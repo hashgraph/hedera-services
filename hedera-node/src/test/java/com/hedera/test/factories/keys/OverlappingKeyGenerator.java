@@ -9,9 +9,9 @@ package com.hedera.test.factories.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,10 @@ package com.hedera.test.factories.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
 
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		Set<ByteString> usedPrefixes = new HashSet<>();
 		Map<ByteString, Key> byPrefix = new HashMap<>();
 		while (precomputed.size() < n) {
-			Key candidate = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pkMap);
+			Key candidate = genSingleEd25519Key(pkMap);
 			ByteString prefix = pubKeyPrefixOf(candidate, minOverlapLen);
 			if (byPrefix.containsKey(prefix)) {
 				if (!usedPrefixes.contains(prefix)) {
@@ -61,6 +62,24 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 			}
 		}
 	}
+
+	/**
+	 * Generates a single Ed25519 key.
+	 *
+	 * @param pubKey2privKeyMap
+	 * 		map of public key hex string as key and the private key as value
+	 * @return generated Ed25519 key
+	 */
+	public static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
+		final var pair = new KeyPairGenerator().generateKeyPair();
+		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKey);
+		final var akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+
+		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
+		return akey;
+	}
+
 	private ByteString pubKeyPrefixOf(Key key, int prefixLen) {
 		return key.getEd25519().substring(0, prefixLen);
 	}
