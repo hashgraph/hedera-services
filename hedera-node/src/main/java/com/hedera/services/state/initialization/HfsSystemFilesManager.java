@@ -59,7 +59,7 @@ import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.Address.ipString;
 
@@ -379,8 +379,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private CurrentAndNextFeeSchedule defaultSchedules() throws Exception {
 		var resource = properties.getStringProperty("bootstrap.feeSchedulesJson.resource");
-
-		return loadFeeScheduleFromJson(resource);
+		final var in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource);
+		return loadFeeScheduleFromStream(in);
 	}
 
 	private ThrottleDefinitions defaultThrottles() throws Exception {

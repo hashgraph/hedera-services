@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.parseFeeScheduleFromJson;
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.stringToSubType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +43,7 @@ public class FeesJsonToProtoSerdeTest {
 	private static final String UNTYPED_FEE_SCHEDULE_REPR_PATH = "src/test/resources/sysfiles/r4FeeSchedule.bin";
 	private static final String TYPED_FEE_SCHEDULE_JSON_PATH = "src/test/resources/sysfiles/r16feeSchedules.json";
 	private static final String TYPED_FEE_SCHEDULE_JSON_RESOURCE = "sysfiles/r16feeSchedules.json";
+	private static final String TMP_PROTO_LOC = "tbd.bin";
 
 	@Test
 	void isUninstantiable() throws NoSuchMethodException {
@@ -57,19 +59,34 @@ public class FeesJsonToProtoSerdeTest {
 	}
 
 	@Test
-	public void serializesTypedFeeScheduleFromLoadedJsonResource() throws Exception {
+	public void serializesTypedFeeScheduleFromStream() throws Exception {
 		// setup:
-		final var tmpSerializedLoc = "2020-04-22-FeeSchedule.bin";
+		final var in = java.nio.file.Files.newInputStream(Paths.get(TYPED_FEE_SCHEDULE_JSON_PATH));
 
 		// given:
-		final var typedSchedules = loadFeeScheduleFromJson(TYPED_FEE_SCHEDULE_JSON_RESOURCE);
+		final var typedSchedules = loadFeeScheduleFromStream(in);
 		// and:
-		final var tmpFile = new File(tmpSerializedLoc);
+		final var tmpFile = new File(TMP_PROTO_LOC);
 		Files.write(typedSchedules.toByteArray(), tmpFile);
 
 		// and sanity check:
 		Assertions.assertDoesNotThrow(() ->
-				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpSerializedLoc))));
+				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(TMP_PROTO_LOC))));
+		// cleanup:
+		tmpFile.delete();
+	}
+
+	@Test
+	public void serializesTypedFeeScheduleFromLoadedJsonResource() throws Exception {
+		// given:
+		final var typedSchedules = loadFeeScheduleFromJson(TYPED_FEE_SCHEDULE_JSON_RESOURCE);
+		// and:
+		final var tmpFile = new File(TMP_PROTO_LOC);
+		Files.write(typedSchedules.toByteArray(), tmpFile);
+
+		// and sanity check:
+		Assertions.assertDoesNotThrow(() ->
+				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(TMP_PROTO_LOC))));
 
 		// cleanup:
 		tmpFile.delete();
@@ -78,19 +95,17 @@ public class FeesJsonToProtoSerdeTest {
 	@Test
 	void serializesTypedFeeScheduleFromParsedJsonLiteral() throws Exception {
 		// setup:
-		final var tmpSerializedLoc = "2020-04-22-FeeSchedule.bin";
-		// and:
 		final var jsonLiteral = new String(java.nio.file.Files.readAllBytes(Paths.get(TYPED_FEE_SCHEDULE_JSON_PATH)));
 
 		// given:
 		final var typedSchedules = parseFeeScheduleFromJson(jsonLiteral);
-		final var tmpFile = new File(tmpSerializedLoc);
+		final var tmpFile = new File(TMP_PROTO_LOC);
 		// and:
 		Files.write(typedSchedules.toByteArray(), tmpFile);
 
 		// and sanity check:
 		Assertions.assertDoesNotThrow(() ->
-				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpSerializedLoc))));
+				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(TMP_PROTO_LOC))));
 
 		// cleanup:
 		tmpFile.delete();

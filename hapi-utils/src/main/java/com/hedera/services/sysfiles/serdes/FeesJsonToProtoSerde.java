@@ -55,22 +55,31 @@ public class FeesJsonToProtoSerde {
 	}
 
 	public static CurrentAndNextFeeSchedule loadFeeScheduleFromJson(String jsonResource) throws Exception {
+		return buildFrom(om -> om.readValue(
+				FeesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(jsonResource),
+				List.class));
+	}
+
+	public static CurrentAndNextFeeSchedule loadFeeScheduleFromStream(InputStream in) throws Exception {
+		return buildFrom(om -> om.readValue(in, List.class));
+	}
+
+	public static CurrentAndNextFeeSchedule parseFeeScheduleFromJson(String literal) throws Exception {
+		return buildFrom(om -> om.readValue(literal, List.class));
+	}
+
+	private static CurrentAndNextFeeSchedule buildFrom(ThrowingReader reader) throws Exception {
 		final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
 
-		final List<Map<String, Object>> rawFeeSchedules = asMapList(jsonResource);
+		final var om = new ObjectMapper();
+		final var rawFeeSchedules = reader.readValueWith(om);
 		constructWithBuilder(feeSchedules, rawFeeSchedules);
 
 		return feeSchedules.build();
 	}
 
-	public static CurrentAndNextFeeSchedule parseFeeScheduleFromJson(String literal) throws Exception {
-		final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
-
-		final var om = new ObjectMapper();
-		List<Map<String, Object>> rawFeeSchedules = (List<Map<String, Object>>) om.readValue(literal, List.class);
-		constructWithBuilder(feeSchedules, rawFeeSchedules);
-
-		return feeSchedules.build();
+	interface ThrowingReader {
+		List<Map<String, Object>> readValueWith(ObjectMapper om) throws Exception;
 	}
 
 	private static void constructWithBuilder(
@@ -85,15 +94,6 @@ public class FeesJsonToProtoSerde {
 					rawFeeSchedule,
 					FeeSchedule.class,
 					bindFeeScheduleFrom((List<Map<String, Object>>) rawFeeSchedules.get(i++).get(rawFeeSchedule)));
-		}
-	}
-
-	private static List<Map<String, Object>> asMapList(String jsonResource) {
-		ObjectMapper om = new ObjectMapper();
-		try (InputStream in = FeesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(jsonResource)) {
-			return (List<Map<String, Object>>) om.readValue(in, List.class);
-		} catch (Exception e) {
-			throw new IllegalStateException(String.format("Cannot load fee schedules '%s'!", jsonResource), e);
 		}
 	}
 
