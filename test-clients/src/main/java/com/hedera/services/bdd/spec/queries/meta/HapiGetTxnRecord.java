@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,6 +47,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -62,6 +63,8 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummary
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
@@ -88,6 +91,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	boolean omitPaymentHeaderOnCostAnswer = false;
 	List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
 	List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
+	List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
 	List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
@@ -105,6 +109,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
 	}
+
 	public HapiGetTxnRecord(TransactionID txnId) {
 		this.explicitTxnId = Optional.of(txnId);
 	}
@@ -218,17 +223,26 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasHbarAmountInTransferList(String account, long amount) {
+	public HapiGetTxnRecord hasHbarAmount(final String account, final long amount) {
 		accountAmountsToValidate.add(Pair.of(account, amount));
 		return this;
 	}
 
-	public HapiGetTxnRecord hasTokenAmountInTokenTransferList(String token, String account, long amount) {
+	public HapiGetTxnRecord hasTokenAmount(final String token, final String account, final long amount) {
 		tokenAmountsToValidate.add(Triple.of(token, account, amount));
 		return this;
 	}
 
-	public HapiGetTxnRecord hasExpectedAssessedCustomFees(String token, String account, long amount) {
+	public HapiGetTxnRecord hasNftTransfer(final String token,
+			final String sender,
+			final String receiver,
+			final long serial
+	) {
+		assessedNftTransfersToValidate.add(new AssessedNftTransfer(token, sender, receiver, serial));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasAssessedCustomFee(String token, String account, long amount) {
 		assessedCustomFeesToValidate.add(Triple.of(token, account, amount));
 		return this;
 	}
@@ -319,97 +333,142 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (!accountAmountsToValidate.isEmpty()) {
 			final var accountAmounts = actualRecord.getTransferList().getAccountAmountsList();
 			accountAmountsToValidate.forEach(pair ->
-					validateAccountAmount(spec.registry().getAccountID(pair.getLeft()), pair.getRight(), accountAmounts));
+					validateAccountAmount(asId(pair.getLeft(), spec), pair.getRight(), accountAmounts));
 		}
+		final var tokenTransferLists = actualRecord.getTokenTransferListsList();
 		if (!tokenAmountsToValidate.isEmpty()) {
-			final var tokenTransferLists = actualRecord.getTokenTransferListsList();
 			tokenAmountsToValidate.forEach(triple ->
-					validateTokenTransferList(
-							spec.registry().getTokenID(triple.getLeft()),
-							spec.registry().getAccountID(triple.getMiddle()),
+					validateTokenAmount(
+							asTokenId(triple.getLeft(), spec),
+							asId(triple.getMiddle(), spec),
 							triple.getRight(),
+							tokenTransferLists));
+		}
+		if (!assessedNftTransfersToValidate.isEmpty()) {
+			assessedNftTransfersToValidate.forEach(transfer ->
+					validateAssessedNftTransfer(
+							asTokenId(transfer.getToken(), spec),
+							asId(transfer.getSender(), spec),
+							asId(transfer.getReceiver(), spec),
+							transfer.getSerial(),
 							tokenTransferLists));
 		}
 		if (!assessedCustomFeesToValidate.isEmpty()) {
 			final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
 			assessedCustomFeesToValidate.forEach(triple ->
 					validateAssessedCustomFees(
-							!triple.getLeft().equals(HBAR_TOKEN_SENTINEL) ? spec.registry().getTokenID(triple.getLeft()) : null,
-							spec.registry().getAccountID(triple.getMiddle()),
+							triple.getLeft().equals(HBAR_TOKEN_SENTINEL) ? null : asTokenId(triple.getLeft(), spec),
+							asId(triple.getMiddle(), spec),
 							triple.getRight(),
 							actualAssessedCustomFees
 					));
 		}
 	}
 
-	private void validateAssessedCustomFees(final TokenID tokenID, final AccountID accountID, final long amount,
-			final List<AssessedCustomFee> assessedCustomFees) {
-		boolean found = false;
+	private void validateAssessedCustomFees(final TokenID tokenID,
+			final AccountID accountID,
+			final long amount,
+			final List<AssessedCustomFee> assessedCustomFees
+	) {
 		for (var acf : assessedCustomFees) {
-			if (acf.getAmount() == amount &&
-					acf.getFeeCollectorAccountId().equals(accountID) &&
-					(!acf.hasTokenId() || acf.getTokenId().equals(tokenID))) {
-				found = true;
-				break;
+			if (acf.getAmount() == amount
+					&& acf.getFeeCollectorAccountId().equals(accountID)
+					&& (!acf.hasTokenId() || acf.getTokenId().equals(tokenID))) {
+				return;
 			}
 		}
-		assertTrue("Cannot find TokenID : " + tokenID +
-				" AccountID : " + accountID +
-				" and amount : " + amount + " in assessed_custom_fees of the txnRecord", found);
+
+		Assert.fail(cannotFind(tokenID, accountID, amount) + " in the assessed_custom_fees of the txnRecord");
 	}
 
-	private void validateTokenTransferList(final TokenID tokenID, final AccountID accountID, final long amount,
-			final List<TokenTransferList> tokenTransferLists) {
-		boolean found = false;
-
+	private void validateTokenAmount(final TokenID tokenID,
+			final AccountID accountID,
+			final long amount,
+			final List<TokenTransferList> tokenTransferLists
+	) {
 		for (final var ttl : tokenTransferLists) {
 			if (ttl.getToken().equals(tokenID)) {
 				final var accountAmounts = ttl.getTransfersList();
-				if (!accountAmounts.isEmpty()) {
-					found = findInAccountAmountsList(accountID, amount, accountAmounts);
-				} else {
-					found = findInNftTransferList(accountID, amount, ttl.getNftTransfersList());
+				if (!accountAmounts.isEmpty() && foundInAccountAmountsList(accountID, amount, accountAmounts)) {
+					return;
 				}
-				break;
 			}
 		}
 
-		assertTrue("Cannot find TokenID : " + tokenID +
-				" AccountID : " + accountID +
-				" and amount : " + amount + " in the tokenTransferList of the txnRecord", found);
+		Assert.fail(cannotFind(tokenID, accountID, amount) + " in the tokenTransferLists of the txnRecord");
 	}
 
-	private boolean findInNftTransferList(final AccountID accountID, final long amount,
-			final List<NftTransfer> nftTransferList) {
-		boolean found = false;
-		for(var nfttl : nftTransferList) {
-			if (nfttl.getSerialNumber() == amount &&
-					nfttl.getReceiverAccountID().equals(accountID)) {
-				found = true;
-				break;
+	private String cannotFind(final TokenID tokenID, final AccountID accountID, final long amount) {
+		return "Cannot find TokenID: " + tokenID
+				+ " AccountID: " + accountID
+				+ " and amount: " + amount;
+	}
+
+	private void validateAssessedNftTransfer(final TokenID tokenID,
+			final AccountID sender,
+			final AccountID receiver,
+			final long serial,
+			final List<TokenTransferList> tokenTransferLists
+	) {
+		for (final var ttl : tokenTransferLists) {
+			if (ttl.getToken().equals(tokenID)) {
+				final var nftTransferList = ttl.getNftTransfersList();
+				if (!nftTransferList.isEmpty() && foundInNftTransferList(sender, receiver, serial, nftTransferList)) {
+					return;
+				}
 			}
 		}
-		return found;
+
+		Assert.fail(cannotFind(tokenID, sender, receiver, serial) + " in the tokenTransferLists of the txnRecord");
 	}
 
-	private void validateAccountAmount(final AccountID accountID, final long amount,
-			final List<AccountAmount> accountAmountsList) {
-		final var found = findInAccountAmountsList(accountID, amount, accountAmountsList);
-		assertTrue("Cannot find AccountID : " + accountID +
-				" and amount : " + amount + " in the transferList of the txnRecord", found);
+	private String cannotFind(final TokenID tokenID,
+			final AccountID sender,
+			final AccountID receiver,
+			final long serial
+	) {
+		return "Cannot find TokenID: " + tokenID
+				+ " sender: " + sender
+				+ " receiver: " + receiver
+				+ " and serial: " + serial;
 	}
 
-	private boolean findInAccountAmountsList(final AccountID accountID, final long amount,
-			final List<AccountAmount> accountAmountsList) {
-		boolean found = false;
-		for (var aa : accountAmountsList) {
-			if( aa.getAmount() == amount &&
-					aa.getAccountID().equals(accountID)) {
-				found = true;
-				break;
+	private boolean foundInNftTransferList(final AccountID sender,
+			final AccountID receiver,
+			final long serial,
+			final List<NftTransfer> nftTransferList
+	) {
+		for (final var nftTransfer : nftTransferList) {
+			if (nftTransfer.getSerialNumber() == serial
+					&& nftTransfer.getSenderAccountID().equals(sender)
+					&& nftTransfer.getReceiverAccountID().equals(receiver)) {
+				return true;
 			}
 		}
-		return found;
+
+		return false;
+	}
+
+	private void validateAccountAmount(final AccountID accountID,
+			final long amount,
+			final List<AccountAmount> accountAmountsList
+	) {
+		final var found = foundInAccountAmountsList(accountID, amount, accountAmountsList);
+		assertTrue("Cannot find AccountID: " + accountID
+				+ " and amount: " + amount + " in the transferList of the txnRecord", found);
+	}
+
+	private boolean foundInAccountAmountsList(final AccountID accountID,
+			final long amount,
+			final List<AccountAmount> accountAmountsList
+	) {
+		for (final var aa : accountAmountsList) {
+			if (aa.getAmount() == amount && aa.getAccountID().equals(accountID)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override
@@ -424,7 +483,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var fee = record.getTransactionFee();
 				var rates = spec.ratesProvider();
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 4);
-				log.info("Record (charged ${}): {}", priceInUsd,  record);
+				log.info("Record (charged ${}): {}", priceInUsd, record);
 			}
 		}
 		if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == OK) {
@@ -467,7 +526,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		QueryHeader header;
 		if (costOnly && omitPaymentHeaderOnCostAnswer) {
 			header = QueryHeader.newBuilder().setResponseType(COST_ANSWER).build();
-		} else  {
+		} else {
 			header = costOnly ? answerCostHeader(payment) : answerHeader(payment);
 		}
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
@@ -496,6 +555,40 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			return super.toStringHelper().add("explicitTxnId", true);
 		} else {
 			return super.toStringHelper().add("txn", txn);
+		}
+	}
+
+	public class AssessedNftTransfer {
+		private String token;
+		private String sender;
+		private String receiver;
+		private long serial;
+
+		public AssessedNftTransfer(final String token,
+				final String sender,
+				final String receiver,
+				final long serial
+		) {
+			this.token = token;
+			this.sender = sender;
+			this.receiver = receiver;
+			this.serial = serial;
+		}
+
+		public String getToken() {
+			return token;
+		}
+
+		public String getSender() {
+			return sender;
+		}
+
+		public String getReceiver() {
+			return receiver;
+		}
+
+		public long getSerial() {
+			return serial;
 		}
 	}
 }
