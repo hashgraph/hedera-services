@@ -140,6 +140,7 @@ import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
+import com.hedera.services.bdd.suites.token.Hip17UnhappyTokensSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
@@ -331,6 +332,7 @@ public class SuiteRunner {
 		put("TokenTransactSpecs", aof(TokenTransactSpecs::new));
 		put("TokenManagementSpecs", aof(TokenManagementSpecs::new));
 		put("TokenAssociationSpecs", aof(TokenAssociationSpecs::new));
+		put("Hip17UnhappyTokensSuite", aof(Hip17UnhappyTokensSuite::new));
 		/* Functional tests - CRYPTO */
 		put("CryptoTransferSuite", aof(CryptoTransferSuite::new));
 		put("CryptoDeleteSuite", aof(CryptoDeleteSuite::new));
