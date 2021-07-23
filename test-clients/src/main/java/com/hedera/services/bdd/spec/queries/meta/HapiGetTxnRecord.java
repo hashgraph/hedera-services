@@ -89,6 +89,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	boolean assertNothingAboutHashes = false;
 	boolean lookupScheduledFromRegistryId = false;
 	boolean omitPaymentHeaderOnCostAnswer = false;
+	boolean assertEmptyAssessedCustomFees = false;
 	List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
 	List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
 	List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
@@ -247,6 +248,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasEmptyAssessedCustomFees() {
+		assertEmptyAssessedCustomFees = true;
+		return this;
+	}
+
 	public TransactionRecord getResponseRecord() {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
@@ -353,8 +359,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 							transfer.getSerial(),
 							tokenTransferLists));
 		}
+		final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
+		if (assertEmptyAssessedCustomFees) {
+			assertTrue("Actual assessed_custom_fees is not empty:\n" + actualAssessedCustomFees,
+					actualAssessedCustomFees.isEmpty());
+		}
 		if (!assessedCustomFeesToValidate.isEmpty()) {
-			final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
 			assessedCustomFeesToValidate.forEach(triple ->
 					validateAssessedCustomFees(
 							triple.getLeft().equals(HBAR_TOKEN_SENTINEL) ? null : asTokenId(triple.getLeft(), spec),
