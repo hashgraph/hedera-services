@@ -23,7 +23,7 @@ package com.hedera.services.bdd.suites.misc;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,7 +63,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 		final var pemLocForOriginalTreasuryKey = "stabletestnet-account2.pem";
 		final var passphraseForOriginalPemLoc = "<SECRET>";
 
-		final var hexedNewEd25519PrivateKey = Hex.encodeHexString(randomUtf8Bytes(32));
+		final var hexedNewEd25519PrivateKey = CommonUtils.hex(randomUtf8Bytes(32));
 		final var newTreasuryKey = "newTreasuryKey";
 
 		return customHapiSpec("RekeyTreasury")

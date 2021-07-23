@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.verification;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,11 +20,9 @@ package com.hedera.services.bdd.spec.verification;
  * ‍
  */
 
-import com.hedera.services.legacy.core.HexUtils;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,7 +74,7 @@ public class NodeSignatureVerifier {
 			try {
 				accountKeys.put(account, loadPublicKey(nodeAddress.getRSAPubKey()));
 				log.info("Discovered node " + account);
-			} catch (DecoderException ex) {
+			} catch (IllegalArgumentException ex) {
 				log.warn("Malformed address key {} for node {}", nodeAddress.getRSAPubKey(), account);
 				throw new IllegalArgumentException("Malformed public key!");
 			}
@@ -91,8 +89,8 @@ public class NodeSignatureVerifier {
 				.collect(toList());
 	}
 
-	private PublicKey loadPublicKey(String rsaPubKeyString) throws DecoderException {
-		return bytesToPublicKey(HexUtils.hexToBytes(rsaPubKeyString));
+	private PublicKey loadPublicKey(String rsaPubKeyString) throws IllegalArgumentException {
+		return bytesToPublicKey(CommonUtils.unhex(rsaPubKeyString));
 	}
 
 	private static PublicKey bytesToPublicKey(byte[] bytes) {
@@ -115,12 +113,12 @@ public class NodeSignatureVerifier {
 			String nodeAccountID = getAccountIDStringFromFilePath(sigFile.getPath());
 			if (verifySignatureFile(sigFile)) {
 				byte[] hash = extractHashAndSigFromFile(sigFile).getLeft();
-				String hashString = Hex.encodeHexString(hash);
+				String hashString = CommonUtils.hex(hash);
 				Set<String> nodeAccountIDs = hashToNodeAccountIDs.getOrDefault(hashString, new HashSet<>());
 				nodeAccountIDs.add(nodeAccountID);
 				hashToNodeAccountIDs.put(hashString, nodeAccountIDs);
 			} else {
-				log.info(MARKER, "Node{} has invalid signature file {}", nodeAccountID , sigFile.getName());
+				log.info(MARKER, "Node{} has invalid signature file {}", nodeAccountID, sigFile.getName());
 			}
 		}
 
@@ -226,7 +224,7 @@ public class NodeSignatureVerifier {
 		Matcher matcher = NODE_PATTERN.matcher(path);
 
 		String match = null;
-		while(matcher.find()) {
+		while (matcher.find()) {
 			match = matcher.group(1);
 		}
 		return match;

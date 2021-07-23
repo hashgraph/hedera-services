@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.logging.log4j.LogManager;
@@ -48,8 +49,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.function.BiConsumer;
-
-import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 public class SpecKey {
 	static final Logger log = LogManager.getLogger(SpecKey.class);
@@ -139,7 +138,7 @@ public class SpecKey {
 		forms.completeIntake(spec.registry(), grpcKey);
 		spec.keys().incorporate(
 				forms.name(),
-				encodeHexString(cryptoKey.getAbyte()),
+				CommonUtils.hex(cryptoKey.getAbyte()),
 				cryptoKey,
 				SigControl.ON);
 	}
@@ -189,7 +188,7 @@ public class SpecKey {
 			(2) Set the given SigControl as default for signing requests with the Key. */
 		spec.keys().incorporate(
 				forms.name(),
-				encodeHexString(publicKey.getAbyte()),
+				CommonUtils.hex(publicKey.getAbyte()),
 				keyPair.getPrivate(),
 				SigControl.ON);
 	}

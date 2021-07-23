@@ -76,7 +76,6 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 		parseArgs(args);
 
 		MixedOpsMemoPerfSuite suite = new MixedOpsMemoPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -85,11 +84,6 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 		return	List.of(
 				runMixedMemoOps()
 		);
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	// perform cryptoCreate, cryptoUpdate, TokenCreate, TokenUpdate, FileCreate, FileUpdate txs with entity memo set.

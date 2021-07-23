@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.utilops.inventory;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,9 +26,9 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -77,7 +77,7 @@ public class NewSpecKey extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		KeyGenerator keyGen = generator.orElse(KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
+		final var keyGen = generator.orElse(KeyExpansion::genSingleEd25519Key);
 		Key key;
 		if (shape.isPresent()) {
 			if (labels.isPresent()) {
@@ -93,7 +93,7 @@ public class NewSpecKey extends UtilOp {
 			if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
 				log.info("Created simple '{}' w/ Ed25519 public key {}",
 						name,
-						Hex.encodeHexString(key.getEd25519().toByteArray()));
+						CommonUtils.hex(key.getEd25519().toByteArray()));
 			} else {
 				log.info("Created a complex key...");
 			}

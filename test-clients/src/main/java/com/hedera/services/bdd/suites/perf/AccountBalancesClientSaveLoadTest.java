@@ -79,7 +79,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
-
 public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 	private static final Logger log = LogManager.getLogger(AccountBalancesClientSaveLoadTest.class);
 	final static int MAX_PENDING_OPS_FOR_SETUP = 10_000;
@@ -122,12 +121,6 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {	runAccountBalancesClientSaveLoadTest() });
 	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return false;
-	}
-
 
 	private HapiApiSpec runAccountBalancesClientSaveLoadTest() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
@@ -336,7 +329,6 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		};
 	}
 
-
 	private Function<HapiApiSpec, OpProvider> randomTransfer(PerfTestLoadSettings settings) {
 		return spec -> new OpProvider() {
 			@Override
@@ -375,5 +367,4 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
 }

@@ -21,14 +21,13 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.client.test.ClientBaseThread;
+import com.hedera.services.legacy.client.util.KeyExpansion;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomProperties;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
-import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -52,7 +51,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
@@ -79,6 +77,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+
+import static com.hedera.services.legacy.client.util.KeyExpansion.keyFromBytes;
 
 /**
  * Adds crypto related functions for regression tests.
@@ -120,7 +120,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	protected static int MAX_BUSY_RETRIES = 10;
 	protected static int BUSY_RETRY_MS = 200;
 
-	protected static enum SUPPORTE_KEY_TYPES {
+	protected static enum SUPPORTED_KEY_TYPES {
 		single, keylist, thresholdKey
 	}
 
@@ -554,23 +554,18 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		indicates failure while reading genesis information
 	 */
 	protected void readGenesisInfo() throws Exception {
-		KeyPairObj genesisKeyPair;
 		// Get Genesis Account key Pair
-		Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
+		final var keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
 		genesisAccountList = keyFromFile.get("START_ACCOUNT");
 		genesisAccountID = genesisAccountList.get(0).getAccountId();
-		genesisKeyPair = genesisAccountList.get(0).getKeyPairList().get(0);
-		String pubKeyHex = genesisKeyPair.getPublicKeyAbyteStr();
-		Key akey;
-		if (KeyExpansion.USE_HEX_ENCODED_KEY) {
-			akey = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyHex)).build();
-		} else {
-			akey = Key.newBuilder().setEd25519(ByteString.copyFrom(ClientBaseThread.hexToBytes(pubKeyHex)))
-					.build();
-		}
+		final var genesisKeyPair = genesisAccountList.get(0).getKeyPairList().get(0);
+		final var pubKeyHex = genesisKeyPair.getPublicKeyAbyteStr();
 		genesisPrivateKey = genesisKeyPair.getPrivateKey();
 		pubKey2privKeyMap.put(pubKeyHex, genesisPrivateKey);
-		startUpKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(akey)).build();
+		startUpKey = Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(keyFromBytes(com.swirlds.common.CommonUtils.unhex(pubKeyHex))))
+				.build();
 		acc2ComplexKeyMap.put(genesisAccountID, startUpKey);
 	}
 
@@ -751,13 +746,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 */
 	protected Key genComplexKey(String accountKeyType) {
 		Key key = null;
-		if (accountKeyType.equals(SUPPORTE_KEY_TYPES.thresholdKey.name())) {
+		if (accountKeyType.equals(SUPPORTED_KEY_TYPES.thresholdKey.name())) {
 			key = KeyExpansion
 					.genThresholdKeyInstance(COMPLEX_KEY_SIZE, COMPLEX_KEY_THRESHOLD, pubKey2privKeyMap);
-		} else if (accountKeyType.equals(SUPPORTE_KEY_TYPES.keylist.name())) {
+		} else if (accountKeyType.equals(SUPPORTED_KEY_TYPES.keylist.name())) {
 			key = KeyExpansion.genKeyListInstance(COMPLEX_KEY_SIZE, pubKey2privKeyMap);
 		} else {
-			key = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pubKey2privKeyMap);
+			key = KeyExpansion.genSingleEd25519Key(pubKey2privKeyMap);
 		}
 
 		return key;
@@ -949,8 +944,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	protected Key genComplexKeyRecursive(String accountKeyType, int currentLevel, int targetLevel)
 			throws Exception {
 		Key key = null;
-		if (accountKeyType.equals(SUPPORTE_KEY_TYPES.thresholdKey.name())
-				|| (accountKeyType.equals(SUPPORTE_KEY_TYPES.keylist.name()))) {
+		if (accountKeyType.equals(SUPPORTED_KEY_TYPES.thresholdKey.name())
+				|| (accountKeyType.equals(SUPPORTED_KEY_TYPES.keylist.name()))) {
 			if (targetLevel < 2) {
 				throw new Exception(
 						"Error: targetLevel should be at least 2 for keyList and thresholdKey! A base key has a depth" +
@@ -962,14 +957,14 @@ public class CryptoServiceTest extends TestHelperComplex {
 				Key item = null;
 				// check if level reached, if not call parent at the next level
 				if (currentLevel >= (targetLevel - 1)) {
-					item = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pubKey2privKeyMap);
+					item = KeyExpansion.genSingleEd25519Key(pubKey2privKeyMap);
 				} else {
 					String keyType = getRandomAccountKeyType();
 					item = genComplexKeyRecursive(keyType, (currentLevel + 1), targetLevel);
 				}
 				keyList.addKeys(item);
 			}
-			if (accountKeyType.equals(SUPPORTE_KEY_TYPES.thresholdKey.name())) {
+			if (accountKeyType.equals(SUPPORTED_KEY_TYPES.thresholdKey.name())) {
 				key = Key.newBuilder()
 						.setThresholdKey(
 								ThresholdKey.newBuilder().setKeys(keyList).setThreshold(COMPLEX_KEY_THRESHOLD))
@@ -978,7 +973,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 				key = Key.newBuilder().setKeyList(keyList).build();
 			}
 		} else {
-			key = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pubKey2privKeyMap);
+			key = KeyExpansion.genSingleEd25519Key(pubKey2privKeyMap);
 		}
 
 		return key;

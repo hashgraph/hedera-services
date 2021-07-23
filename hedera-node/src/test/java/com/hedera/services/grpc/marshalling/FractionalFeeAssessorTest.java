@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,7 +53,7 @@ class FractionalFeeAssessorTest {
 	@Test
 	void appliesFeesAsExpected() {
 		// setup:
-		final var fees = List.of(firstFractionalFee, secondFractionalFee, exemptFractionalFee);
+		final var fees = List.of(firstFractionalFee, secondFractionalFee, exemptFractionalFee, skippedFixedFee);
 		final var firstCollectorChange = BalanceChange.tokenAdjust(
 				firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
 		final var secondCollectorChange = BalanceChange.tokenAdjust(
@@ -277,6 +277,10 @@ class FractionalFeeAssessorTest {
 	private final Id tokenWithFractionalFee = new Id(1, 2, 3);
 	private final EntityId firstFractionalFeeCollector = new EntityId(4, 5, 6);
 	private final EntityId secondFractionalFeeCollector = new EntityId(5, 6, 7);
+	private final FcCustomFee skippedFixedFee = FcCustomFee.fixedFee(
+			100L,
+			EntityId.MISSING_ENTITY_ID,
+			EntityId.MISSING_ENTITY_ID);
 	private final FcCustomFee firstFractionalFee = FcCustomFee.fractionalFee(
 			firstNumerator,
 			firstDenominator,

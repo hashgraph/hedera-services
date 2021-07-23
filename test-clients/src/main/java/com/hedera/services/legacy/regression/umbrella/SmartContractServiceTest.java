@@ -46,15 +46,15 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hederahashgraph.builder.TransactionSigner;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
+import com.swirlds.common.CommonUtils;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
-import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 
 import java.io.IOException;
@@ -533,7 +533,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 		ByteString contractByteCode = null;
 		contractByteCode = respToReturn.getContractGetBytecodeResponse().getBytecode();
 		if (contractByteCode != null && !contractByteCode.isEmpty()) {
-			byteCode = ByteUtil.toHexString(contractByteCode.toByteArray());
+			byteCode = CommonUtils.hex(contractByteCode.toByteArray());
 		}
 
 		return byteCode;

@@ -20,15 +20,13 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
-import com.hedera.services.legacy.client.test.ClientBaseThread;
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.Serializable;
 import java.security.KeyPair;
@@ -38,66 +36,31 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
-
 public class KeyPairObj implements Serializable {
-
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 9146375644904969927L;
 	private String publicKey;
-
-
 	private String privateKey;
-
-	private PrivateKey privKey;
-
 
 	public KeyPairObj(String publicKey, String privateKey) {
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 	}
 
-
-	public String getPublicKeyStr() {
-		return publicKey;
-	}
-
-
-	public void setPublicKeyStr(String publicKey) {
-		this.publicKey = publicKey;
-	}
-
-
-	public String getPrivateKeyStr() {
-		return privateKey;
-	}
-
-
-	public void setPrivateKeyStr(String privateKey) {
-		this.privateKey = privateKey;
-	}
-
-	public static String getPrivateKeyString (PrivateKey pKey) {
-
-		return null;
-	}
-
 	public PrivateKey getPrivateKey() {
-		PrivateKey privKey=null;
+		PrivateKey privKey = null;
 		byte[] privArray = new byte[0];
 		try {
-			privArray = Hex.decodeHex(privateKey);
-		} catch (DecoderException e) {
+			privArray = CommonUtils.unhex(privateKey);
+		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		}
-		if(privateKey.length()==128) {
+		if (privateKey.length() == 128) {
 			EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 			EdDSAPrivateKeySpec pubKeySpec = new EdDSAPrivateKeySpec(spec, privArray);
 			privKey = new EdDSAPrivateKey(pubKeySpec);
 		} else {
 			PKCS8EncodedKeySpec encoded = new PKCS8EncodedKeySpec(privArray);
-			try{
+			try {
 				privKey = new EdDSAPrivateKey(encoded);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -107,24 +70,10 @@ public class KeyPairObj implements Serializable {
 		return privKey;
 	}
 
-	public PrivateKey getPrivateKey_128() {
-		byte[] privArray = null;
-		try {
-			privArray=Hex.decodeHex(privateKey);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
-		EdDSAPrivateKeySpec pubKeySpec = new EdDSAPrivateKeySpec(spec, privArray);
-		PrivateKey privKey = new EdDSAPrivateKey(pubKeySpec);
-		return privKey;
-	}
-
-
-	public PublicKey getPublicKey() throws DecoderException, InvalidKeySpecException {
-		byte[] pubKeyBytes = HexUtils.hexToBytes(publicKey);
+	public PublicKey getPublicKey() throws IllegalArgumentException, InvalidKeySpecException {
+		byte[] pubKeyBytes = CommonUtils.unhex(publicKey);
 		PublicKey pubKey = null;
-		if(publicKey.length()==64) {
+		if (publicKey.length() == 64) {
 			EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 			EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(pubKeyBytes, spec);
 			pubKey = new EdDSAPublicKey(pubKeySpec);
@@ -135,26 +84,11 @@ public class KeyPairObj implements Serializable {
 		return pubKey;
 	}
 
-	public PublicKey getPublicKey_64() {
-		byte[] pubKeyBytes=null;
-		try {
-			pubKeyBytes = ClientBaseThread.hexToBytes(publicKey);
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-		EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
-		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(pubKeyBytes, spec);
-		PublicKey pubKey = new EdDSAPublicKey(pubKeySpec);
-		return pubKey;
-	}
-
-	public KeyPair getKeyPair() throws InvalidKeySpecException, DecoderException {
+	public KeyPair getKeyPair() throws InvalidKeySpecException, IllegalArgumentException {
 		return new KeyPair(getPublicKey(), getPrivateKey());
 	}
 
-	public String getPublicKeyAbyteStr() throws InvalidKeySpecException, DecoderException {
-		return HexUtils.bytes2Hex(((EdDSAPublicKey) getPublicKey()).getAbyte());
+	public String getPublicKeyAbyteStr() throws InvalidKeySpecException, IllegalArgumentException {
+		return CommonUtils.hex(((EdDSAPublicKey) getPublicKey()).getAbyte());
 	}
-
-
 }

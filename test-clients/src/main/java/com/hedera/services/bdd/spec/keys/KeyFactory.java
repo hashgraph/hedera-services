@@ -29,9 +29,8 @@ import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
-import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -39,10 +38,8 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.builder.TransactionSigner;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,7 +107,7 @@ public class KeyFactory implements Serializable {
 	public void exportSimpleKeyAsLegacyStartUpAccount(String exportKey, AccountID owner, String b64EncodedLoc) {
 		final var protoKey = registry.getKey(exportKey);
 		final var pubKeyBytes = protoKey.getEd25519().toByteArray();
-		final var hexedPubKey = Hex.encodeHexString(pubKeyBytes);
+		final var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
 		final var privKey = pkMap.get(hexedPubKey);
 
 		try {
@@ -158,7 +155,7 @@ public class KeyFactory implements Serializable {
 			String passphrase
 	) throws KeyStoreException {
 		var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
-		var hexedPubKey = Hex.encodeHexString(pubKeyBytes);
+		var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
 
 		var privateKey = pkMap.get(hexedPubKey);
 
@@ -170,14 +167,14 @@ public class KeyFactory implements Serializable {
 	public void incorporateSimpleWacl(
 			String byName,
 			KeyPairObj kp
-	) throws InvalidKeySpecException, DecoderException {
+	) throws InvalidKeySpecException, IllegalArgumentException {
 		incorporate(byName, kp, KeyShape.listOf(1));
 	}
 
 	public void incorporate(
 			String byName,
 			KeyPairObj kp
-	) throws InvalidKeySpecException, DecoderException {
+	) throws InvalidKeySpecException, IllegalArgumentException {
 		incorporate(byName, kp, ON);
 	}
 
@@ -185,7 +182,7 @@ public class KeyFactory implements Serializable {
 			String byName,
 			KeyPairObj kp,
 			SigControl control
-	) throws InvalidKeySpecException, DecoderException {
+	) throws InvalidKeySpecException, IllegalArgumentException {
 		String pubKeyHex = kp.getPublicKeyAbyteStr();
 		pkMap.put(pubKeyHex, kp.getPrivateKey());
 		controlMap.put(registry.getKey(byName), control);
@@ -287,11 +284,11 @@ public class KeyFactory implements Serializable {
 
 		private void signIfNecessary(Key key) throws Throwable {
 			byte[] pubKey = key.getEd25519().toByteArray();
-			String pubKeyHex = HexUtils.bytes2Hex(pubKey);
+			String pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKey);
 			if (!used.contains(pubKeyHex)) {
 				PrivateKey signer = pkMap.get(pubKeyHex);
 
-				byte[] sig = HexUtils.hexToBytes(SignatureGenerator.signBytes(data, signer));
+				byte[] sig = com.swirlds.common.CommonUtils.unhex(SignatureGenerator.signBytes(data, signer));
 				keySigs.add(new AbstractMap.SimpleEntry<>(pubKey, sig));
 				used.add(pubKeyHex);
 			}
@@ -417,7 +414,7 @@ public class KeyFactory implements Serializable {
 	}
 
 	public Key generate(KeyType type) {
-		return generate(type, KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
+		return generate(type, KeyExpansion::genSingleEd25519Key);
 	}
 
 	public Key generate(KeyType type, KeyGenerator keyGen) {

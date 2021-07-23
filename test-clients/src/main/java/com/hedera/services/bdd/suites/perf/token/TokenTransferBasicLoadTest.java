@@ -82,11 +82,6 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 		return List.of(new HapiApiSpec[] {	runTokenTransferBasicLoadTest() });
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return false;
-	}
-
 	private static String tokenRegistryName(int id) {
 		return "TestToken" + id;
 	}
