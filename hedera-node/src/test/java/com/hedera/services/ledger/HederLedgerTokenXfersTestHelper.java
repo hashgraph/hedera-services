@@ -39,7 +39,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
-class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
+class HederLedgerTokenXfersTestHelper extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
