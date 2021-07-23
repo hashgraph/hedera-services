@@ -67,7 +67,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BaseHederaLedgerTest {
+public class BaseHederaLedgerTestHelper {
 	protected OptionValidator validator = TEST_VALIDATOR;
 	protected MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 

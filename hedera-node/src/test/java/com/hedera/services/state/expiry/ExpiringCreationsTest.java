@@ -30,10 +30,10 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,9 +43,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import javafx.util.Pair;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,7 +122,8 @@ class ExpiringCreationsTest {
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	private final List<FcAssessedCustomFee> customFeesCharged = List.of(new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+	private final List<FcAssessedCustomFee> customFeesCharged = List.of(
+			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L));
 
 
 	@BeforeEach
@@ -279,8 +280,8 @@ class ExpiringCreationsTest {
 		assertEquals(timestamp.getEpochSecond(), actualRecord.getConsensusTimestamp().getSeconds());
 		assertEquals(timestamp.getNano(), actualRecord.getConsensusTimestamp().getNanos());
 		assertEquals(asAccount(account).getAccountNum(), actualRecord.getTxnId().getPayerAccount().num());
-		assertEquals(Hex.encodeHexString(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
-				Hex.encodeHexString(actualRecord.getTxnHash()));
+		assertEquals(CommonUtils.hex(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
+				CommonUtils.hex(actualRecord.getTxnHash()));
 		assertEquals(0L, actualRecord.getFee());
 		//and:
 		assertNull(actualRecord.getTokenAdjustments());
