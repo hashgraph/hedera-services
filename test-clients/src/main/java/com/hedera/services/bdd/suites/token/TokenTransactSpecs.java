@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -932,13 +931,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						mintToken(tokenWithHbarFee, List.of(ByteString.copyFromUtf8("Second!"))),
 						tokenAssociate(alice, tokenWithHbarFee),
 						tokenAssociate(bob, tokenWithHbarFee),
-						cryptoTransfer(movingUnique(2L, tokenWithHbarFee).between(treasuryForToken, alice))
+						cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(treasuryForToken, alice))
 								.payingWith(GENESIS)
 								.fee(ONE_HBAR)
 								.via(txnFromTreasury)
 				).when(
 						cryptoTransfer(
-								movingUnique(2L, tokenWithHbarFee).between(alice, bob)
+								movingUnique(tokenWithHbarFee, 2L).between(alice, bob)
 						)
 								.payingWith(GENESIS)
 								.fee(ONE_HBAR)
