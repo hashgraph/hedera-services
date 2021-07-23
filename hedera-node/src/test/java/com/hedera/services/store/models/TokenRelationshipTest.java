@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,18 +61,13 @@ class TokenRelationshipTest {
 	void toStringAsExpected() {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id{shard=1, realm=0, num=1234}," +
-				" " +
-				"expiry=0, balance=0, deleted=false, tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
+				" expiry=0, balance=0, deleted=false, tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
 				"type=null, deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
-				"freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, " +
-				"balance=1234, balanceChange=0, frozen=false, kycGranted=false}";
+				"freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, balance=1234, " +
+				"balanceChange=0, frozen=false, kycGranted=false}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
-	}
-
-	@Test
-	void balanceAdjustmen() {
 	}
 
 	@Test
