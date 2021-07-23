@@ -46,7 +46,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
-public class HederLedgerTokensTest extends BaseHederaLedgerTest {
+public class HederLedgerTokensTestHelper extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
