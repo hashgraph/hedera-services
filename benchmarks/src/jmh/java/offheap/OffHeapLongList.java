@@ -54,4 +54,10 @@ public final class OffHeapLongList {
         data.get((int) (index / NUM_LONGS_PER_CHUNK)).put(subIndex, value);
     }
 
+    /**
+     * Get the current size of this OffHeapLongList, this is the most data that is stored in it
+     */
+    public long size() {
+        return maxIndexThatCanBeStored.get()+1;
+    }
 }
