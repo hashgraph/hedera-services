@@ -22,34 +22,31 @@ import java.nio.file.StandardOpenOption;
  *
  * Int - file format version
  * Int - key size
- * Int - hash size
  * Int - block size
  */
 @SuppressWarnings("DuplicatedCode")
 public class DataFile implements AutoCloseable {
-    public enum DataToRead{HASH,VALUE,KEY_VALUE,HASH_KEY_VALUE};
+    public enum DataToRead{KEY,VALUE,KEY_VALUE};
     private static final int FILE_FORMAT_VERSION = 1;
     private final Path path;
     private final int blockSize;
     private final int keySize;
-    private final int hashSize;
     private boolean isReadOnly;
     private SeekableByteChannel seekableByteChannel = null;
     private ByteBuffer tempWriteBuffer = null;
 
     /**
      * Open a data file, if it already exists it is opened read only, if it doesn't exist it is opened in append mode.
-     *  @param path the path to the data file
+     *
+     * @param path the path to the data file
      * @param blockSize the size of blocks, used for storing a block offsets. 4096 must be divisible by blockSize
      * @param keySize the number of byte to store each key
-     * @param hashSize the number of byte to store each hash
      */
-    public DataFile(Path path, int blockSize, int keySize, int hashSize) throws IOException {
+    public DataFile(Path path, int blockSize, int keySize) throws IOException {
         if (4096 % blockSize != 0) throw new IOException("4096 is not divisible by blockSize");
         this.path = path;
         this.blockSize = blockSize;
         this.keySize = keySize;
-        this.hashSize = hashSize;
         if (Files.exists(path)) {
             isReadOnly = true;
             seekableByteChannel = Files.newByteChannel(path, StandardOpenOption.READ);
@@ -64,28 +61,28 @@ public class DataFile implements AutoCloseable {
      * Common code for store methods
      *
      *  - Check we are in correct state for writing
-     *  -
-     * @param hash hash of data
+     *  - calculate block offset and data size
+     *  - prep temp buffer
+     *
      * @param dataValueSize the size in bytes of data value that store is going to write
      * @return the blockOffset of where data will be written
      * @throws IOException if we are not in correct state
      */
-    private int startStoring(Hash hash, int dataValueSize) throws IOException {
+    private int startStoring(int dataValueSize) throws IOException {
         if (isReadOnly) throw new IOException("Tried to store data in read only data file "+path);
         if (seekableByteChannel == null) throw new IOException("Tried to store data on closed data file "+path);
         // find offset for the start of this new data item, we assume we always write data in a whole number of blocks
         long byteOffset = seekableByteChannel.position();
         int blockOffset = (int)(byteOffset/blockSize);
         // calculate data size to write
-        int dataSize = (int)Math.ceil((Integer.SIZE + keySize + hashSize + dataValueSize) / (double)blockSize) * blockSize;
+        int dataSize = (int)Math.ceil((Integer.SIZE + keySize + dataValueSize) / (double)blockSize) * blockSize;
         // get temp buffer
-        tempWriteBuffer = (tempWriteBuffer == null || tempWriteBuffer.limit() < dataSize) ?
+        tempWriteBuffer = (tempWriteBuffer == null || tempWriteBuffer.capacity() < dataSize) ?
                                 ByteBuffer.allocate(dataSize) : tempWriteBuffer.clear();
         // set the limit, this means we pad to nearest block size
         tempWriteBuffer.limit(dataSize);
         // write data header to temp buffer
         tempWriteBuffer.putInt(dataValueSize);
-        Hash.toByteBuffer(hash,tempWriteBuffer);
         return blockOffset;
     }
 
@@ -93,15 +90,14 @@ public class DataFile implements AutoCloseable {
      * Store data in provided ByteBuffer from its current position to its limit.
      *
      * @param key a long key
-     * @param hash hash of data
      * @param dataToStore buffer containing data to be written, must be rewound
      * @return the block offset of where the data was stored
      * @throws IOException If there was a problem appending data to file
      */
-    public synchronized int storeData(long key, Hash hash, ByteBuffer dataToStore) throws IOException {
+    public synchronized int storeData(long key, ByteBuffer dataToStore) throws IOException {
         if (keySize != Long.BYTES) throw new IOException("Tried to store data with long key when key size was "+keySize+", into data file "+path);
         // start storing process, prepares tempWriteBuffer, writes block header data, returns byteOffset
-        int blockOffset = startStoring(hash, dataToStore.remaining());
+        int blockOffset = startStoring(dataToStore.remaining());
         // write key and value
         tempWriteBuffer.putLong(key);
         tempWriteBuffer.put(dataToStore);
@@ -116,20 +112,19 @@ public class DataFile implements AutoCloseable {
      * Store data in provided ByteBuffer from its current position to its limit.
      *
      * @param key buffer containing key to be written, must be rewound
-     * @param hash hash of data
      * @param dataToStore buffer containing data to be written, must be rewound
      * @return the block offset of where the data was stored
      * @throws IOException If there was a problem appending data to file
      */
-    public synchronized int storeData(ByteBuffer key, Hash hash, ByteBuffer dataToStore) throws IOException {
+    public synchronized int storeData(ByteBuffer key, ByteBuffer dataToStore) throws IOException {
         if (keySize != key.remaining()) throw new IOException("Tried to store data with key of size ["+key.remaining()+"] when key size was "+keySize+", into data file "+path);
         // start storing process, prepares tempWriteBuffer, writes block header data, returns byteOffset
-        int blockOffset = startStoring(hash, dataToStore.remaining());
+        int blockOffset = startStoring(dataToStore.remaining());
         // write key and value
         tempWriteBuffer.put(key);
         tempWriteBuffer.put(dataToStore);
         // write temp buffer to file]
-        tempWriteBuffer.flip();
+        tempWriteBuffer.rewind();
         seekableByteChannel.write(tempWriteBuffer);
         // return the offset where we wrote the data
         return blockOffset;
@@ -150,7 +145,6 @@ public class DataFile implements AutoCloseable {
         tempWriteBuffer.clear();
         tempWriteBuffer.putInt(FILE_FORMAT_VERSION);
         tempWriteBuffer.putInt(keySize);
-        tempWriteBuffer.putInt(hashSize);
         tempWriteBuffer.putInt(blockSize);
         tempWriteBuffer.rewind();
         // write footer to file
@@ -174,19 +168,13 @@ public class DataFile implements AutoCloseable {
         if (!isReadOnly) throw new IOException("Tried to read data from a non-read-only file "+path);
         if (seekableByteChannel == null) throw new IOException("Tried to read from closed data file "+path);
         long offset = (long)startBlockOffset*(long)blockSize+Integer.BYTES;
-        switch(dataToRead) {
-            case HASH:
-                bufferToReadInto.limit(bufferToReadInto.position()+hashSize); // set limit so we only read hash
-                break;
-            case KEY_VALUE:
-                offset += hashSize; // jump over hash
-                // we have to assume bufferToReadInto's limit is set correctly or will just fill it up
-                break;
-            case VALUE:
-                offset += hashSize + keySize;
-                break;
-            // case HASH_KEY_VALUE: // this is fine we just read all the data
+        if(dataToRead == DataToRead.KEY) {
+            bufferToReadInto.limit(bufferToReadInto.position()+keySize); // set limit so we only read hash
+        } else if (dataToRead == DataToRead.VALUE) {
+            // jump over key
+            offset += keySize;
         }
+        // TODO for non KEY only we read up to bufferToReadInto.limit bytes as we do not know value size, maybe we should read size int and set limit but it will be slower...
         seekableByteChannel.position(offset);
         seekableByteChannel.read(bufferToReadInto);
         // get buffer ready for a reader

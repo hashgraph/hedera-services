@@ -1,7 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
-import com.swirlds.common.crypto.Hash;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,22 +15,20 @@ public class MemoryIndexDiskKeyValueStore {
     private final Path storeDir;
     private final String storeName;
     private final int blockSize;
-    private final int hashSize;
     private final OffHeapLongList index = new OffHeapLongList();
     private final List<DataFile> files = new CopyOnWriteArrayList<>();
     private DataFile currentDataFileForWriting = null;
     private long currentDataFileForWritingKey;
 
-    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int blockSize, int hashSize) {
+    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int blockSize) {
         this.storeDir = storeDir;
         this.storeName = storeName;
         this.blockSize = blockSize;
-        this.hashSize = hashSize;
     }
 
     public void startWriting() throws IOException {
         if (currentDataFileForWriting != null) throw new IOException("Tried to start writing when we were already writing.");
-        currentDataFileForWriting = new DataFile(storeDir.resolve(storeName+"_"+DATE_FORMAT.format(new Date())+".data"),blockSize,Long.BYTES, hashSize);
+        currentDataFileForWriting = new DataFile(storeDir.resolve(storeName+"_"+DATE_FORMAT.format(new Date())+".data"),blockSize,Long.BYTES);
         currentDataFileForWritingKey = (files.size()+1L) << 32; // add one to file index so that a dataLocation=0 is special non-valid
     }
 
@@ -43,10 +40,11 @@ public class MemoryIndexDiskKeyValueStore {
         currentDataFileForWritingKey = 0;
     }
 
-    public void put(long key, Hash hash, ByteBuffer data) throws IOException {
+    public void put(long key, ByteBuffer data) throws IOException {
         if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
         // store key,hash and data in current file and get the offset where it was stored
-        int storageOffset = currentDataFileForWriting.storeData(key, hash, data);
+        // TODO combine hash and data here or outside this method
+        int storageOffset = currentDataFileForWriting.storeData(key, data);
         // calculate he data location key for current file and the offset
         long dataLocation = currentDataFileForWritingKey | storageOffset;
         // store data location in index

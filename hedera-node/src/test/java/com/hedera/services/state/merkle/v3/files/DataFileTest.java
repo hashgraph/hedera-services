@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.v3.files;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Test;
 
@@ -13,82 +12,136 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.merkle.v3.V3TestUtils.hash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DataFileTest {
     private static final int HASH_SIZE = 48+4;
 
     @Test
-    public void createDataAndCheck() throws Exception {
+    public void createDataAndCheckLongKey() throws Exception {
         // get non-existent temp file
         Path tempFilePath = Files.createTempFile("DataFileTest",".data");
         Files.deleteIfExists(tempFilePath);
         // create data file
-        DataFile dataFile = new DataFile(tempFilePath,1024,Long.BYTES,HASH_SIZE);
+        DataFile dataFile = new DataFile(tempFilePath,128,Long.BYTES);
         // put in 1000 items
-        ByteBuffer tempData = ByteBuffer.allocate(Integer.BYTES);
+        ByteBuffer tempData = ByteBuffer.allocate(HASH_SIZE+Integer.BYTES);
         List<Integer> storedOffsets = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             // prep data buffer
             tempData.clear();
+            Hash.toByteBuffer(hash(i),tempData);
             tempData.putInt(i);
             tempData.flip();
+//            System.out.println(i+" --- "+toIntsString(tempData));
             // store in file
-            storedOffsets.add(dataFile.storeData(i,hash(i),tempData));
+            storedOffsets.add(dataFile.storeData(i,tempData));
         }
         // now finish writing
         dataFile.finishWriting();
+//        hexDump(System.out,tempFilePath);
         // now read back all the data and check all data
         {
-            ByteBuffer tempResult = ByteBuffer.allocate(HASH_SIZE + Long.BYTES + Integer.BYTES);
+            ByteBuffer tempResult = ByteBuffer.allocate(Long.BYTES + HASH_SIZE + Integer.BYTES);
             for (int i = 0; i < 1000; i++) {
                 int storedOffset = storedOffsets.get(i);
                 tempResult.clear();
                 // read
-                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.HASH_KEY_VALUE);
+                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.KEY_VALUE);
                 // check all the data
+//                System.out.println(i+" *** "+toIntsString(tempResult));
                 tempResult.rewind();
+                assertEquals(i, tempResult.getLong()); // key
                 Hash readHash = Hash.fromByteBuffer(tempResult);
                 assertEquals(hash(i), readHash); // hash
-                assertEquals(i, tempResult.getLong()); // key
                 assertEquals(i, tempResult.getInt()); // value data
             }
         }
         // now read back all the data and check all data random order
         {
-            ByteBuffer tempResult = ByteBuffer.allocate(HASH_SIZE + Long.BYTES + Integer.BYTES);
+            ByteBuffer tempResult = ByteBuffer.allocate(Long.BYTES + HASH_SIZE + Integer.BYTES);
             List<Integer> randomOrderIndexes = IntStream.range(0,1000).boxed().collect(Collectors.toList());
             Collections.shuffle(randomOrderIndexes);
             for (int i : randomOrderIndexes) {
                 int storedOffset = storedOffsets.get(i);
                 tempResult.clear();
                 // read
-                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.HASH_KEY_VALUE);
+                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.KEY_VALUE);
                 // check all the data
                 tempResult.rewind();
+                assertEquals(i, tempResult.getLong()); // key
                 Hash readHash = Hash.fromByteBuffer(tempResult);
                 assertEquals(hash(i), readHash); // hash
-                assertEquals(i, tempResult.getLong()); // key
                 assertEquals(i, tempResult.getInt()); // value data
             }
         }
-        // now read back hashes and check
+        // now read back keys and check
         {
-            ByteBuffer tempResult = ByteBuffer.allocate(HASH_SIZE);
+            ByteBuffer tempResult = ByteBuffer.allocate(Long.BYTES);
             for (int i = 0; i < 1000; i++) {
                 int storedOffset = storedOffsets.get(i);
                 tempResult.clear();
                 // read
-                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.HASH);
+                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.KEY);
+                // check all the data
+                tempResult.rewind();
+                assertEquals(i, tempResult.getLong()); // key
+            }
+        }
+        // now read back values and check
+        {
+            ByteBuffer tempResult = ByteBuffer.allocate(HASH_SIZE+Integer.BYTES);
+            for (int i = 0; i < 1000; i++) {
+                int storedOffset = storedOffsets.get(i);
+                tempResult.clear();
+                // read
+                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.VALUE);
                 // check all the data
                 tempResult.rewind();
                 Hash readHash = Hash.fromByteBuffer(tempResult);
                 assertEquals(hash(i), readHash); // hash
+                assertEquals(i, tempResult.getInt()); // value data
             }
         }
-        // now read back keys and values and check
+        // clean up and delete files
+        Files.deleteIfExists(tempFilePath);
+    }
+
+    @Test
+    public void createDataAndCheckCustomKey() throws Exception {
+        // get non-existent temp file
+        Path tempFilePath = Files.createTempFile("DataFileTest",".data");
+        Files.deleteIfExists(tempFilePath);
+        // create data file
+        int keySize = Long.BYTES*5;
+        DataFile dataFile = new DataFile(tempFilePath,1024,keySize);
+        // put in 1000 items
+        ByteBuffer tempKey = ByteBuffer.allocate(keySize);
+        ByteBuffer tempData = ByteBuffer.allocate(HASH_SIZE+Integer.BYTES);
+        List<Integer> storedOffsets = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            // prep key buffer
+            tempKey.clear();
+            tempKey.putLong(i);
+            tempKey.putLong(i);
+            tempKey.putLong(i);
+            tempKey.putLong(i);
+            tempKey.putLong(i);
+            tempKey.flip();
+            // prep data buffer
+            tempData.clear();
+            Hash.toByteBuffer(hash(i),tempData);
+            tempData.putInt(i);
+            tempData.flip();
+            // store in file
+            storedOffsets.add(dataFile.storeData(tempKey,tempData));
+        }
+        // now finish writing
+        dataFile.finishWriting();
+        // now read back all the data and check all data
         {
-            ByteBuffer tempResult = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
+            ByteBuffer tempResult = ByteBuffer.allocate(keySize + HASH_SIZE + Integer.BYTES);
             for (int i = 0; i < 1000; i++) {
                 int storedOffset = storedOffsets.get(i);
                 tempResult.clear();
@@ -97,12 +150,57 @@ public class DataFileTest {
                 // check all the data
                 tempResult.rewind();
                 assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                Hash readHash = Hash.fromByteBuffer(tempResult);
+                assertEquals(hash(i), readHash); // hash
                 assertEquals(i, tempResult.getInt()); // value data
+            }
+        }
+        // now read back all the data and check all data random order
+        {
+            ByteBuffer tempResult = ByteBuffer.allocate(keySize + HASH_SIZE + Integer.BYTES);
+            List<Integer> randomOrderIndexes = IntStream.range(0,1000).boxed().collect(Collectors.toList());
+            Collections.shuffle(randomOrderIndexes);
+            for (int i : randomOrderIndexes) {
+                int storedOffset = storedOffsets.get(i);
+                tempResult.clear();
+                // read
+                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.KEY_VALUE);
+                // check all the data
+                tempResult.rewind();
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                Hash readHash = Hash.fromByteBuffer(tempResult);
+                assertEquals(hash(i), readHash); // hash
+                assertEquals(i, tempResult.getInt()); // value data
+            }
+        }
+        // now read back keys and check
+        {
+            ByteBuffer tempResult = ByteBuffer.allocate(keySize);
+            for (int i = 0; i < 1000; i++) {
+                int storedOffset = storedOffsets.get(i);
+                tempResult.clear();
+                // read
+                dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.KEY);
+                // check all the data
+                tempResult.rewind();
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
+                assertEquals(i, tempResult.getLong()); // key
             }
         }
         // now read back values and check
         {
-            ByteBuffer tempResult = ByteBuffer.allocate(Integer.BYTES);
+            ByteBuffer tempResult = ByteBuffer.allocate(HASH_SIZE+Integer.BYTES);
             for (int i = 0; i < 1000; i++) {
                 int storedOffset = storedOffsets.get(i);
                 tempResult.clear();
@@ -110,6 +208,8 @@ public class DataFileTest {
                 dataFile.readData(tempResult, storedOffset, DataFile.DataToRead.VALUE);
                 // check all the data
                 tempResult.rewind();
+                Hash readHash = Hash.fromByteBuffer(tempResult);
+                assertEquals(hash(i), readHash); // hash
                 assertEquals(i, tempResult.getInt()); // value data
             }
         }
@@ -119,32 +219,5 @@ public class DataFileTest {
 
     // =================================================================================================================
     // utils
-
-    /**
-     * Creates a hash containing a int repeated 6 times as longs
-     *
-     * @return byte array of 6 longs
-     */
-    public static Hash hash(int value) {
-        byte b0 = (byte)(value >>> 24);
-        byte b1 = (byte)(value >>> 16);
-        byte b2 = (byte)(value >>> 8);
-        byte b3 = (byte)value;
-        return new TestHash(new byte[] {
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3
-        });
-    }
-
-    public static final class TestHash extends Hash {
-        public TestHash(byte[] bytes) {
-            super(bytes, DigestType.SHA_384, true, false);
-        }
-    }
-
 
 }
