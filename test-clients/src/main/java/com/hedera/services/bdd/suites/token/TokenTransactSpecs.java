@@ -122,7 +122,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						nestedHbarCaseStudy(),
 						nestedFractionalCaseStudy(),
 						nestedHtsCaseStudy(),
-						treasuriesAreExemptFromAllFees(),
+						treasuriesAreExemptFromAllCustomFees(),
 						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
 				}
 		);
@@ -139,7 +139,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.initialSupply(1000L)
+								.initialSupply(1_000L)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(B_TOKEN)
 								.supplyKey(theKey)
@@ -869,29 +869,35 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury(treasuryForToken)
 								.withCustom(fixedHbarFee(ONE_HBAR, treasuryForToken)),
 						mintToken(tokenWithHbarFee, List.of(ByteString.copyFromUtf8("First!"))),
+						mintToken(tokenWithHbarFee, List.of(ByteString.copyFromUtf8("Second!"))),
 						tokenAssociate(alice, tokenWithHbarFee),
 						tokenAssociate(bob, tokenWithHbarFee),
-						cryptoTransfer(movingUnique(1L, tokenWithHbarFee).between(treasuryForToken, alice))
+						cryptoTransfer(movingUnique(2L, tokenWithHbarFee).between(treasuryForToken, alice))
 								.payingWith(GENESIS)
 								.fee(ONE_HBAR)
 								.via(txnFromTreasury)
 				).when(
 						cryptoTransfer(
-								movingUnique(1L, tokenWithHbarFee).between(alice, bob)
+								movingUnique(2L, tokenWithHbarFee).between(alice, bob)
 						)
 								.payingWith(GENESIS)
 								.fee(ONE_HBAR)
 								.via(txnFromAlice)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromAlice).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasNftTransfer(tokenWithHbarFee, treasuryForToken, alice, 2L),
+						getTxnRecord(txnFromAlice)
+								.hasNftTransfer(tokenWithHbarFee, alice, bob, 2L)
+								.hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, treasuryForToken, ONE_HBAR)
+								.hasHbarAmount(treasuryForToken, ONE_HBAR)
+								.hasHbarAmount(alice, -ONE_HBAR),
 						getAccountBalance(bob)
 								.hasTokenBalance(tokenWithHbarFee, 1L),
 						getAccountBalance(alice)
 								.hasTokenBalance(tokenWithHbarFee, 0L)
 								.hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR),
 						getAccountBalance(treasuryForToken)
-								.hasTokenBalance(tokenWithHbarFee, 0L)
+								.hasTokenBalance(tokenWithHbarFee, 1L)
 								.hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR)
 				);
 	}
@@ -913,7 +919,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(tokenWithFractionalFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForToken)
-								.withCustom(fractionalFee(1, 100, 1L, OptionalLong.of(5L), treasuryForToken)),
+								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), treasuryForToken)),
 						tokenAssociate(alice, tokenWithFractionalFee),
 						tokenAssociate(bob, tokenWithFractionalFee),
 						cryptoTransfer(moving(1_000_000L, tokenWithFractionalFee).between(treasuryForToken, bob))
@@ -928,14 +934,20 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromBob)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromBob).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(tokenWithFractionalFee, bob, 1_000_000L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, -1_000_000L),
+						getTxnRecord(txnFromBob)
+								.hasTokenAmount(tokenWithFractionalFee, bob, -1_000L)
+								.hasTokenAmount(tokenWithFractionalFee, alice, 995L)
+								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, 5L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, 5L),
 						getAccountBalance(alice)
 								.hasTokenBalance(tokenWithFractionalFee, 995L),
 						getAccountBalance(bob)
-								.hasTokenBalance(tokenWithFractionalFee, 999_000L),
+								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L),
 						getAccountBalance(treasuryForToken)
-								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 999_995L)
+								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L)
 				);
 	}
 
@@ -960,7 +972,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(simpleHtsFeeToken)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForToken)
-								.withCustom(fixedHtsFee(2, commissionPaymentToken, treasuryForToken)),
+								.withCustom(fixedHtsFee(2L, commissionPaymentToken, treasuryForToken)),
 						tokenAssociate(claire, List.of(simpleHtsFeeToken, commissionPaymentToken)),
 						tokenAssociate(debbie, simpleHtsFeeToken),
 						cryptoTransfer(
@@ -978,16 +990,25 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromClaire)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromClaire).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(commissionPaymentToken, claire, 1_000L)
+								.hasTokenAmount(commissionPaymentToken, treasuryForToken, -1_000L)
+								.hasTokenAmount(simpleHtsFeeToken, claire, 1_000L)
+								.hasTokenAmount(simpleHtsFeeToken, treasuryForToken, -1_000L),
+						getTxnRecord(txnFromClaire)
+								.hasTokenAmount(simpleHtsFeeToken, debbie, 100L)
+								.hasTokenAmount(simpleHtsFeeToken, claire, -100L)
+								.hasAssessedCustomFee(commissionPaymentToken, treasuryForToken, 2L)
+								.hasTokenAmount(commissionPaymentToken, treasuryForToken, 2L)
+								.hasTokenAmount(commissionPaymentToken, claire, -2L),
 						getAccountBalance(debbie)
 								.hasTokenBalance(simpleHtsFeeToken, 100L),
 						getAccountBalance(claire)
-								.hasTokenBalance(simpleHtsFeeToken, 900L)
-								.hasTokenBalance(commissionPaymentToken, 998L),
+								.hasTokenBalance(simpleHtsFeeToken, 1_000L - 100L)
+								.hasTokenBalance(commissionPaymentToken, 1_000L - 2L),
 						getAccountBalance(treasuryForToken)
 								.hasTokenBalance(simpleHtsFeeToken, Long.MAX_VALUE - 1_000L)
-								.hasTokenBalance(commissionPaymentToken, Long.MAX_VALUE - 998L)
+								.hasTokenBalance(commissionPaymentToken, Long.MAX_VALUE - 1_000L + 2L)
 				);
 	}
 
@@ -1016,7 +1037,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(tokenWithNestedFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForTopLevelCollection)
-								.withCustom(fixedHtsFee(1, tokenWithHbarFee, treasuryForTopLevelCollection)),
+								.withCustom(fixedHtsFee(1L, tokenWithHbarFee, treasuryForTopLevelCollection)),
 						tokenAssociate(debbie, List.of(tokenWithHbarFee, tokenWithNestedFee)),
 						tokenAssociate(edgar, tokenWithNestedFee),
 						cryptoTransfer(
@@ -1036,20 +1057,32 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromDebbie)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromDebbie).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(tokenWithHbarFee, debbie, 1_000L)
+								.hasTokenAmount(tokenWithHbarFee, treasuryForNestedCollection, -1_000L)
+								.hasTokenAmount(tokenWithNestedFee, debbie, 1_000L)
+								.hasTokenAmount(tokenWithNestedFee, treasuryForTopLevelCollection, -1_000L),
+						getTxnRecord(txnFromDebbie)
+								.hasTokenAmount(tokenWithNestedFee, edgar, 1L)
+								.hasTokenAmount(tokenWithNestedFee, debbie, -1L)
+								.hasAssessedCustomFee(tokenWithHbarFee, treasuryForTopLevelCollection, 1L)
+								.hasTokenAmount(tokenWithHbarFee, treasuryForTopLevelCollection, 1L)
+								.hasTokenAmount(tokenWithHbarFee, debbie, -1L)
+								.hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, treasuryForNestedCollection, ONE_HBAR)
+								.hasHbarAmount(treasuryForNestedCollection, ONE_HBAR)
+								.hasHbarAmount(debbie, -ONE_HBAR),
 						getAccountBalance(edgar)
 								.hasTokenBalance(tokenWithNestedFee, 1L),
 						getAccountBalance(debbie)
 								.hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR)
-								.hasTokenBalance(tokenWithHbarFee, 999L)
-								.hasTokenBalance(tokenWithNestedFee, 999L),
+								.hasTokenBalance(tokenWithHbarFee, 1_000L - 1L)
+								.hasTokenBalance(tokenWithNestedFee, 1_000L - 1L),
 						getAccountBalance(treasuryForTopLevelCollection)
-								.hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1000L)
+								.hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1_000L)
 								.hasTokenBalance(tokenWithHbarFee, 1L),
 						getAccountBalance(treasuryForNestedCollection)
 								.hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR)
-								.hasTokenBalance(tokenWithHbarFee, Long.MAX_VALUE - 1000L)
+								.hasTokenBalance(tokenWithHbarFee, Long.MAX_VALUE - 1_000L)
 				);
 	}
 
@@ -1073,13 +1106,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(tokenWithFractionalFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForNestedCollection)
-								.withCustom(fractionalFee(1, 100, 1L, OptionalLong.of(5L),
+								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L),
 										treasuryForNestedCollection)),
 						tokenAssociate(treasuryForTopLevelCollection, tokenWithFractionalFee),
 						tokenCreate(tokenWithNestedFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForTopLevelCollection)
-								.withCustom(fixedHtsFee(50, tokenWithFractionalFee, treasuryForTopLevelCollection)),
+								.withCustom(fixedHtsFee(50L, tokenWithFractionalFee, treasuryForTopLevelCollection)),
 						tokenAssociate(edgar, List.of(tokenWithFractionalFee, tokenWithNestedFee)),
 						tokenAssociate(fern, tokenWithNestedFee),
 						cryptoTransfer(
@@ -1099,18 +1132,29 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromEdgar)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromEdgar).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(tokenWithFractionalFee, edgar, 1_000L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForNestedCollection, -1_000L)
+								.hasTokenAmount(tokenWithNestedFee, edgar, 1_000L)
+								.hasTokenAmount(tokenWithNestedFee, treasuryForTopLevelCollection, -1_000L),
+						getTxnRecord(txnFromEdgar)
+								.hasTokenAmount(tokenWithNestedFee, fern, 10L)
+								.hasTokenAmount(tokenWithNestedFee, edgar, -10L)
+								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForTopLevelCollection, 50L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForTopLevelCollection, 49L)
+								.hasTokenAmount(tokenWithFractionalFee, edgar, -50L)
+								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForNestedCollection, 1L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForNestedCollection, 1L),
 						getAccountBalance(fern)
 								.hasTokenBalance(tokenWithNestedFee, 10L),
 						getAccountBalance(edgar)
-								.hasTokenBalance(tokenWithFractionalFee, 950L)
-								.hasTokenBalance(tokenWithNestedFee, 990L),
+								.hasTokenBalance(tokenWithNestedFee, 1_000L - 10L)
+								.hasTokenBalance(tokenWithFractionalFee, 1_000L - 50L),
 						getAccountBalance(treasuryForTopLevelCollection)
-								.hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1000L)
+								.hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1_000L)
 								.hasTokenBalance(tokenWithFractionalFee, 49L),
 						getAccountBalance(treasuryForNestedCollection)
-								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 999L)
+								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L)
 				);
 	}
 
@@ -1139,12 +1183,12 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(tokenWithHtsFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForNestedCollection)
-								.withCustom(fixedHtsFee(1, feeToken, treasuryForNestedCollection)),
+								.withCustom(fixedHtsFee(1L, feeToken, treasuryForNestedCollection)),
 						tokenAssociate(treasuryForTopLevelCollection, tokenWithHtsFee),
 						tokenCreate(tokenWithNestedFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForTopLevelCollection)
-								.withCustom(fixedHtsFee(1, tokenWithHtsFee, treasuryForTopLevelCollection)),
+								.withCustom(fixedHtsFee(1L, tokenWithHtsFee, treasuryForTopLevelCollection)),
 						tokenAssociate(debbie, List.of(feeToken, tokenWithHtsFee, tokenWithNestedFee)),
 						tokenAssociate(edgar, tokenWithNestedFee),
 						cryptoTransfer(
@@ -1166,26 +1210,40 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromDebbie)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromDebbie).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(feeToken, debbie, 1_000L)
+								.hasTokenAmount(feeToken, DEFAULT_PAYER, -1_000L)
+								.hasTokenAmount(tokenWithHtsFee, debbie, 1_000L)
+								.hasTokenAmount(tokenWithHtsFee, treasuryForNestedCollection, -1_000L)
+								.hasTokenAmount(tokenWithNestedFee, debbie, 1_000L)
+								.hasTokenAmount(tokenWithNestedFee, treasuryForTopLevelCollection, -1_000L),
+						getTxnRecord(txnFromDebbie)
+								.hasTokenAmount(tokenWithNestedFee, edgar, 1L)
+								.hasTokenAmount(tokenWithNestedFee, debbie, -1L)
+								.hasAssessedCustomFee(tokenWithHtsFee, treasuryForTopLevelCollection, 1L)
+								.hasTokenAmount(tokenWithHtsFee, treasuryForTopLevelCollection, 1L)
+								.hasTokenAmount(tokenWithHtsFee, debbie, -1L)
+								.hasAssessedCustomFee(feeToken, treasuryForNestedCollection, 1L)
+								.hasTokenAmount(feeToken, treasuryForNestedCollection, 1L)
+								.hasTokenAmount(feeToken, debbie, -1L),
 						getAccountBalance(edgar)
 								.hasTokenBalance(tokenWithNestedFee, 1L),
 						getAccountBalance(debbie)
-								.hasTokenBalance(feeToken, 999L)
-								.hasTokenBalance(tokenWithHtsFee, 999L)
-								.hasTokenBalance(tokenWithNestedFee, 999L),
-						getAccountBalance(DEFAULT_PAYER)
-								.hasTokenBalance(feeToken, Long.MAX_VALUE - 1000L),
+								.hasTokenBalance(feeToken, 1_000L - 1L)
+								.hasTokenBalance(tokenWithHtsFee, 1_000L - 1L)
+								.hasTokenBalance(tokenWithNestedFee, 1_000L - 1L),
 						getAccountBalance(treasuryForTopLevelCollection)
 								.hasTokenBalance(tokenWithHtsFee, 1L)
-								.hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1000L),
+								.hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1_000L),
 						getAccountBalance(treasuryForNestedCollection)
 								.hasTokenBalance(feeToken, 1L)
-								.hasTokenBalance(tokenWithHtsFee, Long.MAX_VALUE - 1000L)
+								.hasTokenBalance(tokenWithHtsFee, Long.MAX_VALUE - 1_000L),
+						getAccountBalance(DEFAULT_PAYER)
+								.hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L)
 				);
 	}
 
-	public HapiApiSpec treasuriesAreExemptFromAllFees() {
+	public HapiApiSpec treasuriesAreExemptFromAllCustomFees() {
 		final var edgar = "Edgar";
 		final var feeToken = "FeeToken";
 		final var topLevelToken = "TopLevelToken";
@@ -1212,48 +1270,67 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForTopLevel)
 								.withCustom(fixedHbarFee(ONE_HBAR, collectorForTopLevel))
-								.withCustom(fixedHtsFee(50, feeToken, collectorForTopLevel))
-								.withCustom(fractionalFee(1, 10, 5, OptionalLong.of(50), collectorForTopLevel))
+								.withCustom(fixedHtsFee(50L, feeToken, collectorForTopLevel))
+								.withCustom(fractionalFee(1L, 10L, 5L, OptionalLong.of(50L), collectorForTopLevel))
 								.signedBy(DEFAULT_PAYER, treasuryForTopLevel, collectorForTopLevel),
 						tokenAssociate(nonTreasury, List.of(topLevelToken, feeToken)),
 						tokenAssociate(edgar, topLevelToken),
 						cryptoTransfer(
 								moving(2_000L, feeToken)
-										.distributing(TOKEN_TREASURY, treasuryForTopLevel, nonTreasury),
-								moving(1_000L, topLevelToken)
-										.between(treasuryForTopLevel, nonTreasury)
+										.distributing(TOKEN_TREASURY, treasuryForTopLevel, nonTreasury)
 						).payingWith(TOKEN_TREASURY).fee(ONE_HBAR)
 				).when(
 						cryptoTransfer(
 								moving(1_000L, topLevelToken)
-										.between(treasuryForTopLevel, edgar)
+										.between(treasuryForTopLevel, nonTreasury)
 						)
 								.payingWith(treasuryForTopLevel)
 								.fee(ONE_HBAR)
 								.via(txnFromTreasury)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(topLevelToken, nonTreasury, 1_000L)
+								.hasTokenAmount(topLevelToken, treasuryForTopLevel, -1_000L)
+								.hasAssessedCustomFeesSize(0),
 						getAccountBalance(collectorForTopLevel)
-								.logged()
 								.hasTinyBars(0L)
 								.hasTokenBalance(feeToken, 0L)
 								.hasTokenBalance(topLevelToken, 0L),
+						getAccountBalance(treasuryForTopLevel)
+								.hasTokenBalance(topLevelToken, Long.MAX_VALUE - 1_000L)
+								.hasTokenBalance(feeToken, 1_000L),
+						getAccountBalance(nonTreasury)
+								.hasTokenBalance(topLevelToken, 1_000L)
+								.hasTokenBalance(feeToken, 1_000L),
 						/* Now we perform the same transfer from a non-treasury and see all three fees charged */
 						cryptoTransfer(
 								moving(1_000L, topLevelToken)
 										.between(nonTreasury, edgar)
 						)
-								.payingWith(nonTreasury)
+								.payingWith(TOKEN_TREASURY)
 								.fee(ONE_HBAR)
 								.via(txnFromNonTreasury),
-						getTxnRecord(txnFromNonTreasury).logged(),
+						getTxnRecord(txnFromNonTreasury)
+								.hasAssessedCustomFeesSize(3)
+								.hasTokenAmount(topLevelToken, edgar, 1_000L - 50L)
+								.hasTokenAmount(topLevelToken, nonTreasury, -1_000L)
+								.hasAssessedCustomFee(topLevelToken, collectorForTopLevel, 50L)
+								.hasTokenAmount(topLevelToken, collectorForTopLevel, 50L)
+								.hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, collectorForTopLevel, ONE_HBAR)
+								.hasHbarAmount(collectorForTopLevel, ONE_HBAR)
+								.hasHbarAmount(nonTreasury, -ONE_HBAR)
+								.hasAssessedCustomFee(feeToken, collectorForTopLevel, 50L)
+								.hasTokenAmount(feeToken, collectorForTopLevel, 50L)
+								.hasTokenAmount(feeToken, nonTreasury, -50L),
 						getAccountBalance(collectorForTopLevel)
-								.logged()
 								.hasTinyBars(ONE_HBAR)
 								.hasTokenBalance(feeToken, 50L)
 								.hasTokenBalance(topLevelToken, 50L),
 						getAccountBalance(edgar)
-								.hasTokenBalance(topLevelToken, 1950L)
+								.hasTokenBalance(topLevelToken, 1_000L - 50L),
+						getAccountBalance(nonTreasury)
+								.hasTokenBalance(topLevelToken, 1_000L - 1_000L)
+								.hasTokenBalance(feeToken, 1_000L - 50L)
 				);
 	}
 
@@ -1278,8 +1355,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury(treasuryForTopLevel)
 								.withCustom(fixedHbarFee(ONE_HBAR, firstCollectorForTopLevel))
 								.withCustom(fixedHbarFee(2 * ONE_HBAR, secondCollectorForTopLevel))
-								.withCustom(fractionalFee(1, 20, 0, OptionalLong.of(0), firstCollectorForTopLevel))
-								.withCustom(fractionalFee(1, 10, 0, OptionalLong.of(0), secondCollectorForTopLevel))
+								.withCustom(fractionalFee(1L, 20L, 0L, OptionalLong.of(0L), firstCollectorForTopLevel))
+								.withCustom(fractionalFee(1L, 10L, 0L, OptionalLong.of(0L), secondCollectorForTopLevel))
 								.signedBy(DEFAULT_PAYER, treasuryForTopLevel, firstCollectorForTopLevel,
 										secondCollectorForTopLevel),
 						tokenAssociate(edgar, topLevelToken),
@@ -1295,16 +1372,21 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromCollector)
 				).then(
-						getTxnRecord(txnFromCollector).logged(),
+						getTxnRecord(txnFromCollector)
+								.hasAssessedCustomFeesSize(2)
+								.hasTokenAmount(topLevelToken, edgar, 1_000L - 100L)
+								.hasTokenAmount(topLevelToken, firstCollectorForTopLevel, -1_000L)
+								.hasAssessedCustomFee(topLevelToken, secondCollectorForTopLevel, 100L)
+								.hasTokenAmount(topLevelToken, secondCollectorForTopLevel, 100L)
+								.hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, secondCollectorForTopLevel, 2 * ONE_HBAR)
+								.hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR),
 						getAccountBalance(firstCollectorForTopLevel)
-								.logged()
-								.hasTokenBalance(topLevelToken, 0L),
+								.hasTokenBalance(topLevelToken, 1_000L - 1_000L),
 						getAccountBalance(secondCollectorForTopLevel)
-								.logged()
-								.hasTinyBars(12 * ONE_HBAR)
-								.hasTokenBalance(topLevelToken, 1_100L),
+								.hasTinyBars((10 + 2) * ONE_HBAR)
+								.hasTokenBalance(topLevelToken, 1_000L + 100L),
 						getAccountBalance(edgar)
-								.hasTokenBalance(topLevelToken, 900L)
+								.hasTokenBalance(topLevelToken, 1_000L - 100L)
 				);
 	}
 

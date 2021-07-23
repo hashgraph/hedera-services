@@ -21,7 +21,7 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -54,7 +54,7 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		Set<ByteString> usedPrefixes = new HashSet<>();
 		Map<ByteString, Key> byPrefix = new HashMap<>();
 		while (precomputed.size() < n) {
-			Key candidate = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pkMap);
+			Key candidate = KeyExpansion.genSingleEd25519Key(pkMap);
 			ByteString prefix = pubKeyPrefixOf(candidate, minOverlapLen);
 			if (byPrefix.containsKey(prefix)) {
 				if (!usedPrefixes.contains(prefix)) {
