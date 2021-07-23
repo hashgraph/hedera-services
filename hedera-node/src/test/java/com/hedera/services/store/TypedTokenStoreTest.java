@@ -275,6 +275,8 @@ class TypedTokenStoreTest {
 		// setup:
 		final var mintedSerialNo = 33L;
 		final var burnedSerialNo = 33L;
+		final var mintedSerialNo2 = 44;
+		final var burnedSerialNo2 = 44;
 		final var nftMeta = "abcdefgh".getBytes();
 		final var treasuryId = new EntityId(0, 0, treasuryAccountNum);
 		final var tokenEntityId = new EntityId(0, 0, tokenNum);
@@ -282,6 +284,8 @@ class TypedTokenStoreTest {
 		final var modelTreasuryId = new Id(0, 0, treasuryAccountNum);
 		final var mintedToken = new UniqueToken(tokenId, mintedSerialNo, creationTime, modelTreasuryId, nftMeta);
 		final var burnedToken = new UniqueToken(tokenId, burnedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		final var mintedToken2 = new UniqueToken(tokenId, mintedSerialNo2, creationTime, modelTreasuryId, nftMeta);
+		final var burnedToken2 = new UniqueToken(tokenId, burnedSerialNo2, creationTime, modelTreasuryId, nftMeta);
 		// and:
 		final var expectedReplacementToken = new MerkleToken(
 				expiry, tokenSupply * 2, 0,
@@ -294,15 +298,28 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setKycKey(kycKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 		// and:
+		final var expectedReplacementToken2 = new MerkleToken(
+				expiry, tokenSupply * 4, 0,
+				symbol, name,
+				freezeDefault, true,
+				new EntityId(0, 0, treasuryAccountNum));
+		expectedReplacementToken2.setAutoRenewAccount(treasuryId);
+		expectedReplacementToken2.setSupplyKey(supplyKey);
+		expectedReplacementToken2.setFreezeKey(freezeKey);
+		expectedReplacementToken2.setKycKey(kycKey);
+		expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
+		// and:
 		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
+		final var expectedNewUniqTokenId2 = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo2);
 		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
 		final var expectedPastUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo);
+		final var expectedPastUniqTokenId2 = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo2);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
 
 		// when:
-		final var modelToken = subject.loadToken(tokenId);
+		var modelToken = subject.loadToken(tokenId);
 		// and:
 		modelToken.setTotalSupply(tokenSupply * 2);
 		modelToken.setAutoRenewAccount(treasuryAccount);
@@ -325,6 +342,33 @@ class TypedTokenStoreTest {
 		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
 		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
 		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
+		verify(uniqueTreasuryOwnerships).associate(new EntityId(tokenId), expectedPastUniqTokenId);
+
+		// when:
+		modelToken = subject.loadToken(tokenId);
+		// and:
+		modelToken.setTotalSupply(tokenSupply * 4);
+		modelToken.setAutoRenewAccount(treasuryAccount);
+		modelToken.setTreasury(treasuryAccount);
+		modelToken.setFrozenByDefault(!freezeDefault);
+		modelToken.mintedUniqueTokens().add(mintedToken2);
+		modelToken.setIsDeleted(false);
+		modelToken.setExpiry(expiry);
+		modelToken.removedUniqueTokens().add(burnedToken2);
+		// and:
+		subject.persistToken(modelToken);
+
+		// then:
+		assertEquals(expectedReplacementToken2, merkleToken);
+		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken2);
+		// and:
+		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
+		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
+		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId2);
+		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId2);
+		verify(uniqueTreasuryOwnerships).associate(new EntityId(tokenId), expectedPastUniqTokenId2);
+		verify(uniqueTreasuryOwnerships).disassociate(new EntityId(tokenId), expectedPastUniqTokenId2);
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {

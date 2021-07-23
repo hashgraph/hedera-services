@@ -345,6 +345,14 @@ class ServicesContextTest {
 	}
 
 	@Test
+	void queryableUniqueTreasuryOwnershipsReturnsProperReference() throws Exception {
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+
+		compareFCOTMR(subject.uniqueOwnershipTreasuryAssociations(), queryableState.get().getUniqueOwnershipTreasuryAssociations());
+	}
+
+	@Test
 	void delegatesPrimitivesToState() throws Exception {
 		// setup:
 		InOrder inOrder = inOrder(workingState);

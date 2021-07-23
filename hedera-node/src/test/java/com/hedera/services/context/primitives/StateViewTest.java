@@ -138,9 +138,11 @@ class StateViewTest {
 	private HFileMeta immutableMetadata;
 	private FileID target = asFile("0.0.123");
 	private TokenID tokenId = asToken("2.4.5");
+	private TokenID nftTokenId = asToken("1.2.3");
 	private TokenID missingTokenId = asToken("3.4.5");
 	private AccountID payerAccountId = asAccount("9.9.9");
 	private AccountID tokenAccountId = asAccount("9.9.10");
+	private AccountID treasuryOwnerId = asAccount("0.0.0");
 	private AccountID nftOwnerId = asAccount("4.4.44");
 	private AccountID invalidOwnerId = asAccount("5.5.55");
 	private ScheduleID scheduleId = asSchedule("6.7.8");
@@ -303,14 +305,19 @@ class StateViewTest {
 
 		var uniqueTokens = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
 		uniqueTokens.put(targetNftKey, targetNft);
+		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
 		final var uniqueTokenAssociations = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(tokenId),
 				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
+		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(nftTokenId),
+				new MerkleUniqueTokenId(treasuryNftKey.tokenId(), 5));
 
 		final var uniqueTokenAccountOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(nftOwnerId),
 				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
+		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(treasuryOwnerId),
+				new MerkleUniqueTokenId(treasuryNftKey.tokenId(), 5));
 
 		final var uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		uniqueTokenTreasuryOwnerships.associate(targetNftKey.tokenId(),
@@ -365,8 +372,11 @@ class StateViewTest {
 		));
 
 		var result = subject.infoForAccountNfts(nftOwnerId, 0, 2);
-		assertFalse(result.isEmpty());
+		assertEquals(false, result.get().isEmpty());
 		assertEquals(expectedResult, result.get());
+
+		result = subject.infoForAccountNfts(nftOwnerId, 2, 3);
+		assertEquals(true, result.get().isEmpty());
 	}
 
 	@Test
@@ -1010,22 +1020,25 @@ class StateViewTest {
 		assertSame(
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS,
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER.get());
+		assertSame(
+				StateView.EMPTY_UNIQUE_TOKEN_TREASURY_OWNERSHIPS,
+				StateView.EMPTY_UNIQUE_TOKEN_TREASURY_OWNERSHIP_SUPPLIER.get());
 	}
 
 	@Test
 	void infoForTokenNftsWorks() {
 		var expectedResult = new ArrayList<>();
 		expectedResult.add(TokenNftInfo.newBuilder()
-				.setAccountID(targetNft.getOwner().toGrpcAccountId())
-				.setCreationTime(targetNft.getCreationTime().toGrpc())
+				.setAccountID(treasuryNftKey.tokenId().toGrpcAccountId())
+				.setCreationTime(treasuryNft.getCreationTime().toGrpc())
 				.setNftID(NftID.newBuilder()
-						.setTokenID(targetNftId.getTokenID())
-						.setSerialNumber(targetNftId.getSerialNumber())
+						.setTokenID(treasuryNftId.getTokenID())
+						.setSerialNumber(treasuryNftId.getSerialNumber())
 						.build())
-				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+				.setMetadata(ByteString.copyFrom(treasuryNft.getMetadata()))
 				.build());
 
-		var result = subject.infosForTokenNfts(tokenId, 0, 1);
+		var result = subject.infosForTokenNfts(nftTokenId, 0, 1);
 		assertFalse(result.isEmpty());
 		assertEquals(expectedResult, result.get());
 	}
@@ -1042,12 +1055,19 @@ class StateViewTest {
 			.setTokenID(IdUtils.asToken("1.2.3"))
 			.setSerialNumber(4L)
 			.build();
+	private final NftID treasuryNftId = NftID.newBuilder()
+			.setTokenID(IdUtils.asToken("1.2.3"))
+			.setSerialNumber(5L)
+			.build();
 	private final NftID missingNftId = NftID.newBuilder()
 			.setTokenID(IdUtils.asToken("1.7.9"))
 			.setSerialNumber(5L)
 			.build();
 	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
+	private final MerkleUniqueTokenId treasuryNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 5);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
+			fromJava(nftCreation));
+	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId), nftMeta,
 			fromJava(nftCreation));
 
 	private CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);

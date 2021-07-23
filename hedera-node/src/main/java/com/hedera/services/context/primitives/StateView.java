@@ -592,9 +592,6 @@ public class StateView {
 						var nft = uniqueTokensMap.get(nftId);
 						nftInfos.add(buildTokenNft(aid, nft, nftId));
 					});
-			if (rangesAndLeftover.getRight() == 0L) {
-				break;
-			}
 		}
 
 		return Optional.of(nftInfos);

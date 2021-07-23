@@ -30,12 +30,6 @@ import com.swirlds.fcmap.FCMap;
 public class ViewBuilder {
 	/**
 	 * call first ctx.rebuildStoreViewsIfPresent() before rebuilding the unique token views
-	 *
-	 * @param tokenStore
-	 * @param uniqueTokens
-	 * @param uniqueTokenAssociations
-	 * @param uniqueOwnershipAssociations
-	 * @param treasuryOwnedUniqueTokens
 	 */
 	public static void rebuildUniqueTokenViews(
 			TokenStore tokenStore,
