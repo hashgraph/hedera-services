@@ -92,7 +92,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						confirmNftToggleIsOffByDefaultThenEnable(),
+//						confirmNftToggleIsOffByDefaultThenEnable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
