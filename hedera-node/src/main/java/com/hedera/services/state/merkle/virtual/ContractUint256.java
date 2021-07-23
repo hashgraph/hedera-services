@@ -179,7 +179,7 @@ public class ContractUint256 implements VKey, VValue {
     }
 
     @Override
-    public VValue copy() {
+    public ContractUint256 copy() {
         // It is immutable anyway
         return new ContractUint256(this);
     }

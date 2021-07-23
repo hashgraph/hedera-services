@@ -9,13 +9,30 @@ import com.swirlds.fcmap.VValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-class ContractValue implements VValue {
-    private final Id contractId;
-    private final ContractUint256 key;
+public class ContractValue implements VValue {
+    public static final int SERIALIZED_SIZE = ContractUint256.SERIALIZED_SIZE;
+    private ContractUint256 value;
+    private boolean readOnly = false;
 
-    ContractValue(Id contractId, ContractUint256 key) {
-        this.contractId = contractId;
-        this.key = key;
+    public ContractValue() {}
+
+    public ContractValue(ContractUint256 value) {
+        this.value = value;
+    }
+
+    private ContractValue(ContractValue source, boolean readOnly) {
+        this.value = source.value;
+        this.readOnly = readOnly;
+    }
+
+    public ContractUint256 getValue() {
+        return value;
+    }
+
+    public void setValue(ContractUint256 value) {
+        if (!readOnly) {
+            this.value = value;
+        }
     }
 
     @Override
@@ -30,37 +47,43 @@ class ContractValue implements VValue {
 
     @Override
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-
+        this.value = new ContractUint256();
+        deserialize(serializableDataInputStream, i);
     }
 
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-
+        if (this.value != null) {
+            this.value.serialize(serializableDataOutputStream);
+        }
     }
 
     @Override
     public void serialize(ByteBuffer byteBuffer) throws IOException {
-
+        if (this.value != null) {
+            this.value.serialize(byteBuffer);
+        }
     }
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-
+        this.value = new ContractUint256();
+        deserialize(byteBuffer, i);
     }
 
     @Override
     public void update(ByteBuffer byteBuffer) throws IOException {
-
+        serialize(byteBuffer);
     }
 
     @Override
-    public VValue copy() {
-        return this;
+    public ContractValue copy() {
+        return new ContractValue(this, false);
     }
 
     @Override
     public VValue asReadOnly() {
-        return this;
+        return new ContractValue(this, true);
     }
 
     @Override

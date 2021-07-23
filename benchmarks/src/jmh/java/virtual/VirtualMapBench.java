@@ -1,4 +1,4 @@
-package contract;
+package virtual;
 
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

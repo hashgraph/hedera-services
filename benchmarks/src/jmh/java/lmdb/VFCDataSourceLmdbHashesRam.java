@@ -211,6 +211,7 @@ public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> 
             final ByteBuffer keyBytes = getLeafKeyBytes(key);
             // now update everything
             final ByteBuffer newPathKey = getPathBytes(newPath);
+            // TODO Should probably remove the mapping at the old path
             // write hash
             hashStore.put(newPath,hash);
             // write key -> path
@@ -448,6 +449,7 @@ public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> 
     }
 
     private long getPath(ByteBuffer pathBytes) {
+        pathBytes.order(ByteOrder.nativeOrder());
         return pathBytes.getLong(0);
     }
 
