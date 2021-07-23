@@ -1,7 +1,7 @@
-package appendonlyfiles;
+package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 import com.swirlds.common.crypto.Hash;
-import offheap.OffHeapLongList;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

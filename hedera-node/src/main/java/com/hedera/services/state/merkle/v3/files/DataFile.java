@@ -1,4 +1,4 @@
-package appendonlyfiles;
+package com.hedera.services.state.merkle.v3.files;
 
 import com.swirlds.common.crypto.Hash;
 
@@ -74,13 +74,15 @@ public class DataFile implements AutoCloseable {
         if (isReadOnly) throw new IOException("Tried to store data in read only data file "+path);
         if (seekableByteChannel == null) throw new IOException("Tried to store data on closed data file "+path);
         // find offset for the start of this new data item, we assume we always write data in a whole number of blocks
-        long byteOffset = seekableByteChannel.size();
+        long byteOffset = seekableByteChannel.position();
         int blockOffset = (int)(byteOffset/blockSize);
         // calculate data size to write
         int dataSize = (int)Math.ceil((Integer.SIZE + keySize + hashSize + dataValueSize) / (double)blockSize) * blockSize;
         // get temp buffer
         tempWriteBuffer = (tempWriteBuffer == null || tempWriteBuffer.limit() < dataSize) ?
                                 ByteBuffer.allocate(dataSize) : tempWriteBuffer.clear();
+        // set the limit, this means we pad to nearest block size
+        tempWriteBuffer.limit(dataSize);
         // write data header to temp buffer
         tempWriteBuffer.putInt(dataValueSize);
         Hash.toByteBuffer(hash,tempWriteBuffer);
@@ -97,14 +99,14 @@ public class DataFile implements AutoCloseable {
      * @throws IOException If there was a problem appending data to file
      */
     public synchronized int storeData(long key, Hash hash, ByteBuffer dataToStore) throws IOException {
-        if (keySize != Long.SIZE) throw new IOException("Tried to store data with long key when key size was "+keySize+", into data file "+path);
+        if (keySize != Long.BYTES) throw new IOException("Tried to store data with long key when key size was "+keySize+", into data file "+path);
         // start storing process, prepares tempWriteBuffer, writes block header data, returns byteOffset
         int blockOffset = startStoring(hash, dataToStore.remaining());
         // write key and value
         tempWriteBuffer.putLong(key);
         tempWriteBuffer.put(dataToStore);
         // write temp buffer to file
-        tempWriteBuffer.flip();
+        tempWriteBuffer.rewind();
         seekableByteChannel.write(tempWriteBuffer);
         // return the offset where we wrote the data
         return blockOffset;
@@ -187,6 +189,8 @@ public class DataFile implements AutoCloseable {
         }
         seekableByteChannel.position(offset);
         seekableByteChannel.read(bufferToReadInto);
+        // get buffer ready for a reader
+        bufferToReadInto.rewind();
     }
 
     /**
