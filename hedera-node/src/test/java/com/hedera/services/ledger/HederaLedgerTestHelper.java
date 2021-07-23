@@ -53,7 +53,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
-public class HederaLedgerTest extends BaseHederaLedgerTest {
+public class HederaLedgerTestHelper extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
