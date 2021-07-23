@@ -30,6 +30,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -46,137 +47,147 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
  * {@code Pair<long[], long[]>} of acquired and relinquished serial numbers.
  */
 public class TokenRelationship {
-	private final Token token;
-	private final Account account;
+    private final Token token;
+    private final Account account;
 
-	private long balance;
-	private boolean frozen;
-	private boolean kycGranted;
-	private boolean destroyed = false;
-	private boolean notYetPersisted = true;
+    private long balance;
+    private boolean frozen;
+    private boolean kycGranted;
+    private boolean destroyed = false;
+    private boolean notYetPersisted = true;
 
-	private long balanceChange = 0L;
+    private long balanceChange = 0L;
 
-	public TokenRelationship(Token token, Account account) {
-		this.token = token;
-		this.account = account;
-	}
+    public TokenRelationship(Token token, Account account) {
+        this.token = token;
+        this.account = account;
+    }
 
-	public long getBalance() {
-		return balance;
-	}
+    public long getBalance() {
+        return balance;
+    }
 
-	/**
-	 * Set the balance of this relationship's token that
-	 * the account holds at the beginning of a user transaction. (In particular, does
-	 * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
-	 *
-	 * @param balance the initial balance in the relationship
-	 */
-	public void initBalance(long balance) {
-		this.balance = balance;
-	}
+    /**
+     * Set the balance of this relationship's token that
+     * the account holds at the beginning of a user transaction. (In particular, does
+     * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
+     *
+     * @param balance the initial balance in the relationship
+     */
+    public void initBalance(long balance) {
+        this.balance = balance;
+    }
 
-	/**
-	 * Update the balance of this relationship token held by the account.
-	 * <p>
-	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
-	 *
-	 * @param balance the updated balance of the relationship
-	 */
-	public void setBalance(long balance) {
-		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
-		validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+    /**
+     * Update the balance of this relationship token held by the account.
+     * <p>
+     * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
+     *
+     * @param balance the updated balance of the relationship
+     */
+    public void setBalance(long balance) {
+        validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
+        validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 
-		balanceChange += (balance - this.balance);
-		this.balance = balance;
-	}
+        balanceChange += (balance - this.balance);
+        this.balance = balance;
+    }
 
-	void adjustBalance(long adjustment) {
-		balanceChange += adjustment;
-		this.balance += adjustment;
-	}
+    void adjustBalance(long adjustment) {
+        balanceChange += adjustment;
+        this.balance += adjustment;
+    }
 
-	public boolean isFrozen() {
-		return frozen;
-	}
+    public boolean isFrozen() {
+        return frozen;
+    }
 
-	public void setFrozen(boolean frozen) {
-		this.frozen = frozen;
-	}
+    public void setFrozen(boolean frozen) {
+        this.frozen = frozen;
+    }
 
-	public boolean isKycGranted() {
-		return kycGranted;
-	}
+    public boolean isKycGranted() {
+        return kycGranted;
+    }
 
-	public void setKycGranted(boolean kycGranted) {
-		this.kycGranted = kycGranted;
-	}
+    public void setKycGranted(boolean kycGranted) {
+        this.kycGranted = kycGranted;
+    }
 
-	public long getBalanceChange() {
-		return balanceChange;
-	}
+    /**
+     * Modifies the state of the KYC property to either true (granted) or false (revoked).
+     * <p>Before the property modification, the method performs validation, that the respective token has a KYC key. </p>
+     * @param isGranted  the new state of the property
+     */
+    public void changeKycState(boolean isGranted) {
+        validateTrue(token.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
+        this.kycGranted = isGranted;
+    }
 
-	public Token getToken() {
-		return token;
-	}
+    public long getBalanceChange() {
+        return balanceChange;
+    }
 
-	public Account getAccount() {
-		return account;
-	}
+    public Token getToken() {
+        return token;
+    }
 
-	boolean hasInvolvedIds(Id tokenId, Id accountId) {
-		return account.getId().equals(accountId) && token.getId().equals(tokenId);
-	}
+    public Account getAccount() {
+        return account;
+    }
 
-	public boolean isNotYetPersisted() {
-		return notYetPersisted;
-	}
+    boolean hasInvolvedIds(Id tokenId, Id accountId) {
+        return account.getId().equals(accountId) && token.getId().equals(tokenId);
+    }
 
-	public void markAsPersisted() {
-		notYetPersisted = false;
-	}
+    public boolean isNotYetPersisted() {
+        return notYetPersisted;
+    }
 
-	public boolean isDestroyed() {
-		return destroyed;
-	}
+    public void markAsPersisted() {
+        notYetPersisted = false;
+    }
 
-	public void markAsDestroyed() {
-		validateFalse(notYetPersisted, FAIL_INVALID);
-		destroyed = true;
-	}
+    public boolean isDestroyed() {
+        return destroyed;
+    }
 
-	public boolean hasCommonRepresentation() {
-		return token.getType() == TokenType.FUNGIBLE_COMMON;
-	}
+    public void markAsDestroyed() {
+        validateFalse(notYetPersisted, FAIL_INVALID);
+        destroyed = true;
+    }
 
-	public boolean hasUniqueRepresentation() {
-		return token.getType() == TokenType.NON_FUNGIBLE_UNIQUE;
-	}
+    public boolean hasCommonRepresentation() {
+        return token.getType() == TokenType.FUNGIBLE_COMMON;
+    }
 
-	/* The object methods below are only overridden to improve
-	readability of unit tests; model objects are not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
+    public boolean hasUniqueRepresentation() {
+        return token.getType() == TokenType.NON_FUNGIBLE_UNIQUE;
+    }
 
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
+    /* The object methods below are only overridden to improve
+    readability of unit tests; model objects are not used in hash-based
+    collections, so the performance of these methods doesn't matter. */
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(TokenRelationship.class)
-				.add("notYetPersisted", notYetPersisted)
-				.add("account", account)
-				.add("token", token)
-				.add("balance", balance)
-				.add("balanceChange", balanceChange)
-				.add("frozen", frozen)
-				.add("kycGranted", kycGranted)
-				.toString();
-	}
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(TokenRelationship.class)
+                .add("notYetPersisted", notYetPersisted)
+                .add("account", account)
+                .add("token", token)
+                .add("balance", balance)
+                .add("balanceChange", balanceChange)
+                .add("frozen", frozen)
+                .add("kycGranted", kycGranted)
+                .toString();
+    }
 }
