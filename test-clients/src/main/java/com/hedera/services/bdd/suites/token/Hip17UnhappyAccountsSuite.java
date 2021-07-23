@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -76,15 +77,15 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				/* Dissociated Account */
-				uniqueTokenOperationsFailForDissociatedAccount(),
+//				uniqueTokenOperationsFailForDissociatedAccount(),
 				/* Frozen Account */
-				uniqueTokenOperationsFailForFrozenAccount(),
+//				uniqueTokenOperationsFailForFrozenAccount(),
 				/* Account Without KYC */
-				uniqueTokenOperationsFailForKycRevokedAccount(),
+//				uniqueTokenOperationsFailForKycRevokedAccount(),
 				/* Expired Account */
-//				uniqueTokenOperationsFailForExpiredAccount(),
+				uniqueTokenOperationsFailForExpiredAccount(),
 				/* Deleted Account */
-				uniqueTokenOperationsFailForDeletedAccount(),
+//				uniqueTokenOperationsFailForDeletedAccount(),
 				/* AutoRemoved Account */
 //				uniqueTokenOperationsFailForAutoRemovedAccount()
 		});
@@ -200,12 +201,13 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 										"tokens.nfts.areEnabled", "true",
 										"ledger.autoRenewPeriod.minDuration", "1",
 										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "7776000L",
+										"autorenew.gracePeriod", "7776000",
 										"autorenew.numberOfEntitiesToScan", "100",
 										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "10"
-								)),
+								))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						newKeyNamed(supplyKey),
-						cryptoCreate(tokenTreasury),
+						cryptoCreate(tokenTreasury).autoRenewSecs(THREE_MONTHS_IN_SECONDS),
 						tokenCreate(uniqueTokenA)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
@@ -215,6 +217,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 						cryptoCreate(firstUser)
 								.autoRenewSecs(10L)
 								.balance(0L),
+						getAccountInfo(firstUser).logged(),
 						tokenAssociate(firstUser, uniqueTokenA)
 				)
 				.when(
