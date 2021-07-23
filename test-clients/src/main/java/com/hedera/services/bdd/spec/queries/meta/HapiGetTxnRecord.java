@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -79,32 +80,32 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 
-	String txn;
-	boolean scheduled = false;
-	boolean assertNothing = false;
-	boolean useDefaultTxnId = false;
-	boolean requestDuplicates = false;
-	boolean shouldBeTransferFree = false;
-	boolean assertOnlyPriority = false;
-	boolean assertNothingAboutHashes = false;
-	boolean lookupScheduledFromRegistryId = false;
-	boolean omitPaymentHeaderOnCostAnswer = false;
-	boolean assertEmptyAssessedCustomFees = false;
-	List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
-	List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
-	List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
-	List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
-	Optional<TransactionID> explicitTxnId = Optional.empty();
-	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
-	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
-	Optional<String> creationName = Optional.empty();
-	Optional<String> saveTxnRecordToRegistry = Optional.empty();
-	Optional<String> registryEntry = Optional.empty();
-	Optional<String> topicToValidate = Optional.empty();
-	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
-	Optional<LongConsumer> priceConsumer = Optional.empty();
-	Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
-	Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
+	private String txn;
+	private boolean scheduled = false;
+	private boolean assertNothing = false;
+	private boolean useDefaultTxnId = false;
+	private boolean requestDuplicates = false;
+	private boolean shouldBeTransferFree = false;
+	private boolean assertOnlyPriority = false;
+	private boolean assertNothingAboutHashes = false;
+	private boolean lookupScheduledFromRegistryId = false;
+	private boolean omitPaymentHeaderOnCostAnswer = false;
+	private List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
+	private List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
+	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
+	private List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
+	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
+	private Optional<TransactionID> explicitTxnId = Optional.empty();
+	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
+	private Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
+	private Optional<String> creationName = Optional.empty();
+	private Optional<String> saveTxnRecordToRegistry = Optional.empty();
+	private Optional<String> registryEntry = Optional.empty();
+	private Optional<String> topicToValidate = Optional.empty();
+	private Optional<byte[]> lastMessagedSubmitted = Optional.empty();
+	private Optional<LongConsumer> priceConsumer = Optional.empty();
+	private Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
+	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
@@ -248,8 +249,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasEmptyAssessedCustomFees() {
-		assertEmptyAssessedCustomFees = true;
+	public HapiGetTxnRecord hasAssessedCustomFeesSize(final int size) {
+		assessedCustomFeesSize = OptionalInt.of(size);
 		return this;
 	}
 
@@ -360,9 +361,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 							tokenTransferLists));
 		}
 		final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
-		if (assertEmptyAssessedCustomFees) {
-			assertTrue("Actual assessed_custom_fees is not empty:\n" + actualAssessedCustomFees,
-					actualAssessedCustomFees.isEmpty());
+		if (assessedCustomFeesSize.isPresent()) {
+			assertEquals("Unexpected size of assessed_custom_fees:\n" + actualAssessedCustomFees,
+					assessedCustomFeesSize.getAsInt(), actualAssessedCustomFees.size());
 		}
 		if (!assessedCustomFeesToValidate.isEmpty()) {
 			assessedCustomFeesToValidate.forEach(triple ->

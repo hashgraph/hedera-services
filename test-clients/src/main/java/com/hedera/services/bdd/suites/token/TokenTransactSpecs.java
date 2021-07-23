@@ -93,37 +93,37 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						balancesChangeOnTokenTransfer(),
-//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-//						senderSigsAreValid(),
-//						balancesAreChecked(),
-//						duplicateAccountsInTokenTransferRejected(),
-//						tokenOnlyTxnsAreAtomic(),
-//						tokenPlusHbarTxnsAreAtomic(),
-//						nonZeroTransfersRejected(),
-//						prechecksWork(),
-//						missingEntitiesRejected(),
-//						allRequiredSigsAreChecked(),
-//						uniqueTokenTxnAccountBalance(),
-//						uniqueTokenTxnWithNoAssociation(),
-//						uniqueTokenTxnWithFrozenAccount(),
-//						uniqueTokenTxnWithSenderNotSigned(),
-//						uniqueTokenTxnWithReceiverNotSigned(),
-//						uniqueTokenTxnsAreAtomic(),
-//						uniqueTokenDeletedTxn(),
-//						cannotSendFungibleToDissociatedContractsOrAccounts(),
-//						cannotGiveNftsToDissociatedContractsOrAccounts(),
-//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-//						transferListsEnforceTokenTypeRestrictions(),
-//						/* HIP-18 charging case studies */
-//						fixedHbarCaseStudy(),
-//						fractionalCaseStudy(),
-//						simpleHtsFeeCaseStudy(),
-//						nestedHbarCaseStudy(),
-//						nestedFractionalCaseStudy(),
-//						nestedHtsCaseStudy(),
+						balancesChangeOnTokenTransfer(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+						senderSigsAreValid(),
+						balancesAreChecked(),
+						duplicateAccountsInTokenTransferRejected(),
+						tokenOnlyTxnsAreAtomic(),
+						tokenPlusHbarTxnsAreAtomic(),
+						nonZeroTransfersRejected(),
+						prechecksWork(),
+						missingEntitiesRejected(),
+						allRequiredSigsAreChecked(),
+						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnWithNoAssociation(),
+						uniqueTokenTxnWithFrozenAccount(),
+						uniqueTokenTxnWithSenderNotSigned(),
+						uniqueTokenTxnWithReceiverNotSigned(),
+						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn(),
+						cannotSendFungibleToDissociatedContractsOrAccounts(),
+						cannotGiveNftsToDissociatedContractsOrAccounts(),
+						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+						transferListsEnforceTokenTypeRestrictions(),
+						/* HIP-18 charging case studies */
+						fixedHbarCaseStudy(),
+						fractionalCaseStudy(),
+						simpleHtsFeeCaseStudy(),
+						nestedHbarCaseStudy(),
+						nestedFractionalCaseStudy(),
+						nestedHtsCaseStudy(),
 						treasuriesAreExemptFromAllCustomFees(),
-//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
 				}
 		);
 	}
@@ -1291,7 +1291,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getTxnRecord(txnFromTreasury)
 								.hasTokenAmount(topLevelToken, nonTreasury, 1_000L)
 								.hasTokenAmount(topLevelToken, treasuryForTopLevel, -1_000L)
-								.hasEmptyAssessedCustomFees(),
+								.hasAssessedCustomFeesSize(0),
 						getAccountBalance(collectorForTopLevel)
 								.hasTinyBars(0L)
 								.hasTokenBalance(feeToken, 0L)
@@ -1311,6 +1311,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromNonTreasury),
 						getTxnRecord(txnFromNonTreasury)
+								.hasAssessedCustomFeesSize(3)
 								.hasTokenAmount(topLevelToken, edgar, 1_000L - 50L)
 								.hasTokenAmount(topLevelToken, nonTreasury, -1_000L)
 								.hasAssessedCustomFee(topLevelToken, collectorForTopLevel, 50L)
@@ -1372,6 +1373,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.via(txnFromCollector)
 				).then(
 						getTxnRecord(txnFromCollector)
+								.hasAssessedCustomFeesSize(2)
 								.hasTokenAmount(topLevelToken, edgar, 1_000L - 100L)
 								.hasTokenAmount(topLevelToken, firstCollectorForTopLevel, -1_000L)
 								.hasAssessedCustomFee(topLevelToken, secondCollectorForTopLevel, 100L)
