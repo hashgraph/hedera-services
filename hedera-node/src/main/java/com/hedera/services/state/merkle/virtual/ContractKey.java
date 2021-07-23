@@ -13,7 +13,7 @@ import java.util.Objects;
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
  */
-public final class ContractKey implements SelfSerializable, VKey {
+public final class ContractKey implements VKey {
     public static final int SERIALIZED_SIZE = Long.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES + ContractUint256.SERIALIZED_SIZE;
     private Id contractId;
     private ContractUint256 key;
