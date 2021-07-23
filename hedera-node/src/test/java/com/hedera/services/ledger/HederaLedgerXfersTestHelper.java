@@ -44,7 +44,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
+public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
