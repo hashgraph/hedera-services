@@ -1,22 +1,22 @@
-package offheaphashes;
+package offheap;
 
 import com.swirlds.common.crypto.Hash;
 
 import static fcmmap.FCVirtualMapTestUtils.hash;
 import static fcmmap.FCVirtualMapTestUtils.toLongsString;
 
-public class OffHeapHashStoreTest {
+public class OffHeapHashListTest {
 
     public static void main(String[] args) {
         try {
-            OffHeapHashStore hashStore = new OffHeapHashStore();
+            OffHeapHashList hashStore = new OffHeapHashList();
             for (int i = 0; i < 3_000_000; i++) {
-                hashStore.saveHash(i, hash(i));
+                hashStore.put(i, hash(i));
             }
 
             for (int i = 0; i < 3_000_000; i++) {
                 Hash answerHash = hash(i);
-                Hash readHash = hashStore.loadHash(i);
+                Hash readHash = hashStore.get(i);
                 if (readHash == null) {
                     System.err.println("Got null hash for " + i + " should be [" + toLongsString(answerHash) + "]");
                 } else if (!answerHash.equals(readHash)) {
@@ -26,8 +26,8 @@ public class OffHeapHashStoreTest {
 
             // test off end
             Hash bigHash = hash(3_000_123);
-            hashStore.saveHash(3_000_123, bigHash);
-            if (!bigHash.equals(hashStore.loadHash(3_000_123))) {
+            hashStore.put(3_000_123, bigHash);
+            if (!bigHash.equals(hashStore.get(3_000_123))) {
                 System.err.println("Failed to save and get 3_000_123");
             }
 
