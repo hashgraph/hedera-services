@@ -158,6 +158,7 @@ class BaseOperationUsage {
 					default:
 						break;
 				}
+				break;
 			case TokenMint:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();

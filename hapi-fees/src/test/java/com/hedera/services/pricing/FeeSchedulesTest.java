@@ -515,7 +515,6 @@ class FeeSchedulesTest {
 		final var canonicalUsage = baseOperationUsage.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
 		final var jsonRepr = reprAsSingleFeeScheduleEntry(
 				TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE, computedResourcePrices);
-		//System.out.println(jsonRepr);
 
 		// when:
 		final var actualBasePrice = feeInUsd(computedResourcePrices, canonicalUsage);
@@ -886,7 +885,6 @@ class FeeSchedulesTest {
 				TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		final var jsonRepr = reprAsSingleFeeScheduleEntry(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES,
 				computedPrices);
-		System.out.println(jsonRepr);
 
 		final var actualBasePrice = feeInUsd(computedPrices, canonicalUsage);
 		assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue());

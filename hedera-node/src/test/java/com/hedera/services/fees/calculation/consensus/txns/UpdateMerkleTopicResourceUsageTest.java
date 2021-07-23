@@ -108,7 +108,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void getFeeThrowsExceptionForBadKeys() throws DecoderException {
+    void getFeeThrowsExceptionForBadKeys() throws DecoderException, IllegalArgumentException {
         // given
         TransactionBody txnBody = makeTransactionBody(topicId, defaultMemo,
                 JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(adminKeyString))),

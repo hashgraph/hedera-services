@@ -22,7 +22,8 @@ package com.hedera.services.legacy.core;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.TextFormat;
-import com.hedera.services.legacy.client.util.Common;
+import com.hedera.services.legacy.client.util.KeyExpansion;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
@@ -41,7 +42,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
@@ -170,10 +170,10 @@ public class TestHelper {
 		Transaction transaction = TestHelper
 				.createAccount(payerAccount, nodeAccount, pair, initialBalance, TestHelper.getCryptoMaxFee(),
 						DEFAULT_SEND_RECV_RECORD_THRESHOLD, DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-		List<Key> keyList = Collections.singletonList(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
+		List<Key> keyList = Collections.singletonList(KeyExpansion.keyFromPrivateKey(payerKeyPair.getPrivate()));
 		HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-		Common.addKeyMap(pair, pubKey2privKeyMap);
-		Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
+		KeyExpansion.addKeyMap(pair, pubKey2privKeyMap);
+		KeyExpansion.addKeyMap(payerKeyPair, pubKey2privKeyMap);
 		Transaction signTransaction = TransactionSigner
 				.signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
 		long createAccountFee = FeeClient.getCreateAccountFee(signTransaction, 1);
@@ -332,11 +332,11 @@ public class TestHelper {
 		// sign the tx
 		List<Key> keyList = new ArrayList<>();
 		HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-		keyList.add(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
-		Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
+		keyList.add(KeyExpansion.keyFromPrivateKey(payerKeyPair.getPrivate()));
+		KeyExpansion.addKeyMap(payerKeyPair, pubKey2privKeyMap);
 		if (!payerKeyPair.equals(fromKeyPair)) {
-			keyList.add(Common.PrivateKeyToKey(fromKeyPair.getPrivate()));
-			Common.addKeyMap(fromKeyPair, pubKey2privKeyMap);
+			keyList.add(KeyExpansion.keyFromPrivateKey(fromKeyPair.getPrivate()));
+			KeyExpansion.addKeyMap(fromKeyPair, pubKey2privKeyMap);
 		}
 
 		Transaction signedTx = TransactionSigner.signTransactionComplexWithSigMap(
@@ -371,11 +371,11 @@ public class TestHelper {
 		// sign the tx
 		List<Key> keyList = new ArrayList<>();
 		HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-		keyList.add(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
-		Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
+		keyList.add(KeyExpansion.keyFromPrivateKey(payerKeyPair.getPrivate()));
+		KeyExpansion.addKeyMap(payerKeyPair, pubKey2privKeyMap);
 		if (!payerKeyPair.equals(fromKeyPair)) {
-			keyList.add(Common.PrivateKeyToKey(fromKeyPair.getPrivate()));
-			Common.addKeyMap(fromKeyPair, pubKey2privKeyMap);
+			keyList.add(KeyExpansion.keyFromPrivateKey(fromKeyPair.getPrivate()));
+			KeyExpansion.addKeyMap(fromKeyPair, pubKey2privKeyMap);
 		}
 
 		Transaction signedTx = TransactionSigner.signTransactionComplexWithSigMap(
@@ -523,9 +523,9 @@ public class TestHelper {
 			ByteString functionData, long value,
 			KeyPair payerKeyPair) throws Exception {
 
-		List<Key> keyList = Collections.singletonList(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
+		List<Key> keyList = Collections.singletonList(KeyExpansion.keyFromPrivateKey(payerKeyPair.getPrivate()));
 		HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-		Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
+		KeyExpansion.addKeyMap(payerKeyPair, pubKey2privKeyMap);
 
 		Transaction transaction = RequestBuilder
 				.getContractCallRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
@@ -556,9 +556,9 @@ public class TestHelper {
 			Duration autoRenewalPeriod, KeyPair payerKeyPair, String contractMemo,
 			Key adminPubKey) throws Exception {
 
-		List<Key> keyList = Collections.singletonList(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
+		List<Key> keyList = Collections.singletonList(KeyExpansion.keyFromPrivateKey(payerKeyPair.getPrivate()));
 		HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-		Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
+		KeyExpansion.addKeyMap(payerKeyPair, pubKey2privKeyMap);
 
 		Transaction transaction = RequestBuilder
 				.getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,

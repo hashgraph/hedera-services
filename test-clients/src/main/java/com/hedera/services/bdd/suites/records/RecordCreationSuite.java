@@ -92,7 +92,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						confirmNftToggleIsOffByDefaultThenEnable(),
+						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
@@ -115,15 +115,20 @@ public class RecordCreationSuite extends HapiApiSuite {
 		);
 	}
 
-	private HapiApiSpec confirmNftToggleIsOffByDefaultThenEnable() {
+	private HapiApiSpec confirmNftToggleIsWorksThenReenable() {
 		final var acceptedTokenAttempt = "someSuch";
 		final var blockedTokenAttempt = "neverToBe";
 		final var supplyKey = "supplyKey";
 		final var wipeKey = "wipeKey";
 		final var miscAccount = "civilian";
 
-		return defaultHapiSpec("ConfirmNftToggleIsOffByDefaultThenEnable")
+		return defaultHapiSpec("ConfirmNftToggleIsWorksThenReenable")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "false"
+								)),
 						tokenCreate(blockedTokenAttempt)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0L)
