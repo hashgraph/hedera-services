@@ -1,7 +1,5 @@
 package com.hedera.services.state.merkle.v3.files;
 
-import com.swirlds.common.crypto.Hash;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;

@@ -46,7 +46,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
      * @param storageDir directory to store data files in
      */
     public VFCDataSourceImplV3(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
-                                Path storageDir) {
+                                Path storageDir) throws IOException {
         this.keySizeBytes = Integer.BYTES + keySizeBytes;
         this.keyConstructor = keyConstructor;
         this.valueSizeBytes = Integer.BYTES + valueSizeBytes;
