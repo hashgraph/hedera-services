@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 class GrpcUtilsTest {
 	private final GrpcUtils subject = new GrpcUtils();
@@ -21,8 +20,7 @@ class GrpcUtilsTest {
 		final var nonTreasuryNft = new MerkleUniqueToken(nonTreasuryOwner, nonTreasuryMeta, creationTime);
 
 		// when:
-		final var actual = subject.reprOf(
-				token.toGrpcTokenId(), nonTreasurySerial, nonTreasuryNft, Optional.empty());
+		final var actual = subject.reprOf(token.toGrpcTokenId(), nonTreasurySerial, nonTreasuryNft);
 
 		// then:
 		Assertions.assertEquals(expectedNonTreasury, actual);
@@ -35,7 +33,7 @@ class GrpcUtilsTest {
 
 		// when:
 		final var actual = subject.reprOf(
-				token.toGrpcTokenId(), treasurySerial, treasuryNft, Optional.empty());
+				token.toGrpcTokenId(), treasurySerial, treasuryNft);
 
 		// then:
 		Assertions.assertEquals(expectedTreasury, actual);
@@ -48,7 +46,7 @@ class GrpcUtilsTest {
 
 		// when:
 		final var actual = subject.reprOf(
-				token.toGrpcTokenId(), treasurySerial, treasuryNft, Optional.of(treasury.toGrpcAccountId()));
+				token.toGrpcTokenId(), treasurySerial, treasuryNft, treasury.toGrpcAccountId());
 
 		// then:
 		Assertions.assertEquals(expectedTreasury, actual);
@@ -64,7 +62,7 @@ class GrpcUtilsTest {
 
 		// when:
 		final var e = Assertions.assertThrows(IllegalArgumentException.class, ()-> subject.reprOf(
-				token.toGrpcTokenId(), treasurySerial, treasuryNft, Optional.empty()));
+				token.toGrpcTokenId(), treasurySerial, treasuryNft));
 
 		// then:
 		Assertions.assertEquals(desiredMsg, e.getMessage());
