@@ -34,15 +34,15 @@ public class ExplicitOwnersUniqTokenView implements UniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
-		final var accountId = EntityId.fromGrpcAccountId(owner);
-		return accumulatedInfo(nftsByOwner.get(), accountId, (int) start, (int) end, null);
-	}
-
-	@Override
 	public List<TokenNftInfo> typedAssociations(TokenID type, long start, long end) {
 		final var tokenId = EntityId.fromGrpcTokenId(type);
 		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type);
+	}
+
+	@Override
+	public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
+		final var accountId = EntityId.fromGrpcAccountId(owner);
+		return accumulatedInfo(nftsByOwner.get(), accountId, (int) start, (int) end, null);
 	}
 
 	private List<TokenNftInfo> accumulatedInfo(
