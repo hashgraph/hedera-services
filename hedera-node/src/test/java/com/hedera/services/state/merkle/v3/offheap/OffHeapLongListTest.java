@@ -16,12 +16,12 @@ public class OffHeapLongListTest {
             }
             // check all data
             for (int i = 0; i < 3_000_000; i++) {
-                long readValue = longList.get(i);
+                long readValue = longList.get(i, 0);
                 assertEquals(i,readValue,"Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
             }
             // test off end
             longList.put(13_000_123, 13_000_123);
-            assertEquals(13_000_123,longList.get(13_000_123),"Failed to save and get 13_000_123");
+            assertEquals(13_000_123,longList.get(13_000_123, 0),"Failed to save and get 13_000_123");
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -45,7 +45,7 @@ public class VFCDataSourceTest {
         // create some node hashes
         IntStream.range(0,1000).forEach(i -> dataSource.saveInternal(i,hash(i)));
         // check all the node hashes
-        IntStream.range(0,1000).forEach(i -> assertEquals(hash(i), dataSource.loadHash(i)));
+        IntStream.range(0,1000).forEach(i -> assertEquals(hash(i), dataSource.loadInternalHash(i)));
         // close data source
         dataSource.close();
     }
@@ -56,7 +56,7 @@ public class VFCDataSourceTest {
         // create some -1 hashes
         for (int i : shuffle(RANDOM,IntStream.range(0,1000).toArray())) dataSource.saveInternal(i,hash(i));
         // check all the node hashes
-        IntStream.range(0,1000).forEach(i -> assertEquals(hash(i), dataSource.loadHash(i)));
+        IntStream.range(0,1000).forEach(i -> assertEquals(hash(i), dataSource.loadInternalHash(i)));
         // close data source
         dataSource.close();
     }
@@ -89,7 +89,7 @@ public class VFCDataSourceTest {
             // things that should have changed
             assertEquals(new TestLeafData(j),   dataSource.loadLeafValue(new LongVKey(i)));
             assertEquals(new TestLeafData(j),   dataSource.loadLeafValue(i));
-            assertEquals(hash(j),               dataSource.loadHash(i));
+            assertEquals(hash(j),               dataSource.loadLeafHash(i));
         });
         // close data source
         dataSource.close();
@@ -118,6 +118,6 @@ public class VFCDataSourceTest {
         // things that should have changed
         assertEquals(new TestLeafData(i),   dataSource.loadLeafValue(new LongVKey(i)));
         assertEquals(new TestLeafData(i),   dataSource.loadLeafValue(path));
-        assertEquals(hash(i),               dataSource.loadHash(path));
+        assertEquals(hash(i),               dataSource.loadLeafHash(path));
     }
 }

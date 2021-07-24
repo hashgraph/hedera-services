@@ -6,6 +6,7 @@ import com.swirlds.common.crypto.Hash;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.file.Files;
@@ -30,6 +31,17 @@ public class V3TestUtils {
             }
             System.out.println("Deleted data files");
         }
+    }
+
+    public static String toLongsString(Hash hash) {
+        final var bytes = hash.getValue();
+        LongBuffer longBuf =
+                ByteBuffer.wrap(bytes)
+                        .order(ByteOrder.BIG_ENDIAN)
+                        .asLongBuffer();
+        long[] array = new long[longBuf.remaining()];
+        longBuf.get(array);
+        return Arrays.toString(array);
     }
 
     public static String toIntsString(ByteBuffer buf) {

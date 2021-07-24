@@ -107,13 +107,18 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
      * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadHash(long path) throws IOException {
+    public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             ByteBuffer hashBytes = pathToHashMap.get(txn,getPathBytes(path));
             if (hashBytes == null) return null;
             return getHash(hashBytes);
         }
+    }
+
+    @Override
+    public Hash loadInternalHash(long path) throws IOException {
+        return loadLeafHash(path);
     }
 
     /**

@@ -248,7 +248,7 @@ public class VFCDataSourceImplGetBench {
                             for (int i = 0; i < chunk; i++) {
                                 randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
                                 try {
-                                    dataSource.loadHash(randomNodeIndex1);
+                                    dataSource.loadInternalHash(randomNodeIndex1);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -316,8 +316,13 @@ public class VFCDataSourceImplGetBench {
     }
 
     @Benchmark
-    public void r_loadHash() throws Exception {
-        dataSource.loadHash(randomNodeIndex1);
+    public void r_loadInternalHash() throws Exception {
+        dataSource.loadInternalHash(randomNodeIndex1);
+    }
+
+    @Benchmark
+    public void r_loadLeafHash() throws Exception {
+        dataSource.loadLeafHash(randomLeafIndex1);
     }
 
 }

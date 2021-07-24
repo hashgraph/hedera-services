@@ -26,6 +26,10 @@ public class MemoryIndexDiskKeyValueStore {
         this.blockSize = blockSize;
     }
 
+    public void close() throws IOException {
+        for(DataFile file:files) file.close();
+    }
+
     public void startWriting() throws IOException {
         if (currentDataFileForWriting != null) throw new IOException("Tried to start writing when we were already writing.");
         currentDataFileForWriting = new DataFile(storeDir.resolve(storeName+"_"+DATE_FORMAT.format(new Date())+".data"),blockSize,Long.BYTES);
@@ -43,7 +47,6 @@ public class MemoryIndexDiskKeyValueStore {
     public void put(long key, ByteBuffer data) throws IOException {
         if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
         // store key,hash and data in current file and get the offset where it was stored
-        // TODO combine hash and data here or outside this method
         int storageOffset = currentDataFileForWriting.storeData(key, data);
         // calculate he data location key for current file and the offset
         long dataLocation = currentDataFileForWritingKey | storageOffset;
@@ -52,7 +55,7 @@ public class MemoryIndexDiskKeyValueStore {
     }
 
     public boolean get(long key, ByteBuffer toReadDataInto, DataFile.DataToRead dataToRead) throws IOException {
-        long dataLocation = index.get(key);
+        long dataLocation = index.get(key, 0);
         // check if found
         if (dataLocation == 0) return false;
         // split up location

@@ -207,7 +207,7 @@ public class VFCDataSource4LmdbBench {
                                 randomDataSource = random.nextInt(numDataSources);
                                 randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
                                 try {
-                                    dataSources[randomDataSource].loadHash(randomNodeIndex1);
+                                    dataSources[randomDataSource].loadInternalHash(randomNodeIndex1);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -277,8 +277,13 @@ public class VFCDataSource4LmdbBench {
     }
 
     @Benchmark
-    public void r_loadHash() throws Exception {
-        dataSources[randomDataSource].loadHash(randomNodeIndex1);
+    public void r_loadInternalHash() throws Exception {
+        dataSources[randomDataSource].loadInternalHash(randomNodeIndex1);
+    }
+
+    @Benchmark
+    public void r_loadLeafHash() throws Exception {
+        dataSources[randomDataSource].loadLeafHash(randomLeafIndex1);
     }
 
 }

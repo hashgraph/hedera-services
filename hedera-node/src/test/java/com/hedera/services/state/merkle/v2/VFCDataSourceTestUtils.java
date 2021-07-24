@@ -498,9 +498,18 @@ public class VFCDataSourceTestUtils {
         }
 
         @Override
-        public Hash loadHash(long path) {
+        public Hash loadLeafHash(long path) {
             try {
-                return dataSource.loadHash(path);
+                return dataSource.loadLeafHash(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Hash loadInternalHash(long path) {
+            try {
+                return dataSource.loadInternalHash(path);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

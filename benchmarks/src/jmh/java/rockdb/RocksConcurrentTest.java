@@ -5,6 +5,7 @@ import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.DigestType;
 import fcmmap.FCVirtualMapTestUtils;
+import org.openjdk.jmh.annotations.Benchmark;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -91,7 +92,8 @@ public class RocksConcurrentTest {
             System.out.println("Loaded existing data");
         }
         List<Test> tests = List.of(
-                new Test("loadHash",RocksConcurrentTest::r_loadHash),
+                new Test("loadInternalHash",RocksConcurrentTest::r_loadInternalHash),
+                new Test("loadLeafHash",RocksConcurrentTest::r_loadLeafHash),
                 new Test("loadLeafValueByKey",RocksConcurrentTest::r_loadLeafValueByKey),
                 new Test("loadLeafValueByPath",RocksConcurrentTest::r_loadLeafValueByPath),
                 new Test("loadLeafKey",RocksConcurrentTest::r_loadLeafKey),
@@ -232,13 +234,21 @@ public class RocksConcurrentTest {
         }
     }
 
-    public static void r_loadHash(VFCDataSourceRocksDb<ContractKey,ContractUint256> dataSource) {
+    public static void r_loadInternalHash(VFCDataSourceRocksDb<ContractKey,ContractUint256> dataSource) {
         long randomNodeIndex1 = (long)(random.nextDouble()*numEntities);
         try {
-            dataSource.loadHash(randomNodeIndex1);
+            dataSource.loadInternalHash(randomNodeIndex1);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    public static void r_loadLeafHash(VFCDataSourceRocksDb<ContractKey,ContractUint256> dataSource) {
+        long randomLeafPath1 = numEntities + (long)(random.nextDouble()*numEntities);
+        try {
+            dataSource.loadInternalHash(randomLeafPath1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

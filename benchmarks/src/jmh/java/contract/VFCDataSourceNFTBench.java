@@ -1,20 +1,19 @@
 package contract;
 
 import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.IdKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.state.merkle.virtual.IdKey;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VValue;
 import fcmmap.FCVirtualMapTestUtils;
-import lmdb.VFCDataSourceLmdbHashesRam;
-import org.openjdk.jmh.annotations.*;
 import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
+import lmdb.VFCDataSourceLmdbHashesRam;
 import lmdb.VFCDataSourceLmdbTwoIndexes;
+import org.openjdk.jmh.annotations.*;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
@@ -257,7 +256,7 @@ public class VFCDataSourceNFTBench {
                             for (int i = 0; i < chunk; i++) {
                                 randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
                                 try {
-                                    dataSource.loadHash(randomNodeIndex1);
+                                    dataSource.loadInternalHash(randomNodeIndex1);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -325,8 +324,13 @@ public class VFCDataSourceNFTBench {
     }
 
     @Benchmark
-    public void r_loadHash() throws Exception {
-        dataSource.loadHash(randomNodeIndex1);
+    public void r_loadInternalHash() throws Exception {
+        dataSource.loadInternalHash(randomNodeIndex1);
+    }
+
+    @Benchmark
+    public void r_loadLeafHash() throws Exception {
+        dataSource.loadLeafHash(randomLeafIndex1);
     }
 
     public static class NFTData implements VValue {
