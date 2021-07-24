@@ -60,7 +60,7 @@ public class VFCDataSourceImplGetBench {
         System.out.println("Clean Setup");
         try {
             // delete any old store
-//            FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
+            if (impl.equals("v3")) FCVirtualMapTestUtils.deleteDirectoryAndContents(storePath);
             final boolean storeExists = Files.exists(storePath);
             // get slot index suppliers
             dataSource = switch (impl) {
@@ -176,6 +176,8 @@ public class VFCDataSourceImplGetBench {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        // v3 data sorce needs a transaction
+        if (impl.equals("v3")) dataSource.startTransaction();
     }
 
     private static void printUpdate(long START, long count, int size, String msg) {
@@ -189,6 +191,8 @@ public class VFCDataSourceImplGetBench {
     @TearDown(Level.Trial)
     public void tearDown() {
         try {
+            // v3 data sorce needs a transaction
+            if (impl.equals("v3")) dataSource.commitTransaction(null);
             dataSource.close();
         } catch (IOException e) {
             e.printStackTrace();
