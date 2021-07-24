@@ -109,13 +109,18 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
      * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadHash(long path) throws IOException {
+    public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             ByteBuffer keyHashBytes = pathToKeyAndHashMap.get(txn,getPathBytes(path));
             if (keyHashBytes == null) return null;
             return getHashFromKeyAndHash(keyHashBytes);
         }
+    }
+
+    @Override
+    public Hash loadInternalHash(long path) throws IOException {
+        return loadLeafHash(path);
     }
 
     /**

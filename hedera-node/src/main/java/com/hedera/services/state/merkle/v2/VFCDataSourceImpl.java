@@ -170,10 +170,15 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadHash(long path) throws IOException {
+    public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         ByteBuffer buf = nodeStore.accessSlot(path,false);
         return buf != null ? Hash.fromByteBuffer(buf) : null;
+    }
+
+    @Override
+    public Hash loadInternalHash(long path) throws IOException {
+        return loadLeafHash(path);
     }
 
     /**

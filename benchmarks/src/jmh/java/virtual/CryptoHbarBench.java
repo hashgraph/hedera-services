@@ -87,7 +87,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         final var ds = virtualMap.getDataSource();
 
         for (int i=0; i<(numEntities*2 - 1); i++) {
-            final var hash = ds.loadHash(i);
+            final var hash = ds.loadInternalHash(i); // TODO Richard: could be leaf hash?
             if (hash == null) {
                 System.err.println("Failed to find hash for path " + i);
             }
@@ -139,7 +139,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
                 try {
                     final var ds = virtualMap.getDataSource();
                     for (int i = 0; i < (numEntities * 2 - 1); i++) {
-                        final var hash = ds.loadHash(i);
+                        final var hash = ds.loadInternalHash(i); // TODO Richard: maybe could be leaf hash?
                         if (hash == null) {
                             System.err.println("Failed to find hash for path " + i);
                         }

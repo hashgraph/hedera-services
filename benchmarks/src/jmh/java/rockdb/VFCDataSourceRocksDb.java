@@ -120,7 +120,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
      * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadHash(long path) throws IOException {
+    public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try {
             byte[] hashData = this.hashData.get();
@@ -130,6 +130,11 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
         } catch (RocksDBException e) {
             throw new IOException("Problem reading hash from db",e);
         }
+    }
+
+    @Override
+    public Hash loadInternalHash(long path) throws IOException {
+        return loadLeafHash(path);
     }
 
     /**

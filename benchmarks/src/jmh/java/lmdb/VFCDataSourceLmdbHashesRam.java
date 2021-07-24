@@ -1,10 +1,10 @@
 package lmdb;
 
+import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
-import offheap.OffHeapHashList;
 import org.lmdbjava.*;
 
 import java.io.IOException;
@@ -106,9 +106,14 @@ public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> 
      * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadHash(long path) throws IOException {
+    public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         return hashStore.get(path);
+    }
+
+    @Override
+    public Hash loadInternalHash(long path) throws IOException {
+        return loadLeafHash(path);
     }
 
     /**
