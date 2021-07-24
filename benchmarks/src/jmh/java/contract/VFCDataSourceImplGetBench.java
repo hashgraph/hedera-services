@@ -1,6 +1,7 @@
 package contract;
 
 import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
+import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
@@ -31,13 +32,13 @@ import java.util.stream.IntStream;
 public class VFCDataSourceImplGetBench {
     private static final long MB = 1024*1024;
 
-    @Param({"10000000"})
+    @Param({"10000"})
     public long numEntities;
     @Param({"5"})
     public int hashThreads;
     @Param({"4"})
     public int writeThreads;
-    @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb","lmdb-ram"})
+    @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb","lmdb-ram","v3"})
     public String impl;
 
     // state
@@ -84,6 +85,11 @@ public class VFCDataSourceImplGetBench {
                             storePath);
                 case "rocksdb" ->
                     new VFCDataSourceRocksDb<>(
+                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            storePath);
+                case "v3" ->
+                    new VFCDataSourceImplV3<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath);
@@ -222,78 +228,78 @@ public class VFCDataSourceImplGetBench {
     public void w3_MoveLeaf() throws Exception {
         dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
     }
-
-    /**
-     * This is designed to mimic our transaction round
-     */
-    @Benchmark
-    public void t_transaction() {
-        IntStream.range(0,3).parallel().forEach(thread -> {
-            try {
-                switch (thread) {
-                    case 0 -> {
-                        Thread.currentThread().setName("transaction");
-                        // this is the transaction thread that reads leaf values
-                        for (int i = 0; i < 20_000; i++) {
-                            randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                            key2 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
-                            dataSource.loadLeafValue(key2);
-                        }
-                    }
-                    case 1 -> {
-                        // this is the hashing thread that reads hashes
-                        final int chunk = 20_000/hashThreads;
-                        IntStream.range(0,hashThreads).parallel().forEach(hashChunk -> {
-                            Thread.currentThread().setName("hashing "+hashChunk);
-                            for (int i = 0; i < chunk; i++) {
-                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                                try {
-                                    dataSource.loadInternalHash(randomNodeIndex1);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    }
-                    case 2 -> {
-                        Thread.currentThread().setName("archiver");
-                        // this is the archive thread that writes nodes and leaves
-                        final int chunk = 20_000/writeThreads;
-                        IntStream.range(0,writeThreads/2).parallel().forEach(c -> {
-                            Thread.currentThread().setName("writing internals "+c);
-                            final Object transaction = dataSource.startTransaction();
-                            for (int i = 0; i < chunk; i++) { // update 10k internal hashes
-                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                                try {
-                                    dataSource.saveInternal(transaction,randomLeafIndex1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            dataSource.commitTransaction(transaction);
-                        });
-                        IntStream.range(0,writeThreads/2).parallel().forEach(c -> {
-                            Thread.currentThread().setName("writing leaves "+c);
-                            final Object transaction = dataSource.startTransaction();
-                            for (int i = 0; i < chunk; i++) { // update 10k leaves
-                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                                randomLeafIndex1 = numEntities + randomNodeIndex1;
-                                key1 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
-                                try {
-                                    dataSource.updateLeaf(transaction,randomLeafIndex1,key1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            dataSource.commitTransaction(transaction);
-                        });
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-    }
+//
+//    /**
+//     * This is designed to mimic our transaction round
+//     */
+//    @Benchmark
+//    public void t_transaction() {
+//        IntStream.range(0,3).parallel().forEach(thread -> {
+//            try {
+//                switch (thread) {
+//                    case 0 -> {
+//                        Thread.currentThread().setName("transaction");
+//                        // this is the transaction thread that reads leaf values
+//                        for (int i = 0; i < 20_000; i++) {
+//                            randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+//                            key2 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
+//                            dataSource.loadLeafValue(key2);
+//                        }
+//                    }
+//                    case 1 -> {
+//                        // this is the hashing thread that reads hashes
+//                        final int chunk = 20_000/hashThreads;
+//                        IntStream.range(0,hashThreads).parallel().forEach(hashChunk -> {
+//                            Thread.currentThread().setName("hashing "+hashChunk);
+//                            for (int i = 0; i < chunk; i++) {
+//                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+//                                try {
+//                                    dataSource.loadInternalHash(randomNodeIndex1);
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                        });
+//                    }
+//                    case 2 -> {
+//                        Thread.currentThread().setName("archiver");
+//                        // this is the archive thread that writes nodes and leaves
+//                        final int chunk = 20_000/writeThreads;
+//                        IntStream.range(0,writeThreads/2).parallel().forEach(c -> {
+//                            Thread.currentThread().setName("writing internals "+c);
+//                            final Object transaction = dataSource.startTransaction();
+//                            for (int i = 0; i < chunk; i++) { // update 10k internal hashes
+//                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+//                                try {
+//                                    dataSource.saveInternal(transaction,randomLeafIndex1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                            dataSource.commitTransaction(transaction);
+//                        });
+//                        IntStream.range(0,writeThreads/2).parallel().forEach(c -> {
+//                            Thread.currentThread().setName("writing leaves "+c);
+//                            final Object transaction = dataSource.startTransaction();
+//                            for (int i = 0; i < chunk; i++) { // update 10k leaves
+//                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+//                                randomLeafIndex1 = numEntities + randomNodeIndex1;
+//                                key1 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
+//                                try {
+//                                    dataSource.updateLeaf(transaction,randomLeafIndex1,key1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                            dataSource.commitTransaction(transaction);
+//                        });
+//                    }
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//    }
 
     @Benchmark
     public void r_loadLeafPath() throws Exception {
