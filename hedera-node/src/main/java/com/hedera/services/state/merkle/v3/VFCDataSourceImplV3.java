@@ -146,6 +146,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
     public V loadLeafValue(K key) throws IOException {
         if (key == null) throw new IllegalArgumentException("key can not be null");
         long path = isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.getIfAbsent(key, INVALID_PATH);
+        if (path == INVALID_PATH) return null;
         return loadLeafValue(path);
     }
 
