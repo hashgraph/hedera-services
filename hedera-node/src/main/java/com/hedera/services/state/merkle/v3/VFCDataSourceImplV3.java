@@ -64,7 +64,8 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
             longKeyToPath =  null;
             objectKeyToPath = new ObjectLongHashMap<K>().asSynchronized();
         }
-        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",1024); // TODO 1024 should be power of 2 bigger than hash size + valueSizeBytes
+        if ((this.keySizeBytes+HASH_SIZE+this.valueSizeBytes) > 256) throw new IOException("Dude you really need to fix this TODo ;-)");
+        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",256); // TODO 256 should be power of 2 bigger than hash size + valueSizeBytes
     }
 
 
