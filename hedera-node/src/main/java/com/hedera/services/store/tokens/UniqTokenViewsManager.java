@@ -8,7 +8,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
-import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class UniqTokenViewsManager {
@@ -26,13 +26,94 @@ public class UniqTokenViewsManager {
 		this.treasuryNftsByType = treasuryNftsByType;
 	}
 
+	public UniqTokenViewsManager(
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner
+	) {
+		this.nftsByType = nftsByType;
+		this.nftsByOwner = nftsByOwner;
+		this.treasuryNftsByType = null;
+	}
+
 	public void rebuildNotice(
+			FCMap<MerkleEntityId, MerkleToken> tokens,
+			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
+	) {
+		if (isUsingTreasuryWildcards()) {
+			rebuildUsingTreasuryWildcards(tokens, nfts);
+		} else {
+			rebuildUsingExplicitOwners(nfts);
+		}
+	}
+
+	public void mintNotice(MerkleUniqueTokenId nftId, EntityId treasury) {
+		final var tokenId = nftId.tokenId();
+		nftsByType.get().associate(tokenId, nftId);
+		if (isUsingTreasuryWildcards()) {
+			curTreasuryNftsByType().associate(tokenId, nftId);
+		} else {
+			nftsByOwner.get().associate(treasury, nftId);
+		}
+	}
+
+	public void wipeNotice(MerkleUniqueTokenId nftId, EntityId fromAccount) {
+		/* The treasury account cannot wiped, so both cases are the same */
+		nftsByType.get().disassociate(nftId.tokenId(), nftId);
+		nftsByOwner.get().disassociate(fromAccount, nftId);
+	}
+
+	public void burnNotice(MerkleUniqueTokenId nftId, EntityId treasury) {
+		final var tokenId = nftId.tokenId();
+		nftsByType.get().disassociate(tokenId, nftId);
+		if (isUsingTreasuryWildcards()) {
+			curTreasuryNftsByType().disassociate(tokenId, nftId);
+		} else {
+			nftsByOwner.get().disassociate(treasury, nftId);
+		}
+	}
+
+	public void exchangeNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId newOwner) {
+		final var curNftsByOwner = nftsByOwner.get();
+		curNftsByOwner.disassociate(prevOwner, nftId);
+		curNftsByOwner.associate(newOwner, nftId);
+	}
+
+	public void treasuryExitNotice(MerkleUniqueTokenId nftId, EntityId treasury, EntityId newOwner) {
+		final var curNftsByOwner = nftsByOwner.get();
+		if (isUsingTreasuryWildcards()) {
+			curTreasuryNftsByType().disassociate(nftId.tokenId(), nftId);
+		} else {
+			curNftsByOwner.disassociate(treasury, nftId);
+		}
+		curNftsByOwner.associate(newOwner, nftId);
+	}
+
+	public void treasuryReturnNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId treasury) {
+		final var curNftsByOwner = nftsByOwner.get();
+		curNftsByOwner.disassociate(prevOwner, nftId);
+		if (isUsingTreasuryWildcards()) {
+			curTreasuryNftsByType().associate(nftId.tokenId(), nftId);
+		} else {
+			curNftsByOwner.associate(treasury, nftId);
+		}
+	}
+
+	public boolean isUsingTreasuryWildcards() {
+		return treasuryNftsByType != null;
+	}
+
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> curTreasuryNftsByType() {
+		Objects.requireNonNull(treasuryNftsByType);
+		return treasuryNftsByType.get();
+	}
+
+	private void rebuildUsingTreasuryWildcards(
 			FCMap<MerkleEntityId, MerkleToken> tokens,
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
 	) {
 		final var curNftsByType = nftsByType.get();
 		final var curNftsByOwner = nftsByOwner.get();
-		final var curTreasuryNftsByType = treasuryNftsByType.get();
+		final var curTreasuryNftsByType = curTreasuryNftsByType();
 
 		nfts.forEach((nftId, nft) -> {
 			final var tokenId = nftId.tokenId();
@@ -51,35 +132,12 @@ public class UniqTokenViewsManager {
 		});
 	}
 
-	public void mintNotice(MerkleUniqueTokenId nft, EntityId firstOwner) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public void wipeNotice(MerkleUniqueTokenId nft, EntityId lastOwner) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public void burnNotice(MerkleUniqueTokenId nft) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public void nonTreasuryExchangeNotice(MerkleUniqueTokenId nft, EntityId prevOwner, EntityId newOwner) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public void treasuryExitNotice(MerkleUniqueTokenId nft, EntityId newOwner) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public void treasuryReturnNotice(MerkleUniqueTokenId nft, EntityId prevOwner) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public Iterator<MerkleUniqueTokenId> ownedAssociations(EntityId owner, int start, int end) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public Iterator<MerkleUniqueTokenId> typedAssociations(EntityId type, int start, int end) {
-		throw new AssertionError("Not implemented!");
+	private void rebuildUsingExplicitOwners(FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts) {
+		final var curNftsByType = nftsByType.get();
+		final var curNftsByOwner = nftsByOwner.get();
+		nfts.forEach((nftId, nft) -> {
+			curNftsByType.associate(nftId.tokenId(), nftId);
+			curNftsByOwner.associate(nft.getOwner(), nftId);
+		});
 	}
 }

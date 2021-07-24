@@ -265,6 +265,7 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -571,6 +572,7 @@ public class ServicesContext {
 	private PricedUsageCalculator pricedUsageCalculator;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
+	private UniqTokenViewsManager uniqTokenViewsManager;
 	private HfsSystemFilesManager systemFilesManager;
 	private CurrentPlatformStatus platformStatus;
 	private SystemAccountsCreator systemAccountsCreator;
@@ -592,14 +594,15 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private StateChildren workingState = new StateChildren();
-	private AtomicReference<StateChildren> queryableState = new AtomicReference<>(new StateChildren());
+
+	private final StateChildren workingState = new StateChildren();
+	private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
 
 	/* Context-free infrastructure. */
-	private static Pause pause;
-	private static StateMigrations stateMigrations;
-	private static AccountsExporter accountsExporter;
-	private static LegacyEd25519KeyReader b64KeyReader;
+	private static final Pause pause;
+	private static final StateMigrations stateMigrations;
+	private static final AccountsExporter accountsExporter;
+	private static final LegacyEd25519KeyReader b64KeyReader;
 
 	static {
 		pause = SleepingPause.SLEEPING_PAUSE;
@@ -949,6 +952,24 @@ public class ServicesContext {
 					nodeLocalProperties());
 		}
 		return currentView;
+	}
+
+	public UniqTokenViewsManager uniqTokenViewsManager() {
+		if (uniqTokenViewsManager == null) {
+			final var shouldUseTreasuryWildcards =
+					properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+			if (shouldUseTreasuryWildcards) {
+				uniqTokenViewsManager = new UniqTokenViewsManager(
+						this::uniqueTokenAssociations,
+						this::uniqueOwnershipAssociations,
+						this::uniqueOwnershipTreasuryAssociations);
+			} else {
+				uniqTokenViewsManager = new UniqTokenViewsManager(
+						this::uniqueTokenAssociations,
+						this::uniqueOwnershipAssociations);
+			}
+		}
+		return uniqTokenViewsManager;
 	}
 
 	public HederaNumbers hederaNums() {
