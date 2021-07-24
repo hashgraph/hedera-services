@@ -396,15 +396,15 @@ public class VFCDataSourceTestUtils {
         }
     }
 
-    public static class LongVKey implements VKey, FastCopyable {
+    public static class LongVKeyImpl implements com.swirlds.fcmap.LongVKey, FastCopyable {
         public static final int SIZE_BYTES = Long.BYTES;
         private static final long CLASS_ID = 2544515330134674835L;
         private long value;
         private int hashCode;
 
-        public LongVKey() {}
+        public LongVKeyImpl() {}
 
-        public LongVKey(long value) {
+        public LongVKeyImpl(long value) {
             setValue(value);
         }
 
@@ -436,8 +436,8 @@ public class VFCDataSourceTestUtils {
             return byteBuffer.getLong() == value;
         }
 
-        public LongVKey copy() {
-            return new LongVKey(this.value);
+        public LongVKeyImpl copy() {
+            return new LongVKeyImpl(this.value);
         }
 
         public void release() {}
@@ -461,10 +461,10 @@ public class VFCDataSourceTestUtils {
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
-            } else if (!(o instanceof LongVKey)) {
+            } else if (!(o instanceof LongVKeyImpl)) {
                 return false;
             } else {
-                LongVKey that = (LongVKey)o;
+                LongVKeyImpl that = (LongVKeyImpl)o;
                 return this.value == that.value;
             }
         }
@@ -476,6 +476,11 @@ public class VFCDataSourceTestUtils {
                     ", hashCode=" + hashCode +
                     '}';
         }
+
+        @Override
+        public long getKeyAsLong() {
+            return value;
+        }
     }
 
     /**
@@ -486,6 +491,16 @@ public class VFCDataSourceTestUtils {
 
         public VFCDataSourceExceptionWrapper(VFCDataSource<K,V> dataSource) {
             this.dataSource = dataSource;
+        }
+
+        @Override
+        public Object startTransaction() {
+            return dataSource.startTransaction();
+        }
+
+        @Override
+        public void commitTransaction(Object handle) {
+            dataSource.commitTransaction(handle);
         }
 
         @Override

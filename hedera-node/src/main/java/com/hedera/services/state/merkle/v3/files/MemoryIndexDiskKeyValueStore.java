@@ -4,6 +4,7 @@ import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -20,10 +21,12 @@ public class MemoryIndexDiskKeyValueStore {
     private DataFile currentDataFileForWriting = null;
     private long currentDataFileForWritingKey;
 
-    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int blockSize) {
+    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int blockSize) throws IOException {
         this.storeDir = storeDir;
         this.storeName = storeName;
         this.blockSize = blockSize;
+        // create store dir
+        Files.createDirectories(storeDir);
     }
 
     public void close() throws IOException {
