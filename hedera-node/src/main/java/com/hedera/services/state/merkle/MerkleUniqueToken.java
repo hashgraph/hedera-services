@@ -123,10 +123,12 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueToken copy() {
+		setImmutable(true);
 		return new MerkleUniqueToken(owner, metadata, creationTime);
 	}
 
 	public void setOwner(EntityId owner) {
+		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
 		this.owner = owner;
 	}
 

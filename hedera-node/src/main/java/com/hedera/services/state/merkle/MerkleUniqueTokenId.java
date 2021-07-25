@@ -137,6 +137,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueTokenId copy() {
+		setImmutable(true);
 		return new MerkleUniqueTokenId(tokenId, serialNumber);
 	}
 }

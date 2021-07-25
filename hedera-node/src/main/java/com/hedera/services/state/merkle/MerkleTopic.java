@@ -189,6 +189,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 
 	@Override
 	public MerkleTopic copy() {
+		setImmutable(true);
 		return new MerkleTopic(this);
 	}
 
@@ -252,6 +253,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 			@Nullable TopicID topicId,
 			@Nullable Instant consensusTimestamp
 	) throws IOException {
+		throwIfImmutable("Cannot change this topic's running hash or sequence number if it's immutable.");
 		if (null == message) {
 			message = new byte[0];
 		}
@@ -298,6 +300,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setMemo(@Nullable String memo) {
+		throwIfImmutable("Cannot change this topic's memo if it's immutable.");
 		this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
 	}
 
@@ -310,6 +313,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setAdminKey(@Nullable JKey adminKey) {
+		throwIfImmutable("Cannot change this topic's admin key if it's immutable.");
 		this.adminKey = ((null != adminKey) && !adminKey.isEmpty()) ? adminKey : null;
 	}
 
@@ -322,6 +326,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setSubmitKey(@Nullable JKey submitKey) {
+		throwIfImmutable("Cannot change this topic's memo if it's immutable.");
 		this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
 	}
 
@@ -330,6 +335,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setAutoRenewDurationSeconds(long autoRenewDurationSeconds) {
+		throwIfImmutable("Cannot change this topic's auto renewal duration seconds if it's immutable.");
 		this.autoRenewDurationSeconds = autoRenewDurationSeconds;
 	}
 
@@ -342,6 +348,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setAutoRenewAccountId(@Nullable EntityId autoRenewAccountId) {
+		throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
 		this.autoRenewAccountId = ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
 				? autoRenewAccountId
 				: null;
@@ -356,6 +363,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setExpirationTimestamp(@Nullable RichInstant expiry) {
+		throwIfImmutable("Cannot change this topic's expiration timestamp if it's immutable.");
 		if ((null != expiry) && ((0 != expiry.getSeconds()) || (0 != expiry.getNanos()))) {
 			this.expirationTimestamp = expiry;
 		} else {
@@ -368,6 +376,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setDeleted(boolean deleted) {
+		throwIfImmutable("Cannot change this topic's status to be deleted if it's immutable.");
 		this.deleted = deleted;
 	}
 
@@ -376,6 +385,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setSequenceNumber(long sequenceNumber) {
+		throwIfImmutable("Cannot change this topic's sequence number if it's immutable.");
 		this.sequenceNumber = sequenceNumber;
 	}
 
@@ -388,6 +398,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	public void setRunningHash(@Nullable byte[] runningHash) {
+		throwIfImmutable("Cannot change this topic's running hash if it's immutable.");
 		this.runningHash = ((null != runningHash) && (0 != runningHash.length)) ? runningHash : null;
 	}
 }

@@ -70,6 +70,7 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleBlobMeta copy() {
+		setImmutable(true);
 		return new MerkleBlobMeta(path);
 	}
 
@@ -98,6 +99,7 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf {
 	}
 
 	public void setPath(String path) {
+		throwIfImmutable("Cannot change this blob's path if it's immutable.");
 		this.path = path;
 	}
 
