@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -60,7 +61,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.hedera.services.context.primitives.StateView.GONE_TOKEN;
+import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -181,19 +182,14 @@ class GetAccountInfoAnswerTest {
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);
+		final StateChildren children = new StateChildren();
+		children.setAccounts(accounts);
+		children.setTokenAssociations(tokenRels);
 		view = new StateView(
 				tokenStore,
 				scheduleStore,
-				StateView.EMPTY_TOPICS_SUPPLIER,
-				() -> accounts,
-				StateView.EMPTY_STORAGE_SUPPLIER,
-				StateView.EMPTY_UNIQUE_TOKENS_SUPPLIER,
-				() -> tokenRels,
-				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
-				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
-				StateView.EMPTY_UNIQUE_TOKEN_TREASURY_OWNERSHIP_SUPPLIER,
-				null,
 				nodeProps,
+				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 		optionValidator = mock(OptionValidator.class);
 
@@ -291,7 +287,7 @@ class GetAccountInfoAnswerTest {
 								fourthToken.getTokenNum(), false, false).asGrpcFor(deletedToken),
 						new RawTokenRelationship(
 								missingBalance, 0, 0,
-								missingToken.getTokenNum(), false, false).asGrpcFor(GONE_TOKEN)),
+								missingToken.getTokenNum(), false, false).asGrpcFor(REMOVED_TOKEN)),
 
 				info.getTokenRelationshipsList());
 	}

@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -89,11 +90,12 @@ class GetTxnRecordResourceUsageTest {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
+		final StateChildren children = new StateChildren();
 		view = new StateView(
-				StateView.EMPTY_TOPICS_SUPPLIER,
-				() -> accounts,
-				nodeProps,
 				null,
+				null,
+				nodeProps,
+				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		answerFunctions = mock(AnswerFunctions.class);

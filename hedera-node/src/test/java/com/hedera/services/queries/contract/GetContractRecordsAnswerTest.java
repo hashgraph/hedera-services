@@ -20,6 +20,7 @@ package com.hedera.services.queries.contract;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -68,11 +69,14 @@ class GetContractRecordsAnswerTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		accounts = mock(FCMap.class);
+		final StateChildren children = new StateChildren();
+		children.setAccounts(accounts);
 		view = new StateView(
-				StateView.EMPTY_TOPICS_SUPPLIER,
-				() -> accounts,
 				null,
 				null,
+				null,
+				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		optionValidator = mock(OptionValidator.class);

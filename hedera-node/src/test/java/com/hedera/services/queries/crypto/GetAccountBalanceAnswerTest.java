@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -144,19 +145,14 @@ public class GetAccountBalanceAnswerTest {
 
 		scheduleStore = mock(ScheduleStore.class);
 
+		final StateChildren children = new StateChildren();
+		children.setAccounts(accounts);
+		children.setTokenAssociations(tokenRels);
 		view = new StateView(
 				tokenStore,
 				scheduleStore,
-				StateView.EMPTY_TOPICS_SUPPLIER,
-				() -> accounts,
-				StateView.EMPTY_STORAGE_SUPPLIER,
-				StateView.EMPTY_UNIQUE_TOKENS_SUPPLIER,
-				() -> tokenRels,
-				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
-				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
-				StateView.EMPTY_UNIQUE_TOKEN_TREASURY_OWNERSHIP_SUPPLIER,
-				null,
 				nodeProps,
+				children,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		optionValidator = mock(OptionValidator.class);

@@ -924,16 +924,8 @@ public class ServicesContext {
 			stateViews = () -> new StateView(
 					tokenStore(),
 					scheduleStore(),
-					() -> queryableState.get().getTopics(),
-					() -> queryableState.get().getAccounts(),
-					() -> queryableState.get().getStorage(),
-					() -> queryableState.get().getUniqueTokens(),
-					() -> queryableState.get().getTokenAssociations(),
-					() -> queryableState.get().getUniqueTokenAssociations(),
-					() -> queryableState.get().getUniqueOwnershipAssociations(),
-					() -> queryableState.get().getUniqueOwnershipTreasuryAssociations(),
-					this::diskFs,
 					nodeLocalProperties(),
+					queryableState.get(),
 					uniqTokenViewFactory());
 		}
 		return stateViews;
@@ -944,16 +936,8 @@ public class ServicesContext {
 			currentView = new StateView(
 					tokenStore(),
 					scheduleStore(),
-					this::topics,
-					this::accounts,
-					this::storage,
-					this::uniqueTokens,
-					this::tokenAssociations,
-					this::uniqueTokenAssociations,
-					this::uniqueOwnershipAssociations,
-					this::uniqueOwnershipTreasuryAssociations,
-					this::diskFs,
 					nodeLocalProperties(),
+					workingState,
 					uniqTokenViewFactory());
 		}
 		return currentView;

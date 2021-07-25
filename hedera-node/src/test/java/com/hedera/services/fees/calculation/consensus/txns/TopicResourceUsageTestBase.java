@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -56,11 +57,13 @@ class TopicResourceUsageTestBase {
     void setup() throws Throwable {
         topics = mock(FCMap.class);
         nodeProps = mock(NodeLocalProperties.class);
+        final StateChildren children = new StateChildren();
+        children.setTopics(topics);
         view = new StateView(
-                () -> topics,
-                StateView.EMPTY_ACCOUNTS_SUPPLIER,
-                nodeProps,
+        		null,
                 null,
+                nodeProps,
+                children,
                 EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
     }
 

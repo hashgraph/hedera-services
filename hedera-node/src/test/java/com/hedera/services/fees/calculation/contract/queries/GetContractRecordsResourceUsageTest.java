@@ -51,8 +51,8 @@ class GetContractRecordsResourceUsageTest {
 	private void setup() throws Throwable {
 		usageEstimator = mock(SmartContractFeeBuilder.class);
 		view = new StateView(
-				StateView.EMPTY_TOPICS_SUPPLIER,
-				() -> null,
+				null,
+				null,
 				null,
 				null,
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);

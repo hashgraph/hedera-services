@@ -356,6 +356,8 @@ class ServicesStateTest {
 		// setup:
 		var throttling = mock(FunctionalityThrottling.class);
 		var nodeInfo = mock(NodeInfo.class);
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager, expiryManager, networkCtx);
 
@@ -384,6 +386,8 @@ class ServicesStateTest {
 	@Test
 	void doesntInitializeFilesIfStoreStillInitializing() {
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 
 		given(blobStore.isInitializing()).willReturn(true);
 		// and:
@@ -428,6 +432,8 @@ class ServicesStateTest {
 	@Test
 	void invokesMigrationsAsApropos() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -486,6 +492,8 @@ class ServicesStateTest {
 	@Test
 	void justWarnOnFailedDiskFsMigration() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -551,6 +559,8 @@ class ServicesStateTest {
 	@Test
 	void logsNonNullHashesFromSavedState() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
