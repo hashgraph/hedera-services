@@ -34,7 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
 public class PlatformSubmissionManager {
-	private static final Logger log = LogManager.getLogger(BasicSubmissionFlow.class);
+	private static final Logger log = LogManager.getLogger(PlatformSubmissionManager.class);
 
 	private final Platform platform;
 	private final RecordCache recordCache;

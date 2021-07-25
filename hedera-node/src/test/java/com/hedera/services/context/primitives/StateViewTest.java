@@ -252,7 +252,6 @@ class StateViewTest {
 				new MerkleTokenRelStatus(123L, false, true));
 
 		tokenStore = mock(TokenStore.class);
-		given(tokenStore.tokens()).willReturn(() -> mock(FCMap.class));
 		token = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,

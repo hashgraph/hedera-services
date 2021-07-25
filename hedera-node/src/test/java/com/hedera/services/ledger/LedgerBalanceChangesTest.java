@@ -45,6 +45,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -90,6 +91,7 @@ class LedgerBalanceChangesTest {
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -129,9 +131,14 @@ class LedgerBalanceChangesTest {
 		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
 		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
+		final var viewManager = new UniqTokenViewsManager(
+				() -> uniqueTokenOwnerships,
+				() -> uniqueOwnershipAssociations,
+				() -> uniqueOwnershipTreasuryAssociations);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
+				viewManager,
 				dynamicProperties,
 				() -> tokens,
 				() -> uniqueOwnershipAssociations,
@@ -221,9 +228,14 @@ class LedgerBalanceChangesTest {
 		tokens.clear();
 		tokens.put(anotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
 		tokens.put(yetAnotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
+		final var viewManager = new UniqTokenViewsManager(
+				() -> uniqueTokenOwnerships,
+				() -> uniqueOwnershipAssociations,
+				() -> uniqueOwnershipTreasuryAssociations);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
+				viewManager,
 				dynamicProperties,
 				() -> tokens,
 				() -> uniqueOwnershipAssociations,

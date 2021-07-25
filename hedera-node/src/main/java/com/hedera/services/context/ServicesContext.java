@@ -1692,10 +1692,9 @@ public class ServicesContext {
 			tokenStore = new HederaTokenStore(
 					ids(),
 					validator(),
+					uniqTokenViewsManager(),
 					globalDynamicProperties(),
 					this::tokens,
-					this::uniqueOwnershipAssociations,
-					this::uniqueOwnershipTreasuryAssociations,
 					tokenRelsLedger,
 					nftsLedger);
 		}

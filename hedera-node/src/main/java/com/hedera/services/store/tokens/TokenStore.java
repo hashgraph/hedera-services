@@ -21,7 +21,6 @@ package com.hedera.services.store.tokens;
  */
 
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
@@ -32,11 +31,9 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -82,8 +79,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
 
 	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
-
-	Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens();
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

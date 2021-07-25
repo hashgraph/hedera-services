@@ -24,7 +24,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.models.NftId;
@@ -34,11 +33,9 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_STORE;
@@ -115,11 +112,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens() {
 		throw new UnsupportedOperationException();
 	}
 
