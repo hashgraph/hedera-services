@@ -265,7 +265,7 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -1078,7 +1078,8 @@ public class ServicesContext {
 					this::uniqueOwnershipTreasuryAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels());
+					(BackingTokenRels) backingTokenRels(),
+					uniqTokenViewsManager());
 		}
 		return typedTokenStore;
 	}

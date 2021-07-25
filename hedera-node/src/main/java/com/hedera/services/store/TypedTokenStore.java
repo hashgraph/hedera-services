@@ -36,6 +36,7 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -88,6 +89,7 @@ public class TypedTokenStore {
 
 	/* Data Structures for Tokens of type Non-Fungible Unique  */
 	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipTreasuryAssociations;
@@ -104,12 +106,14 @@ public class TypedTokenStore {
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipTreasuryAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
-			BackingTokenRels backingTokenRels
+			BackingTokenRels backingTokenRels,
+			UniqTokenViewsManager uniqTokenViewsManager
 	) {
 		this.tokens = tokens;
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
+		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
@@ -315,43 +319,39 @@ public class TypedTokenStore {
 	public void persistToken(Token token) {
 		final var key = token.getId().asMerkle();
 		final var mutableToken = tokens.get().getForModify(key);
-		final var treasury = mutableToken.treasury().copy();
 		mapModelChangesToMutable(token, mutableToken);
 
-		final var currentUniqueTokens = uniqueTokens.get();
-		final var currentUniqueTokenAssociations = uniqueTokenAssociations.get();
-		final var currentUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
-		final var currentUniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations.get();
-
+		final var treasury = mutableToken.treasury();
 		if (token.hasMintedUniqueTokens()) {
-			for (var uniqueToken : token.mintedUniqueTokens()) {
-				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
-						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
-				final var merkleUniqueToken = new MerkleUniqueToken(
-						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
-				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
-				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				currentUniqueOwnershipTreasuryAssociations.associate(new EntityId(token.getId()), merkleUniqueTokenId);
-			}
+			persistMinted(token.mintedUniqueTokens(), treasury);
 		}
-		/* UniqueTokens are removed both from Wipe and Burn */
 		if (token.hasRemovedUniqueTokens()) {
-			for (var uniqueToken : token.removedUniqueTokens()) {
-				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
-						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
-				final var accountId = new EntityId(uniqueToken.getOwner());
-				currentUniqueTokens.remove(merkleUniqueTokenId);
-				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				if (uniqueToken.getOwner().equals(token.getTreasury().getId())) {
-					/* Disassociate the treasury owned token on Burn */
-					currentUniqueOwnershipTreasuryAssociations.disassociate(new EntityId(token.getId()), merkleUniqueTokenId);
-				} else {
-					/* Disassociate the account owned token on Wipe */
-					currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
-				}
-			}
+			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
 		transactionRecordService.includeChangesToToken(token);
+	}
+
+	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
+		final var curNfts = uniqueTokens.get();
+		for (var nft : nfts) {
+			final var merkleNftId = new MerkleUniqueTokenId(new EntityId(nft.getTokenId()), nft.getSerialNumber());
+			curNfts.remove(merkleNftId);
+			if (treasury.matches(nft.getOwner())) {
+				uniqTokenViewsManager.burnNotice(merkleNftId, treasury);
+			} else {
+				uniqTokenViewsManager.wipeNotice(merkleNftId, new EntityId(nft.getOwner()));
+			}
+		}
+	}
+
+	private void persistMinted(List<UniqueToken> nfts, EntityId treasury) {
+		final var curNfts = uniqueTokens.get();
+		for (var nft : nfts) {
+			final var merkleNftId = new MerkleUniqueTokenId(new EntityId(nft.getTokenId()), nft.getSerialNumber());
+			final var merkleNft = new MerkleUniqueToken(new EntityId(nft.getOwner()), nft.getMetadata(), nft.getCreationTime());
+			curNfts.put(merkleNftId, merkleNft);
+			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);
+		}
 	}
 
 	private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {

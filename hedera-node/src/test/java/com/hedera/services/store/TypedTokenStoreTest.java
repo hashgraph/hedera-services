@@ -38,6 +38,7 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -68,6 +69,8 @@ import static org.mockito.Mockito.verify;
 class TypedTokenStoreTest {
 	@Mock
 	private AccountStore accountStore;
+	@Mock
+	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
@@ -101,7 +104,8 @@ class TypedTokenStoreTest {
 				() -> uniqueTreasuryOwnerships,
 				() -> uniqueTokenAssociations,
 				() -> tokenRels,
-				backingTokenRels);
+				backingTokenRels,
+				uniqTokenViewsManager);
 	}
 
 	/* --- Token relationship loading --- */
@@ -334,15 +338,12 @@ class TypedTokenStoreTest {
 
 		// then:
 		assertEquals(expectedReplacementToken, merkleToken);
-		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
-		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
-		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
-		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
-		verify(uniqueTreasuryOwnerships).associate(new EntityId(tokenId), expectedPastUniqTokenId);
+		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId, autoRenewId.asEntityId());
+		verify(uniqTokenViewsManager).wipeNotice(expectedPastUniqTokenId, treasuryId);
 
 		// when:
 		modelToken = subject.loadToken(tokenId);
@@ -365,10 +366,8 @@ class TypedTokenStoreTest {
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
-		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId2);
-		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId2);
-		verify(uniqueTreasuryOwnerships).associate(new EntityId(tokenId), expectedPastUniqTokenId2);
-		verify(uniqueTreasuryOwnerships).disassociate(new EntityId(tokenId), expectedPastUniqTokenId2);
+		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId2, treasuryId);
+		verify(uniqTokenViewsManager).burnNotice(expectedPastUniqTokenId2, treasuryId);
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
