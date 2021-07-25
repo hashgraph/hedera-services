@@ -23,6 +23,7 @@ package com.hedera.services.queries.contract;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
@@ -67,7 +68,12 @@ class GetContractRecordsAnswerTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, null, null);
+		view = new StateView(
+				StateView.EMPTY_TOPICS_SUPPLIER,
+				() -> accounts,
+				null,
+				null,
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		optionValidator = mock(OptionValidator.class);
 

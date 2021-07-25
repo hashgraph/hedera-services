@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.topics.TopicFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -104,7 +105,12 @@ class GetMerkleTopicInfoAnswerTest {
 		given(topics.get(key)).willReturn(merkleTopic);
 
 		nodeProps = mock(NodeLocalProperties.class);
-		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, nodeProps, null);
+		view = new StateView(
+				() -> topics,
+				StateView.EMPTY_ACCOUNTS_SUPPLIER,
+				nodeProps,
+				null,
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);

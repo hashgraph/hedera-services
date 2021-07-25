@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.contract.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -49,7 +50,12 @@ class GetContractRecordsResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		usageEstimator = mock(SmartContractFeeBuilder.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> null, null, null);
+		view = new StateView(
+				StateView.EMPTY_TOPICS_SUPPLIER,
+				() -> null,
+				null,
+				null,
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		subject = new GetContractRecordsResourceUsage(usageEstimator);
 	}

@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -55,7 +56,12 @@ class TopicResourceUsageTestBase {
     void setup() throws Throwable {
         topics = mock(FCMap.class);
         nodeProps = mock(NodeLocalProperties.class);
-        view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, nodeProps, null);
+        view = new StateView(
+                () -> topics,
+                StateView.EMPTY_ACCOUNTS_SUPPLIER,
+                nodeProps,
+                null,
+                EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
     }
 
     protected void checkServicesFee(FeeData feeData, int extraRbh) {

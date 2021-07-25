@@ -133,6 +133,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
@@ -676,6 +677,7 @@ class ServicesContextTest {
 		assertThat(ctx.backingNfts(), instanceOf(BackingNfts.class));
 		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
 		assertThat(ctx.uniqTokenViewsManager(), instanceOf(UniqTokenViewsManager.class));
+		assertThat(ctx.uniqTokenViewFactory(), instanceOf(ConfigDrivenUniqTokenViewFactory.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

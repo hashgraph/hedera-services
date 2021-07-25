@@ -265,6 +265,8 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
@@ -564,6 +566,7 @@ public class ServicesContext {
 	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
+	private UniqTokenViewFactory uniqTokenViewFactory;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
@@ -930,7 +933,8 @@ public class ServicesContext {
 					() -> queryableState.get().getUniqueOwnershipAssociations(),
 					() -> queryableState.get().getUniqueOwnershipTreasuryAssociations(),
 					this::diskFs,
-					nodeLocalProperties());
+					nodeLocalProperties(),
+					uniqTokenViewFactory());
 		}
 		return stateViews;
 	}
@@ -949,7 +953,8 @@ public class ServicesContext {
 					this::uniqueOwnershipAssociations,
 					this::uniqueOwnershipTreasuryAssociations,
 					this::diskFs,
-					nodeLocalProperties());
+					nodeLocalProperties(),
+					uniqTokenViewFactory());
 		}
 		return currentView;
 	}
@@ -1074,9 +1079,6 @@ public class ServicesContext {
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
 					this::uniqueTokens,
-					this::uniqueOwnershipAssociations,
-					this::uniqueOwnershipTreasuryAssociations,
-					this::uniqueTokenAssociations,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels(),
 					uniqTokenViewsManager());
@@ -1411,6 +1413,15 @@ public class ServicesContext {
 			hfs.register(throttleDefsManager());
 		}
 		return hfs;
+	}
+
+	public UniqTokenViewFactory uniqTokenViewFactory() {
+		if (uniqTokenViewFactory == null) {
+			final var shouldUseTreasuryWildcards =
+					properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+			uniqTokenViewFactory = new ConfigDrivenUniqTokenViewFactory(shouldUseTreasuryWildcards);
+		}
+		return uniqTokenViewFactory;
 	}
 
 	/**

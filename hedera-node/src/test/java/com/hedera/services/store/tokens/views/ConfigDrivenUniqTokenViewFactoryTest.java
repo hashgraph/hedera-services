@@ -26,9 +26,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.ExplicitOwnersUniqTokenView;
-import com.hedera.services.store.tokens.views.TreasuryWildcardsUniqTokenView;
-import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
@@ -40,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.function.Supplier;
 
 @ExtendWith(MockitoExtension.class)
-class UniqTokenViewFactoryTest {
+class ConfigDrivenUniqTokenViewFactoryTest {
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
@@ -57,7 +54,7 @@ class UniqTokenViewFactoryTest {
 	@Test
 	void constructsExplicitIfNotUsingWildcards() {
 		// given:
-		final var subject = new UniqTokenViewFactory(false);
+		final var subject = new ConfigDrivenUniqTokenViewFactory(false);
 
 		// when:
 		final var view = subject.viewFor(
@@ -70,7 +67,7 @@ class UniqTokenViewFactoryTest {
 	@Test
 	void constructsTreasuryWildcardIfUsing() {
 		// given:
-		final var subject = new UniqTokenViewFactory(true);
+		final var subject = new ConfigDrivenUniqTokenViewFactory(true);
 
 		// when:
 		final var view = subject.viewFor(

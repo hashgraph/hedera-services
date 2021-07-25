@@ -28,6 +28,7 @@ import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -88,7 +89,12 @@ class GetTxnRecordResourceUsageTest {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
+		view = new StateView(
+				StateView.EMPTY_TOPICS_SUPPLIER,
+				() -> accounts,
+				nodeProps,
+				null,
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))

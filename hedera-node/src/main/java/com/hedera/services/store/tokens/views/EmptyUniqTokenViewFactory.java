@@ -11,13 +11,20 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
 
-@FunctionalInterface
-public interface UniqTokenViewFactory {
-	UniqTokenView viewFor(
+import static com.hedera.services.store.tokens.views.EmptyUniqueTokenView.EMPTY_UNIQUE_TOKEN_VIEW;
+
+public enum EmptyUniqTokenViewFactory implements UniqTokenViewFactory {
+	EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
+
+	@Override
+	public UniqTokenView viewFor(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType);
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType
+	) {
+		return EMPTY_UNIQUE_TOKEN_VIEW;
+	}
 }

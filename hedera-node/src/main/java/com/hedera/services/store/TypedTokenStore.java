@@ -39,11 +39,8 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -52,6 +49,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -80,19 +78,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * may need to be included in the record of the transaction.
  */
 public class TypedTokenStore {
-	static final Logger log = LogManager.getLogger(TypedTokenStore.class);
-
 	private final AccountStore accountStore;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final TransactionRecordService transactionRecordService;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
-
-	/* Data Structures for Tokens of type Non-Fungible Unique  */
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipTreasuryAssociations;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
@@ -102,17 +93,11 @@ public class TypedTokenStore {
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipTreasuryAssociations,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager
 	) {
 		this.tokens = tokens;
-		this.uniqueTokenAssociations = uniqueTokenAssociations;
-		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
-		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
@@ -348,7 +333,7 @@ public class TypedTokenStore {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
 			final var merkleNftId = new MerkleUniqueTokenId(new EntityId(nft.getTokenId()), nft.getSerialNumber());
-			final var merkleNft = new MerkleUniqueToken(new EntityId(nft.getOwner()), nft.getMetadata(), nft.getCreationTime());
+			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
 			curNfts.put(merkleNftId, merkleNft);
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);
 		}

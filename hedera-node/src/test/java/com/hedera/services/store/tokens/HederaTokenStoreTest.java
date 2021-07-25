@@ -326,6 +326,12 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void returnsExpectedTokens() {
+		// expect:
+		assertSame(tokens, subject.tokens().get());
+	}
+
+	@Test
 	void rebuildsAsExpected() {
 		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));

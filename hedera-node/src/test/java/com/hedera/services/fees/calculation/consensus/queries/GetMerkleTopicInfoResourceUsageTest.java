@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -64,7 +65,12 @@ class GetMerkleTopicInfoResourceUsageTest {
 	private void setup() throws Throwable {
 		topics = mock(FCMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, nodeProps, null);
+		view = new StateView(
+				() -> topics,
+				StateView.EMPTY_ACCOUNTS_SUPPLIER,
+				nodeProps,
+				null,
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

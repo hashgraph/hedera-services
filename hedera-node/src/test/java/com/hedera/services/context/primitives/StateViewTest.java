@@ -40,6 +40,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.UniqTokenView;
+import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -79,16 +81,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
@@ -168,6 +165,9 @@ class StateViewTest {
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private FCMap<MerkleEntityId, MerkleAccount> contracts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByType;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByOwner;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> treasuryNftsByType;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -180,6 +180,8 @@ class StateViewTest {
 	private MerkleAccount tokenAccount;
 	private NodeLocalProperties nodeProps;
 	private MerkleDiskFs diskFs;
+	private UniqTokenView uniqTokenView;
+	private UniqTokenViewFactory uniqTokenViewFactory;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -246,6 +248,7 @@ class StateViewTest {
 				new MerkleTokenRelStatus(123L, false, true));
 
 		tokenStore = mock(TokenStore.class);
+		given(tokenStore.tokens()).willReturn(() -> mock(FCMap.class));
 		token = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
@@ -267,7 +270,8 @@ class StateViewTest {
 
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
-		given(tokenStore.listOfTokensServed(nftOwnerId)).willReturn(Collections.singletonList(targetNftKey.tokenId().toGrpcTokenId()));
+		given(tokenStore.listOfTokensServed(nftOwnerId)).willReturn(
+				Collections.singletonList(targetNftKey.tokenId().toGrpcTokenId()));
 		given(tokenStore.get(tokenId)).willReturn(token);
 		given(tokenStore.get(IdUtils.asToken("1.2.3"))).willReturn(token);
 
@@ -307,21 +311,13 @@ class StateViewTest {
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
-		final var uniqueTokenAssociations = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(tokenId),
-				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
-		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(nftTokenId),
-				new MerkleUniqueTokenId(treasuryNftKey.tokenId(), 5));
+		nftsByOwner = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
+		nftsByType = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
+		treasuryNftsByType = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
+		uniqTokenView = mock(UniqTokenView.class);
+		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
 
-		final var uniqueTokenAccountOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(nftOwnerId),
-				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
-		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(treasuryOwnerId),
-				new MerkleUniqueTokenId(treasuryNftKey.tokenId(), 5));
-
-		final var uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		uniqueTokenTreasuryOwnerships.associate(targetNftKey.tokenId(),
-				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
+		given(uniqTokenViewFactory.viewFor(any(), any(), any(), any(), any(), any())).willReturn(uniqTokenView);
 
 		subject = new StateView(
 				tokenStore,
@@ -331,11 +327,12 @@ class StateViewTest {
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> uniqueTokens,
 				() -> tokenRels,
-				() -> uniqueTokenAssociations,
-				() -> uniqueTokenAccountOwnerships,
-				() -> uniqueTokenTreasuryOwnerships,
+				() -> nftsByType,
+				() -> nftsByOwner,
+				() -> treasuryNftsByType,
 				() -> diskFs,
-				nodeProps);
+				nodeProps,
+				uniqTokenViewFactory);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -345,6 +342,11 @@ class StateViewTest {
 	@AfterEach
 	void cleanup() {
 		StateView.tokenRelsFn = StateView::tokenRels;
+	}
+
+	@Test
+	void usesFactoryForUniqTokensView() {
+		assertSame(subject.getUniqTokenView(), uniqTokenView);
 	}
 
 	@Test
@@ -380,7 +382,7 @@ class StateViewTest {
 	}
 
 	@Test
-	void infoForAccountNftsReturnsEmpty() {
+	void infoForMissingAccountNftsReturnsEmpty() {
 		var result = subject.infoForAccountNfts(invalidOwnerId, 0, 1);
 		assertTrue(result.isEmpty());
 	}
@@ -692,8 +694,8 @@ class StateViewTest {
 				() -> topics,
 				() -> contracts,
 				nodeProps,
-				() -> diskFs
-		);
+				() -> diskFs,
+				uniqTokenViewFactory);
 
 		// when:
 		var actualTopics = subject.topics();
@@ -841,7 +843,7 @@ class StateViewTest {
 
 	@Test
 	void accountNftsCountWorks() {
-		assertEquals(2, subject.accountNftsCount(nftOwnerId));
+		assertEquals(2, subject.numNftsOwnedBy(nftOwnerId));
 	}
 
 	@Test
@@ -1027,24 +1029,20 @@ class StateViewTest {
 
 	@Test
 	void infoForTokenNftsWorks() {
-		var expectedResult = new ArrayList<>();
-		expectedResult.add(TokenNftInfo.newBuilder()
-				.setAccountID(treasuryNftKey.tokenId().toGrpcAccountId())
-				.setCreationTime(treasuryNft.getCreationTime().toGrpc())
-				.setNftID(NftID.newBuilder()
-						.setTokenID(treasuryNftId.getTokenID())
-						.setSerialNumber(treasuryNftId.getSerialNumber())
-						.build())
-				.setMetadata(ByteString.copyFrom(treasuryNft.getMetadata()))
-				.build());
+		// setup:
+		final List<TokenNftInfo> mockInfo = new ArrayList<>();
 
-		var result = subject.infosForTokenNfts(nftTokenId, 0, 1);
+		given(uniqTokenView.typedAssociations(nftTokenId, 3L, 4L)).willReturn(mockInfo);
+
+		// when:
+		var result = subject.infosForTokenNfts(nftTokenId, 3L, 4L);
+
 		assertFalse(result.isEmpty());
-		assertEquals(expectedResult, result.get());
+		assertSame(mockInfo, result.get());
 	}
 
 	@Test
-	void infoForTokenNftsReturnsEmpty() {
+	void infoForMissingTokenNftsReturnsEmpty() {
 		var result = subject.infosForTokenNfts(missingTokenId, 0, 1);
 		assertTrue(result.isEmpty());
 	}
@@ -1067,7 +1065,8 @@ class StateViewTest {
 	private final MerkleUniqueTokenId treasuryNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 5);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
 			fromJava(nftCreation));
-	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId), nftMeta,
+	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),
+			nftMeta,
 			fromJava(nftCreation));
 
 	private CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);

@@ -41,7 +41,6 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -76,12 +76,6 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
-	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnerships;
-	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
@@ -100,9 +94,6 @@ class TypedTokenStoreTest {
 				transactionRecordService,
 				() -> tokens,
 				() -> uniqueTokens,
-				() -> uniqueTokenOwnerships,
-				() -> uniqueTreasuryOwnerships,
-				() -> uniqueTokenAssociations,
 				() -> tokenRels,
 				backingTokenRels,
 				uniqTokenViewsManager);
@@ -278,18 +269,18 @@ class TypedTokenStoreTest {
 	void savesTokenAsExpected() {
 		// setup:
 		final var mintedSerialNo = 33L;
-		final var burnedSerialNo = 33L;
+		final var wipedSerialNo = 33L;
 		final var mintedSerialNo2 = 44;
-		final var burnedSerialNo2 = 44;
+		final var burnedSerialNo = 44;
 		final var nftMeta = "abcdefgh".getBytes();
 		final var treasuryId = new EntityId(0, 0, treasuryAccountNum);
 		final var tokenEntityId = new EntityId(0, 0, tokenNum);
 		final var creationTime = new RichInstant(1_234_567L, 8);
 		final var modelTreasuryId = new Id(0, 0, treasuryAccountNum);
-		final var mintedToken = new UniqueToken(tokenId, mintedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		final var mintedToken = new UniqueToken(tokenId, mintedSerialNo, creationTime, Id.DEFAULT, nftMeta);
+		final var wipedToken = new UniqueToken(tokenId, wipedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		final var mintedToken2 = new UniqueToken(tokenId, mintedSerialNo2, creationTime, Id.DEFAULT, nftMeta);
 		final var burnedToken = new UniqueToken(tokenId, burnedSerialNo, creationTime, modelTreasuryId, nftMeta);
-		final var mintedToken2 = new UniqueToken(tokenId, mintedSerialNo2, creationTime, modelTreasuryId, nftMeta);
-		final var burnedToken2 = new UniqueToken(tokenId, burnedSerialNo2, creationTime, modelTreasuryId, nftMeta);
 		// and:
 		final var expectedReplacementToken = new MerkleToken(
 				expiry, tokenSupply * 2, 0,
@@ -315,9 +306,9 @@ class TypedTokenStoreTest {
 		// and:
 		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
 		final var expectedNewUniqTokenId2 = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo2);
-		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
-		final var expectedPastUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo);
-		final var expectedPastUniqTokenId2 = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo2);
+		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
+		final var expectedPastUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, wipedSerialNo);
+		final var expectedPastUniqTokenId2 = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -332,7 +323,7 @@ class TypedTokenStoreTest {
 		modelToken.mintedUniqueTokens().add(mintedToken);
 		modelToken.setIsDeleted(false);
 		modelToken.setExpiry(expiry);
-		modelToken.removedUniqueTokens().add(burnedToken);
+		modelToken.removedUniqueTokens().add(wipedToken);
 		// and:
 		subject.persistToken(modelToken);
 
@@ -355,7 +346,7 @@ class TypedTokenStoreTest {
 		modelToken.mintedUniqueTokens().add(mintedToken2);
 		modelToken.setIsDeleted(false);
 		modelToken.setExpiry(expiry);
-		modelToken.removedUniqueTokens().add(burnedToken2);
+		modelToken.removedUniqueTokens().add(burnedToken);
 		// and:
 		subject.persistToken(modelToken);
 

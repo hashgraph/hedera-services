@@ -163,6 +163,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
+	public Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens() {
+		return tokens;
+	}
+
+	@Override
 	public void rebuildViews() {
 		knownTreasuries.clear();
 		rebuildViewOfKnownTreasuries();
