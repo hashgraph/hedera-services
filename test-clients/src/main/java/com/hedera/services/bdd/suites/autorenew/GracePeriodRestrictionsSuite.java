@@ -172,9 +172,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.entityMemo("NOPE")
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						cryptoUpdate(detachedAccount)
-								.memo("Can't pass precheck with past expiry")
+								.memo("Can't update with past expiry")
 								.expiring(certainlyPast)
-								.hasPrecheck(INVALID_EXPIRATION_TIME),
+								.hasKnownStatus(INVALID_EXPIRATION_TIME),
 						cryptoUpdate(detachedAccount)
 								.memo("CAN extend expiry")
 								.expiring(certainlyDistant)
@@ -211,7 +211,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.hasPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						getAccountInfo("0.0.2")
 								.payingWith(detachedAccount)
-								.hasCostAnswerPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						getAccountInfo("0.0.2")
 								.payingWith(detachedAccount)
 								.nodePayment(666L)
