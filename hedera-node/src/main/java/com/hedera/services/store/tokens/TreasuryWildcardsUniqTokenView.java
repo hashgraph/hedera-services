@@ -5,28 +5,19 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.utils.GrpcUtils;
+import com.hedera.services.store.tokens.utils.MultiSourceRange;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class TreasuryWildcardsUniqTokenView implements UniqTokenView {
+public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	private final TokenStore tokenStore;
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
-	private final Supplier<FCOneToManyRelation<EntityId,MerkleUniqueTokenId>> nftsByType;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType;
-
-	private GrpcUtils grpcUtils = new GrpcUtils();
 
 	public TreasuryWildcardsUniqTokenView(
 			TokenStore tokenStore,
@@ -36,9 +27,8 @@ public class TreasuryWildcardsUniqTokenView implements UniqTokenView {
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType
 	) {
-		this.nfts = nfts;
-		this.tokens = tokens;
-		this.nftsByType = nftsByType;
+		super(tokens, nfts, nftsByType);
+
 		this.nftsByOwner = nftsByOwner;
 		this.treasuryNftsByType = treasuryNftsByType;
 
@@ -46,53 +36,36 @@ public class TreasuryWildcardsUniqTokenView implements UniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> typedAssociations(TokenID type, long start, long end) {
-		final var tokenId = EntityId.fromGrpcTokenId(type);
-		final var treasuryGrpcId = grpcTreasuryOf(tokens.get(), tokenId);
-		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type, treasuryGrpcId);
-	}
-
-	@Override
 	public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
-		throw new AssertionError("Not implemented!");
-	}
+		final var accountId = EntityId.fromGrpcAccountId(owner);
+		final var curNftsByOwner = nftsByOwner.get();
+		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, curNftsByOwner.getCount(accountId));
 
-	void setGrpcUtils(GrpcUtils grpcUtils) {
-		this.grpcUtils = grpcUtils;
-	}
-
-	private List<TokenNftInfo> accumulatedInfo(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> relation,
-			EntityId key,
-			int start,
-			int end,
-			@Nullable TokenID fixedType,
-			@Nullable AccountID fixedTreasury
-	) {
-		final var curNfts = nfts.get();
-		final var curTokens = tokens.get();
-		final List<TokenNftInfo> answer = new ArrayList<>();
-		relation.get(key, start, end).forEachRemaining(nftId -> {
-			final var nft = curNfts.get(nftId);
-			if (nft == null) {
-				throw new ConcurrentModificationException(nftId + " was removed during query answering");
-			}
-			final var type = (fixedType != null) ? fixedType : nftId.tokenId().toGrpcTokenId();
-			final var treasury = (fixedTreasury != null)
-					? fixedTreasury
-					: grpcTreasuryOf(curTokens, nftId.tokenId());
-			final var info = grpcUtils.reprOf(type, nftId.serialNumber(), nft, treasury);
-			answer.add(info);
-		});
+		final var range = multiSourceRange.rangeForCurrentSource();
+		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range[0], range[1], null, owner);
+		if (!multiSourceRange.isRequestedRangeExhausted()) {
+			tryToCompleteWithTreasuryOwned(owner, accountId, multiSourceRange, answer);
+		}
 		return answer;
 	}
 
-	private AccountID grpcTreasuryOf(FCMap<MerkleEntityId, MerkleToken> curTokens, EntityId tokenId) {
-		final var token = curTokens.get(tokenId.asMerkle());
-		if (token == null) {
-			throw new ConcurrentModificationException(
-					"Token " + tokenId.toAbbrevString() + " was removed during query answering");
+	private void tryToCompleteWithTreasuryOwned(
+			AccountID owner,
+			EntityId accountId,
+			MultiSourceRange multiSourceRange,
+			List<TokenNftInfo> answer
+	) {
+		final var curTreasuryNftsByType = treasuryNftsByType.get();
+		final var allServed = tokenStore.listOfTokensServed(owner);
+		for (var served : allServed) {
+			final var tokenId = EntityId.fromGrpcTokenId(served);
+			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(tokenId));
+			final var range = multiSourceRange.rangeForCurrentSource();
+			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range[0], range[1], served, owner);
+			answer.addAll(infoHere);
+			if (multiSourceRange.isRequestedRangeExhausted()) {
+				break;
+			}
 		}
-		return token.treasury().toGrpcAccountId();
 	}
 }

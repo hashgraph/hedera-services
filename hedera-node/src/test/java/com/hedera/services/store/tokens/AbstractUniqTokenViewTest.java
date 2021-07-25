@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -30,7 +31,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 
 @ExtendWith(MockitoExtension.class)
-class ExplicitOwnersUniqTokenViewTest {
+class AbstractUniqTokenViewTest {
 	@Mock
 	private GrpcUtils grpcUtils;
 	@Mock
@@ -41,40 +42,75 @@ class ExplicitOwnersUniqTokenViewTest {
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByType;
-	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByOwner;
 
-	private ExplicitOwnersUniqTokenView subject;
+	private AbstractUniqTokenView subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ExplicitOwnersUniqTokenView(() -> tokens, () -> nfts, () -> nftsByType, () -> nftsByOwner);
+		subject = new AbstractUniqTokenView(() -> tokens, () -> nfts, () -> nftsByType) {
+			@Override
+			public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
+				throw new UnsupportedOperationException();
+			}
+		};
 	}
 
 	@Test
-	void interpolatesAccountIdForWildcard() {
+	void interpolatesTreasuryIdForWildcard() {
 		setupFirstMockRange();
 		subject.setGrpcUtils(grpcUtils);
 
-		given(nftsByOwner.get(someOwnerId, start, end)).willReturn(firstMockRange);
+		given(nftsByType.get(someTokenId, start, end)).willReturn(firstMockRange);
+		given(tokens.get(someTokenId.asMerkle())).willReturn(someToken);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(grpcUtils.reprOf(
 				someTokenId.toGrpcTokenId(),
 				someSerial,
 				someExplicitNft,
-				someOwnerId.toGrpcAccountId())).willReturn(mockExplicitInfo);
+				treasuryId.toGrpcAccountId())).willReturn(mockExplicitInfo);
 		given(grpcUtils.reprOf(
-				otherTokenId.toGrpcTokenId(),
+				someTokenId.toGrpcTokenId(),
 				wildcardSerial,
 				wildcardNft,
-				someOwnerId.toGrpcAccountId())).willReturn(mockInterpolatedInfo);
+				treasuryId.toGrpcAccountId())).willReturn(mockInterpolatedInfo);
 
 		// when:
-		final var actual = subject.ownedAssociations(someOwnerId.toGrpcAccountId(), start, end);
+		final var actual = subject.typedAssociations(someTokenId.toGrpcTokenId(), start, end);
 
 		// then:
 		Assertions.assertEquals(List.of(mockExplicitInfo, mockInterpolatedInfo), actual);
+	}
+
+	@Test
+	void throwsCmeIfIdHasNoMatchingTokenInTokenAssociations() {
+		setupFirstMockRange();
+		// and:
+		final var desired = "MerkleUniqueTokenId{tokenId=EntityId{shard=6, realm=6, num=6}, serialNumber=1} " +
+				"was removed during query answering";
+
+		given(nftsByType.get(someTokenId, start, end)).willReturn(firstMockRange);
+		given(tokens.get(someTokenId.asMerkle())).willReturn(someToken);
+
+		// when:
+		final var e = Assertions.assertThrows(ConcurrentModificationException.class, () ->
+				subject.typedAssociations(someTokenId.toGrpcTokenId(), start, end));
+
+		// then:
+		Assertions.assertEquals(desired, e.getMessage());
+	}
+
+	@Test
+	void throwsCmeIfIdHasNoMatchingToken() {
+		// setup:
+		final var desired = "Token 6.6.6 was removed during query answering";
+
+		// when:
+		final var e = Assertions.assertThrows(ConcurrentModificationException.class, () ->
+				subject.typedAssociations(someTokenId.toGrpcTokenId(), start, end));
+
+		// then:
+		Assertions.assertEquals(desired, e.getMessage());
 	}
 
 	private void setupFirstMockRange() {
@@ -94,12 +130,16 @@ class ExplicitOwnersUniqTokenViewTest {
 	private final byte[] wildMeta = "...caution to the wind, then!".getBytes(StandardCharsets.UTF_8);
 	private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
 	private final EntityId someTokenId = new EntityId(6, 6, 6);
-	private final EntityId otherTokenId = new EntityId(7, 7, 7);
 	private final EntityId someOwnerId = new EntityId(1, 2, 3);
+	private final EntityId treasuryId = new EntityId(1, 2, 3);
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(someOwnerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueTokenId someExplicitNftId = new MerkleUniqueTokenId(someTokenId, someSerial);
-	private final MerkleUniqueTokenId wildcardNftId = new MerkleUniqueTokenId(otherTokenId, wildcardSerial);
+	private final MerkleUniqueTokenId wildcardNftId = new MerkleUniqueTokenId(someTokenId, wildcardSerial);
+	private final MerkleToken someToken = new MerkleToken(
+			1_234_567L, 1, 2,
+			"THREE", "Four",
+			true, false, treasuryId);
 	final TokenNftInfo mockExplicitInfo = TokenNftInfo.newBuilder()
 			.setNftID(NftID.getDefaultInstance())
 			.setAccountID(AccountID.getDefaultInstance())

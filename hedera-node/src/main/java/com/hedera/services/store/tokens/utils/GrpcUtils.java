@@ -13,10 +13,6 @@ import javax.annotation.Nullable;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 public class GrpcUtils {
-	public TokenNftInfo reprOf(TokenID type, long serialNo, MerkleUniqueToken nft) {
-		return doRepr(type, serialNo, nft, null);
-	}
-
 	public TokenNftInfo reprOf(TokenID type, long serialNo, MerkleUniqueToken nft, AccountID treasury) {
 		return doRepr(type, serialNo, nft, treasury);
 	}

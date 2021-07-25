@@ -8,14 +8,14 @@ public class MultiSourceRange {
 	private int currentSourceSize;
 	private int currentSourceStart;
 	private int endAchieved;
-	private boolean currentSourceExhausted;
+	private boolean currentSourceIsExhausted;
 
 	public MultiSourceRange(int start, int end, int firstSourceSize) {
 		this.end = end;
 		this.start = start;
 		this.currentSourceSize = firstSourceSize;
 
-		currentSourceExhausted = false;
+		currentSourceIsExhausted = false;
 		currentSourceStart = 0;
 		endAchieved = start;
 	}
@@ -37,7 +37,7 @@ public class MultiSourceRange {
 		} else {
 			ans = EMPTY_RANGE;
 		}
-		currentSourceExhausted = true;
+		currentSourceIsExhausted = true;
 		return ans;
 	}
 
@@ -46,7 +46,7 @@ public class MultiSourceRange {
 
 		currentSourceStart += currentSourceSize;
 		currentSourceSize = newSourceSize;
-		currentSourceExhausted = false;
+		currentSourceIsExhausted = false;
 	}
 
 	private void throwIfRangeExhausted() {
@@ -56,7 +56,7 @@ public class MultiSourceRange {
 	}
 
 	private void throwIfSourceExhausted() {
-		if (currentSourceExhausted) {
+		if (currentSourceIsExhausted) {
 			throw new IllegalStateException("The current source is already exhausted");
 		}
 	}

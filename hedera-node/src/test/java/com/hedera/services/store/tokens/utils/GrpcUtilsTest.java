@@ -15,31 +15,6 @@ class GrpcUtilsTest {
 	private final GrpcUtils subject = new GrpcUtils();
 
 	@Test
-	void createsExpectedForNonTreasury() {
-		// given:
-		final var nonTreasuryNft = new MerkleUniqueToken(nonTreasuryOwner, nonTreasuryMeta, creationTime);
-
-		// when:
-		final var actual = subject.reprOf(token.toGrpcTokenId(), nonTreasurySerial, nonTreasuryNft);
-
-		// then:
-		Assertions.assertEquals(expectedNonTreasury, actual);
-	}
-
-	@Test
-	void createsExpectedForTreasuryNotUsingWildcard() {
-		// given:
-		final var treasuryNft = new MerkleUniqueToken(treasury, treasuryMeta, creationTime);
-
-		// when:
-		final var actual = subject.reprOf(
-				token.toGrpcTokenId(), treasurySerial, treasuryNft);
-
-		// then:
-		Assertions.assertEquals(expectedTreasury, actual);
-	}
-
-	@Test
 	void createsExpectedForTreasuryUsingWildcard() {
 		// given:
 		final var treasuryNft = new MerkleUniqueToken(wildcard, treasuryMeta, creationTime);
@@ -50,22 +25,6 @@ class GrpcUtilsTest {
 
 		// then:
 		Assertions.assertEquals(expectedTreasury, actual);
-	}
-
-	@Test
-	void failsFastIfWildcardIsUsedWithoutTreasuryInfo() {
-		// setup:
-		final var desiredMsg = "6.6.6.2 has wildcard owner, but no treasury information was provided";
-
-		// given:
-		final var treasuryNft = new MerkleUniqueToken(wildcard, treasuryMeta, creationTime);
-
-		// when:
-		final var e = Assertions.assertThrows(IllegalArgumentException.class, ()-> subject.reprOf(
-				token.toGrpcTokenId(), treasurySerial, treasuryNft));
-
-		// then:
-		Assertions.assertEquals(desiredMsg, e.getMessage());
 	}
 
 	private final long nonTreasurySerial = 1L;

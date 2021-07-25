@@ -29,7 +29,7 @@ public class UniqTokenViewFactory {
 			return new TreasuryWildcardsUniqTokenView(
 					tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
 		} else {
-			return new ExplicitOwnersUniqTokenView(nfts, nftsByType, nftsByOwner);
+			return new ExplicitOwnersUniqTokenView(tokens, nfts, nftsByType, nftsByOwner);
 		}
 	}
 }
