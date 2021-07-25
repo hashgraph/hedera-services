@@ -141,8 +141,6 @@ class LedgerBalanceChangesTest {
 				viewManager,
 				dynamicProperties,
 				() -> tokens,
-				() -> uniqueOwnershipAssociations,
-				() -> uniqueOwnershipTreasuryAssociations,
 				tokenRelsLedger,
 				nftsLedger);
 
@@ -238,8 +236,6 @@ class LedgerBalanceChangesTest {
 				viewManager,
 				dynamicProperties,
 				() -> tokens,
-				() -> uniqueOwnershipAssociations,
-				() -> uniqueOwnershipTreasuryAssociations,
 				tokenRelsLedger,
 				nftsLedger);
 

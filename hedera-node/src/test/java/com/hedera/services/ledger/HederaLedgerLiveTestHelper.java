@@ -103,8 +103,6 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 				viewManager,
 				new MockGlobalDynamicProps(),
 				() -> tokens,
-				() -> uniqueTokenAccountOwnerships,
-				() -> uniqueTokenTreasuryOwnerships,
 				tokenRelsLedger,
 				nftsLedger);
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);

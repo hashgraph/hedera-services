@@ -658,6 +658,7 @@ public class ServicesContext {
 		newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
 		newQueryableStateChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		newQueryableStateChildren.setDiskFs(state.diskFs());
 
 		queryableState.set(newQueryableStateChildren);
 	}

@@ -2251,7 +2251,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 01846-PR1861-ExtractTokenViewsMgr
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

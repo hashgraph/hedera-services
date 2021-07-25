@@ -28,14 +28,10 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
 public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
-	private static final Logger log = LogManager.getLogger(ConfigDrivenUniqTokenViewFactory.class);
-
 	private final boolean shouldUseTreasuryWildcards;
 
 	public ConfigDrivenUniqTokenViewFactory(boolean shouldUseTreasuryWildcards) {
@@ -50,7 +46,6 @@ public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType
 	) {
-		log.info("Constructing the UniqTokenView with  shouldUseTreasuryWildcards={}", shouldUseTreasuryWildcards);
 		if (shouldUseTreasuryWildcards) {
 			return new TreasuryWildcardsUniqTokenView(
 					tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);

@@ -21,7 +21,7 @@ package com.hedera.services.store.tokens.views.utils;
  */
 
 public class MultiSourceRange {
-	public static final int[] EMPTY_RANGE = new int[0];
+	public static final int[] EMPTY_RANGE = { 0, 0 };
 
 	private final int start;
 	private final int end;
