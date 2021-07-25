@@ -36,11 +36,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class UniqTokenViewsManagerTest {
@@ -223,6 +225,9 @@ class UniqTokenViewsManagerTest {
 		// and:
 		verify(nftsByType).associate(bTokenId, bOneNftId);
 		verify(nftsByOwner).associate(firstOwner, bOneNftId);
+		// and:
+		verifyNoMoreInteractions(nftsByType);
+		verifyNoMoreInteractions(treasuryNftsByType);
 	}
 
 	@Test
@@ -234,6 +239,9 @@ class UniqTokenViewsManagerTest {
 
 		// and:
 		givenWellKnownNfts();
+		// and:
+		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
+		given(tokens.get(bTokenId.asMerkle())).willReturn(bToken);
 
 		// when:
 		subject.rebuildNotice(tokens, nfts);
@@ -245,8 +253,8 @@ class UniqTokenViewsManagerTest {
 		verify(nftsByType).associate(bTokenId, bOneNftId);
 		verify(nftsByOwner).associate(firstOwner, bOneNftId);
 		// and:
-		verify(nftsByType).associate(cTokenId, missingTokenNftId);
-		verify(nftsByOwner).associate(secondOwner, missingTokenNftId);
+		verifyNoMoreInteractions(nftsByType);
+		verifyNoMoreInteractions(nftsByOwner);
 	}
 
 	private void givenWellKnownNfts() {
@@ -285,7 +293,7 @@ class UniqTokenViewsManagerTest {
 			false, true, secondOwner);
 	private byte[] someMeta = "SOMETHING".getBytes(StandardCharsets.UTF_8);
 	private byte[] otherMeta = "ELSE".getBytes(StandardCharsets.UTF_8);
-	private final MerkleUniqueToken firstOwnedANft = new MerkleUniqueToken(firstOwner, someMeta, MISSING_INSTANT);
+	private final MerkleUniqueToken firstOwnedANft = new MerkleUniqueToken(MISSING_ENTITY_ID, someMeta, MISSING_INSTANT);
 	private final MerkleUniqueToken firstOwnedBNft = new MerkleUniqueToken(firstOwner, otherMeta, MISSING_INSTANT);
 	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(secondOwner, otherMeta, MISSING_INSTANT);
 }

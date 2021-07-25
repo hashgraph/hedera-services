@@ -29,6 +29,7 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public class UniqTokenViewsManager {
@@ -62,7 +63,7 @@ public class UniqTokenViewsManager {
 		if (isUsingTreasuryWildcards()) {
 			rebuildUsingTreasuryWildcards(tokens, nfts);
 		} else {
-			rebuildUsingExplicitOwners(nfts);
+			rebuildUsingExplicitOwners(tokens, nfts);
 		}
 	}
 
@@ -131,33 +132,37 @@ public class UniqTokenViewsManager {
 			FCMap<MerkleEntityId, MerkleToken> tokens,
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
 	) {
+		final var curTreasuryNftsByType = curTreasuryNftsByType();
+		rebuildDelegate(tokens, nfts, (treasuryId, nftId) -> curTreasuryNftsByType.associate(nftId.tokenId(), nftId));
+	}
+
+	private void rebuildUsingExplicitOwners(
+			FCMap<MerkleEntityId, MerkleToken> tokens,
+			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
+	) {
+		final var curNftsByOwner = nftsByOwner.get();
+		rebuildDelegate(tokens, nfts, (treasuryId, nftId) -> curNftsByOwner.associate(treasuryId, nftId));
+	}
+
+	private void rebuildDelegate(
+			FCMap<MerkleEntityId, MerkleToken> tokens,
+			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts,
+			BiConsumer<EntityId, MerkleUniqueTokenId> treasuryOwnedAction
+	) {
 		final var curNftsByType = nftsByType.get();
 		final var curNftsByOwner = nftsByOwner.get();
-		final var curTreasuryNftsByType = curTreasuryNftsByType();
-
 		nfts.forEach((nftId, nft) -> {
 			final var tokenId = nftId.tokenId();
 			final var token = tokens.get(tokenId.asMerkle());
 			if (token == null) {
 				return;
 			}
-			curNftsByType.associate(tokenId, nftId);
-			final var ownerId = nft.getOwner();
-			final var isTreasuryOwned = token.treasury().equals(ownerId);
-			if (isTreasuryOwned) {
-				curTreasuryNftsByType.associate(tokenId, nftId);
-			} else {
-				curNftsByOwner.associate(ownerId, nftId);
-			}
-		});
-	}
-
-	private void rebuildUsingExplicitOwners(FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts) {
-		final var curNftsByType = nftsByType.get();
-		final var curNftsByOwner = nftsByOwner.get();
-		nfts.forEach((nftId, nft) -> {
 			curNftsByType.associate(nftId.tokenId(), nftId);
-			curNftsByOwner.associate(nft.getOwner(), nftId);
+			if (nft.isTreasuryOwned()) {
+				treasuryOwnedAction.accept(token.treasury(), nftId);
+			} else {
+				curNftsByOwner.associate(nft.getOwner(), nftId);
+			}
 		});
 	}
 }
