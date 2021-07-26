@@ -190,12 +190,12 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 						tokenAssociate(ANOTHER_USER, NFTdeleted),
 						mintToken(NFTdeleted, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
 						cryptoTransfer(
-								TokenMovement.movingUnique(1L, NFTdeleted)
+								TokenMovement.movingUnique(NFTdeleted, 1L)
 										.between(TOKEN_TREASURY, ANOTHER_USER)),
 						tokenDelete(NFTdeleted)
 				).then(
 						cryptoTransfer(
-								TokenMovement.movingUnique(2L, NFTdeleted)
+								TokenMovement.movingUnique(NFTdeleted, 2L)
 										.between(TOKEN_TREASURY, ANOTHER_USER))
 								.hasKnownStatus(TOKEN_WAS_DELETED)
 				);
@@ -440,7 +440,7 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 						mintToken(NFTdeleted,
 								List.of(ByteString.copyFromUtf8(FIRST_MEMO), ByteString.copyFromUtf8(SECOND_MEMO))),
 						cryptoTransfer(
-								movingUnique(2L, NFTdeleted).between(TOKEN_TREASURY, ANOTHER_USER)
+								movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER)
 						),
 						getAccountInfo(ANOTHER_USER).hasOwnedNfts(1),
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
@@ -478,7 +478,7 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 						mintToken(NFTdeleted,
 								List.of(ByteString.copyFromUtf8(FIRST_MEMO), ByteString.copyFromUtf8(SECOND_MEMO))),
 						cryptoTransfer(
-								movingUnique(2L, NFTdeleted).between(TOKEN_TREASURY, ANOTHER_USER)
+								movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER)
 						),
 						getAccountInfo(ANOTHER_USER).hasOwnedNfts(1),
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
