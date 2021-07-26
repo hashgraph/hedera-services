@@ -36,6 +36,9 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
  * Represents the ID of {@link MerkleUniqueTokenId}
  */
 public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
+	private static final long IDENTITY_CODE_SERIAL_NUM_MASK = (1L << 32) - 1;
+	private static final long IDENTITY_CODE_TOKEN_NUM_MASK = IDENTITY_CODE_SERIAL_NUM_MASK << 32;
+
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x52dd6afda193e8bcL;
 
@@ -65,11 +68,18 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	}
 
 	/**
-	 * Gives a "compressed" code
-	 * @return
+	 * Gives a "compressed" code to identify this unique token id.
+	 *
+	 * @return the code for this unique token id
 	 */
 	public Long identityCode() {
-		throw new AssertionError("Not implemented!");
+		return (tokenId.num() << 32) | serialNumber;
+	}
+
+	public static MerkleUniqueTokenId fromIdentityCode(long code) {
+		final var tokenNum = (code & IDENTITY_CODE_TOKEN_NUM_MASK) >>> 32;
+		final var serialNum = code & IDENTITY_CODE_SERIAL_NUM_MASK;
+		return new MerkleUniqueTokenId(new EntityId(0, 0, tokenNum), serialNum);
 	}
 
 	/* --- Object --- */

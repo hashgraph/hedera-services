@@ -24,7 +24,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -58,8 +57,26 @@ class MerkleUniqueTokenIdTest {
 		subject = new MerkleUniqueTokenId(tokenId, serialNumber);
 	}
 
-	@AfterEach
-	void cleanup() {
+	@Test
+	void reconstructsExpectedFromIdentityCode() {
+		// setup:
+		Long code = Long.valueOf((3L << 32) | 4L);
+		// and:
+		final var expected = new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
+
+		// given:
+		final var actual = MerkleUniqueTokenId.fromIdentityCode(code);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void identityCodeWorks() {
+		// expect:
+		assertEquals(
+				(3L << 32) | 1L,
+				subject.identityCode());
 	}
 
 	@Test
