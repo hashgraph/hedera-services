@@ -507,15 +507,15 @@ public class StateView {
 		return stateChildren == null ? emptyFcm() : stateChildren.getTokens();
 	}
 
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByType() {
+	FCOneToManyRelation<Integer, Long> nftsByType() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueTokenAssociations();
 	}
 
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByOwner() {
+	FCOneToManyRelation<Integer, Long> nftsByOwner() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipAssociations();
 	}
 
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> treasuryNftsByType() {
+	FCOneToManyRelation<Integer, Long> treasuryNftsByType() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipTreasuryAssociations();
 	}
 

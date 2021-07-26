@@ -55,9 +55,9 @@ class TreasuryWildcardsUniqTokenViewTest {
 	@Mock
 	private GrpcUtils grpcUtils;
 	@Mock
-	private Iterator<MerkleUniqueTokenId> firstMockRange;
+	private Iterator<Long> firstMockRange;
 	@Mock
-	private Iterator<MerkleUniqueTokenId> secondMockRange;
+	private Iterator<Long> secondMockRange;
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
@@ -65,11 +65,11 @@ class TreasuryWildcardsUniqTokenViewTest {
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<EntityId,MerkleUniqueTokenId> nftsByType;
+	private FCOneToManyRelation<Integer, Long> nftsByType;
 	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByOwner;
+	private FCOneToManyRelation<Integer, Long> nftsByOwner;
 	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> treasuryNftsByType;
+	private FCOneToManyRelation<Integer, Long> treasuryNftsByType;
 	
 	private TreasuryWildcardsUniqTokenView subject;
 
@@ -84,8 +84,8 @@ class TreasuryWildcardsUniqTokenViewTest {
 		setupFirstMockRange();
 		subject.setGrpcUtils(grpcUtils);
 
-		given(nftsByOwner.getCount(someOwnerId)).willReturn(end + 1);
-		given(nftsByOwner.get(someOwnerId, start, end)).willReturn(firstMockRange);
+		given(nftsByOwner.getCount(someOwnerId.identityCode())).willReturn(end + 1);
+		given(nftsByOwner.get(someOwnerId.identityCode(), start, end)).willReturn(firstMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(grpcUtils.reprOf(
@@ -112,11 +112,11 @@ class TreasuryWildcardsUniqTokenViewTest {
 		setupSecondMockRange();
 		subject.setGrpcUtils(grpcUtils);
 
-		given(nftsByOwner.getCount(someOwnerId)).willReturn(end - 1);
-		given(treasuryNftsByType.getCount(treasuryTokenId)).willReturn(1);
+		given(nftsByOwner.getCount(someOwnerId.identityCode())).willReturn(end - 1);
+		given(treasuryNftsByType.getCount(treasuryTokenId.identityCode())).willReturn(1);
 		// and:
-		given(nftsByOwner.get(someOwnerId, start, end - 1)).willReturn(firstMockRange);
-		given(treasuryNftsByType.get(treasuryTokenId, 0, 1)).willReturn(secondMockRange);
+		given(nftsByOwner.get(someOwnerId.identityCode(), start, end - 1)).willReturn(firstMockRange);
+		given(treasuryNftsByType.get(treasuryTokenId.identityCode(), 0, 1)).willReturn(secondMockRange);
 		// and:
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
@@ -150,17 +150,17 @@ class TreasuryWildcardsUniqTokenViewTest {
 
 	private void setupFirstMockRange() {
 		willAnswer(invocationOnMock -> {
-			final Consumer<MerkleUniqueTokenId> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(someExplicitNftId);
-			consumer.accept(wildcardNftId);
+			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
+			consumer.accept(someExplicitNftId.identityCode());
+			consumer.accept(wildcardNftId.identityCode());
 			return null;
 		}).given(firstMockRange).forEachRemaining(any());
 	}
 
 	private void setupSecondMockRange() {
 		willAnswer(invocationOnMock -> {
-			final Consumer<MerkleUniqueTokenId> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(otherWildcardNftId);
+			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
+			consumer.accept(otherWildcardNftId.identityCode());
 			return null;
 		}).given(secondMockRange).forEachRemaining(any());
 	}
@@ -174,11 +174,11 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private final byte[] wildMeta = "...caution to the wind, then!".getBytes(StandardCharsets.UTF_8);
 	private final byte[] om = "Post-haste!".getBytes(StandardCharsets.UTF_8);
 	private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
-	private final EntityId someTokenId = new EntityId(6, 6, 6);
-	private final EntityId otherTokenId = new EntityId(7, 7, 7);
-	private final EntityId treasuryTokenId = new EntityId(8, 8, 8);
-	private final EntityId yTreasuryTokenId = new EntityId(9, 9, 9);
-	private final EntityId someOwnerId = new EntityId(1, 2, 3);
+	private final EntityId someTokenId = new EntityId(0, 0, 6);
+	private final EntityId otherTokenId = new EntityId(0, 0, 7);
+	private final EntityId treasuryTokenId = new EntityId(0, 0, 8);
+	private final EntityId yTreasuryTokenId = new EntityId(0, 0, 9);
+	private final EntityId someOwnerId = new EntityId(0, 0, 3);
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(someOwnerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueToken otherWildNft = new MerkleUniqueToken(MISSING_ENTITY_ID, om, someCreationTime);

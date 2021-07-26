@@ -166,12 +166,12 @@ class ServicesStateTest {
 	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokensCopy;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociationsCopy;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociationsCopy;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociationsCopy;
+	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociationsCopy;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociationsCopy;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociationsCopy;
 	private MerkleDiskFs diskFs;
 	private MerkleDiskFs diskFsCopy;
 	private RecordsRunningHashLeaf runningHashLeaf;

@@ -54,15 +54,15 @@ class ExplicitOwnersUniqTokenViewTest {
 	@Mock
 	private GrpcUtils grpcUtils;
 	@Mock
-	private Iterator<MerkleUniqueTokenId> firstMockRange;
+	private Iterator<Long> firstMockRange;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByType;
+	private FCOneToManyRelation<Integer, Long> nftsByType;
 	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByOwner;
+	private FCOneToManyRelation<Integer, Long> nftsByOwner;
 
 	private ExplicitOwnersUniqTokenView subject;
 
@@ -76,7 +76,7 @@ class ExplicitOwnersUniqTokenViewTest {
 		setupFirstMockRange();
 		subject.setGrpcUtils(grpcUtils);
 
-		given(nftsByOwner.get(someOwnerId, start, end)).willReturn(firstMockRange);
+		given(nftsByOwner.get(someOwnerId.identityCode(), start, end)).willReturn(firstMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(grpcUtils.reprOf(
@@ -99,9 +99,9 @@ class ExplicitOwnersUniqTokenViewTest {
 
 	private void setupFirstMockRange() {
 		willAnswer(invocationOnMock -> {
-			final Consumer<MerkleUniqueTokenId> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(someExplicitNftId);
-			consumer.accept(wildcardNftId);
+			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
+			consumer.accept(someExplicitNftId.identityCode());
+			consumer.accept(wildcardNftId.identityCode());
 			return null;
 		}).given(firstMockRange).forEachRemaining(any());
 	}
@@ -113,9 +113,9 @@ class ExplicitOwnersUniqTokenViewTest {
 	private final byte[] someMeta = "As you wish...".getBytes(StandardCharsets.UTF_8);
 	private final byte[] wildMeta = "...caution to the wind, then!".getBytes(StandardCharsets.UTF_8);
 	private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
-	private final EntityId someTokenId = new EntityId(6, 6, 6);
-	private final EntityId otherTokenId = new EntityId(7, 7, 7);
-	private final EntityId someOwnerId = new EntityId(1, 2, 3);
+	private final EntityId someTokenId = new EntityId(0, 0, 6);
+	private final EntityId otherTokenId = new EntityId(0, 0, 7);
+	private final EntityId someOwnerId = new EntityId(0, 0, 3);
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(someOwnerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueTokenId someExplicitNftId = new MerkleUniqueTokenId(someTokenId, someSerial);

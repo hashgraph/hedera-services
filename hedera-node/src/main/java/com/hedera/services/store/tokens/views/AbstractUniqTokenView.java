@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,14 +50,14 @@ import java.util.function.Supplier;
 public abstract class AbstractUniqTokenView implements UniqTokenView {
 	protected final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	protected final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
-	protected final Supplier<FCOneToManyRelation<EntityId,MerkleUniqueTokenId>> nftsByType;
+	protected final Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
 
 	protected GrpcUtils grpcUtils = new GrpcUtils();
 
 	public AbstractUniqTokenView(
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType
 	) {
 		this.tokens = tokens;
 		this.nfts = nfts;
@@ -79,16 +79,22 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	 * If any unique token has the sentinel owner id {@code 0.0.0}, looks up the actual
 	 * treasury id and completes the description accordingly.
 	 *
-	 * @param relation the source of the key's associated unique tokens
-	 * @param key the key of interest
-	 * @param start the inclusive start of the desired sub-list
-	 * @param end the exclusive end of the desired sub-list
-	 * @param fixedType if not null, the type to which all the unique tokens are known to belong
-	 * @param fixedTreasury if not null, the treasury which all sentinel owner id's should be replaced with
+	 * @param relation
+	 * 		the source of the key's associated unique tokens
+	 * @param key
+	 * 		the key of interest
+	 * @param start
+	 * 		the inclusive start of the desired sub-list
+	 * @param end
+	 * 		the exclusive end of the desired sub-list
+	 * @param fixedType
+	 * 		if not null, the type to which all the unique tokens are known to belong
+	 * @param fixedTreasury
+	 * 		if not null, the treasury which all sentinel owner id's should be replaced with
 	 * @return the requested list
 	 */
 	protected List<TokenNftInfo> accumulatedInfo(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> relation,
+			FCOneToManyRelation<Integer, Long> relation,
 			EntityId key,
 			int start,
 			int end,
@@ -98,7 +104,8 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		final var curNfts = nfts.get();
 		final var curTokens = tokens.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
-		relation.get(key, start, end).forEachRemaining(nftId -> {
+		relation.get(key.identityCode(), start, end).forEachRemaining(nftIdCode -> {
+			final var nftId = MerkleUniqueTokenId.fromIdentityCode(nftIdCode);
 			final var nft = curNfts.get(nftId);
 			if (nft == null) {
 				throw new ConcurrentModificationException(nftId + " was removed during query answering");

@@ -19,19 +19,25 @@ public interface UniqTokenViewFactory {
 	/**
 	 * Returns a queryable view of the unique tokens contained in the given sources of token-related information.
 	 *
-	 * @param tokenStore the store used to manipulate token types in the world state
-	 * @param tokens the token types in the world state
-	 * @param nfts the unique tokens in the world state
-	 * @param nftsByType the unique tokens associated to each non-fungible unique token type
-	 * @param nftsByOwner the unique tokens associated to owning account
-	 * @param treasuryNftsByType the unique tokens associated to their token type's treasury
+	 * @param tokenStore
+	 * 		the store used to manipulate token types in the world state
+	 * @param tokens
+	 * 		the token types in the world state
+	 * @param nfts
+	 * 		the unique tokens in the world state
+	 * @param nftsByType
+	 * 		the unique tokens associated to each non-fungible unique token type
+	 * @param nftsByOwner
+	 * 		the unique tokens associated to owning account
+	 * @param treasuryNftsByType
+	 * 		the unique tokens associated to their token type's treasury
 	 * @return a queryable view of the unique tokens in the given sources
 	 */
 	UniqTokenView viewFor(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType);
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType);
 }

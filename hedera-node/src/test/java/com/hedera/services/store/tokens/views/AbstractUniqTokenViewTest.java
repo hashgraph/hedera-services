@@ -55,13 +55,13 @@ class AbstractUniqTokenViewTest {
 	@Mock
 	private GrpcUtils grpcUtils;
 	@Mock
-	private Iterator<MerkleUniqueTokenId> firstMockRange;
+	private Iterator<Long> firstMockRange;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByType;
+	private FCOneToManyRelation<Integer, Long> nftsByType;
 
 	private AbstractUniqTokenView subject;
 
@@ -80,7 +80,7 @@ class AbstractUniqTokenViewTest {
 		setupFirstMockRange();
 		subject.setGrpcUtils(grpcUtils);
 
-		given(nftsByType.get(someTokenId, start, end)).willReturn(firstMockRange);
+		given(nftsByType.get(someTokenId.identityCode(), start, end)).willReturn(firstMockRange);
 		given(tokens.get(someTokenId.asMerkle())).willReturn(someToken);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
@@ -106,10 +106,10 @@ class AbstractUniqTokenViewTest {
 	void throwsCmeIfIdHasNoMatchingTokenInTokenAssociations() {
 		setupFirstMockRange();
 		// and:
-		final var desired = "MerkleUniqueTokenId{tokenId=EntityId{shard=6, realm=6, num=6}, serialNumber=1} " +
+		final var desired = "MerkleUniqueTokenId{tokenId=EntityId{shard=0, realm=0, num=6}, serialNumber=1} " +
 				"was removed during query answering";
 
-		given(nftsByType.get(someTokenId, start, end)).willReturn(firstMockRange);
+		given(nftsByType.get(someTokenId.identityCode(), start, end)).willReturn(firstMockRange);
 		given(tokens.get(someTokenId.asMerkle())).willReturn(someToken);
 
 		// when:
@@ -123,7 +123,7 @@ class AbstractUniqTokenViewTest {
 	@Test
 	void throwsCmeIfIdHasNoMatchingToken() {
 		// setup:
-		final var desired = "Token 6.6.6 was removed during query answering";
+		final var desired = "Token 0.0.6 was removed during query answering";
 
 		// when:
 		final var e = Assertions.assertThrows(ConcurrentModificationException.class, () ->
@@ -135,9 +135,9 @@ class AbstractUniqTokenViewTest {
 
 	private void setupFirstMockRange() {
 		willAnswer(invocationOnMock -> {
-			final Consumer<MerkleUniqueTokenId> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(someExplicitNftId);
-			consumer.accept(wildcardNftId);
+			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
+			consumer.accept(someExplicitNftId.identityCode());
+			consumer.accept(wildcardNftId.identityCode());
 			return null;
 		}).given(firstMockRange).forEachRemaining(any());
 	}
@@ -149,9 +149,9 @@ class AbstractUniqTokenViewTest {
 	private final byte[] someMeta = "As you wish...".getBytes(StandardCharsets.UTF_8);
 	private final byte[] wildMeta = "...caution to the wind, then!".getBytes(StandardCharsets.UTF_8);
 	private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
-	private final EntityId someTokenId = new EntityId(6, 6, 6);
-	private final EntityId someOwnerId = new EntityId(1, 2, 3);
-	private final EntityId treasuryId = new EntityId(1, 2, 3);
+	private final EntityId someTokenId = new EntityId(0, 0, 6);
+	private final EntityId someOwnerId = new EntityId(0, 0, 3);
+	private final EntityId treasuryId = new EntityId(0, 0, 3);
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(someOwnerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueTokenId someExplicitNftId = new MerkleUniqueTokenId(someTokenId, someSerial);

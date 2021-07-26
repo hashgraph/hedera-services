@@ -123,10 +123,6 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 		return serialNumber;
 	}
 
-	public NftId asNftId() {
-		return new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
-	}
-
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
