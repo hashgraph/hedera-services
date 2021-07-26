@@ -76,15 +76,15 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccount(),
-//						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						transferToTopicReturnsInvalidAccountId(),
-//						tokenTransferFeesScaleAsExpected(),
-//						okToSetInvalidPaymentHeaderForCostAnswer(),
-//						baseCryptoTransferFeeChargedAsExpected()
+						transferWithMissingAccountGetsInvalidAccountId(),
+						vanillaTransferSucceeds(),
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						specialAccountsBalanceCheck(),
+						transferToTopicReturnsInvalidAccountId(),
+						tokenTransferFeesScaleAsExpected(),
+						okToSetInvalidPaymentHeaderForCostAnswer(),
+						baseCryptoTransferFeeChargedAsExpected()
 				}
 		);
 	}
@@ -431,7 +431,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec transferWithMissingAccount() {
+	private HapiApiSpec transferWithMissingAccountGetsInvalidAccountId() {
 		return defaultHapiSpec("TransferWithMissingAccount")
 				.given(
 						cryptoCreate("payeeSigReq").receiverSigRequired(true)
