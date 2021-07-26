@@ -1466,6 +1466,8 @@ public class ServicesContext {
 
 	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
 		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
+		final var shouldUseTreasuryWildcards =
+				properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
 
 		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
 				/* Crypto */
@@ -1524,7 +1526,8 @@ public class ServicesContext {
 								txnCtx(), globalDynamicProperties()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
-								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
+								shouldUseTreasuryWildcards, validator(), tokenStore(),
+								ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFeeScheduleUpdate,
 						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenFreezeAccount,

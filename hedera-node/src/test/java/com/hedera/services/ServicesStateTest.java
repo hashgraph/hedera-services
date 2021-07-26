@@ -896,6 +896,7 @@ class ServicesStateTest {
 		// and given:
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 
 		// when:
 		subject.archive();
@@ -903,6 +904,7 @@ class ServicesStateTest {
 		// then:
 		verify(uniqueTokenAssociations).release();
 		verify(uniqueOwnershipAssociations).release();
+		verify(uniqueOwnershipTreasuryAssociations).release();
 	}
 
 	@Test
@@ -913,6 +915,7 @@ class ServicesStateTest {
 		// and given:
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 
 		// when:
 		subject.onRelease();
@@ -920,6 +923,7 @@ class ServicesStateTest {
 		// then:
 		verify(uniqueTokenAssociations).release();
 		verify(uniqueOwnershipAssociations).release();
+		verify(uniqueOwnershipTreasuryAssociations).release();
 	}
 
 	@Test

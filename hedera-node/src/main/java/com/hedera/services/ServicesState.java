@@ -479,6 +479,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
+	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnershipAssociations) {
+		this.uniqueTreasuryOwnedAssociations = uniqueTreasuryOwnershipAssociations;
+	}
+
 	private void releaseFcotmrIfNonNull() {
 		if (uniqueTokenAssociations != null) {
 			uniqueTokenAssociations.release();
@@ -486,9 +490,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (uniqueOwnershipAssociations != null) {
 			uniqueOwnershipAssociations.release();
 		}
-	}
-
-	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnershipAssociations) {
-		this.uniqueTreasuryOwnedAssociations = uniqueTreasuryOwnershipAssociations;
+		if (uniqueTreasuryOwnedAssociations != null) {
+			uniqueTreasuryOwnedAssociations.release();
+		}
 	}
 }
