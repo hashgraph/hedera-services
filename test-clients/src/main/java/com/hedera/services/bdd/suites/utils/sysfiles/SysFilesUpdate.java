@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBy
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
@@ -265,7 +266,8 @@ public class SysFilesUpdate extends HapiApiSuite {
 				var pojoRates = mapper.readValue(new File(readableFile), ExchangeRatesPojo.class);
 				bytes = pojoRates.toProto().toByteArray();
 			} else if (target == SystemFile.FEE_SCHEDULE) {
-				bytes = FeeScheduleDeJson.fromJson(readableFile).toByteArray();
+				final var literal = java.nio.file.Files.readString(Paths.get(readableFile));
+				bytes = FeesJsonToProtoSerde.parseFeeScheduleFromJson(literal).toByteArray();
 			} else {
 				var jutilConfig = new Properties();
 				jutilConfig.load(java.nio.file.Files.newInputStream(Paths.get(readableFile)));
