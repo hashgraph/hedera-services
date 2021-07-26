@@ -22,7 +22,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -65,7 +65,7 @@ public class RenewalHelper {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 
 	/* Only needed for interoperability, will be removed during refactor */
-	private final BackingAccounts backingAccounts;
+	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	private MerkleAccount lastClassifiedAccount = null;
 	private MerkleEntityId lastClassifiedEntityId;
@@ -77,7 +77,7 @@ public class RenewalHelper {
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
-			BackingAccounts backingAccounts
+			BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		this.shard = hederaNumbers.shard();
 		this.realm = hederaNumbers.realm();
