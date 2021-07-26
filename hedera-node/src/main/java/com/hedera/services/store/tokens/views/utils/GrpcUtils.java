@@ -36,6 +36,10 @@ import javax.annotation.Nullable;
  * treasury ownership.
  */
 public class GrpcUtils {
+	private GrpcUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	/**
 	 * Build a query-friendly representation of the given unique token,
 	 * using the given treasury account id to substitute for the sentinel
