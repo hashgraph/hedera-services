@@ -142,4 +142,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 		return creationTime;
 	}
 
+	public boolean isTreasuryOwned() {
+		return EntityId.MISSING_ENTITY_ID.equals(owner);
+	}
 }

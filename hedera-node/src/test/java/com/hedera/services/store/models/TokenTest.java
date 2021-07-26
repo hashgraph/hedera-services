@@ -61,7 +61,7 @@ class TokenTest {
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
 	private final Id id = new Id(1, 2, 3);
-	private final Id treasuryId = new Id(2, 2, 3);
+	private final Id treasuryId = new Id(0, 0, 0);
 	private final Id nonTreasuryId = new Id(3, 2, 3);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
@@ -430,7 +430,7 @@ class TokenTest {
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		subject.setSupplyKey(someKey);
 		final var ownershipTracker = mock(OwnershipTracker.class);
-		final var metadata = List.of(ByteString.copyFromUtf8("kur"));
+		final var metadata = List.of(ByteString.copyFromUtf8("memo"));
 		final List<ByteString> emptyMetadata = List.of();
 
 		assertThrows(InvalidTransactionException.class, () -> {
@@ -478,7 +478,7 @@ class TokenTest {
 	@Test
 	void toStringWorks() {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id{shard=2, realm=2, num=3}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
+				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
 				"currentSerialNumber=0}";
 
