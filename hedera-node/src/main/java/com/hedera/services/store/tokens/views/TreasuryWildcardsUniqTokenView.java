@@ -79,7 +79,7 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, curNftsByOwner.getCount(accountId));
 
 		final var range = multiSourceRange.rangeForCurrentSource();
-		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range[0], range[1], null, owner);
+		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range.getLeft(), range.getRight(), null, owner);
 		if (!multiSourceRange.isRequestedRangeExhausted()) {
 			tryToCompleteWithTreasuryOwned(owner, multiSourceRange, answer);
 		}
@@ -97,7 +97,7 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 			final var tokenId = EntityId.fromGrpcTokenId(served);
 			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(tokenId));
 			final var range = multiSourceRange.rangeForCurrentSource();
-			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range[0], range[1], served, owner);
+			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range.getLeft(), range.getRight(), served, owner);
 			answer.addAll(infoHere);
 			if (multiSourceRange.isRequestedRangeExhausted()) {
 				break;
