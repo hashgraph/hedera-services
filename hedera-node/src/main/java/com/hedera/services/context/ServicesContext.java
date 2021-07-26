@@ -1712,7 +1712,7 @@ public class ServicesContext {
 		if (entityAutoRenewal == null) {
 			final var helper = new RenewalHelper(
 					tokenStore(), hederaNums(), globalDynamicProperties(),
-					this::tokens, this::accounts, this::tokenAssociations, (BackingAccounts) backingAccounts());
+					this::tokens, this::accounts, this::tokenAssociations, backingAccounts());
 			final var recordHelper = new RenewalRecordsHelper(
 					this, recordStreamManager(), globalDynamicProperties());
 			final var renewalProcess = new RenewalProcess(
