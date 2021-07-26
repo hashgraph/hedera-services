@@ -92,7 +92,7 @@ class TreasuryWildcardsUniqTokenViewTest {
 				someTokenId.toGrpcTokenId(),
 				someSerial,
 				someExplicitNft,
-				someOwnerId.toGrpcAccountId())).willReturn(mockExplicitInfo);
+				null)).willReturn(mockExplicitInfo);
 		given(grpcUtils.reprOf(
 				otherTokenId.toGrpcTokenId(),
 				wildcardSerial,
@@ -126,7 +126,7 @@ class TreasuryWildcardsUniqTokenViewTest {
 				someTokenId.toGrpcTokenId(),
 				someSerial,
 				someExplicitNft,
-				someOwnerId.toGrpcAccountId())).willReturn(mockExplicitInfo);
+				null)).willReturn(mockExplicitInfo);
 		given(grpcUtils.reprOf(
 				otherTokenId.toGrpcTokenId(),
 				wildcardSerial,
