@@ -101,7 +101,7 @@ public class GetAccountNftInfosAnswer implements AnswerService {
             }
         }
 
-        var nftCount = view.accountNftsCount(id);
+        var nftCount = view.numNftsOwnedBy(id);
         if (
                 accountNftInfoQuery.getStart() < 0 ||
                 accountNftInfoQuery.getEnd() < 0 ||

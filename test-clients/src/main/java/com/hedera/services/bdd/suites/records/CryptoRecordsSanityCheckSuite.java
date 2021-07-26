@@ -100,8 +100,8 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						getAccountBalance(firstOwner).logged(),
 						cryptoTransfer(
 								movingHbar(1_234_567L).between(secondOwner, firstOwner),
-								movingUnique(1L, uniqueToken)
-								.between(firstOwner, secondOwner))
+								movingUnique(uniqueToken, 1L)
+										.between(firstOwner, secondOwner))
 								.via(xferRecord)
 				).then(
 						getTxnRecord(mintRecord).logged(),
