@@ -125,13 +125,13 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 						tokenAssociate(firstUser, uniqueTokenA),
 						grantTokenKyc(uniqueTokenA, firstUser),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(tokenTreasury, firstUser)),
+								movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
 						sleepFor(3_500L),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(2, uniqueTokenA).between(tokenTreasury, firstUser))
+								movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						revokeTokenKyc(uniqueTokenA, firstUser)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
@@ -176,7 +176,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(2, uniqueTokenA).between(tokenTreasury, firstUser))
+								movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
 								.hasKnownStatus(ACCOUNT_DELETED),
 						revokeTokenKyc(uniqueTokenA, firstUser)
 								.hasKnownStatus(ACCOUNT_DELETED),
@@ -226,7 +226,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 						tokenAssociate(firstUser, uniqueTokenA),
 						grantTokenKyc(uniqueTokenA, firstUser),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(tokenTreasury, firstUser))
+								movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
 				)
 				.when(
 						sleepFor(10_500L),
@@ -235,12 +235,12 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 				.then(
 						getAccountInfo(firstUser).logged(),
 						cryptoTransfer(
-								movingUnique(2, uniqueTokenA).between(tokenTreasury, firstUser))
+								movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						cryptoCreate(secondUser),
 						tokenAssociate(secondUser, uniqueTokenA),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(firstUser, secondUser))
+								movingUnique(uniqueTokenA, 1L).between(firstUser, secondUser))
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						tokenFreeze(uniqueTokenA, firstUser)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
@@ -284,16 +284,16 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 						tokenAssociate(firstUser, uniqueTokenA),
 						grantTokenKyc(uniqueTokenA, firstUser),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(tokenTreasury, firstUser)),
+								movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
 						tokenAssociate(secondUser, uniqueTokenA),
 						revokeTokenKyc(uniqueTokenA, firstUser)
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(2, uniqueTokenA).between(tokenTreasury, firstUser)
+								movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser)
 						).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(firstUser, secondUser)
+								movingUnique(uniqueTokenA, 1L).between(firstUser, secondUser)
 						).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
 						wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
 								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN)
@@ -329,16 +329,16 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 						tokenAssociate(firstUser, uniqueTokenA),
 						grantTokenKyc(uniqueTokenA, firstUser),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(tokenTreasury, firstUser)),
+								movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
 						tokenAssociate(secondUser, uniqueTokenA),
 						tokenFreeze(uniqueTokenA, firstUser)
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(2, uniqueTokenA).between(tokenTreasury, firstUser)
+								movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser)
 						).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(firstUser, secondUser)
+								movingUnique(uniqueTokenA, 1L).between(firstUser, secondUser)
 						).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
 						wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
@@ -383,7 +383,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 						wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						cryptoTransfer(
-								movingUnique(1, uniqueTokenA).between(tokenTreasury, firstUser)
+								movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)
 						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				);
 	}
