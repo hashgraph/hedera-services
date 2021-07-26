@@ -38,6 +38,15 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Provides implementation support for a {@link UniqTokenView} via a method able to
+ * list all the unique tokens that can be retrieved from a {@link FCOneToManyRelation}
+ * in a single {@link FCOneToManyRelation#get(Object, int, int)} call.
+ *
+ * When {@link MerkleUniqueToken#isTreasuryOwned()} returns true for a unique token,
+ * this class looks up the owner from an injected {@code Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens},
+ * and builds the {@link TokenNftInfo} accordingly.
+ */
 public abstract class AbstractUniqTokenView implements UniqTokenView {
 	protected final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	protected final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
@@ -62,6 +71,22 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type, treasuryGrpcId);
 	}
 
+	/**
+	 * Given a {@link FCOneToManyRelation} that associates the given key to zero or
+	 * more unique tokens, returns the requested sub-list of the {@link TokenNftInfo}
+	 * descriptions of those unique tokens.
+	 *
+	 * If any unique token has the sentinel owner id {@code 0.0.0}, looks up the actual
+	 * treasury id and completes the description accordingly.
+	 *
+	 * @param relation the source of the key's associated unique tokens
+	 * @param key the key of interest
+	 * @param start the inclusive start of the desired sub-list
+	 * @param end the exclusive end of the desired sub-list
+	 * @param fixedType if not null, the type to which all the unique tokens are known to belong
+	 * @param fixedTreasury if not null, the treasury which all sentinel owner id's should be replaced with
+	 * @return the requested list
+	 */
 	protected List<TokenNftInfo> accumulatedInfo(
 			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> relation,
 			EntityId key,
