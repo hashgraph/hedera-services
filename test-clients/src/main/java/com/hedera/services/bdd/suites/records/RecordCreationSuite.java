@@ -145,7 +145,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 								.signedBy(DEFAULT_PAYER)
 								.fee(ONE_HBAR)
 								.hasPrecheck(NOT_SUPPORTED),
-						cryptoTransfer(movingUnique(1L, "1.2.3")
+						cryptoTransfer(movingUnique("1.2.3", 1L)
 								.between("2.3.4", "3.4.5")
 						)
 								.signedBy(DEFAULT_PAYER)
@@ -176,7 +176,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 										ByteString.copyFromUtf8("C"))),
 						burnToken(acceptedTokenAttempt, List.of(2L)),
 						tokenAssociate(miscAccount, acceptedTokenAttempt),
-						cryptoTransfer(movingUnique(1L, acceptedTokenAttempt)
+						cryptoTransfer(movingUnique(acceptedTokenAttempt, 1L)
 								.between(TOKEN_TREASURY, miscAccount)
 						),
 						wipeTokenAccount(acceptedTokenAttempt, miscAccount, List.of(1L)),

@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -27,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -64,7 +66,14 @@ class GetMerkleTopicInfoResourceUsageTest {
 	private void setup() throws Throwable {
 		topics = mock(FCMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, nodeProps, null);
+		final StateChildren children = new StateChildren();
+		children.setTopics(topics);
+		view = new StateView(
+				null,
+				null,
+				nodeProps,
+				children,
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

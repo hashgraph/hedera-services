@@ -120,7 +120,7 @@ class GetAccountNftInfosAnswerTest {
 	@Test
 	void checksValidityProperly() throws Throwable {
 		// given:
-		given(view.accountNftsCount(accountId)).willReturn(3L);
+		given(view.numNftsOwnedBy(accountId)).willReturn(3L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
 		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(OK);
@@ -147,7 +147,7 @@ class GetAccountNftInfosAnswerTest {
 	@Test
 	void checksQueryRangeLargerThanNftCount() throws Throwable {
 		// given:
-		given(view.accountNftsCount(accountId)).willReturn(1L);
+		given(view.numNftsOwnedBy(accountId)).willReturn(1L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
 		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(OK);
@@ -162,7 +162,7 @@ class GetAccountNftInfosAnswerTest {
 	@Test
 	void checksInvalidAccountId() throws Throwable {
 		// given:
-		given(view.accountNftsCount(accountId)).willReturn(10L);
+		given(view.numNftsOwnedBy(accountId)).willReturn(10L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
 		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(INVALID_ACCOUNT_ID);
@@ -177,7 +177,7 @@ class GetAccountNftInfosAnswerTest {
 	@Test
 	void fallsbackToCheckContractId() throws Throwable {
 		// given:
-		given(view.accountNftsCount(accountId)).willReturn(10L);
+		given(view.numNftsOwnedBy(accountId)).willReturn(10L);
 		given(view.accounts()).willReturn(accountMap);
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
 		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(INVALID_ACCOUNT_ID);

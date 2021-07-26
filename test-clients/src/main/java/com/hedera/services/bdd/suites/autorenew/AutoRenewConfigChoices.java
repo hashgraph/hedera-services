@@ -43,8 +43,12 @@ public class AutoRenewConfigChoices {
 				DEFAULT_HIGH_TOUCH_COUNT);
 	}
 
-	public static Map<String, String> enablingAutoRenewWith(long minAutoRenew, long gracePeriod, int maxScan,
-			int maxTouch) {
+	public static Map<String, String> enablingAutoRenewWith(
+			long minAutoRenew,
+			long gracePeriod,
+			int maxScan,
+			int maxTouch
+	) {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", "" + minAutoRenew,
 				"autorenew.isEnabled", "true",
@@ -64,6 +68,15 @@ public class AutoRenewConfigChoices {
 	public static Map<String, String> disablingAutoRenewWithDefaults() {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod,
+				"autorenew.isEnabled", "false",
+				"autorenew.gracePeriod", defaultGracePeriod,
+				"autorenew.numberOfEntitiesToScan", defaultNumToScan
+		);
+	}
+
+	public static Map<String, String> disablingAutoRenewWith(long minAutoRenew) {
+		return Map.of(
+				"ledger.autoRenewPeriod.minDuration", "" + minAutoRenew,
 				"autorenew.isEnabled", "false",
 				"autorenew.gracePeriod", defaultGracePeriod,
 				"autorenew.numberOfEntitiesToScan", defaultNumToScan

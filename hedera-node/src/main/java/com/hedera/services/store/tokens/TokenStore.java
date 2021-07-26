@@ -76,6 +76,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
+	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
+
 	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 
 	default TokenID resolve(TokenID id) {
