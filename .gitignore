@@ -50,6 +50,7 @@ hs_err_pid*
 *.json
 !hapi-fees/src/main/resources/*.json
 !hapi-utils/src/test/resources/bootstrap/*.json
+!hapi-utils/src/test/resources/sysfiles/*.json
 !hedera-node/src/test/resources/fees/feeSchedules.json
 !hedera-node/src/test/resources/legacyAccounts.json
 !hedera-node/src/test/resources/bootstrap/*.json

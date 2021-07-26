@@ -28,6 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -79,6 +80,7 @@ class TokenUpdateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private TokenID target = IdUtils.asToken("1.2.666");
+	private NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
 	private AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
@@ -122,7 +124,8 @@ class TokenUpdateTransitionLogicTest {
 		expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
 		given(expiryOnlyCheck.test(any())).willReturn(false);
 
-		subject = new TokenUpdateTransitionLogic(validator, store, ledger, txnCtx, expiryOnlyCheck);
+		subject = new TokenUpdateTransitionLogic(
+				true, validator, store, ledger, txnCtx, expiryOnlyCheck);
 	}
 
 	@Test
@@ -387,25 +390,6 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
-		// setup:
-		long oldTreasuryBalance = 1;
-		givenValidTxnCtx(true);
-		givenToken(true, true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(CURRENT_TREASURY_STILL_OWNS_NFTS);
-	}
-
-	@Test
 	void followsHappyPathWithNewTreasuryAndZeroBalanceOldTreasury() {
 		// setup:
 		long oldTreasuryBalance = 0;
@@ -425,6 +409,32 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).grantKyc(newTreasury, target);
 		verify(ledger).getTokenBalance(oldTreasury, target);
 		verify(ledger, never()).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
+		// and:
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void followsHappyPathNftWithNewTreasury() {
+		// setup:
+		long oldTreasuryBalance = 1;
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		// and:
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+		given(store.changeOwnerWildCard(nftId, oldTreasury, newTreasury)).willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).unfreeze(newTreasury, target);
+		verify(ledger).grantKyc(newTreasury, target);
+		verify(ledger).getTokenBalance(oldTreasury, target);
+		verify(store).changeOwnerWildCard(nftId, oldTreasury, newTreasury);
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -555,6 +565,29 @@ class TokenUpdateTransitionLogicTest {
 
 		// expect:
 		assertEquals(INVALID_FREEZE_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
+		// setup:
+		long oldTreasuryBalance = 1;
+		// and:
+		subject = new TokenUpdateTransitionLogic(
+				false, validator, store, ledger, txnCtx, expiryOnlyCheck);
+
+		givenValidTxnCtx(true);
+		givenToken(true, true, true);
+		// and:
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(CURRENT_TREASURY_STILL_OWNS_NFTS);
 	}
 
 	private void givenValidTxnCtx() {

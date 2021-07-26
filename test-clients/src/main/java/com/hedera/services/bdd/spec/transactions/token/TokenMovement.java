@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 public class TokenMovement {
 	private final long amount;
 	private final String token;
-	private long serialNum;
+	private long[] serialNums;
 	private Optional<String> sender;
 	private Optional<String> receiver;
 	private final Optional<List<String>> receivers;
@@ -87,14 +87,14 @@ public class TokenMovement {
 			String token,
 			Optional<String> sender,
 			long amount,
-			long serialNum,
+			long[] serialNums,
 			Optional<String> receiver,
 			Optional<List<String>> receivers
 	) {
 		this.token = token;
 		this.sender = sender;
 		this.amount = amount;
-		this.serialNum = serialNum;
+		this.serialNums = serialNums;
 		this.receiver = receiver;
 		this.receivers = receivers;
 
@@ -107,7 +107,7 @@ public class TokenMovement {
 	}
 
 	public boolean isFungibleToken() {
-		return serialNum == 0;
+		return serialNums == null;
 	}
 
 	public List<Map.Entry<String, Long>> generallyInvolved() {
@@ -169,7 +169,9 @@ public class TokenMovement {
 		var id = isTrulyToken() ? asTokenId(token, spec) : HBAR_SENTINEL_TOKEN_ID;
 		scopedTransfers.setToken(id);
 		if (sender.isPresent() && receiver.isPresent()) {
-			scopedTransfers.addNftTransfers(adjustment(sender.get(), receiver.get(), serialNum, spec));
+			for (long serialNum : serialNums) {
+				scopedTransfers.addNftTransfers(adjustment(sender.get(), receiver.get(), serialNum, spec));
+			}
 		}
 
 		return scopedTransfers.build();
@@ -192,7 +194,7 @@ public class TokenMovement {
 
 	public static class Builder {
 		private final long amount;
-		private long serialNum;
+		private long[] serialNums;
 		private final String token;
 
 		public Builder(long amount, String token) {
@@ -200,10 +202,11 @@ public class TokenMovement {
 			this.amount = amount;
 		}
 
-		public Builder(long amount, long serialNum, String token) {
+		public Builder(long amount, String token, long... serialNums) {
 			this.amount = amount;
-			this.serialNum = serialNum;
 			this.token = token;
+			this.serialNums = serialNums;
+
 		}
 
 		public TokenMovement between(String sender, String receiver) {
@@ -211,7 +214,7 @@ public class TokenMovement {
 					token,
 					Optional.of(sender),
 					amount,
-					serialNum,
+					serialNums,
 					Optional.of(receiver),
 					Optional.empty());
 		}
@@ -254,8 +257,8 @@ public class TokenMovement {
 		return new Builder(amount, token);
 	}
 
-	public static Builder movingUnique(long serialNum, String token) {
-		return new Builder(1, serialNum, token);
+	public static Builder movingUnique(String token, long... serialNums) {
+		return new Builder(1, token, serialNums);
 	}
 
 	public static Builder movingHbar(long amount) {

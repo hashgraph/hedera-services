@@ -51,8 +51,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +65,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
@@ -393,12 +396,19 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	}
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
+		var uniqueCount = tokenAwareProviders.stream()
+				.filter(Predicate.not(TokenMovement::isFungibleToken)).count();
 		Map<TokenID, List<NftTransfer>> aggregated = tokenAwareProviders.stream()
 				.filter(Predicate.not(TokenMovement::isFungibleToken))
 				.map(p -> p.specializedForNft(spec))
-				.collect(groupingBy(
+				.collect(Collectors.toMap(
 						TokenTransferList::getToken,
-						flatMapping(xfers -> xfers.getNftTransfersList().stream(), toList())));
+						TokenTransferList::getNftTransfersList,
+						(left, right) -> Stream.of(left, right).flatMap(Collection::stream).collect(toList()),
+						LinkedHashMap::new));
+		if (aggregated.size() != 0 && uniqueCount != aggregated.size()) {
+			throw new RuntimeException("Duplicated Token Id set in unique token movement!");
+		}
 		return aggregated.entrySet().stream()
 				.map(entry -> TokenTransferList.newBuilder()
 						.setToken(entry.getKey())

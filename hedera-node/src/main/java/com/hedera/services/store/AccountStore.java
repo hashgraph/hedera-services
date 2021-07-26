@@ -104,7 +104,7 @@ public class AccountStore {
 		validateFalse(merkleAccount.isDeleted(), ACCOUNT_DELETED);
 		if (dynamicProperties.autoRenewEnabled()) {
 			if (merkleAccount.getBalance() == 0) {
-				final boolean isExpired = validator.isAfterConsensusSecond(merkleAccount.getExpiry());
+				final boolean isExpired = !validator.isAfterConsensusSecond(merkleAccount.getExpiry());
 				validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			}
 		}
