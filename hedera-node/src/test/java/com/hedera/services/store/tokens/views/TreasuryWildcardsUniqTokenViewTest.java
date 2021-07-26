@@ -148,6 +148,48 @@ class TreasuryWildcardsUniqTokenViewTest {
 		Assertions.assertEquals(List.of(mockExplicitInfo, mockInterpolatedInfo, mockTreasuryInfo), actual);
 	}
 
+	@Test
+	void getsAllAssociationsWithRangeToSpare() {
+		setupFirstMockRange();
+		setupSecondMockRange();
+		subject.setGrpcUtils(grpcUtils);
+
+		given(nftsByOwner.getCount(someOwnerId)).willReturn(end - 1);
+		given(treasuryNftsByType.getCount(treasuryTokenId)).willReturn(1);
+		// and:
+		given(nftsByOwner.get(someOwnerId, start, end - 1)).willReturn(firstMockRange);
+		given(treasuryNftsByType.get(treasuryTokenId, 0, 1)).willReturn(secondMockRange);
+		// and:
+		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
+		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
+		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
+		// and:
+		given(grpcUtils.reprOf(
+				someTokenId.toGrpcTokenId(),
+				someSerial,
+				someExplicitNft,
+				null)).willReturn(mockExplicitInfo);
+		given(grpcUtils.reprOf(
+				otherTokenId.toGrpcTokenId(),
+				wildcardSerial,
+				wildcardNft,
+				someOwnerId.toGrpcAccountId())).willReturn(mockInterpolatedInfo);
+		given(grpcUtils.reprOf(
+				treasuryTokenId.toGrpcTokenId(),
+				treasurySerial,
+				otherWildNft,
+				someOwnerId.toGrpcAccountId())).willReturn(mockTreasuryInfo);
+		// and:
+		given(tokenStore.listOfTokensServed(someOwnerId.toGrpcAccountId()))
+				.willReturn(List.of(treasuryTokenId.toGrpcTokenId()));
+
+		// when:
+		final var actual = subject.ownedAssociations(someOwnerId.toGrpcAccountId(), start, end+1);
+
+		// then:
+		Assertions.assertEquals(List.of(mockExplicitInfo, mockInterpolatedInfo, mockTreasuryInfo), actual);
+	}
+
 	private void setupFirstMockRange() {
 		willAnswer(invocationOnMock -> {
 			final Consumer<MerkleUniqueTokenId> consumer = invocationOnMock.getArgument(0);

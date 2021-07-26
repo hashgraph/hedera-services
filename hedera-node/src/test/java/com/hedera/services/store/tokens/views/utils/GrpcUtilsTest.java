@@ -60,7 +60,7 @@ class GrpcUtilsTest {
 	@Test
 	void failsAsExpectedWhenTreasuryIsNull() {
 		final var treasuryNft = new MerkleUniqueToken(wildcard, treasuryMeta, creationTime);
-		
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> subject.reprOf(
 				token.toGrpcTokenId(), treasurySerial, treasuryNft, null));
 	}
