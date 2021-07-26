@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,14 +30,24 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 
 import javax.annotation.Nullable;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-
+/**
+ * Small helper class to provide a query-friendly representation of a Merkle
+ * unique token whose owner id may be the sentinel {@code 0.0.0} representing
+ * treasury ownership.
+ */
 public class GrpcUtils {
-	public TokenNftInfo reprOf(TokenID type, long serialNo, MerkleUniqueToken nft, AccountID treasury) {
-		return doRepr(type, serialNo, nft, treasury);
-	}
-
-	private TokenNftInfo doRepr(
+	/**
+	 * Build a query-friendly representation of the given unique token,
+	 * using the given treasury account id to substitute for the sentinel
+	 * {@code 0.0.0} id if necessary.
+	 *
+	 * @param type the type of the unique token
+	 * @param serialNo the serial number of the unique token
+	 * @param nft the creation time, owner, and metadata of the unique token
+	 * @param treasury if not null, the account id that should replace the sentinel id
+	 * @return the desired query-friendly representation
+	 */
+	public TokenNftInfo reprOf(
 			TokenID type,
 			long serialNo,
 			MerkleUniqueToken nft,
@@ -48,8 +58,7 @@ public class GrpcUtils {
 				.setSerialNumber(serialNo);
 
 		AccountID effectiveOwner;
-		var explicitOwner = nft.getOwner();
-		if (explicitOwner.equals(MISSING_ENTITY_ID)) {
+		if (nft.isTreasuryOwned()) {
 			if (treasury == null) {
 				throw new IllegalArgumentException(EntityIdUtils.readableId(type)
 						+ "." + serialNo
@@ -57,7 +66,7 @@ public class GrpcUtils {
 			}
 			effectiveOwner = treasury;
 		} else {
-			effectiveOwner =  explicitOwner.toGrpcAccountId();
+			effectiveOwner = nft.getOwner().toGrpcAccountId();
 		}
 
 		return TokenNftInfo.newBuilder()

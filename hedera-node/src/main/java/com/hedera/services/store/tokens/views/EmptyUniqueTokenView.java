@@ -7,6 +7,9 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A {@link UniqTokenView} that always returns empty lists.
+ */
 public enum EmptyUniqueTokenView implements UniqTokenView {
 	EMPTY_UNIQUE_TOKEN_VIEW;
 

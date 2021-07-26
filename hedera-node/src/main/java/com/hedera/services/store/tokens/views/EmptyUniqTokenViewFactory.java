@@ -13,6 +13,9 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.store.tokens.views.EmptyUniqueTokenView.EMPTY_UNIQUE_TOKEN_VIEW;
 
+/**
+ * A {@link UniqTokenViewFactory} that constructs an always-empty {@link UniqTokenView}.
+ */
 public enum EmptyUniqTokenViewFactory implements UniqTokenViewFactory {
 	EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 

@@ -26,7 +26,37 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 
 import java.util.List;
 
+/**
+ * Defines a type able to describe sub-lists of the unique tokens that share
+ * one of two common characteristics:
+ * <ol>
+ *     <li>All the unique tokens belong to the same non-fungible unique token type.</li>
+ *     <li>All the unique tokens have the same owner.</li>
+ * </ol>
+ *
+ * The ordering of these sub-lists are only guaranteed stable between queries
+ * if no change is made to the family of unique tokens in question.
+ */
 public interface UniqTokenView {
+	/**
+	 * Returns query-friendly descriptions of the requested sub-list of the unique
+	 * tokens owned by the given account.
+	 *
+	 * @param owner the owning account of interest
+	 * @param start the inclusive, zero-based index at the start the desired sub-list
+	 * @param end the exclusive, zero-based index at the end of the desired sub-list
+	 * @return the (possibly empty) sub-list of the owning account's unique tokens
+	 */
 	List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end);
+
+	/**
+	 * Returns query-friendly descriptions of the requested sub-list of the unique
+	 * tokens belonging to the given type.
+	 *
+	 * @param type the non-fungible unique token type of interest
+	 * @param start the inclusive, zero-based index at the start the desired sub-list
+	 * @param end the exclusive, zero-based index at the end of the desired sub-list
+	 * @return the (possibly empty) sub-list of the type's unique tokens
+	 */
 	List<TokenNftInfo> typedAssociations(TokenID type, long start, long end);
 }

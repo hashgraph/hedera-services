@@ -31,6 +31,11 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
 
+/**
+ * A {@link UniqTokenViewFactory} able to construct an appropriate implementation
+ * of {@link UniqTokenView} depending on the injected value of the global/static
+ * {@code tokens.nfts.useTreasuryWildcards} property.
+ */
 public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
 	private final boolean shouldUseTreasuryWildcards;
 
@@ -38,6 +43,7 @@ public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
 		this.shouldUseTreasuryWildcards = shouldUseTreasuryWildcards;
 	}
 
+	@Override
 	public UniqTokenView viewFor(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,

@@ -33,6 +33,10 @@ import com.swirlds.fcmap.FCMap;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * A {@link UniqTokenView} that answers requests for an account's unique tokens
+ * using only a {@code nftsByOwner} {@link FCOneToManyRelation}.
+ */
 public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner;
 

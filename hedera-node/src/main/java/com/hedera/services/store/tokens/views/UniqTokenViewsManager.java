@@ -32,6 +32,19 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+/**
+ * Keeps the {@link FCOneToManyRelation} views of the unique tokens in the world state
+ * up-to-date as transactions are handled by the {@link com.hedera.services.store.TypedTokenStore}
+ * and (for now) {@link com.hedera.services.store.tokens.HederaTokenStore}.
+ *
+ * <b>NOTE:</b> The terms "unique token" and NFT are used interchangeably in this
+ * class to shorten variable names and reduce cognitive overhead.
+ *
+ * If constructed with a {@code treasuryNftsByType} {@link FCOneToManyRelation}, uses the
+ * "dual-source" picture of NFT ownership, with an internal representation that distinguishes
+ * between an account owning an NFT it received it via a {@link com.hederahashgraph.api.proto.java.NftTransfer},
+ * and an account owning an NFT because it is the designated treasury for the NFT's token type.
+ */
 public class UniqTokenViewsManager {
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner;
@@ -56,17 +69,36 @@ public class UniqTokenViewsManager {
 		this.treasuryNftsByType = null;
 	}
 
+	/**
+	 * Rebuilds the internal views of the unique tokens in the world state, given
+	 * the token types and unique tokens in the world state.
+	 *
+	 * <b>NOTE: </b> Does not clear the internal {@link FCOneToManyRelation}s,
+	 * because it would never be correct to call this method except on restart
+	 * or reconnect; and in those cases, the {@link FCOneToManyRelation}s are
+	 * newly created.
+	 *
+	 * @param tokens the token types in the world state
+	 * @param uniqueTokens unique tokens in the world state
+	 */
 	public void rebuildNotice(
 			FCMap<MerkleEntityId, MerkleToken> tokens,
-			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
+			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens
 	) {
 		if (isUsingTreasuryWildcards()) {
-			rebuildUsingTreasuryWildcards(tokens, nfts);
+			rebuildUsingTreasuryWildcards(tokens, uniqueTokens);
 		} else {
-			rebuildUsingExplicitOwners(tokens, nfts);
+			rebuildUsingExplicitOwners(tokens, uniqueTokens);
 		}
 	}
 
+	/**
+	 * Updates the internal view of the unique tokens in the world state to reflect
+	 * the minting of an NFT with the given id in the given treasury.
+	 *
+	 * @param nftId the minted id
+	 * @param treasury the treasury that received the new NFT
+	 */
 	public void mintNotice(MerkleUniqueTokenId nftId, EntityId treasury) {
 		final var tokenId = nftId.tokenId();
 		nftsByType.get().associate(tokenId, nftId);
@@ -77,12 +109,26 @@ public class UniqTokenViewsManager {
 		}
 	}
 
+	/**
+	 * Updates the internal view of the unique tokens in the world state to reflect
+	 * the wiping of an NFT with the given id from the given account.
+	 *
+	 * @param nftId the wiped id
+	 * @param fromAccount the account that was wiped
+	 */
 	public void wipeNotice(MerkleUniqueTokenId nftId, EntityId fromAccount) {
 		/* The treasury account cannot wiped, so both cases are the same */
 		nftsByType.get().disassociate(nftId.tokenId(), nftId);
 		nftsByOwner.get().disassociate(fromAccount, nftId);
 	}
 
+	/**
+	 * Updates the internal view of the unique tokens in the world state to reflect
+	 * the burning of an NFT with the given id from the given treasury.
+	 *
+	 * @param nftId the burned id
+	 * @param treasury the treasury of the burned NFT's token type
+	 */
 	public void burnNotice(MerkleUniqueTokenId nftId, EntityId treasury) {
 		final var tokenId = nftId.tokenId();
 		nftsByType.get().disassociate(tokenId, nftId);
@@ -93,12 +139,29 @@ public class UniqTokenViewsManager {
 		}
 	}
 
+	/**
+	 * Updates the internal view of the unique tokens in the world state to reflect
+	 * the exchange of an NFT with the given id between the given non-treasury accounts.
+	 *
+	 * @param nftId the exchanged id
+	 * @param prevOwner the previous owner
+	 * @param newOwner the new owner
+	 */
 	public void exchangeNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId newOwner) {
 		final var curNftsByOwner = nftsByOwner.get();
 		curNftsByOwner.disassociate(prevOwner, nftId);
 		curNftsByOwner.associate(newOwner, nftId);
 	}
 
+	/**
+	 * Updates the internal view of the unique tokens in the world state to reflect
+	 * the departure of an NFT with the given id from the given treasury to the
+	 * given receiving account.
+	 *
+	 * @param nftId the id exiting the treasury
+	 * @param treasury the relevant treasury
+	 * @param newOwner the new owner
+	 */
 	public void treasuryExitNotice(MerkleUniqueTokenId nftId, EntityId treasury, EntityId newOwner) {
 		final var curNftsByOwner = nftsByOwner.get();
 		if (isUsingTreasuryWildcards()) {
@@ -109,6 +172,15 @@ public class UniqTokenViewsManager {
 		curNftsByOwner.associate(newOwner, nftId);
 	}
 
+	/**
+	 * Updates the internal view of the unique tokens in the world state to reflect
+	 * the return of an NFT with the given id to the given treasury from the given
+	 * sending account.
+	 *
+	 * @param nftId the id returning to the treasury
+	 * @param prevOwner the previous owner
+	 * @param treasury the relevant treasury
+	 */
 	public void treasuryReturnNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId treasury) {
 		final var curNftsByOwner = nftsByOwner.get();
 		curNftsByOwner.disassociate(prevOwner, nftId);
@@ -119,6 +191,14 @@ public class UniqTokenViewsManager {
 		}
 	}
 
+	/**
+	 * Indicates whether this manager uses a "dual-source" picture of NFT ownership, with an internal
+	 * representation that distinguishes between an account owning an NFT it received it via a
+	 * {@link com.hederahashgraph.api.proto.java.NftTransfer}, and an account owning an NFT because
+	 * it is the designated treasury for the NFT's token type.
+	 *
+	 * @return whether this manager internally differentiates the above ownership sources
+	 */
 	public boolean isUsingTreasuryWildcards() {
 		return treasuryNftsByType != null;
 	}

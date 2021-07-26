@@ -27,6 +27,26 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MultiSourceRangeTest {
 	@Test
+	void threeRangeExampleAsExpected() {
+		// given:
+		final var subject = new MultiSourceRange(1, 9, 2);
+
+		// when:
+		final var firstRange = subject.rangeForCurrentSource();
+		subject.moveToNewSource(3);
+		final var secondRange = subject.rangeForCurrentSource();
+		subject.moveToNewSource(5);
+		final var thirdRange = subject.rangeForCurrentSource();
+
+		// then:
+		assertTrue(subject.isRequestedRangeExhausted());
+		// and:
+		assertArrayEquals(range(1, 2), firstRange);
+		assertArrayEquals(range(0, 3), secondRange);
+		assertArrayEquals(range(0, 4), thirdRange);
+	}
+
+	@Test
 	void satisfiesWithFirstRangeIfPossible() {
 		// given:
 		final var subject = new MultiSourceRange(2, 5, 10);

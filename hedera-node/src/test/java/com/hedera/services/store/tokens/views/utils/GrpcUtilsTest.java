@@ -57,15 +57,6 @@ class GrpcUtilsTest {
 	private final EntityId nonTreasuryOwner = new EntityId(1, 2, 3);
 	private final EntityId treasury = new EntityId(2, 3, 4);
 
-	private final TokenNftInfo expectedNonTreasury = TokenNftInfo.newBuilder()
-			.setNftID(NftID.newBuilder()
-					.setTokenID(token.toGrpcTokenId())
-					.setSerialNumber(nonTreasurySerial))
-			.setAccountID(nonTreasuryOwner.toGrpcAccountId())
-			.setMetadata(ByteString.copyFrom(nonTreasuryMeta))
-			.setCreationTime(creationTime.toGrpc())
-			.build();
-
 	private final TokenNftInfo expectedTreasury = TokenNftInfo.newBuilder()
 			.setNftID(NftID.newBuilder()
 					.setTokenID(token.toGrpcTokenId())
