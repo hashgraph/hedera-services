@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -55,7 +56,6 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -150,9 +150,8 @@ import static org.mockito.Mockito.times;
 class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
+	private UniqTokenViewsManager uniqTokenViewsManager;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenTreasuryOwnerships;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -305,19 +304,16 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
 		given(tokens.get(fromTokenId(tNft.tokenId())).treasury()).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
 
-		uniqueTokenAccountOwnerships = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(
-				FCOneToManyRelation.class);
-		uniqueTokenTreasuryOwnerships = mock(FCOneToManyRelation.class);
-
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
+		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
+
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokenAccountOwnerships,
-				() -> uniqueTokenTreasuryOwnerships, tokenRelsLedger, nftsLedger);
+				ids, TEST_VALIDATOR, uniqTokenViewsManager, properties, () -> tokens, tokenRelsLedger, nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{
@@ -652,27 +648,50 @@ class HederaTokenStoreTest {
 
 		assertEquals(OK, status);
 		verify(nftsLedger).set(aNft, NftProperty.OWNER, receiver);
-		verify(uniqueTokenAccountOwnerships).disassociate(sender, muti);
-		verify(uniqueTokenAccountOwnerships).associate(receiver, muti);
 		verify(accountsLedger).set(sponsor, NUM_NFTS_OWNED, startSponsorNfts - 1);
-		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
+		verify(uniqTokenViewsManager).exchangeNotice(muti, sender, receiver);
 		verify(hederaLedger).updateOwnershipChanges(aNft, sponsor, counterparty);
 	}
 
 	@Test
-	void changingOwnerDoesTheExpectedWithTreasury() {
+	void changingOwnerDoesTheExpectedWithTreasuryReturn() {
+		long startTreasuryNfts = 5, startCounterpartyNfts = 8;
+		long startTreasuryTNfts = 4, startCounterpartyTNfts = 1;
+		final var sender = EntityId.fromGrpcAccountId(counterparty);
+		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
+		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(tNft.tokenId()), tNft.serialNo());
+		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
+			add(nonfungible);
+		}});
+		given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
+		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
+		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
+		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
+		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
+
+		final var status = subject.changeOwner(tNft, counterparty, primaryTreasury);
+
+		assertEquals(OK, status);
+		verify(nftsLedger).set(tNft, NftProperty.OWNER, EntityId.MISSING_ENTITY_ID);
+		verify(accountsLedger).set(primaryTreasury, NUM_NFTS_OWNED, startTreasuryNfts + 1);
+		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
+		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
+		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts - 1);
+		verify(uniqTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
+		verify(hederaLedger).updateOwnershipChanges(tNft, counterparty, primaryTreasury);
+	}
+
+	@Test
+	void changingOwnerDoesTheExpectedWithTreasuryExit() {
 		long startTreasuryNfts = 5, startCounterpartyNfts = 8;
 		long startTreasuryTNfts = 4, startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
 		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(tNft.tokenId()), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
-			add(nonfungible);
-		}});
-		subject.knownTreasuries.put(counterparty, new HashSet<>() {{
 			add(nonfungible);
 		}});
 		given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
@@ -683,13 +702,13 @@ class HederaTokenStoreTest {
 		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
 		assertEquals(OK, status);
-		verify(uniqueTokenTreasuryOwnerships).disassociate(EntityId.fromGrpcTokenId(nonfungible), muti);
-		verify(uniqueTokenTreasuryOwnerships).associate(EntityId.fromGrpcTokenId(nonfungible), muti);
+		verify(nftsLedger).set(tNft, NftProperty.OWNER, receiver);
 		verify(accountsLedger).set(primaryTreasury, NUM_NFTS_OWNED, startTreasuryNfts - 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
+		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
 		verify(hederaLedger).updateOwnershipChanges(tNft, primaryTreasury, counterparty);
 	}
 

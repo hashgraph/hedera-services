@@ -69,6 +69,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -85,7 +87,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -105,7 +106,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				mintFailsWithLargeBatchSize(),
 				mintFailsWithTooLongMetadata(),
 				mintFailsWithInvalidMetadataFromBatch(),
@@ -161,7 +162,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				baseUniqueMintOperationIsChargedExpectedFee(),
 				baseUniqueWipeOperationIsChargedExpectedFee(),
 				baseUniqueBurnOperationIsChargedExpectedFee()
-		);
+		});
 	}
 
 	private HapiApiSpec baseUniqueWipeOperationIsChargedExpectedFee() {
@@ -439,8 +440,10 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				).when(
 						mintToken("tbu", List.of(metadata("BLAMMO"))),
 						mintToken("treasury-token-2", List.of(metadata("treasury-meta"))),
-						mintToken("non-fungible-2", List.of(metadata("nft2-1"), metadata("nft2-2"), metadata("nft2-3"))),
-						mintToken("non-fungible-3", List.of(metadata("nft3-1"), metadata("nft3-2"), metadata("nft3-3"))),
+						mintToken("non-fungible-2", List.of(metadata("nft2-1"), metadata("nft2-2"),
+								metadata("nft2-3"))),
+						mintToken("non-fungible-3", List.of(metadata("nft3-1"), metadata("nft3-2"),
+								metadata("nft3-3"))),
 						getAccountInfo("oldTreasury").logged(),
 						getAccountInfo("newTreasury").logged(),
 						tokenAssociate("newTreasury", "tbu", "non-fungible-2", "non-fungible-3"),
@@ -645,7 +648,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1")),
 										newTokenNftInfo(NFT, 2, nonTreasury, metadata("2"))
-								) .logged(),
+								).logged(),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1"))
@@ -1078,7 +1081,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getTokenInfo(NFT).hasTotalSupply(1),
 						getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID),
 						getTokenNftInfo(NFT, 1).hasSerialNum(1),
-						wipeTokenAccount(NFT, "account", List.of(1L)).hasKnownStatus(FAIL_INVALID)
+						wipeTokenAccount(NFT, "account", List.of(1L))
+								.hasKnownStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT)
 				);
 	}
 
@@ -1420,7 +1424,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						mintToken(NFT, List.of(metadata("memo1"), metadata("memo2")))
 				).then(
 						cryptoTransfer(TokenMovement.movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, "acc")),
-						tokenDissociate("acc", NFT).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+						tokenDissociate("acc", NFT).hasKnownStatus(ACCOUNT_STILL_OWNS_NFTS)
 				);
 	}
 

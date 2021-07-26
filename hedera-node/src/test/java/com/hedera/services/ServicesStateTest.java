@@ -33,7 +33,6 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.initialization.ViewBuilderTest;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -52,6 +51,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -356,6 +356,8 @@ class ServicesStateTest {
 		// setup:
 		var throttling = mock(FunctionalityThrottling.class);
 		var nodeInfo = mock(NodeInfo.class);
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager, expiryManager, networkCtx);
 
@@ -384,6 +386,8 @@ class ServicesStateTest {
 	@Test
 	void doesntInitializeFilesIfStoreStillInitializing() {
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 
 		given(blobStore.isInitializing()).willReturn(true);
 		// and:
@@ -428,6 +432,8 @@ class ServicesStateTest {
 	@Test
 	void invokesMigrationsAsApropos() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -486,6 +492,8 @@ class ServicesStateTest {
 	@Test
 	void justWarnOnFailedDiskFsMigration() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -521,10 +529,11 @@ class ServicesStateTest {
 	@Test
 	void rebuildsFcotmrAsExpected() {
 		// setup:
+		final var uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		TokenStore tokenStore = mock(TokenStore.class);
-		given(ctx.tokenStore()).willReturn(tokenStore);
+		given(ctx.uniqTokenViewsManager()).willReturn(uniqTokenViewsManager);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
 		CONTEXTS.store(ctx);
 
@@ -539,19 +548,19 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
-		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, ViewBuilderTest.someUniqueTokens());
+		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
 		// when:
 		subject.init(platform, book);
 
 		// then:
-		ViewBuilderTest.assertIsTheExpectedUta(subject.uniqueTokenAssociations());
-		ViewBuilderTest.assertIsTheExpectedUtao(subject.uniqueOwnershipAssociations());
-//		ViewBuilderTest.assertIsTheExpectedTUtao(subject.uniqueOwnershipTreasuryAssociations());  TODO case with ownership treasury
+		verify(uniqTokenViewsManager).rebuildNotice(tokens, uniqueTokens);
 	}
 
 	@Test
 	void logsNonNullHashesFromSavedState() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -887,6 +896,7 @@ class ServicesStateTest {
 		// and given:
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueTreasuryOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 
 		// when:
 		subject.archive();
@@ -894,6 +904,7 @@ class ServicesStateTest {
 		// then:
 		verify(uniqueTokenAssociations).release();
 		verify(uniqueOwnershipAssociations).release();
+		verify(uniqueOwnershipTreasuryAssociations).release();
 	}
 
 	@Test
@@ -904,6 +915,7 @@ class ServicesStateTest {
 		// and given:
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueTreasuryOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 
 		// when:
 		subject.onRelease();
@@ -911,6 +923,7 @@ class ServicesStateTest {
 		// then:
 		verify(uniqueTokenAssociations).release();
 		verify(uniqueOwnershipAssociations).release();
+		verify(uniqueOwnershipTreasuryAssociations).release();
 	}
 
 	@Test

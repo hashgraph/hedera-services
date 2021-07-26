@@ -133,6 +133,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -162,6 +164,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -326,6 +329,26 @@ class ServicesContextTest {
 		assertSame(newState.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
 		assertSame(newState.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
 		assertSame(newState.uniqueTreasuryOwnershipAssociations(), queryableState.get().getUniqueOwnershipTreasuryAssociations());
+	}
+
+	@Test
+	void constructsUniqTokenViewMgrAsExpectedNotUsingWildcards() {
+		given(properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards")).willReturn(false);
+		// and:
+		final var subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		// expect:
+		Assertions.assertFalse(subject.uniqTokenViewsManager().isUsingTreasuryWildcards());
+	}
+
+	@Test
+	void constructsUniqTokenViewMgrAsExpectedUsingWildcards() {
+		given(properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards")).willReturn(true);
+		// and:
+		final var subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		// expect:
+		Assertions.assertTrue(subject.uniqTokenViewsManager().isUsingTreasuryWildcards());
 	}
 
 	@Test
@@ -653,6 +676,8 @@ class ServicesContextTest {
 		assertThat(ctx.transferSemanticChecks(), instanceOf(PureTransferSemanticChecks.class));
 		assertThat(ctx.backingNfts(), instanceOf(BackingNfts.class));
 		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
+		assertThat(ctx.uniqTokenViewsManager(), instanceOf(UniqTokenViewsManager.class));
+		assertThat(ctx.uniqTokenViewFactory(), instanceOf(ConfigDrivenUniqTokenViewFactory.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

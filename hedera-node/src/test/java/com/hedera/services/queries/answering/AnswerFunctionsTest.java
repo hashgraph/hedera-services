@@ -20,6 +20,7 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.records.RecordCache;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -83,7 +85,14 @@ class AnswerFunctionsTest {
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
+		final var children = new StateChildren();
+		children.setAccounts(accounts);
+		view = new StateView(
+				null,
+				null,
+				nodeProps,
+				children,
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		recordCache = mock(RecordCache.class);
 

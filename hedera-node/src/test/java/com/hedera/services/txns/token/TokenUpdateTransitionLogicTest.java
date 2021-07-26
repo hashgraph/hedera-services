@@ -124,7 +124,8 @@ class TokenUpdateTransitionLogicTest {
 		expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
 		given(expiryOnlyCheck.test(any())).willReturn(false);
 
-		subject = new TokenUpdateTransitionLogic(validator, store, ledger, txnCtx, expiryOnlyCheck);
+		subject = new TokenUpdateTransitionLogic(
+				true, validator, store, ledger, txnCtx, expiryOnlyCheck);
 	}
 
 	@Test
@@ -564,6 +565,29 @@ class TokenUpdateTransitionLogicTest {
 
 		// expect:
 		assertEquals(INVALID_FREEZE_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
+		// setup:
+		long oldTreasuryBalance = 1;
+		// and:
+		subject = new TokenUpdateTransitionLogic(
+				false, validator, store, ledger, txnCtx, expiryOnlyCheck);
+
+		givenValidTxnCtx(true);
+		givenToken(true, true, true);
+		// and:
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(CURRENT_TREASURY_STILL_OWNS_NFTS);
 	}
 
 	private void givenValidTxnCtx() {

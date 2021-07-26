@@ -67,7 +67,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.state.initialization.ViewBuilder.rebuildUniqueTokenViews;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -281,7 +280,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		uniqueTokenAssociations = new FCOneToManyRelation<>();
 		uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 		uniqueTreasuryOwnedAssociations = new FCOneToManyRelation<>();
-		rebuildUniqueTokenViews(ctx.tokenStore(), uniqueTokens(), uniqueTokenAssociations, uniqueOwnershipAssociations, uniqueTreasuryOwnedAssociations);
+		ctx.uniqTokenViewsManager().rebuildNotice(tokens(), uniqueTokens());
 		/* Use any payer records stored in state to rebuild the recent transaction
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
@@ -480,6 +479,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
+	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnershipAssociations) {
+		this.uniqueTreasuryOwnedAssociations = uniqueTreasuryOwnershipAssociations;
+	}
+
 	private void releaseFcotmrIfNonNull() {
 		if (uniqueTokenAssociations != null) {
 			uniqueTokenAssociations.release();
@@ -487,9 +490,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (uniqueOwnershipAssociations != null) {
 			uniqueOwnershipAssociations.release();
 		}
-	}
-
-	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnershipAssociations) {
-		this.uniqueTreasuryOwnedAssociations = uniqueTreasuryOwnershipAssociations;
+		if (uniqueTreasuryOwnedAssociations != null) {
+			uniqueTreasuryOwnedAssociations.release();
+		}
 	}
 }

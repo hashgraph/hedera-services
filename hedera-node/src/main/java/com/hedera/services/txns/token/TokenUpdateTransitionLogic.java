@@ -64,6 +64,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	private final boolean allowChangedTreasuryToOwnNfts;
 	private final TokenStore store;
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
@@ -71,6 +72,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
 	public TokenUpdateTransitionLogic(
+			boolean allowChangedTreasuryToOwnNfts,
 			OptionValidator validator,
 			TokenStore store,
 			HederaLedger ledger,
@@ -82,6 +84,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.affectsExpiryOnly = affectsExpiryOnly;
+		this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
 	}
 
 	@Override
@@ -137,6 +140,13 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				return;
 			}
 			var existingTreasury = token.treasury().toGrpcAccountId();
+			if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+				var existingTreasuryBalance = ledger.getTokenBalance(existingTreasury, id);
+				if (existingTreasuryBalance > 0L) {
+					abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
+					return;
+				}
+			}
 			if (!newTreasury.equals(existingTreasury)) {
 				if (ledger.isDetached(existingTreasury)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
