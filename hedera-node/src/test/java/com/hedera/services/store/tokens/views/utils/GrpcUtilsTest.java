@@ -66,6 +66,11 @@ class GrpcUtilsTest {
 		assertEquals(expectedNftInfo(nonTreasurySerial, nonTreasuryOwner), actual);
 	}
 
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, () -> new GrpcUtils());
+	}
+
 	private final long nonTreasurySerial = 1L;
 	private final long treasurySerial = 2L;
 	private final byte[] meta = "As you wish...".getBytes(StandardCharsets.UTF_8);

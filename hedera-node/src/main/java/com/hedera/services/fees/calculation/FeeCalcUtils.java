@@ -42,7 +42,7 @@ public class FeeCalcUtils {
 
 	public static final Timestamp ZERO_EXPIRY = Timestamp.newBuilder().setSeconds(0).build();
 
-	private FeeCalcUtils() {
+	FeeCalcUtils() {
 		throw new IllegalStateException("Utility class");
 	}
 

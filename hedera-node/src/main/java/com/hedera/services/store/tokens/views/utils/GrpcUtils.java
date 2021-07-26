@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
  * treasury ownership.
  */
 public class GrpcUtils {
-	private GrpcUtils() {
+	GrpcUtils() {
 		throw new IllegalStateException("Utility Class");
 	}
 

@@ -49,7 +49,7 @@ public class HederaKeyActivation {
 	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
 			(ignoredKey, sig) -> VALID.equals(sig.getSignatureStatus());
 
-	private HederaKeyActivation() {
+	HederaKeyActivation() {
 		throw new IllegalStateException("Utility Class");
 	}
 

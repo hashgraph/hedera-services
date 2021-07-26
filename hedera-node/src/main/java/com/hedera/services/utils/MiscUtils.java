@@ -179,7 +179,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 public class MiscUtils {
-	private MiscUtils() {
+	MiscUtils() {
 		throw new IllegalStateException("Utility Class");
 	}
 
