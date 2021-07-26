@@ -142,6 +142,7 @@ public class RenewalHelper {
 			}
 		}
 
+		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
 		backingAccounts.remove(lastClassifiedEntityId.toAccountId());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
