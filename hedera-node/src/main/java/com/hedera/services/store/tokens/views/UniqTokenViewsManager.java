@@ -117,7 +117,7 @@ public class UniqTokenViewsManager {
 	 * @param fromAccount the account that was wiped
 	 */
 	public void wipeNotice(MerkleUniqueTokenId nftId, EntityId fromAccount) {
-		/* The treasury account cannot wiped, so both cases are the same */
+		/* The treasury account cannot be wiped, so both cases are the same */
 		nftsByType.get().disassociate(nftId.tokenId(), nftId);
 		nftsByOwner.get().disassociate(fromAccount, nftId);
 	}
