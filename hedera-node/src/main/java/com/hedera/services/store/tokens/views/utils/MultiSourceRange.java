@@ -26,11 +26,11 @@ package com.hedera.services.store.tokens.views.utils;
  *
  * For example, suppose we want to get the sub-list of eight items with indices
  * {@code [1, 9)} from a 10-item sequence made up of three source lists:
- * <li>
- *     <ol>List {@code A}, which has two items.</ol>
- *     <ol>List {@code B}, which has three items.</ol>
- *     <ol>List {@code C}, which has five items.</ol>
- * </li>
+ * <ol>
+ *     <li>List {@code A}, which has two items.</li>
+ *     <li>List {@code B}, which has three items.</li>
+ *     <li>List {@code C}, which has five items.</li>
+ * </ol>
  * Then the answer is the concatenation of {@code A.subList(1, 2)}
  * with {@code B.sublist(0, 3)} with {@code C.sublist(0, 4}.
  *
