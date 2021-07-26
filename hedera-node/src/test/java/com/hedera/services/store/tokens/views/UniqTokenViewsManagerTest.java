@@ -214,7 +214,6 @@ class UniqTokenViewsManagerTest {
 		givenWellKnownNfts();
 		// and:
 		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
-		given(tokens.get(bTokenId.asMerkle())).willReturn(bToken);
 
 		// when:
 		subject.rebuildNotice(tokens, nfts);
@@ -241,7 +240,6 @@ class UniqTokenViewsManagerTest {
 		givenWellKnownNfts();
 		// and:
 		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
-		given(tokens.get(bTokenId.asMerkle())).willReturn(bToken);
 
 		// when:
 		subject.rebuildNotice(tokens, nfts);
@@ -295,5 +293,5 @@ class UniqTokenViewsManagerTest {
 	private byte[] otherMeta = "ELSE".getBytes(StandardCharsets.UTF_8);
 	private final MerkleUniqueToken firstOwnedANft = new MerkleUniqueToken(MISSING_ENTITY_ID, someMeta, MISSING_INSTANT);
 	private final MerkleUniqueToken firstOwnedBNft = new MerkleUniqueToken(firstOwner, otherMeta, MISSING_INSTANT);
-	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(secondOwner, otherMeta, MISSING_INSTANT);
+	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(MISSING_ENTITY_ID, otherMeta, MISSING_INSTANT);
 }

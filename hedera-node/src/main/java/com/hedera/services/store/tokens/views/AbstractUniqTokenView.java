@@ -58,7 +58,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	@Override
 	public List<TokenNftInfo> typedAssociations(TokenID type, long start, long end) {
 		final var tokenId = EntityId.fromGrpcTokenId(type);
-		final var treasuryGrpcId = grpcTreasuryOf(tokens.get(), tokenId);
+		final var treasuryGrpcId = treasuryOf(tokens.get(), tokenId);
 		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type, treasuryGrpcId);
 	}
 
@@ -79,16 +79,16 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 				throw new ConcurrentModificationException(nftId + " was removed during query answering");
 			}
 			final var type = (fixedType != null) ? fixedType : nftId.tokenId().toGrpcTokenId();
-			final var treasury = (fixedTreasury != null)
-					? fixedTreasury
-					: grpcTreasuryOf(curTokens, nftId.tokenId());
+			final var treasury = nft.isTreasuryOwned()
+					? ((fixedTreasury != null) ? fixedTreasury : treasuryOf(curTokens, nftId.tokenId()))
+					: null;
 			final var info = grpcUtils.reprOf(type, nftId.serialNumber(), nft, treasury);
 			answer.add(info);
 		});
 		return answer;
 	}
 
-	private AccountID grpcTreasuryOf(FCMap<MerkleEntityId, MerkleToken> curTokens, EntityId tokenId) {
+	private AccountID treasuryOf(FCMap<MerkleEntityId, MerkleToken> curTokens, EntityId tokenId) {
 		final var token = curTokens.get(tokenId.asMerkle());
 		if (token == null) {
 			throw new ConcurrentModificationException(

@@ -153,16 +153,16 @@ public class UniqTokenViewsManager {
 		final var curNftsByOwner = nftsByOwner.get();
 		nfts.forEach((nftId, nft) -> {
 			final var tokenId = nftId.tokenId();
-			final var token = tokens.get(tokenId.asMerkle());
-			if (token == null) {
-				return;
-			}
-			curNftsByType.associate(nftId.tokenId(), nftId);
 			if (nft.isTreasuryOwned()) {
+				final var token = tokens.get(tokenId.asMerkle());
+				if (token == null) {
+					return;
+				}
 				treasuryOwnedAction.accept(token.treasury(), nftId);
 			} else {
 				curNftsByOwner.associate(nft.getOwner(), nftId);
 			}
+			curNftsByType.associate(nftId.tokenId(), nftId);
 		});
 	}
 }

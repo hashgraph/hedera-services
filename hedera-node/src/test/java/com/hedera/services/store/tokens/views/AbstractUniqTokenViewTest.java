@@ -88,7 +88,7 @@ class AbstractUniqTokenViewTest {
 				someTokenId.toGrpcTokenId(),
 				someSerial,
 				someExplicitNft,
-				treasuryId.toGrpcAccountId())).willReturn(mockExplicitInfo);
+				null)).willReturn(mockExplicitInfo);
 		given(grpcUtils.reprOf(
 				someTokenId.toGrpcTokenId(),
 				wildcardSerial,
