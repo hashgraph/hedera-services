@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 public class ScheduleTypePatching {
 	private static final EnumSet<SubType> ONLY_DEFAULT = EnumSet.of(DEFAULT);
 	static final Map<HederaFunctionality, EnumSet<SubType>> FUNCTIONS_WITH_REQUIRED_SUBTYPES;
+
 	static {
 		FUNCTIONS_WITH_REQUIRED_SUBTYPES = new EnumMap<>(HederaFunctionality.class);
 		/* The functions with non-DEFAULT prices in hapi-fees/src/main/resources/canonical-prices.json */
@@ -99,7 +100,9 @@ public class ScheduleTypePatching {
 			}
 		}
 
-		final Set<SubType> presentTypes = EnumSet.copyOf(listedTypes);
+		final Set<SubType> presentTypes = listedTypes.isEmpty()
+				? EnumSet.noneOf(SubType.class)
+				: EnumSet.copyOf(listedTypes);
 		for (var type : requiredTypes) {
 			if (!presentTypes.contains(type)) {
 				if (explicitDefaultPrices != null) {
