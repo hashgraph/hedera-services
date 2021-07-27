@@ -73,6 +73,7 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -427,7 +428,7 @@ public class StateView {
 		return account.getNftsOwned();
 	}
 
-	public Optional<List<TokenNftInfo>> infoForAccountNfts(AccountID aid, long start, long end) {
+	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull AccountID aid, long start, long end) {
 		var account = accounts().get(fromAccountId(aid));
 		if (account == null) {
 			return Optional.empty();
@@ -436,7 +437,7 @@ public class StateView {
 		return Optional.of(answer);
 	}
 
-	public Optional<List<TokenNftInfo>> infosForTokenNfts(TokenID tid, long start, long end) {
+	public Optional<List<TokenNftInfo>> infosForTokenNfts(@Nonnull TokenID tid, long start, long end) {
 		if (!tokenExists(tid)) {
 			return Optional.empty();
 		}

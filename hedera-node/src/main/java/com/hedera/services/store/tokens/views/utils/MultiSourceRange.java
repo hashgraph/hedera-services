@@ -20,6 +20,8 @@ package com.hedera.services.store.tokens.views.utils;
  * ‍
  */
 
+import org.apache.commons.lang3.tuple.Pair;
+
 /**
  * A convenience class to help select a sub-list from a sequence of items, where
  * the items in the sequence come from multiple source lists.
@@ -51,7 +53,7 @@ package com.hedera.services.store.tokens.views.utils;
  * </pre>
  */
 public class MultiSourceRange {
-	static final int[] EMPTY_RANGE = { 0, 0 };
+	static final Pair<Integer, Integer> EMPTY_RANGE = Pair.of(0, 0);
 
 	private final int start;
 	private final int end;
@@ -88,11 +90,11 @@ public class MultiSourceRange {
 	 *
 	 * @return the sub-list indices for the current source
 	 */
-	public int[] rangeForCurrentSource() {
+	public Pair<Integer, Integer> rangeForCurrentSource() {
 		throwIfSourceExhausted();
 		throwIfRangeExhausted();
 
-		int[] ans;
+		Pair<Integer, Integer> ans;
 		final var endOfCurrentSource = currentSourceStart + currentSourceSize;
 		if (endOfCurrentSource > start) {
 			final var sourceEnd = Math.min(endOfCurrentSource, end);
@@ -130,7 +132,7 @@ public class MultiSourceRange {
 		}
 	}
 
-	private int[] range(int lo, int hi) {
-		return new int[] { lo, hi };
+	private Pair<Integer, Integer> range(int lo, int hi) {
+		return Pair.of(lo, hi);
 	}
 }
