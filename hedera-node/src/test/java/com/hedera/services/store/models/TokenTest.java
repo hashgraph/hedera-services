@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -42,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -422,6 +424,18 @@ class TokenTest {
 		// and when:
 		oneToBurn.setOwner(treasuryId);
 		assertDoesNotThrow(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)));
+	}
+
+	@Test
+	void cannotMintPastSerialNoLimit() {
+		// setup:
+		final var twoMeta = List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("Z"));
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		subject.setLastUsedSerialNumber(MerkleUniqueTokenId.MAX_NUM_ALLOWED - 1);
+
+		assertFailsWith(
+				() -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
+				SERIAL_NUMBER_LIMIT_REACHED);
 	}
 
 	@Test

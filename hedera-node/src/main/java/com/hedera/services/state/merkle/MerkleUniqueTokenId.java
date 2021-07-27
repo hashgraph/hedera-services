@@ -38,6 +38,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	private static final long IDENTITY_CODE_SERIAL_NUM_MASK = (1L << 32) - 1;
 	private static final long IDENTITY_CODE_TOKEN_NUM_MASK = IDENTITY_CODE_SERIAL_NUM_MASK << 32;
+	public static final long MAX_NUM_ALLOWED = -1 & 0xFFFFFFFFL;
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x52dd6afda193e8bcL;
@@ -59,6 +60,11 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 			EntityId tokenId,
 			long serialNumber
 	) {
+		if (serialNumber > MAX_NUM_ALLOWED) {
+			throw new IllegalArgumentException("Serial number too large for "
+					+ tokenId.toAbbrevString()
+					+ "." + serialNumber);
+		}
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
 	}
