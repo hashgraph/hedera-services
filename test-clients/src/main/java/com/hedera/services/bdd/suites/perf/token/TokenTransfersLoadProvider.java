@@ -106,7 +106,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						.maxOpsPerSec(maxOpsPerSec::get)
 				).then(
 						getAccountBalance(DEFAULT_PAYER).logged(),
-						// The freeze and long wait after freeze means to keep the server in MAINTAENANCE state till test
+						// The freeze and long wait after freeze means to keep the server in MAINTENANCE state till test
 						// end to prevent it from making new export files that may cause account balances validator to
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
 						freeze().payingWith(GENESIS)
