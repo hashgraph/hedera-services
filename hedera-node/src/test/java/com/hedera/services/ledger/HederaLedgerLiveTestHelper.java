@@ -78,9 +78,9 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
-		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
+		FCOneToManyRelation<Integer, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+		FCOneToManyRelation<Integer, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+		FCOneToManyRelation<Integer, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,

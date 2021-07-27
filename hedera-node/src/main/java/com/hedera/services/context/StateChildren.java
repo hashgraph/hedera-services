@@ -52,9 +52,9 @@ public class StateChildren {
 	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
 	private MerkleNetworkContext networkCtx;
 	private AddressBook addressBook;
 	private MerkleDiskFs diskFs;
@@ -149,33 +149,33 @@ public class StateChildren {
 		this.uniqueTokens = uniqueTokens;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueTokenAssociations() {
+	public FCOneToManyRelation<Integer, Long> getUniqueTokenAssociations() {
 		Objects.requireNonNull(uniqueTokenAssociations);
 		return uniqueTokenAssociations;
 	}
 
-	public void setUniqueTokenAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations) {
+	public void setUniqueTokenAssociations(FCOneToManyRelation<Integer, Long> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueOwnershipAssociations() {
+	public FCOneToManyRelation<Integer, Long> getUniqueOwnershipAssociations() {
 		Objects.requireNonNull(uniqueOwnershipAssociations);
 		return uniqueOwnershipAssociations;
 	}
 
 	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations
+			FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations
 	) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<Integer, Long> getUniqueOwnershipTreasuryAssociations() {
 		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations);
 		return uniqueOwnershipTreasuryAssociations;
 	}
 
 	public void setUniqueOwnershipTreasuryAssociations(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations
+			FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations
 	) {
 		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
 	}

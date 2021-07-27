@@ -51,12 +51,12 @@ import java.util.function.Supplier;
 public abstract class AbstractUniqTokenView implements UniqTokenView {
 	protected final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	protected final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
-	protected final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType;
+	protected final Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
 
 	protected AbstractUniqTokenView(
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType
 	) {
 		this.tokens = tokens;
 		this.nfts = nfts;
@@ -93,7 +93,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	 * @return the requested list
 	 */
 	protected List<TokenNftInfo> accumulatedInfo(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> relation,
+			FCOneToManyRelation<Integer, Long> relation,
 			EntityId key,
 			int start,
 			int end,
@@ -102,7 +102,8 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	) {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
-		relation.get(key, start, end).forEachRemaining(nftId -> {
+		relation.get(key.identityCode(), start, end).forEachRemaining(nftIdCode -> {
+			final var nftId = MerkleUniqueTokenId.fromIdentityCode(nftIdCode);
 			final var nft = curNfts.get(nftId);
 			if (nft == null) {
 				throw new ConcurrentModificationException(nftId + " was removed during query answering");
