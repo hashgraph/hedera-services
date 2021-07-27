@@ -381,7 +381,7 @@ public abstract class HapiSpecOperation {
 	}
 
 	protected boolean isWithInRetryLimit(int retryCount) {
-		return retryLimits.isPresent() && retryCount < retryLimits.get();
+		return retryLimits.map(integer -> retryCount < integer).orElse(true);
 	}
 
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
