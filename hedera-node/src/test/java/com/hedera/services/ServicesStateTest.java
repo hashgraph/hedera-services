@@ -33,7 +33,6 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.initialization.ViewBuilderTest;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -51,6 +50,8 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -168,7 +169,9 @@ class ServicesStateTest {
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociationsCopy;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociationsCopy;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociationsCopy;
 	private MerkleDiskFs diskFs;
 	private MerkleDiskFs diskFsCopy;
 	private RecordsRunningHashLeaf runningHashLeaf;
@@ -249,7 +252,9 @@ class ServicesStateTest {
 		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
 		uniqueTokenAssociationsCopy = mock(FCOneToManyRelation.class);
 		uniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
+		uniqueOwnershipTreasuryAssociations = mock(FCOneToManyRelation.class);
 		uniqueOwnershipAssociationsCopy = mock(FCOneToManyRelation.class);
+		uniqueOwnershipTreasuryAssociationsCopy = mock(FCOneToManyRelation.class);
 
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
@@ -261,6 +266,7 @@ class ServicesStateTest {
 		given(runningHashLeaf.copy()).willReturn(runningHashLeafCopy);
 		given(uniqueTokenAssociations.copy()).willReturn(uniqueTokenAssociationsCopy);
 		given(uniqueOwnershipAssociations.copy()).willReturn(uniqueOwnershipAssociationsCopy);
+		given(uniqueOwnershipTreasuryAssociations.copy()).willReturn(uniqueOwnershipTreasuryAssociationsCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -326,6 +332,7 @@ class ServicesStateTest {
 				Collections.emptyList(),
 				uniqueTokenAssociations,
 				uniqueOwnershipAssociations,
+				uniqueOwnershipTreasuryAssociations,
 				new ServicesState());
 
 		// then:
@@ -349,6 +356,8 @@ class ServicesStateTest {
 		// setup:
 		var throttling = mock(FunctionalityThrottling.class);
 		var nodeInfo = mock(NodeInfo.class);
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager, expiryManager, networkCtx);
 
@@ -377,6 +386,8 @@ class ServicesStateTest {
 	@Test
 	void doesntInitializeFilesIfStoreStillInitializing() {
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 
 		given(blobStore.isInitializing()).willReturn(true);
 		// and:
@@ -421,6 +432,8 @@ class ServicesStateTest {
 	@Test
 	void invokesMigrationsAsApropos() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -479,6 +492,8 @@ class ServicesStateTest {
 	@Test
 	void justWarnOnFailedDiskFsMigration() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -514,8 +529,11 @@ class ServicesStateTest {
 	@Test
 	void rebuildsFcotmrAsExpected() {
 		// setup:
+		final var uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		TokenStore tokenStore = mock(TokenStore.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(uniqTokenViewsManager);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
 		CONTEXTS.store(ctx);
 
@@ -530,18 +548,19 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
-		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, ViewBuilderTest.someUniqueTokens());
+		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
 		// when:
 		subject.init(platform, book);
 
 		// then:
-		ViewBuilderTest.assertIsTheExpectedUta(subject.uniqueTokenAssociations());
-		ViewBuilderTest.assertIsTheExpectedUtao(subject.uniqueOwnershipAssociations());
+		verify(uniqTokenViewsManager).rebuildNotice(tokens, uniqueTokens);
 	}
 
 	@Test
 	void logsNonNullHashesFromSavedState() {
 		// setup:
+		var viewManager = mock(UniqTokenViewsManager.class);
+		given(ctx.uniqTokenViewsManager()).willReturn(viewManager);
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
@@ -714,6 +733,7 @@ class ServicesStateTest {
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
 		assertNull(copy.uniqueTokenAssociations());
 		assertNull(copy.uniqueOwnershipAssociations());
+		assertNull(copy.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test
@@ -732,6 +752,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueTreasuryOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -755,6 +776,7 @@ class ServicesStateTest {
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
 		assertSame(uniqueTokenAssociationsCopy, copy.uniqueTokenAssociations());
 		assertSame(uniqueOwnershipAssociationsCopy, copy.uniqueOwnershipAssociations());
+		assertSame(uniqueOwnershipTreasuryAssociationsCopy, copy.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test
@@ -874,6 +896,7 @@ class ServicesStateTest {
 		// and given:
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueTreasuryOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 
 		// when:
 		subject.archive();
@@ -881,6 +904,7 @@ class ServicesStateTest {
 		// then:
 		verify(uniqueTokenAssociations).release();
 		verify(uniqueOwnershipAssociations).release();
+		verify(uniqueOwnershipTreasuryAssociations).release();
 	}
 
 	@Test
@@ -891,6 +915,7 @@ class ServicesStateTest {
 		// and given:
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueTreasuryOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 
 		// when:
 		subject.onRelease();
@@ -898,6 +923,7 @@ class ServicesStateTest {
 		// then:
 		verify(uniqueTokenAssociations).release();
 		verify(uniqueOwnershipAssociations).release();
+		verify(uniqueOwnershipTreasuryAssociations).release();
 	}
 
 	@Test

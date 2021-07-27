@@ -230,19 +230,19 @@ public class HederaLedger {
 		for (int i = 0; i < numTouches; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
-				final var fungibleTransfersHere = netTokenTransfers.get(token);
-				if (fungibleTransfersHere != null) {
-					purgeZeroAdjustments(fungibleTransfersHere);
+				final var uniqueTransfersHere = uniqueTokenTransfers.get(token);
+				if (uniqueTransfersHere != null) {
 					all.add(TokenTransferList.newBuilder()
 							.setToken(token)
-							.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
+							.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
 							.build());
 				} else {
-					var uniqueTransfersHere = uniqueTokenTransfers.get(token);
-					if (uniqueTransfersHere != null) {
+					final var fungibleTransfersHere = netTokenTransfers.get(token);
+					if (fungibleTransfersHere != null) {
+						purgeZeroAdjustments(fungibleTransfersHere);
 						all.add(TokenTransferList.newBuilder()
 								.setToken(token)
-								.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
+								.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
 								.build());
 					}
 				}

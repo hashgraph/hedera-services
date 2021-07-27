@@ -30,6 +30,8 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -71,7 +73,8 @@ public class TokenRelationship {
 	 * the account holds at the beginning of a user transaction. (In particular, does
 	 * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
 	 *
-	 * @param balance the initial balance in the relationship
+	 * @param balance
+	 * 		the initial balance in the relationship
 	 */
 	public void initBalance(long balance) {
 		this.balance = balance;
@@ -82,7 +85,8 @@ public class TokenRelationship {
 	 * <p>
 	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
 	 *
-	 * @param balance the updated balance of the relationship
+	 * @param balance
+	 * 		the updated balance of the relationship
 	 */
 	public void setBalance(long balance) {
 		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
@@ -90,11 +94,6 @@ public class TokenRelationship {
 
 		balanceChange += (balance - this.balance);
 		this.balance = balance;
-	}
-
-	void adjustBalance(long adjustment) {
-		balanceChange += adjustment;
-		this.balance += adjustment;
 	}
 
 	public boolean isFrozen() {
@@ -105,12 +104,39 @@ public class TokenRelationship {
 		this.frozen = frozen;
 	}
 
+	/**
+	 * Modifies the state of the "Frozen" property to either true
+	 * (freezes the relation between the account and the token) or false
+	 * (unfreezes the relation between the account and the token).
+	 * <p> Before the property modification, the method performs validation, that the respective token has a freeze key.
+	 *
+	 * @param freeze
+	 * 		the new state of the property
+	 */
+	public void changeFrozenState(boolean freeze) {
+		validateTrue(token.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
+		this.frozen = freeze;
+	}
+
 	public boolean isKycGranted() {
 		return kycGranted;
 	}
 
 	public void setKycGranted(boolean kycGranted) {
 		this.kycGranted = kycGranted;
+	}
+
+	/**
+	 * Modifies the state of the KYC property to either true (granted) or false (revoked).
+	 * <p>Before the property modification, the method performs validation, that the respective token has a KYC key.
+     * </p>
+	 *
+	 * @param isGranted
+	 * 		the new state of the property
+	 */
+	public void changeKycState(boolean isGranted) {
+		validateTrue(token.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
+		this.kycGranted = isGranted;
 	}
 
 	public long getBalanceChange() {

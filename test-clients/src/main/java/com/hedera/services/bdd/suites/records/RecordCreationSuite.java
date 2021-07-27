@@ -92,7 +92,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						confirmNftToggleIsOffByDefaultThenEnable(),
+						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
@@ -115,15 +115,20 @@ public class RecordCreationSuite extends HapiApiSuite {
 		);
 	}
 
-	private HapiApiSpec confirmNftToggleIsOffByDefaultThenEnable() {
+	private HapiApiSpec confirmNftToggleIsWorksThenReenable() {
 		final var acceptedTokenAttempt = "someSuch";
 		final var blockedTokenAttempt = "neverToBe";
 		final var supplyKey = "supplyKey";
 		final var wipeKey = "wipeKey";
 		final var miscAccount = "civilian";
 
-		return defaultHapiSpec("ConfirmNftToggleIsOffByDefaultThenEnable")
+		return defaultHapiSpec("ConfirmNftToggleIsWorksThenReenable")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "false"
+								)),
 						tokenCreate(blockedTokenAttempt)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0L)
@@ -140,7 +145,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 								.signedBy(DEFAULT_PAYER)
 								.fee(ONE_HBAR)
 								.hasPrecheck(NOT_SUPPORTED),
-						cryptoTransfer(movingUnique(1L, "1.2.3")
+						cryptoTransfer(movingUnique("1.2.3", 1L)
 								.between("2.3.4", "3.4.5")
 						)
 								.signedBy(DEFAULT_PAYER)
@@ -171,7 +176,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 										ByteString.copyFromUtf8("C"))),
 						burnToken(acceptedTokenAttempt, List.of(2L)),
 						tokenAssociate(miscAccount, acceptedTokenAttempt),
-						cryptoTransfer(movingUnique(1L, acceptedTokenAttempt)
+						cryptoTransfer(movingUnique(acceptedTokenAttempt, 1L)
 								.between(TOKEN_TREASURY, miscAccount)
 						),
 						wipeTokenAccount(acceptedTokenAttempt, miscAccount, List.of(1L)),

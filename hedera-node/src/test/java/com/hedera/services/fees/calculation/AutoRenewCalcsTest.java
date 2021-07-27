@@ -20,7 +20,7 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.fees.bootstrap.JsonToProtoSerde;
+import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
@@ -189,7 +189,7 @@ class AutoRenewCalcsTest {
 			String resource,
 			HederaFunctionality autoRenewFunction
 	) throws Exception {
-		var schedules = JsonToProtoSerde.loadFeeScheduleFromJson(resource);
+		var schedules = FeesJsonToProtoSerde.loadFeeScheduleFromJson(resource);
 		var prePrices = schedules.getCurrentFeeSchedule().getTransactionFeeScheduleList().stream()
 				.filter(transactionFeeSchedule -> transactionFeeSchedule.getHederaFunctionality() == autoRenewFunction)
 				.findFirst()

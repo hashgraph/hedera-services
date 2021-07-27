@@ -47,44 +47,45 @@
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "CryptoAccountAutoRenew",
-          "fees": [{
-            "nodedata": {
-              "constant": 73351018,
-              "bpt": 117266,
-              "vpt": 293165743,
-              "rbh": 78,
-              "sbh": 6,
-              "gas": 782,
-              "bpr": 117266,
-              "sbpr": 2932,
-              "min": 0,
-              "max": 1000000000000000
-            },
-            "networkdata": {
-              "constant": 953563237,
-              "bpt": 1524462,
-              "vpt": 3811154656,
-              "rbh": 1016,
-              "sbh": 76,
-              "gas": 10163,
-              "bpr": 1524462,
-              "sbpr": 38112,
-              "min": 0,
-              "max": 1000000000000000
-            },
-            "servicedata": {
-              "constant": 953563237,
-              "bpt": 1524462,
-              "vpt": 3811154656,
-              "rbh": 1016,
-              "sbh": 76,
-              "gas": 10163,
-              "bpr": 1524462,
-              "sbpr": 38112,
-              "min": 0,
-              "max": 1000000000000000
-            }
-          }]
+          "fees": [
+            {
+              "nodedata": {
+                "constant": 73351018,
+                "bpt": 117266,
+                "vpt": 293165743,
+                "rbh": 78,
+                "sbh": 6,
+                "gas": 782,
+                "bpr": 117266,
+                "sbpr": 2932,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "networkdata": {
+                "constant": 953563237,
+                "bpt": 1524462,
+                "vpt": 3811154656,
+                "rbh": 1016,
+                "sbh": 76,
+                "gas": 10163,
+                "bpr": 1524462,
+                "sbpr": 38112,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "servicedata": {
+                "constant": 953563237,
+                "bpt": 1524462,
+                "vpt": 3811154656,
+                "rbh": 1016,
+                "sbh": 76,
+                "gas": 10163,
+                "bpr": 1524462,
+                "sbpr": 38112,
+                "min": 0,
+                "max": 1000000000000000
+              }
+            }]
         }
       },
       {
@@ -305,7 +306,7 @@
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "CryptoGetClaim",
-          "fees": [{
+          "fees":[{
             "nodedata": {
               "constant": 67338,
               "bpt": 108,

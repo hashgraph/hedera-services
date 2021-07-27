@@ -85,7 +85,7 @@ class AccountStoreTest {
 	@Test
 	void failsLoadingDetached() throws NegativeAccountBalanceException {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
-		given(validator.isAfterConsensusSecond(expiry)).willReturn(true);
+		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
 		miscMerkleAccount.setBalance(0L);
 

@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -209,5 +210,16 @@ class MerkleUniqueTokenTest {
 	@Test
 	void getsCreationTime() {
 		assertEquals(timestamp, subject.getCreationTime());
+	}
+
+	@Test
+	void treasuryOwnershipCheckWorks() {
+		// expect:
+		assertFalse(subject.isTreasuryOwned());
+
+		// and:
+		subject.setOwner(EntityId.MISSING_ENTITY_ID);
+		// then:
+		assertTrue(subject.isTreasuryOwned());
 	}
 }

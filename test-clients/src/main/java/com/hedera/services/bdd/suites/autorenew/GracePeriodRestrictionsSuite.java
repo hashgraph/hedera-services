@@ -64,7 +64,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWith;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -172,9 +172,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.entityMemo("NOPE")
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						cryptoUpdate(detachedAccount)
-								.memo("Can't pass precheck with past expiry")
+								.memo("Can't update with past expiry")
 								.expiring(certainlyPast)
-								.hasPrecheck(INVALID_EXPIRATION_TIME),
+								.hasKnownStatus(INVALID_EXPIRATION_TIME),
 						cryptoUpdate(detachedAccount)
 								.memo("CAN extend expiry")
 								.expiring(certainlyDistant)
@@ -211,7 +211,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.hasPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						getAccountInfo("0.0.2")
 								.payingWith(detachedAccount)
-								.hasCostAnswerPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						getAccountInfo("0.0.2")
 								.payingWith(detachedAccount)
 								.nodePayment(666L)
@@ -454,7 +454,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				.given().when().then(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(disablingAutoRenewWithDefaults())
+								.overridingProps(disablingAutoRenewWith(10L))
 				);
 	}
 

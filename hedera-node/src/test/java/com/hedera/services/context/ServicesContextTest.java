@@ -133,6 +133,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -162,6 +164,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -212,6 +215,7 @@ class ServicesContextTest {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
 	private AddressBook addresses;
 	private MerkleDiskFs diskFs;
 
@@ -220,6 +224,7 @@ class ServicesContextTest {
 		uniqueTokens = mock(FCMap.class);
 		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
 		uniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
+		uniqueOwnershipTreasuryAssociations = mock(FCOneToManyRelation.class);
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
@@ -255,6 +260,7 @@ class ServicesContextTest {
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
+		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueOwnershipTreasuryAssociations);
 
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
@@ -278,6 +284,7 @@ class ServicesContextTest {
 		var newUniqueTokens = mock(FCMap.class);
 		var newUniqueTokenAssociations = mock(FCOneToManyRelation.class);
 		var newUniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
+		var newUniqueOwnershipTreasuryAssociations = mock(FCOneToManyRelation.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -288,6 +295,7 @@ class ServicesContextTest {
 		given(newState.uniqueTokens()).willReturn(newUniqueTokens);
 		given(newState.uniqueTokenAssociations()).willReturn(newUniqueTokenAssociations);
 		given(newState.uniqueOwnershipAssociations()).willReturn(newUniqueOwnershipAssociations);
+		given(newState.uniqueTreasuryOwnershipAssociations()).willReturn(newUniqueOwnershipTreasuryAssociations);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 
@@ -304,6 +312,7 @@ class ServicesContextTest {
 		assertSame(state.uniqueTokens(), queryableState.get().getUniqueTokens());
 		assertSame(state.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
 		assertSame(state.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
+		assertSame(state.uniqueTreasuryOwnershipAssociations(), queryableState.get().getUniqueOwnershipTreasuryAssociations());
 
 		// when:
 		subject.update(newState);
@@ -319,6 +328,27 @@ class ServicesContextTest {
 		assertSame(newState.uniqueTokens(), queryableState.get().getUniqueTokens());
 		assertSame(newState.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
 		assertSame(newState.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
+		assertSame(newState.uniqueTreasuryOwnershipAssociations(), queryableState.get().getUniqueOwnershipTreasuryAssociations());
+	}
+
+	@Test
+	void constructsUniqTokenViewMgrAsExpectedNotUsingWildcards() {
+		given(properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards")).willReturn(false);
+		// and:
+		final var subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		// expect:
+		Assertions.assertFalse(subject.uniqTokenViewsManager().isUsingTreasuryWildcards());
+	}
+
+	@Test
+	void constructsUniqTokenViewMgrAsExpectedUsingWildcards() {
+		given(properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards")).willReturn(true);
+		// and:
+		final var subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		// expect:
+		Assertions.assertTrue(subject.uniqTokenViewsManager().isUsingTreasuryWildcards());
 	}
 
 	@Test
@@ -335,6 +365,14 @@ class ServicesContextTest {
 		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
 
 		compareFCOTMR(subject.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
+	}
+
+	@Test
+	void queryableUniqueTreasuryOwnershipsReturnsProperReference() throws Exception {
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+
+		compareFCOTMR(subject.uniqueOwnershipTreasuryAssociations(), queryableState.get().getUniqueOwnershipTreasuryAssociations());
 	}
 
 	@Test
@@ -638,6 +676,8 @@ class ServicesContextTest {
 		assertThat(ctx.transferSemanticChecks(), instanceOf(PureTransferSemanticChecks.class));
 		assertThat(ctx.backingNfts(), instanceOf(BackingNfts.class));
 		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
+		assertThat(ctx.uniqTokenViewsManager(), instanceOf(UniqTokenViewsManager.class));
+		assertThat(ctx.uniqTokenViewFactory(), instanceOf(ConfigDrivenUniqTokenViewFactory.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

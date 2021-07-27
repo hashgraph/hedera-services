@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
@@ -65,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 
-public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
+public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	long thisSecond = 1_234_567L;
 	@BeforeEach
 	void setup() {
@@ -77,7 +78,9 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -90,12 +93,16 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+		final var viewManager = new UniqTokenViewsManager(
+				() -> uniqueTokenOwnerships,
+				() -> uniqueTokenAccountOwnerships,
+				() -> uniqueTokenTreasuryOwnerships);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
+				viewManager,
 				new MockGlobalDynamicProps(),
 				() -> tokens,
-				() -> uniqueTokenAccountOwnerships,
 				tokenRelsLedger,
 				nftsLedger);
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);

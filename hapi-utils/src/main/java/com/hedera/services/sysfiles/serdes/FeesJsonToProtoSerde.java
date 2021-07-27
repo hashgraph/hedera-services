@@ -1,17 +1,17 @@
-package com.hedera.services.bdd.suites.utils.sysfiles;
+package com.hedera.services.sysfiles.serdes;
 
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,26 +26,22 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Provides data binding from the fee schedules JSON created by
- * the Hedera product team, to the {@link CurrentAndNextFeeSchedule}
- * protobuf type.
- *
- * @author Michael Tinker
+ * Provides data binding from the fee schedules JSON created by the Hedera product team,
+ * to the {@link CurrentAndNextFeeSchedule} protobuf type.
  */
 @SuppressWarnings("unchecked")
-public class FeeScheduleDeJson {
-	private static String[] FEE_SCHEDULE_KEYS = { "currentFeeSchedule", "nextFeeSchedule" };
+public class FeesJsonToProtoSerde {
+	private static final String[] FEE_SCHEDULE_KEYS = { "currentFeeSchedule", "nextFeeSchedule" };
 	private static final String EXPIRY_TIME_KEY = "expiryTime";
 	private static final String TXN_FEE_SCHEDULE_KEY = "transactionFeeSchedule";
 	private static final String FEE_DATA_KEY = "fees";
@@ -54,41 +50,54 @@ public class FeeScheduleDeJson {
 	private static final String[] RESOURCE_KEYS =
 			{ "constant", "bpt", "vpt", "rbh", "sbh", "gas", "bpr", "sbpr", "min", "max" };
 
-	public static CurrentAndNextFeeSchedule fromJsonLiteral(String stylized) throws Exception {
-		var om = new ObjectMapper();
-		List<Map<String, Object>> rawFeeSchedules = (List<Map<String, Object>>)om.readValue(stylized, List.class);
-		return fromMapList(rawFeeSchedules);
+	private FeesJsonToProtoSerde() {
+		throw new UnsupportedOperationException("Static utilities class, should not be instantiated");
 	}
 
-	public static CurrentAndNextFeeSchedule fromJson(String jsonLoc) throws Exception {
-		List<Map<String, Object>> rawFeeSchedules = asMapList(jsonLoc);
-		return fromMapList(rawFeeSchedules);
+	public static CurrentAndNextFeeSchedule loadFeeScheduleFromJson(String jsonResource) throws Exception {
+		return buildFrom(om -> om.readValue(
+				FeesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(jsonResource),
+				List.class));
 	}
 
-	private static CurrentAndNextFeeSchedule fromMapList(List<Map<String, Object>> mapList) throws Exception {
-		var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
+	public static CurrentAndNextFeeSchedule loadFeeScheduleFromStream(InputStream in) throws Exception {
+		return buildFrom(om -> om.readValue(in, List.class));
+	}
+
+	public static CurrentAndNextFeeSchedule parseFeeScheduleFromJson(String literal) throws Exception {
+		return buildFrom(om -> om.readValue(literal, List.class));
+	}
+
+	private static CurrentAndNextFeeSchedule buildFrom(ThrowingReader reader) throws Exception {
+		final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
+
+		final var om = new ObjectMapper();
+		final var rawFeeSchedules = reader.readValueWith(om);
+		constructWithBuilder(feeSchedules, rawFeeSchedules);
+
+		return feeSchedules.build();
+	}
+
+	interface ThrowingReader {
+		List<Map<String, Object>> readValueWith(ObjectMapper om) throws Exception;
+	}
+
+	private static void constructWithBuilder(
+			CurrentAndNextFeeSchedule.Builder builder,
+			List<Map<String, Object>> rawFeeSchedules
+	) throws Exception {
 		int i = 0;
 		for (String rawFeeSchedule : FEE_SCHEDULE_KEYS) {
 			set(
 					CurrentAndNextFeeSchedule.Builder.class,
-					feeSchedules,
+					builder,
 					rawFeeSchedule,
 					FeeSchedule.class,
-					bindFeeScheduleFrom((List<Map<String, Object>>)mapList.get(i++).get(rawFeeSchedule)));
-		}
-		return feeSchedules.build();
-	}
-
-	static List<Map<String, Object>> asMapList(String jsonLoc) {
-		ObjectMapper om = new ObjectMapper();
-		try (InputStream in = Files.newInputStream(Paths.get(jsonLoc))) {
-			return (List<Map<String, Object>>)om.readValue(in, List.class);
-		} catch (Exception e) {
-			throw new IllegalStateException(String.format("Cannot load fee schedules '%s'!", jsonLoc), e);
+					bindFeeScheduleFrom((List<Map<String, Object>>) rawFeeSchedules.get(i++).get(rawFeeSchedule)));
 		}
 	}
 
-	static FeeSchedule bindFeeScheduleFrom(List<Map<String, Object>> rawFeeSchedule) throws Exception {
+	private static FeeSchedule bindFeeScheduleFrom(List<Map<String, Object>> rawFeeSchedule) throws Exception {
 		FeeSchedule.Builder feeSchedule = FeeSchedule.newBuilder();
 
 		for (Map<String, Object> part : rawFeeSchedule) {
@@ -97,22 +106,25 @@ public class FeeScheduleDeJson {
 				feeSchedule.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry));
 			} else {
 				feeSchedule.addTransactionFeeSchedule(bindTxnFeeScheduleFrom(
-						(Map<String, Object>)part.get(TXN_FEE_SCHEDULE_KEY)));
+						(Map<String, Object>) part.get(TXN_FEE_SCHEDULE_KEY)));
 			}
 		}
 
 		return feeSchedule.build();
 	}
 
-	static TransactionFeeSchedule bindTxnFeeScheduleFrom(Map<String, Object> rawTxnFeeSchedule) throws Exception {
-		TransactionFeeSchedule.Builder txnFeeSchedule = TransactionFeeSchedule.newBuilder();
-		var key = translateClaimFunction((String)rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
+	private static TransactionFeeSchedule bindTxnFeeScheduleFrom(
+			Map<String, Object> rawTxnFeeSchedule
+	) throws Exception {
+		final var txnFeeSchedule = TransactionFeeSchedule.newBuilder();
+		var key = translateClaimFunction((String) rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
 		txnFeeSchedule.setHederaFunctionality(HederaFunctionality.valueOf(key));
+		var feesList = (List<Object>) rawTxnFeeSchedule.get(FEE_DATA_KEY);
 
-		var feesList = (List<Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY);
 		for (Object o : feesList) {
 			txnFeeSchedule.addFees(bindFeeDataFrom((Map<String, Object>) o));
 		}
+
 		return txnFeeSchedule.build();
 	}
 
@@ -128,8 +140,14 @@ public class FeeScheduleDeJson {
 		}
 	}
 
-	static FeeData bindFeeDataFrom(Map<String, Object> rawFeeData) throws Exception {
+	private static FeeData bindFeeDataFrom(Map<String, Object> rawFeeData) throws Exception {
 		FeeData.Builder feeData = FeeData.newBuilder();
+
+		if (rawFeeData.get("subType") == null) {
+			feeData.setSubType(SubType.DEFAULT);
+		} else {
+			feeData.setSubType(stringToSubType((String) rawFeeData.get("subType")));
+		}
 
 		for (String feeComponent : FEE_COMPONENT_KEYS) {
 			set(
@@ -137,10 +155,25 @@ public class FeeScheduleDeJson {
 					feeData,
 					feeComponent,
 					FeeComponents.class,
-					bindFeeComponentsFrom((Map<String, Object>)rawFeeData.get(feeComponent)));
+					bindFeeComponentsFrom((Map<String, Object>) rawFeeData.get(feeComponent)));
 		}
 
 		return feeData.build();
+	}
+
+	static SubType stringToSubType(String subType) {
+		switch (subType) {
+			case "TOKEN_FUNGIBLE_COMMON":
+				return SubType.TOKEN_FUNGIBLE_COMMON;
+			case "TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES":
+				return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+			case "TOKEN_NON_FUNGIBLE_UNIQUE":
+				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+			case "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES":
+				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+			default:
+				return SubType.DEFAULT;
+		}
 	}
 
 	static FeeComponents bindFeeComponentsFrom(Map<String, Object> rawFeeComponents) throws Exception {
@@ -156,7 +189,8 @@ public class FeeScheduleDeJson {
 		return feeComponents.build();
 	}
 
-	static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType, T value) throws Exception {
+	static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType,
+			T value) throws Exception {
 		Method setter = builderType.getDeclaredMethod(setterName(property), valueType);
 		setter.invoke(builder, value);
 	}
