@@ -1300,6 +1300,11 @@ public class MiscUtilsTest {
 		assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
 	}
 
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, () -> new MiscUtils());
+	}
+
 	public static class BodySetter<T> {
 		private final Class<T> type;
 

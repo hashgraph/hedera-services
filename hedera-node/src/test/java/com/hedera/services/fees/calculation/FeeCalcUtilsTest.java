@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExp
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -203,7 +204,7 @@ public class FeeCalcUtilsTest {
 		var c = sumOfUsages(a, b);
 		// and:
 		var scopedUsages = new FeeComponents[] {
-			c.getNodedata(), c.getNetworkdata(), c.getServicedata()
+				c.getNodedata(), c.getNetworkdata(), c.getServicedata()
 		};
 
 		// then:
@@ -220,5 +221,10 @@ public class FeeCalcUtilsTest {
 			assertEquals(10, scopedUsage.getBpr());
 			assertEquals(10, scopedUsage.getSbpr());
 		}
+	}
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, () -> new FeeCalcUtils());
 	}
 }

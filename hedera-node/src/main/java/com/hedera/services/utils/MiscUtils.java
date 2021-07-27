@@ -179,6 +179,10 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 public class MiscUtils {
+	MiscUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	public static final EnumSet<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
 			ConsensusGetTopicInfo,
 			GetBySolidityID,
