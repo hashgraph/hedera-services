@@ -74,8 +74,8 @@ public class RandomOps extends HapiApiSuite {
 								.setRetryLimit(5),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
 								.hasRetryPrecheckFrom(OK)
-								.setRetryLimit(5),
-						cryptoTransfer(tinyBarsFromTo(NODE, GENESIS, 1L))
+								.setRetryLimit(3),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L))
 				);
 	}
 
