@@ -29,17 +29,13 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.FileGetContentsResponse;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +45,6 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.EnumSet;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -57,9 +52,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FeesAndRatesProvider {
@@ -77,6 +69,7 @@ public class FeesAndRatesProvider {
 	private HapiSpecRegistry registry;
 	static private FeeSchedule feeSchedule;
 	static private ExchangeRateSet rateSet;
+	private final ScheduleTypePatching typePatching = new ScheduleTypePatching();
 
 	public FeesAndRatesProvider(
 			TxnFactory txns,
@@ -160,48 +153,8 @@ public class FeesAndRatesProvider {
 		FileGetContentsResponse response = downloadWith(queryFee, false, setup.feeScheduleId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
-		feeSchedule = guaranteedUsableFeeSchedule(wrapper.getCurrentFeeSchedule());
+		feeSchedule = typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule());
 		log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
-	}
-
-	private static EnumSet<HederaFunctionality> FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS = EnumSet.of(
-			TokenMint,
-			TokenBurn,
-			TokenAccountWipe
-	);
-
-	private FeeSchedule guaranteedUsableFeeSchedule(FeeSchedule possiblyUntypedSchedule) {
-		final var usableSchedule = FeeSchedule.newBuilder();
-		for (var tfs : possiblyUntypedSchedule.getTransactionFeeScheduleList()) {
-			final var usableTfs = TransactionFeeSchedule.newBuilder();
-			usableTfs.setHederaFunctionality(tfs.getHederaFunctionality());
-			if (tfs.hasFeeData()) {
-				final var data = tfs.getFeeData();
-				final var function = tfs.getHederaFunctionality();
-				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
-					usableTfs.addFees(FeeData.newBuilder()
-									.setSubType(SubType.TOKEN_FUNGIBLE_COMMON)
-									.mergeFrom(data));
-					usableTfs.addFees(FeeData.newBuilder()
-							.setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-							.mergeFrom(data));
-					if (function == TokenAccountWipe) {
-						usableTfs.addFees(FeeData.newBuilder()
-								.setSubType(SubType.DEFAULT)
-								.mergeFrom(data));
-					}
-				} else {
-					usableTfs.addFees(FeeData.newBuilder()
-							.setSubType(SubType.DEFAULT)
-							.mergeFrom(data));
-				}
-				usableSchedule.addTransactionFeeSchedule(usableTfs);
-			} else {
-				/* Must have been >= release 0.16.0 fee schedule */
-				return possiblyUntypedSchedule;
-			}
-		}
-		return usableSchedule.build();
 	}
 
 	private long lookupDownloadFee(FileID fileId) throws Throwable {
