@@ -1,15 +1,13 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.store.models.Id;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ContractValue implements VValue {
+public class ContractValue implements VirtualValue {
     public static final int SERIALIZED_SIZE = ContractUint256.SERIALIZED_SIZE;
     private ContractUint256 value;
     private boolean readOnly = false;
@@ -82,7 +80,7 @@ public class ContractValue implements VValue {
     }
 
     @Override
-    public VValue asReadOnly() {
+    public VirtualValue asReadOnly() {
         return new ContractValue(this, true);
     }
 

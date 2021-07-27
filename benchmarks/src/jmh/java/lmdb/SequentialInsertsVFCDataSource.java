@@ -1,16 +1,16 @@
 package lmdb;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 
 import java.io.IOException;
 
 /**
- * Extended interface for VFCDataSource's that support faster sequential data insertion where the keys are sequential
+ * Extended interface for VirtualDataSource's that support faster sequential data insertion where the keys are sequential
  */
-public interface SequentialInsertsVFCDataSource<K extends VKey, V extends VValue> extends VFCDataSource<K, V> {
+public interface SequentialInsertsVFCDataSource<K extends VirtualKey, V extends VirtualValue> extends VirtualDataSource<K, V> {
 
     /**
      * Save a hash for a internal node

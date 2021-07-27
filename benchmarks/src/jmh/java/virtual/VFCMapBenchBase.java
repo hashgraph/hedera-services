@@ -1,15 +1,14 @@
 package virtual;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VFCMap;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualValue;
 import lmdb.VFCDataSourceLmdb;
 import lmdb.VFCDataSourceLmdbHashesRam;
 import rockdb.VFCDataSourceRocksDb;
@@ -25,7 +24,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.function.Supplier;
 
-public abstract class VFCMapBenchBase<K extends VKey, V extends VValue> {
+public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualValue> {
     public enum DataSourceType {
         lmdbMem, lmdb, rocksdb, jasperdb
     }
@@ -33,40 +32,40 @@ public abstract class VFCMapBenchBase<K extends VKey, V extends VValue> {
     protected final Random rand = new Random(1234);
     protected final Pipeline<K, V> pipeline = new Pipeline<>();
 
-    protected VFCMap<K,V> createMap(
+    protected VirtualMap<K,V> createMap(
             DataSourceType type,
             int keySizeBytes,
             Supplier<K> keyConstructor,
             int valueSizeBytes,
-            Supplier<V> valueConstructor) throws IOException {
+            Supplier<V> valueConstructor,
+            long numEntities) throws IOException {
 
         return switch (type) {
-            case lmdbMem -> new VFCMap<>(new VFCDataSourceLmdbHashesRam<>(
+            case lmdbMem -> new VirtualMap<>(new VFCDataSourceLmdbHashesRam<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("lmdbMem")));
-            case lmdb -> new VFCMap<>(new VFCDataSourceLmdb<>(
+            case lmdb -> new VirtualMap<>(new VFCDataSourceLmdb<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("lmdb")));
-            case rocksdb -> new VFCMap<>(new VFCDataSourceRocksDb<>(
+            case rocksdb -> new VirtualMap<>(new VFCDataSourceRocksDb<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("rocksdb")));
-            case jasperdb ->
-//                virtualMap = new VFCMap<>(new VFCDataSourceImpl<>(
-//                        keySizeBytes,
-//                        keyConstructor,
-//                        valueSizeBytes,
-//                        valueConstructor,
-//                        Path.of("jasperdb")));
-                    null;
+            case jasperdb -> new VirtualMap<>(new VFCDataSourceImplV3<>(
+                    keySizeBytes,
+                    keyConstructor,
+                    valueSizeBytes,
+                    valueConstructor,
+                    Path.of("jasperdb"),
+                    numEntities));
         };
     }
 
@@ -112,7 +111,7 @@ public abstract class VFCMapBenchBase<K extends VKey, V extends VValue> {
         }
     }
 
-    protected static final class Id implements VKey {
+    protected static final class Id implements VirtualLongKey {
         public static final int SERIALIZED_SIZE = Long.BYTES;
 
         private long num;
@@ -187,9 +186,19 @@ public abstract class VFCMapBenchBase<K extends VKey, V extends VValue> {
         public int hashCode() {
             return Objects.hash(num);
         }
+
+        @Override
+        public String toString() {
+            return "Id(" + num + ")";
+        }
+
+        @Override
+        public long getKeyAsLong() {
+            return num;
+        }
     }
 
-    protected static final class Account implements VValue {
+    protected static final class Account implements VirtualValue {
         private static final int MAX_STRING_BYTES = 128;
         public static final int SERIALIZED_SIZE = (4*Long.BYTES) + // key
                 Long.BYTES +        // expiry
@@ -211,6 +220,11 @@ public abstract class VFCMapBenchBase<K extends VKey, V extends VValue> {
         private Id proxy;
 
         private transient boolean readOnly = false;
+
+        @Override
+        public String toString() {
+            return "Account(hbar=" + hbarBalance + ", memo=" + memo + ")";
+        }
 
         public Account() {
 

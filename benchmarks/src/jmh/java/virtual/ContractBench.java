@@ -2,7 +2,7 @@ package virtual;
 
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractValue;
-import com.swirlds.fcmap.VFCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -53,14 +53,15 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
     public DataSourceType dsType;
 
     // This is the map we will be testing!
-    private VFCMap<ContractKey, ContractValue> virtualMap;
+    private VirtualMap<ContractKey, ContractValue> virtualMap;
     private int[] keyValuePairsPerContract;
 
     @Setup
     public void prepare() throws Exception {
         virtualMap = createMap(dsType,
                 ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                ContractValue.SERIALIZED_SIZE, ContractValue::new);
+                ContractValue.SERIALIZED_SIZE, ContractValue::new,
+                numContracts);
 
         if (preFill) {
             keyValuePairsPerContract = new int[numContracts];

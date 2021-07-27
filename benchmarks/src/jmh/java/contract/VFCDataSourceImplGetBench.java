@@ -5,7 +5,7 @@ import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
-import com.swirlds.fcmap.VFCDataSource;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import fcmmap.FCVirtualMapTestUtils;
 import lmdb.VFCDataSourceLmdbHashesRam;
 import org.openjdk.jmh.annotations.*;
@@ -43,7 +43,7 @@ public class VFCDataSourceImplGetBench {
 
     // state
     public Path storePath;
-    public VFCDataSource<ContractKey,ContractUint256> dataSource;
+    public VirtualDataSource<ContractKey,ContractUint256> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
     private ContractKey key1 = null;
@@ -92,7 +92,8 @@ public class VFCDataSourceImplGetBench {
                     new VFCDataSourceImplV3<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
-                            storePath);
+                            storePath,
+                            numEntities);
                 default ->
                     throw new IllegalStateException("Unexpected value: " + impl);
             };

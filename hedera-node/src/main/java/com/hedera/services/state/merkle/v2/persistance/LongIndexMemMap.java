@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle.v2.persistance;
 
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
+public final class LongIndexMemMap<K extends VirtualKey> implements LongIndex<K> {
 
     //==================================================================================================================
     // Config
@@ -160,7 +160,7 @@ public final class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
      * then an array of stored values
      *      [int hash][int key class version][long value]
      */
-    public static final class BinFile<K extends VKey> {
+    public static final class BinFile<K extends VirtualKey> {
         /**
          * Special key for a hash for a empty entry. -1 is known to be safe as it is all ones and keys are always shifted
          * left at least 2 by FCSlotIndexUsingMemMapFile.

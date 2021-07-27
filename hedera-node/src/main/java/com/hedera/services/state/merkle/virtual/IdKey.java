@@ -3,13 +3,13 @@ package com.hedera.services.state.merkle.virtual;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class IdKey implements VKey {
+public class IdKey implements VirtualKey {
     public static final int SERIALIZED_SIZE = Long.BYTES*3;
     private static final long CLASS_ID = 0x2f48ba357c95f343L;
     private static final int CLASS_VERSION = 1;

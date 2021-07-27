@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle.v2.persistance;
 
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
 
@@ -9,7 +9,7 @@ import java.io.IOException;
  *
  * @param <K> the type for key
  */
-public interface LongIndex<K extends VKey> {
+public interface LongIndex<K extends VirtualKey> {
 
     /**
      * Put a key into map

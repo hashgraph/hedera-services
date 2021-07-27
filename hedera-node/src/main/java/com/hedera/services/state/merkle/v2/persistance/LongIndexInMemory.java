@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle.v2.persistance;
 
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <K> the type for keys
  */
-public class LongIndexInMemory<K extends VKey> implements LongIndex<K> {
+public class LongIndexInMemory<K extends VirtualKey> implements LongIndex<K> {
     private final ConcurrentHashMap<K,Long> map = new ConcurrentHashMap<>();
 
     @Override

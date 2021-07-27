@@ -6,8 +6,8 @@ import com.hedera.services.state.merkle.virtual.IdKey;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import fcmmap.FCVirtualMapTestUtils;
 import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
@@ -48,7 +48,7 @@ public class VFCDataSourceNFTBench {
 
     // state
     public Path storePath;
-    public VFCDataSource<IdKey,NFTData> dataSource;
+    public VirtualDataSource<IdKey,NFTData> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
     private IdKey key1 = null;
@@ -333,7 +333,7 @@ public class VFCDataSourceNFTBench {
         dataSource.loadLeafHash(randomLeafIndex1);
     }
 
-    public static class NFTData implements VValue {
+    public static class NFTData implements VirtualValue {
         private static Random RANDOM = new Random();
         
         ByteBuffer randomData;

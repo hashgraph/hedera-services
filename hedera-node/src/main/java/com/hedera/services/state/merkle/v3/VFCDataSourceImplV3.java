@@ -7,10 +7,10 @@ import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.LongVKey;
-import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,7 +25,7 @@ import static java.nio.ByteBuffer.allocateDirect;
  * @param <K>
  * @param <V>
  */
-public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
+public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     private final static int HASH_SIZE = Integer.BYTES+ DigestType.SHA_384.digestLength(); // TODO remove please for something better
     private final int keySizeBytes;
     private final int valueSizeBytes;
@@ -151,7 +151,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
     @Override
     public V loadLeafValue(K key) throws IOException {
         if (key == null) throw new IllegalArgumentException("key can not be null");
-        long path = isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
+        long path = isLongKeyMode ? longKeyToPath.get(((VirtualLongKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
         if (path == INVALID_PATH) return null;
         return loadLeafValue(path);
     }
@@ -186,7 +186,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
      */
     @Override
     public long loadLeafPath(K key) throws IOException {
-        return isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
+        return isLongKeyMode ? longKeyToPath.get(((VirtualLongKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
     }
 
     /**
@@ -259,7 +259,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
         pathToKeyHashValue.put(path,keyHashValueBuffer);
         // save key to path mapping
         if (isLongKeyMode) {
-            longKeyToPath.put(((LongVKey)key).getKeyAsLong(),path);
+            longKeyToPath.put(((VirtualLongKey)key).getKeyAsLong(),path);
         } else {
             objectKeyToPath.put(key,path);
         }

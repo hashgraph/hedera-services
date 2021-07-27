@@ -4,7 +4,7 @@ import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,7 +13,7 @@ import java.util.Objects;
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
  */
-public final class ContractKey implements VKey {
+public final class ContractKey implements VirtualKey {
     public static final int SERIALIZED_SIZE = Long.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES + ContractUint256.SERIALIZED_SIZE;
     private Id contractId;
     private ContractUint256 key;

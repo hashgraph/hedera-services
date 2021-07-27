@@ -1,7 +1,7 @@
 package com.hedera.services.state.merkle.v3.files;
 
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  *
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
  */
-public class HalfDiskHashMap<K extends VKey> {
+public class HalfDiskHashMap<K extends VirtualKey> {
     /**
      * Nominal value for a bucket location that doesn't exist. It is zero so we don't need fill empty index memory
      * with some other value.
@@ -200,7 +200,7 @@ public class HalfDiskHashMap<K extends VKey> {
      *  - Count of keys stored
      *  - Long pointer to next bucket if this one is full. TODO implement this
      */
-    private static final class Bucket<K extends VKey> {
+    private static final class Bucket<K extends VirtualKey> {
         private static final int BUCKET_ENTRY_COUNT_OFFSET = Integer.BYTES;
         private static final int NEXT_BUCKET_OFFSET = BUCKET_ENTRY_COUNT_OFFSET + Integer.BYTES;
         private final ByteBuffer bucketBuffer = ByteBuffer.allocateDirect(DISK_PAGE_SIZE_BYTES);

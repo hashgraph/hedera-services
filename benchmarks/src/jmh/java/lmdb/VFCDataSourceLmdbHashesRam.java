@@ -3,8 +3,8 @@ package lmdb;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
 import org.lmdbjava.*;
 
 import java.io.IOException;
@@ -12,6 +12,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.nio.ByteBuffer.allocateDirect;
@@ -19,7 +21,7 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
 @SuppressWarnings({"unchecked", "DuplicatedCode", "unused"})
-public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> implements SequentialInsertsVFCDataSource<K, V> {
+public final class VFCDataSourceLmdbHashesRam<K extends VirtualKey, V extends VirtualValue> implements SequentialInsertsVFCDataSource<K, V> {
     private final static long GB = 1024*1024*1024;
     private final static long TB = GB*1024;
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
@@ -67,7 +69,7 @@ public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> 
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
                 .setMaxDbs(4)
                 // assume max readers is max number of cores
-                .setMaxReaders(Runtime.getRuntime().availableProcessors())
+                .setMaxReaders(Runtime.getRuntime().availableProcessors() * 2)
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
@@ -347,6 +349,7 @@ public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> 
         leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
     }
 
+    private Set<K> addedKeys = new HashSet<>();
     /**
      * Add a new leaf to store
      *
@@ -361,6 +364,7 @@ public final class VFCDataSourceLmdbHashesRam<K extends VKey, V extends VValue> 
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
         if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
+        addedKeys.add(key);
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         final ByteBuffer pathBytes = getPathBytes(path);
         final ByteBuffer keyBytes = getLeafKeyBytes(key);

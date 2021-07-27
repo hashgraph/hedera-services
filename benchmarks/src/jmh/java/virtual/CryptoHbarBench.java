@@ -1,6 +1,6 @@
 package virtual;
 
-import com.swirlds.fcmap.VFCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -11,6 +11,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  */
@@ -33,11 +34,11 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     public DataSourceType dsType;
 
     // This is the map we will be testing!
-    private VFCMap<Id, Account> virtualMap;
+    private VirtualMap<Id, Account> virtualMap;
 
     @Setup
     public void prepare() throws Exception {
-        virtualMap = createMap(dsType, Id.SERIALIZED_SIZE, Id::new, Account.SERIALIZED_SIZE, Account::new);
+        virtualMap = createMap(dsType, Id.SERIALIZED_SIZE, Id::new, Account.SERIALIZED_SIZE, Account::new, numEntities);
 
         if (preFill) {
             for (int i = 0; i < numEntities; i++) {
@@ -62,52 +63,6 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
             // During setup we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
             virtualMap = pipeline.endRound(virtualMap);
-
-            for (int i=0; i<4; i++) {
-                virtualMap = pipeline.endRound(virtualMap);
-            }
-
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException ignored) {}
-
-            for (int i=0; i<400; i++) {
-                virtualMap = pipeline.endRound(virtualMap);
-            }
-
-            for (int i=0; i<50; i++) {
-                System.gc();
-            }
-
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException ignored) {}
-        }
-
-        final var ds = virtualMap.getDataSource();
-
-        for (int i=0; i<(numEntities*2 - 1); i++) {
-            final var hash = ds.loadInternalHash(i); // TODO Richard: could be leaf hash?
-            if (hash == null) {
-                System.err.println("Failed to find hash for path " + i);
-            }
-        }
-
-        for (int i=(int)(numEntities); i<(numEntities*2 -1); i++) {
-            final var id = ds.loadLeafKey(i);
-            if (id == null) {
-                System.err.println("Failed to find leaf key for path " + i);
-            } else {
-                final var value = ds.loadLeafValue(i);
-                if (value == null) {
-                    System.err.println("Failed to find leaf value for path " + i);
-                }
-
-                final var path = ds.loadLeafPath(id);
-                if (path == -1) {
-                    System.err.println("Failed to load leaf path for id " + id.getNum());
-                }
-            }
         }
 
         printDataStoreSize();
@@ -134,46 +89,64 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
             final var sender = virtualMap.getForModify(senderId);
             final var receiver = virtualMap.getForModify(receiverId);
 
-            if (sender == null || receiver == null) {
-                System.out.printf("WHAT?");
+            if (sender == null) {
                 try {
-                    final var ds = virtualMap.getDataSource();
-                    for (int i = 0; i < (numEntities * 2 - 1); i++) {
-                        final var hash = ds.loadInternalHash(i); // TODO Richard: maybe could be leaf hash?
-                        if (hash == null) {
-                            System.err.println("Failed to find hash for path " + i);
-                        }
-                    }
-
-                    for (int i = (int) (numEntities - 1); i < (numEntities * 2 - 1); i++) {
-                        final var id = ds.loadLeafKey(i);
-                        if (id == null) {
-                            System.err.println("Failed to find leaf key for path " + i);
-                        } else {
-                            final var value = ds.loadLeafValue(i);
-                            if (value == null) {
-                                System.err.println("Failed to find leaf value for path " + i);
-                            }
-
-                            final var path = ds.loadLeafPath(id);
-                            if (path == -1) {
-                                System.err.println("Failed to load leaf path for id " + id.getNum());
-                            }
-                        }
-                    }
+                    System.err.println("Sender was null: id=" + senderId.getNum() +
+                            ", path=" + virtualMap.getDataSource().loadLeafPath(senderId));
+                    virtualMap.getForModify(senderId);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.err.println("Sender was null. Could not load leaf path");
                 }
-
-                virtualMap.getForModify(senderId);
-                virtualMap.getForModify(receiverId);
+            } else if (receiver == null) {
+                try {
+                    System.err.println("Receiver was null: id=" + receiverId.getNum() +
+                            ", path=" + virtualMap.getDataSource().loadLeafPath(receiverId));
+                    ;
+                } catch (Exception e) {
+                    System.err.println("Receiver was null. Could not load leaf path");
+                }
+            } else {
+                final var tinyBars = rand.nextInt(10);
+                sender.setHbarBalance(sender.getHbarBalance() - tinyBars);
+                receiver.setHbarBalance(receiver.getHbarBalance() + tinyBars);
             }
-
-            final var tinyBars = rand.nextInt(10);
-            sender.setHbarBalance(sender.getHbarBalance() - tinyBars);
-            receiver.setHbarBalance(receiver.getHbarBalance() + tinyBars);
         }
 
         virtualMap = pipeline.endRound(virtualMap);
+    }
+
+    public static void main(String[] args) throws Exception {
+        final var start = new AtomicLong(System.currentTimeMillis());
+        final var test = new CryptoHbarBench();
+        test.numEntities = 1000;
+        test.dsType = DataSourceType.jasperdb;
+        test.preFill = true;
+        test.targetOpsPerSecond = 2;
+        test.prepare();
+
+        for (int i=0; i< test.numEntities; i++) {
+            final var value = test.virtualMap.getForModify(new Id(i));
+            if (value == null) {
+                test.virtualMap.getForModify(new Id(i));
+            }
+        }
+
+        int totalCount = 0;
+        while (true) {
+            test.update();
+//            for (int i=0; i<2; i++) {
+//                System.gc();
+//            }
+            totalCount += test.targetOpsPerSecond;
+            printTestUpdate(start, test.targetOpsPerSecond, totalCount, "Hey");
+        }
+    }
+
+    private static double printTestUpdate(AtomicLong start, long count, long totalCount, String msg) {
+        long took = System.currentTimeMillis() - start.getAndSet(System.currentTimeMillis());
+        double timeSeconds = (double)took/1000d;
+        double perSecond = (double)count / timeSeconds;
+        System.out.printf("%s x %,d : [%,d] at %,.0f per/sec, took %,.2f seconds\n",msg,totalCount, count, perSecond, timeSeconds);
+        return perSecond;
     }
 }
