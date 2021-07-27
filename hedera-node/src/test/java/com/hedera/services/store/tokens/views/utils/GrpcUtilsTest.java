@@ -71,24 +71,6 @@ class GrpcUtilsTest {
 		assertThrows(IllegalStateException.class, () -> new GrpcUtils());
 	}
 
-	@Test
-	void createsExpectedForNonTreasuryUsingWildcard() {
-		final var nonTreasuryNft = new MerkleUniqueToken(nonTreasuryOwner, nonTreasuryMeta, creationTime);
-
-		final var actual = subject.reprOf(
-				token.toGrpcTokenId(), nonTreasurySerial, nonTreasuryNft, nonTreasuryOwner.toGrpcAccountId());
-
-		Assertions.assertEquals(expectedNonTreasury, actual);
-	}
-
-	@Test
-	void failsAsExpectedWhenTreasuryIsNull() {
-		final var treasuryNft = new MerkleUniqueToken(wildcard, treasuryMeta, creationTime);
-
-		Assertions.assertThrows(IllegalArgumentException.class, () -> subject.reprOf(
-				token.toGrpcTokenId(), treasurySerial, treasuryNft, null));
-	}
-
 	private final long nonTreasurySerial = 1L;
 	private final long treasurySerial = 2L;
 	private final byte[] meta = "As you wish...".getBytes(StandardCharsets.UTF_8);
@@ -108,21 +90,4 @@ class GrpcUtilsTest {
 				.setCreationTime(creationTime.toGrpc())
 				.build();
 	}
-	private final TokenNftInfo expectedTreasury = TokenNftInfo.newBuilder()
-			.setNftID(NftID.newBuilder()
-					.setTokenID(token.toGrpcTokenId())
-					.setSerialNumber(treasurySerial))
-			.setAccountID(treasury.toGrpcAccountId())
-			.setMetadata(ByteString.copyFrom(treasuryMeta))
-			.setCreationTime(creationTime.toGrpc())
-			.build();
-
-	private final TokenNftInfo expectedNonTreasury = TokenNftInfo.newBuilder()
-			.setNftID(NftID.newBuilder()
-					.setTokenID(token.toGrpcTokenId())
-					.setSerialNumber(nonTreasurySerial))
-			.setAccountID(nonTreasuryOwner.toGrpcAccountId())
-			.setMetadata(ByteString.copyFrom(nonTreasuryMeta))
-			.setCreationTime(creationTime.toGrpc())
-			.build();
 }
