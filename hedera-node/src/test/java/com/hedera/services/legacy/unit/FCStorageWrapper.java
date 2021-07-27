@@ -24,11 +24,8 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class FCStorageWrapper {
-  private static final Logger log = LogManager.getLogger(FCStorageWrapper.class);
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
 
   public FCStorageWrapper() {

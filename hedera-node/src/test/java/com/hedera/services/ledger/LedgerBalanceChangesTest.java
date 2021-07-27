@@ -58,7 +58,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +116,9 @@ class LedgerBalanceChangesTest {
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
+
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
@@ -124,8 +127,6 @@ class LedgerBalanceChangesTest {
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
 		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));

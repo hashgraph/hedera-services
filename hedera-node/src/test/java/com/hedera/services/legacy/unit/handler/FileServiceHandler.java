@@ -25,13 +25,9 @@ import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.legacy.unit.GlobalFlag;
-import com.hedera.services.legacy.unit.InvalidFileIDException;
 import com.hedera.services.legacy.unit.InvalidFileWACLException;
-import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -49,20 +45,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 
-import static com.hedera.services.utils.EntityIdUtils.readableId;
-
 public class FileServiceHandler {
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
 
-  private GlobalFlag globalFlag;
   private FCStorageWrapper storageWrapper;
 
-  public FileServiceHandler(
-          FCStorageWrapper storageWrapper,
-          FeeScheduleInterceptor feeScheduleInterceptor,
-          ExchangeRates exchangeRates
-  ) {
-    this.globalFlag = GlobalFlag.getInstance();
+  public FileServiceHandler(FCStorageWrapper storageWrapper) {
     this.storageWrapper = storageWrapper;
   }
 
@@ -81,17 +69,6 @@ public class FileServiceHandler {
         }
         return rv;
     }
-
-	public static FileInfo lookupInfo(FileID fid, FCStorageWrapper fcfs) throws Exception {
-		String metaPath = FeeCalcUtilsTest.pathOfMeta(fid);
-		if (fcfs.fileExists(metaPath)) {
-			long size = fcfs.getSize(FeeCalcUtilsTest.pathOf(fid));
-			HFileMeta jInfo = HFileMeta.deserialize(fcfs.fileRead(metaPath));
-			return HFileMetaSerdeTest.toGrpc(jInfo, fid, size);
-		} else {
-			throw new InvalidFileIDException(String.format("No such file '%s'!", readableId(fid)), fid);
-		}
-	}
 
   public static JKey convertWacl(KeyList waclAsKeyList) throws InvalidFileWACLException {
         try {
@@ -161,8 +138,8 @@ public class FileServiceHandler {
       log.debug("Maximum File Size Exceeded {}", ()->e);
 	}
 
-    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(fid, status,
-        globalFlag.getExchangeRateSet());
+    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(
+    		fid, status, ExchangeRateSet.getDefaultInstance());
     TransactionRecord.Builder txRecordBuilder = TransactionRecord.newBuilder().setReceipt(receipt)
         .setConsensusTimestamp(RequestBuilder.getTimestamp(timestamp)).setTransactionID(txId)
         .setMemo(gtx.getMemo()).setTransactionFee(gtx.getTransactionFee());
@@ -173,13 +150,5 @@ public class FileServiceHandler {
           + TextFormat.shortDebugString(txRecord) + "; tx=" + TextFormat.shortDebugString(tx));
     }
     return txRecord;
-  }
-
-  public FileInfo getFileInfo(FileID fid) throws Exception {
-  	return lookupInfo(fid, storageWrapper);
-  }
-
-  public FCStorageWrapper getStorageWrapper() {
-    return storageWrapper;
   }
 }

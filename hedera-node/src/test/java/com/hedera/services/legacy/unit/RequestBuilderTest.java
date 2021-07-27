@@ -39,6 +39,5 @@ public class RequestBuilderTest {
     Duration duration = RequestBuilder.getDuration(500);
     Timestamp expirationTime = RequestBuilder.getExpirationTime(Instant.now(), duration);
     Assert.assertNotNull(expirationTime);
-    Instant timeStamp = RequestBuilder.convertProtoTimeStamp(expirationTime);
   }
 }

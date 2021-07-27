@@ -46,7 +46,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +60,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -120,8 +119,6 @@ class SignedStateBalancesExporterTest {
 	private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
 	private Instant now = Instant.now();
-	private Instant shortlyAfter = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
-	private Instant anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
 
 	private ServicesState state;
 	private PropertySource properties;
@@ -140,7 +137,7 @@ class SignedStateBalancesExporterTest {
 	void setUp() throws ConstructableRegistryException {
 		// setup:
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
