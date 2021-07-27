@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -74,12 +75,9 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -149,12 +147,14 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
 
-		subject.commit();
+		assertThrows(
+				InvalidTransactionException.class,
+				() -> subject.doZeroSum(fixtureChanges()));
 
 		// then:
-		assertEquals(INVALID_ACCOUNT_ID, result);
+		subject.commit();
+
 		// and:
 		assertInitialBalanceUnchanged();
 	}
@@ -167,13 +167,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertThrows(
+				InvalidTransactionException.class,
+				() -> subject.doZeroSum(fixtureChanges()));
 
 		subject.commit();
 
 		// then:
-		assertEquals(INVALID_ACCOUNT_ID, result);
-		// and:
 		assertInitialBalanceUnchanged(-1L);
 	}
 
@@ -185,13 +185,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertThrows(
+				InvalidTransactionException.class,
+				() -> subject.doZeroSum(fixtureChanges()));
 
 		subject.commit();
 
 		// then:
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, result);
-		// and:
 		assertInitialBalanceUnchanged();
 	}
 
@@ -204,12 +204,12 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertThrows(
+				InvalidTransactionException.class,
+				() -> subject.doZeroSum(fixtureChanges()));
 		subject.commit();
 
 		// then:
-		assertEquals(ACCOUNT_DELETED, result);
-		// and:
 		assertInitialBalanceUnchanged();
 	}
 
@@ -236,12 +236,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertThrows(
+				InvalidTransactionException.class,
+				() -> subject.doZeroSum(fixtureChanges()));
+
 		subject.commit();
 
 		// then:
-		assertEquals(INVALID_TOKEN_ID, result);
-		// and:
 		assertInitialBalanceUnchanged();
 	}
 
@@ -254,14 +255,13 @@ class LedgerBalanceChangesTest {
 		List<TokenTransferList> inProgressTokens;
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertDoesNotThrow(() -> subject.doZeroSum(fixtureChanges()));
+
 		inProgress = subject.netTransfersInTxn();
 		inProgressTokens = subject.netTokenTransfersInTxn();
 		// and:
 		subject.commit();
 
-		// then:
-		assertEquals(OK, result);
 		// and:
 		assertEquals(
 				aStartBalance + aHbarChange,

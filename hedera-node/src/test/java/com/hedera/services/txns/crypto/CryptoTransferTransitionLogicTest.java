@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -55,16 +56,16 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 
@@ -123,13 +124,11 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+		// TODO replace with will throw
+		doThrow(InvalidTransactionException.class).when(ledger).doZeroSum(anyList());
 
 		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(INSUFFICIENT_ACCOUNT_BALANCE);
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 	}
 
 	@Test
@@ -149,15 +148,12 @@ class CryptoTransferTransitionLogicTest {
 		// and:
 		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
-				.willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
-
 		// then:
-		verify(txnCtx).setStatus(SUCCESS);
+		assertDoesNotThrow(() -> subject.doStateTransition());
 	}
 
 	@Test
@@ -186,15 +182,12 @@ class CryptoTransferTransitionLogicTest {
 		// and:
 		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
-				.willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 
 		// then:
-		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
 	}
 
@@ -210,11 +203,10 @@ class CryptoTransferTransitionLogicTest {
 		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 
-		// when:
-		subject.doStateTransition();
+		// when & then:
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
 		// then:
-		verify(txnCtx).setStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 		verifyNoInteractions(ledger);
 	}
 
@@ -262,10 +254,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
 
 		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
+		assertThrows(Exception.class, () -> subject.doStateTransition());
 	}
 
 	@Test

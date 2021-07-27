@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -46,7 +47,9 @@ public class TransitionRunner {
 			TokenMint, TokenBurn,
 			TokenAssociateToAccount,
 			TokenDissociateFromAccount,
-			TokenAccountWipe
+			TokenAccountWipe,
+
+			CryptoTransfer
 	);
 
 	private final TransactionContext txnCtx;
