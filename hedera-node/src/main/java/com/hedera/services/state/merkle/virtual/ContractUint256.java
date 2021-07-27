@@ -78,7 +78,7 @@ public class ContractUint256 implements VKey, VValue {
 
     @Override
     public int hashCode() {
-        // was using Objects.hash but it is horrible as has to box longs into Longs and create a Object[]
+        // was using Objects.hash but it is horrible in hot spot as has to box longs into Longs and create a Object[]
         int result = 1;
         result = 31 * result + (int)(value_0 ^ (value_0 >>> 32));
         result = 31 * result + (int)(value_1 ^ (value_1 >>> 32));
@@ -200,12 +200,19 @@ public class ContractUint256 implements VKey, VValue {
 
     @Override
     public String toString() {
-        return "ContractUint256{" +
-                "value_0=" + value_0 +
-                ", value_1=" + value_1 +
-                ", value_2=" + value_2 +
-                ", value_3=" + value_3 +
-                '}';
+        try {
+            byte[] bytes = new byte[SERIALIZED_SIZE];
+            serialize(bytes,0);
+            return "ContractUint256{"+new BigInteger(bytes)+"}";
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "ContractUint256{" +
+                    value_0 +
+                    ", " + value_1 +
+                    ", " + value_2 +
+                    ", " + value_3 +
+                    "}";
+        }
     }
 
     @Override

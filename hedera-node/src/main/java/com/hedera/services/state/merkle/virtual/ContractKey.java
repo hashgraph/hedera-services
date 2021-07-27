@@ -72,13 +72,18 @@ public final class ContractKey implements VKey {
 
     @Override
     public int hashCode() {
-        return Objects.hash(contractId, key);
+        // was using Objects.hash but it is horrible in hot spot as it creates a Object[] because of var args
+        int result = 1;
+        result = 31 * result + (contractId == null ? 0 : contractId.hashCode());
+        result = 31 * result + (key == null ? 0 : key.hashCode());
+        return result;
     }
 
     @Override
     public String toString() {
         return "ContractKey{" +
-                "key=" + key +
+                "id={" + contractId.getShard()+","+contractId.getRealm()+","+contractId.getNum()+"}, " +
+                key +
                 '}';
     }
 
