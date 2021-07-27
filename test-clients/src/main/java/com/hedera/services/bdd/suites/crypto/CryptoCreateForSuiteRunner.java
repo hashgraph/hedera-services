@@ -39,9 +39,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRE
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -95,14 +92,17 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 													.via("txn")
 													.ensuringResolvedStatusIsntFromDuplicate();
 											allRunFor(spec, cryptoCreateOp);
-											var getRecordOp = getTxnRecord("txn")
-													.assertingNothing()
-													.saveTxnRecordToRegistry("savedTxnRcd")
-													.hasRetryAnswerOnlyPrecheck(
-															DUPLICATE_TRANSACTION,
-															INVALID_TRANSACTION_ID)
-													.logged();
-											allRunFor(spec, getRecordOp);
+											var gotCreationRecord = false;
+											while (!gotCreationRecord) {
+												try {
+													var getRecordOp = getTxnRecord("txn")
+															.assertingNothing()
+															.saveTxnRecordToRegistry("savedTxnRcd")
+															.logged();
+													allRunFor(spec, getRecordOp);
+													gotCreationRecord = true;
+												} catch (Throwable ignoreAndRetry) { }
+											}
 											createdAuditablePayer = true;
 										} catch (Throwable ignoreAgainAndRetry) {
 											retryCount++;
@@ -114,13 +114,16 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 											.getStatus();
 									Assert.assertEquals("Failed to create payer account!", SUCCESS, status);
 
-									var payerAccountInfo = getAccountInfo("payerAccount")
-													.hasRetryAnswerOnlyPrecheck(
-															DUPLICATE_TRANSACTION,
-															INVALID_ACCOUNT_ID)
+									var gotPayerInfo = false;
+									while (!gotPayerInfo) {
+										try {
+											var payerAccountInfo = getAccountInfo("payerAccount")
 													.saveToRegistry("payerAccountInfo")
 													.logged();
-									allRunFor(spec, payerAccountInfo);
+											allRunFor(spec, payerAccountInfo);
+											gotPayerInfo = true;
+										} catch (Throwable ignoreAndRetry) { }
+									}
 
 									//TODO Should be modified in a different way to avoid setting a static variable of
 									// other class
