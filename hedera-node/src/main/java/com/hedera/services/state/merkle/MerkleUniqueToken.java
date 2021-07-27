@@ -38,7 +38,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
 
-	private EntityId owner;
+	private int owner; // only store the meaningful portion of this ID
 	private RichInstant creationTime;
 	private byte[] metadata;
 
@@ -52,7 +52,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 			byte[] metadata,
 			RichInstant creationTime
 	) {
-		this.owner = owner;
+		this.owner = (int)owner.num();
 		this.metadata = metadata;
 		this.creationTime = creationTime;
 	}
@@ -72,7 +72,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 		}
 
 		var that = (MerkleUniqueToken) o;
-		return this.owner.equals(that.owner) &&
+		return this.owner == that.owner &&
 				Objects.deepEquals(this.metadata, that.metadata) &&
 				Objects.equals(creationTime, that.creationTime);
 	}
@@ -108,14 +108,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
-		owner = in.readSerializable();
+		owner = in.readInt();
 		creationTime = RichInstant.from(in);
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializable(owner, true);
+		out.writeInt(owner);
 		creationTime.serialize(out);
 		out.writeByteArray(metadata);
 	}
@@ -123,15 +123,22 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueToken copy() {
-		return new MerkleUniqueToken(owner, metadata, creationTime);
+		setImmutable(true);
+		return new MerkleUniqueToken(new EntityId(0,0,owner), metadata, creationTime);
 	}
 
 	public void setOwner(EntityId owner) {
-		this.owner = owner;
+		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
+		this.owner = (int)owner.num();
+	}
+
+	public void setOwner(long owner) {
+		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
+		this.owner = (int)owner;
 	}
 
 	public EntityId getOwner() {
-		return owner;
+		return new EntityId(0, 0, owner);
 	}
 
 	public byte[] getMetadata() {
@@ -141,7 +148,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	public RichInstant getCreationTime() {
 		return creationTime;
 	}
-
 	public boolean isTreasuryOwned() {
 		return EntityId.MISSING_ENTITY_ID.equals(owner);
 	}
