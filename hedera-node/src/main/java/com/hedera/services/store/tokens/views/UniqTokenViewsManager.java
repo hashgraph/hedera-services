@@ -221,7 +221,7 @@ public class UniqTokenViewsManager {
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
 	) {
 		final var curNftsByOwner = nftsByOwner.get();
-		rebuildDelegate(tokens, nfts, (treasuryId, nftId) -> curNftsByOwner.associate(treasuryId, nftId));
+		rebuildDelegate(tokens, nfts, curNftsByOwner::associate);
 	}
 
 	private void rebuildDelegate(
