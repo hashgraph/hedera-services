@@ -23,6 +23,7 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -123,13 +124,15 @@ class RenewalHelperTest {
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	@Mock
+	private BackingAccounts backingAccounts;
+	@Mock
 	private TokenStore tokenStore;
 
 	private RenewalHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalHelper(tokenStore, nums, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels);
+		subject = new RenewalHelper(tokenStore, nums, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels, backingAccounts);
 	}
 
 	@Test
@@ -240,7 +243,7 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(accounts).remove(expiredKey);
+		verify(backingAccounts).remove(expiredKey.toAccountId());
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
@@ -267,7 +270,7 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(accounts).remove(expiredKey);
+		verify(backingAccounts).remove(expiredKey.toAccountId());
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));

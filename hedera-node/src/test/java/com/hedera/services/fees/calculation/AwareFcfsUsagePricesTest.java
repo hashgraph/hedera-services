@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation;
 
 import com.google.common.io.Files;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -73,6 +72,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class AwareFcfsUsagePricesTest {
+	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
+
 	FileID schedules = IdUtils.asFile("0.0.111");
 	long currentExpiry = 1_234_567;
 	long nextExpiry = currentExpiry + 1_000;
@@ -281,7 +282,7 @@ class AwareFcfsUsagePricesTest {
 	@Test
 	void loadsGoodScheduleUneventfully() throws Exception {
 		// setup:
-		byte[] bytes = Files.toByteArray(new File(JsonToProtoSerdeTest.R4_FEE_SCHEDULE_REPR_PATH));
+		byte[] bytes = Files.toByteArray(new File(R4_FEE_SCHEDULE_REPR_PATH));
 		CurrentAndNextFeeSchedule expectedFeeSchedules = CurrentAndNextFeeSchedule.parseFrom(bytes);
 
 		given(hfs.exists(schedules)).willReturn(true);

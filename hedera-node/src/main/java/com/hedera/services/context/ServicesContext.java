@@ -946,9 +946,7 @@ public class ServicesContext {
 
 	public UniqTokenViewsManager uniqTokenViewsManager() {
 		if (uniqTokenViewsManager == null) {
-			final var shouldUseTreasuryWildcards =
-					properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
-			if (shouldUseTreasuryWildcards) {
+			if (shouldUseTreasuryWildcards()) {
 				uniqTokenViewsManager = new UniqTokenViewsManager(
 						this::uniqueTokenAssociations,
 						this::uniqueOwnershipAssociations,
@@ -960,6 +958,10 @@ public class ServicesContext {
 			}
 		}
 		return uniqTokenViewsManager;
+	}
+
+	private boolean shouldUseTreasuryWildcards() {
+		return properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
 	}
 
 	public HederaNumbers hederaNums() {
@@ -1402,9 +1404,7 @@ public class ServicesContext {
 
 	public UniqTokenViewFactory uniqTokenViewFactory() {
 		if (uniqTokenViewFactory == null) {
-			final var shouldUseTreasuryWildcards =
-					properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
-			uniqTokenViewFactory = new ConfigDrivenUniqTokenViewFactory(shouldUseTreasuryWildcards);
+			uniqTokenViewFactory = new ConfigDrivenUniqTokenViewFactory(shouldUseTreasuryWildcards());
 		}
 		return uniqTokenViewFactory;
 	}
@@ -1466,8 +1466,6 @@ public class ServicesContext {
 
 	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
 		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
-		final var shouldUseTreasuryWildcards =
-				properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
 
 		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
 				/* Crypto */
@@ -1526,7 +1524,7 @@ public class ServicesContext {
 								txnCtx(), globalDynamicProperties()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
-								shouldUseTreasuryWildcards, validator(), tokenStore(),
+								shouldUseTreasuryWildcards(), validator(), tokenStore(),
 								ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFeeScheduleUpdate,
 						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
@@ -1738,7 +1736,7 @@ public class ServicesContext {
 		if (entityAutoRenewal == null) {
 			final var helper = new RenewalHelper(
 					tokenStore(), hederaNums(), globalDynamicProperties(),
-					this::tokens, this::accounts, this::tokenAssociations);
+					this::tokens, this::accounts, this::tokenAssociations, backingAccounts());
 			final var recordHelper = new RenewalRecordsHelper(
 					this, recordStreamManager(), globalDynamicProperties());
 			final var renewalProcess = new RenewalProcess(

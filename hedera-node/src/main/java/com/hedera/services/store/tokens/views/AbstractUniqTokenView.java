@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -52,9 +53,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	protected final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
 	protected final Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
 
-	protected GrpcUtils grpcUtils = new GrpcUtils();
-
-	public AbstractUniqTokenView(
+	protected AbstractUniqTokenView(
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
 			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType
@@ -65,7 +64,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> typedAssociations(TokenID type, long start, long end) {
+	public List<TokenNftInfo> typedAssociations(@Nonnull TokenID type, long start, long end) {
 		final var tokenId = EntityId.fromGrpcTokenId(type);
 		final var treasuryGrpcId = treasuryOf(tokens.get(), tokenId);
 		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type, treasuryGrpcId);
@@ -99,10 +98,9 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 			int start,
 			int end,
 			@Nullable TokenID fixedType,
-			@Nullable AccountID fixedTreasury
+			@Nonnull AccountID fixedTreasury
 	) {
 		final var curNfts = nfts.get();
-		final var curTokens = tokens.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
 		relation.get(key.identityCode(), start, end).forEachRemaining(nftIdCode -> {
 			final var nftId = MerkleUniqueTokenId.fromIdentityCode(nftIdCode);
@@ -111,10 +109,9 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 				throw new ConcurrentModificationException(nftId + " was removed during query answering");
 			}
 			final var type = (fixedType != null) ? fixedType : nftId.tokenId().toGrpcTokenId();
-			final var treasury = nft.isTreasuryOwned()
-					? ((fixedTreasury != null) ? fixedTreasury : treasuryOf(curTokens, nftId.tokenId()))
-					: null;
-			final var info = grpcUtils.reprOf(type, nftId.serialNumber(), nft, treasury);
+
+			AccountID treasury = nft.isTreasuryOwned() ? fixedTreasury : null;
+			final var info = GrpcUtils.reprOf(type, nftId.serialNumber(), nft, treasury);
 			answer.add(info);
 		});
 		return answer;
@@ -127,9 +124,5 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 					"Token " + tokenId.toAbbrevString() + " was removed during query answering");
 		}
 		return token.treasury().toGrpcAccountId();
-	}
-
-	void setGrpcUtils(GrpcUtils grpcUtils) {
-		this.grpcUtils = grpcUtils;
 	}
 }

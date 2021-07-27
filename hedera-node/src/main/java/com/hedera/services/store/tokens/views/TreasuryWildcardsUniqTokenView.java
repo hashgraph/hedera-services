@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -74,15 +75,14 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
+	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
 		final var accountId = EntityId.fromGrpcAccountId(owner);
 		final var curNftsByOwner = nftsByOwner.get();
 		final var numOwnedViaTransfer = curNftsByOwner.getCount(accountId.identityCode());
 		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, numOwnedViaTransfer);
 
 		final var range = multiSourceRange.rangeForCurrentSource();
-		final var answer =
-				accumulatedInfo(nftsByOwner.get(), accountId, range[0], range[1], null, owner);
+		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range.getLeft(), range.getRight(), null, owner);
 		if (!multiSourceRange.isRequestedRangeExhausted()) {
 			tryToCompleteWithTreasuryOwned(owner, multiSourceRange, answer);
 		}
@@ -100,8 +100,7 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 			final var tokenId = EntityId.fromGrpcTokenId(served);
 			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(tokenId.identityCode()));
 			final var range = multiSourceRange.rangeForCurrentSource();
-			final var infoHere =
-					accumulatedInfo(curTreasuryNftsByType, tokenId, range[0], range[1], served, owner);
+			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range.getLeft(), range.getRight(), served, owner);
 			answer.addAll(infoHere);
 			if (multiSourceRange.isRequestedRangeExhausted()) {
 				break;

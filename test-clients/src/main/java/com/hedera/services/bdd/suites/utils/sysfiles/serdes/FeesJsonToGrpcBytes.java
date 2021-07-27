@@ -23,8 +23,8 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.suites.utils.sysfiles.FeeScheduleDeJson;
 import com.hedera.services.bdd.suites.utils.sysfiles.FeeSchedulesListEntry;
+import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 
 import java.io.IOException;
@@ -75,7 +75,7 @@ public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
 	@Override
 	public byte[] toRawFile(String styledFile) {
 		try {
-			return FeeScheduleDeJson.fromJsonLiteral(styledFile).toByteArray();
+			return FeesJsonToProtoSerde.parseFeeScheduleFromJson(styledFile).toByteArray();
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Not a set of fee schedules!", e);
 		}
