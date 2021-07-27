@@ -81,7 +81,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
 	/** if response code in the set then allow to resubmit transaction */
 	protected Optional<EnumSet<ResponseCodeEnum>> answerOnlyRetryPrechecks = Optional.empty();
-	protected Optional<Integer> retryLimits = Optional.empty();
 
 	private ResponseCodeEnum expectedCostAnswerPrecheck() {
 		return costAnswerPrecheck.orElse(OK);
@@ -172,7 +171,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			timedSubmitWith(spec, payment);
 
 			actualPrecheck = reflectForPrecheck(response);
-			if (answerOnlyRetryPrechecks.isPresent() &&
+			if (
+					answerOnlyRetryPrechecks.isPresent() &&
 					answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
 					isWithInRetryLimit(retryCount)
 			) {
@@ -212,10 +212,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		}
 		txnSubmitted = payment;
 		return true;
-	}
-
-	private boolean isWithInRetryLimit(int retryCount) {
-		return retryLimits.isPresent() && retryCount < retryLimits.get();
 	}
 
 	private void timedSubmitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
