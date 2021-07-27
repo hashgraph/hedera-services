@@ -28,7 +28,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -49,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -95,14 +95,8 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true",
-										"ledger.autoRenewPeriod.minDuration", "1",
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "0",
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "10"
-								)),
+								.overridingProps(enablingAutoRenewWith(1, 0, 100, 10))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
 						newKeyNamed(kycKey),
@@ -149,11 +143,6 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 	private HapiApiSpec uniqueTokenOperationsFailForDeletedAccount() {
 		return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								)),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
 						newKeyNamed(kycKey),
@@ -196,14 +185,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true",
-										"ledger.autoRenewPeriod.minDuration", "1",
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "7776000",
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "10"
-								))
+								.overridingProps(enablingAutoRenewWith(1, 7776000, 100, 10))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
@@ -258,11 +240,6 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 	private HapiApiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
 		return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								)),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
 						newKeyNamed(kycKey),
@@ -303,11 +280,6 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 	private HapiApiSpec uniqueTokenOperationsFailForFrozenAccount() {
 		return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								)),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
 						newKeyNamed(kycKey),
@@ -348,11 +320,6 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 	private HapiApiSpec uniqueTokenOperationsFailForDissociatedAccount() {
 		return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								)),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
 						newKeyNamed(kycKey),
