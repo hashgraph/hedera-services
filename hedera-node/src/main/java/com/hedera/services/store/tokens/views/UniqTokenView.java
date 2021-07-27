@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -42,21 +43,21 @@ public interface UniqTokenView {
 	 * Returns query-friendly descriptions of the requested sub-list of the unique
 	 * tokens owned by the given account.
 	 *
-	 * @param owner the owning account of interest
+	 * @param owner the non-null owning account of interest
 	 * @param start the inclusive, zero-based index at the start the desired sub-list
 	 * @param end the exclusive, zero-based index at the end of the desired sub-list
 	 * @return the (possibly empty) sub-list of the owning account's unique tokens
 	 */
-	List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end);
+	List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end);
 
 	/**
 	 * Returns query-friendly descriptions of the requested sub-list of the unique
 	 * tokens belonging to the given type.
 	 *
-	 * @param type the non-fungible unique token type of interest
+	 * @param type the non-null non-fungible unique token type of interest
 	 * @param start the inclusive, zero-based index at the start the desired sub-list
 	 * @param end the exclusive, zero-based index at the end of the desired sub-list
 	 * @return the (possibly empty) sub-list of the type's unique tokens
 	 */
-	List<TokenNftInfo> typedAssociations(TokenID type, long start, long end);
+	List<TokenNftInfo> typedAssociations(@Nonnull TokenID type, long start, long end);
 }

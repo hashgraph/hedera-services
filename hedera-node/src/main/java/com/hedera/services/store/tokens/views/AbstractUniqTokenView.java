@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -63,7 +64,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> typedAssociations(TokenID type, long start, long end) {
+	public List<TokenNftInfo> typedAssociations(@Nonnull TokenID type, long start, long end) {
 		final var tokenId = EntityId.fromGrpcTokenId(type);
 		final var treasuryGrpcId = treasuryOf(tokens.get(), tokenId);
 		return accumulatedInfo(nftsByType.get(), tokenId, (int) start, (int) end, type, treasuryGrpcId);
@@ -97,10 +98,9 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 			int start,
 			int end,
 			@Nullable TokenID fixedType,
-			@Nullable AccountID fixedTreasury
+			@Nonnull AccountID fixedTreasury
 	) {
 		final var curNfts = nfts.get();
-		final var curTokens = tokens.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
 		relation.get(key, start, end).forEachRemaining(nftId -> {
 			final var nft = curNfts.get(nftId);
@@ -109,10 +109,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 			}
 			final var type = (fixedType != null) ? fixedType : nftId.tokenId().toGrpcTokenId();
 
-			AccountID treasury = null;
-			if (nft.isTreasuryOwned()) {
-				treasury = (fixedTreasury != null) ? fixedTreasury : treasuryOf(curTokens, nftId.tokenId());
-			}
+			AccountID treasury = nft.isTreasuryOwned() ? fixedTreasury : null;
 			final var info = GrpcUtils.reprOf(type, nftId.serialNumber(), nft, treasury);
 			answer.add(info);
 		});

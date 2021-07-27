@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -73,7 +74,7 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
+	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
 		final var accountId = EntityId.fromGrpcAccountId(owner);
 		final var curNftsByOwner = nftsByOwner.get();
 		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, curNftsByOwner.getCount(accountId));
