@@ -11,9 +11,10 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -24,7 +25,11 @@ import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.Random;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 @SuppressWarnings("unused")
@@ -196,7 +201,7 @@ public class VFCDataSourceTestUtils {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static final class TestLeafData implements VValue {
+    public static final class TestLeafData implements VirtualValue {
         public static final int SIZE_BYTES = Integer.BYTES+1024;
         static final byte[] RANDOM_1K = new byte[1024];
         static {
@@ -245,12 +250,12 @@ public class VFCDataSourceTestUtils {
         }
 
         @Override
-        public VValue copy() {
+        public VirtualValue copy() {
             return this;
         }
 
         @Override
-        public VValue asReadOnly() {
+        public VirtualValue asReadOnly() {
             return this;
         }
 
@@ -294,7 +299,7 @@ public class VFCDataSourceTestUtils {
     }
 
     @SuppressWarnings("unused")
-    public static class SerializableAccount implements VKey {
+    public static class SerializableAccount implements VirtualKey {
         public static final int SIZE_BYTES = Long.BYTES*3;
         private Account account;
 
@@ -396,7 +401,7 @@ public class VFCDataSourceTestUtils {
         }
     }
 
-    public static class LongVKeyImpl implements com.swirlds.fcmap.LongVKey, FastCopyable {
+    public static class LongVKeyImpl implements VirtualLongKey, FastCopyable {
         public static final int SIZE_BYTES = Long.BYTES;
         private static final long CLASS_ID = 2544515330134674835L;
         private long value;
@@ -471,7 +476,7 @@ public class VFCDataSourceTestUtils {
 
         @Override
         public String toString() {
-            return "LongVKey{" +
+            return "LongVirtualKey{" +
                     "value=" + value +
                     ", hashCode=" + hashCode +
                     '}';
@@ -484,12 +489,12 @@ public class VFCDataSourceTestUtils {
     }
 
     /**
-     * Wrap a VFCDataSource turning all execptions into runtime exceptions for testing
+     * Wrap a VirtualDataSource turning all execptions into runtime exceptions for testing
      */
-    public static class VFCDataSourceExceptionWrapper<K extends VKey, V extends VValue> implements VFCDataSource<K,V> {
-        private final VFCDataSource<K,V> dataSource;
+    public static class VFCDataSourceExceptionWrapper<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K,V> {
+        private final VirtualDataSource<K,V> dataSource;
 
-        public VFCDataSourceExceptionWrapper(VFCDataSource<K,V> dataSource) {
+        public VFCDataSourceExceptionWrapper(VirtualDataSource<K,V> dataSource) {
             this.dataSource = dataSource;
         }
 

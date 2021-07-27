@@ -3,8 +3,8 @@ package com.hedera.services.state.merkle.virtual;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -15,7 +15,7 @@ import java.util.Objects;
  * Representation of a 256bit unsigned int, stored internally as 4 longs.
  */
 @SuppressWarnings({"PointlessBitwiseExpression", "PointlessArithmeticExpression"})
-public class ContractUint256 implements VKey, VValue {
+public class ContractUint256 implements VirtualKey, VirtualValue {
     public static final int SERIALIZED_SIZE = Long.BYTES * 4; // 32 for BigInt of 256 bytes
     private long value_0 = 0; // low order
     private long value_1 = 0;
@@ -185,7 +185,7 @@ public class ContractUint256 implements VKey, VValue {
     }
 
     @Override
-    public VValue asReadOnly() {
+    public VirtualValue asReadOnly() {
         // It is immutable anyway
         return this;
     }

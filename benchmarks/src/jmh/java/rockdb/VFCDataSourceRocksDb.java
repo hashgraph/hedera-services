@@ -2,9 +2,9 @@ package rockdb;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.rocksdb.*;
 
 import java.io.IOException;
@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * RocksDB implementation of VFCDataSource. It should support and actually benefit from being used from many threads.
+ * RocksDB implementation of VirtualDataSource. It should support and actually benefit from being used from many threads.
  *
  * @param <K> leaf key type
  * @param <V> leaf value type
  */
 @SuppressWarnings("jol")
-public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
+public final class VFCDataSourceRocksDb <K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
     private final WriteOptions writeOptions;
     private final Supplier<K> keyConstructor;

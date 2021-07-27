@@ -2,9 +2,13 @@ package lmdb;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
-import org.lmdbjava.*;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
+import org.lmdbjava.Dbi;
+import org.lmdbjava.Env;
+import org.lmdbjava.EnvFlags;
+import org.lmdbjava.PutFlags;
+import org.lmdbjava.Txn;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,7 +22,7 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
 @SuppressWarnings({"unchecked", "DuplicatedCode", "unused"})
-public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implements SequentialInsertsVFCDataSource<K, V> {
+public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValue> implements SequentialInsertsVFCDataSource<K, V> {
     private final static long GB = 1024*1024*1024;
     private final static long TB = GB*1024;
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();

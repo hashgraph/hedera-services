@@ -2,9 +2,9 @@ package virtual;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.InterruptableRunnable;
-import com.swirlds.fcmap.VFCMap;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualValue;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Exchanger;
@@ -28,11 +28,11 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <K>
  * @param <V>
  */
-public class Pipeline<K extends VKey, V extends VValue> {
+public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
     /** Used to pass a virtual map from the handleTransaction (main) thread to the hashing thread */
     private final Exchanger<HashingData> hashingExchanger = new Exchanger<>();
     /** Used to pass a virtual map from the holder thread to the release thread, where it will be released / merged */
-    private final Exchanger<VFCMap<K, V>> releaseExchanger = new Exchanger<>();
+    private final Exchanger<VirtualMap<K, V>> releaseExchanger = new Exchanger<>();
 
     /** This thread will hash the virtual map (which has a bunch of additional background threads) */
     private final ExecutorService hashingService = Executors.newSingleThreadExecutor(threadFactory("HashingService"));
@@ -69,9 +69,12 @@ public class Pipeline<K extends VKey, V extends VValue> {
         // map we get will be merged into it. At some point, the archive thread
         // will wake up and get the map setting it back to null, at which point
         // we start the process over again.
-        final var masterMap = new AtomicReference<VFCMap<K, V>>(null);
+        final var masterMap = new AtomicReference<VirtualMap<K, V>>(null);
         releaseService.submit(new Task(() -> {
             final var map = releaseExchanger.exchange(null);
+//            while (masterMap.get() != null) {
+//                Thread.sleep(50);
+//            }
             synchronized (masterMap) {
                 final var master = masterMap.get();
                 if (master != null) {
@@ -82,17 +85,22 @@ public class Pipeline<K extends VKey, V extends VValue> {
         }));
 
         // Runs once a minute and grabs the latest "master" map. If not null, it archives it.
-        archiveService.schedule(new Task(() -> {
-            synchronized (masterMap) {
-                final var map = masterMap.getAndSet(null);
-                if (map != null) {
-                    map.archive();
+        archiveService.scheduleWithFixedDelay(() -> {
+            try {
+                synchronized (masterMap) {
+//                    final var map = masterMap.getAndSet(null);
+//                    if (map != null) {
+//                        map.archive();
+//                        System.out.println("Archived");
+//                    }
                 }
+            } catch (Throwable th) {
+                th.printStackTrace();
             }
-        }), 10, TimeUnit.SECONDS);
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
-    public VFCMap<K, V> endRound(VFCMap<K, V> virtualMap) {
+    public VirtualMap<K, V> endRound(VirtualMap<K, V> virtualMap) {
         try {
             // Block on a previous hash job, if there is one
             if (hashingFuture != null) {
@@ -126,10 +134,10 @@ public class Pipeline<K extends VKey, V extends VValue> {
 
     private final class HashingData {
         Future<Hash> hashingFuture;
-        VFCMap<K, V> map;
+        VirtualMap<K, V> map;
 
         // Created when passing a HashingData from handleTransaction to the hashing service
-        public HashingData(VFCMap<K, V> map) {
+        public HashingData(VirtualMap<K, V> map) {
             this.hashingFuture = null;
             this.map = map;
         }
@@ -154,7 +162,7 @@ public class Pipeline<K extends VKey, V extends VValue> {
             while (true) {
                 try {
                     this.r.run();
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }

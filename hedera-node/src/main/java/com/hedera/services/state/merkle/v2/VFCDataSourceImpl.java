@@ -1,11 +1,16 @@
 package com.hedera.services.state.merkle.v2;
 
-import com.hedera.services.state.merkle.v2.persistance.*;
+import com.hedera.services.state.merkle.v2.persistance.LongIndex;
+import com.hedera.services.state.merkle.v2.persistance.LongIndexInMemory;
+import com.hedera.services.state.merkle.v2.persistance.LongIndexMemMap;
+import com.hedera.services.state.merkle.v2.persistance.SlotStore;
+import com.hedera.services.state.merkle.v2.persistance.SlotStoreInMemory;
+import com.hedera.services.state.merkle.v2.persistance.SlotStoreMemMap;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VKey;
-import com.swirlds.fcmap.VValue;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -24,7 +29,7 @@ import java.util.function.Supplier;
  * @param <K> the type for leaf keys
  * @param <V> the type for leaf values
  */
-public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
+public class VFCDataSourceImpl<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+DigestType.SHA_384.digestLength();
     public final static int NODE_STORE_SLOTS_SIZE = HASH_SIZE + Long.BYTES;
     private final static int NULL_DATA_INDEX = -1;
@@ -81,7 +86,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      * @return new VFCDataSourceImpl configured for disk storage
      * @throws IOException If there was a problem creating files on disk
      */
-    public static <K extends VKey, V extends VValue> VFCDataSourceImpl<K,V> createOnDisk(
+    public static <K extends VirtualKey, V extends VirtualValue> VFCDataSourceImpl<K,V> createOnDisk(
             Path dataDirectory, long numEntities,
             int keySizeBytes, Supplier<K> keyConstructor,
             int valueSizeBytes, Supplier<V> valueConstructor,
@@ -134,7 +139,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      * @return new VFCDataSourceImpl configured for disk storage
      * @throws IOException If there was a problem creating stores
      */
-    public static <K extends VKey, V extends VValue> VFCDataSourceImpl<K,V> createInMemory(
+    public static <K extends VirtualKey, V extends VirtualValue> VFCDataSourceImpl<K,V> createInMemory(
             int keySizeBytes, Supplier<K> keyConstructor,
             int valueSizeBytes, Supplier<V> valueConstructor) throws IOException {
         return new VFCDataSourceImpl<K,V>(

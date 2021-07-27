@@ -10,7 +10,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.VKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -243,7 +243,7 @@ public class FCVirtualMapTestUtils {
         }
     }
 
-    public static class SerializableAccount implements VKey {
+    public static class SerializableAccount implements VirtualKey {
         private Account account;
 
         public SerializableAccount() {}

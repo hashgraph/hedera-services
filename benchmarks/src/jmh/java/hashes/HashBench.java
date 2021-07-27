@@ -1,26 +1,23 @@
 package hashes;
 
-import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
-import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractUint256;
-import com.hedera.services.store.models.Id;
-import com.swirlds.common.crypto.*;
-import com.swirlds.fcmap.VFCDataSource;
-import fcmmap.FCVirtualMapTestUtils;
-import lmdb.SequentialInsertsVFCDataSource;
-import lmdb.VFCDataSourceLmdb;
-import lmdb.VFCDataSourceLmdbHashesRam;
-import lmdb.VFCDataSourceLmdbTwoIndexes;
-import org.openjdk.jmh.annotations.*;
-import rockdb.VFCDataSourceRocksDb;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.HashBuilder;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
 
 @SuppressWarnings({"jol", "DuplicatedCode", "DefaultAnnotationParam", "SameParameterValue", "SpellCheckingInspection"})
 @State(Scope.Thread)
