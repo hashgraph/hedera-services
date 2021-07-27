@@ -110,6 +110,28 @@ class TreasuryWildcardsUniqTokenViewTest {
 		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
 	}
 
+	@Test
+	void getsAllAssociationsWithRangeToSpare() {
+		setupFirstMockRange();
+		setupSecondMockRange();
+		given(nftsByOwner.getCount(ownerId)).willReturn(end - 1);
+		given(treasuryNftsByType.getCount(treasuryTokenId)).willReturn(1);
+		given(nftsByOwner.get(ownerId, start, end - 1)).willReturn(firstMockRange);
+		given(treasuryNftsByType.get(treasuryTokenId, 0, 1)).willReturn(secondMockRange);
+		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
+		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
+		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
+		// and:
+		given(tokenStore.listOfTokensServed(grpcOwnerId))
+				.willReturn(List.of(treasuryTokenId.toGrpcTokenId()));
+
+		// when:
+		final var actual = subject.ownedAssociations(grpcOwnerId, start, end+1);
+
+		// then:
+		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
+	}
+
 	private void setupFirstMockRange() {
 		willAnswer(invocationOnMock -> {
 			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
