@@ -47,7 +47,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
@@ -182,7 +181,6 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 		};
 		return defaultHapiSpec("TokenTransferBasicLoadTest" )
 				.given(
-						tokenOpsEnablement(), // remove this line when token services enabled by default
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
 				).when(
 						sourcing(() -> runWithProvider(tokenCreatesFactory(settings))

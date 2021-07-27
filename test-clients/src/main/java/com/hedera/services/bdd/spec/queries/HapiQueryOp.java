@@ -62,6 +62,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
 
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
@@ -72,10 +74,14 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private boolean stopAfterCostAnswer = false;
 	private boolean expectStrictCostAnswer = false;
 	protected Response response = null;
+	protected ResponseCodeEnum actualPrecheck = UNKNOWN;
 	private Optional<ResponseCodeEnum> answerOnlyPrecheck = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> nodePaymentFn = Optional.empty();
 	private Optional<EnumSet<ResponseCodeEnum>> permissibleAnswerOnlyPrechecks = Optional.empty();
 	private Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
+	/** if response code in the set then allow to resubmit transaction */
+	protected Optional<EnumSet<ResponseCodeEnum>> answerOnlyRetryPrechecks = Optional.empty();
+	protected Optional<Integer> retryLimits = Optional.empty();
 
 	private ResponseCodeEnum expectedCostAnswerPrecheck() {
 		return costAnswerPrecheck.orElse(OK);
@@ -143,24 +149,39 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		fixNodeFor(spec);
 		configureTlsFor(spec);
 
-		/* Note that HapiQueryOp#fittedPayment makes a COST_ANSWER query if necessary. */
-		Transaction payment = needsPayment() ? fittedPayment(spec) : Transaction.getDefaultInstance();
+		Transaction payment = Transaction.getDefaultInstance();
+		int retryCount = 1;
+		while(true) {
+			/* Note that HapiQueryOp#fittedPayment makes a COST_ANSWER query if necessary. */
+			if (needsPayment()) {
+				payment = fittedPayment(spec);
+			}
 
-		if (stopAfterCostAnswer) {
-			return false;
+			if (stopAfterCostAnswer) {
+				return false;
+			}
+
+			/* If the COST_ANSWER query was expected to fail, we will not do anything else for this query. */
+			if (needsPayment() && !nodePayment.isPresent() && expectedCostAnswerPrecheck() != OK) {
+				return false;
+			}
+
+			if (needsPayment() && !loggingOff) {
+				log.info(spec.logPrefix() + "Paying for " + this + " with " + txnToString(payment));
+			}
+			timedSubmitWith(spec, payment);
+
+			actualPrecheck = reflectForPrecheck(response);
+			if (answerOnlyRetryPrechecks.isPresent() &&
+					answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
+					isWithInRetryLimit(retryCount)
+			) {
+				retryCount++;
+				sleep(10);
+			} else {
+				break;
+			}
 		}
-
-		/* If the COST_ANSWER query was expected to fail, we will not do anything else for this query. */
-		if (needsPayment() && !nodePayment.isPresent() && expectedCostAnswerPrecheck() != OK) {
-			return false;
-		}
-
-		if (needsPayment() && !loggingOff) {
-			log.info(spec.logPrefix() + "Paying for " + this + " with " + txnToString(payment));
-		}
-		timedSubmitWith(spec, payment);
-
-		ResponseCodeEnum actualPrecheck = reflectForPrecheck(response);
 		if (permissibleAnswerOnlyPrechecks.isPresent()) {
 			if (permissibleAnswerOnlyPrechecks.get().contains(actualPrecheck)) {
 				answerOnlyPrecheck = Optional.of(actualPrecheck);
@@ -191,6 +212,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		}
 		txnSubmitted = payment;
 		return true;
+	}
+
+	private boolean isWithInRetryLimit(int retryCount) {
+		return retryLimits.isPresent() && retryCount < retryLimits.get();
 	}
 
 	private void timedSubmitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
@@ -322,6 +347,16 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
 	public T hasAnswerOnlyPrecheckFrom(ResponseCodeEnum... prechecks) {
 		permissibleAnswerOnlyPrechecks = Optional.of(EnumSet.copyOf(List.of(prechecks)));
+		return self();
+	}
+
+	public T hasRetryAnswerOnlyPrecheck(ResponseCodeEnum... statuses) {
+		answerOnlyRetryPrechecks = Optional.of(EnumSet.copyOf(List.of(statuses)));
+		return self();
+	}
+
+	public T setRetryLimit(int limit) {
+		retryLimits = Optional.of(limit);
 		return self();
 	}
 

@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class RandomOps extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RandomOps.class);
@@ -56,9 +58,21 @@ public class RandomOps extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[]{
 						freezeWorks(),
+						getAccountInfoRetryWorks()
 //						createThenTransferThenUpdateDeleteThenUpdate()
 				}
 		);
+	}
+
+	private HapiApiSpec getAccountInfoRetryWorks() {
+		return defaultHapiSpec("GetAccountInfoRetryWorks")
+				.given()
+				.when()
+				.then(
+						getAccountInfo("0.0.2")
+								.hasRetryAnswerOnlyPrecheck(OK)
+								.setRetryLimit(5)
+				);
 	}
 
 	private HapiApiSpec freezeWorks() {
