@@ -58,20 +58,24 @@ public class RandomOps extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[]{
 						freezeWorks(),
-						getAccountInfoRetryWorks()
+						limitOnRetryWorks()
 //						createThenTransferThenUpdateDeleteThenUpdate()
 				}
 		);
 	}
 
-	private HapiApiSpec getAccountInfoRetryWorks() {
+	private HapiApiSpec limitOnRetryWorks() {
 		return defaultHapiSpec("GetAccountInfoRetryWorks")
 				.given()
 				.when()
 				.then(
 						getAccountInfo("0.0.2")
 								.hasRetryAnswerOnlyPrecheck(OK)
-								.setRetryLimit(5)
+								.setRetryLimit(5),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+								.hasRetryPrecheckFrom(OK)
+								.setRetryLimit(5),
+						cryptoTransfer(tinyBarsFromTo(NODE, GENESIS, 1L))
 				);
 	}
 

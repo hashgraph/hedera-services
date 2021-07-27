@@ -129,6 +129,7 @@ public abstract class HapiSpecOperation {
 	protected Optional<AccountID> node = Optional.empty();
 	protected Optional<Supplier<AccountID>> nodeSupplier = Optional.empty();
 	protected OptionalDouble usdFee = OptionalDouble.empty();
+	protected Optional<Integer> retryLimits = Optional.empty();
 
 	abstract protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable;
 
@@ -377,6 +378,10 @@ public abstract class HapiSpecOperation {
 			active.addAll(variableDefaultSigners().apply(spec));
 		}
 		return active;
+	}
+
+	protected boolean isWithInRetryLimit(int retryCount) {
+		return retryLimits.isPresent() && retryCount < retryLimits.get();
 	}
 
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
