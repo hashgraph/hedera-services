@@ -81,6 +81,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
 	/** if response code in the set then allow to resubmit transaction */
 	protected Optional<EnumSet<ResponseCodeEnum>> answerOnlyRetryPrechecks = Optional.empty();
+	protected Optional<Integer> retryLimits = Optional.empty();
 
 	private ResponseCodeEnum expectedCostAnswerPrecheck() {
 		return costAnswerPrecheck.orElse(OK);
@@ -149,6 +150,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		configureTlsFor(spec);
 
 		Transaction payment = Transaction.getDefaultInstance();
+		int retryCount = 1;
 		while(true) {
 			/* Note that HapiQueryOp#fittedPayment makes a COST_ANSWER query if necessary. */
 			if (needsPayment()) {
@@ -170,7 +172,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			timedSubmitWith(spec, payment);
 
 			actualPrecheck = reflectForPrecheck(response);
-			if (answerOnlyRetryPrechecks.isPresent() && answerOnlyRetryPrechecks.get().contains(actualPrecheck)) {
+			if (answerOnlyRetryPrechecks.isPresent() &&
+					answerOnlyRetryPrechecks.get().contains(actualPrecheck) &&
+					isWithInRetryLimit(retryCount)
+			) {
+				retryCount++;
 				sleep(10);
 			} else {
 				break;
@@ -206,6 +212,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		}
 		txnSubmitted = payment;
 		return true;
+	}
+
+	private boolean isWithInRetryLimit(int retryCount) {
+		return retryLimits.isPresent() && retryCount < retryLimits.get();
 	}
 
 	private void timedSubmitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
@@ -342,6 +352,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
 	public T hasRetryAnswerOnlyPrecheck(ResponseCodeEnum... statuses) {
 		answerOnlyRetryPrechecks = Optional.of(EnumSet.copyOf(List.of(statuses)));
+		return self();
+	}
+
+	public T setRetryLimit(int limit) {
+		retryLimits = Optional.of(limit);
 		return self();
 	}
 

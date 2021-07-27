@@ -58,7 +58,7 @@ public class RandomOps extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[]{
 						freezeWorks(),
-//						getAccountInfoRetryWorks()
+						getAccountInfoRetryWorks()
 //						createThenTransferThenUpdateDeleteThenUpdate()
 				}
 		);
@@ -71,6 +71,7 @@ public class RandomOps extends HapiApiSuite {
 				.then(
 						getAccountInfo("0.0.2")
 								.hasRetryAnswerOnlyPrecheck(OK)
+								.setRetryLimit(5)
 				);
 	}
 

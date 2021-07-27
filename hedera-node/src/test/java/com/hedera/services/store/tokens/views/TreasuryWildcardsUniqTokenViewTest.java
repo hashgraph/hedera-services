@@ -114,10 +114,10 @@ class TreasuryWildcardsUniqTokenViewTest {
 	void getsAllAssociationsWithRangeToSpare() {
 		setupFirstMockRange();
 		setupSecondMockRange();
-		given(nftsByOwner.getCount(ownerId)).willReturn(end - 1);
-		given(treasuryNftsByType.getCount(treasuryTokenId)).willReturn(1);
-		given(nftsByOwner.get(ownerId, start, end - 1)).willReturn(firstMockRange);
-		given(treasuryNftsByType.get(treasuryTokenId, 0, 1)).willReturn(secondMockRange);
+		given(nftsByOwner.getCount(ownerId.identityCode())).willReturn(end - 1);
+		given(treasuryNftsByType.getCount(treasuryTokenId.identityCode())).willReturn(1);
+		given(nftsByOwner.get(ownerId.identityCode(), start, end - 1)).willReturn(firstMockRange);
+		given(treasuryNftsByType.get(treasuryTokenId.identityCode(), 0, 1)).willReturn(secondMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
