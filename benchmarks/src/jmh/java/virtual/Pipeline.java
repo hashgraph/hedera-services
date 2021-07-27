@@ -88,11 +88,11 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         archiveService.scheduleWithFixedDelay(() -> {
             try {
                 synchronized (masterMap) {
-//                    final var map = masterMap.getAndSet(null);
-//                    if (map != null) {
-//                        map.archive();
-//                        System.out.println("Archived");
-//                    }
+                    final var map = masterMap.getAndSet(null);
+                    if (map != null) {
+                        map.archive();
+                        System.out.println("Archived");
+                    }
                 }
             } catch (Throwable th) {
                 th.printStackTrace();
