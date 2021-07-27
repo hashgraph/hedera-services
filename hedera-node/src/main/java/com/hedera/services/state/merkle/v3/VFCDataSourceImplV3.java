@@ -20,6 +20,12 @@ import java.util.function.Supplier;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
+/**
+ * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
+ *
+ * @param <K>
+ * @param <V>
+ */
 public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
     private final static int HASH_SIZE = Integer.BYTES+ DigestType.SHA_384.digestLength(); // TODO remove please for something better
     private final int keySizeBytes;

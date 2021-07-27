@@ -89,9 +89,12 @@ public class Id {
 
 	@Override
 	public int hashCode() {
-		int result = Long.hashCode(shard);
-		result = 31 * result + Long.hashCode(realm);
-		return 31 * result + Long.hashCode(num);
+		// was using Objects.hash but it is horrible in hot spot as has to box longs into Longs and create a Object[]
+		int result = 1;
+		result = 31 * result + (int)(shard ^ (shard >>> 32));
+		result = 31 * result + (int)(realm ^ (realm >>> 32));
+		result = 31 * result + (int)(num ^ (num >>> 32));
+		return result;
 	}
 
 	@Override

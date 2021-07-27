@@ -1,6 +1,9 @@
 package com.hedera.services.state.merkle.v3;
 
 import com.hedera.services.state.merkle.v3.files.DataFileTest;
+import com.hedera.services.state.merkle.virtual.ContractKey;
+import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 
@@ -15,6 +18,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class V3TestUtils {
+
+    public static ContractKey newContractKey(long num) {
+//        return new ContractKey(new Id(num,num,num),new ContractUint256(num));
+        return new ContractKey(new Id(0,0,num),new ContractUint256(num));
+    }
 
     public static void deleteDirectoryAndContents(Path dir) {
         if (Files.exists(dir) && Files.isDirectory(dir)) {
