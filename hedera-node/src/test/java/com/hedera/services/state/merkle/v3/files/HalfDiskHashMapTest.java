@@ -49,7 +49,7 @@ public class HalfDiskHashMapTest {
 
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 10, 31, 128, 10_000, 1_000_000}) // six numbers
+    @ValueSource(ints = {1, 10, 31, 128, 10_000, 1_000_000})
     public void createDataAndCheck(int count) throws Exception {
         // create map
         HalfDiskHashMap<ContractKey> map = createNewTempMap(count);

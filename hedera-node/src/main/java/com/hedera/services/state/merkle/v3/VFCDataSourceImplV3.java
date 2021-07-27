@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.v3;
 
 import com.hedera.services.state.merkle.v3.files.DataFile;
+import com.hedera.services.state.merkle.v3.files.HalfDiskHashMap;
 import com.hedera.services.state.merkle.v3.files.MemoryIndexDiskKeyValueStore;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
@@ -10,8 +11,6 @@ import com.swirlds.fcmap.LongVKey;
 import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,12 +34,10 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
     private final boolean isLongKeyMode;
     private final OffHeapHashList hashStore = new OffHeapHashList();
     private final OffHeapLongList longKeyToPath;
-    private final MutableObjectLongMap<K> objectKeyToPath;
+    private final HalfDiskHashMap<K> objectKeyToPath;
     private final MemoryIndexDiskKeyValueStore pathToKeyHashValue;
     private final ThreadLocal<ByteBuffer> leafKey;
-//    private final ThreadLocal<ByteBuffer> leafValue;
     private final ThreadLocal<ByteBuffer> keyHashValue;
-//    private final ThreadLocal<ByteBuffer> hashData;
 
     /**
      * Create new VFCDataSourceImplV3
@@ -50,17 +47,16 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
      * @param valueSizeBytes the size of value when serialized in bytes
      * @param valueConstructor constructor for creating values for deserialization
      * @param storageDir directory to store data files in
+     * @param maxNumOfKeys the maximum number of unique keys. This is used for calculating in memory index sizes
      */
     public VFCDataSourceImplV3(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
-                                Path storageDir) throws IOException {
+                                Path storageDir, long maxNumOfKeys) throws IOException {
         this.keySizeBytes = Integer.BYTES + keySizeBytes;
         this.keyConstructor = keyConstructor;
         this.valueSizeBytes = Integer.BYTES + valueSizeBytes;
         this.valueConstructor = valueConstructor;
         this.leafKey = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
-//        this.leafValue = ThreadLocal.withInitial(() -> allocateDirect(HASH_SIZE+this.valueSizeBytes));
         this.keyHashValue = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes+HASH_SIZE+this.valueSizeBytes));
-//        this.hashData = ThreadLocal.withInitial(() -> allocateDirect(HASH_SIZE));
         if (keySizeBytes == Long.BYTES) {
             isLongKeyMode = true;
             longKeyToPath = new OffHeapLongList();
@@ -68,10 +64,13 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
         } else {
             isLongKeyMode = false;
             longKeyToPath =  null;
-            objectKeyToPath = new ObjectLongHashMap<K>().asSynchronized();
+            objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySizeBytes,keyConstructor,storageDir,"objectKeyToPath");
         }
-        if ((this.keySizeBytes+HASH_SIZE+this.valueSizeBytes) > 256) throw new IOException("Dude you really need to fix this TODo ;-)");
-        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",256); // TODO 256 should be power of 2 bigger than hash size + valueSizeBytes
+        final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes;
+        System.out.println("keyHashValueSize = " + keyHashValueSize);
+        final int keyHashValueSizePower2 = Integer.highestOneBit(keyHashValueSize)*2; // nearest greater power of two
+        System.out.println("keyHashValueSizePower2 = " + keyHashValueSizePower2);
+        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSizePower2);
     }
 
 
@@ -152,7 +151,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
     @Override
     public V loadLeafValue(K key) throws IOException {
         if (key == null) throw new IllegalArgumentException("key can not be null");
-        long path = isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.getIfAbsent(key, INVALID_PATH);
+        long path = isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
         if (path == INVALID_PATH) return null;
         return loadLeafValue(path);
     }
@@ -187,7 +186,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
      */
     @Override
     public long loadLeafPath(K key) throws IOException {
-        return isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.getIfAbsent(key, INVALID_PATH);
+        return isLongKeyMode ? longKeyToPath.get(((LongVKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
     }
 
     /**
@@ -273,6 +272,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
     public Object startTransaction() {
         try {
             pathToKeyHashValue.startWriting();
+            if (!isLongKeyMode) objectKeyToPath.startWriting();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -283,6 +283,7 @@ public class VFCDataSourceImplV3<K extends VKey, V extends VValue> implements VF
     public void commitTransaction(Object handle) {
         try {
             pathToKeyHashValue.endWriting();
+            if (!isLongKeyMode) objectKeyToPath.endWriting();
         } catch (IOException e) {
             e.printStackTrace();
         }
