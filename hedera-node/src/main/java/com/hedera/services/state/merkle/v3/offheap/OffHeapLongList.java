@@ -24,14 +24,14 @@ public final class OffHeapLongList {
      *
      * @param index the index to get hash for
      * @param notFoundValue the value to use if not found
-     * @return loaded long or 0 if long is not stored
+     * @return loaded long or -1 if long is not stored
      */
     public long get(long index, long notFoundValue) {
         if (index <= maxIndexThatCanBeStored.get()) {
             int subIndex = (int)(index % NUM_LONGS_PER_CHUNK);
             return data.get((int) (index / NUM_LONGS_PER_CHUNK)).get(subIndex);
         } else {
-            return 0;
+            return notFoundValue;
         }
     }
 

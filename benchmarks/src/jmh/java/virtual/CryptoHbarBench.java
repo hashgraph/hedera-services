@@ -118,10 +118,10 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     public static void main(String[] args) throws Exception {
         final var start = new AtomicLong(System.currentTimeMillis());
         final var test = new CryptoHbarBench();
-        test.numEntities = 1000;
+        test.numEntities = 1000000;
         test.dsType = DataSourceType.jasperdb;
         test.preFill = true;
-        test.targetOpsPerSecond = 2;
+        test.targetOpsPerSecond = 10000;
         test.prepare();
 
         for (int i=0; i< test.numEntities; i++) {
