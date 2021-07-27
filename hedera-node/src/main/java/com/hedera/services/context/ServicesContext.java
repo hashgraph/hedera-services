@@ -2325,15 +2325,15 @@ public class ServicesContext {
 		return state.uniqueTokens();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueTokenAssociations() {
 		return state.uniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations() {
 		return state.uniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations() {
 		return state.uniqueTreasuryOwnershipAssociations();
 	}
 
