@@ -57,6 +57,7 @@ class MerkleUniqueTokenTest {
 	private byte[] otherMetadata;
 	private RichInstant timestamp;
 	private RichInstant otherTimestamp;
+	private RichInstant anotherTimestamp;
 
 	private static long timestampL = 1_234_567L;
 
@@ -68,6 +69,7 @@ class MerkleUniqueTokenTest {
 		otherMetadata = "Test NFT2".getBytes();
 		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
 		otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
+		anotherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL, 1));
 
 		subject = new MerkleUniqueToken(owner, metadata, timestamp);
 	}
@@ -82,12 +84,14 @@ class MerkleUniqueTokenTest {
 		var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
 		var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
 		var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
+		var other4 = new MerkleUniqueToken(owner, metadata, anotherTimestamp);
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 
 		// expect
 		assertNotEquals(subject, other);
 		assertNotEquals(subject, other2);
 		assertNotEquals(subject, other3);
+		assertNotEquals(subject, other4);
 		assertEquals(subject, identical);
 	}
 
@@ -106,8 +110,8 @@ class MerkleUniqueTokenTest {
 	void toStringWorks() {
 		// given:
 		assertEquals("MerkleUniqueToken{" +
-						"owner=" + owner + ", " +
-						"creationTime=" + timestamp + ", " +
+						"owner=0.0.3, " +
+						"creationTime=1970-01-15T06:56:07Z, " +
 						"metadata=" + Arrays.toString(metadata) + "}",
 				subject.toString());
 	}
