@@ -79,28 +79,31 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
+		try {
+			final var accessor = txnCtx.accessor();
+			final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
-		final var accessor = txnCtx.accessor();
-		final var impliedTransfers = finalImpliedTransfersFor(accessor);
+			var outcome = impliedTransfers.getMeta().code();
+			validateTrue(outcome == OK, outcome);
 
-		var outcome = impliedTransfers.getMeta().code();
-		validateTrue(outcome == OK, outcome);
+			final var changes = impliedTransfers.getAllBalanceChanges();
+			ledger.doZeroSum(changes);
 
-		final var changes = impliedTransfers.getAllBalanceChanges();
-		ledger.doZeroSum(changes);
-
-		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
+			txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
+		} catch (InvalidTransactionException ite) {
+			/* rethrow any exception of this class as it aborts the flow */
+			throw new InvalidTransactionException(ite.getResponseCode());
+		} catch (Exception e) {
+			/* avoidable exceptions like NPEs should be translated to a FAIL_INVALID */
+			throw new InvalidTransactionException(FAIL_INVALID);
+		}
 	}
 
 	private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
-			try {
-				final var op = accessor.getTxn().getCryptoTransfer();
-				impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
-			} catch (Exception e) {
-				throw new InvalidTransactionException(FAIL_INVALID);
-			}
+			final var op = accessor.getTxn().getCryptoTransfer();
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		}
 		return impliedTransfers;
 	}
