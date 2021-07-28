@@ -163,7 +163,7 @@
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <hapi-proto.version>0.16.0-rc.1</hapi-proto.version>
+    <hapi-proto.version>0.17.0-SNAPSHOT</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
@@ -182,6 +182,11 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+    <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+    <!-- for license header -->
+    <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
+    <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S125</sonar.issue.ignore.multicriteria.e1.ruleKey>
+
     <project.build.outputTimestamp>2021-06-11T23:15:26Z</project.build.outputTimestamp>
   </properties>
 

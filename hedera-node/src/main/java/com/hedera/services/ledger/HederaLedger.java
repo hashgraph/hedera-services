@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -384,7 +385,7 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
+	public void doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
 			if (change.isForHbar()) {
@@ -401,8 +402,8 @@ public class HederaLedger {
 			adjustHbarUnchecked(changes);
 		} else {
 			dropPendingTokenChanges();
+			throw new InvalidTransactionException(validity);
 		}
-		return validity;
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */

@@ -9,9 +9,9 @@ package com.hedera.services.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,9 +47,9 @@ public class HederaKeyActivation {
 	public static final TransactionSignature INVALID_MISSING_SIG = new InvalidSignature();
 
 	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
-			(ignoredKey, sig) -> VALID.equals( sig.getSignatureStatus() );
+			(ignoredKey, sig) -> VALID.equals(sig.getSignatureStatus());
 
-	private HederaKeyActivation(){
+	HederaKeyActivation() {
 		throw new IllegalStateException("Utility Class");
 	}
 
@@ -57,7 +57,8 @@ public class HederaKeyActivation {
 	 * Determines if the given transaction has an set of valid cryptographic signatures that,
 	 * taken together, activate the payer's Hedera key.
 	 *
-	 * @param accessor the txn to evaluate.
+	 * @param accessor
+	 * 		the txn to evaluate.
 	 * @return whether the payer's Hedera key is active
 	 */
 	public static boolean payerSigIsActive(TxnAccessor accessor) {
@@ -81,9 +82,12 @@ public class HederaKeyActivation {
 	 * <p><b>IMPORTANT:</b> The sigs must be supplied in the order that a DFS traversal
 	 * of the Hedera key tree structure encounters the corresponding simple keys.
 	 *
-	 * @param key the top-level Hedera key to test for activation.
-	 * @param sigsFn the source of platform signatures for the simple keys in the Hedera key.
-	 * @param tests the logic deciding if a given simple key is activated by a given platform sig.
+	 * @param key
+	 * 		the top-level Hedera key to test for activation.
+	 * @param sigsFn
+	 * 		the source of platform signatures for the simple keys in the Hedera key.
+	 * @param tests
+	 * 		the logic deciding if a given simple key is activated by a given platform sig.
 	 * @return whether the Hedera key is active.
 	 */
 	public static boolean isActive(
@@ -107,8 +111,8 @@ public class HederaKeyActivation {
 					? key.getKeyList().getKeysList()
 					: key.getThresholdKey().getKeys().getKeysList();
 			final int m = key.hasKeyList()
-					? characteristics.sigsNeededForList((JKeyList)key)
-					: characteristics.sigsNeededForThreshold((JThresholdKey)key);
+					? characteristics.sigsNeededForList((JKeyList) key)
+					: characteristics.sigsNeededForThreshold((JThresholdKey) key);
 			var n = 0;
 			for (var child : children) {
 				if (isActive(child, sigsFn, tests)) {
@@ -122,7 +126,8 @@ public class HederaKeyActivation {
 	/**
 	 * Factory for a source of platform signatures backed by a list.
 	 *
-	 * @param sigs the backing list of platform sigs.
+	 * @param sigs
+	 * 		the backing list of platform sigs.
 	 * @return a supplier that produces the backing list sigs by public key.
 	 */
 	public static Function<byte[], TransactionSignature> pkToSigMapFrom(List<TransactionSignature> sigs) {
@@ -138,7 +143,7 @@ public class HederaKeyActivation {
 
 	private static class InvalidSignature extends TransactionSignature {
 		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte)0xAB
+				(byte) 0xAB
 		};
 
 		public InvalidSignature() {

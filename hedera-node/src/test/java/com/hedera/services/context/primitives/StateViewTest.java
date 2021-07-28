@@ -168,9 +168,9 @@ class StateViewTest {
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private FCMap<MerkleEntityId, MerkleAccount> contracts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByType;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> nftsByOwner;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> treasuryNftsByType;
+	private FCOneToManyRelation<Integer, Long> nftsByType;
+	private FCOneToManyRelation<Integer, Long> nftsByOwner;
+	private FCOneToManyRelation<Integer, Long> treasuryNftsByType;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -314,9 +314,9 @@ class StateViewTest {
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
-		nftsByOwner = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
-		nftsByType = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
-		treasuryNftsByType = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
+		nftsByOwner = (FCOneToManyRelation<Integer, Long>) mock(FCOneToManyRelation.class);
+		nftsByType = (FCOneToManyRelation<Integer, Long>) mock(FCOneToManyRelation.class);
+		treasuryNftsByType = (FCOneToManyRelation<Integer, Long>) mock(FCOneToManyRelation.class);
 		uniqTokenView = mock(UniqTokenView.class);
 		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
 

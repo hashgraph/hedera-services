@@ -24,7 +24,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -45,11 +44,11 @@ class ConfigDrivenUniqTokenViewFactoryTest {
 	@Mock
 	private Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	@Mock
-	private Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType;
+	private Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
 	@Mock
-	private Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner;
+	private Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner;
 	@Mock
-	private Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType;
+	private Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType;
 
 	@Test
 	void constructsExplicitIfNotUsingWildcards() {
