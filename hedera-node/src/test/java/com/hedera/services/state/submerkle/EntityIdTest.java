@@ -136,6 +136,12 @@ class EntityIdTest {
 	}
 
 	@Test
+	void identityCodeWorks() {
+		// expect:
+		assertEquals(Integer.valueOf(3), subject.identityCode());
+	}
+
+	@Test
 	void factoriesWork() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcAccountId(null));

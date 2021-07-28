@@ -95,9 +95,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	NodeId nodeId = null;
 	boolean skipDiskFsHashCheck = false;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnedAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueTreasuryOwnedAssociations;
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -134,9 +134,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ServicesContext ctx,
 			NodeId nodeId,
 			List<MerkleNode> children,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueTokenAssociations,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueOwnershipAssociations,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueTreasuryOwnershipAssociations,
+			FCOneToManyRelation<Integer, Long> mutableUniqueTokenAssociations,
+			FCOneToManyRelation<Integer, Long> mutableUniqueOwnershipAssociations,
+			FCOneToManyRelation<Integer, Long> mutableUniqueTreasuryOwnershipAssociations,
 			ServicesState immutableState
 	) {
 		super(immutableState);
@@ -459,27 +459,27 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(ChildIndices.UNIQUE_TOKENS);
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueTokenAssociations() {
 		return uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations() {
 		return uniqueOwnershipAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnershipAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueTreasuryOwnershipAssociations() {
 		return uniqueTreasuryOwnedAssociations;
 	}
 
-	void setUniqueTokenAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations) {
+	void setUniqueTokenAssociations(FCOneToManyRelation<Integer, Long> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations) {
+	void setUniqueOwnershipAssociations(FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
-	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnershipAssociations) {
+	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<Integer, Long> uniqueTreasuryOwnershipAssociations) {
 		this.uniqueTreasuryOwnedAssociations = uniqueTreasuryOwnershipAssociations;
 	}
 

@@ -141,6 +141,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		fixNodeFor(spec);
 		configureTlsFor(spec);
 
+		int retryCount = 1;
 		while (true) {
 			Transaction txn = finalizedTxn(spec, opBodyDef(spec));
 
@@ -173,7 +174,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			txnSubmitted = txn;
 
 			actualPrecheck = response.getNodeTransactionPrecheckCode();
-			if (retryPrechecks.isPresent() && retryPrechecks.get().contains(actualPrecheck)) {
+			if (
+					retryPrechecks.isPresent() &&
+					retryPrechecks.get().contains(actualPrecheck) &&
+					isWithInRetryLimit(retryCount)
+			) {
+				retryCount++;
 				sleep(10);
 			} else {
 				break;
@@ -502,6 +508,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T logged() {
 		verboseLoggingOn = true;
+		return self();
+	}
+
+	public T setRetryLimit(int limit) {
+		retryLimits = Optional.of(limit);
 		return self();
 	}
 

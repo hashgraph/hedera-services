@@ -213,9 +213,9 @@ class ServicesContextTest {
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
 	private AddressBook addresses;
 	private MerkleDiskFs diskFs;
 

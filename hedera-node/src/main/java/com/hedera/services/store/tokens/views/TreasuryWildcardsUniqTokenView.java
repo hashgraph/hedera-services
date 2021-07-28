@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -42,7 +43,8 @@ import java.util.function.Supplier;
  *
  * That is, this class assumes an account's owned unique tokens have <i>two distinct sources</i>:
  * <ol>
- * 	<li>Ownership from being a {@link com.hederahashgraph.api.proto.java.NftTransfer} receiver in a {@code CryptoTransfer}.</li>
+ * 	<li>Ownership from being a {@link com.hederahashgraph.api.proto.java.NftTransfer} receiver in a {@code
+ * 	CryptoTransfer}.</li>
  * 	<li>Ownership from being the treasury for one or more non-fungible unique token types.</li>
  * </ol>
  *
@@ -53,16 +55,16 @@ import java.util.function.Supplier;
  */
 public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	private final TokenStore tokenStore;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType;
+	private final Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner;
+	private final Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType;
 
 	public TreasuryWildcardsUniqTokenView(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType
 	) {
 		super(tokens, nfts, nftsByType);
 
@@ -73,13 +75,14 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	}
 
 	@Override
-	public List<TokenNftInfo> ownedAssociations(AccountID owner, long start, long end) {
+	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
 		final var accountId = EntityId.fromGrpcAccountId(owner);
 		final var curNftsByOwner = nftsByOwner.get();
-		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, curNftsByOwner.getCount(accountId));
+		final var numOwnedViaTransfer = curNftsByOwner.getCount(accountId.identityCode());
+		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, numOwnedViaTransfer);
 
 		final var range = multiSourceRange.rangeForCurrentSource();
-		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range[0], range[1], null, owner);
+		final var answer = accumulatedInfo(nftsByOwner.get(), accountId, range.getLeft(), range.getRight(), null, owner);
 		if (!multiSourceRange.isRequestedRangeExhausted()) {
 			tryToCompleteWithTreasuryOwned(owner, multiSourceRange, answer);
 		}
@@ -95,9 +98,9 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 		final var allServed = tokenStore.listOfTokensServed(owner);
 		for (var served : allServed) {
 			final var tokenId = EntityId.fromGrpcTokenId(served);
-			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(tokenId));
+			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(tokenId.identityCode()));
 			final var range = multiSourceRange.rangeForCurrentSource();
-			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range[0], range[1], served, owner);
+			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range.getLeft(), range.getRight(), served, owner);
 			answer.addAll(infoHere);
 			if (multiSourceRange.isRequestedRangeExhausted()) {
 				break;

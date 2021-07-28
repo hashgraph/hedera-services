@@ -91,9 +91,9 @@ class LedgerBalanceChangesTest {
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<Integer, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
