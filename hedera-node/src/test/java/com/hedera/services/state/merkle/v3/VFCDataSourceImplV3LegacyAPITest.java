@@ -14,7 +14,7 @@ import static com.hedera.services.state.merkle.v2.VFCDataSourceTestUtils.*;
 import static com.hedera.services.state.merkle.v3.V3TestUtils.newContractKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VFCDataSourceImplV3Test {
+public class VFCDataSourceImplV3LegacyAPITest {
     private static final Random RANDOM = new Random(1234);
     private static final Path STORE_PATH = Path.of("data-store");
 
