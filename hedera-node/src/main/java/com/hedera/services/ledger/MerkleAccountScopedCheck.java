@@ -20,14 +20,26 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.function.Function;
 
-public class MerkleAccountScopedCheck implements ScopedChecks<MerkleAccount> {
+public class MerkleAccountScopedCheck implements LedgerCheck<AccountProperty> {
+
+	private BalanceChange balanceChange;
+
+	MerkleAccountScopedCheck(BalanceChange balanceChange) {
+		this.balanceChange = balanceChange;
+	}
+
 	@Override
-	public ResponseCodeEnum checkUsing(final Function<MerkleAccount, Object> getter) {
-		return null;
+	public ResponseCodeEnum checkUsing(final Function<AccountProperty, Object> getter) {
+
+		if ((boolean) getter.apply(AccountProperty.IS_SMART_CONTRACT)) {
+			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
+		}
+
+		return ResponseCodeEnum.OK;
 	}
 }

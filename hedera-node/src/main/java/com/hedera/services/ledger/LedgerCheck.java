@@ -20,14 +20,11 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.function.Function;
 
-public class MerkleTokenRelStatusScopedCheck implements ScopedChecks<MerkleTokenRelStatus> {
-	@Override
-	public ResponseCodeEnum checkUsing(final Function<MerkleTokenRelStatus, Object> getter) {
-		return null;
-	}
+public interface LedgerCheck<Q>  {
+	ResponseCodeEnum checkUsing(Function<Q, Object> getter);
 }
