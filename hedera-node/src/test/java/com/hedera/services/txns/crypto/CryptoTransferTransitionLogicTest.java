@@ -36,6 +36,7 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -56,6 +57,8 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -124,11 +127,13 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
-		// TODO replace with will throw
-		doThrow(InvalidTransactionException.class).when(ledger).doZeroSum(anyList());
+
+		doThrow(new InvalidTransactionException(INSUFFICIENT_ACCOUNT_BALANCE)).when(ledger).doZeroSum(anyList());
 
 		// when:
-		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	@Test
@@ -204,8 +209,10 @@ class CryptoTransferTransitionLogicTest {
 				.willReturn(impliedTransfers);
 
 		// when & then:
-		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
-
+		assertFailsWith(
+				() -> subject.doStateTransition(),
+				TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN
+		);
 		// then:
 		verifyNoInteractions(ledger);
 	}
@@ -254,7 +261,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
 
 		// when:
-		assertThrows(Exception.class, () -> subject.doStateTransition());
+		assertFailsWith(()->subject.doStateTransition(), FAIL_INVALID);
 	}
 
 	@Test
@@ -264,6 +271,11 @@ class CryptoTransferTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(cryptoTransferTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 
 	private void givenValidTxnCtx(TransferList wrapper) {

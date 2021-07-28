@@ -51,6 +51,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -155,9 +156,9 @@ class LedgerBalanceChangesTest {
 		subject.begin();
 		// and:
 
-		assertThrows(
-				InvalidTransactionException.class,
-				() -> subject.doZeroSum(fixtureChanges()));
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
 		// then:
 		subject.commit();
@@ -174,9 +175,9 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		assertThrows(
-				InvalidTransactionException.class,
-				() -> subject.doZeroSum(fixtureChanges()));
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
 		subject.commit();
 
@@ -192,9 +193,9 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		assertThrows(
-				InvalidTransactionException.class,
-				() -> subject.doZeroSum(fixtureChanges()));
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		subject.commit();
 
@@ -211,9 +212,10 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		assertThrows(
-				InvalidTransactionException.class,
-				() -> subject.doZeroSum(fixtureChanges()));
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.ACCOUNT_DELETED);
+
 		subject.commit();
 
 		// then:
@@ -247,9 +249,9 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		assertThrows(
-				InvalidTransactionException.class,
-				() -> subject.doZeroSum(fixtureChanges()));
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_TOKEN_ID);
 
 		subject.commit();
 
@@ -510,6 +512,11 @@ class LedgerBalanceChangesTest {
 		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 		return token;
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 
 	private final long aSerialNo = 1_234L;

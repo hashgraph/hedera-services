@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -77,6 +79,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
+
 		final var accessor = txnCtx.accessor();
 		final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
@@ -92,8 +95,12 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
-			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+			try {
+				final var op = accessor.getTxn().getCryptoTransfer();
+				impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+			} catch (Exception e) {
+				throw new InvalidTransactionException(FAIL_INVALID);
+			}
 		}
 		return impliedTransfers;
 	}
