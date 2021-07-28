@@ -44,6 +44,10 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * A helper class that publishes which price {@link SubType}s must be available for each {@link HederaFunctionality}.
  */
 public class RequiredPriceTypes {
+	RequiredPriceTypes() {
+		throw new IllegalStateException("Uninstantiable");
+	}
+
 	private static final EnumSet<SubType> ONLY_DEFAULT = EnumSet.of(DEFAULT);
 	private static final Map<HederaFunctionality, EnumSet<SubType>> FUNCTIONS_WITH_REQUIRED_SUBTYPES;
 	static {

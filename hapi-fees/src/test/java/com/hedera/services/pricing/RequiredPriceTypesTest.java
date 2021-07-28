@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RequiredPriceTypesTest {
 	@Test
@@ -62,4 +63,8 @@ class RequiredPriceTypesTest {
 				RequiredPriceTypes.requiredTypesFor(TokenCreate));
 	}
 
+	@Test
+	void isUninstantiable() {
+		assertThrows(IllegalStateException.class, RequiredPriceTypes::new);
+	}
 }
