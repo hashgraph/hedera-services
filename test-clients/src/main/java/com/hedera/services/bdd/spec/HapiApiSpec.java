@@ -237,14 +237,14 @@ public class HapiApiSpec implements Runnable {
 
 	public boolean tryReinitializingFees() {
 		int secsWait = 0;
-		if(ciPropsSource != null) {
+		if (ciPropsSource != null) {
 			String secs = setup().ciPropertiesMap().get("secondsWaitingServerUp");
-			if(secs != null) {
+			if (secs != null) {
 				secsWait = Integer.parseInt(secs);
 				secsWait = secsWait >= 0 ? secsWait : 0;
 			}
 		}
-		while (secsWait >= 0 )  {
+		while (secsWait >= 0) {
 			try {
 				ratesProvider.init();
 				feeCalculator.init();
@@ -254,9 +254,9 @@ public class HapiApiSpec implements Runnable {
 				if (secsWait < 0) {
 					log.error("Fees failed to initialize! Please check if server is down...", t);
 					return false;
-				}
-				else {
-					log.warn("Hedera service is not reachable. Will wait and try connect again for {} seconds...", secsWait);
+				} else {
+					log.warn("Hedera service is not reachable. Will wait and try connect again for {} seconds...",
+							secsWait);
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -378,7 +378,8 @@ public class HapiApiSpec implements Runnable {
 									} else {
 										try {
 											Thread.sleep(500L);
-										} catch (InterruptedException ignored) { }
+										} catch (InterruptedException ignored) {
+										}
 									}
 								}
 							}

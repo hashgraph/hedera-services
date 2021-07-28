@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
@@ -37,9 +37,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoTransfer transaction,
@@ -78,22 +77,16 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		try {
-			final var accessor = txnCtx.accessor();
-			final var impliedTransfers = finalImpliedTransfersFor(accessor);
+		final var accessor = txnCtx.accessor();
+		final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
-			var outcome = impliedTransfers.getMeta().code();
-			if (outcome == OK) {
-				final var changes = impliedTransfers.getAllBalanceChanges();
-				outcome = ledger.doZeroSum(changes);
-			}
+		var outcome = impliedTransfers.getMeta().code();
+		validateTrue(outcome == OK, outcome);
 
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-			txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
-		} catch (Exception e) {
-			log.warn("Avoidable exception in CryptoTransfer state transition", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		final var changes = impliedTransfers.getAllBalanceChanges();
+		ledger.doZeroSum(changes);
+
+		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
 	}
 
 	private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
@@ -126,7 +119,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 					dynamicProperties.maxNftTransfersLen(),
 					dynamicProperties.maxCustomFeeDepth(),
 					dynamicProperties.maxXferBalanceChanges(),
-                                        dynamicProperties.areNftsEnabled());
+					dynamicProperties.areNftsEnabled());
 			final var op = accessor.getTxn().getCryptoTransfer();
 			return transferSemanticChecks.fullPureValidation(
 					op.getTransfers(), op.getTokenTransfersList(), validationProps);
