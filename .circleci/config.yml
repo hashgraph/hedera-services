@@ -1632,7 +1632,7 @@ workflows:
 
   # This workflow will be running normally in master branch on a daily basis
 
-  GCP-Daily-Services-Crypto-Migration-5N-1C:
+  GCP-Daily-Services-Crypto-Migration-8N-1C:
     triggers:
       - schedule:
           cron: "45 5 * * *"
@@ -1648,9 +1648,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/5N_1C/Migration
+          result_path: results/8N_1C/Migration
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Crypto-Migration-5N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-8N-1C"
           requires:
             - update-start-up-key
           pre-steps:
