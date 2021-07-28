@@ -217,37 +217,48 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
-		if (version >= RELEASE_0130_VERSION) {
-			int numUsageSnapshots = in.readInt();
-			if (numUsageSnapshots > 0) {
-				usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
-				for (int i = 0; i < numUsageSnapshots; i++) {
-					var used = in.readLong();
-					var lastUsed = serdes.readNullableInstant(in);
-					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
-							used, (lastUsed == null) ? null : lastUsed.toJava());
-				}
-			}
+		readCongestionControlData(in);
 
-			int numCongestionStarts = in.readInt();
-			if (numCongestionStarts > 0) {
-				congestionLevelStarts = new Instant[numCongestionStarts];
-				for (int i = 0; i < numCongestionStarts; i++) {
-					final var levelStart = serdes.readNullableInstant(in);
-					congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
-				}
-			}
-		}
 		if (version >= RELEASE_0140_VERSION) {
-			lastScannedEntity = in.readLong();
-			entitiesScannedThisSecond = in.readLong();
-			entitiesTouchedThisSecond = in.readLong();
-			stateVersion = in.readInt();
+			whenVersionHigherOrEqualTo0140(in);
 		}
 		if (version >= RELEASE_0150_VERSION) {
-			final var lastBoundaryCheck = serdes.readNullableInstant(in);
-			lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+			whenVersionHigherOrEqualTo0150(in);
 		}
+	}
+
+	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
+		int numUsageSnapshots = in.readInt();
+		if (numUsageSnapshots > 0) {
+			usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
+			for (int i = 0; i < numUsageSnapshots; i++) {
+				var used = in.readLong();
+				var lastUsed = serdes.readNullableInstant(in);
+				usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
+						used, (lastUsed == null) ? null : lastUsed.toJava());
+			}
+		}
+
+		int numCongestionStarts = in.readInt();
+		if (numCongestionStarts > 0) {
+			congestionLevelStarts = new Instant[numCongestionStarts];
+			for (int i = 0; i < numCongestionStarts; i++) {
+				final var levelStart = serdes.readNullableInstant(in);
+				congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
+			}
+		}
+	}
+
+	private void whenVersionHigherOrEqualTo0140(final SerializableDataInputStream in) throws IOException {
+		lastScannedEntity = in.readLong();
+		entitiesScannedThisSecond = in.readLong();
+		entitiesTouchedThisSecond = in.readLong();
+		stateVersion = in.readInt();
+	}
+
+	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
+		final var lastBoundaryCheck = serdes.readNullableInstant(in);
+		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
 	}
 
 	@Override

@@ -86,6 +86,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 	private List<byte[]> signatories = new ArrayList<>();
 
 	public MerkleSchedule() {
+		// Do nothing intentionally as empty default constructor.
 	}
 
 	public static MerkleSchedule from(byte[] bodyBytes, long consensusExpiry) {

@@ -106,6 +106,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	 */
 	@Override
 	public void invalidateHash() {
+		// Do nothing because this is no-op intentionally.
 	}
 
 	@Override

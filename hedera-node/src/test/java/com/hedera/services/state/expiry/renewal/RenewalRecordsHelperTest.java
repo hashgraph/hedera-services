@@ -25,7 +25,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
@@ -48,6 +47,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.toList;
@@ -159,7 +159,7 @@ class RenewalRecordsHelperTest {
 
 	private RecordStreamObject expectedRso(TransactionRecord record, int nanosOffset) {
 		return new RecordStreamObject(
-				ExpirableTxnRecord.fromGprc(record),
+				fromGprc(record),
 				Transaction.getDefaultInstance(),
 				instantNow.plusNanos(nanosOffset));
 	}
