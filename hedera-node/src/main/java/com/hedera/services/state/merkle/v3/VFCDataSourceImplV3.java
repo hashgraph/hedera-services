@@ -11,11 +11,17 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -75,14 +81,105 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
 
 
     //==================================================================================================================
-    // Public API methods
+    // Public NEW API methods
+
+    public VirtualLeafRecord<K, V> loadLeafRecord(K key) throws IOException {
+        if (key == null) throw new IllegalArgumentException("key can not be null");
+        long path = isLongKeyMode ? longKeyToPath.get(((VirtualLongKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
+        if (path == INVALID_PATH) return null;
+        return loadLeafRecord(path,key);
+    }
+
+    public VirtualLeafRecord<K, V> loadLeafRecord(long path) throws IOException {
+        return loadLeafRecord(path,null);
+    }
 
     /**
-     * Close all data stores
+     * load a leaf record by path, using the provided key or if null deserializing the key.
      */
-    @Override
-    public void close() throws IOException {
-        pathToKeyHashValue.close();
+    private VirtualLeafRecord<K, V> loadLeafRecord(long path, K key) throws IOException {
+        // get reusable buffer
+        ByteBuffer keyHashValueBuffer = this.keyHashValue.get().clear();
+        // read value
+        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer, DataFile.DataToRead.VALUE);
+        if (!found) return null;
+        // deserialize
+        keyHashValueBuffer.rewind();
+        // deserialize key
+        if (key != null) {
+            keyHashValueBuffer.position(keySizeBytes); // jump key
+        } else {
+            final int keySerializationVersion = keyHashValueBuffer.getInt();
+            key = keyConstructor.get();
+            key.deserialize(keyHashValueBuffer, keySerializationVersion);
+        }
+        // deserialize hash
+        final Hash hash = Hash.fromByteBuffer(keyHashValueBuffer);
+        // deserialize value
+        final int valueSerializationVersion = keyHashValueBuffer.getInt();
+        final V value = valueConstructor.get();
+        value.deserialize(keyHashValueBuffer,valueSerializationVersion);
+        // return new VirtualLeafRecord
+        return new VirtualLeafRecord<>(path, hash, key, value);
+    }
+
+    /**
+     * Save a batch of data to data store
+     */
+    public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords, List<VirtualLeafRecord<K, V>> leafRecords) {
+        // TODO work out how to delete things using firstLeafPath & lastLeafPath
+        // might as well write to the 3 data stores in parallel
+        IntStream.range(0,3).parallel().forEach(action -> {
+            if (action == 0) {// write internal node hashes
+                for (VirtualInternalRecord rec: internalRecords) {
+                    hashStore.put(rec.getPath(), rec.getHash());
+                }
+            } else if (action == 1) { // write leaves to pathToKeyHashValue
+                try {
+                    pathToKeyHashValue.startWriting();
+                    // get reusable buffer
+                    ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
+                    for (var rec: leafRecords) {
+                        final long path = rec.getPath();
+                        final VirtualKey key = rec.getKey();
+                        final Hash hash = rec.getHash();
+                        final VirtualValue value = rec.getValue();
+                        // clear buffer for reuse
+                        keyHashValueBuffer.clear();
+                        // put key
+                        keyHashValueBuffer.putInt(key.getVersion());
+                        key.serialize(keyHashValueBuffer);
+                        // put hash
+                        Hash.toByteBuffer(hash,keyHashValueBuffer);
+                        // put value
+                        keyHashValueBuffer.putInt(value.getVersion());
+                        value.serialize(keyHashValueBuffer);
+                        // now save pathToKeyHashValue
+                        keyHashValueBuffer.flip();
+                        pathToKeyHashValue.put(path,keyHashValueBuffer);
+                    }
+                    pathToKeyHashValue.endWriting();
+                } catch (IOException e) {
+                    throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                }
+            } else if (action == 2) { // write leaves to objectKeyToPath
+                if (isLongKeyMode) {
+                    for (var rec : leafRecords) {
+                        longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
+                    }
+                } else {
+                    try {
+                        objectKeyToPath.startWriting();
+                        for (var rec : leafRecords) {
+                            objectKeyToPath.put(rec.getKey(), rec.getPath());
+                        }
+                        objectKeyToPath.endWriting();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -116,6 +213,17 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     public Hash loadInternalHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         return hashStore.get(path);
+    }
+
+    //==================================================================================================================
+    // Legacy API methods
+
+    /**
+     * Close all data stores
+     */
+    @Override
+    public void close() throws IOException {
+        pathToKeyHashValue.close();
     }
 
     /**
@@ -266,7 +374,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     }
 
     //==================================================================================================================
-    // Public API Transaction methods
+    // Legacy API Transaction methods
 
     @Override
     public Object startTransaction() {
