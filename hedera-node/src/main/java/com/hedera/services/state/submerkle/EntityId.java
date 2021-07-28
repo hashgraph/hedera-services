@@ -36,7 +36,13 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.numFromCode;
+
 public class EntityId implements SelfSerializable {
+	private static final long DEFAULT_SHARD = 0L;
+	private static final long DEFAULT_REALM = 0L;
+
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf35ba643324efa37L;
 
@@ -47,6 +53,7 @@ public class EntityId implements SelfSerializable {
 	private long num;
 
 	public EntityId() {
+		/* For RuntimeConstructable */
 	}
 
 	public EntityId(Id id) {
@@ -61,21 +68,23 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
-	public static EntityId fromIdentity(int code) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public static EntityId fromNum(long n) {
-		throw new AssertionError("Not implemented!");
-	}
-
 	/**
 	 * Gives a "compressed" code to identify this entity id.
 	 *
 	 * @return the code for this id
 	 */
 	public Integer identityCode() {
-		return (int) num;
+		return codeFromNum(num);
+	}
+
+	/**
+	 * Builds an entity id from its encoded format.
+	 *
+	 * @param code the compressed representation
+	 * @return the equivalent entity id
+	 */
+	public static EntityId fromIdentityCode(int code) {
+		return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, numFromCode(code));
 	}
 
 	/* --- SelfSerializable --- */

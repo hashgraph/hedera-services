@@ -56,7 +56,7 @@ class BackingNftsTest {
 	private MerkleUniqueTokenId cKey =
 			new MerkleUniqueTokenId(new EntityId(0, 0, 5), 6);
 	private MerkleUniqueToken aValue = new MerkleUniqueToken(
-			new EntityId(1, 2, 3),
+			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
 			new RichInstant(1_234_567L, 1));
 	private MerkleUniqueToken theToken = new MerkleUniqueToken(

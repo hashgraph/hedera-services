@@ -62,8 +62,8 @@ class MerkleUniqueTokenTest {
 
 	@BeforeEach
 	public void setup() {
-		owner = new EntityId(1, 2, 3);
-		otherOwner = new EntityId(1, 2, 4);
+		owner = new EntityId(0, 0, 3);
+		otherOwner = new EntityId(0, 0, 4);
 		metadata = "Test NFT".getBytes();
 		otherMetadata = "Test NFT2".getBytes();
 		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
@@ -135,7 +135,7 @@ class MerkleUniqueTokenTest {
 		subject.serialize(out);
 
 		// then:
-		inOrder.verify(out).writeSerializable(owner, true);
+		inOrder.verify(out).writeInt(owner.identityCode());
 		inOrder.verify(out).writeLong(timestamp.getSeconds());
 		inOrder.verify(out).writeInt(timestamp.getNanos());
 		inOrder.verify(out).writeByteArray(metadata);
@@ -147,10 +147,11 @@ class MerkleUniqueTokenTest {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
-		given(in.readSerializable()).willReturn(owner);
 		given(in.readByteArray(anyInt())).willReturn(metadata);
 		given(in.readLong()).willReturn(timestampL);
-		given(in.readInt()).willReturn(0);
+		given(in.readInt())
+				.willReturn(owner.identityCode())
+				.willReturn(0);
 
 		// and:
 		var read = new MerkleUniqueToken();

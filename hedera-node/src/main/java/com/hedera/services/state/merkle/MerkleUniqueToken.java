@@ -28,19 +28,23 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
 public class MerkleUniqueToken extends AbstractMerkleLeaf {
-	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
+	private static final int TREASURY_OWNER_CODE = 0;
+
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
 
-	private int owner; // only store the meaningful portion of this ID
-	private RichInstant creationTime;
+	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
+
+	private int ownerCode;
 	private byte[] metadata;
+	private RichInstant creationTime;
 
 	/**
 	 * @param owner
@@ -55,7 +59,17 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 			byte[] metadata,
 			RichInstant creationTime
 	) {
-		this.owner = (int) owner.num();
+		this.ownerCode = owner.identityCode();
+		this.metadata = metadata;
+		this.creationTime = creationTime;
+	}
+
+	public MerkleUniqueToken(
+			int ownerCode,
+			byte[] metadata,
+			RichInstant creationTime
+	) {
+		this.ownerCode = ownerCode;
 		this.metadata = metadata;
 		this.creationTime = creationTime;
 	}
@@ -75,7 +89,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 		}
 
 		var that = (MerkleUniqueToken) o;
-		return this.owner == that.owner &&
+		return this.ownerCode == that.ownerCode &&
 				Objects.deepEquals(this.metadata, that.metadata) &&
 				Objects.equals(creationTime, that.creationTime);
 	}
@@ -83,15 +97,15 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-				owner,
+				ownerCode,
 				creationTime,
-				metadata);
+				Arrays.hashCode(metadata));
 	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
-				.add("owner", owner)
+				.add("owner", EntityId.fromIdentityCode(ownerCode))
 				.add("creationTime", creationTime)
 				.add("metadata", metadata)
 				.toString();
@@ -111,14 +125,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
-		owner = in.readInt();
+		ownerCode = in.readInt();
 		creationTime = RichInstant.from(in);
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeInt(owner);
+		out.writeInt(ownerCode);
 		creationTime.serialize(out);
 		out.writeByteArray(metadata);
 	}
@@ -127,21 +141,21 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	@Override
 	public MerkleUniqueToken copy() {
 		setImmutable(true);
-		return new MerkleUniqueToken(EntityId.fromIdentity(owner), metadata, creationTime);
+		return new MerkleUniqueToken(ownerCode, metadata, creationTime);
 	}
 
 	public void setOwner(EntityId owner) {
 		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
-		this.owner = (int) owner.num();
+		this.ownerCode = (int) owner.num();
 	}
 
 	public void setOwner(long owner) {
 		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
-		this.owner = (int) owner;
+		this.ownerCode = (int) owner;
 	}
 
 	public EntityId getOwner() {
-		return new EntityId(0, 0, owner);
+		return new EntityId(0, 0, ownerCode);
 	}
 
 	public byte[] getMetadata() {
@@ -153,6 +167,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	}
 
 	public boolean isTreasuryOwned() {
-		return EntityId.MISSING_ENTITY_ID.equals(owner);
+		return ownerCode == TREASURY_OWNER_CODE;
 	}
 }

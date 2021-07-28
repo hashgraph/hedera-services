@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class NftPropertyTest {
 	private final byte[] aMeta = "abcdefgh".getBytes();
-	private final EntityId aEntity = new EntityId(1, 2, 3);
-	private final EntityId bEntity = new EntityId(2, 3, 4);
+	private final EntityId aEntity = new EntityId(0, 0, 3);
+	private final EntityId bEntity = new EntityId(0, 0, 4);
 	private final RichInstant aInstant = new RichInstant(1_234_567L, 1);
 
 	@Test
@@ -55,6 +55,6 @@ class NftPropertyTest {
 		setter.accept(aSubject, bEntity);
 
 		// expect:
-		assertSame(bEntity, aSubject.getOwner());
+		assertEquals(bEntity, aSubject.getOwner());
 	}
 }

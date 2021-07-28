@@ -137,20 +137,20 @@ class StateViewTest {
 	private HFileMeta metadata;
 	private HFileMeta immutableMetadata;
 	private FileID target = asFile("0.0.123");
-	private TokenID tokenId = asToken("2.4.5");
-	private TokenID nftTokenId = asToken("1.2.3");
-	private TokenID missingTokenId = asToken("3.4.5");
-	private AccountID payerAccountId = asAccount("9.9.9");
-	private AccountID tokenAccountId = asAccount("9.9.10");
+	private TokenID tokenId = asToken("0.0.5");
+	private TokenID nftTokenId = asToken("0.0.3");
+	private TokenID missingTokenId = asToken("0.0.5555");
+	private AccountID payerAccountId = asAccount("0.0.9");
+	private AccountID tokenAccountId = asAccount("0.0.10");
 	private AccountID treasuryOwnerId = asAccount("0.0.0");
-	private AccountID nftOwnerId = asAccount("4.4.44");
-	private ScheduleID scheduleId = asSchedule("6.7.8");
-	private ScheduleID missingScheduleId = asSchedule("7.8.9");
-	private ContractID cid = asContract("3.2.1");
+	private AccountID nftOwnerId = asAccount("0.0.44");
+	private ScheduleID scheduleId = asSchedule("0.0.8");
+	private ScheduleID missingScheduleId = asSchedule("0.0.9");
+	private ContractID cid = asContract("0.0.1");
 	private byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-	private ContractID notCid = asContract("1.2.3");
-	private AccountID autoRenew = asAccount("2.4.6");
-	private AccountID creatorAccountID = asAccount("3.5.7");
+	private ContractID notCid = asContract("0.0.3");
+	private AccountID autoRenew = asAccount("0.0.6");
+	private AccountID creatorAccountID = asAccount("0.0.7");
 	private long autoRenewPeriod = 1_234_567;
 	private String fileMemo = "Originally she thought";
 	private String scheduleMemo = "For what but eye and ear";
@@ -227,7 +227,7 @@ class StateViewTest {
 				.memo("Stay cold...")
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
-				.proxy(asAccount("1.2.3"))
+				.proxy(asAccount("0.0.3"))
 				.senderThreshold(1_234L)
 				.receiverThreshold(4_321L)
 				.receiverSigRequired(true)
@@ -255,7 +255,7 @@ class StateViewTest {
 		token = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
-				new EntityId(1, 2, 3));
+				new EntityId(0, 0, 3));
 		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
@@ -276,7 +276,7 @@ class StateViewTest {
 		given(tokenStore.listOfTokensServed(nftOwnerId)).willReturn(
 				Collections.singletonList(targetNftKey.tokenId().toGrpcTokenId()));
 		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(IdUtils.asToken("1.2.3"))).willReturn(token);
+		given(tokenStore.get(IdUtils.asToken("0.0.3"))).willReturn(token);
 
 		scheduleStore = mock(ScheduleStore.class);
 		parentScheduleCreate =
@@ -1074,11 +1074,11 @@ class StateViewTest {
 	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
 	private final byte[] nftMeta = "abcdefgh".getBytes();
 	private final NftID targetNftId = NftID.newBuilder()
-			.setTokenID(IdUtils.asToken("1.2.3"))
+			.setTokenID(IdUtils.asToken("0.0.3"))
 			.setSerialNumber(4L)
 			.build();
 	private final NftID missingNftId = NftID.newBuilder()
-			.setTokenID(IdUtils.asToken("1.7.9"))
+			.setTokenID(IdUtils.asToken("0.0.9"))
 			.setSerialNumber(5L)
 			.build();
 	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
