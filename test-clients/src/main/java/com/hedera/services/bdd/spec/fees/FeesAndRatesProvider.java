@@ -154,6 +154,7 @@ public class FeesAndRatesProvider {
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
 		feeSchedule = typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule());
+		log.info("The patched fee schedule is {}", feeSchedule);
 		log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
 	}
 

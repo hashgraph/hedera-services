@@ -66,17 +66,12 @@ public class ScheduleTypePatching {
 	public FeeSchedule withPatchedTypesIfNecessary(FeeSchedule possiblyUntypedSchedule) {
 		final var usableSchedule = FeeSchedule.newBuilder();
 		for (var tfs : possiblyUntypedSchedule.getTransactionFeeScheduleList()) {
-			if (tfs.hasFeeData()) {
-				final var usableTfs = TransactionFeeSchedule.newBuilder();
-				final var fn = tfs.getHederaFunctionality();
-				usableTfs.setHederaFunctionality(fn);
-				final EnumSet<SubType> requiredTypes = FUNCTIONS_WITH_REQUIRED_SUBTYPES.getOrDefault(fn, ONLY_DEFAULT);
-				ensurePatchedFeeScheduleHasRequiredTypes(tfs, usableTfs, requiredTypes);
-				usableSchedule.addTransactionFeeSchedule(usableTfs);
-			} else {
-				/* Must have been >= release 0.16.0 fee schedule */
-				return possiblyUntypedSchedule;
-			}
+			final var usableTfs = TransactionFeeSchedule.newBuilder();
+			final var fn = tfs.getHederaFunctionality();
+			usableTfs.mergeFrom(tfs);
+			final EnumSet<SubType> requiredTypes = FUNCTIONS_WITH_REQUIRED_SUBTYPES.getOrDefault(fn, ONLY_DEFAULT);
+			ensurePatchedFeeScheduleHasRequiredTypes(tfs, usableTfs, requiredTypes);
+			usableSchedule.addTransactionFeeSchedule(usableTfs);
 		}
 		return usableSchedule.build();
 	}

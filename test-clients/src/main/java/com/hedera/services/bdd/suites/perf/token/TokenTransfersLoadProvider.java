@@ -68,7 +68,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class TokenTransfersLoadProvider extends HapiApiSuite {
@@ -101,9 +100,10 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 								.overridingProps(Map.of("balances.exportPeriodSecs", "300",
 										"balances.exportDir.path", "data/accountBalances/")
 								)
-				).when(	runWithProvider(tokenTransfersFactory())
-						.lasting(duration::get, unit::get)
-						.maxOpsPerSec(maxOpsPerSec::get)
+				).when(
+						runWithProvider(tokenTransfersFactory())
+								.lasting(duration::get, unit::get)
+								.maxOpsPerSec(maxOpsPerSec::get)
 				).then(
 						getAccountBalance(DEFAULT_PAYER).logged(),
 						// The freeze and long wait after freeze means to keep the server in MAINTENANCE state till test
@@ -111,7 +111,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
 						freeze().payingWith(GENESIS)
 								.startingIn(30).seconds()
-								.hasKnownStatusFrom(SUCCESS,UNKNOWN)
+								.hasKnownStatusFrom(SUCCESS, UNKNOWN)
 								.hasAnyPrecheck()
 								.andLasting(10).minutes(),
 						sleepFor(60_000)
@@ -145,14 +145,6 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				   restart tests includes a fee schedule with HTS resource prices. */
 				if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 					initializers.add(uploadDefaultFeeSchedules(GENESIS));
-					initializers.add(
-							fileUpdate(APP_PROPERTIES)
-									.fee(9_999_999_999L)
-									.payingWith(GENESIS)
-									.overridingProps(Map.ofEntries(
-											entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
-									))
-					);
 				} else {
 					initializers.add(withOpContext((spec, opLog) -> {
 						log.info("\n\n" + bannerWith("Waiting for a fee schedule with token ops!"));
@@ -169,7 +161,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 							} catch (Exception e) {
 								var msg = e.toString();
 								msg = msg.substring(msg.indexOf(":") + 2);
-								log.info( "Couldn't check for HTS fee schedules---'{}'", msg);
+								log.info("Couldn't check for HTS fee schedules---'{}'", msg);
 							}
 							TimeUnit.SECONDS.sleep(3);
 						}
