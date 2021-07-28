@@ -57,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -359,31 +358,6 @@ class AwareFcfsUsagePricesTest {
 		assertEquals(unPrices, burnTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
 		assertEquals(fcPrices, wipeTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
 		assertEquals(unPrices, wipeTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
-	}
-
-	@Test
-	void knowsTypedFunctions() {
-		// expect:
-		assertEquals(
-				EnumSet.of(
-						DEFAULT,
-						TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-						TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(CryptoTransfer));
-		assertEquals(
-				EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenMint));
-		assertEquals(
-				EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenBurn));
-		assertEquals(
-				EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenAccountWipe));
-		assertEquals(
-				EnumSet.of(
-						TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-						TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenCreate));
 	}
 
 	@Test

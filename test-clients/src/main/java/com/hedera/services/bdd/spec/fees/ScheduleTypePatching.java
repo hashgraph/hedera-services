@@ -20,56 +20,31 @@ package com.hedera.services.bdd.spec.fees;
  * ‍
  */
 
+import com.hedera.services.pricing.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
+/**
+ * Helper class to avoid problems when restarting from a saved state from the last release, whose
+ * fee schedules are missing one or more price types that are required in the current release.
+ */
 public class ScheduleTypePatching {
-	private static final EnumSet<SubType> ONLY_DEFAULT = EnumSet.of(DEFAULT);
-	static final Map<HederaFunctionality, EnumSet<SubType>> FUNCTIONS_WITH_REQUIRED_SUBTYPES;
-
-	static {
-		FUNCTIONS_WITH_REQUIRED_SUBTYPES = new EnumMap<>(HederaFunctionality.class);
-		/* The functions with non-DEFAULT prices in hapi-fees/src/main/resources/canonical-prices.json */
-		List.of(TokenMint, TokenBurn, TokenAccountWipe).forEach(function ->
-				FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(function, EnumSet.of(
-						TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)));
-		FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(TokenCreate, EnumSet.of(
-				TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-				TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
-		FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(CryptoTransfer, EnumSet.of(
-				DEFAULT,
-				TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-				TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
-	}
-
 	public FeeSchedule withPatchedTypesIfNecessary(FeeSchedule possiblyUntypedSchedule) {
 		final var usableSchedule = FeeSchedule.newBuilder();
 		for (var tfs : possiblyUntypedSchedule.getTransactionFeeScheduleList()) {
 			final var usableTfs = TransactionFeeSchedule.newBuilder();
 			final var fn = tfs.getHederaFunctionality();
 			usableTfs.mergeFrom(tfs);
-			final EnumSet<SubType> requiredTypes = FUNCTIONS_WITH_REQUIRED_SUBTYPES.getOrDefault(fn, ONLY_DEFAULT);
+			final Set<SubType> requiredTypes = RequiredPriceTypes.requiredTypesFor(fn);
 			ensurePatchedFeeScheduleHasRequiredTypes(tfs, usableTfs, requiredTypes);
 			usableSchedule.addTransactionFeeSchedule(usableTfs);
 		}
@@ -79,7 +54,7 @@ public class ScheduleTypePatching {
 	private void ensurePatchedFeeScheduleHasRequiredTypes(
 			TransactionFeeSchedule origTfs,
 			TransactionFeeSchedule.Builder patchedTfs,
-			EnumSet<SubType> requiredTypes
+			Set<SubType> requiredTypes
 	) {
 		/* The deprecated prices are the final fallback; if even they are not set, the function will be free */
 		final var oldDefaultPrices = origTfs.getFeeData();
