@@ -36,22 +36,30 @@ import javax.annotation.Nullable;
  * treasury ownership.
  */
 public class GrpcUtils {
+	GrpcUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	/**
 	 * Build a query-friendly representation of the given unique token,
 	 * using the given treasury account id to substitute for the sentinel
 	 * {@code 0.0.0} id if necessary.
 	 *
-	 * @param type the type of the unique token
-	 * @param serialNo the serial number of the unique token
-	 * @param nft the creation time, owner, and metadata of the unique token
-	 * @param treasury if not null, the account id that should replace the sentinel id
+	 * @param type
+	 * 		the type of the unique token
+	 * @param serialNo
+	 * 		the serial number of the unique token
+	 * @param nft
+	 * 		the creation time, owner, and metadata of the unique token
+	 * @param treasury
+	 * 		if not null, the account id that should replace the sentinel id
 	 * @return the desired query-friendly representation
 	 */
-	public TokenNftInfo reprOf(
-			TokenID type,
-			long serialNo,
-			MerkleUniqueToken nft,
-			@Nullable AccountID treasury
+	public static TokenNftInfo reprOf(
+			final TokenID type,
+			final long serialNo,
+			final MerkleUniqueToken nft,
+			@Nullable final AccountID treasury
 	) {
 		final var nftId = NftID.newBuilder()
 				.setTokenID(type)

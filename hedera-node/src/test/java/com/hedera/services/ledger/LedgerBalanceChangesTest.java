@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -50,6 +51,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -75,12 +77,9 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,9 +90,9 @@ class LedgerBalanceChangesTest {
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<Integer, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -156,12 +155,14 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
 
-		subject.commit();
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
 		// then:
-		assertEquals(INVALID_ACCOUNT_ID, result);
+		subject.commit();
+
 		// and:
 		assertInitialBalanceUnchanged();
 	}
@@ -174,13 +175,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
 		subject.commit();
 
 		// then:
-		assertEquals(INVALID_ACCOUNT_ID, result);
-		// and:
 		assertInitialBalanceUnchanged(-1L);
 	}
 
@@ -192,13 +193,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
 		subject.commit();
 
 		// then:
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, result);
-		// and:
 		assertInitialBalanceUnchanged();
 	}
 
@@ -211,12 +212,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.ACCOUNT_DELETED);
+
 		subject.commit();
 
 		// then:
-		assertEquals(ACCOUNT_DELETED, result);
-		// and:
 		assertInitialBalanceUnchanged();
 	}
 
@@ -247,12 +249,13 @@ class LedgerBalanceChangesTest {
 		// when:
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertFailsWith(
+				() -> subject.doZeroSum(fixtureChanges()),
+				ResponseCodeEnum.INVALID_TOKEN_ID);
+
 		subject.commit();
 
 		// then:
-		assertEquals(INVALID_TOKEN_ID, result);
-		// and:
 		assertInitialBalanceUnchanged();
 	}
 
@@ -265,14 +268,13 @@ class LedgerBalanceChangesTest {
 		List<TokenTransferList> inProgressTokens;
 		subject.begin();
 		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
+		assertDoesNotThrow(() -> subject.doZeroSum(fixtureChanges()));
+
 		inProgress = subject.netTransfersInTxn();
 		inProgressTokens = subject.netTokenTransfersInTxn();
 		// and:
 		subject.commit();
 
-		// then:
-		assertEquals(OK, result);
 		// and:
 		assertEquals(
 				aStartBalance + aHbarChange,
@@ -510,6 +512,11 @@ class LedgerBalanceChangesTest {
 		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 		return token;
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 
 	private final long aSerialNo = 1_234L;

@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,15 @@ package com.hedera.services.store.tokens.views.utils;
  * ‍
  */
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.store.tokens.views.utils.MultiSourceRange.EMPTY_RANGE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MultiSourceRangeTest {
 	@Test
@@ -41,9 +46,9 @@ class MultiSourceRangeTest {
 		// then:
 		assertTrue(subject.isRequestedRangeExhausted());
 		// and:
-		assertArrayEquals(range(1, 2), firstRange);
-		assertArrayEquals(range(0, 3), secondRange);
-		assertArrayEquals(range(0, 4), thirdRange);
+		assertEquals(Pair.of(1, 2), firstRange);
+		assertEquals(Pair.of(0, 3), secondRange);
+		assertEquals(Pair.of(0, 4), thirdRange);
 	}
 
 	@Test
@@ -55,7 +60,7 @@ class MultiSourceRangeTest {
 		final var firstRange = subject.rangeForCurrentSource();
 
 		// then:
-		assertArrayEquals(range(2, 5), firstRange);
+		assertEquals(Pair.of(2, 5), firstRange);
 		// and:
 		assertTrue(subject.isRequestedRangeExhausted());
 		assertThrows(IllegalStateException.class, () -> subject.moveToNewSource(10));
@@ -64,7 +69,7 @@ class MultiSourceRangeTest {
 	@Test
 	void canSatisfyUsingSingleElements() {
 		// setup:
-		final var zeroOneRange = range(0, 1);
+		final var zeroOneRange = Pair.of(0, 1);
 
 		// given:
 		final var subject = new MultiSourceRange(3, 6, 1);
@@ -76,11 +81,11 @@ class MultiSourceRangeTest {
 		subject.moveToNewSource(1);
 		assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
 		subject.moveToNewSource(1);
-		assertArrayEquals(zeroOneRange, subject.rangeForCurrentSource());
+		assertEquals(zeroOneRange, subject.rangeForCurrentSource());
 		subject.moveToNewSource(1);
-		assertArrayEquals(zeroOneRange, subject.rangeForCurrentSource());
+		assertEquals(zeroOneRange, subject.rangeForCurrentSource());
 		subject.moveToNewSource(1);
-		assertArrayEquals(zeroOneRange, subject.rangeForCurrentSource());
+		assertEquals(zeroOneRange, subject.rangeForCurrentSource());
 		// and:
 		assertTrue(subject.isRequestedRangeExhausted());
 	}
@@ -129,17 +134,13 @@ class MultiSourceRangeTest {
 		assertTrue(subject.isRequestedRangeExhausted());
 
 		// then: Six elements are used from the first range
-		assertArrayEquals(range(2, 8), firstRange);
+		assertEquals(Pair.of(2, 8), firstRange);
 		// and: All three elements are used from the second range
-		assertArrayEquals(range(0, 3), secondRange);
+		assertEquals(Pair.of(0, 3), secondRange);
 		// and: The remaining 10 requested elements are used from the third range
-		assertArrayEquals(range(0, 10), thirdRange);
+		assertEquals(Pair.of(0, 10), thirdRange);
 		// and:
 		assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
 		assertThrows(IllegalStateException.class, () -> subject.moveToNewSource(10));
-	}
-
-	private int[] range(int a, int b) {
-		return new int[] { a, b };
 	}
 }

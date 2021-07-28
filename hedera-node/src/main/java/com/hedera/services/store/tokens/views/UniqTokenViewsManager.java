@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,14 +46,14 @@ import java.util.function.Supplier;
  * and an account owning an NFT because it is the designated treasury for the NFT's token type.
  */
 public class UniqTokenViewsManager {
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType;
+	private final Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
+	private final Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner;
+	private final Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType;
 
 	public UniqTokenViewsManager(
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType
 	) {
 		this.nftsByType = nftsByType;
 		this.nftsByOwner = nftsByOwner;
@@ -61,8 +61,8 @@ public class UniqTokenViewsManager {
 	}
 
 	public UniqTokenViewsManager(
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner
 	) {
 		this.nftsByType = nftsByType;
 		this.nftsByOwner = nftsByOwner;
@@ -78,8 +78,10 @@ public class UniqTokenViewsManager {
 	 * or reconnect; and in those cases, the {@link FCOneToManyRelation}s are
 	 * newly created.
 	 *
-	 * @param tokens the token types in the world state
-	 * @param uniqueTokens unique tokens in the world state
+	 * @param tokens
+	 * 		the token types in the world state
+	 * @param uniqueTokens
+	 * 		unique tokens in the world state
 	 */
 	public void rebuildNotice(
 			FCMap<MerkleEntityId, MerkleToken> tokens,
@@ -96,16 +98,18 @@ public class UniqTokenViewsManager {
 	 * Updates the internal view of the unique tokens in the world state to reflect
 	 * the minting of an NFT with the given id in the given treasury.
 	 *
-	 * @param nftId the minted id
-	 * @param treasury the treasury that received the new NFT
+	 * @param nftId
+	 * 		the minted id
+	 * @param treasury
+	 * 		the treasury that received the new NFT
 	 */
 	public void mintNotice(MerkleUniqueTokenId nftId, EntityId treasury) {
 		final var tokenId = nftId.tokenId();
-		nftsByType.get().associate(tokenId, nftId);
+		nftsByType.get().associate(tokenId.identityCode(), nftId.identityCode());
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().associate(tokenId, nftId);
+			curTreasuryNftsByType().associate(tokenId.identityCode(), nftId.identityCode());
 		} else {
-			nftsByOwner.get().associate(treasury, nftId);
+			nftsByOwner.get().associate(treasury.identityCode(), nftId.identityCode());
 		}
 	}
 
@@ -113,29 +117,33 @@ public class UniqTokenViewsManager {
 	 * Updates the internal view of the unique tokens in the world state to reflect
 	 * the wiping of an NFT with the given id from the given account.
 	 *
-	 * @param nftId the wiped id
-	 * @param fromAccount the account that was wiped
+	 * @param nftId
+	 * 		the wiped id
+	 * @param fromAccount
+	 * 		the account that was wiped
 	 */
 	public void wipeNotice(MerkleUniqueTokenId nftId, EntityId fromAccount) {
 		/* The treasury account cannot be wiped, so both cases are the same */
-		nftsByType.get().disassociate(nftId.tokenId(), nftId);
-		nftsByOwner.get().disassociate(fromAccount, nftId);
+		nftsByType.get().disassociate(nftId.tokenId().identityCode(), nftId.identityCode());
+		nftsByOwner.get().disassociate(fromAccount.identityCode(), nftId.identityCode());
 	}
 
 	/**
 	 * Updates the internal view of the unique tokens in the world state to reflect
 	 * the burning of an NFT with the given id from the given treasury.
 	 *
-	 * @param nftId the burned id
-	 * @param treasury the treasury of the burned NFT's token type
+	 * @param nftId
+	 * 		the burned id
+	 * @param treasury
+	 * 		the treasury of the burned NFT's token type
 	 */
 	public void burnNotice(MerkleUniqueTokenId nftId, EntityId treasury) {
 		final var tokenId = nftId.tokenId();
-		nftsByType.get().disassociate(tokenId, nftId);
+		nftsByType.get().disassociate(tokenId.identityCode(), nftId.identityCode());
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().disassociate(tokenId, nftId);
+			curTreasuryNftsByType().disassociate(tokenId.identityCode(), nftId.identityCode());
 		} else {
-			nftsByOwner.get().disassociate(treasury, nftId);
+			nftsByOwner.get().disassociate(treasury.identityCode(), nftId.identityCode());
 		}
 	}
 
@@ -143,14 +151,17 @@ public class UniqTokenViewsManager {
 	 * Updates the internal view of the unique tokens in the world state to reflect
 	 * the exchange of an NFT with the given id between the given non-treasury accounts.
 	 *
-	 * @param nftId the exchanged id
-	 * @param prevOwner the previous owner
-	 * @param newOwner the new owner
+	 * @param nftId
+	 * 		the exchanged id
+	 * @param prevOwner
+	 * 		the previous owner
+	 * @param newOwner
+	 * 		the new owner
 	 */
 	public void exchangeNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId newOwner) {
 		final var curNftsByOwner = nftsByOwner.get();
-		curNftsByOwner.disassociate(prevOwner, nftId);
-		curNftsByOwner.associate(newOwner, nftId);
+		curNftsByOwner.disassociate(prevOwner.identityCode(), nftId.identityCode());
+		curNftsByOwner.associate(newOwner.identityCode(), nftId.identityCode());
 	}
 
 	/**
@@ -158,18 +169,21 @@ public class UniqTokenViewsManager {
 	 * the departure of an NFT with the given id from the given treasury to the
 	 * given receiving account.
 	 *
-	 * @param nftId the id exiting the treasury
-	 * @param treasury the relevant treasury
-	 * @param newOwner the new owner
+	 * @param nftId
+	 * 		the id exiting the treasury
+	 * @param treasury
+	 * 		the relevant treasury
+	 * @param newOwner
+	 * 		the new owner
 	 */
 	public void treasuryExitNotice(MerkleUniqueTokenId nftId, EntityId treasury, EntityId newOwner) {
 		final var curNftsByOwner = nftsByOwner.get();
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().disassociate(nftId.tokenId(), nftId);
+			curTreasuryNftsByType().disassociate(nftId.tokenId().identityCode(), nftId.identityCode());
 		} else {
-			curNftsByOwner.disassociate(treasury, nftId);
+			curNftsByOwner.disassociate(treasury.identityCode(), nftId.identityCode());
 		}
-		curNftsByOwner.associate(newOwner, nftId);
+		curNftsByOwner.associate(newOwner.identityCode(), nftId.identityCode());
 	}
 
 	/**
@@ -177,17 +191,20 @@ public class UniqTokenViewsManager {
 	 * the return of an NFT with the given id to the given treasury from the given
 	 * sending account.
 	 *
-	 * @param nftId the id returning to the treasury
-	 * @param prevOwner the previous owner
-	 * @param treasury the relevant treasury
+	 * @param nftId
+	 * 		the id returning to the treasury
+	 * @param prevOwner
+	 * 		the previous owner
+	 * @param treasury
+	 * 		the relevant treasury
 	 */
 	public void treasuryReturnNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId treasury) {
 		final var curNftsByOwner = nftsByOwner.get();
-		curNftsByOwner.disassociate(prevOwner, nftId);
+		curNftsByOwner.disassociate(prevOwner.identityCode(), nftId.identityCode());
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().associate(nftId.tokenId(), nftId);
+			curTreasuryNftsByType().associate(nftId.tokenId().identityCode(), nftId.identityCode());
 		} else {
-			curNftsByOwner.associate(treasury, nftId);
+			curNftsByOwner.associate(treasury.identityCode(), nftId.identityCode());
 		}
 	}
 
@@ -203,7 +220,7 @@ public class UniqTokenViewsManager {
 		return treasuryNftsByType != null;
 	}
 
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> curTreasuryNftsByType() {
+	private FCOneToManyRelation<Integer, Long> curTreasuryNftsByType() {
 		Objects.requireNonNull(treasuryNftsByType);
 		return treasuryNftsByType.get();
 	}
@@ -213,7 +230,8 @@ public class UniqTokenViewsManager {
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
 	) {
 		final var curTreasuryNftsByType = curTreasuryNftsByType();
-		rebuildDelegate(tokens, nfts, (treasuryId, nftId) -> curTreasuryNftsByType.associate(nftId.tokenId(), nftId));
+		rebuildDelegate(tokens, nfts, (treasuryId, nftId) ->
+				curTreasuryNftsByType.associate(nftId.tokenId().identityCode(), nftId.identityCode()));
 	}
 
 	private void rebuildUsingExplicitOwners(
@@ -221,7 +239,8 @@ public class UniqTokenViewsManager {
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts
 	) {
 		final var curNftsByOwner = nftsByOwner.get();
-		rebuildDelegate(tokens, nfts, (treasuryId, nftId) -> curNftsByOwner.associate(treasuryId, nftId));
+		rebuildDelegate(tokens, nfts, (treasuryId, nftId) ->
+				curNftsByOwner.associate(treasuryId.identityCode(), nftId.identityCode()));
 	}
 
 	private void rebuildDelegate(
@@ -240,9 +259,9 @@ public class UniqTokenViewsManager {
 				}
 				treasuryOwnedAction.accept(token.treasury(), nftId);
 			} else {
-				curNftsByOwner.associate(nft.getOwner(), nftId);
+				curNftsByOwner.associate(nft.getOwner().identityCode(), nftId.identityCode());
 			}
-			curNftsByType.associate(nftId.tokenId(), nftId);
+			curNftsByType.associate(nftId.tokenId().identityCode(), nftId.identityCode());
 		});
 	}
 }

@@ -24,17 +24,18 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
 
+import static com.hedera.services.state.merkle.MerkleUniqueTokenId.MAX_NUM_ALLOWED;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
@@ -58,8 +59,50 @@ class MerkleUniqueTokenIdTest {
 		subject = new MerkleUniqueTokenId(tokenId, serialNumber);
 	}
 
-	@AfterEach
-	void cleanup() {
+	@Test
+	void reconstructsExpectedFromIdentityCodeWithSmallNums() {
+		// setup:
+		Long code = Long.valueOf((3L << 32) | 4L);
+		// and:
+		final var expected = new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
+
+		// given:
+		final var actual = MerkleUniqueTokenId.fromIdentityCode(code);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void failsFastOnInvalidSerialNumber() {
+		// expect:
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> new MerkleUniqueTokenId(new EntityId(0, 0, 1), MAX_NUM_ALLOWED + 1));
+	}
+
+	@Test
+	void reconstructsExpectedFromIdentityCodeWithLargeNums() {
+		// setup:
+		Long code = Long.valueOf((MAX_NUM_ALLOWED << 32) | MAX_NUM_ALLOWED);
+		// and:
+		final var expected = new MerkleUniqueTokenId(
+				new EntityId(0, 0, MAX_NUM_ALLOWED),
+				MAX_NUM_ALLOWED);
+
+		// given:
+		final var actual = MerkleUniqueTokenId.fromIdentityCode(code);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void identityCodeWorks() {
+		// expect:
+		assertEquals(
+				(3L << 32) | 1L,
+				subject.identityCode());
 	}
 
 	@Test

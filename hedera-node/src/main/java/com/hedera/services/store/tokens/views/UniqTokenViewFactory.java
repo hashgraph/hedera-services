@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -39,19 +38,25 @@ public interface UniqTokenViewFactory {
 	/**
 	 * Returns a queryable view of the unique tokens contained in the given sources of token-related information.
 	 *
-	 * @param tokenStore the store used to manipulate token types in the world state
-	 * @param tokens the token types in the world state
-	 * @param nfts the unique tokens in the world state
-	 * @param nftsByType the unique tokens associated to each non-fungible unique token type
-	 * @param nftsByOwner the unique tokens associated to owning account
-	 * @param treasuryNftsByType the unique tokens associated to their token type's treasury
+	 * @param tokenStore
+	 * 		the store used to manipulate token types in the world state
+	 * @param tokens
+	 * 		the token types in the world state
+	 * @param nfts
+	 * 		the unique tokens in the world state
+	 * @param nftsByType
+	 * 		the unique tokens associated to each non-fungible unique token type
+	 * @param nftsByOwner
+	 * 		the unique tokens associated to owning account
+	 * @param treasuryNftsByType
+	 * 		the unique tokens associated to their token type's treasury
 	 * @return a queryable view of the unique tokens in the given sources
 	 */
 	UniqTokenView viewFor(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByType,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> nftsByOwner,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> treasuryNftsByType);
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType);
 }
