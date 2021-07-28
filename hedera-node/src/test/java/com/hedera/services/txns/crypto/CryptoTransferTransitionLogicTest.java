@@ -57,7 +57,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
@@ -254,14 +253,6 @@ class CryptoTransferTransitionLogicTest {
 
 		// then:
 		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
-	}
-
-	@Test
-	void translatesUnknownException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-
-		// when:
-		assertFailsWith(()->subject.doStateTransition(), FAIL_INVALID);
 	}
 
 	@Test
