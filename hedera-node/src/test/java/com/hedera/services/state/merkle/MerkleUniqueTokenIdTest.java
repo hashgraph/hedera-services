@@ -51,8 +51,8 @@ class MerkleUniqueTokenIdTest {
 
 	@BeforeEach
 	void setup() {
-		tokenId = new EntityId(1, 2, 3);
-		otherTokenId = new EntityId(1, 2, 4);
+		tokenId = new EntityId(0, 0, 3);
+		otherTokenId = new EntityId(0, 0, 4);
 		serialNumber = 1;
 		otherSerialNumber = 2;
 

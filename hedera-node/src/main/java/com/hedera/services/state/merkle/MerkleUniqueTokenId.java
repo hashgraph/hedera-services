@@ -79,7 +79,11 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	 * @return the code for this unique token id
 	 */
 	public Long identityCode() {
-		return (tokenId.num() << 32) | serialNumber;
+		return encode(tokenId().num(), serialNumber);
+	}
+
+	private long encode(long num, long serialNo) {
+		return (num << 32) | serialNo;
 	}
 
 	public static MerkleUniqueTokenId fromIdentityCode(long code) {

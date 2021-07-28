@@ -1081,8 +1081,8 @@ class StateViewTest {
 			.setTokenID(IdUtils.asToken("1.7.9"))
 			.setSerialNumber(5L)
 			.build();
-	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
-	private final MerkleUniqueTokenId treasuryNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 5);
+	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
+	private final MerkleUniqueTokenId treasuryNftKey = new MerkleUniqueTokenId(new EntityId(0, 0, 3), 5);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
 			fromJava(nftCreation));
 	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),

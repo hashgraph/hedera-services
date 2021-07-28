@@ -61,6 +61,14 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
+	public static EntityId fromIdentity(int code) {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public static EntityId fromNum(long n) {
+		throw new AssertionError("Not implemented!");
+	}
+
 	/**
 	 * Gives a "compressed" code to identify this entity id.
 	 *

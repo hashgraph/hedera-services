@@ -43,16 +43,19 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	private byte[] metadata;
 
 	/**
-	 * @param owner        The entity which owns the unique token.
-	 * @param metadata     Metadata about the token.
-	 * @param creationTime The consensus time at which the token was created.
+	 * @param owner
+	 * 		The entity which owns the unique token.
+	 * @param metadata
+	 * 		Metadata about the token.
+	 * @param creationTime
+	 * 		The consensus time at which the token was created.
 	 */
 	public MerkleUniqueToken(
 			EntityId owner,
 			byte[] metadata,
 			RichInstant creationTime
 	) {
-		this.owner = (int)owner.num();
+		this.owner = (int) owner.num();
 		this.metadata = metadata;
 		this.creationTime = creationTime;
 	}
@@ -124,17 +127,17 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	@Override
 	public MerkleUniqueToken copy() {
 		setImmutable(true);
-		return new MerkleUniqueToken(new EntityId(0,0,owner), metadata, creationTime);
+		return new MerkleUniqueToken(EntityId.fromIdentity(owner), metadata, creationTime);
 	}
 
 	public void setOwner(EntityId owner) {
 		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
-		this.owner = (int)owner.num();
+		this.owner = (int) owner.num();
 	}
 
 	public void setOwner(long owner) {
 		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
-		this.owner = (int)owner;
+		this.owner = (int) owner;
 	}
 
 	public EntityId getOwner() {
@@ -148,6 +151,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	public RichInstant getCreationTime() {
 		return creationTime;
 	}
+
 	public boolean isTreasuryOwned() {
 		return EntityId.MISSING_ENTITY_ID.equals(owner);
 	}
