@@ -1586,7 +1586,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1639,7 +1639,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1694,7 +1694,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1717,7 +1717,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1741,7 +1741,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1765,7 +1765,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1790,7 +1790,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1813,7 +1813,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1836,7 +1836,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1856,7 +1856,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "30 21 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
@@ -1879,7 +1879,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "30 22 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
@@ -1903,7 +1903,7 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "30 22 * * *"
+          cron: "30 3 * * *"
           filters:
             branches:
               only:
@@ -1930,7 +1930,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1953,7 +1953,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1976,7 +1976,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1999,7 +1999,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - 01886-M-Use0170alpha1Sdk
+                  - X-01886-M-Use0170alpha1Sdk
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2064,7 +2064,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - 01886-M-Use0170alpha1Sdk
+                  - X-01886-M-Use0170alpha1Sdk
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2136,7 +2136,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2212,7 +2212,7 @@ workflows:
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - X-01886-M-Use0170alpha1Sdk
     jobs:
       - fast-build-artifact:
           context: Slack
