@@ -160,13 +160,13 @@
     <commons-codec.version>1.15</commons-codec.version>
     <eddsa.version>0.3.0</eddsa.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
-    <grpc.version>1.33.0</grpc.version>
+    <grpc.version>1.39.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <hapi-proto.version>0.17.0-SNAPSHOT</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
-    <netty.version>4.1.51.Final</netty.version>
+    <netty.version>4.1.66.Final</netty.version>
     <swirlds.version>0.16.0</swirlds.version>
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
@@ -449,12 +449,27 @@ ${git.signoff}
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http2</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler-proxy</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
         <artifactId>netty-transport</artifactId>
         <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-epoll</artifactId>
         <version>${netty.version}</version>
       </dependency>
       <dependency>
@@ -481,11 +496,6 @@ ${git.signoff}
         <groupId>com.swirlds</groupId>
         <artifactId>swirlds-common</artifactId>
         <version>${swirlds.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-transport-native-epoll</artifactId>
-        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
