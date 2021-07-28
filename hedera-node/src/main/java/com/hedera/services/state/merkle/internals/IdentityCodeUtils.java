@@ -10,7 +10,16 @@ public class IdentityCodeUtils {
 	}
 
 	public static int codeFromNum(long num) {
+		if (num > MAX_NUM_ALLOWED) {
+			throw new IllegalArgumentException("Serial number " + num + " out of range!");
+		}
 		return (int) num;
+	}
+
+	public static void assertValid(long num) {
+		if (num > MAX_NUM_ALLOWED) {
+			throw new IllegalArgumentException("Serial number " + num + " out of range!");
+		}
 	}
 
 	IdentityCodeUtils() {

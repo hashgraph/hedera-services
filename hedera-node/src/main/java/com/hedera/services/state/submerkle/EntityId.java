@@ -73,7 +73,7 @@ public class EntityId implements SelfSerializable {
 	 *
 	 * @return the code for this id
 	 */
-	public Integer identityCode() {
+	public int identityCode() {
 		return codeFromNum(num);
 	}
 
