@@ -153,32 +153,31 @@
     <maven-dependency.version>3.1.1</maven-dependency.version>
     <maven-versions.version>2.8.1</maven-versions.version>
     <maven-javadoc.version>3.3.0</maven-javadoc.version>
-    <commons-io.version>2.7</commons-io.version>
 
-    <!-- Dependency properties -->
-    <commons-io.version>2.1</commons-io.version>
+    <!-- Dependency properties in alphabetical order -->
     <commons-codec.version>1.15</commons-codec.version>
+    <commons-io.version>2.11.0</commons-io.version>
     <eddsa.version>0.3.0</eddsa.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.39.0</grpc.version>
     <guava.version>30.1.1-jre</guava.version>
     <hapi-proto.version>0.17.0-SNAPSHOT</hapi-proto.version>
-    <jackson-databind.version>2.9.10.7</jackson-databind.version>
+    <jackson-databind.version>2.12.4</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <javax-inject.version>1</javax-inject.version>
-    <log4j.version>2.13.2</log4j.version>
+    <log4j.version>2.14.1</log4j.version>
     <netty.version>4.1.66.Final</netty.version>
     <protobuf-java.version>3.17.3</protobuf-java.version>
     <swirlds.version>0.16.0</swirlds.version>
-    <!-- Test dependency properties -->
+    <!-- Test dependency properties in alphabetical order -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
-    <junit.version>4.13.1</junit.version>
-    <junit5-bom.version>5.7.0</junit5-bom.version>
-    <mockito2.version>3.7.7</mockito2.version>
+    <junit.version>4.13.2</junit.version>
+    <junit5-bom.version>5.7.2</junit5-bom.version>
+    <mockito2.version>3.11.2</mockito2.version>
 
     <!-- SonarCloud properties -->
-    <jacoco.version>0.8.6</jacoco.version>
-    <sonar.version>3.7.0.1746</sonar.version>
+    <jacoco.version>0.8.7</jacoco.version>
+    <sonar.version>3.9.0.2155</sonar.version>
 
     <sonar.organization>hashgraph</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
