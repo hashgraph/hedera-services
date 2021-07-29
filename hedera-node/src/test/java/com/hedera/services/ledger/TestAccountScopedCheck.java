@@ -60,4 +60,9 @@ class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProp
 		}
 		return OK;
 	}
+
+	@Override
+	public LedgerCheck setBalanceChange(final BalanceChange change) {
+		return this;
+	}
 }
