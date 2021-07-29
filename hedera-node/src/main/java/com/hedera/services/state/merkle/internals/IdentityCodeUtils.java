@@ -21,8 +21,8 @@ package com.hedera.services.state.merkle.internals;
  */
 
 /**
- * Minimal helper class that "encodes" {@code int} values as positive
- * {@code long}s in the range 1 to 4,294,967,295.
+ * Minimal helper class that "encodes" {@code int} values as non-negative
+ * {@code long}s in the range 0 to 4,294,967,295.
  */
 public class IdentityCodeUtils {
 	private static final long MASK_AS_UNSIGNED_LONG = (1L << 32) - 1;
@@ -51,13 +51,13 @@ public class IdentityCodeUtils {
 	}
 
 	/**
-	 * Throws an exception if the given long is not a positive number in the allowed range.
+	 * Throws an exception if the given long is not a number in the allowed range.
 	 *
 	 * @param num the long to check
-	 * @throws IllegalArgumentException if the argument is less than 1 or greater than 4,294,967,295
+	 * @throws IllegalArgumentException if the argument is less than 0 or greater than 4,294,967,295
 	 */
 	public static void assertValid(long num) {
-		if (num < 1 || num > MAX_NUM_ALLOWED) {
+		if (num < 0 || num > MAX_NUM_ALLOWED) {
 			throw new IllegalArgumentException("Serial number " + num + " out of range!");
 		}
 	}
