@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -203,8 +204,17 @@ class MerkleUniqueTokenTest {
 
 	@Test
 	void setsAndGetsOwner() {
-		subject.setOwner(new EntityId(0, 0, 1));
-		assertEquals(new EntityId(0, 0, 1), subject.getOwner());
+		// setup:
+		final var smallNumOwner = new EntityId(0, 0, 1);
+		final var largeNumOwner = new EntityId(0, 0, MAX_NUM_ALLOWED);
+
+		// expect:
+		subject.setOwner(smallNumOwner);
+		assertEquals(smallNumOwner, subject.getOwner());
+
+		// and expect:
+		subject.setOwner(largeNumOwner);
+		assertEquals(largeNumOwner, subject.getOwner());
 	}
 
 	@Test

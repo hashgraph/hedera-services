@@ -73,13 +73,17 @@ class MerkleUniqueTokenIdTest {
 
 	@Test
 	void failsFastOnInvalidNums() {
+		// setup:
+		final var okEntityId = new EntityId(0, 0, 1);
+		final var notOkEntityId = new EntityId(0, 0, MAX_NUM_ALLOWED + 1);
+
 		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> new MerkleUniqueTokenId(new EntityId(0, 0, 1), MAX_NUM_ALLOWED + 1));
+				() -> new MerkleUniqueTokenId(okEntityId, MAX_NUM_ALLOWED + 1));
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> new MerkleUniqueTokenId(new EntityId(0, 0, MAX_NUM_ALLOWED + 1), 1));
+				() -> new MerkleUniqueTokenId(notOkEntityId, 1));
 	}
 
 	@Test
