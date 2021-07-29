@@ -33,7 +33,6 @@ import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_N
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -148,7 +147,6 @@ class MerkleUniqueTokenIdTest {
 		var dup = subject;
 
 		// expect:
-		assertSame(copyNftId, subject);
 		assertEquals(subject, copyNftId);
 		assertEquals(subject, dup);
 		assertNotEquals(subject, other);
