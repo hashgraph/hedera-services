@@ -43,7 +43,7 @@ class IdentityCodeUtilsTest {
 	@Test
 	void codeFromNumThrowsWhenOutOfRange() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(0));
+		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(-1));
 		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
 	}
 
@@ -51,7 +51,7 @@ class IdentityCodeUtilsTest {
 	void throwsWhenArgOutOfRange() {
 		// expect:
 		assertDoesNotThrow(() -> IdentityCodeUtils.assertValid(MAX_NUM_ALLOWED));
-		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(0));
+		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(-1));
 		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(MAX_NUM_ALLOWED + 1));
 	}
 
