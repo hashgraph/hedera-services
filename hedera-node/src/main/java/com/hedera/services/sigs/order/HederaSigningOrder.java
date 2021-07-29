@@ -93,8 +93,6 @@ public class HederaSigningOrder {
 	private final EntityNumbers entityNums;
 	private final SigMetadataLookup sigMetaLookup;
 	private final GlobalDynamicProperties properties;
-	private final Predicate<TransactionBody> updateAccountSigns;
-	private final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
 
 	private final SignatureWaivers signatureWaivers;
 
@@ -109,8 +107,6 @@ public class HederaSigningOrder {
 		this.entityNums = entityNums;
 		this.properties = properties;
 		this.sigMetaLookup = sigMetaLookup;
-		this.targetWaclSigns = targetWaclSigns;
-		this.updateAccountSigns = updateAccountSigns;
 		this.signatureWaivers = signatureWaivers;
 	}
 
@@ -278,7 +274,8 @@ public class HederaSigningOrder {
 		} else if (txn.hasTokenUpdate()) {
 			return Optional.of(tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory));
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return Optional.of(tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory));
+			return Optional.of(
+					tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -297,7 +294,6 @@ public class HederaSigningOrder {
 				return Optional.of(fileAppend(
 						txn.getTransactionID(), txn.getFileAppend(), waclShouldSign, isSuperuser, factory));
 			} else {
-				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileUpdate);
 				return Optional.of(fileUpdate(
 						txn.getTransactionID(), txn.getFileUpdate(), waclShouldSign, isSuperuser, factory));
 			}
@@ -431,32 +427,28 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> fileUpdate(
 			TransactionID txnId,
+			boolean isNewWaclSigWaived,
+			boolean isTargetWaclSigWaived,
 			FileUpdateTransactionBody op,
-			boolean waclShouldSign,
-			boolean payerIsSuperuser,
 			SigningOrderResultFactory<T> factory
 	) {
 		var target = op.getFileID();
-		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
-			return SigningOrderResult.noKnownKeys();
+		var targetResult = sigMetaLookup.fileSigningMetaFor(target);
+		if (!targetResult.succeeded()) {
+			return factory.forMissingFile(target, txnId);
 		} else {
-			var targetResult = sigMetaLookup.fileSigningMetaFor(target);
-			if (!targetResult.succeeded()) {
-				return factory.forMissingFile(target, txnId);
-			} else {
-				List<JKey> required = new ArrayList<>();
-				if (waclShouldSign) {
-					var wacl = targetResult.metadata().getWacl();
-					if (!wacl.isEmpty()) {
-						required.add(wacl);
-					}
-					if (op.hasKeys()) {
-						var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
-						candidate.ifPresent(required::add);
-					}
+			List<JKey> required = new ArrayList<>();
+			if (!isTargetWaclSigWaived) {
+				var wacl = targetResult.metadata().getWacl();
+				if (!wacl.isEmpty()) {
+					required.add(wacl);
 				}
-				return factory.forValidOrder(required);
 			}
+			if (!isNewWaclSigWaived && op.hasKeys()) {
+				var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
+				candidate.ifPresent(required::add);
+			}
+			return factory.forValidOrder(required);
 		}
 	}
 
@@ -1041,7 +1033,8 @@ public class HederaSigningOrder {
 		return result.failureIfAny();
 	}
 
-	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender, List<JKey> required) {
+	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender,
+			List<JKey> required) {
 		var result = sigMetaLookup.accountSigningMetaFor(accountID);
 		if (result.succeeded()) {
 			var meta = result.metadata();

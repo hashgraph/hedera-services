@@ -22,12 +22,15 @@ package com.hedera.services.sigs;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -83,7 +86,9 @@ public class SigVerifierRegressionTest {
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
+	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 	private Predicate<TransactionBody> updateAccountSigns = txn ->
 			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
 	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->
@@ -222,7 +227,8 @@ public class SigVerifierRegressionTest {
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns,
-				new MockGlobalDynamicProps());
+				new MockGlobalDynamicProps(),
+				mockSignatureWaivers);
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
@@ -231,7 +237,8 @@ public class SigVerifierRegressionTest {
 								MN, MN, runningAvgs, speedometers),
 						updateAccountSigns,
 						targetWaclSigns,
-						new MockGlobalDynamicProps());
+						new MockGlobalDynamicProps(),
+						mockSignatureWaivers);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);

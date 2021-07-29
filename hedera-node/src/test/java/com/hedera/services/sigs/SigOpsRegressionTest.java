@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
@@ -103,8 +104,9 @@ class SigOpsRegressionTest {
 	private HederaSigningOrder signingOrder;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
-	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers();
+	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	private Predicate<TransactionBody> updateAccountSigns = txn ->
 			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
@@ -369,7 +371,8 @@ class SigOpsRegressionTest {
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns,
-				new MockGlobalDynamicProps());
+				new MockGlobalDynamicProps(),
+				mockSignatureWaivers);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
 		final var impliedKey = impliedOrdering.getPayerKey();
 		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
@@ -385,7 +388,8 @@ class SigOpsRegressionTest {
 				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns,
-				new MockGlobalDynamicProps());
+				new MockGlobalDynamicProps(),
+				mockSignatureWaivers);
 
 		return otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
 	}
@@ -401,7 +405,8 @@ class SigOpsRegressionTest {
 				sigMetaLookups,
 				updateAccountSigns,
 				targetWaclSigns,
-				new MockGlobalDynamicProps());
+				new MockGlobalDynamicProps(),
+				mockSignatureWaivers);
 
 		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
 		return expandIn(platformTxn, keyOrder, pkToSigFn);
@@ -415,7 +420,8 @@ class SigOpsRegressionTest {
 				sigMetaLookups,
 				updateAccountSigns,
 				targetWaclSigns,
-				new MockGlobalDynamicProps());
+				new MockGlobalDynamicProps(),
+				mockSignatureWaivers);
 
 		return rationalizeIn(
 				platformTxn,
@@ -439,7 +445,8 @@ class SigOpsRegressionTest {
 				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns,
-				new MockGlobalDynamicProps());
+				new MockGlobalDynamicProps(),
+				mockSignatureWaivers);
 		SigningOrderResult<SignatureStatus> payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
 		expectedSigs = new ArrayList<>();
