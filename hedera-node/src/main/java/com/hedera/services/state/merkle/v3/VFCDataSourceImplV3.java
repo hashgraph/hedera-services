@@ -129,51 +129,57 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         // might as well write to the 3 data stores in parallel
         IntStream.range(0,3).parallel().forEach(action -> {
             if (action == 0) {// write internal node hashes
-                for (VirtualInternalRecord rec: internalRecords) {
-                    hashStore.put(rec.getPath(), rec.getHash());
+                if (internalRecords != null && !internalRecords.isEmpty()) {
+                    for (VirtualInternalRecord rec : internalRecords) {
+                        hashStore.put(rec.getPath(), rec.getHash());
+                    }
                 }
             } else if (action == 1) { // write leaves to pathToKeyHashValue
-                try {
-                    pathToKeyHashValue.startWriting();
-                    // get reusable buffer
-                    ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
-                    for (var rec: leafRecords) {
-                        final long path = rec.getPath();
-                        final VirtualKey key = rec.getKey();
-                        final Hash hash = rec.getHash();
-                        final VirtualValue value = rec.getValue();
-                        // clear buffer for reuse
-                        keyHashValueBuffer.clear();
-                        // put key
-                        keyHashValueBuffer.putInt(key.getVersion());
-                        key.serialize(keyHashValueBuffer);
-                        // put hash
-                        Hash.toByteBuffer(hash,keyHashValueBuffer);
-                        // put value
-                        keyHashValueBuffer.putInt(value.getVersion());
-                        value.serialize(keyHashValueBuffer);
-                        // now save pathToKeyHashValue
-                        keyHashValueBuffer.flip();
-                        pathToKeyHashValue.put(path,keyHashValueBuffer);
-                    }
-                    pathToKeyHashValue.endWriting();
-                } catch (IOException e) {
-                    throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-                }
-            } else if (action == 2) { // write leaves to objectKeyToPath
-                if (isLongKeyMode) {
-                    for (var rec : leafRecords) {
-                        longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
-                    }
-                } else {
+                if (leafRecords != null && !leafRecords.isEmpty()) {
                     try {
-                        objectKeyToPath.startWriting();
+                        pathToKeyHashValue.startWriting();
+                        // get reusable buffer
+                        ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
                         for (var rec : leafRecords) {
-                            objectKeyToPath.put(rec.getKey(), rec.getPath());
+                            final long path = rec.getPath();
+                            final VirtualKey key = rec.getKey();
+                            final Hash hash = rec.getHash();
+                            final VirtualValue value = rec.getValue();
+                            // clear buffer for reuse
+                            keyHashValueBuffer.clear();
+                            // put key
+                            keyHashValueBuffer.putInt(key.getVersion());
+                            key.serialize(keyHashValueBuffer);
+                            // put hash
+                            Hash.toByteBuffer(hash, keyHashValueBuffer);
+                            // put value
+                            keyHashValueBuffer.putInt(value.getVersion());
+                            value.serialize(keyHashValueBuffer);
+                            // now save pathToKeyHashValue
+                            keyHashValueBuffer.flip();
+                            pathToKeyHashValue.put(path, keyHashValueBuffer);
                         }
-                        objectKeyToPath.endWriting();
+                        pathToKeyHashValue.endWriting();
                     } catch (IOException e) {
                         throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                    }
+                }
+            } else if (action == 2) { // write leaves to objectKeyToPath
+                if (leafRecords != null && !leafRecords.isEmpty()) {
+                    if (isLongKeyMode) {
+                        for (var rec : leafRecords) {
+                            longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
+                        }
+                    } else {
+                        try {
+                            objectKeyToPath.startWriting();
+                            for (var rec : leafRecords) {
+                                objectKeyToPath.put(rec.getKey(), rec.getPath());
+                            }
+                            objectKeyToPath.endWriting();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                        }
                     }
                 }
             }
