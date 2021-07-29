@@ -164,7 +164,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 		and that copy references this object's congestionLevelStarts, we will get
 		a (transient) ISS if the congestion level changes mid-serialization on one
 		node but not others. */
-		return congestionLevelStarts.clone();
+		return congestionLevelStarts;
 	}
 
 	private boolean ensureConfigUpToDate() {

@@ -34,6 +34,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -52,7 +54,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
-	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
+	static final List<DeterministicThrottle.UsageSnapshot> NO_SNAPSHOTS = Collections.emptyList();
 
 	public static final Instant UNKNOWN_CONSENSUS_TIME = null;
 
@@ -69,7 +71,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
-	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
+	private List<DeterministicThrottle.UsageSnapshot> usageSnapshots = NO_SNAPSHOTS;
 
 	public MerkleNetworkContext() {
 		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
@@ -94,7 +96,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			SequenceNumber seqNo,
 			long lastScannedEntity,
 			ExchangeRates midnightRates,
-			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
+			List<DeterministicThrottle.UsageSnapshot> usageSnapshots,
 			Instant[] congestionStartPeriods,
 			int stateVersion,
 			long entitiesScannedThisSecond,
@@ -123,10 +125,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public void resetThrottlingFromSavedSnapshots(FunctionalityThrottling throttling) {
 		var activeThrottles = throttling.allActiveThrottles();
 
-		if (activeThrottles.size() != usageSnapshots.length) {
+		if (activeThrottles.size() != usageSnapshots.size()) {
 			log.warn("There are " +
 					activeThrottles.size() + " active throttles, but " +
-					usageSnapshots.length + " usage snapshots from saved state. " +
+					usageSnapshots.size() + " usage snapshots from saved state. " +
 					"Not performing a reset!");
 			return;
 		}
@@ -159,9 +161,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (n == 0) {
 			usageSnapshots = NO_SNAPSHOTS;
 		} else {
-			usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
 			for (int i = 0; i < n; i++) {
-				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
+				var usageSnapshot = activeThrottles.get(i).usageSnapshot();
+				if(i < usageSnapshots.size())
+					usageSnapshots.set(i, usageSnapshot);
+				else
+					usageSnapshots.add(usageSnapshot);
 			}
 		}
 	}
@@ -195,13 +200,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	@Override
 	public MerkleNetworkContext copy() {
 		setImmutable(true);
+
+		List<DeterministicThrottle.UsageSnapshot> copyUsageSnapshots = new ArrayList<>();
+		for(DeterministicThrottle.UsageSnapshot snapshot: usageSnapshots){
+			copyUsageSnapshots.add(new DeterministicThrottle.UsageSnapshot(snapshot.used(), snapshot.lastDecisionTime()));
+		}
+
 		return new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
 				lastScannedEntity,
 				midnightRates.copy(),
-				usageSnapshots,
-				congestionLevelStarts,
+				copyUsageSnapshots,
+				congestionLevelStarts.clone(),
 				stateVersion,
 				entitiesScannedThisSecond,
 				entitiesTouchedThisSecond,
@@ -220,12 +231,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0130_VERSION) {
 			int numUsageSnapshots = in.readInt();
 			if (numUsageSnapshots > 0) {
-				usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
+				usageSnapshots = new ArrayList<>(numUsageSnapshots);
 				for (int i = 0; i < numUsageSnapshots; i++) {
 					var used = in.readLong();
 					var lastUsed = serdes.readNullableInstant(in);
-					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
-							used, (lastUsed == null) ? null : lastUsed.toJava());
+					usageSnapshots.add(new DeterministicThrottle.UsageSnapshot(
+							used, (lastUsed == null) ? null : lastUsed.toJava()));
 				}
 			}
 
@@ -255,7 +266,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		serdes.writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
-		int n = usageSnapshots.length;
+		int n = usageSnapshots.size();
 		out.writeInt(n);
 		for (var usageSnapshot : usageSnapshots) {
 			out.writeLong(usageSnapshot.used());
@@ -357,8 +368,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		var currUsageSnapshots = throttles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
 				.collect(toList());
-		for (int i = 0, n = usageSnapshots.length; i < n; i++) {
-			var savedUsageSnapshot = usageSnapshots[i];
+		for (int i = 0, n = usageSnapshots.size(); i < n; i++) {
+			var savedUsageSnapshot = usageSnapshots.get(i);
 			var throttle = throttles.get(i);
 			try {
 				throttle.resetUsageTo(savedUsageSnapshot);
@@ -399,15 +410,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTimeOfLastHandledTxn;
 	}
 
-	DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
+	List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
 		return usageSnapshots;
 	}
 
-	void setUsageSnapshots(DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
+	void setUsageSnapshots(List<DeterministicThrottle.UsageSnapshot> usageSnapshots) {
 		this.usageSnapshots = usageSnapshots;
 	}
 
-	DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
+	List<DeterministicThrottle.UsageSnapshot> usageSnapshots() {
 		return usageSnapshots;
 	}
 }

@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
@@ -80,7 +81,7 @@ class MerkleNetworkContextTest {
 	private ExchangeRates midnightRateSet;
 	private ExchangeRates midnightRateSetCopy;
 	private Instant[] congestionStarts;
-	private DeterministicThrottle.UsageSnapshot[] usageSnapshots;
+	private List<DeterministicThrottle.UsageSnapshot> usageSnapshots;
 
 	private DomainSerdes serdes;
 	private FunctionalityThrottling throttling;
@@ -110,12 +111,11 @@ class MerkleNetworkContextTest {
 				1, 14, 1_234_567L,
 				1, 15, 2_345_678L);
 		midnightRateSetCopy = midnightRateSet.copy();
-		usageSnapshots = new DeterministicThrottle.UsageSnapshot[] {
-				new DeterministicThrottle.UsageSnapshot(
-						123L, consensusTimeOfLastHandledTxn),
-				new DeterministicThrottle.UsageSnapshot(
-						456L, consensusTimeOfLastHandledTxn.plusSeconds(1L))
-		};
+		usageSnapshots = new ArrayList<>();
+		usageSnapshots.add(new DeterministicThrottle.UsageSnapshot(
+				123L, consensusTimeOfLastHandledTxn));
+		usageSnapshots.add(new DeterministicThrottle.UsageSnapshot(
+						456L, consensusTimeOfLastHandledTxn.plusSeconds(1L)));
 
 		serdes = mock(DomainSerdes.class, RETURNS_DEEP_STUBS);
 		MerkleNetworkContext.serdes = serdes;
@@ -149,8 +149,8 @@ class MerkleNetworkContextTest {
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
 		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
-		assertSame(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
-		assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
+		assertEquals(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
+		assertArrayEquals(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
 		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
@@ -330,8 +330,7 @@ class MerkleNetworkContextTest {
 		cThrottle.allow(20);
 		var activeThrottles = List.of(aThrottle, bThrottle, cThrottle);
 		var expectedSnapshots = activeThrottles.stream()
-				.map(DeterministicThrottle::usageSnapshot)
-				.toArray(DeterministicThrottle.UsageSnapshot[]::new);
+				.map(DeterministicThrottle::usageSnapshot).collect(Collectors.toList());
 
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -341,7 +340,7 @@ class MerkleNetworkContextTest {
 		subject.updateSnapshotsFrom(throttling);
 
 		// then:
-		assertArrayEquals(expectedSnapshots, subject.usageSnapshots());
+		assertEquals(expectedSnapshots, subject.usageSnapshots());
 	}
 
 	@Test
@@ -378,7 +377,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
 		// and:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
+		subject.setUsageSnapshots(new ArrayList<>(List.of(subjectSnapshotA, subjectSnapshotC)));
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -405,7 +404,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
 		// and:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
+		subject.setUsageSnapshots(new ArrayList<>(List.of(subjectSnapshot)));
 		// and:
 		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
 
@@ -431,7 +430,7 @@ class MerkleNetworkContextTest {
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle));
 		// given:
-		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{ subjectSnapshot });
+		subject.setUsageSnapshots(new ArrayList<>(List.of(subjectSnapshot)));
 
 		// when:
 		subject.resetThrottlingFromSavedSnapshots(throttling);
@@ -505,15 +504,15 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext();
 
 		given(in.readInt())
-				.willReturn(usageSnapshots.length)
+				.willReturn(usageSnapshots.size())
 				.willReturn(congestionStarts.length);
 		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
+				.willReturn(usageSnapshots.get(0).used())
+				.willReturn(usageSnapshots.get(1).used());
 		given(serdes.readNullableInstant(in).toJava())
 				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(usageSnapshots[0].lastDecisionTime())
-				.willReturn(usageSnapshots[1].lastDecisionTime())
+				.willReturn(usageSnapshots.get(0).lastDecisionTime())
+				.willReturn(usageSnapshots.get(1).lastDecisionTime())
 				.willReturn(congestionStarts[0])
 				.willReturn(congestionStarts[1]);
 
@@ -522,7 +521,7 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertEquals(usageSnapshots, subject.usageSnapshots());
 		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
@@ -542,19 +541,19 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext();
 
 		given(in.readInt())
-				.willReturn(usageSnapshots.length)
+				.willReturn(usageSnapshots.size())
 				.willReturn(congestionStarts.length)
 				.willReturn(stateVersion);
 		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
+				.willReturn(usageSnapshots.get(0).used())
+				.willReturn(usageSnapshots.get(1).used())
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond);
 		given(serdes.readNullableInstant(in))
 				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
-				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots.get(0).lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots.get(1).lastDecisionTime()))
 				.willReturn(fromJava(congestionStarts[0]))
 				.willReturn(fromJava(congestionStarts[1]));
 
@@ -565,7 +564,7 @@ class MerkleNetworkContextTest {
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
 		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertEquals(usageSnapshots, subject.usageSnapshots());
 		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
@@ -586,19 +585,19 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext();
 
 		given(in.readInt())
-				.willReturn(usageSnapshots.length)
+				.willReturn(usageSnapshots.size())
 				.willReturn(congestionStarts.length)
 				.willReturn(stateVersion);
 		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
+				.willReturn(usageSnapshots.get(0).used())
+				.willReturn(usageSnapshots.get(1).used())
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond);
 		given(serdes.readNullableInstant(in))
 				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
-				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots.get(0).lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots.get(1).lastDecisionTime()))
 				.willReturn(fromJava(congestionStarts[0]))
 				.willReturn(fromJava(congestionStarts[1]))
 				.willReturn(fromJava(lastMidnightBoundaryCheck));
@@ -611,7 +610,7 @@ class MerkleNetworkContextTest {
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
 		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertEquals(usageSnapshots, subject.usageSnapshots());
 		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
@@ -632,12 +631,12 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext();
 
 		given(in.readInt())
-				.willReturn(usageSnapshots.length)
+				.willReturn(usageSnapshots.size())
 				.willReturn(congestionStarts.length)
 				.willReturn(stateVersion);
 		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
+				.willReturn(usageSnapshots.get(0).used())
+				.willReturn(usageSnapshots.get(1).used())
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond);
@@ -651,10 +650,10 @@ class MerkleNetworkContextTest {
 		assertNull(subject.lastMidnightBoundaryCheck());
 		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
 		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(new DeterministicThrottle.UsageSnapshot[] {
-				new DeterministicThrottle.UsageSnapshot(usageSnapshots[0].used(), null),
-				new DeterministicThrottle.UsageSnapshot(usageSnapshots[1].used(), null)
-		}, subject.usageSnapshots());
+		assertEquals(new ArrayList<>( List.of(
+				new DeterministicThrottle.UsageSnapshot(usageSnapshots.get(0).used(), null),
+				new DeterministicThrottle.UsageSnapshot(usageSnapshots.get(1).used(), null)
+		)), subject.usageSnapshots());
 		assertArrayEquals(new Instant[] { null, null }, subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
