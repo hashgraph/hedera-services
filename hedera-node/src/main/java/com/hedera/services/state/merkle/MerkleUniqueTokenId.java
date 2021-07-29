@@ -139,7 +139,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueTokenId copy() {
-		return this;
+		return new MerkleUniqueTokenId(this.nftCode);
 	}
 
 	private MerkleUniqueTokenId(long nftCode) {

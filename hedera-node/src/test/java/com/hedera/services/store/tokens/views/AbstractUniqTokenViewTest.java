@@ -93,8 +93,7 @@ class AbstractUniqTokenViewTest {
 	void throwsCmeIfIdHasNoMatchingTokenInTokenAssociations() {
 		setupFirstMockRange();
 		// and:
-		final var desired = "MerkleUniqueTokenId{tokenId=EntityId{shard=0, realm=0, num=6}, serialNumber=1} " +
-				"was removed during query answering";
+		final var desired = "MerkleUniqueTokenId{tokenId=0.0.6, serialNumber=1} was removed during query answering";
 
 		given(nftsByType.get(tokenId.identityCode(), start, end)).willReturn(firstMockRange);
 		given(tokens.get(tokenId.asMerkle())).willReturn(someToken);
