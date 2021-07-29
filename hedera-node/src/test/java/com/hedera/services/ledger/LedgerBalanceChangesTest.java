@@ -40,7 +40,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -522,9 +521,9 @@ class LedgerBalanceChangesTest {
 
 	private final long aSerialNo = 1_234L;
 	private final long bSerialNo = 2_234L;
-	private final AccountID aModel = asAccount("1.2.3");
-	private final AccountID bModel = asAccount("2.3.4");
-	private final AccountID cModel = asAccount("3.4.5");
+	private final AccountID aModel = asAccount("0.0.3");
+	private final AccountID bModel = asAccount("0.0.4");
+	private final AccountID cModel = asAccount("0.0.5");
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);

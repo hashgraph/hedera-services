@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -90,6 +91,18 @@ class EntityIdTest {
 		in = mock(SerializableDataInputStream.class);
 
 		subject = new EntityId(shard, realm, num);
+	}
+
+	@Test
+	void fromIdentityCodeWorks() {
+		// setup:
+		final var expected = new EntityId(0, 0, IdentityCodeUtils.MAX_NUM_ALLOWED);
+
+		// given:
+		final var actual = EntityId.fromIdentityCode((int) IdentityCodeUtils.MAX_NUM_ALLOWED);
+
+		// then:
+		assertEquals(actual, expected);
 	}
 
 	@Test

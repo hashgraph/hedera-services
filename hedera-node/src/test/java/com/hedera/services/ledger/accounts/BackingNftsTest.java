@@ -46,17 +46,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
-	private NftId aNftId = new NftId(1, 2, 3, 4);
-	private NftId bNftId = new NftId(2, 3, 4, 5);
-	private NftId cNftId = new NftId(3, 4, 5, 6);
+	private NftId aNftId = new NftId(0, 0, 3, 4);
+	private NftId bNftId = new NftId(0, 0, 4, 5);
+	private NftId cNftId = new NftId(0, 0, 5, 6);
 	private MerkleUniqueTokenId aKey =
-			new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
+			new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
 	private MerkleUniqueTokenId bKey =
-			new MerkleUniqueTokenId(new EntityId(2, 3, 4), 5);
+			new MerkleUniqueTokenId(new EntityId(0, 0, 4), 5);
 	private MerkleUniqueTokenId cKey =
-			new MerkleUniqueTokenId(new EntityId(3, 4, 5), 6);
+			new MerkleUniqueTokenId(new EntityId(0, 0, 5), 6);
 	private MerkleUniqueToken aValue = new MerkleUniqueToken(
-			new EntityId(1, 2, 3),
+			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
 			new RichInstant(1_234_567L, 1));
 	private MerkleUniqueToken theToken = new MerkleUniqueToken(
