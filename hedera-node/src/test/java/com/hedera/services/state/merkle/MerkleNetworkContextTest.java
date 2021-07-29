@@ -344,6 +344,44 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void updatesSnapshotWithThrottleChangesAsExpected() {
+		// setup A:
+		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
+		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
+		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
+		aThrottle.allow(1);
+		bThrottle.allow(1);
+		cThrottle.allow(20);
+
+		var activeThrottles = List.of(aThrottle, bThrottle, cThrottle);
+		var expectedSnapshots = activeThrottles.stream()
+				.map(DeterministicThrottle::usageSnapshot).collect(Collectors.toList());
+
+		throttling = mock(FunctionalityThrottling.class);
+
+		given(throttling.allActiveThrottles()).willReturn(activeThrottles);
+
+		// when A:
+		subject.updateSnapshotsFrom(throttling);
+
+		// then A:
+		assertEquals(expectedSnapshots, subject.usageSnapshots());
+
+		// setup B:
+		activeThrottles = List.of(aThrottle);
+		expectedSnapshots = activeThrottles.stream()
+				.map(DeterministicThrottle::usageSnapshot).collect(Collectors.toList());
+
+		given(throttling.allActiveThrottles()).willReturn(activeThrottles);
+
+		// when B:
+		subject.updateSnapshotsFrom(throttling);
+
+		// then B:
+		assertEquals(expectedSnapshots, subject.usageSnapshots());
+	}
+
+	@Test
 	void updatesCongestionStartsAsExpected() {
 		// setup:
 		subject = new MerkleNetworkContext();

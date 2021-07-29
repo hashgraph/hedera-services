@@ -168,6 +168,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				else
 					usageSnapshots.add(usageSnapshot);
 			}
+			while(usageSnapshots.size() > n)
+				usageSnapshots.remove(usageSnapshots.size() - 1);
 		}
 	}
 
