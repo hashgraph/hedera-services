@@ -40,7 +40,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -86,7 +85,8 @@ import static org.mockito.BDDMockito.given;
 class LedgerBalanceChangesTest {
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
-	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
+	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
+			new HashMapBackingTokenRels();
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
