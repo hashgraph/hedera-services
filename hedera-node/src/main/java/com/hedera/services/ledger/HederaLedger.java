@@ -388,7 +388,10 @@ public class HederaLedger {
 		var validity = OK;
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				validity = plausibilityOf(change);
+				validity = accountsLedger.validate(
+						change.accountId(),
+						new MerkleAccountScopedCheck(dynamicProperties, validator, change)
+				);
 			} else {
 				validity = tokenStore.tryTokenChange(change);
 			}

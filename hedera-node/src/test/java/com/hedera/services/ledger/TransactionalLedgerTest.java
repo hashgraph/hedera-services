@@ -37,6 +37,9 @@ import java.util.stream.LongStream;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,10 +55,12 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.when;
 
 class TransactionalLedgerTest {
 	Supplier<TestAccount> newAccountFactory;
 	BackingStore<Long, TestAccount> backingAccounts;
+	LedgerCheck scopedCheck;
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
@@ -68,6 +73,7 @@ class TransactionalLedgerTest {
 		token = mock(MerkleToken.class);
 
 		backingAccounts = mock(BackingStore.class);
+		scopedCheck = mock(MerkleAccountScopedCheck.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
@@ -401,5 +407,28 @@ class TransactionalLedgerTest {
 	void reflectsUnchangedAccountIfNoChanges() {
 		// expect:
 		assertEquals(account1, subject.getFinalized(1L));
+	}
+
+	@Test
+	void validateHappyPath() {
+		when(scopedCheck.checkUsing(any())).thenReturn(OK);
+		subject.begin();
+
+		assertEquals(OK, subject.validate(1L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsForMissingAccount() {
+		subject.begin();
+
+		assertEquals(INVALID_ACCOUNT_ID, subject.validate(2L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsAsExpected() {
+		when(scopedCheck.checkUsing(any())).thenReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+		subject.begin();
+
+		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, subject.validate(1L, scopedCheck));
 	}
 }

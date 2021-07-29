@@ -20,16 +20,27 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.function.Function;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+
 public class MerkleAccountScopedCheck implements LedgerCheck<AccountProperty> {
 
-	private BalanceChange balanceChange;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final OptionValidator validator;
+	private final BalanceChange balanceChange;
 
-	MerkleAccountScopedCheck(BalanceChange balanceChange) {
+	MerkleAccountScopedCheck(
+			GlobalDynamicProperties dynamicProperties,
+			OptionValidator validator,
+			BalanceChange balanceChange) {
+		this.dynamicProperties = dynamicProperties;
+		this.validator = validator;
 		this.balanceChange = balanceChange;
 	}
 
@@ -39,6 +50,26 @@ public class MerkleAccountScopedCheck implements LedgerCheck<AccountProperty> {
 		if ((boolean) getter.apply(AccountProperty.IS_SMART_CONTRACT)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 		}
+
+		if ((boolean) getter.apply(AccountProperty.IS_DELETED)) {
+			return ResponseCodeEnum.ACCOUNT_DELETED;
+		}
+
+		final var balance = (long) getter.apply(AccountProperty.BALANCE);
+
+		if (
+				dynamicProperties.autoRenewEnabled() &&
+				balance == 0L &&
+				!validator.isAfterConsensusSecond((long) getter.apply(AccountProperty.EXPIRY))
+		) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+		}
+
+		final var newBalance = balance + balanceChange.units();
+		if (newBalance < 0L) {
+			return balanceChange.codeForInsufficientBalance();
+		}
+		balanceChange.setNewBalance(newBalance);
 
 		return ResponseCodeEnum.OK;
 	}
