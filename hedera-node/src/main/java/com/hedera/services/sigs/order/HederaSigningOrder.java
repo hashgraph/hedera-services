@@ -60,8 +60,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,8 +90,6 @@ import static java.util.Collections.EMPTY_LIST;
  * @author Michael Tinker
  */
 public class HederaSigningOrder {
-	private static final Logger log = LogManager.getLogger(HederaSigningOrder.class);
-
 	final EntityNumbers entityNums;
 	final SigMetadataLookup sigMetaLookup;
 	final GlobalDynamicProperties properties;
