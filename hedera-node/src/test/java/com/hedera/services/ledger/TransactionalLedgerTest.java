@@ -37,7 +37,9 @@ import java.util.stream.LongStream;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.stream.Collectors.toList;
@@ -67,13 +69,12 @@ class TransactionalLedgerTest {
 	Object[] things = { "a", "b", "c", "d" };
 	MerkleToken token;
 	TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
-
 	@BeforeEach
 	private void setup() {
 		token = mock(MerkleToken.class);
 
 		backingAccounts = mock(BackingStore.class);
-		scopedCheck = mock(MerkleAccountScopedCheck.class);
+		scopedCheck = new TestAccountScopedCheck();
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
@@ -411,24 +412,35 @@ class TransactionalLedgerTest {
 
 	@Test
 	void validateHappyPath() {
-		when(scopedCheck.checkUsing(any())).thenReturn(OK);
 		subject.begin();
+		subject.set(1L, LONG, 123L);
+		subject.set(1L, FLAG, false);
+		subject.set(1L, OBJ, "DEFAULT");
+		subject.commit();
 
 		assertEquals(OK, subject.validate(1L, scopedCheck));
 	}
 
 	@Test
 	void validationFailsForMissingAccount() {
-		subject.begin();
-
 		assertEquals(INVALID_ACCOUNT_ID, subject.validate(2L, scopedCheck));
 	}
 
 	@Test
 	void validationFailsAsExpected() {
-		when(scopedCheck.checkUsing(any())).thenReturn(INSUFFICIENT_ACCOUNT_BALANCE);
-		subject.begin();
+		TestAccount account2 = new TestAccount(321L, things[1], false, 667L);
+		TestAccount account3 = new TestAccount(123L, things[1], true, 667L);
+		TestAccount account4 = new TestAccount(123L, "RANDOM", false, 667L);
 
-		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, subject.validate(1L, scopedCheck));
+		when(backingAccounts.contains(2L)).thenReturn(true);
+		when(backingAccounts.getImmutableRef(2L)).thenReturn(account2);
+		when(backingAccounts.contains(3L)).thenReturn(true);
+		when(backingAccounts.getImmutableRef(3L)).thenReturn(account3);
+		when(backingAccounts.contains(4L)).thenReturn(true);
+		when(backingAccounts.getImmutableRef(4L)).thenReturn(account4);
+
+		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
+		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
+		assertEquals(ACCOUNT_STILL_OWNS_NFTS, subject.validate(4L, scopedCheck));
 	}
 }

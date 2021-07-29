@@ -2,6 +2,7 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,8 +10,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Map;
 
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -31,7 +34,10 @@ class MerkleAccountScopedCheckTest {
 	BalanceChange balanceChange;
 
 	@Mock
-	Function<AccountProperty, Object> getter;
+	MerkleAccount account;
+
+	@Mock
+	Map<AccountProperty, Object> changeSet;
 
 	long expiry = 1234L;
 	MerkleAccountScopedCheck subject;
@@ -43,53 +49,62 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedForSmartContacts() {
-		when(getter.apply(AccountProperty.IS_SMART_CONTRACT)).thenReturn(true);
+		when(account.isSmartContract()).thenReturn(true);
 
-		assertEquals(INVALID_ACCOUNT_ID, subject.checkUsing(getter));
+		assertEquals(INVALID_ACCOUNT_ID, subject.checkUsing(account, changeSet));
 	}
 
 	@Test
 	void failsAsExpectedForDeletedAccount() {
-		when(getter.apply(AccountProperty.IS_SMART_CONTRACT)).thenReturn(false);
-		when(getter.apply(AccountProperty.IS_DELETED)).thenReturn(true);
+		when(account.isSmartContract()).thenReturn(false);
+		when(account.isDeleted()).thenReturn(true);
 
-		assertEquals(ACCOUNT_DELETED, subject.checkUsing(getter));
+		assertEquals(ACCOUNT_DELETED, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void failAsExpectedForDeletedAccountInChangeSet() {
+		when(account.isSmartContract()).thenReturn(false);
+		Map<AccountProperty, Object> changes = new HashMap<>();
+		changes.put(IS_DELETED, true);
+
+		assertEquals(ACCOUNT_DELETED, subject.checkUsing(account, changes));
 	}
 
 	@Test
 	void failsAsExpectedForExpiredAccount() {
-		when(getter.apply(AccountProperty.IS_SMART_CONTRACT)).thenReturn(false);
-		when(getter.apply(AccountProperty.IS_DELETED)).thenReturn(false);
+		when(account.isSmartContract()).thenReturn(false);
+		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(true);
-		when(getter.apply(AccountProperty.BALANCE)).thenReturn(0L);
-		when(getter.apply(AccountProperty.EXPIRY)).thenReturn(expiry);
+		when(account.getBalance()).thenReturn(0L);
+		when(account.getExpiry()).thenReturn(expiry);
 		when(validator.isAfterConsensusSecond(expiry)).thenReturn(false);
 
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(getter));
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(account, changeSet));
 	}
 
 	@Test
 	void failsAsExpectedWhenInsufficientBalance() {
-		when(getter.apply(AccountProperty.IS_SMART_CONTRACT)).thenReturn(false);
-		when(getter.apply(AccountProperty.IS_DELETED)).thenReturn(false);
+		when(account.isSmartContract()).thenReturn(false);
+		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 
-		when(getter.apply(AccountProperty.BALANCE)).thenReturn(5L);
+		when(account.getBalance()).thenReturn(5L);
 		when(balanceChange.units()).thenReturn(-6L);
 		when(balanceChange.codeForInsufficientBalance()).thenReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 
-		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, subject.checkUsing(getter));
+		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, subject.checkUsing(account, changeSet));
 	}
 
 	@Test
 	void hapyPath() {
-		when(getter.apply(AccountProperty.IS_SMART_CONTRACT)).thenReturn(false);
-		when(getter.apply(AccountProperty.IS_DELETED)).thenReturn(false);
+		when(account.isSmartContract()).thenReturn(false);
+		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
-		when(getter.apply(AccountProperty.BALANCE)).thenReturn(0L);
+		when(account.getBalance()).thenReturn(0L);
 		when(balanceChange.units()).thenReturn(5L);
 
-		assertEquals(OK, subject.checkUsing(getter));
+		assertEquals(OK, subject.checkUsing(account, changeSet));
 	}
 
 }

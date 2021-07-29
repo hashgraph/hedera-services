@@ -22,14 +22,16 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import java.util.Map;
 import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 
-public class MerkleAccountScopedCheck implements LedgerCheck<AccountProperty> {
+public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
 
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
@@ -45,7 +47,15 @@ public class MerkleAccountScopedCheck implements LedgerCheck<AccountProperty> {
 	}
 
 	@Override
-	public ResponseCodeEnum checkUsing(final Function<AccountProperty, Object> getter) {
+	public ResponseCodeEnum checkUsing(final MerkleAccount account, final Map<AccountProperty, Object> changeSet) {
+
+		Function<AccountProperty, Object> getter = prop -> {
+			if (changeSet != null && changeSet.containsKey(prop)) {
+				return changeSet.get(prop);
+			} else {
+				return prop.getter().apply(account);
+			}
+		};
 
 		if ((boolean) getter.apply(AccountProperty.IS_SMART_CONTRACT)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;

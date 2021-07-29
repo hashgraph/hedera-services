@@ -208,20 +208,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		perishedKeys.add(id);
 	}
 
-	public ResponseCodeEnum validate(K id, LedgerCheck<P> ledgerCheck) {
+	public ResponseCodeEnum validate(K id, LedgerCheck<A, P> ledgerCheck) {
 		if(!exists(id)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 		}
 		var changeSet = changes.get(id);
 		var getterTarget = toGetterTarget(id);
-		Function<P, Object> getter = prop -> {
-			if (changeSet != null && changeSet.containsKey(prop)) {
-				return changeSet.get(prop);
-			} else {
-				return prop.getter().apply(getterTarget);
-			}
-		};
-		return ledgerCheck.checkUsing(getter);
+		return ledgerCheck.checkUsing(getterTarget, changeSet);
 	}
 
 

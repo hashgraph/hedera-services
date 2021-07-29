@@ -23,8 +23,8 @@ package com.hedera.services.ledger;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.util.function.Function;
+import java.util.Map;
 
-public interface LedgerCheck<Q>  {
-	ResponseCodeEnum checkUsing(Function<Q, Object> getter);
+public interface LedgerCheck<A, P>  {
+	ResponseCodeEnum checkUsing(A account, Map<P, Object> changeSet);
 }
