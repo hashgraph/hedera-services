@@ -258,10 +258,6 @@
       <artifactId>swirlds-fcqueue</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.swirlds</groupId>
-      <artifactId>swirlds-common</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <exclusions>
@@ -290,18 +286,6 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.i2p.crypto</groupId>
-      <artifactId>eddsa</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.inject</groupId>
-      <artifactId>javax.inject</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>

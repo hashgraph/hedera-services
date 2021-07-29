@@ -394,11 +394,6 @@ ${git.signoff}
         <scope>import</scope>
       </dependency>
       <dependency>
-        <groupId>javax.inject</groupId>
-        <artifactId>javax.inject</artifactId>
-        <version>${javax-inject.version}</version>
-      </dependency>
-      <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${commons-io.version}</version>
@@ -419,19 +414,9 @@ ${git.signoff}
         <version>${swirlds.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.swirlds</groupId>
-        <artifactId>swirlds-common</artifactId>
-        <version>${swirlds.version}</version>
-      </dependency>
-      <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${jackson-databind.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.annotation</groupId>
-        <artifactId>javax.annotation-api</artifactId>
-        <version>${javax.annotation-api.version}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -459,11 +444,6 @@ ${git.signoff}
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-all</artifactId>
         <version>${hamcrest-all.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.i2p.crypto</groupId>
-        <artifactId>eddsa</artifactId>
-        <version>${eddsa.version}</version>
       </dependency>
       <dependency>
         <groupId>com.hedera.hashgraph</groupId>
@@ -494,6 +474,26 @@ ${git.signoff}
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-common</artifactId>
+      <version>${swirlds.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>${javax.annotation-api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>${javax-inject.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.i2p.crypto</groupId>
+      <artifactId>eddsa</artifactId>
+      <version>${eddsa.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
