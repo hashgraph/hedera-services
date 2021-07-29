@@ -44,7 +44,8 @@ class MerkleAccountScopedCheckTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new MerkleAccountScopedCheck(dynamicProperties, validator, balanceChange);
+		subject = new MerkleAccountScopedCheck(dynamicProperties, validator);
+		subject.setBalanceChange(balanceChange);
 	}
 
 	@Test

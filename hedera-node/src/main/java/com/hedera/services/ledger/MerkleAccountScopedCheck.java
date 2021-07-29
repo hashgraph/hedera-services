@@ -35,15 +35,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
-	private final BalanceChange balanceChange;
+	private BalanceChange balanceChange;
 
 	MerkleAccountScopedCheck(
 			GlobalDynamicProperties dynamicProperties,
-			OptionValidator validator,
-			BalanceChange balanceChange) {
+			OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
-		this.balanceChange = balanceChange;
 	}
 
 	@Override
@@ -82,5 +80,11 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		balanceChange.setNewBalance(newBalance);
 
 		return ResponseCodeEnum.OK;
+	}
+
+	@Override
+	public MerkleAccountScopedCheck setBalanceChange(final BalanceChange balanceChange) {
+		this.balanceChange = balanceChange;
+		return this;
 	}
 }

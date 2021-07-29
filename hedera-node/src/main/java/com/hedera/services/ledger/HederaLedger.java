@@ -130,6 +130,7 @@ public class HederaLedger {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
+	private LedgerCheck scopedCheck;
 
 	int numTouches = 0;
 	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
@@ -155,6 +156,7 @@ public class HederaLedger {
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
+		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
@@ -387,7 +389,7 @@ public class HederaLedger {
 			if (change.isForHbar()) {
 				validity = accountsLedger.validate(
 						change.accountId(),
-						new MerkleAccountScopedCheck(dynamicProperties, validator, change)
+						scopedCheck.setBalanceChange(change)
 				);
 			} else {
 				validity = tokenStore.tryTokenChange(change);
