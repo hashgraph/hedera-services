@@ -273,11 +273,11 @@ class UniqTokenViewsManagerTest {
 		subject = new UniqTokenViewsManager(() -> nftsByType, () -> nftsByOwner);
 	}
 
-	private final EntityId firstOwner = new EntityId(1, 2, 3);
-	private final EntityId secondOwner = new EntityId(2, 3, 4);
-	private final EntityId aTokenId = new EntityId(3, 4, 5);
-	private final EntityId bTokenId = new EntityId(4, 5, 6);
-	private final EntityId cTokenId = new EntityId(5, 6, 7);
+	private final EntityId firstOwner = new EntityId(0, 0, 3);
+	private final EntityId secondOwner = new EntityId(0, 0, 4);
+	private final EntityId aTokenId = new EntityId(0, 0, 5);
+	private final EntityId bTokenId = new EntityId(0, 0, 6);
+	private final EntityId cTokenId = new EntityId(0, 0, 7);
 	private final MerkleUniqueTokenId aOneNftId = new MerkleUniqueTokenId(aTokenId, 1L);
 	private final MerkleUniqueTokenId bOneNftId = new MerkleUniqueTokenId(bTokenId, 1L);
 	private final MerkleUniqueTokenId missingTokenNftId = new MerkleUniqueTokenId(cTokenId, 666L);
