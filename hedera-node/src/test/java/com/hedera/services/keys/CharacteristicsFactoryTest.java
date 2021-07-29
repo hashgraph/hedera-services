@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.Function;
@@ -43,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class CharacteristicsFactoryTest {
 	FileID target = IdUtils.asFile("0.0.75231");
 	FileID missing = IdUtils.asFile("1.2.3");
@@ -117,7 +114,7 @@ class CharacteristicsFactoryTest {
 	private TransactionBody fileDelete() {
 		return TransactionBody.newBuilder()
 				.setFileDelete(FileDeleteTransactionBody.newBuilder()
-					.setFileID(target))
+						.setFileID(target))
 				.build();
 	}
 }

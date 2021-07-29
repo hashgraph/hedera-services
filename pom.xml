@@ -171,7 +171,6 @@
     <swirlds.version>0.16.0</swirlds.version>
     <!-- Test dependency properties in alphabetical order -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
-    <junit.version>4.13.2</junit.version>
     <junit5-bom.version>5.7.2</junit5-bom.version>
     <mockito2.version>3.11.2</mockito2.version>
 
@@ -417,11 +416,6 @@ ${git.signoff}
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${jackson-databind.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>${junit.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit</groupId>
