@@ -90,24 +90,28 @@ import static java.util.Collections.EMPTY_LIST;
  * @author Michael Tinker
  */
 public class HederaSigningOrder {
-	final EntityNumbers entityNums;
-	final SigMetadataLookup sigMetaLookup;
-	final GlobalDynamicProperties properties;
-	final Predicate<TransactionBody> updateAccountSigns;
-	final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
+	private final EntityNumbers entityNums;
+	private final SigMetadataLookup sigMetaLookup;
+	private final GlobalDynamicProperties properties;
+	private final Predicate<TransactionBody> updateAccountSigns;
+	private final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
+
+	private final SignatureWaivers signatureWaivers;
 
 	public HederaSigningOrder(
 			EntityNumbers entityNums,
 			SigMetadataLookup sigMetaLookup,
 			Predicate<TransactionBody> updateAccountSigns,
 			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns,
-			GlobalDynamicProperties properties
+			GlobalDynamicProperties properties,
+			SignatureWaivers signatureWaivers
 	) {
 		this.entityNums = entityNums;
 		this.properties = properties;
 		this.sigMetaLookup = sigMetaLookup;
 		this.targetWaclSigns = targetWaclSigns;
 		this.updateAccountSigns = updateAccountSigns;
+		this.signatureWaivers = signatureWaivers;
 	}
 
 	/**

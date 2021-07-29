@@ -32,6 +32,8 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -102,6 +104,8 @@ class SigOpsRegressionTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
+	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers();
+
 	private Predicate<TransactionBody> updateAccountSigns = txn ->
 			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
 	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->

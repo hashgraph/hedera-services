@@ -1337,7 +1337,8 @@ public class ServicesContext {
 				lookups,
 				txn -> policies.check(txn, CryptoUpdate) != AUTHORIZED,
 				(txn, function) -> policies.check(txn, function) != AUTHORIZED,
-				properties);
+				properties,
+				null);
 	}
 
 	public StoragePersistence storagePersistence() {
