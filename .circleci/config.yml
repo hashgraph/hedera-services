@@ -2251,6 +2251,7 @@ workflows:
               branches:
                 ignore:
                   - NONE
+                  - 01907-M-MigrateNftFcms
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
