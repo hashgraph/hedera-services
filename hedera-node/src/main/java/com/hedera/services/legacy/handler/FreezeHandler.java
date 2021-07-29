@@ -183,10 +183,11 @@ public class FreezeHandler {
 			if (directory.exists()) {
 				log.info("{} clean directory {}", LOG_PREFIX, directory);
 				// delete everything in it recursively
-				Files.walk(directory.toPath())
-						.sorted(Comparator.reverseOrder())
-						.map(Path::toFile)
-						.forEach(File::delete);
+				try (final var walk = Files.walk(directory.toPath())) {
+					walk.sorted(Comparator.reverseOrder())
+							.map(Path::toFile)
+							.forEach(File::delete);
+				}
 			} else {
 				log.info("{} create directory {}", LOG_PREFIX, directory);
 				directory.mkdir();

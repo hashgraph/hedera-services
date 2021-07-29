@@ -28,9 +28,9 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CommonUtilsTest {
+class CommonUtilsTest {
 	@Test
-	public void testNap() throws InterruptedException, IOException {
+	void testNap() throws InterruptedException, IOException {
 		String filePath = "./src/test/resources/test.txt";
 		CommonUtils.writeToFile(filePath, "TEST".getBytes());
 		CommonUtils.nap(1);
