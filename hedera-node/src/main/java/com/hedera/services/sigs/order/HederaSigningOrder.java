@@ -128,34 +128,34 @@ public class HederaSigningOrder {
 	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
 	 */
 	public <T> SigningOrderResult<T> keysForOtherParties(TransactionBody txn, SigningOrderResultFactory<T> factory) {
-		var cryptoOrder = forCrypto(txn, factory);
-		if (cryptoOrder.isPresent()) {
-			return cryptoOrder.get();
+		final var cryptoOrder = forCrypto(txn, factory);
+		if (cryptoOrder != null) {
+			return cryptoOrder;
 		}
 
-		var consensusOrder = forConsensus(txn, factory);
-		if (consensusOrder.isPresent()) {
-			return consensusOrder.get();
+		final var consensusOrder = forConsensus(txn, factory);
+		if (consensusOrder != null) {
+			return consensusOrder;
 		}
 
-		var tokenOrder = forToken(txn, factory);
-		if (tokenOrder.isPresent()) {
-			return tokenOrder.get();
+		final var tokenOrder = forToken(txn, factory);
+		if (tokenOrder != null) {
+			return tokenOrder;
 		}
 
-		var scheduleOrder = forSchedule(txn, factory);
-		if (scheduleOrder.isPresent()) {
-			return scheduleOrder.get();
+		final var scheduleOrder = forSchedule(txn, factory);
+		if (scheduleOrder != null) {
+			return scheduleOrder;
 		}
 
 		var fileOrder = forFile(txn, factory);
-		if (fileOrder.isPresent()) {
-			return fileOrder.get();
+		if (fileOrder != null) {
+			return fileOrder;
 		}
 
-		var contractOrder = forContract(txn, factory);
-		if (contractOrder.isPresent()) {
-			return contractOrder.get();
+		final var contractOrder = forContract(txn, factory);
+		if (contractOrder != null) {
+			return contractOrder;
 		}
 
 		return SigningOrderResult.noKnownKeys();
@@ -178,120 +178,107 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forContract(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forContract(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasContractCreateInstance()) {
-			return Optional.of(contractCreate(txn.getContractCreateInstance(), factory));
+			return contractCreate(txn.getContractCreateInstance(), factory);
 		} else if (txn.hasContractUpdateInstance()) {
-			return Optional.of(contractUpdate(txn.getTransactionID(), txn.getContractUpdateInstance(), factory));
+			return contractUpdate(txn.getTransactionID(), txn.getContractUpdateInstance(), factory);
 		} else if (txn.hasContractDeleteInstance()) {
-			return Optional.of(contractDelete(txn.getTransactionID(), txn.getContractDeleteInstance(), factory));
+			return contractDelete(txn.getTransactionID(), txn.getContractDeleteInstance(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forCrypto(
+	private <T> SigningOrderResult<T> forCrypto(
 			TransactionBody txn,
 			SigningOrderResultFactory<T> factory
 	) {
 		if (txn.hasCryptoCreateAccount()) {
-			return Optional.of(cryptoCreate(txn.getCryptoCreateAccount(), factory));
+			return cryptoCreate(txn.getCryptoCreateAccount(), factory);
 		} else if (txn.hasCryptoTransfer()) {
-			return Optional.of(cryptoTransfer(txn.getTransactionID(), txn.getCryptoTransfer(), factory));
+			return cryptoTransfer(txn.getTransactionID(), txn.getCryptoTransfer(), factory);
 		} else if (txn.hasCryptoUpdateAccount()) {
-			return Optional.of(cryptoUpdate(txn.getTransactionID(), txn, factory));
+			return cryptoUpdate(txn.getTransactionID(), txn, factory);
 		} else if (txn.hasCryptoDelete()) {
-			return Optional.of(cryptoDelete(txn.getTransactionID(), txn.getCryptoDelete(), factory));
+			return cryptoDelete(txn.getTransactionID(), txn.getCryptoDelete(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forSchedule(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forSchedule(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasScheduleCreate()) {
-			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory));
+			return scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory);
 		} else if (txn.hasScheduleSign()) {
-			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
+			return scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory);
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(),
-					factory));
+			return scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forToken(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forToken(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasTokenCreation()) {
-			return Optional.of(tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory));
+			return tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory);
 		} else if (txn.hasTokenAssociate()) {
-			return Optional.of(tokenAssociate(txn.getTransactionID(), txn.getTokenAssociate(), factory));
+			return tokenAssociate(txn.getTransactionID(), txn.getTokenAssociate(), factory);
 		} else if (txn.hasTokenDissociate()) {
-			return Optional.of(tokenDissociate(txn.getTransactionID(), txn.getTokenDissociate(), factory));
+			return tokenDissociate(txn.getTransactionID(), txn.getTokenDissociate(), factory);
 		} else if (txn.hasTokenFreeze()) {
-			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory));
+			return tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory);
 		} else if (txn.hasTokenUnfreeze()) {
-			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenUnfreeze().getToken(), factory));
+			return tokenFreezing(txn.getTransactionID(), txn.getTokenUnfreeze().getToken(), factory);
 		} else if (txn.hasTokenGrantKyc()) {
-			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenGrantKyc().getToken(), factory));
+			return tokenKnowing(txn.getTransactionID(), txn.getTokenGrantKyc().getToken(), factory);
 		} else if (txn.hasTokenRevokeKyc()) {
-			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenRevokeKyc().getToken(), factory));
+			return tokenKnowing(txn.getTransactionID(), txn.getTokenRevokeKyc().getToken(), factory);
 		} else if (txn.hasTokenMint()) {
-			return Optional.of(tokenRefloating(txn.getTransactionID(), txn.getTokenMint().getToken(), factory));
+			return tokenRefloating(txn.getTransactionID(), txn.getTokenMint().getToken(), factory);
 		} else if (txn.hasTokenBurn()) {
-			return Optional.of(tokenRefloating(txn.getTransactionID(), txn.getTokenBurn().getToken(), factory));
+			return tokenRefloating(txn.getTransactionID(), txn.getTokenBurn().getToken(), factory);
 		} else if (txn.hasTokenWipe()) {
-			return Optional.of(tokenWiping(txn.getTransactionID(), txn.getTokenWipe().getToken(), factory));
+			return tokenWiping(txn.getTransactionID(), txn.getTokenWipe().getToken(), factory);
 		} else if (txn.hasTokenDeletion()) {
-			return Optional.of(tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory));
+			return tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory);
 		} else if (txn.hasTokenUpdate()) {
-			return Optional.of(tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory));
+			return tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory);
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return Optional.of(tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory));
+			return tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forFile(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forFile(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasFileCreate()) {
-			return Optional.of(fileCreate(txn.getFileCreate(), factory));
+			return fileCreate(txn.getFileCreate(), factory);
 		} else if (txn.hasFileAppend()) {
-			return Optional.of(fileAppend(txn.getTransactionID(), txn, factory));
+			return fileAppend(txn.getTransactionID(), txn, factory);
 		} else if (txn.hasFileUpdate()) {
-			return Optional.of(fileUpdate(txn.getTransactionID(), txn, factory));
+			return fileUpdate(txn.getTransactionID(), txn, factory);
 		} else if (txn.hasFileDelete()) {
-			return Optional.of(fileDelete(txn.getTransactionID(), txn.getFileDelete(), factory));
+			return fileDelete(txn.getTransactionID(), txn.getFileDelete(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forConsensus(
+	private <T> SigningOrderResult<T> forConsensus(
 			TransactionBody txn,
 			SigningOrderResultFactory<T> factory
 	) {
 		if (txn.hasConsensusCreateTopic()) {
-			return Optional.of(topicCreate(txn.getTransactionID(), txn.getConsensusCreateTopic(), factory));
+			return topicCreate(txn.getTransactionID(), txn.getConsensusCreateTopic(), factory);
 		} else if (txn.hasConsensusSubmitMessage()) {
-			return Optional.of(messageSubmit(txn.getTransactionID(), txn.getConsensusSubmitMessage(), factory));
+			return messageSubmit(txn.getTransactionID(), txn.getConsensusSubmitMessage(), factory);
 		} else if (txn.hasConsensusUpdateTopic()) {
-			return Optional.of(topicUpdate(txn.getTransactionID(), txn.getConsensusUpdateTopic(), factory));
+			return topicUpdate(txn.getTransactionID(), txn.getConsensusUpdateTopic(), factory);
 		} else if (txn.hasConsensusDeleteTopic()) {
-			return Optional.of(topicDelete(txn.getTransactionID(), txn.getConsensusDeleteTopic(), factory));
+			return topicDelete(txn.getTransactionID(), txn.getConsensusDeleteTopic(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 

@@ -210,6 +210,7 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -788,7 +789,10 @@ public class ServicesContext {
 	}
 
 	public SignatureWaivers signatureWaivers() {
-		throw new AssertionError("Not implemented!");
+		if (signatureWaivers == null) {
+			signatureWaivers = new PolicyBasedSigWaivers(entityNums(), systemOpPolicies());
+		}
+		return signatureWaivers;
 	}
 
 	public MiscSpeedometers speedometers() {
@@ -1335,12 +1339,7 @@ public class ServicesContext {
 	}
 
 	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
-		final var policies = systemOpPolicies();
-		final var properties = globalDynamicProperties();
-		return new HederaSigningOrder(
-				lookups,
-				properties,
-				null);
+		return new HederaSigningOrder(lookups, globalDynamicProperties(), signatureWaivers());
 	}
 
 	public StoragePersistence storagePersistence() {
