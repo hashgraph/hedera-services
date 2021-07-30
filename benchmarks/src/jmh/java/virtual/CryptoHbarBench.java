@@ -44,6 +44,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
             for (int i = 0; i < numEntities; i++) {
                 if (i % 100000 == 0 && i > 0) {
                     System.out.println("Completed: " + i);
+//                    System.out.println(virtualMap.toDebugString());
                     virtualMap = pipeline.endRound(virtualMap);
                 }
 
@@ -62,6 +63,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
 
             // During setup we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
+//            System.out.println(virtualMap.toDebugString());
             virtualMap = pipeline.endRound(virtualMap);
         }
 
@@ -79,6 +81,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
      */
     @Benchmark
     public void update() {
+//        System.out.println(virtualMap.toDebugString());
         // Start modifying the new fast copy
         for (int j=0; j<targetOpsPerSecond; j++) {
             // Read the two accounts involved in the token transfer
@@ -112,17 +115,18 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
             }
         }
 
+//        System.out.println(virtualMap.toDebugString());
         virtualMap = pipeline.endRound(virtualMap);
     }
 
     public static void main(String[] args) throws Exception {
-        final var start = new AtomicLong(System.currentTimeMillis());
         final var test = new CryptoHbarBench();
-        test.numEntities = 1000000;
+        test.numEntities = 1_000_000;
         test.dsType = DataSourceType.jasperdb;
         test.preFill = true;
-        test.targetOpsPerSecond = 10000;
+        test.targetOpsPerSecond = 10_000;
         test.prepare();
+        System.out.println(test.virtualMap.toDebugString());
 
         for (int i=0; i< test.numEntities; i++) {
             final var value = test.virtualMap.getForModify(new Id(i));
@@ -132,21 +136,22 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         }
 
         int totalCount = 0;
+        final var start = new AtomicLong();
         while (true) {
+            start.set(System.nanoTime());
             test.update();
-//            for (int i=0; i<2; i++) {
-//                System.gc();
-//            }
             totalCount += test.targetOpsPerSecond;
-            printTestUpdate(start, test.targetOpsPerSecond, totalCount, "Hey");
+            printTestUpdate(start, test.targetOpsPerSecond, totalCount, "Iteration");
         }
     }
 
     private static double printTestUpdate(AtomicLong start, long count, long totalCount, String msg) {
-        long took = System.currentTimeMillis() - start.getAndSet(System.currentTimeMillis());
-        double timeSeconds = (double)took/1000d;
+        final var stopTime = System.nanoTime();
+        long took = stopTime - start.get();
+        double timeSeconds = (double)took/1_000_000_000d;
         double perSecond = (double)count / timeSeconds;
-        System.out.printf("%s x %,d : [%,d] at %,.0f per/sec, took %,.2f seconds\n",msg,totalCount, count, perSecond, timeSeconds);
+        System.out.printf("%s x %,d : [%,d] at %,.0f per/sec, took %,.4f seconds\n",
+                msg, totalCount, count, perSecond, timeSeconds);
         return perSecond;
     }
 }
