@@ -42,17 +42,14 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
 import static com.hedera.test.CiConditions.isInCircleCi;
@@ -89,10 +86,6 @@ public class SigVerifierRegressionTest {
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
-	private Predicate<TransactionBody> updateAccountSigns = txn ->
-			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
-	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->
-			mockSystemOpPolicies.check(txn, function) != AUTHORIZED;
 
 	@Test
 	void rejectsInvalidTxn() throws Throwable {
@@ -223,20 +216,14 @@ public class SigVerifierRegressionTest {
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
 		keyOrder = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
-				updateAccountSigns,
-				targetWaclSigns,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		retryingKeyOrder =
 				new HederaSigningOrder(
-						new MockEntityNumbers(),
 						defaultLookupsPlusAccountRetriesFor(
 								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
-						updateAccountSigns,
-						targetWaclSigns,
 						new MockGlobalDynamicProps(),
 						mockSignatureWaivers);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);

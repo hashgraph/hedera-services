@@ -20,7 +20,6 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -2049,7 +2048,6 @@ class HederaSigningOrderTest {
 		scheduleStore = scenario.scheduleStore();
 
 		subject = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				sigMetaLookup.orElse(
 						defaultLookupsFor(
 								hfs,
@@ -2057,8 +2055,6 @@ class HederaSigningOrderTest {
 								() -> topics,
 								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
 								SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
-				null,
-				null,
 				new MockGlobalDynamicProps(),
 				signatureWaivers);
 	}

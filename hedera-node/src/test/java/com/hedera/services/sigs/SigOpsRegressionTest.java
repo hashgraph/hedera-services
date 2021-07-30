@@ -47,7 +47,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -59,13 +58,11 @@ import org.junit.jupiter.api.Test;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
@@ -107,11 +104,6 @@ class SigOpsRegressionTest {
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
-
-	private Predicate<TransactionBody> updateAccountSigns = txn ->
-			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
-	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->
-			mockSystemOpPolicies.check(txn, function) != AUTHORIZED;
 
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
@@ -367,10 +359,7 @@ class SigOpsRegressionTest {
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
-				updateAccountSigns,
-				targetWaclSigns,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
@@ -384,10 +373,7 @@ class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().clear();
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
-				updateAccountSigns,
-				targetWaclSigns,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
@@ -401,10 +387,7 @@ class SigOpsRegressionTest {
 						hfs, () -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
 						runningAvgs, speedometers);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				sigMetaLookups,
-				updateAccountSigns,
-				targetWaclSigns,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
@@ -416,10 +399,7 @@ class SigOpsRegressionTest {
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				sigMetaLookups,
-				updateAccountSigns,
-				targetWaclSigns,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
@@ -441,10 +421,7 @@ class SigOpsRegressionTest {
 		expectedErrorStatus = null;
 
 		signingOrder = new HederaSigningOrder(
-				new MockEntityNumbers(),
 				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
-				updateAccountSigns,
-				targetWaclSigns,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		SigningOrderResult<SignatureStatus> payerKeys =
