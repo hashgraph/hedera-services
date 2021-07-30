@@ -27,5 +27,4 @@ import java.util.Map;
 
 public interface LedgerCheck<A, P>  {
 	ResponseCodeEnum checkUsing(A account, Map<P, Object> changeSet);
-	LedgerCheck setBalanceChange(BalanceChange change);
 }

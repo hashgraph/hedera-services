@@ -82,7 +82,6 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return ResponseCodeEnum.OK;
 	}
 
-	@Override
 	public MerkleAccountScopedCheck setBalanceChange(final BalanceChange balanceChange) {
 		this.balanceChange = balanceChange;
 		return this;

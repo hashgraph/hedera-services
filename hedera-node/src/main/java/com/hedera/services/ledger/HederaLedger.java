@@ -130,7 +130,7 @@ public class HederaLedger {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
-	private LedgerCheck scopedCheck;
+	private MerkleAccountScopedCheck scopedCheck;
 
 	int numTouches = 0;
 	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
