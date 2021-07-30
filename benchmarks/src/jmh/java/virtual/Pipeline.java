@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -70,11 +71,9 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         // will wake up and get the map setting it back to null, at which point
         // we start the process over again.
         final var masterMap = new AtomicReference<VirtualMap<K, V>>(null);
+        final var archiveStartTime = new AtomicLong(System.currentTimeMillis());
         releaseService.submit(new Task(() -> {
             final var map = releaseExchanger.exchange(null);
-//            while (masterMap.get() != null) {
-//                Thread.sleep(50);
-//            }
             synchronized (masterMap) {
                 final var master = masterMap.get();
                 if (master != null) {
@@ -82,22 +81,36 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                 }
                 masterMap.set(map);
             }
+
+            while (System.currentTimeMillis() - archiveStartTime.get() > 10*1000) {
+                try{
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) { }
+            }
         }));
 
         // Runs once a minute and grabs the latest "master" map. If not null, it archives it.
-        archiveService.scheduleWithFixedDelay(() -> {
-            try {
-                synchronized (masterMap) {
-                    final var map = masterMap.getAndSet(null);
-                    if (map != null) {
-                        map.archive();
-                        System.out.println("Archived");
+        archiveService.execute(() -> {
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                var time = System.currentTimeMillis();
+                if (time - archiveStartTime.get() > 10*1000) {
+                    archiveStartTime.set(time);
+                    try {
+                        VirtualMap<?, ?> map;
+                        synchronized (masterMap) {
+                            map = masterMap.getAndSet(null);
+                        }
+
+                        if (map != null) {
+                            map.archive();
+                        }
+                    } catch (Throwable th) {
+                        th.printStackTrace();
                     }
                 }
-            } catch (Throwable th) {
-                th.printStackTrace();
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        });
     }
 
     public VirtualMap<K, V> endRound(VirtualMap<K, V> virtualMap) {

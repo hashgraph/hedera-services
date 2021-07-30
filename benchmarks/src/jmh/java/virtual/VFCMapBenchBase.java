@@ -199,7 +199,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
     }
 
     protected static final class Account implements VirtualValue {
-        private static final int MAX_STRING_BYTES = 128;
+        private static final int MAX_STRING_BYTES = 120;
         public static final int SERIALIZED_SIZE = (4*Long.BYTES) + // key
                 Long.BYTES +        // expiry
                 Long.BYTES +        // hbarBalance
