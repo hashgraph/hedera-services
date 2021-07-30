@@ -227,7 +227,7 @@ import static org.mockito.Mockito.verify;
 
 class HederaSigningOrderTest {
 	private static class TopicAdapter {
-		public static TopicSigMetaLookup with() {
+		public static TopicSigMetaLookup throwingUoe() {
 			return id -> {
 				throw new UnsupportedOperationException();
 			};
@@ -241,7 +241,7 @@ class HederaSigningOrderTest {
 	}
 
 	private static class FileAdapter {
-		public static FileSigMetaLookup with() {
+		public static FileSigMetaLookup throwingUoe() {
 			return id -> {
 				throw new UnsupportedOperationException();
 			};
@@ -267,7 +267,7 @@ class HederaSigningOrderTest {
 	private static final boolean IN_HANDLE_TXN_DYNAMIC_CTX = false;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
 			new DelegatingSigMetadataLookup(
-					FileAdapter.with(),
+					FileAdapter.throwingUoe(),
 					AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 					contractSigMetaLookup,
 					TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
@@ -398,10 +398,10 @@ class HederaSigningOrderTest {
 		setupForNonStdLookup(
 				CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
 				new DelegatingSigMetadataLookup(
-						FileAdapter.with(),
+						FileAdapter.throwingUoe(),
 						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 						ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
-						TopicAdapter.with(),
+						TopicAdapter.throwingUoe(),
 						id -> null,
 						id -> null));
 		aMockSummaryFactory();
@@ -2083,7 +2083,7 @@ class HederaSigningOrderTest {
 
 	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
 		return new DelegatingSigMetadataLookup(
-				FileAdapter.with(),
+				FileAdapter.throwingUoe(),
 				AccountAdapter.withSafe(id -> {
 					if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
 						try {
