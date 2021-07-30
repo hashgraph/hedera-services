@@ -20,11 +20,14 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -54,8 +57,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.order.AlwaysWaivingSigs.ALWAYS_WAIVING_SIGS;
-import static com.hedera.services.sigs.order.NeverWaivingSigs.NEVER_WAIVING_SIGS;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO;
@@ -126,10 +127,14 @@ import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_U
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.FILE_APPEND_MISSING_TARGET_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.IMMUTABLE_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.MASTER_SYS_FILE_APPEND_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileAppendScenarios.SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.TREASURY_SYS_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.VANILLA_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.VANILLA_FILE_CREATE_SCENARIO;
@@ -139,6 +144,7 @@ import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDAT
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.IMMUTABLE_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.MASTER_SYS_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_SYS_FILE_UPDATE_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.VANILLA_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_INVALID_XFER;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_NO_ADMIN;
@@ -195,6 +201,7 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
@@ -283,6 +290,9 @@ class HederaSigningOrderTest {
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
@@ -411,7 +421,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsCryptoUpdateVanillaNewKey() throws Throwable {
 		// given:
-		customSigSetupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -423,52 +433,65 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	void getsCryptoUpdateProtectedNewKey() throws Throwable {
-		customSigSetupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, ALWAYS_WAIVING_SIGS);
-
-		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
-	}
-
-	@Test
 	void getsCryptoUpdateProtectedSysAccountNewKey() throws Throwable {
-		customSigSetupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO, ALWAYS_WAIVING_SIGS);
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
-	}
-
-	@Test
-	void getsCryptoUpdateProtectedNoNewKey() throws Throwable {
-		customSigSetupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, ALWAYS_WAIVING_SIGS);
-
-		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		assertThat(sanityRestored(
+				summary.getOrderedKeys()),
+				contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
 	}
 
 	@Test
 	void getsCryptoUpdateProtectedSysAccountNoNewKey() throws Throwable {
-		customSigSetupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO, ALWAYS_WAIVING_SIGS);
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(SYS_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoUpdateSysAccountWithPrivilegedPayer() throws Throwable {
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	void getsCryptoUpdateTreasuryWithTreasury() throws Throwable {
+		setupFor(CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	void getsCryptoUpdateTreasuryWithTreasuryAndNewKey() throws Throwable {
+		setupFor(CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(NEW_ACCOUNT_KT.asKey()));
 	}
 
 	@Test
 	void getsCryptoUpdateVanillaNoNewKey() throws Throwable {
-		customSigSetupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -548,19 +571,19 @@ class HederaSigningOrderTest {
 	@Test
 	void getsFileAppendProtected() throws Throwable {
 		// given:
-		customSigSetupFor(VANILLA_FILE_APPEND_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
 	@Test
 	void getsFileAppendImmutable() throws Throwable {
 		// given:
-		customSigSetupFor(IMMUTABLE_FILE_APPEND_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(IMMUTABLE_FILE_APPEND_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -572,7 +595,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsSysFileAppendByTreasury() throws Throwable {
 		// given:
-		customSigSetupFor(TREASURY_SYS_FILE_APPEND_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(TREASURY_SYS_FILE_APPEND_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -584,7 +607,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsSysFileAppendByMaster() throws Throwable {
 		// given:
-		customSigSetupFor(MASTER_SYS_FILE_APPEND_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(MASTER_SYS_FILE_APPEND_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -596,7 +619,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsSysFileUpdateByMaster() throws Throwable {
 		// given:
-		customSigSetupFor(MASTER_SYS_FILE_UPDATE_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(MASTER_SYS_FILE_UPDATE_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -608,7 +631,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsSysFileUpdateByTreasury() throws Throwable {
 		// given:
-		customSigSetupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -648,9 +671,9 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	void getsFileUpdateImmutable() throws Throwable {
+	void getsTreasuryUpdateNoNewWacl() throws Throwable {
 		// given:
-		customSigSetupFor(IMMUTABLE_FILE_UPDATE_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -660,15 +683,29 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	void getsFileUpdateProtectedNoNewWacl() throws Throwable {
+	void getsFileUpdateImmutable() throws Throwable {
 		// given:
-		customSigSetupFor(VANILLA_FILE_UPDATE_SCENARIO, ALWAYS_WAIVING_SIGS);
+		setupFor(IMMUTABLE_FILE_UPDATE_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void getsNonSystemFileUpdateNoNewWacl() throws Throwable {
+		// given:
+		setupFor(VANILLA_FILE_UPDATE_SCENARIO);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(
+				summary.getOrderedKeys()),
+				contains(MISC_FILE_WACL_KT.asKey()));
 	}
 
 	@Test
@@ -686,18 +723,6 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	void getsFileUpdateProtectedNewWacl() throws Throwable {
-		// given:
-		customSigSetupFor(FILE_UPDATE_NEW_WACL_SCENARIO, ALWAYS_WAIVING_SIGS);
-
-		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
-	}
-
-	@Test
 	void getsFileDelete() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_DELETE_SCENARIO);
@@ -712,7 +737,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsFileDeleteProtected() throws Throwable {
 		// given:
-		customSigSetupFor(VANILLA_FILE_DELETE_SCENARIO, ALWAYS_WAIVING_SIGS);
+		setupFor(VANILLA_FILE_DELETE_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -724,7 +749,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsFileDeleteImmutable() throws Throwable {
 		// given:
-		customSigSetupFor(IMMUTABLE_FILE_DELETE_SCENARIO, NEVER_WAIVING_SIGS);
+		setupFor(IMMUTABLE_FILE_DELETE_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -2015,7 +2040,7 @@ class HederaSigningOrderTest {
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
-		customSigSetupFor(scenario, NEVER_WAIVING_SIGS);
+		setupFor(scenario, Optional.empty(), mockSignatureWaivers);
 	}
 
 	private void setupForNonStdLookup(
@@ -2025,14 +2050,7 @@ class HederaSigningOrderTest {
 		setupFor(
 				scenario,
 				Optional.of(sigMetadataLookup),
-				NEVER_WAIVING_SIGS);
-	}
-
-	private void customSigSetupFor(
-			TxnHandlingScenario scenario,
-			SignatureWaivers signatureWaivers
-	) throws Throwable {
-		setupFor(scenario, Optional.empty(), signatureWaivers);
+				mockSignatureWaivers);
 	}
 
 	private void setupFor(
