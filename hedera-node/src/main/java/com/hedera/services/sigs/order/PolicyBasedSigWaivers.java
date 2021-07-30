@@ -35,32 +35,43 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
 
 	@Override
 	public boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn) {
+		assertTypeExpectation(fileAppendTxn.hasFileAppend());
 		return opPolicies.check(fileAppendTxn, FileAppend) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn) {
+		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
 		return opPolicies.check(fileUpdateTxn, FileUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn) {
+		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
 		return opPolicies.check(fileUpdateTxn, FileUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
+		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
 		return opPolicies.check(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
+		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
 		final var isAuthorized = opPolicies.check(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
 		if (!isAuthorized) {
 			return false;
 		} else {
 			final var targetNum = cryptoUpdateTxn.getCryptoUpdateAccount().getAccountIDToUpdate().getAccountNum();
 			return targetNum != accountNums.treasury();
+		}
+	}
+
+	private void assertTypeExpectation(boolean isExpectedType) {
+		if (!isExpectedType) {
+			throw new IllegalArgumentException("Given transaction is not of the expected type");
 		}
 	}
 }

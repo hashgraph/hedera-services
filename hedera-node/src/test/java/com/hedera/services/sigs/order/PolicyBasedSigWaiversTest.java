@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PolicyBasedSigWaiversTest {
@@ -146,6 +147,21 @@ class PolicyBasedSigWaiversTest {
 
 		// expect:
 		assertFalse(subject.isNewAccountKeyWaived(txn));
+	}
+
+	@Test
+	void allMethodsRequireExpectedTxnType() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.isAppendFileWaclWaived(TransactionBody.getDefaultInstance()));
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.isTargetAccountKeyWaived(TransactionBody.getDefaultInstance()));
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.isNewAccountKeyWaived(TransactionBody.getDefaultInstance()));
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.isTargetFileWaclWaived(TransactionBody.getDefaultInstance()));
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.isNewFileWaclWaived(TransactionBody.getDefaultInstance()));
 	}
 
 	private final AccountID treasury = IdUtils.asAccount("0.0.2");
