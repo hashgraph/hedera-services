@@ -47,6 +47,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfIntProp;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfLongProp;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -90,29 +94,21 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final long SECS_TO_RUN = 4050;
+	private final IntFunction<String> treasuryNameFn = i -> "treasury" + i;
+	private final IntFunction<String> uniqueTokenNameFn = i -> "uniqueToken" + i;
 
-	private static final int MINT_TPS = 250;
-	private static final int NUM_UNIQ_TOKENS = 10_000;
-	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
-	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
-	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
-	private static final int NEW_NFTS_PER_MINT_OP = 10;
-	private static final int UNIQ_TOKENS_PER_TREASURY = 500;
-	private static final int METADATA_SIZE = 100;
-
-	final IntFunction<String> treasuryNameFn = i -> "treasury" + i;
-	final IntFunction<String> uniqueTokenNameFn = i -> "uniqueToken" + i;
-	private AtomicLong duration = new AtomicLong(SECS_TO_RUN);
-	private AtomicInteger maxOpsPerSec = new AtomicInteger(MINT_TPS);
-	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-
-	private static final AtomicReference<String> firstCreatedId = new AtomicReference<>(null);
-	private static final AtomicReference<String> lastCreatedId = new AtomicReference<>(null);
+	private final AtomicLong duration = new AtomicLong(SECS_TO_RUN);
+	private final AtomicLong prepDuration = new AtomicLong(PREP_SECS_TO_RUN);
+	private final AtomicInteger maxOpsPerSec = new AtomicInteger(MINT_TPS);
+	private final AtomicInteger maxPrepOpsPerSecs = new AtomicInteger(CRYPTO_CREATE_TPS);
+	private final AtomicInteger numXferPrepAccounts = new AtomicInteger(NUM_PREPPED_XFER_ACCOUNTS);
+	private final AtomicInteger numTokens = new AtomicInteger(NUM_UNIQ_TOKENS);
+	private final AtomicInteger numNftsPerToken = new AtomicInteger(NFTS_PER_UNIQ_TOKEN);
+	private final AtomicInteger numNftsPerMintOp = new AtomicInteger(NEW_NFTS_PER_MINT_OP);
+	private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 
 	public static void main(String... args) {
-		UniqueTokenStateSetup suite = new UniqueTokenStateSetup();
-		suite.runSuiteSync();
+		new UniqueTokenStateSetup().runSuiteSync();
 		System.out.println("Created unique tokens from " + firstCreatedId + " + to " + lastCreatedId);
 	}
 
@@ -126,11 +122,57 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 
 	private HapiApiSpec createNfts() {
 		return defaultHapiSpec("CreateNfts")
-				.given().when().then(
+				.given(
+						stdMgmtOf(duration, unit, maxOpsPerSec, "mint_"),
+						mgmtOfIntProp(numTokens, "mint_numTokens"),
+						mgmtOfIntProp(numNftsPerToken, "mint_numNftsPerToken"),
+						mgmtOfIntProp(numNftsPerMintOp, "mint_numNftsPerMintOp"),
+						mgmtOfIntProp(maxPrepOpsPerSecs, "mint_maxPrepOpsPerSecs"),
+						mgmtOfIntProp(numXferPrepAccounts, "mint_numXferPrepAccounts"),
+						mgmtOfLongProp(prepDuration, "mint_prepDuration"),
+						withOpContext((spec, opLog) -> {
+							opLog.info("Resolved configuration:\n  " +
+									"mint_prepDuration={}\n  " +
+									"mint_numXferPrepAccounts={}\n  " +
+									"mint_maxPrepOpsPerSecs={}\n  " +
+									"mint_duration={}\n  " +
+									"mint_maxOpsPerSec={}\n  " +
+									"mint_numTokens={}\n  " +
+									"mint_numNftsPerToken={}\n  " +
+									"mint_numNftsPerMintOp={}",
+									prepDuration.get(), numXferPrepAccounts.get(), maxPrepOpsPerSecs.get(),
+									duration.get(), maxPrepOpsPerSecs.get(), numTokens.get(),
+									numNftsPerToken.get(), numNftsPerMintOp.get());
+						})
+				).when(
+						runWithProvider(xferPrepAccountFactory())
+								.lasting(prepDuration::get, unit::get)
+								.maxOpsPerSec(maxPrepOpsPerSecs::get)
+				).then(
 						runWithProvider(nftFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
 				);
+	}
+
+	private Function<HapiApiSpec, OpProvider> xferPrepAccountFactory() {
+		final AtomicInteger xferAccountsCreated = new AtomicInteger(0);
+
+		return spec -> (OpProvider) () -> {
+			if (xferAccountsCreated.get() >= numXferPrepAccounts.get()) {
+				return Optional.empty();
+			}
+			final var op = cryptoCreate("xferPrep" + xferAccountsCreated.getAndIncrement())
+					.payingWith(GENESIS)
+					.key(GENESIS)
+					.balance(10 * ONE_HUNDRED_HBARS)
+					.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+					.hasKnownStatusFrom(SUCCESS, UNKNOWN, TRANSACTION_EXPIRED)
+					.noLogging()
+					.rememberingNothing()
+					.deferStatusResolution();
+			return Optional.of(op);
+		};
 	}
 
 	private Function<HapiApiSpec, OpProvider> nftFactory() {
@@ -142,9 +184,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
-				final var numTreasuries = NUM_UNIQ_TOKENS / UNIQ_TOKENS_PER_TREASURY
-						+ Math.min(1, NUM_UNIQ_TOKENS % UNIQ_TOKENS_PER_TREASURY);
-
+				final var numTreasuries = numTokens.get() / + Math.min(1, numTokens.get() % UNIQ_TOKENS_PER_TREASURY);
 				final List<HapiSpecOperation> inits = new ArrayList<>();
 				inits.add(
 						inParallel(IntStream.range(0, numTreasuries)
@@ -154,7 +194,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 										.noLogging()
 										.key(GENESIS)
 										.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-										.hasKnownStatusFrom(SUCCESS,UNKNOWN, TRANSACTION_EXPIRED)
+										.hasKnownStatusFrom(SUCCESS, UNKNOWN, TRANSACTION_EXPIRED)
 										.deferStatusResolution())
 								.toArray(HapiSpecOperation[]::new)));
 				inits.add(sleepFor(5_000L));
@@ -170,29 +210,30 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 				}
 
 				final var currentToken = currentUniqueToken.get();
-				if (nftsMintedForCurrentUniqueToken.get() < NFTS_PER_UNIQ_TOKEN) {
+				if (nftsMintedForCurrentUniqueToken.get() < numNftsPerToken.get()) {
 					final List<ByteString> allMeta = new ArrayList<>();
-					final int noMoreThan = NFTS_PER_UNIQ_TOKEN - nftsMintedForCurrentUniqueToken.get();
-					for (int i = 0, n = Math.min(noMoreThan, NEW_NFTS_PER_MINT_OP); i < n; i++) {
+					final int noMoreThan = numNftsPerToken.get() - nftsMintedForCurrentUniqueToken.get();
+					for (int i = 0, n = Math.min(noMoreThan, numNftsPerMintOp.get()); i < n; i++) {
 						final var nextSerialNo = nftsMintedForCurrentUniqueToken.incrementAndGet();
 						allMeta.add(metadataFor(currentToken, nextSerialNo));
 					}
 					final var op = mintToken(currentToken, allMeta)
 							.payingWith(GENESIS)
+							.rememberingNothing()
 							.deferStatusResolution()
 							.fee(ONE_HBAR)
 							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-							.hasKnownStatusFrom(SUCCESS,UNKNOWN, OK, TRANSACTION_EXPIRED)
+							.hasKnownStatusFrom(SUCCESS, UNKNOWN, OK, TRANSACTION_EXPIRED)
 							.noLogging();
 					return Optional.of(op);
 				} else {
 					nftsMintedForCurrentUniqueToken.set(0);
 					final var nextUniqTokenNo = uniqueTokensCreated.incrementAndGet();
 					currentUniqueToken.set(uniqueTokenNameFn.apply(nextUniqTokenNo));
-					if (nextUniqTokenNo >= NUM_UNIQ_TOKENS) {
+					if (nextUniqTokenNo >= numTokens.get()) {
 						System.out.println("Done creating " + nextUniqTokenNo
-								+ " unique tokens w/ at least "
-								+ (NFTS_PER_UNIQ_TOKEN * nextUniqTokenNo) + " NFTs");
+								+ " unique tokens w/ approximately "
+								+ (numNftsPerToken.get() * nextUniqTokenNo) + " NFTs");
 						done.set(true);
 					}
 					return Optional.empty();
@@ -204,8 +245,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	private List<HapiSpecOperation> burstedUniqCreations(int perBurst, int numTreasuries, long pauseMs) {
 		final var createdSoFar = new AtomicInteger(0);
 		List<HapiSpecOperation> ans = new ArrayList<>();
-		while (createdSoFar.get() < NUM_UNIQ_TOKENS) {
-			var thisBurst = Math.min(NUM_UNIQ_TOKENS - createdSoFar.get(), perBurst);
+		while (createdSoFar.get() < numTokens.get()) {
+			var thisBurst = Math.min(numTokens.get() - createdSoFar.get(), perBurst);
 			final var burst = inParallel(IntStream.range(0, thisBurst)
 					.mapToObj(i -> tokenCreate(uniqueTokenNameFn.apply(i + createdSoFar.get()))
 							.payingWith(GENESIS)
@@ -216,12 +257,13 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.initialSupply(0)
 							.supplyKey(GENESIS)
 							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-							.hasKnownStatusFrom(SUCCESS,UNKNOWN, TRANSACTION_EXPIRED)
+							.hasKnownStatusFrom(SUCCESS, UNKNOWN, TRANSACTION_EXPIRED)
 							.treasury(treasuryNameFn.apply((i + createdSoFar.get()) % numTreasuries))
 							.exposingCreatedIdTo(newId -> {
 								final var newN = numFrom(newId);
 								if (newN < numFrom(firstCreatedId.get())) {
 									firstCreatedId.set(newId);
+									lastCreatedId.set(newId);
 								} else if (lastCreatedId.get() == null || newN > numFrom(lastCreatedId.get())) {
 									lastCreatedId.set(newId);
 								}
@@ -257,4 +299,20 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
+
+	private static final AtomicReference<String> firstCreatedId = new AtomicReference<>(null);
+	private static final AtomicReference<String> lastCreatedId = new AtomicReference<>(null);
+
+	private static final long SECS_TO_RUN = 4050;
+	private static final long PREP_SECS_TO_RUN = 25;
+	private static final int MINT_TPS = 250;
+	private static final int CRYPTO_CREATE_TPS = 1000;
+	private static final int NUM_PREPPED_XFER_ACCOUNTS = 10_000;
+	private static final int NUM_UNIQ_TOKENS = 10_000;
+	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
+	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
+	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
+	private static final int NEW_NFTS_PER_MINT_OP = 10;
+	private static final int UNIQ_TOKENS_PER_TREASURY = 500;
+	private static final int METADATA_SIZE = 100;
 }

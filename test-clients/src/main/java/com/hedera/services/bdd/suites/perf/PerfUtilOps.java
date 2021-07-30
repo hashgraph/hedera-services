@@ -37,21 +37,51 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static java.util.Map.entry;
 
 public class PerfUtilOps {
+	public static HapiSpecOperation mgmtOfIntProp(AtomicInteger value, String prop) {
+		return withOpContext((spec, opLog) -> {
+			var ciProps = spec.setup().ciPropertiesMap();
+			if (ciProps.has(prop)) {
+				value.set(ciProps.getInteger(prop));
+			}
+		});
+	}
+
+	public static HapiSpecOperation mgmtOfLongProp(AtomicLong value, String prop) {
+		return withOpContext((spec, opLog) -> {
+			var ciProps = spec.setup().ciPropertiesMap();
+			if (ciProps.has(prop)) {
+				value.set(ciProps.getLong(prop));
+			}
+		});
+	}
+
 	public static HapiSpecOperation stdMgmtOf(
 			AtomicLong duration,
 			AtomicReference<TimeUnit> unit,
 			AtomicInteger maxOpsPerSec
 	) {
+		return stdMgmtOf(duration, unit, maxOpsPerSec, "");
+	}
+
+	public static HapiSpecOperation stdMgmtOf(
+			AtomicLong duration,
+			AtomicReference<TimeUnit> unit,
+			AtomicInteger maxOpsPerSec,
+			String ciPropPrefix
+	) {
 		return withOpContext((spec, opLog) -> {
+			final var durationProp = ciPropPrefix + "duration";
 			var ciProps = spec.setup().ciPropertiesMap();
-			if (ciProps.has("duration")) {
-				duration.set(ciProps.getLong("duration"));
+			if (ciProps.has(durationProp)) {
+				duration.set(ciProps.getLong(durationProp));
 			}
-			if (ciProps.has("unit")) {
-				unit.set(ciProps.getTimeUnit("unit"));
+			final var unitProp = ciPropPrefix + "unit";
+			if (ciProps.has(unitProp)) {
+				unit.set(ciProps.getTimeUnit(unitProp));
 			}
-			if (ciProps.has("maxOpsPerSec")) {
-				maxOpsPerSec.set(ciProps.getInteger("maxOpsPerSec"));
+			final var opsPerSecProp = ciPropPrefix + "maxOpsPerSec";
+			if (ciProps.has(opsPerSecProp)) {
+				maxOpsPerSec.set(ciProps.getInteger(opsPerSecProp));
 			}
 		});
 	}
