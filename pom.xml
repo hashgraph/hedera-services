@@ -149,7 +149,7 @@
     <maven-resources.version>3.2.0</maven-resources.version>
     <maven-license.version>2.0.0</maven-license.version>
     <maven-compiler.version>3.8.1</maven-compiler.version>
-    <maven-surefire.version>2.22.2</maven-surefire.version>
+    <maven-surefire.version>3.0.0-M5</maven-surefire.version>
     <maven-dependency.version>3.1.1</maven-dependency.version>
     <maven-versions.version>2.8.1</maven-versions.version>
     <maven-javadoc.version>3.3.0</maven-javadoc.version>
@@ -391,11 +391,6 @@ ${git.signoff}
         <version>${netty.version}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>${commons-io.version}</version>
       </dependency>
       <dependency>
         <groupId>com.swirlds</groupId>
