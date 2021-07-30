@@ -27,8 +27,11 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.Map;
-import java.util.function.Function;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
@@ -46,29 +49,20 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 	@Override
 	public ResponseCodeEnum checkUsing(final MerkleAccount account, final Map<AccountProperty, Object> changeSet) {
-
-		Function<AccountProperty, Object> getter = prop -> {
-			if (changeSet != null && changeSet.containsKey(prop)) {
-				return changeSet.get(prop);
-			} else {
-				return prop.getter().apply(account);
-			}
-		};
-
-		if ((boolean) getter.apply(AccountProperty.IS_SMART_CONTRACT)) {
+		if ((boolean) getEffective(IS_SMART_CONTRACT, account, changeSet)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 		}
 
-		if ((boolean) getter.apply(AccountProperty.IS_DELETED)) {
+		if ((boolean) getEffective(IS_DELETED, account, changeSet)) {
 			return ResponseCodeEnum.ACCOUNT_DELETED;
 		}
 
-		final var balance = (long) getter.apply(AccountProperty.BALANCE);
+		final var balance = (long) getEffective(BALANCE, account, changeSet);
 
 		if (
 				dynamicProperties.autoRenewEnabled() &&
 				balance == 0L &&
-				!validator.isAfterConsensusSecond((long) getter.apply(AccountProperty.EXPIRY))
+				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, changeSet))
 		) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
@@ -85,5 +79,22 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 	public MerkleAccountScopedCheck setBalanceChange(final BalanceChange balanceChange) {
 		this.balanceChange = balanceChange;
 		return this;
+	}
+
+	Object getEffective(AccountProperty prop, MerkleAccount account, Map<AccountProperty, Object> changeSet) {
+		if (changeSet != null && changeSet.containsKey(prop)) {
+			return changeSet.get(prop);
+		}
+		switch (prop) {
+			case IS_SMART_CONTRACT:
+				return account.isSmartContract();
+			case IS_DELETED:
+				return account.isDeleted();
+			case BALANCE:
+				return account.getBalance();
+			case EXPIRY:
+				return account.getExpiry();
+		}
+		throw new IllegalArgumentException("Property " + prop + " cannot be validated in scoped check");
 	}
 }

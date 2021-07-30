@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -40,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -128,4 +130,10 @@ class MerkleAccountScopedCheckTest {
 		assertEquals(OK, subject.checkUsing(account, changeSet));
 	}
 
+	@Test
+	void throwsAsExpected() {
+		var iae = assertThrows(IllegalArgumentException.class,
+				() -> subject.getEffective(AUTO_RENEW_PERIOD, account, changeSet));
+		assertEquals("Property "+ AUTO_RENEW_PERIOD + " cannot be validated in scoped check", iae.getMessage());
+	}
 }
