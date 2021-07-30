@@ -24,6 +24,8 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 
 public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 	CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO {
@@ -72,7 +74,7 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoUpdate(SYS_ACCOUNT_ID)
-							.newAccountKt(SYS_ACCOUNT_KT)
+							.newAccountKt(NEW_ACCOUNT_KT)
 							.get()
 			));
 		}
@@ -83,5 +85,34 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 					newSignedCryptoUpdate(SYS_ACCOUNT_ID).get()
 			));
 		}
-	}
+	},
+	CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(SYS_ACCOUNT_ID)
+							.payer(MASTER_PAYER_ID)
+							.newAccountKt(NEW_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(TREASURY_PAYER_ID)
+							.payer(TREASURY_PAYER_ID)
+							.get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(TREASURY_PAYER_ID)
+							.payer(TREASURY_PAYER_ID)
+							.newAccountKt(NEW_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
 }
