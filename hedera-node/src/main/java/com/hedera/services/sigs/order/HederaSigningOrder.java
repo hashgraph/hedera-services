@@ -120,51 +120,42 @@ public class HederaSigningOrder {
 	 * role in the given gRPC transaction. (Which could also include the payer crypto account.)
 	 *
 	 * @param txn
-	 * 		the gRPC transaction of interest.
+	 * 		the gRPC transaction of interest
 	 * @param factory
-	 * 		the result factory to use to summarize the listing attempt.
+	 * 		the result factory to use to summarize the listing attempt
 	 * @param <T>
-	 * 		the type of error report created by the factory.
-	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
+	 * 		the type of error report created by the factory
+	 * @return a {@link SigningOrderResult} summarizing the listing attempt
 	 */
 	public <T> SigningOrderResult<T> keysForOtherParties(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		final var cryptoOrder = forCrypto(txn, factory);
 		if (cryptoOrder != null) {
 			return cryptoOrder;
 		}
-
 		final var consensusOrder = forConsensus(txn, factory);
 		if (consensusOrder != null) {
 			return consensusOrder;
 		}
-
 		final var tokenOrder = forToken(txn, factory);
 		if (tokenOrder != null) {
 			return tokenOrder;
 		}
-
 		final var scheduleOrder = forSchedule(txn, factory);
 		if (scheduleOrder != null) {
 			return scheduleOrder;
 		}
-
 		var fileOrder = forFile(txn, factory);
 		if (fileOrder != null) {
 			return fileOrder;
 		}
-
 		final var contractOrder = forContract(txn, factory);
 		if (contractOrder != null) {
 			return contractOrder;
 		}
-
 		return SigningOrderResult.noKnownKeys();
 	}
 
-	private <T> SigningOrderResult<T> orderForPayer(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> orderForPayer(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		var payer = txn.getTransactionID().getAccountID();
 		var result = sigMetaLookup.accountSigningMetaFor(payer);
 		if (result.succeeded()) {
@@ -190,10 +181,7 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private <T> SigningOrderResult<T> forCrypto(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forCrypto(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasCryptoCreateAccount()) {
 			return cryptoCreate(txn.getCryptoCreateAccount(), factory);
 		} else if (txn.hasCryptoTransfer()) {
@@ -265,10 +253,7 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private <T> SigningOrderResult<T> forConsensus(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forConsensus(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasConsensusCreateTopic()) {
 			return topicCreate(txn.getTransactionID(), txn.getConsensusCreateTopic(), factory);
 		} else if (txn.hasConsensusSubmitMessage()) {
