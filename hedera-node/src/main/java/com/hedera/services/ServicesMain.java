@@ -153,8 +153,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("System files rationalized.");
 		createSystemAccountsIfNeeded();
 		log.info("System accounts initialized.");
-		migrateStateIfNeeded();
-		log.info("Migrations complete.");
 		validateLedgerState();
 		log.info("Ledger state ok.");
 		configurePlatform();
@@ -241,10 +239,6 @@ public class ServicesMain implements SwirldMain {
 
 	private void configurePlatform() {
 		ctx.platform().setSleepAfterSync(0L);
-	}
-
-	private void migrateStateIfNeeded() {
-		ctx.stateMigrations().runAllFor(ctx);
 	}
 
 	private void validateLedgerState() {

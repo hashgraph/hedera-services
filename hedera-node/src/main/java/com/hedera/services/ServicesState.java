@@ -57,7 +57,6 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -71,6 +70,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
+import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
@@ -82,10 +82,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
+	/* The version the platform deserialized from a saved state to create this instance, if any */
 	private int deserializedVersion = -1;
-
-	/* All of the state that is not itself hashed or serialized,
-	but only derived from the hashed and serialized state. */
+	/* All of the state that is not itself hashed or serialized, but only derived from such state. */
 	private StateMetadata metadata;
 
 	public ServicesState() {
@@ -93,17 +92,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private ServicesState(ServicesState that) {
-		/* Copies the Merkle route from this instance to the new one */
+		/* Copy the Merkle route from the source instance */
 		super(that);
-
-		/* Copy all non-null Merkle children from the source state */
+		/* Copy the non-null Merkle children from the source */
 		for (int childIndex = 0, n = getNumberOfChildren(); childIndex < n; childIndex++) {
 			final var childToCopy = that.getChild(childIndex);
 			if (childToCopy != null) {
 				setChild(childIndex, childToCopy.copy());
 			}
 		}
-
+		/* Copy the non-Merkle state from the source */
+		this.deserializedVersion = that.deserializedVersion;
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
 	}
 
@@ -162,18 +161,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion != StateVersions.CURRENT_VERSION) {
-			/* First swap the address book and unique tokens */
-			final var mutableAddressBook = getChild(LegacyStateChildIndices.ADDRESS_BOOK).copy();
-			MerkleCopy.copyTreeToLocation(
-					this, StateChildIndices.UNIQUE_TOKENS, getChild(LegacyStateChildIndices.UNIQUE_TOKENS));
-			setChild(StateChildIndices.ADDRESS_BOOK, mutableAddressBook);
-
-			/* Second swap the network context and tokens */
-			final var mutableNetworkContext = networkCtx().copy();
-			MerkleCopy.copyTreeToLocation(
-					this, StateChildIndices.TOKENS, getChild(LegacyStateChildIndices.TOKENS));
-			setChild(StateChildIndices.NETWORK_CTX, mutableNetworkContext);
+		if (deserializedVersion == StateVersions.RELEASE_0160_VERSION) {
+			moveLargeFcmsToBinaryRoutePositions(this);
 		}
 	}
 
@@ -196,6 +185,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Note this overrides the address book from the saved state if it is present. */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
+		diskFs().checkHashesAgainstDiskContents();
 
 		final var selfId = platform.getSelfId();
 		ServicesContext ctx;

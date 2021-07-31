@@ -410,4 +410,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
 		return usageSnapshots;
 	}
+
+	public void setMidnightRates(ExchangeRates midnightRates) {
+		this.midnightRates = midnightRates;
+	}
+
+	public void setSeqNo(SequenceNumber seqNo) {
+		this.seqNo = seqNo;
+	}
 }

@@ -243,8 +243,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.migration.StateMigrations;
-import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -603,14 +601,12 @@ public class ServicesContext {
 
 	/* Context-free infrastructure. */
 	private static final Pause pause;
-	private static final StateMigrations stateMigrations;
 	private static final AccountsExporter accountsExporter;
 	private static final LegacyEd25519KeyReader b64KeyReader;
 
 	static {
 		pause = SleepingPause.SLEEPING_PAUSE;
 		b64KeyReader = new LegacyEd25519KeyReader();
-		stateMigrations = new StdStateMigrations(SleepingPause.SLEEPING_PAUSE);
 		accountsExporter = new ToStringAccountsExporter();
 	}
 
@@ -2191,10 +2187,6 @@ public class ServicesContext {
 
 	public Pause pause() {
 		return pause;
-	}
-
-	public StateMigrations stateMigrations() {
-		return stateMigrations;
 	}
 
 	public AccountsExporter accountsExporter() {

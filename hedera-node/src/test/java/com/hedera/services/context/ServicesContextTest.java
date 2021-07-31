@@ -119,8 +119,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.migration.StdStateMigrations;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
@@ -638,7 +636,6 @@ class ServicesContextTest {
 		assertThat(ctx.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(ctx.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
 		assertThat(ctx.exchange(), instanceOf(AwareHbarCentExchange.class));
-		assertThat(ctx.stateMigrations(), instanceOf(StdStateMigrations.class));
 		assertThat(ctx.opCounters(), instanceOf(HapiOpCounters.class));
 		assertThat(ctx.runningAvgs(), instanceOf(MiscRunningAvgs.class));
 		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
