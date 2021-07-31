@@ -147,7 +147,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 				).when(
 						runWithProvider(xferPrepAccountFactory())
 								.lasting(prepDuration::get, unit::get)
-								.maxOpsPerSec(maxPrepOpsPerSecs::get)
+								.maxOpsPerSec(maxPrepOpsPerSecs::get),
+						sleepFor(20_000L)
 				).then(
 						runWithProvider(nftFactory())
 								.lasting(duration::get, unit::get)

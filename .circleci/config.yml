@@ -2250,6 +2250,7 @@ workflows:
             filters:
               branches:
                 ignore:
+                  - perfnet-0170alpha1Sdk
                   - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
