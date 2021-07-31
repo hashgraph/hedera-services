@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfIntProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfLongProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -200,7 +201,9 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 								.toArray(HapiSpecOperation[]::new)));
 				inits.add(sleepFor(5_000L));
 				inits.addAll(burstedUniqCreations(
-						UNIQ_TOKENS_BURST_SIZE, numTreasuries, UNIQ_TOKENS_POST_BURST_PAUSE_MS));
+						UNIQ_TOKENS_BURST_SIZE,
+						numTreasuries,
+						UNIQ_TOKENS_POST_BURST_PAUSE_MS));
 				return inits;
 			}
 
@@ -224,7 +227,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.deferStatusResolution()
 							.fee(ONE_HBAR)
 							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-							.hasKnownStatusFrom(SUCCESS, UNKNOWN, OK, TRANSACTION_EXPIRED)
+							.hasKnownStatusFrom(SUCCESS, UNKNOWN, OK, TRANSACTION_EXPIRED, INVALID_TOKEN_ID)
 							.noLogging();
 					return Optional.of(op);
 				} else {
@@ -311,7 +314,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final int NUM_PREPPED_XFER_ACCOUNTS = 10_000;
 	private static final int NUM_UNIQ_TOKENS = 10_000;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
-	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
+	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 10_000;
 	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
 	private static final int NEW_NFTS_PER_MINT_OP = 10;
 	private static final int UNIQ_TOKENS_PER_TREASURY = 500;
