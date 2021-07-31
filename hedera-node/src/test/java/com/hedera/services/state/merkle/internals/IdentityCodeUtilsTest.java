@@ -22,7 +22,12 @@ package com.hedera.services.state.merkle.internals;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.nanosFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.secondsFrom;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,5 +63,25 @@ class IdentityCodeUtilsTest {
 	@Test
 	void isUninstantiable() {
 		assertThrows(IllegalStateException.class, IdentityCodeUtils::new);
+	}
+
+	@Test
+	void timePackingWorks() {
+		// given:
+		final var distantFuture = Instant.ofEpochSecond(MAX_NUM_ALLOWED, 999_999_999);
+
+		// when:
+		final var packed = packedTime(distantFuture.getEpochSecond(), distantFuture.getNano());
+		// and:
+		final var unpacked = Instant.ofEpochSecond(secondsFrom(packed), nanosFrom(packed));
+
+		// then:
+		assertEquals(distantFuture, unpacked);
+	}
+
+	@Test
+	void cantPackTooFarFuture() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
 	}
 }
