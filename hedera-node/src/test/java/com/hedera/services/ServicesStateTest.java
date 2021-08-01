@@ -58,9 +58,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMInternalNode;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import com.swirlds.fcmap.internal.FCMTree;
+import com.swirlds.merkletree.MerklePair;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -427,9 +425,7 @@ class ServicesStateTest {
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
 		// and:
 		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(FCMTree.class, FCMTree::new));
-		registerConstructable(new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-		registerConstructable(new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
+		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
 		// and:
 		nfts.put(nftKey, new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT));
 		tokenRels.put(tokenRelsKey, new MerkleTokenRelStatus(1_234L, true, false));
