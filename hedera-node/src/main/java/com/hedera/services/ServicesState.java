@@ -239,14 +239,16 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- Archivable --- */
 	@Override
 	public void archive() {
-		onRelease();
+		if (metadata != null) {
+			metadata.archive();
+		}
 	}
 
 	/* --- MerkleNode --- */
 	@Override
 	protected void onRelease() {
 		if (metadata != null) {
-			metadata.archive();
+			metadata.release();
 		}
 	}
 
