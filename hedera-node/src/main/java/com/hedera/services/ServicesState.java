@@ -25,14 +25,9 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.init.InitializationFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.state.org.LegacyStateChildIndices;
-import com.hedera.services.state.org.StateChildIndices;
-import com.hedera.services.state.org.StateMetadata;
-import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -47,11 +42,16 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.org.LegacyStateChildIndices;
+import com.hedera.services.state.org.StateChildIndices;
+import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -91,7 +91,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static BiConsumer<ServicesState, ServicesContext> contextInitializer = InitializationFlow::accept;
 
 	interface ExpansionHelper {
-		SignatureStatus expandIn(
+		ResponseCodeEnum expandIn(
 				PlatformTxnAccessor txnAccessor,
 				HederaSigningOrder keyOrderer,
 				PubKeyToSigBytes pkToSigFn);

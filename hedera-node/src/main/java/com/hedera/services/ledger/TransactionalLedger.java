@@ -25,6 +25,7 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -206,6 +207,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		deadEntities.add(id);
 		perishedKeys.add(id);
 	}
+
+	public ResponseCodeEnum validate(K id, LedgerCheck<A, P> ledgerCheck) {
+		if(!exists(id)) {
+			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
+		}
+		var changeSet = changes.get(id);
+		var getterTarget = toGetterTarget(id);
+		return ledgerCheck.checkUsing(getterTarget, changeSet);
+	}
+
+
 
 	boolean isInTransaction() {
 		return isInTransaction;

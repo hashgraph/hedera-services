@@ -23,8 +23,8 @@ package com.hedera.services.sigs.verification;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,7 +60,7 @@ public class PrecheckKeyReqsTest {
 	private final TransactionBody txn = TransactionBody.getDefaultInstance();
 	private final Predicate<TransactionBody> FOR_QUERY_PAYMENT = ignore -> true;
 	private final Predicate<TransactionBody> FOR_NON_QUERY_PAYMENT = ignore -> false;
-	private final SigStatusOrderResultFactory factory = new SigStatusOrderResultFactory(false);
+	private final CodeOrderResultFactory factory = CODE_ORDER_RESULT_FACTORY;
 
 	@BeforeEach
 	private void setup() {
@@ -70,9 +70,9 @@ public class PrecheckKeyReqsTest {
 
 	@Test
 	void throwsGenericExceptionAsExpected() {
-		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
-		given(keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(factory.forGeneralError(txnId));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
@@ -82,9 +82,9 @@ public class PrecheckKeyReqsTest {
 
 	@Test
 	void throwsInvalidAccountAsExpected() {
-		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
-		given(keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(factory.forMissingAccount(invalidAccount, txnId));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
@@ -94,7 +94,7 @@ public class PrecheckKeyReqsTest {
 
 	@Test
 	void throwsInvalidPayerAccountAsExpected() {
-		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(factory.forInvalidAccount(invalidAccount, txnId));
 		givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
 
@@ -104,7 +104,7 @@ public class PrecheckKeyReqsTest {
 
 	@Test
 	void usesStdKeyOrderForNonQueryPayment() throws Exception {
-		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
 
@@ -112,7 +112,7 @@ public class PrecheckKeyReqsTest {
 		keys = subject.getRequiredKeys(txn);
 
 		// then:
-		verify(keyOrder).keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY);
+		verify(keyOrder).keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrder);
 		verifyNoInteractions(keyOrderModuloRetry);
 		assertEquals(keys, PAYER_KEYS);
@@ -120,9 +120,9 @@ public class PrecheckKeyReqsTest {
 
 	@Test
 	void usesBothOrderForQueryPayments() throws Exception {
-		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
-		given(keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY))
+		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(OTHER_KEYS));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
@@ -130,9 +130,9 @@ public class PrecheckKeyReqsTest {
 		keys = subject.getRequiredKeys(txn);
 
 		// then:
-		verify(keyOrder).keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY);
+		verify(keyOrder).keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrder);
-		verify(keyOrderModuloRetry).keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY);
+		verify(keyOrderModuloRetry).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrderModuloRetry);
 		assertEquals(keys, ALL_KEYS);
 	}

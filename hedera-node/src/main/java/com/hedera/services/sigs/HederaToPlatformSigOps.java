@@ -21,15 +21,14 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -64,9 +63,6 @@ import com.swirlds.common.crypto.VerificationStatus;
  * @see JKey
  */
 public class HederaToPlatformSigOps {
-	public final static SigStatusOrderResultFactory PRE_HANDLE_SUMMARY_FACTORY =
-			new SigStatusOrderResultFactory(false);
-
 	/**
 	 * Try to set the {@link Signature} list on the accessible platform txn to exactly
 	 * the base-level signatures of the signing hierarchy for each Hedera
@@ -76,7 +72,7 @@ public class HederaToPlatformSigOps {
 	 * <p>Exceptional conditions are treated as follows:
 	 * <ul>
 	 *     <li>If an error occurs while determining the Hedera signing keys,
-	 *     abort processing and return a {@link SignatureStatus} representing this
+	 *     abort processing and return a {@link ResponseCodeEnum} representing this
 	 *     error.</li>
 	 *     <li>If an error occurs while creating the platform {@link Signature}
 	 *     objects for either the payer or the entities in non-payer roles, ignore
@@ -88,7 +84,7 @@ public class HederaToPlatformSigOps {
 	 * @param pkToSigFn source of crypto sigs for the simple keys in the Hedera key leaves
 	 * @return a representation of the outcome
 	 */
-	public static SignatureStatus expandIn(
+	public static ResponseCodeEnum expandIn(
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
 			PubKeyToSigBytes pkToSigFn
@@ -109,11 +105,11 @@ public class HederaToPlatformSigOps {
 	 * <p>Exceptional conditions are treated as follows:
 	 * <ul>
 	 *     <li>If an error occurs while determining the Hedera signing keys,
-	 *     abort processing and return a {@link SignatureStatus} representing this
+	 *     abort processing and return a {@link ResponseCodeEnum} representing this
 	 *     error.</li>
 	 *     <li>If an error occurs while creating the platform {@link Signature}
 	 *     objects for either the payer or the entities in non-payer roles, abort
-	 *     processing and return a {@link SignatureStatus} representing this error.</li>
+	 *     processing and return a {@link ResponseCodeEnum} representing this error.</li>
 	 * </ul>
 	 *
 	 * @param txnAccessor the accessor for the platform txn
@@ -121,22 +117,19 @@ public class HederaToPlatformSigOps {
 	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn
 	 * @param pkToSigFnProvider source of crypto sigs for the simple keys in the Hedera key leaves
 	 * @param sigFactoryCreator source of Platform sigs scoped to the active txn
-	 * @return a representation of the outcome.
+	 * @return a representation of the outcome
 	 */
-	public static SignatureStatus rationalizeIn(
+	public static Rationalization rationalizeIn(
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
 			PubKeyToSigBytes pkToSigFnProvider,
 			TxnScopedPlatformSigFactory sigFactoryCreator
 	) {
-		return new Rationalization(
-				txnAccessor,
-				syncVerifier,
-				keyOrderer,
-				pkToSigFnProvider,
-				sigFactoryCreator
-		).execute();
+		final var rationalization = new Rationalization(
+				txnAccessor, syncVerifier, keyOrderer, pkToSigFnProvider, sigFactoryCreator);
+		rationalization.execute();
+		return rationalization;
 	}
 
 }

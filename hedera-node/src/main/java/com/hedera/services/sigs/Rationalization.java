@@ -21,11 +21,9 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -39,16 +37,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
-import static com.hedera.services.sigs.utils.StatusUtils.successFor;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
 
 public class Rationalization {
-	public final static SigStatusOrderResultFactory IN_HANDLE_SUMMARY_FACTORY =
-			new SigStatusOrderResultFactory(true);
-
 	private final TxnAccessor txnAccessor;
 	private final SyncVerifier syncVerifier;
 	private final PubKeyToSigBytes pkToSigFn;
@@ -56,9 +51,11 @@ public class Rationalization {
 	private final TxnScopedPlatformSigFactory sigFactory;
 
 	private JKey reqPayerSig = null;
+	private boolean verifiedSync = false;
 	private List<JKey> reqOthersSigs = null;
+	private ResponseCodeEnum finalStatus;
 	private List<TransactionSignature> txnSigs;
-	private SigningOrderResult<SignatureStatus> lastOrderResult;
+	private SigningOrderResult<ResponseCodeEnum> lastOrderResult;
 
 	public Rationalization(
 			TxnAccessor txnAccessor,
@@ -76,20 +73,28 @@ public class Rationalization {
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
 	}
 
-	public SignatureStatus execute() {
-		var verifiedSync = false;
-		SignatureStatus otherFailure = null;
+	public ResponseCodeEnum finalStatus() {
+		return finalStatus;
+	}
+
+	public boolean usedSyncVerification() {
+		return verifiedSync;
+	}
+
+	public void execute() {
+		ResponseCodeEnum otherFailure = null;
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
 		final var payerStatus = expandIn(realPayerSigs, keyOrderer::keysForPayer);
-		if (!SUCCESS.equals(payerStatus.getStatusCode())) {
+		if (payerStatus != OK) {
 			txnAccessor.setSigMeta(RationalizedSigMeta.noneAvailable());
-			return payerStatus;
+			finalStatus = payerStatus;
+			return;
 		}
 		reqPayerSig = lastOrderResult.getPayerKey();
 
 		final var otherPartiesStatus = expandIn(realOtherPartySigs, keyOrderer::keysForOtherParties);
-		if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
+		if (otherPartiesStatus != OK) {
 			otherFailure = otherPartiesStatus;
 		} else {
 			reqOthersSigs = lastOrderResult.getOrderedKeys();
@@ -106,11 +111,7 @@ public class Rationalization {
 
 		makeRationalizedMetaAccessible();
 
-		if (otherFailure != null) {
-			return otherFailure;
-		} else {
-			return verifiedSync ? syncSuccess() : asyncSuccess();
-		}
+		finalStatus = (otherFailure != null) ? otherFailure : OK;
 	}
 
 	private void makeRationalizedMetaAccessible() {
@@ -143,34 +144,19 @@ public class Rationalization {
 		return true;
 	}
 
-	private SignatureStatus expandIn(
+	private ResponseCodeEnum expandIn(
 			List<TransactionSignature> target,
-			BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
+			BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
 	) {
-		lastOrderResult = keysFn.apply(txnAccessor.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
+		lastOrderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		if (lastOrderResult.hasErrorReport()) {
 			return lastOrderResult.getErrorReport();
 		}
 		final var creation = createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (creation.hasFailed()) {
-			return creation.asSignatureStatus(true, txnAccessor.getTxnId());
+			return creation.asCode();
 		}
 		target.addAll(creation.getPlatformSigs());
-		return successFor(true, txnAccessor);
-	}
-
-	private SignatureStatus syncSuccess() {
-		return success(SignatureStatusCode.SUCCESS_VERIFY_SYNC);
-	}
-
-	private SignatureStatus asyncSuccess() {
-		return success(SignatureStatusCode.SUCCESS_VERIFY_ASYNC);
-	}
-
-	private SignatureStatus success(SignatureStatusCode code) {
-		return new SignatureStatus(
-				code, ResponseCodeEnum.OK,
-				true, txnAccessor.getTxnId(),
-				null, null, null, null);
+		return OK;
 	}
 }
