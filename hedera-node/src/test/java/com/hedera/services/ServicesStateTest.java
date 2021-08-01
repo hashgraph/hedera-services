@@ -1,25 +1,58 @@
 package com.hedera.services;
 
-import com.hedera.services.state.LegacyStateChildIndices;
-import com.hedera.services.state.StateChildIndices;
-import com.hedera.services.state.StateMetadata;
-import com.hedera.services.state.StateVersions;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.SingletonContextsManager;
+import com.hedera.services.context.init.InitializationFlow;
+import com.hedera.services.sigs.HederaToPlatformSigOps;
+import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.org.LegacyStateChildIndices;
+import com.hedera.services.state.org.StateChildIndices;
+import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
@@ -28,54 +61,264 @@ import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMInternalNode;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import com.swirlds.fcmap.internal.FCMTree;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.swirlds.common.constructable.ConstructableRegistry.registerConstructable;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesStateTest {
+	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
+	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
+	private final NodeId selfId = new NodeId(false, 1L);
+
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private HashLogger hashLogger;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private BiConsumer<ServicesState, ServicesContext> ctxInitializer;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
-	@Mock
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	@Mock
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	@Mock
-	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
-	@Mock
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
-	@Mock
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
-	@Mock
-	private MerkleNetworkContext networkCtx;
+	private Platform platform;
 	@Mock
 	private AddressBook addressBook;
 	@Mock
+	private Address address;
+	@Mock
+	private ServicesContext ctx;
+	@Mock
 	private MerkleDiskFs diskFs;
 	@Mock
+	private MerkleNetworkContext networkContext;
+	@Mock
+	private SwirldTransaction transaction;
+	@Mock
+	private SwirldDualState dualState;
+	@Mock
 	private StateMetadata metadata;
+	@Mock
+	private ProcessLogic logic;
+	@Mock
+	private ServicesState.ExpansionHelper expansionHelper;
+	@Mock
+	private PlatformTxnAccessor txnAccessor;
+	@Mock
+	private ExpandHandleSpan expandHandleSpan;
+	@Mock
+	private HederaSigningOrder retryingKeyOrder;
+	@Mock
+	private PubKeyToSigBytes pubKeyToSigBytes;
 
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
 	private ServicesState subject = new ServicesState();
+
+	@AfterEach
+	void cleanup() {
+		SingletonContextsManager.CONTEXTS.clear();
+	}
+
+	@Test
+	void logsSummaryAsExpected() {
+		setupMockHashLogger();
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(networkContext.toString()).willReturn("IMAGINE");
+
+		// when:
+		subject.logSummary();
+
+		// then:
+		verify(hashLogger).logHashesFor(subject);
+		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
+
+		cleanupMockHashLogger();
+	}
+
+	@Test
+	void getsAccountIdAsExpected() {
+		// setup:
+		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+
+		given(addressBook.getAddress(selfId.getId())).willReturn(address);
+		given(address.getMemo()).willReturn("0.0.3");
+
+		// when:
+		final var parsedAccount = subject.getAccountFromNodeId(selfId);
+
+		// then:
+		assertEquals(IdUtils.asAccount("0.0.3"), parsedAccount);
+	}
+
+	@Test
+	void onReleaseAndArchiveNoopIfMetadataNull() {
+		// when:
+		Assertions.assertDoesNotThrow(subject::archive);
+		Assertions.assertDoesNotThrow(subject::onRelease);
+	}
+
+	@Test
+	void onReleaseForwardsToMetadataIfNonNull() {
+		// setup:
+		subject.setMetadata(metadata);
+
+		// when:
+		subject.onRelease();
+
+		// then:
+		verify(metadata).release();
+	}
+
+	@Test
+	void archiveForwardsToMetadata() {
+		// setup:
+		subject.setMetadata(metadata);
+
+		// when:
+		subject.archive();
+
+		// then:
+		verify(metadata).archive();
+	}
+
+	@Test
+	void noMoreTransactionsIsNoop() {
+		// expect:
+		assertDoesNotThrow(subject::noMoreTransactions);
+	}
+
+	@Test
+	void expandsSigsAsExpected() throws InvalidProtocolBufferException {
+		setupMockExpandHelper();
+		// and:
+		subject.setMetadata(metadata);
+
+		given(metadata.getCtx()).willReturn(ctx);
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(ctx.lookupRetryingKeyOrder()).willReturn(retryingKeyOrder);
+		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
+		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
+
+		// when:
+		subject.expandSignatures(transaction);
+
+		// then:
+		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
+
+		cleanupMockExpandHelper();
+	}
+
+	@Test
+	void warnsOfIpbe() throws InvalidProtocolBufferException {
+		setupMockExpandHelper();
+		// and:
+		subject.setMetadata(metadata);
+
+		given(metadata.getCtx()).willReturn(ctx);
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
+
+		// when:
+		subject.expandSignatures(transaction);
+
+		// then:
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+	}
+
+	@Test
+	void warnsOfRace() throws InvalidProtocolBufferException {
+		setupMockExpandHelper();
+		// and:
+		subject.setMetadata(metadata);
+
+		given(metadata.getCtx()).willReturn(ctx);
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
+
+		// when:
+		subject.expandSignatures(transaction);
+
+		// then:
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
+	}
+
+	@Test
+	void handleNonConsensusTransactionAsExpected() {
+		// setup:
+		subject.setMetadata(metadata);
+
+		// when:
+		subject.handleTransaction(
+				1L, false, creationTime, null, transaction, dualState);
+
+		// then:
+		verifyNoInteractions(metadata);
+	}
+
+	@Test
+	void handleConsensusTransactionAsExpected() {
+		// setup:
+		subject.setMetadata(metadata);
+
+		given(metadata.getCtx()).willReturn(ctx);
+		given(ctx.logic()).willReturn(logic);
+
+		// when:
+		subject.handleTransaction(
+				1L, true, creationTime, consensusTime, transaction, dualState);
+
+		// then:
+		verify(ctx).setDualState(dualState);
+		verify(logic).incorporateConsensusTxn(transaction, consensusTime, 1L);
+	}
+
+	@Test
+	void addressBookCopyWorks() {
+		given(addressBook.copy()).willReturn(addressBook);
+		// and:
+		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+
+		// when:
+		final var bookCopy = subject.getAddressBookCopy();
+
+		// then:
+		assertSame(addressBook, bookCopy);
+		verify(addressBook).copy();
+	}
 
 	@Test
 	void minimumVersionIsRelease0160() {
@@ -106,17 +349,69 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void copyConstructorWorks() {
-		// setup:
-	}
-
-	@Test
 	void doesntMigrateFromRelease0170() {
 		// given:
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::initialize);
+	}
+
+	@Test
+	void genesisInitCreatesChildren() {
+		setupMockInitFlow();
+
+		given(platform.getSelfId()).willReturn(selfId);
+
+		// when:
+		subject.genesisInit(platform, addressBook);
+
+		// then:
+		assertFalse(subject.isImmutable());
+		// and:
+		assertSame(addressBook, subject.addressBook());
+		assertNotNull(subject.accounts());
+		assertNotNull(subject.storage());
+		assertNotNull(subject.topics());
+		assertNotNull(subject.tokens());
+		assertNotNull(subject.tokenAssociations());
+		assertNotNull(subject.scheduleTxs());
+		assertNotNull(subject.networkCtx());
+		assertNotNull(subject.runningHashLeaf());
+		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
+		assertEquals(1001L, subject.networkCtx().seqNo().current());
+		assertNotNull(subject.diskFs());
+		// and:
+		assertInternalInitFor(platform);
+
+		cleanupMockInitFlow();
+	}
+
+	@Test
+	void nonGenesisInitReusesContextIfPresent() {
+		setupMockInitFlow();
+		setupMockHashLogger();
+
+		subject.setChild(StateChildIndices.DISK_FS, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+
+		given(ctx.id()).willReturn(selfId);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		SingletonContextsManager.CONTEXTS.store(ctx);
+
+		// when:
+		subject.init(platform, addressBook);
+
+		// then:
+		assertSame(addressBook, subject.addressBook());
+		assertSame(ctx, subject.getMetadata().getCtx());
+		// and:
+		verify(diskFs).checkHashesAgainstDiskContents();
+		verify(hashLogger).logHashesFor(subject);
+
+		cleanupMockInitFlow();
+		cleanupMockHashLogger();
 	}
 
 	@Test
@@ -152,18 +447,91 @@ class ServicesStateTest {
 		assertEquals(addressBook, subject.addressBook());
 		assertEquals(
 				networkContext.midnightRates(),
-				((MerkleNetworkContext)subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
+				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				nfts.get(nftKey),
-				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>)subject.getChild(StateChildIndices.UNIQUE_TOKENS))
+				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
 		assertEquals(nfts.get(nftKey), subject.uniqueTokens().get(nftKey));
 		assertEquals(
 				tokenRels.get(tokenRelsKey),
-				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>)subject.getChild(StateChildIndices.TOKEN_ASSOCIATIONS))
+				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRels.get(tokenRelsKey), subject.tokenAssociations().get(tokenRelsKey));
+	}
+
+	@Test
+	void forwardsFcomtrAsExpected() {
+		// setup:
+		final FCOneToManyRelation<Integer, Long> a = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<Integer, Long> b = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<Integer, Long> c = new FCOneToManyRelation<>();
+		// and:
+		subject.setMetadata(metadata);
+
+		given(metadata.getUniqueTokenAssociations()).willReturn(a);
+		given(metadata.getUniqueOwnershipAssociations()).willReturn(b);
+		given(metadata.getUniqueTreasuryOwnershipAssociations()).willReturn(c);
+
+		// expect:
+		assertSame(a, subject.uniqueTokenAssociations());
+		assertSame(b, subject.uniqueOwnershipAssociations());
+		assertSame(c, subject.uniqueTreasuryOwnershipAssociations());
+	}
+
+	@Test
+	void copySetsMutabilityAsExpected() {
+		// when:
+		final var copy = subject.copy();
+
+		// then:
+		assertTrue(subject.isImmutable());
+		assertFalse(copy.isImmutable());
+	}
+
+	@Test
+	void copyUpdateCtxWithNonNullMeta() {
+		// setup:
+		subject.setMetadata(metadata);
+
+		given(metadata.getCtx()).willReturn(ctx);
+
+		// when:
+		final var copy = subject.copy();
+
+		// then:
+		verify(ctx).update(copy);
+	}
+
+	@Test
+	void copiesNonNullChildren() {
+		// setup:
+		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.DISK_FS, diskFs);
+		// and:
+		subject.setMetadata(metadata);
+		subject.setDeserializedVersion(10);
+
+		given(addressBook.copy()).willReturn(addressBook);
+		given(networkContext.copy()).willReturn(networkContext);
+		given(diskFs.copy()).willReturn(diskFs);
+		given(metadata.copy()).willReturn(metadata);
+		given(metadata.getCtx()).willReturn(ctx);
+
+		// when:
+		final var copy = subject.copy();
+
+		// then:
+		assertEquals(10, copy.getDeserializedVersion());
+		assertSame(metadata, copy.getMetadata());
+		verify(metadata).copy();
+		// and:
+		assertSame(addressBook, copy.addressBook());
+		assertSame(networkContext, copy.networkCtx());
+		assertSame(diskFs, copy.diskFs());
 	}
 
 	private List<MerkleNode> legacyChildrenWith(
@@ -185,5 +553,43 @@ class ServicesStateTest {
 		legacyChildren.add(null);
 		legacyChildren.add(nfts);
 		return legacyChildren;
+	}
+
+	private void setupMockExpandHelper() {
+		ServicesState.setExpansionHelper(expansionHelper);
+	}
+
+	private void cleanupMockExpandHelper() {
+		ServicesState.setExpansionHelper(HederaToPlatformSigOps::expandIn);
+	}
+
+	private void setupMockInitFlow() {
+		ServicesState.setContextInitializer(ctxInitializer);
+	}
+
+	private void cleanupMockInitFlow() {
+		ServicesState.setContextInitializer(InitializationFlow::accept);
+	}
+
+	private void setupMockHashLogger() {
+		ServicesState.setHashLogger(hashLogger);
+	}
+
+	private void cleanupMockHashLogger() {
+		ServicesState.setHashLogger(new HashLogger());
+	}
+
+	private void assertInternalInitFor(Platform platform) {
+		// setup:
+		final ArgumentCaptor<ServicesContext> captor = ArgumentCaptor.forClass(ServicesContext.class);
+
+		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
+		// and:
+		verify(ctxInitializer).accept(eq(subject), captor.capture());
+		final var initCtx = captor.getValue();
+		assertSame(SingletonContextsManager.CONTEXTS.lookup(selfId.getId()), initCtx);
+		assertSame(platform, initCtx.platform());
+		assertSame(selfId, initCtx.id());
+		assertSame(initCtx, subject.getMetadata().getCtx());
 	}
 }

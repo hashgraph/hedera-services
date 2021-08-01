@@ -1,4 +1,4 @@
-package com.hedera.services.exceptions;
+package com.hedera.services.state.org;
 
 /*-
  * ‌
@@ -20,8 +20,20 @@ package com.hedera.services.exceptions;
  * ‍
  */
 
-public class ContextNotFoundException extends IllegalStateException {
-	public ContextNotFoundException(long nodeId) {
-		super(String.format("No Hedera context exists for node '%d'!", nodeId));
-	}
+/**
+ * Gives the Services 0.17.0 index order of Merkle node children.
+ */
+public class StateChildIndices {
+	public static final int UNIQUE_TOKENS = 0;
+	public static final int TOKEN_ASSOCIATIONS = 1;
+	public static final int TOPICS = 2;
+	public static final int STORAGE = 3;
+	public static final int ACCOUNTS = 4;
+	public static final int TOKENS = 5;
+	public static final int NETWORK_CTX = 6;
+	public static final int DISK_FS = 7;
+	public static final int SCHEDULE_TXS = 8;
+	public static final int RECORD_STREAM_RUNNING_HASH = 9;
+	public static final int ADDRESS_BOOK = 10;
+	public static final int NUM_0170_CHILDREN = 11;
 }

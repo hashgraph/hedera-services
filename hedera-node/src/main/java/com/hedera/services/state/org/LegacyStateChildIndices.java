@@ -1,4 +1,4 @@
-package com.hedera.services.records;
+package com.hedera.services.state.org;
 
 /*-
  * ‌
@@ -20,26 +20,14 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+/**
+ *  Recalls the Services 0.16.0 Merkle node children with indices different from 0.17.0, used for migration.
+ */
+public class LegacyStateChildIndices {
+	public static final int ADDRESS_BOOK = 0;
+	public static final int NETWORK_CTX = 1;
+	public static final int TOKEN_ASSOCIATIONS = 6;
+	public static final int UNIQUE_TOKENS = 10;
 
-import java.util.Optional;
-
-public enum NoopRecordsHistorian implements AccountRecordsHistorian {
-  NOOP_RECORDS_HISTORIAN;
-
-  @Override
-  public void setCreator(EntityCreator creator) { }
-
-  @Override
-  public void finalizeExpirableTransactionRecord() { }
-
-  @Override
-  public void saveExpirableTransactionRecord() { }
-
-  @Override
-  public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
-
-  @Override
-  public void noteNewExpirationEvents() { }
+	public static final int NUM_0160_CHILDREN = 11;
 }

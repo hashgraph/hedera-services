@@ -21,12 +21,17 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.LegacyStateChildIndices;
-import com.hedera.services.state.StateChildIndices;
+import com.hedera.services.state.org.LegacyStateChildIndices;
+import com.hedera.services.state.org.StateChildIndices;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 
+/**
+ * Static helper to move the two (expected) largest {@link com.swirlds.fcmap.FCMap}
+ * children to the "binary route" positions in the Merkle tree, hence reducing the
+ * size of their Merkle routes.
+ */
 public class Release0170Migration {
 	@FunctionalInterface
 	interface TreeCopier {

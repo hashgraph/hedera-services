@@ -620,9 +620,6 @@ public class ServicesContext {
 		this.platform = platform;
 		this.state = state;
 		this.propertySources = propertySources;
-
-		updateWorkingState(state);
-		updateQueryableState(state);
 	}
 
 	/**

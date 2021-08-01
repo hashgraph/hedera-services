@@ -22,13 +22,18 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.init.InitializationFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
-import com.hedera.services.exceptions.ContextNotFoundException;
-import com.hedera.services.state.LegacyStateChildIndices;
-import com.hedera.services.state.StateChildIndices;
-import com.hedera.services.state.StateMetadata;
-import com.hedera.services.state.StateVersions;
+import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.sigs.HederaToPlatformSigOps;
+import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.state.org.LegacyStateChildIndices;
+import com.hedera.services.state.org.StateChildIndices;
+import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.org.StateVersions;
+import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -45,8 +50,8 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -65,26 +70,36 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.BiConsumer;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
+/**
+ * The Merkle tree root of the Hedera Services world state.
+ */
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	private static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
 	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
-	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
+	private static HashLogger hashLogger = new HashLogger();
+	private static ExpansionHelper expansionHelper = HederaToPlatformSigOps::expandIn;
+	private static BiConsumer<ServicesState, ServicesContext> contextInitializer = InitializationFlow::accept;
 
-	/* The version the platform deserialized from a saved state to create this instance, if any */
+	interface ExpansionHelper {
+		SignatureStatus expandIn(
+				PlatformTxnAccessor txnAccessor,
+				HederaSigningOrder keyOrderer,
+				PubKeyToSigBytes pkToSigFn);
+	}
+
+	/* If positive, the version of the saved state loaded to create this instance; if -1, this is the genesis state */
 	private int deserializedVersion = -1;
-	/* All of the state that is not itself hashed or serialized, but only derived from such state. */
+	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
 	public ServicesState() {
@@ -95,7 +110,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Copy the Merkle route from the source instance */
 		super(that);
 		/* Copy the non-null Merkle children from the source */
-		for (int childIndex = 0, n = getNumberOfChildren(); childIndex < n; childIndex++) {
+		for (int childIndex = 0, n = that.getNumberOfChildren(); childIndex < n; childIndex++) {
 			final var childToCopy = that.getChild(childIndex);
 			if (childToCopy != null) {
 				setChild(childIndex, childToCopy.copy());
@@ -124,39 +139,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else if (version == StateVersions.RELEASE_0170_VERSION ) {
 			return StateChildIndices.NUM_0170_CHILDREN;
 		} else {
-			throw new IllegalArgumentException(String.format(UNSUPPORTED_VERSION_MSG_TPL, version));
+			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
 	}
 
 	@Override
 	public int getMinimumSupportedVersion() {
 		return StateVersions.MINIMUM_SUPPORTED_VERSION;
-	}
-
-	@Override
-	public void genesisInit(Platform platform, AddressBook addressBook) {
-		log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
-
-		var bootstrapProps = new BootstrapProperties();
-		long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
-		setChild(StateChildIndices.NETWORK_CTX, new MerkleNetworkContext(
-				UNKNOWN_CONSENSUS_TIME,
-				new SequenceNumber(seqStart),
-				seqStart - 1,
-				new ExchangeRates()));
-		setChild(StateChildIndices.TOPICS, new FCMap<>());
-		setChild(StateChildIndices.STORAGE, new FCMap<>());
-		setChild(StateChildIndices.ACCOUNTS, new FCMap<>());
-		setChild(StateChildIndices.TOKENS, new FCMap<>());
-		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-		setChild(StateChildIndices.DISK_FS, new MerkleDiskFs());
-		setChild(StateChildIndices.SCHEDULE_TXS, new FCMap<>());
-		setChild(StateChildIndices.UNIQUE_TOKENS, new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>());
-		final var firstRunningHash = new RunningHash();
-		firstRunningHash.setHash(EMPTY_HASH);
-		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(firstRunningHash));
-
-		internalInit(platform, addressBook, bootstrapProps);
 	}
 
 	@Override
@@ -176,58 +165,23 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
-		internalInit(platform, addressBook, new BootstrapProperties());
-	}
 
-	private void internalInit(Platform platform, AddressBook addressBook, BootstrapProperties bootstrapProps) {
-		setImmutable(false);
-
-		/* Note this overrides the address book from the saved state if it is present. */
+		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
-		diskFs().checkHashesAgainstDiskContents();
 
-		final var selfId = platform.getSelfId();
-		ServicesContext ctx;
-		try {
-			ctx = CONTEXTS.lookup(selfId.getId());
-		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
-			final var properties = new StandardizedPropertySources(bootstrapProps);
-			ctx = new ServicesContext(selfId, platform, this, properties);
-		}
-
-		metadata = new StateMetadata(ctx, selfId);
-		initializeContext(ctx);
-		CONTEXTS.store(ctx);
-
-		logSummary();
-		log.info("  --> Context initialized accordingly on Services node {}", selfId);
+		internalInit(platform, new BootstrapProperties());
 	}
 
-	private void initializeContext(final ServicesContext ctx) {
-		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
-		/* Set the primitive state in the context and signal the managing stores (if
-		 * they are already constructed) to rebuild their auxiliary views of the state.
-		 * All the initialization that follows will be a function of the primitive state. */
-		ctx.update(this);
-		ctx.rebuildBackingStoresIfPresent();
-		ctx.rebuildStoreViewsIfPresent();
-		ctx.uniqTokenViewsManager().rebuildNotice(tokens(), uniqueTokens());
-		/* Use any payer records stored in state to rebuild the recent transaction
-		 * history. This history has two main uses: Purging expired records, and
-		 * classifying duplicate transactions. */
-		ctx.recordsHistorian().reviewExistingRecords();
-		/* Use any entities stored in state to rebuild queue of expired entities. */
-		ctx.expiries().reviewExistingShortLivedEntities();
-		/* Re-initialize the "observable" system files; that is, the files which have
-	 	associated callbacks managed by the SysFilesCallback object. We explicitly
-	 	re-mark the files are not loaded here, in case this is a reconnect. (During a
-	 	reconnect the blob store might still be reloading, and we will finish loading
-	 	the observable files in the ServicesMain.init method.) */
-		ctx.networkCtxManager().setObservableFilesNotLoaded();
-		if (!blobStoreSupplier.get().isInitializing()) {
-			ctx.networkCtxManager().loadObservableSysFilesIfNeeded();
-		}
+	@Override
+	public void genesisInit(Platform platform, AddressBook addressBook) {
+		log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
+
+		/* Create the top-level children in the Merkle tree */
+		final var bootstrapProps = new BootstrapProperties();
+		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
+		createGenesisChildren(addressBook, seqStart);
+
+		internalInit(platform, bootstrapProps);
 	}
 
 	@Override
@@ -256,11 +210,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		try {
 			final var ctx = metadata.getCtx();
 			final var accessor = ctx.expandHandleSpan().track(platformTxn);
-			expandIn(accessor, ctx.lookupRetryingKeyOrder(), accessor.getPkToSigsFn());
+			expansionHelper.expandIn(accessor, ctx.lookupRetryingKeyOrder(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
-			log.warn("expandSignatures called with non-gRPC txn!", e);
+			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {
-			log.warn("Unexpected problem, signatures will be verified synchronously in handleTransaction!", race);
+			log.warn("Unable to expand signatures, will be verified synchronously in handleTransaction", race);
 		}
 	}
 
@@ -285,16 +239,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- Archivable --- */
 	@Override
 	public void archive() {
-		metadata.archive();
+		onRelease();
 	}
 
 	/* --- MerkleNode --- */
 	@Override
 	protected void onRelease() {
-		metadata.release();
+		if (metadata != null) {
+			metadata.archive();
+		}
 	}
 
-	/* --------------- */
+	/* -- Getters and helpers -- */
 	public AccountID getAccountFromNodeId(NodeId nodeId) {
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
@@ -302,38 +258,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public void logSummary() {
-		logHashes();
-		log.info(networkCtx().toString());
-	}
-
-	private void logHashes() {
-		log.info(String.format("[SwirldState Hashes]\n" +
-						"  Overall                :: %s\n" +
-						"  Accounts               :: %s\n" +
-						"  Storage                :: %s\n" +
-						"  Topics                 :: %s\n" +
-						"  Tokens                 :: %s\n" +
-						"  TokenAssociations      :: %s\n" +
-						"  DiskFs                 :: %s\n" +
-						"  ScheduledTxs           :: %s\n" +
-						"  NetworkContext         :: %s\n" +
-						"  AddressBook            :: %s\n" +
-						"  RecordsRunningHashLeaf :: %s\n" +
-						"    ↪ Running hash       :: %s\n" +
-						"  UniqueTokens           :: %s\n",
-				getHash(),
-				accounts().getHash(),
-				storage().getHash(),
-				topics().getHash(),
-				tokens().getHash(),
-				tokenAssociations().getHash(),
-				diskFs().getHash(),
-				scheduleTxs().getHash(),
-				networkCtx().getHash(),
-				addressBook().getHash(),
-				runningHashLeaf().getHash(),
-				runningHashLeaf().getRunningHash().getHash(),
-				uniqueTokens().getHash()));
+		hashLogger.logHashesFor(this);
+		log.info(networkCtx());
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
@@ -390,5 +316,85 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public FCOneToManyRelation<Integer, Long> uniqueTreasuryOwnershipAssociations() {
 		return metadata.getUniqueTreasuryOwnershipAssociations();
+	}
+
+	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
+		setImmutable(false);
+
+		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
+		diskFs().checkHashesAgainstDiskContents();
+
+		final var selfId = platform.getSelfId();
+		ServicesContext ctx;
+		if (CONTEXTS.isInitialized(selfId.getId())) {
+			ctx = CONTEXTS.lookup(selfId.getId());
+		} else {
+			final var properties = new StandardizedPropertySources(bootstrapProps);
+			ctx = new ServicesContext(selfId, platform, this, properties);
+		}
+		metadata = new StateMetadata(ctx);
+
+		contextInitializer.accept(this, ctx);
+		CONTEXTS.store(ctx);
+		logSummary();
+
+		log.info("  --> Context initialized accordingly on Services node {}", selfId);
+	}
+
+	private void createGenesisChildren(AddressBook addressBook, long seqStart) {
+		setChild(StateChildIndices.UNIQUE_TOKENS, new FCMap<>());
+		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
+		setChild(StateChildIndices.TOPICS, new FCMap<>());
+		setChild(StateChildIndices.STORAGE, new FCMap<>());
+		setChild(StateChildIndices.ACCOUNTS, new FCMap<>());
+		setChild(StateChildIndices.TOKENS, new FCMap<>());
+		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
+		setChild(StateChildIndices.DISK_FS, new MerkleDiskFs());
+		setChild(StateChildIndices.SCHEDULE_TXS, new FCMap<>());
+		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
+		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+	}
+
+	private RecordsRunningHashLeaf genesisRunningHashLeaf() {
+		final var genesisRunningHash = new RunningHash();
+		genesisRunningHash.setHash(EMPTY_HASH);
+		return new RecordsRunningHashLeaf(genesisRunningHash);
+	}
+
+	private MerkleNetworkContext genesisNetworkCtxWith(long seqStart) {
+		return new MerkleNetworkContext(
+				UNKNOWN_CONSENSUS_TIME,
+				new SequenceNumber(seqStart),
+				seqStart - 1,
+				new ExchangeRates());
+	}
+
+	/* --- Only used by unit tests --- */
+	static void setContextInitializer(BiConsumer<ServicesState, ServicesContext> contextInitializer) {
+		ServicesState.contextInitializer = contextInitializer;
+	}
+
+	static void setHashLogger(HashLogger hashLogger) {
+		ServicesState.hashLogger = hashLogger;
+	}
+
+	static void setExpansionHelper(ExpansionHelper expansionHelper) {
+		ServicesState.expansionHelper = expansionHelper;
+	}
+
+	StateMetadata getMetadata() {
+		return metadata;
+	}
+
+	void setMetadata(StateMetadata metadata) {
+		this.metadata = metadata;
+	}
+
+	void setDeserializedVersion(int deserializedVersion) {
+		this.deserializedVersion = deserializedVersion;
+	}
+
+	int getDeserializedVersion() {
+		return deserializedVersion;
 	}
 }
