@@ -2250,7 +2250,6 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 01912-M-RemoveSigStatusWrapper
                   - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:

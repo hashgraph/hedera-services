@@ -178,7 +178,7 @@ class SigOpsRegressionTest {
 		final var ans = invokeRationalizationScenario();
 
 		// then:
-		assertFalse(ans.usedSyncVerification());
+		assertTrue(ans.usedSyncVerification());
 		assertEquals(OK, ans.finalStatus());
 		assertEquals(expectedSigs, platformTxn.getSigMeta().verifiedSigs());
 		// and:
