@@ -48,6 +48,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
@@ -60,6 +62,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO;
@@ -210,6 +213,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -348,8 +352,8 @@ class HederaSigningOrderTest {
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
-	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
-	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
+	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
+	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
 
 	@Test
 	void reportsInvalidPayerId() throws Throwable {
@@ -1067,7 +1071,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForPayer(txn, summaryFactory);
+		final var summary = subject.keysForPayer(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
@@ -1079,7 +1083,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
@@ -1091,7 +1095,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()),
@@ -1105,10 +1109,9 @@ class HederaSigningOrderTest {
 		// and:
 		aMockSummaryFactory();
 		// and:
-		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any()))
-				.willReturn(result);
+		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any())).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -1123,7 +1126,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -1135,7 +1138,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KT.asJKey()));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KT.asKey()));
@@ -1148,10 +1151,9 @@ class HederaSigningOrderTest {
 		// and:
 		aMockSummaryFactory();
 		// and:
-		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingTopic(any(), any()))
-				.willReturn(result);
+		given(mockSummaryFactory.forMissingTopic(any(), any())).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -1166,7 +1168,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -1178,7 +1180,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey()));
@@ -1191,10 +1193,9 @@ class HederaSigningOrderTest {
 		// and:
 		aMockSummaryFactory();
 		// and:
-		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingTopic(any(), any()))
-				.willReturn(result);
+		given(mockSummaryFactory.forMissingTopic(any(), any())).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -1209,7 +1210,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -1221,7 +1222,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey()));
@@ -1234,7 +1235,7 @@ class HederaSigningOrderTest {
 				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -1246,10 +1247,9 @@ class HederaSigningOrderTest {
 		// and:
 		aMockSummaryFactory();
 		// and:
-		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingTopic(any(), any()))
-				.willReturn(result);
+		given(mockSummaryFactory.forMissingTopic(any(), any())).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -1265,10 +1265,9 @@ class HederaSigningOrderTest {
 		// and:
 		aMockSummaryFactory();
 		// and:
-		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any()))
-				.willReturn(result);
+		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any())).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -1283,7 +1282,7 @@ class HederaSigningOrderTest {
 		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
@@ -1297,7 +1296,7 @@ class HederaSigningOrderTest {
 				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
-		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
@@ -1384,7 +1383,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_FEE_COLLECTOR, summary.getErrorReport().getStatusCode());
+		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, summary.getErrorReport());
 	}
 
 	@Test
@@ -1590,7 +1589,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1657,7 +1656,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1752,7 +1751,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1807,7 +1806,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1847,7 +1846,7 @@ class HederaSigningOrderTest {
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
 		// and:
-		assertEquals(SignatureStatusCode.INVALID_AUTO_RENEW_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
 	}
 
 	@Test
@@ -1886,7 +1885,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1899,7 +1898,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, summary.getErrorReport().getResponseCode());
+		assertEquals(ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR, summary.getErrorReport());
 	}
 
 	@Test
@@ -1927,7 +1926,7 @@ class HederaSigningOrderTest {
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
 		// and:
-		assertEquals(SignatureStatusCode.INVALID_AUTO_RENEW_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
 	}
 
 	@Test
@@ -1940,7 +1939,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(UNRESOLVABLE_REQUIRED_SIGNERS, summary.getErrorReport().getResponseCode());
+		assertEquals(ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS, summary.getErrorReport());
 	}
 
 	@Test
@@ -1990,7 +1989,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport().getResponseCode());
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -2047,7 +2046,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -2077,7 +2076,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_SCHEDULE_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(ResponseCodeEnum.INVALID_SCHEDULE_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -2090,7 +2089,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_SCHEDULE_ID, summary.getErrorReport().getStatusCode());
+		assertEquals(INVALID_SCHEDULE_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -2179,7 +2178,7 @@ class HederaSigningOrderTest {
 	}
 
 	private void aMockSummaryFactory() {
-		mockSummaryFactory = (SigningOrderResultFactory<SignatureStatus>) mock(SigningOrderResultFactory.class);
+		mockSummaryFactory = (SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
 	}
 
 	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {

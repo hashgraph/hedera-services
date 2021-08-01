@@ -22,7 +22,6 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -40,7 +39,6 @@ import java.util.EnumSet;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -151,7 +149,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
 
-		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
+		final var sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
 			ctx.networkCtxManager().prepareForIncorporating(accessor);
@@ -161,8 +159,8 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		if (SIG_RATIONALIZATION_ERRORS.contains(sigStatus.getResponseCode())) {
-			ctx.txnCtx().setStatus(sigStatus.getResponseCode());
+		if (SIG_RATIONALIZATION_ERRORS.contains(sigStatus)) {
+			ctx.txnCtx().setStatus(sigStatus);
 			return;
 		}
 		if (!ctx.activationHelper().areOtherPartiesActive(ONLY_IF_SIG_IS_VALID)) {
@@ -193,21 +191,22 @@ public class AwareProcessLogic implements ProcessLogic {
 		return false;
 	}
 
-	private SignatureStatus rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
-		var sigStatus = rationalizeIn(
+	private ResponseCodeEnum rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
+		final var rationalization = rationalizeIn(
 				accessor,
 				ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
 				accessor.getPkToSigsFn(),
 				new BodySigningSigFactory(accessor));
-		if (!sigStatus.isError()) {
-			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
-				ctx.speedometers().cycleAsyncVerifications();
-			} else {
+		final var status = rationalization.finalStatus();
+		if (status == OK) {
+			if (rationalization.usedSyncVerification()) {
 				ctx.speedometers().cycleSyncVerifications();
+			} else {
+				ctx.speedometers().cycleAsyncVerifications();
 			}
 		}
-		return sigStatus;
+		return status;
 	}
 
 	void stream(

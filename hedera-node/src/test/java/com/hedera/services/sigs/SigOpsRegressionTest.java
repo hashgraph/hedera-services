@@ -26,8 +26,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -63,12 +61,11 @@ import java.util.function.Predicate;
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
-import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
@@ -80,6 +77,7 @@ import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_U
 import static com.hedera.test.factories.sigs.SigWrappers.asKind;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,11 +90,8 @@ class SigOpsRegressionTest {
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private List<TransactionSignature> expectedSigs;
-	private SignatureStatus actualStatus;
-	private SignatureStatus successStatus;
-	private SignatureStatus syncSuccessStatus;
-	private SignatureStatus asyncSuccessStatus;
-	private SignatureStatus expectedErrorStatus;
+	private ResponseCodeEnum actualStatus;
+	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
 	private HederaSigningOrder signingOrder;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -110,7 +105,7 @@ class SigOpsRegressionTest {
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
 			HederaSigningOrder keyOrder,
-			SigningOrderResultFactory<SignatureStatus> summaryFactory
+			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory
 	) {
 		return otherPartySigsAreActive(accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
 	}
@@ -118,13 +113,13 @@ class SigOpsRegressionTest {
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
 			HederaSigningOrder keyOrder,
-			SigningOrderResultFactory<SignatureStatus> summaryFactory,
+			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
 		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
 
-		SigningOrderResult<SignatureStatus> othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
+		final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
 			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
 				return false;
@@ -142,7 +137,7 @@ class SigOpsRegressionTest {
 		actualStatus = invokeExpansionScenario();
 
 		// then:
-		statusMatches(successStatus);
+		assertEquals(OK, actualStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
 	}
 
@@ -180,10 +175,11 @@ class SigOpsRegressionTest {
 		List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
 
 		// when:
-		actualStatus = invokeRationalizationScenario();
+		final var ans = invokeRationalizationScenario();
 
 		// then:
-		statusMatches(syncSuccessStatus);
+		assertFalse(ans.usedSyncVerification());
+		assertEquals(OK, ans.finalStatus());
 		assertEquals(expectedSigs, platformTxn.getSigMeta().verifiedSigs());
 		// and:
 		allVerificationStatusesAre(vs -> !VerificationStatus.UNKNOWN.equals(vs));
@@ -198,10 +194,11 @@ class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(asValid(expectedSigs).toArray(new TransactionSignature[0]));
 
 		// when:
-		actualStatus = invokeRationalizationScenario();
+		final var ans = invokeRationalizationScenario();
 
 		// then:
-		statusMatches(asyncSuccessStatus);
+		assertFalse(ans.usedSyncVerification());
+		assertEquals(OK, ans.finalStatus());
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
 		// and:
 		allVerificationStatusesAre(vs -> VerificationStatus.VALID.equals(vs));
@@ -355,8 +352,8 @@ class SigOpsRegressionTest {
 				.allMatch(statusPred);
 	}
 
-	private void statusMatches(SignatureStatus expectedStatus) {
-		assertEquals(expectedStatus.toLogMessage(), actualStatus.toLogMessage());
+	private void statusMatches(ResponseCodeEnum expectedStatus) {
+		assertEquals(expectedStatus, actualStatus);
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
@@ -366,7 +363,8 @@ class SigOpsRegressionTest {
 				updateAccountSigns,
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
-		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
+		final var impliedOrdering =
+				keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		final var impliedKey = impliedOrdering.getPayerKey();
 		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
 
@@ -383,10 +381,10 @@ class SigOpsRegressionTest {
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
 
-		return otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
+		return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
 	}
 
-	private SignatureStatus invokeExpansionScenario() {
+	private ResponseCodeEnum invokeExpansionScenario() {
 		int MAGIC_NUMBER = 10;
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsPlusAccountRetriesFor(
@@ -403,7 +401,7 @@ class SigOpsRegressionTest {
 		return expandIn(platformTxn, keyOrder, pkToSigFn);
 	}
 
-	private SignatureStatus invokeRationalizationScenario() {
+	private Rationalization invokeRationalizationScenario() {
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
@@ -436,8 +434,8 @@ class SigOpsRegressionTest {
 				updateAccountSigns,
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
-		SigningOrderResult<SignatureStatus> payerKeys =
-				signingOrder.keysForPayer(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
+		SigningOrderResult<ResponseCodeEnum> payerKeys =
+				signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		expectedSigs = new ArrayList<>();
 		if (payerKeys.hasErrorReport()) {
 			expectedErrorStatus = payerKeys.getErrorReport();
@@ -448,8 +446,8 @@ class SigOpsRegressionTest {
 					new BodySigningSigFactory(platformTxn)
 			);
 			expectedSigs.addAll(payerResult.getPlatformSigs());
-			SigningOrderResult<SignatureStatus> otherKeys =
-					signingOrder.keysForOtherParties(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
+			SigningOrderResult<ResponseCodeEnum> otherKeys =
+					signingOrder.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 			if (otherKeys.hasErrorReport()) {
 				expectedErrorStatus = otherKeys.getErrorReport();
 			} else {
@@ -463,17 +461,5 @@ class SigOpsRegressionTest {
 				}
 			}
 		}
-		successStatus = new SignatureStatus(
-				SignatureStatusCode.SUCCESS, ResponseCodeEnum.OK,
-				false, platformTxn.getTxn().getTransactionID(),
-				null, null, null, null);
-		syncSuccessStatus = new SignatureStatus(
-				SignatureStatusCode.SUCCESS_VERIFY_SYNC, ResponseCodeEnum.OK,
-				true, platformTxn.getTxn().getTransactionID(),
-				null, null, null, null);
-		asyncSuccessStatus = new SignatureStatus(
-				SignatureStatusCode.SUCCESS_VERIFY_ASYNC, ResponseCodeEnum.OK,
-				true, platformTxn.getTxn().getTransactionID(),
-				null, null, null, null);
 	}
 }
