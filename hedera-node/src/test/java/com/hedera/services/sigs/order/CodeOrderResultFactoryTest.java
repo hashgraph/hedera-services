@@ -1,0 +1,67 @@
+package com.hedera.services.sigs.order;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+class CodeOrderResultFactoryTest {
+	private CodeOrderResultFactory subject = CODE_ORDER_RESULT_FACTORY;
+
+	@Test
+	void createsNewResultForValidOrder() {
+		// given:
+		final List<JKey> pretendKeys = List.of(new JEd25519Key("IMAGINARY".getBytes(StandardCharsets.UTF_8)));
+
+		// when:
+		final var ans = subject.forValidOrder(pretendKeys);
+
+		// then:
+		assertSame(pretendKeys, ans.getOrderedKeys());
+	}
+
+	@Test
+	void errorReportsReturnSingletons() {
+		// expect:
+		assertSame(CodeOrderResultFactory.INVALID_ACCOUNT_RESULT, subject.forInvalidAccount(null, null));
+		assertSame(CodeOrderResultFactory.GENERAL_ERROR_RESULT, subject.forGeneralError(null));
+		assertSame(CodeOrderResultFactory.GENERAL_PAYER_ERROR_RESULT, subject.forGeneralPayerError(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_ACCOUNT_RESULT, subject.forMissingAccount(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_FILE_RESULT, subject.forMissingFile(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_CONTRACT_RESULT, subject.forInvalidContract(null, null));
+		assertSame(CodeOrderResultFactory.IMMUTABLE_CONTRACT_RESULT, subject.forImmutableContract(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_TOPIC_RESULT, subject.forMissingTopic(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_AUTORENEW_RESULT, subject.forMissingAutoRenewAccount(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_TOKEN_RESULT, subject.forMissingToken(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule(null, null));
+		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule(null, null));
+		assertSame(CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT, subject.forUnresolvableRequiredSigners(null, null, null));
+		assertSame(CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT, subject.forUnschedulableTxn(null));
+		assertSame(CodeOrderResultFactory.MISSING_FEE_COLLECTOR_RESULT, subject.forMissingFeeCollector(null));
+	}
+}

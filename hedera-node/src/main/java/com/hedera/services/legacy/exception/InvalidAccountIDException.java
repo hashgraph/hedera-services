@@ -20,23 +20,5 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
-
 public class InvalidAccountIDException extends Exception {
-	private static final long serialVersionUID = 1L;
-	private AccountID accountId;
-
-	public InvalidAccountIDException(String message, AccountID accountId) {
-		super(message);
-		this.accountId = accountId;
-	}
-
-	public InvalidAccountIDException(AccountID accountId, Throwable cause) {
-		super(cause);
-		this.accountId = accountId;
-	}
-
-	public AccountID getAccountId() {
-		return accountId;
-	}
 }
