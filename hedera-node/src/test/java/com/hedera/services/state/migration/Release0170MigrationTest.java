@@ -58,7 +58,6 @@ class Release0170MigrationTest {
 	@Mock
 	private Release0170Migration.TreeCopier treeCopier;
 
-
 	@BeforeEach
 	void setUp() {
 		Release0170Migration.setTreeCopier(treeCopier);
