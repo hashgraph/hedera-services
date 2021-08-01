@@ -46,7 +46,7 @@ public class Release0170Migration {
 	private static TreeCopier treeCopier = MerkleCopy::copyTreeToLocation;
 
 	public static void moveLargeFcmsToBinaryRoutePositions(ServicesState initializingState) {
-		log.info("Performing 0.16.0 ==> 0.17.0 migration (state version {} to {})",
+		log.info("Migrating from 0.16.0 state (version {} to {})",
 				StateVersions.RELEASE_0160_VERSION, StateVersions.RELEASE_0170_VERSION);
 
 		/* First swap the address book and unique tokens */
@@ -56,7 +56,7 @@ public class Release0170Migration {
 				StateChildIndices.UNIQUE_TOKENS,
 				initializingState.getChild(LegacyStateChildIndices.UNIQUE_TOKENS));
 		initializingState.setChild(StateChildIndices.ADDRESS_BOOK, movableBook);
-		log.info("  ↪ Swapped address book ({} ==> {}) and unique token ({} to {}) FCMs",
+		log.info("  ↔ Swapped address book ({} to {}) and unique token ({} to {}) child FCMs",
 				LegacyStateChildIndices.ADDRESS_BOOK, StateChildIndices.ADDRESS_BOOK,
 				LegacyStateChildIndices.UNIQUE_TOKENS, StateChildIndices.UNIQUE_TOKENS);
 
@@ -67,7 +67,7 @@ public class Release0170Migration {
 				StateChildIndices.TOKEN_ASSOCIATIONS,
 				initializingState.getChild(LegacyStateChildIndices.TOKEN_ASSOCIATIONS));
 		initializingState.setChild(StateChildIndices.NETWORK_CTX, movableContext);
-		log.info("  ↪ Swapped network context ({} ==> {}) and token association ({} to {}) FCMs",
+		log.info("  ↔ Swapped network context ({} to {}) and token association ({} to {}) child FCMs",
 				LegacyStateChildIndices.NETWORK_CTX, StateChildIndices.NETWORK_CTX,
 				LegacyStateChildIndices.TOKEN_ASSOCIATIONS, StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
