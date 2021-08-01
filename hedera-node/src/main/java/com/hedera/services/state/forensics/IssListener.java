@@ -80,8 +80,7 @@ public class IssListener implements InvalidSignedStateListener {
 				issState.logSummary();
 			}
 		} catch (Exception any) {
-			String fallbackMsg = String.format(
-					ISS_FALLBACK_ERROR_MSG_PATTERN, round, String.valueOf(self), String.valueOf(other));
+			String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, self, other);
 			log.warn(fallbackMsg, any);
 		}
 	}

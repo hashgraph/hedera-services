@@ -34,7 +34,6 @@ class NoopRecordsHistorianTest {
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::noteNewExpirationEvents);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::saveExpirableTransactionRecord);
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setCreator(null));
-		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.reviewExistingRecords());
 		assertTrue(NOOP_RECORDS_HISTORIAN.lastCreatedRecord().isEmpty());
 	}
 }

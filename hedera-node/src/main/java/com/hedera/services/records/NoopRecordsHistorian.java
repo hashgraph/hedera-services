@@ -38,9 +38,6 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void saveExpirableTransactionRecord() { }
 
   @Override
-  public void reviewExistingRecords() { }
-
-  @Override
   public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
 
   @Override
