@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,14 +32,16 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
 
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.numFromCode;
+
 public class EntityId implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(EntityId.class);
+	private static final long DEFAULT_SHARD = 0L;
+	private static final long DEFAULT_REALM = 0L;
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf35ba643324efa37L;
@@ -50,7 +52,9 @@ public class EntityId implements SelfSerializable {
 	private long realm;
 	private long num;
 
-	public EntityId() { }
+	public EntityId() {
+		/* For RuntimeConstructable */
+	}
 
 	public EntityId(Id id) {
 		this.shard = id.getShard();
@@ -64,8 +68,26 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
-	/* --- SelfSerializable --- */
+	/**
+	 * Gives a "compressed" code to identify this entity id.
+	 *
+	 * @return the code for this id
+	 */
+	public int identityCode() {
+		return codeFromNum(num);
+	}
 
+	/**
+	 * Builds an entity id from its encoded format.
+	 *
+	 * @param code the compressed representation
+	 * @return the equivalent entity id
+	 */
+	public static EntityId fromIdentityCode(int code) {
+		return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, numFromCode(code));
+	}
+
+	/* --- SelfSerializable --- */
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -91,7 +113,6 @@ public class EntityId implements SelfSerializable {
 	}
 
 	/* --- Object --- */
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -100,7 +121,7 @@ public class EntityId implements SelfSerializable {
 		if (o == null || EntityId.class != o.getClass()) {
 			return false;
 		}
-		EntityId that = (EntityId)o;
+		EntityId that = (EntityId) o;
 		return shard == that.shard && realm == that.realm && num == that.num;
 	}
 
@@ -147,7 +168,6 @@ public class EntityId implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
-
 	public static EntityId fromGrpcAccountId(AccountID id) {
 		if (id == null) {
 			throw new IllegalArgumentException("Given account id was null!");

@@ -265,6 +265,9 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -563,6 +566,7 @@ public class ServicesContext {
 	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
+	private UniqTokenViewFactory uniqTokenViewFactory;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
@@ -571,6 +575,7 @@ public class ServicesContext {
 	private PricedUsageCalculator pricedUsageCalculator;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
+	private UniqTokenViewsManager uniqTokenViewsManager;
 	private HfsSystemFilesManager systemFilesManager;
 	private CurrentPlatformStatus platformStatus;
 	private SystemAccountsCreator systemAccountsCreator;
@@ -592,14 +597,15 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private StateChildren workingState = new StateChildren();
-	private AtomicReference<StateChildren> queryableState = new AtomicReference<>(new StateChildren());
+
+	private final StateChildren workingState = new StateChildren();
+	private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
 
 	/* Context-free infrastructure. */
-	private static Pause pause;
-	private static StateMigrations stateMigrations;
-	private static AccountsExporter accountsExporter;
-	private static LegacyEd25519KeyReader b64KeyReader;
+	private static final Pause pause;
+	private static final StateMigrations stateMigrations;
+	private static final AccountsExporter accountsExporter;
+	private static final LegacyEd25519KeyReader b64KeyReader;
 
 	static {
 		pause = SleepingPause.SLEEPING_PAUSE;
@@ -651,6 +657,8 @@ public class ServicesContext {
 		newQueryableStateChildren.setUniqueTokens(state.uniqueTokens());
 		newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		newQueryableStateChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		newQueryableStateChildren.setDiskFs(state.diskFs());
 
 		queryableState.set(newQueryableStateChildren);
 	}
@@ -674,6 +682,7 @@ public class ServicesContext {
 		workingState.setUniqueTokens(state.uniqueTokens());
 		workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		workingState.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
 	}
 
 	public SwirldDualState getDualState() {
@@ -916,15 +925,9 @@ public class ServicesContext {
 			stateViews = () -> new StateView(
 					tokenStore(),
 					scheduleStore(),
-					() -> queryableState.get().getTopics(),
-					() -> queryableState.get().getAccounts(),
-					() -> queryableState.get().getStorage(),
-					() -> queryableState.get().getUniqueTokens(),
-					() -> queryableState.get().getTokenAssociations(),
-					() -> queryableState.get().getUniqueTokenAssociations(),
-					() -> queryableState.get().getUniqueOwnershipAssociations(),
-					this::diskFs,
-					nodeLocalProperties());
+					nodeLocalProperties(),
+					queryableState.get(),
+					uniqTokenViewFactory());
 		}
 		return stateViews;
 	}
@@ -934,17 +937,31 @@ public class ServicesContext {
 			currentView = new StateView(
 					tokenStore(),
 					scheduleStore(),
-					this::topics,
-					this::accounts,
-					this::storage,
-					this::uniqueTokens,
-					this::tokenAssociations,
-					this::uniqueTokenAssociations,
-					this::uniqueOwnershipAssociations,
-					this::diskFs,
-					nodeLocalProperties());
+					nodeLocalProperties(),
+					workingState,
+					uniqTokenViewFactory());
 		}
 		return currentView;
+	}
+
+	public UniqTokenViewsManager uniqTokenViewsManager() {
+		if (uniqTokenViewsManager == null) {
+			if (shouldUseTreasuryWildcards()) {
+				uniqTokenViewsManager = new UniqTokenViewsManager(
+						this::uniqueTokenAssociations,
+						this::uniqueOwnershipAssociations,
+						this::uniqueOwnershipTreasuryAssociations);
+			} else {
+				uniqTokenViewsManager = new UniqTokenViewsManager(
+						this::uniqueTokenAssociations,
+						this::uniqueOwnershipAssociations);
+			}
+		}
+		return uniqTokenViewsManager;
+	}
+
+	private boolean shouldUseTreasuryWildcards() {
+		return properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
 	}
 
 	public HederaNumbers hederaNums() {
@@ -1049,10 +1066,9 @@ public class ServicesContext {
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
 					this::uniqueTokens,
-					this::uniqueOwnershipAssociations,
-					this::uniqueTokenAssociations,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels());
+					(BackingTokenRels) backingTokenRels(),
+					uniqTokenViewsManager());
 		}
 		return typedTokenStore;
 	}
@@ -1386,6 +1402,13 @@ public class ServicesContext {
 		return hfs;
 	}
 
+	public UniqTokenViewFactory uniqTokenViewFactory() {
+		if (uniqTokenViewFactory == null) {
+			uniqTokenViewFactory = new ConfigDrivenUniqTokenViewFactory(shouldUseTreasuryWildcards());
+		}
+		return uniqTokenViewFactory;
+	}
+
 	/**
 	 * Get the current special file system from working state disk fs
 	 *
@@ -1501,7 +1524,8 @@ public class ServicesContext {
 								txnCtx(), globalDynamicProperties()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
-								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
+								shouldUseTreasuryWildcards(), validator(), tokenStore(),
+								ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFeeScheduleUpdate,
 						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenFreezeAccount,
@@ -1670,9 +1694,9 @@ public class ServicesContext {
 			tokenStore = new HederaTokenStore(
 					ids(),
 					validator(),
+					uniqTokenViewsManager(),
 					globalDynamicProperties(),
 					this::tokens,
-					this::uniqueOwnershipAssociations,
 					tokenRelsLedger,
 					nftsLedger);
 		}
@@ -1712,7 +1736,7 @@ public class ServicesContext {
 		if (entityAutoRenewal == null) {
 			final var helper = new RenewalHelper(
 					tokenStore(), hederaNums(), globalDynamicProperties(),
-					this::tokens, this::accounts, this::tokenAssociations);
+					this::tokens, this::accounts, this::tokenAssociations, backingAccounts());
 			final var recordHelper = new RenewalRecordsHelper(
 					this, recordStreamManager(), globalDynamicProperties());
 			final var renewalProcess = new RenewalProcess(
@@ -2301,12 +2325,16 @@ public class ServicesContext {
 		return state.uniqueTokens();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueTokenAssociations() {
 		return state.uniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations() {
 		return state.uniqueOwnershipAssociations();
+	}
+
+	public FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations() {
+		return state.uniqueTreasuryOwnershipAssociations();
 	}
 
 	/**

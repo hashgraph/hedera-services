@@ -76,6 +76,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+						transferWithMissingAccountGetsInvalidAccountId(),
 						vanillaTransferSucceeds(),
 						complexKeyAcctPaysForOwnTransfer(),
 						twoComplexKeysRequired(),
@@ -143,7 +144,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("memo1"))),
 						mintToken(nonFungibleTokenWithCustomFee, List.of(ByteString.copyFromUtf8("memo2"))),
 						tokenAssociate(receiver, nonFungibleToken, nonFungibleTokenWithCustomFee),
-						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee)
+						cryptoTransfer(movingUnique(nonFungibleTokenWithCustomFee, 1)
 								.between(sender, nonTreasurySender))
 								.payingWith(sender),
 						cryptoTransfer(moving(1, fungibleTokenWithCustomFee).between(sender, nonTreasurySender))
@@ -158,7 +159,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.blankMemo()
 								.payingWith(sender)
 								.via(htsXferTxn),
-						cryptoTransfer(movingUnique(1, nonFungibleToken).between(sender, receiver))
+						cryptoTransfer(movingUnique(nonFungibleToken, 1).between(sender, receiver))
 								.blankMemo()
 								.payingWith(sender)
 								.via(nftXferTxn),
@@ -169,7 +170,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.payingWith(nonTreasurySender)
 								.via(htsXferTxnWithCustomFee),
-						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee)
+						cryptoTransfer(movingUnique(nonFungibleTokenWithCustomFee, 1)
 								.between(nonTreasurySender, receiver)
 						)
 								.blankMemo()
@@ -427,6 +428,20 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
 								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
 								.toArray(n -> new HapiSpecOperation[n])
+				);
+	}
+
+	private HapiApiSpec transferWithMissingAccountGetsInvalidAccountId() {
+		return defaultHapiSpec("TransferWithMissingAccount")
+				.given(
+						cryptoCreate("payeeSigReq").receiverSigRequired(true)
+				).when(
+						cryptoTransfer(
+								tinyBarsFromTo("1.2.3", "payeeSigReq", 1_000L)
+						)
+								.signedBy(DEFAULT_PAYER, "payeeSigReq")
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
+				).then(
 				);
 	}
 

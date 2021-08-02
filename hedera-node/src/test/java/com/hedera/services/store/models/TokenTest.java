@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -42,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -61,7 +63,7 @@ class TokenTest {
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
 	private final Id id = new Id(1, 2, 3);
-	private final Id treasuryId = new Id(2, 2, 3);
+	private final Id treasuryId = new Id(0, 0, 0);
 	private final Id nonTreasuryId = new Id(3, 2, 3);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
@@ -425,12 +427,24 @@ class TokenTest {
 	}
 
 	@Test
+	void cannotMintPastSerialNoLimit() {
+		// setup:
+		final var twoMeta = List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("Z"));
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		subject.setLastUsedSerialNumber(IdentityCodeUtils.MAX_NUM_ALLOWED - 1);
+
+		assertFailsWith(
+				() -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
+				SERIAL_NUMBER_LIMIT_REACHED);
+	}
+
+	@Test
 	void uniqueMintFailsAsExpected() {
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		subject.setSupplyKey(someKey);
 		final var ownershipTracker = mock(OwnershipTracker.class);
-		final var metadata = List.of(ByteString.copyFromUtf8("kur"));
+		final var metadata = List.of(ByteString.copyFromUtf8("memo"));
 		final List<ByteString> emptyMetadata = List.of();
 
 		assertThrows(InvalidTransactionException.class, () -> {
@@ -478,7 +492,7 @@ class TokenTest {
 	@Test
 	void toStringWorks() {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id{shard=2, realm=2, num=3}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
+				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
 				"currentSerialNumber=0}";
 

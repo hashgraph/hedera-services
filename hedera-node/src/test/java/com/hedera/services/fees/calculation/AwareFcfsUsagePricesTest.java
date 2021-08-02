@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation;
 
 import com.google.common.io.Files;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -58,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -73,6 +71,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class AwareFcfsUsagePricesTest {
+	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
+
 	FileID schedules = IdUtils.asFile("0.0.111");
 	long currentExpiry = 1_234_567;
 	long nextExpiry = currentExpiry + 1_000;
@@ -281,7 +281,7 @@ class AwareFcfsUsagePricesTest {
 	@Test
 	void loadsGoodScheduleUneventfully() throws Exception {
 		// setup:
-		byte[] bytes = Files.toByteArray(new File(JsonToProtoSerdeTest.R4_FEE_SCHEDULE_REPR_PATH));
+		byte[] bytes = Files.toByteArray(new File(R4_FEE_SCHEDULE_REPR_PATH));
 		CurrentAndNextFeeSchedule expectedFeeSchedules = CurrentAndNextFeeSchedule.parseFrom(bytes);
 
 		given(hfs.exists(schedules)).willReturn(true);
@@ -358,31 +358,6 @@ class AwareFcfsUsagePricesTest {
 		assertEquals(unPrices, burnTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
 		assertEquals(fcPrices, wipeTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
 		assertEquals(unPrices, wipeTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
-	}
-
-	@Test
-	void knowsTypedFunctions() {
-		// expect:
-		assertEquals(
-				EnumSet.of(
-						DEFAULT,
-						TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-						TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(CryptoTransfer));
-		assertEquals(
-				EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenMint));
-		assertEquals(
-				EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenBurn));
-		assertEquals(
-				EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenAccountWipe));
-		assertEquals(
-				EnumSet.of(
-						TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-						TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-				AwareFcfsUsagePrices.FUNCTIONS_WITH_REQUIRED_SUBTYPES.get(TokenCreate));
 	}
 
 	@Test

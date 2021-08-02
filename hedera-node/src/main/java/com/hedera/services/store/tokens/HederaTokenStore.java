@@ -28,6 +28,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -37,6 +38,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -47,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -114,6 +115,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -125,9 +127,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
 	private final OptionValidator validator;
+	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -141,9 +143,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public HederaTokenStore(
 			EntityIdSource ids,
 			OptionValidator validator,
+			UniqTokenViewsManager uniqTokenViewsManager,
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
 	) {
@@ -153,7 +155,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
-		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
+		this.uniqTokenViewsManager = uniqTokenViewsManager;
 		rebuildViewOfKnownTreasuries();
 	}
 
@@ -320,7 +322,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return toFreezeAndKycValidity;
 			}
 
-			final var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+			if (owner.equals(fromGrpcAccountId(AccountID.getDefaultInstance()))) {
+				var tid = nftId.tokenId();
+				owner = this.tokens.get().get(new MerkleEntityId(tid.getShardNum(), tid.getRealmNum(), tid.getTokenNum())).treasury();
+			}
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
@@ -332,20 +338,61 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
 			final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
 			final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
-			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
+
+			final var isTreasuryReturn = isTreasuryForToken(to, tId);
+			if (isTreasuryReturn) {
+				nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);
+			} else {
+				nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
+			}
+
 			accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
 			accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
 			tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 			tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
-			var merkleUniqueTokenId = new MerkleUniqueTokenId(fromGrpcTokenId(nftId.tokenId()), nftId.serialNo());
-			this.uniqueOwnershipAssociations.get().disassociate(
-					fromGrpcAccountId(from),
-					merkleUniqueTokenId);
+			final var merkleNftId = new MerkleUniqueTokenId(fromGrpcTokenId(nftId.tokenId()), nftId.serialNo());
+			final var receiver = fromGrpcAccountId(to);
+			if (isTreasuryReturn) {
+				uniqTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
+			} else {
+				final var isTreasuryExit = isTreasuryForToken(from, tId);
+				if (isTreasuryExit) {
+					uniqTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
+				} else {
+					uniqTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
+				}
+			}
+			hederaLedger.updateOwnershipChanges(nftId, from, to);
+			return OK;
+		});
+	}
 
-			this.uniqueOwnershipAssociations.get().associate(
-					fromGrpcAccountId(to),
-					merkleUniqueTokenId);
+	@Override
+	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
+		final var tId = nftId.tokenId();
+		return sanityChecked(false, from, to, tId, token -> {
+			final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
+			if (fromFreezeAndKycValidity != OK) {
+				return fromFreezeAndKycValidity;
+			}
+			final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
+			if (toFreezeAndKycValidity != OK) {
+				return toFreezeAndKycValidity;
+			}
+
+			final var nftType = nftId.tokenId();
+			final var fromRel = asTokenRel(from, nftType);
+			final var toRel = asTokenRel(to, nftType);
+			final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
+			final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
+			final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
+			final var toThisNftsOwned = (long) tokenRelsLedger.get(toRel, TOKEN_BALANCE);
+
+			accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - fromThisNftsOwned);
+			accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + fromThisNftsOwned);
+			tokenRelsLedger.set(fromRel, TOKEN_BALANCE, 0L);
+			tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + fromThisNftsOwned);
 
 			hederaLedger.updateOwnershipChanges(nftId, from, to);
 
@@ -672,6 +719,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 			if (OK != appliedValidity.get()) {
 				return;
+			}
+			if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+				var relationship = asTokenRel(changes.getTreasury(), tId);
+				long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+				if (balance != 0) {
+					appliedValidity.set(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+					return;
+				}
 			}
 			if (changes.hasAdminKey()) {
 				var newAdminKey = changes.getAdminKey();

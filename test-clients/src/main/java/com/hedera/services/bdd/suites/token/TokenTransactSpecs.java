@@ -37,7 +37,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
@@ -51,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
@@ -71,10 +74,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
@@ -105,6 +110,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						missingEntitiesRejected(),
 						allRequiredSigsAreChecked(),
 						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnAccountBalancesForTreasury(),
 						uniqueTokenTxnWithNoAssociation(),
 						uniqueTokenTxnWithFrozenAccount(),
 						uniqueTokenTxnWithSenderNotSigned(),
@@ -151,7 +157,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenAssociate(theAccount, List.of(A_TOKEN, B_TOKEN))
 				).then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theAccount)
 						).hasKnownStatus(INVALID_NFT_ID),
 						cryptoTransfer(
 								moving(1, B_TOKEN).between(TOKEN_TREASURY, theAccount)
@@ -186,7 +192,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						cryptoTransfer(
 								moving(1, theCommonToken).between(TOKEN_TREASURY, theAccount),
-								movingUnique(1, theUniqueToken).between(TOKEN_TREASURY, theAccount)
+								movingUnique(theUniqueToken, 1).between(TOKEN_TREASURY, theAccount)
 						).via(theTxn)
 				).then(
 						getTxnRecord(theTxn).logged()
@@ -220,15 +226,15 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN)
 				).then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theContract)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theContract)
 						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theAccount)
 						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate(theContract, A_TOKEN),
 						tokenAssociate(theAccount, A_TOKEN),
-						cryptoTransfer(movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theContract)),
-						cryptoTransfer(movingUnique(2, A_TOKEN).between(TOKEN_TREASURY, theAccount)),
+						cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theContract)),
+						cryptoTransfer(movingUnique(A_TOKEN, 2).between(TOKEN_TREASURY, theAccount)),
 						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
 						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1),
 						getAccountNftInfos(theAccount, 0, 1)
@@ -650,13 +656,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenAssociate(FIRST_USER, A_TOKEN)
 				).when(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 						).signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER).via("cryptoTransferTxn")
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(A_TOKEN, 0),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 1),
+						getTokenInfo(A_TOKEN),
 						getTokenNftInfo(A_TOKEN, 1)
 								.hasSerialNum(1)
 								.hasMetadata(ByteString.copyFromUtf8("memo"))
@@ -665,6 +672,58 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountNftInfos(FIRST_USER, 0, 1)
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN, 1, FIRST_USER, ByteString.copyFromUtf8("memo"))),
+						getTxnRecord("cryptoTransferTxn").logged()
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnAccountBalancesForTreasury() {
+		return defaultHapiSpec("UniqueTokenTxnAccountBalancesForTreasury")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate("newTreasury"),
+						cryptoCreate("oldTreasury"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.treasury("oldTreasury"),
+						tokenCreate(B_TOKEN)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.adminKey("supplyKey")
+								.supplyKey("supplyKey")
+								.treasury("oldTreasury"),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))),
+						mintToken(B_TOKEN, List.of(ByteString.copyFromUtf8("memo2"))),
+						tokenAssociate("newTreasury", A_TOKEN, B_TOKEN),
+						tokenUpdate(B_TOKEN)
+								.treasury("newTreasury")
+								.hasKnownStatus(SUCCESS)
+				).when(
+						cryptoTransfer(
+								movingUnique(A_TOKEN, 1).between("oldTreasury", "newTreasury")
+						).via("cryptoTransferTxn")
+				).then(
+						getAccountBalance("oldTreasury")
+								.hasTokenBalance(A_TOKEN, 0),
+						getAccountBalance("newTreasury")
+								.hasTokenBalance(A_TOKEN, 1),
+						getAccountBalance("newTreasury")
+								.hasTokenBalance(B_TOKEN, 1),
+						getTokenNftInfo(A_TOKEN, 1)
+								.hasSerialNum(1)
+								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasTokenID(A_TOKEN)
+								.hasAccountID("newTreasury"),
+						getTokenNftInfos(A_TOKEN, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN, 1, "newTreasury", ByteString.copyFromUtf8("memo"))
+								).logged(),
+						getAccountNftInfos("newTreasury", 0, 2)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN, 1, "newTreasury", ByteString.copyFromUtf8("memo")),
+										newTokenNftInfo(B_TOKEN, 1, "newTreasury", ByteString.copyFromUtf8("memo2"))
+								).logged(),
 						getTxnRecord("cryptoTransferTxn").logged()
 				);
 	}
@@ -686,7 +745,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 
 						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
@@ -718,7 +777,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 						)
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
 				);
@@ -743,7 +802,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 						)
 								.signedBy(DEFAULT_PAYER)
 								.hasKnownStatus(INVALID_SIGNATURE)
@@ -770,7 +829,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 						)
 								.signedBy("signingKeyTreasury", DEFAULT_PAYER)
 								.hasKnownStatus(INVALID_SIGNATURE)
@@ -801,7 +860,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				)
 				.when(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, SECOND_USER),
 								moving(101, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
 						)
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
@@ -839,7 +898,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenDelete(A_TOKEN)
 				).then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 						)
 								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
 								.hasKnownStatus(TOKEN_WAS_DELETED)
@@ -872,13 +931,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						mintToken(tokenWithHbarFee, List.of(ByteString.copyFromUtf8("Second!"))),
 						tokenAssociate(alice, tokenWithHbarFee),
 						tokenAssociate(bob, tokenWithHbarFee),
-						cryptoTransfer(movingUnique(2L, tokenWithHbarFee).between(treasuryForToken, alice))
+						cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(treasuryForToken, alice))
 								.payingWith(GENESIS)
 								.fee(ONE_HBAR)
 								.via(txnFromTreasury)
 				).when(
 						cryptoTransfer(
-								movingUnique(2L, tokenWithHbarFee).between(alice, bob)
+								movingUnique(tokenWithHbarFee, 2L).between(alice, bob)
 						)
 								.payingWith(GENESIS)
 								.fee(ONE_HBAR)

@@ -22,6 +22,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -63,6 +64,9 @@ public class RenewalHelper {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 
+	/* Only needed for interoperability, will be removed during refactor */
+	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+
 	private MerkleAccount lastClassifiedAccount = null;
 	private MerkleEntityId lastClassifiedEntityId;
 
@@ -72,7 +76,8 @@ public class RenewalHelper {
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels
+			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
+			BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		this.shard = hederaNumbers.shard();
 		this.realm = hederaNumbers.realm();
@@ -81,6 +86,7 @@ public class RenewalHelper {
 		this.accounts = accounts;
 		this.tokenRels = tokenRels;
 		this.dynamicProperties = dynamicProperties;
+		this.backingAccounts = backingAccounts;
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
@@ -136,8 +142,8 @@ public class RenewalHelper {
 			}
 		}
 
-		final var currentAccounts = accounts.get();
-		currentAccounts.remove(lastClassifiedEntityId);
+		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
+		backingAccounts.remove(lastClassifiedEntityId.toAccountId());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 

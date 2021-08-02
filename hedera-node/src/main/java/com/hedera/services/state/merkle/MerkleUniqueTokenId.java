@@ -28,20 +28,21 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
-import java.util.Objects;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.assertValid;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
 
 /**
  * Represents the ID of {@link MerkleUniqueTokenId}
  */
 public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
+	private static final long IDENTITY_CODE_SERIAL_NUM_MASK = (1L << 32) - 1;
+	private static final long IDENTITY_CODE_TOKEN_NUM_MASK = IDENTITY_CODE_SERIAL_NUM_MASK << 32;
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x52dd6afda193e8bcL;
 
-	private EntityId tokenId = MISSING_ENTITY_ID;
-	private long serialNumber;
+	private long nftCode;
 
 	public MerkleUniqueTokenId() {
 		/* No-op. */
@@ -57,16 +58,27 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 			EntityId tokenId,
 			long serialNumber
 	) {
-		this.tokenId = tokenId;
-		this.serialNumber = serialNumber;
+		this.nftCode = nftCodeFrom(tokenId.num(), serialNumber);
 	}
 
 	public static MerkleUniqueTokenId fromNftId(NftId id) {
-		return new MerkleUniqueTokenId(new EntityId(id.shard(), id.realm(), id.num()), id.serialNo());
+		return new MerkleUniqueTokenId(nftCodeFrom(id.num(), id.serialNo()));
+	}
+
+	/**
+	 * Gives a "compressed" code to identify this unique token id.
+	 *
+	 * @return the code for this unique token id
+	 */
+	public long identityCode() {
+		return nftCode;
+	}
+
+	public static MerkleUniqueTokenId fromIdentityCode(long code) {
+		return new MerkleUniqueTokenId(code);
 	}
 
 	/* --- Object --- */
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -78,37 +90,29 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 
 		var that = (MerkleUniqueTokenId) o;
 
-		return Objects.equals(tokenId, that.tokenId) &&
-				Objects.equals(this.serialNumber, that.serialNumber);
+		return this.nftCode == that.nftCode;
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Long.hashCode(tokenId.shard());
-		result = 31 * result + Long.hashCode(tokenId.realm());
-		result = 31 * result + Long.hashCode(tokenId.num());
-		return 31 * result + Long.hashCode(serialNumber);
+		return Long.hashCode(nftCode);
 	}
 
 	/* --- Bean --- */
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleUniqueTokenId.class)
-				.add("tokenId", tokenId)
-				.add("serialNumber", serialNumber)
+				.add("tokenId", tokenId().toAbbrevString())
+				.add("serialNumber", serialNumber())
 				.toString();
 	}
 
 	public EntityId tokenId() {
-		return tokenId;
+		return EntityId.fromIdentityCode(codeFromNum((nftCode & IDENTITY_CODE_TOKEN_NUM_MASK) >>> 32));
 	}
 
 	public long serialNumber() {
-		return serialNumber;
-	}
-
-	public NftId asNftId() {
-		return new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
+		return nftCode & IDENTITY_CODE_SERIAL_NUM_MASK;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -124,20 +128,27 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
-		tokenId = in.readSerializable();
-		serialNumber = in.readLong();
+		nftCode = in.readLong();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializable(tokenId, true);
-		out.writeLong(serialNumber);
+		out.writeLong(nftCode);
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueTokenId copy() {
-		setImmutable(true);
-		return new MerkleUniqueTokenId(tokenId, serialNumber);
+		return new MerkleUniqueTokenId(this.nftCode);
+	}
+
+	private MerkleUniqueTokenId(long nftCode) {
+		this.nftCode = nftCode;
+	}
+
+	private static long nftCodeFrom(long num, long serialNo) {
+		assertValid(num);
+		assertValid(serialNo);
+		return (num << 32) | serialNo;
 	}
 }

@@ -177,4 +177,9 @@ class HederaKeyActivationTest {
 		// expect:
 		assertFalse(HederaKeyActivation.payerSigIsActive(accessor));
 	}
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, () -> new HederaKeyActivation());
+	}
 }

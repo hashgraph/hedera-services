@@ -38,7 +38,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,17 +58,19 @@ class MerkleUniqueTokenTest {
 	private byte[] otherMetadata;
 	private RichInstant timestamp;
 	private RichInstant otherTimestamp;
+	private RichInstant anotherTimestamp;
 
 	private static long timestampL = 1_234_567L;
 
 	@BeforeEach
 	public void setup() {
-		owner = new EntityId(1, 2, 3);
-		otherOwner = new EntityId(1, 2, 4);
+		owner = new EntityId(0, 0, 3);
+		otherOwner = new EntityId(0, 0, 4);
 		metadata = "Test NFT".getBytes();
 		otherMetadata = "Test NFT2".getBytes();
 		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
 		otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
+		anotherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL, 1));
 
 		subject = new MerkleUniqueToken(owner, metadata, timestamp);
 	}
@@ -81,12 +85,14 @@ class MerkleUniqueTokenTest {
 		var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
 		var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
 		var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
+		var other4 = new MerkleUniqueToken(owner, metadata, anotherTimestamp);
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 
 		// expect
 		assertNotEquals(subject, other);
 		assertNotEquals(subject, other2);
 		assertNotEquals(subject, other3);
+		assertNotEquals(subject, other4);
 		assertEquals(subject, identical);
 	}
 
@@ -105,8 +111,8 @@ class MerkleUniqueTokenTest {
 	void toStringWorks() {
 		// given:
 		assertEquals("MerkleUniqueToken{" +
-						"owner=" + owner + ", " +
-						"creationTime=" + timestamp + ", " +
+						"owner=0.0.3, " +
+						"creationTime=1970-01-15T06:56:07Z, " +
 						"metadata=" + Arrays.toString(metadata) + "}",
 				subject.toString());
 	}
@@ -134,7 +140,7 @@ class MerkleUniqueTokenTest {
 		subject.serialize(out);
 
 		// then:
-		inOrder.verify(out).writeSerializable(owner, true);
+		inOrder.verify(out).writeInt(owner.identityCode());
 		inOrder.verify(out).writeLong(timestamp.getSeconds());
 		inOrder.verify(out).writeInt(timestamp.getNanos());
 		inOrder.verify(out).writeByteArray(metadata);
@@ -146,10 +152,11 @@ class MerkleUniqueTokenTest {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
-		given(in.readSerializable()).willReturn(owner);
 		given(in.readByteArray(anyInt())).willReturn(metadata);
 		given(in.readLong()).willReturn(timestampL);
-		given(in.readInt()).willReturn(0);
+		given(in.readInt())
+				.willReturn(owner.identityCode())
+				.willReturn(0);
 
 		// and:
 		var read = new MerkleUniqueToken();
@@ -197,8 +204,17 @@ class MerkleUniqueTokenTest {
 
 	@Test
 	void setsAndGetsOwner() {
-		subject.setOwner(new EntityId(0, 0, 1));
-		assertEquals(new EntityId(0, 0, 1), subject.getOwner());
+		// setup:
+		final var smallNumOwner = new EntityId(0, 0, 1);
+		final var largeNumOwner = new EntityId(0, 0, MAX_NUM_ALLOWED);
+
+		// expect:
+		subject.setOwner(smallNumOwner);
+		assertEquals(smallNumOwner, subject.getOwner());
+
+		// and expect:
+		subject.setOwner(largeNumOwner);
+		assertEquals(largeNumOwner, subject.getOwner());
 	}
 
 	@Test
@@ -209,5 +225,16 @@ class MerkleUniqueTokenTest {
 	@Test
 	void getsCreationTime() {
 		assertEquals(timestamp, subject.getCreationTime());
+	}
+
+	@Test
+	void treasuryOwnershipCheckWorks() {
+		// expect:
+		assertFalse(subject.isTreasuryOwned());
+
+		// and:
+		subject.setOwner(EntityId.MISSING_ENTITY_ID);
+		// then:
+		assertTrue(subject.isTreasuryOwned());
 	}
 }

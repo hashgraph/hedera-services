@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -229,19 +230,19 @@ public class HederaLedger {
 		for (int i = 0; i < numTouches; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
-				final var fungibleTransfersHere = netTokenTransfers.get(token);
-				if (fungibleTransfersHere != null) {
-					purgeZeroAdjustments(fungibleTransfersHere);
+				final var uniqueTransfersHere = uniqueTokenTransfers.get(token);
+				if (uniqueTransfersHere != null) {
 					all.add(TokenTransferList.newBuilder()
 							.setToken(token)
-							.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
+							.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
 							.build());
 				} else {
-					var uniqueTransfersHere = uniqueTokenTransfers.get(token);
-					if (uniqueTransfersHere != null) {
+					final var fungibleTransfersHere = netTokenTransfers.get(token);
+					if (fungibleTransfersHere != null) {
+						purgeZeroAdjustments(fungibleTransfersHere);
 						all.add(TokenTransferList.newBuilder()
 								.setToken(token)
-								.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
+								.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
 								.build());
 					}
 				}
@@ -384,7 +385,7 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
+	public void doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
 			if (change.isForHbar()) {
@@ -401,8 +402,8 @@ public class HederaLedger {
 			adjustHbarUnchecked(changes);
 		} else {
 			dropPendingTokenChanges();
+			throw new InvalidTransactionException(validity);
 		}
-		return validity;
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */

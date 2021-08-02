@@ -37,6 +37,7 @@ import java.util.Map;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -47,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
@@ -119,21 +121,23 @@ public class Token {
 			final List<ByteString> metadata,
 			final RichInstant creationTime
 	) {
+		final var metadataCount = metadata.size();
 		validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA,
-				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
+				"Cannot mint zero unique tokens");
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
-				"Non fungible mint can be invoked only on Non fungible token type");
+				"Non-fungible mint can be invoked only on non-fungible token type");
+		validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
 
-		changeSupply(treasuryRel, metadata.size(), FAIL_INVALID);
+		changeSupply(treasuryRel, metadataCount, FAIL_INVALID);
 
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
-			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(),
-					m.toByteArray());
+			// The default sentinel account is used (0.0.0) to represent unique tokens owned by the Treasury
+			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT, m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
 			ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
 		}
-		treasury.setOwnedNfts(treasury.getOwnedNfts() + metadata.size());
+		treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
 	}
 
 	public void burn(final TokenRelationship treasuryRel, final long amount) {
@@ -163,7 +167,7 @@ public class Token {
 			final var uniqueToken = loadedUniqueTokens.get(serialNum);
 			validateTrue(uniqueToken != null, FAIL_INVALID);
 
-			final var treasuryIsOwner = uniqueToken.getOwner().equals(treasuryId);
+			final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
 			validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
 			ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, treasuryId));

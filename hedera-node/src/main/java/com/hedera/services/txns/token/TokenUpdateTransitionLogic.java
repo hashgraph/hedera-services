@@ -22,7 +22,9 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -62,6 +64,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	private final boolean allowChangedTreasuryToOwnNfts;
 	private final TokenStore store;
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
@@ -69,6 +72,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
 	public TokenUpdateTransitionLogic(
+			boolean allowChangedTreasuryToOwnNfts,
 			OptionValidator validator,
 			TokenStore store,
 			HederaLedger ledger,
@@ -80,6 +84,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.affectsExpiryOnly = affectsExpiryOnly;
+		this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
 	}
 
 	@Override
@@ -135,7 +140,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				return;
 			}
 			var existingTreasury = token.treasury().toGrpcAccountId();
-			if (token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+			if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				var existingTreasuryBalance = ledger.getTokenBalance(existingTreasury, id);
 				if (existingTreasuryBalance > 0L) {
 					abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
@@ -161,11 +166,16 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			final var oldTreasury = replacedTreasury.get();
 			long replacedTreasuryBalance = ledger.getTokenBalance(oldTreasury, id);
 			if (replacedTreasuryBalance > 0) {
-				outcome = ledger.doTokenTransfer(
-						id,
-						oldTreasury,
-						op.getTreasury(),
-						replacedTreasuryBalance);
+				if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+					outcome = ledger.doTokenTransfer(
+							id,
+							oldTreasury,
+							op.getTreasury(),
+							replacedTreasuryBalance);
+				} else {
+					outcome = store.changeOwnerWildCard(
+							new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1), oldTreasury, op.getTreasury());
+				}
 			}
 		}
 		if (outcome != OK) {
