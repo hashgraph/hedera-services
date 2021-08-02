@@ -120,7 +120,7 @@ class MerkleAccountScopedCheckTest {
 	}
 
 	@Test
-	void hapyPath() {
+	void happyPath() {
 		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
