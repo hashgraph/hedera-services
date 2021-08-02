@@ -29,7 +29,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         lmdbMem, lmdb, rocksdb, jasperdb
     }
 
-    protected final Random rand = new Random(1234);
+    protected static final Random rand = new Random(1234);
     protected final Pipeline<K, V> pipeline = new Pipeline<>();
 
     protected VirtualMap<K,V> createMap(
@@ -83,7 +83,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         return new Id(index);
     }
 
-    protected Account asAccount(long index) {
+    public static Account asAccount(long index) {
         final var a = new Account();
         a.setHbarBalance(rand.nextInt(100_000));
 //        a.setHbarBalance(index);
@@ -198,7 +198,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
     }
 
-    protected static final class Account implements VirtualValue {
+    public static class Account implements VirtualValue {
         private static final int MAX_STRING_BYTES = 120;
         public static final int SERIALIZED_SIZE = (4*Long.BYTES) + // key
                 Long.BYTES +        // expiry
