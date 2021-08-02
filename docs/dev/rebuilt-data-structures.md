@@ -1,9 +1,9 @@
 # Rebuilt data structures
 
-The ground truth of the Services world state is exactly the Merkle tree
+The ground truth of the Services world state is the Merkle tree
 with `ServicesState` at the root. We can think of `handleTransaction()` 
-as a pure reducer that combines the current world state and a consensus 
-transaction into the new consensus world state.
+as a pure reduction that combines the current world state and a consensus 
+transaction into a new consensus world state.
 
 ```
 handleTransaction: (world_state, consensus_transaction) -> new_world_state
@@ -17,9 +17,10 @@ non-Merkle objects that "denormalize" the Merkle tree. These denormalized
 views of state are used to, for example, classify duplicate transactions;
 and can thus change the outcome of handling a transaction. 
 
-We often call these views **rebuilt data structures** to emphasize they need 
-first-class consideration during the restart and reconnect phases in the 
-lifecycle of a Services node.
+:information_desk_person:&nbsp;We often call these views 
+**rebuilt data structures** to emphasize the restart and reconnect phases 
+in the lifecycle of a Services node must give such structures first-class
+consideration.
 
 ## Lifecycle consistency 
 
@@ -35,7 +36,7 @@ transaction given that state.
 
 This is a problem of _consistency_. 
 
-:warning:&nbsp;That is, no matter how a node derives its non-Merkle state 
+:warning:&nbsp;No matter how a node derives its non-Merkle state 
 views, whether one transaction at a time, or all at once from a state learned 
 via reconnect or found at restart---all nodes must always see the same views 
 for the same state.
