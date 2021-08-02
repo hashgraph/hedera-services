@@ -51,10 +51,10 @@ The **main effect** of `f` is still on the Merkle world state; but this
 **side effect** on `x` must be given equal consideration. 
 
 To achieve consistency for `x`, we must be able to rebuild all the 
-accumulated side effects of intersecting transactions `f` from the main 
-effects of those `f` on the Merkle state.
+side effects of intersecting transactions `f` from their main effects 
+on the Merkle state.
 
-## List of known rebuilt data structures
+## List of rebuilt data structures
 
 The following rebuilt data structures exist in Services:
 1. The [`existingRels`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/ledger/accounts/BackingTokenRels.java#L46) set of non-dissociated token-account relationships.
@@ -77,7 +77,7 @@ transactions can be consistently rebuilt from the main effects in state.
 Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
 ```
 
-This structure givnes a small performance boost when checking if an
+This structure gives a small performance boost when checking if an
 `AccountID` and `TokenID` are associated, as it avoids both (1) 
 converting from gRPC to Merkle types; and (2), acquiring a read lock 
 on the `tokenAssociations` FCM. 
