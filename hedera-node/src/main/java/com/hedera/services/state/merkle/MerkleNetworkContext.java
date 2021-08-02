@@ -69,6 +69,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
+	private FeeMultiplierSource multiplierSource = null;
+	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 
 	public MerkleNetworkContext() {
@@ -152,30 +154,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.lastScannedEntity = lastScannedEntity;
 	}
 
-	public void updateSnapshotsFrom(FunctionalityThrottling throttling) {
-		throwIfImmutable("Cannot update usage snapshots on an immutable context");
-		var activeThrottles = throttling.allActiveThrottles();
-		int n = activeThrottles.size();
-		if (n == 0) {
-			usageSnapshots = NO_SNAPSHOTS;
-		} else {
-			usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
-			for (int i = 0; i < n; i++) {
-				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
-			}
-		}
+	public void syncThrottling(FunctionalityThrottling throttling) {
+		this.throttling = throttling;
 	}
 
-	public void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
-		throwIfImmutable("Cannot update congestion starts on an immutable context");
-		final var congestionStarts = feeMultiplierSource.congestionLevelStarts();
-		if (null == congestionStarts) {
-			congestionLevelStarts = NO_CONGESTION_STARTS;
-		} else {
-			congestionLevelStarts = congestionStarts;
-		}
+	public void syncMultiplierSource(FeeMultiplierSource multiplierSource) {
+		this.multiplierSource = multiplierSource;
 	}
-
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
 		throwIfImmutable("Cannot set consensus time of last transaction on an immutable context");
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
@@ -194,7 +179,17 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	/* --- MerkleLeaf --- */
 	@Override
 	public MerkleNetworkContext copy() {
+		if (throttling != null) {
+			updateSnapshotsFrom(throttling);
+			throttling = null;
+		}
+		if (multiplierSource != null) {
+			updateCongestionStartsFrom(multiplierSource);
+			multiplierSource = null;
+		}
+
 		setImmutable(true);
+
 		return new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
@@ -353,6 +348,30 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* --- Internal helpers --- */
+	void updateSnapshotsFrom(FunctionalityThrottling throttling) {
+		throwIfImmutable("Cannot update usage snapshots on an immutable context");
+		var activeThrottles = throttling.allActiveThrottles();
+		int n = activeThrottles.size();
+		if (n == 0) {
+			usageSnapshots = NO_SNAPSHOTS;
+		} else {
+			usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
+			for (int i = 0; i < n; i++) {
+				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
+			}
+		}
+	}
+
+	void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
+		throwIfImmutable("Cannot update congestion starts on an immutable context");
+		final var congestionStarts = feeMultiplierSource.congestionLevelStarts();
+		if (null == congestionStarts) {
+			congestionLevelStarts = NO_CONGESTION_STARTS;
+		} else {
+			congestionLevelStarts = congestionStarts;
+		}
+	}
+
 	private void reset(List<DeterministicThrottle> throttles) {
 		var currUsageSnapshots = throttles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
@@ -399,10 +418,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTimeOfLastHandledTxn;
 	}
 
-	DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
-		return usageSnapshots;
-	}
-
 	void setUsageSnapshots(DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
 		this.usageSnapshots = usageSnapshots;
 	}
@@ -417,5 +432,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void setSeqNo(SequenceNumber seqNo) {
 		this.seqNo = seqNo;
+        }
+
+	FeeMultiplierSource getMultiplierSource() {
+		return multiplierSource;
+	}
+
+	FunctionalityThrottling getThrottling() {
+		return throttling;
 	}
 }
