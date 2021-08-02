@@ -186,7 +186,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
-				final var numTreasuries = numTokens.get() / + Math.min(1, numTokens.get() % UNIQ_TOKENS_PER_TREASURY);
+				final var numTreasuries = numTokens.get() / UNIQ_TOKENS_PER_TREASURY
+						+ Math.min(1, numTokens.get() % UNIQ_TOKENS_PER_TREASURY);
 				final List<HapiSpecOperation> inits = new ArrayList<>();
 				inits.add(
 						inParallel(IntStream.range(0, numTreasuries)
