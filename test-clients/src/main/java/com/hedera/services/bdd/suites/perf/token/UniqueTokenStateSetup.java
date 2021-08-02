@@ -196,7 +196,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 										.balance(0L)
 										.noLogging()
 										.key(GENESIS)
-										.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+										.hasRetryPrecheckFrom(DUPLICATE_TRANSACTION)
 										.hasKnownStatusFrom(SUCCESS, UNKNOWN, TRANSACTION_EXPIRED)
 										.deferStatusResolution())
 								.toArray(HapiSpecOperation[]::new)));
