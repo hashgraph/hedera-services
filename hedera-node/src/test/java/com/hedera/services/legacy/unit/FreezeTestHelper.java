@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -39,13 +40,17 @@ class FreezeTestHelper {
 	private static AccountID nodeAccountId = IdUtils.asAccount("0.0.3");
 
 	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID) {
-		return createFreezeTransaction(paidBy58, valid, fileID, null);
+		return createFreezeTransaction(paidBy58, valid, fileID, null, null);
 	}
 
-	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash) {
+	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, Instant freezeStartTime) {
+		return createFreezeTransaction(paidBy58, valid, fileID, null, freezeStartTime);
+	}
+
+	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash, Instant timeStamp) {
 		int[] startHourMin = getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
 		int[] endHourMin = getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
-		return createFreezeTransaction(paidBy58, valid, fileID, fileHash, startHourMin, endHourMin);
+		return createFreezeTransaction(paidBy58, valid, fileID, fileHash, startHourMin, endHourMin, timeStamp);
 	}
 
 	static Transaction createFreezeTransaction(
@@ -54,11 +59,17 @@ class FreezeTestHelper {
 			FileID fileID,
 			byte[] fileHash,
 			int[] startHourMin,
-			int[] endHourMin
+			int[] endHourMin,
+			Instant timeStamp
 	) {
 		FreezeTransactionBody freezeBody;
 		if (valid) {
-			var builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
+			FreezeTransactionBody.Builder builder;
+			if(timeStamp == null) {
+				builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
+			} else {
+				builder = getFreezeTranBuilder(timeStamp);
+			}
 			if (fileID != null) {
 				builder.setUpdateFile(fileID);
 				builder.setFileHash(ByteString.copyFrom(fileHash));
@@ -96,6 +107,12 @@ class FreezeTestHelper {
 		return FreezeTransactionBody.newBuilder()
 				.setStartHour(startHour).setStartMin(startMin)
 				.setEndHour(endHour).setEndMin(endMin);
+	}
+
+	private static FreezeTransactionBody.Builder getFreezeTranBuilder(Instant freezeStartTime){
+		return FreezeTransactionBody.newBuilder()
+				.setStartTime(Timestamp.newBuilder().setSeconds(freezeStartTime.getEpochSecond())
+				.setNanos(freezeStartTime.getNano()));
 	}
 
 	private static int[] getUTCHourMinFromMillis(final long utcMillis) {

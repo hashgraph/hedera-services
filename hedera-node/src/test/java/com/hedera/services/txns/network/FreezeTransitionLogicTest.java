@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -136,7 +137,25 @@ public class FreezeTransitionLogicTest {
 
 	@Test
 	public void rejectsInvalidTime() {
-		givenTxnCtx(false, Optional.empty(), Optional.empty());
+		givenTxnCtx(false, Optional.empty(), Optional.empty(), false);
+
+		// expect:
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	public void acceptValidFreezeStartTimeStamp() {
+		givenTxnCtx(true, Optional.empty(), Optional.empty(), true);
+
+		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
+	}
+
+
+
+	@Test
+	public void rejectsInvalidFreezeStartTimeStamp() {
+		givenTxnCtx(false, Optional.empty(), Optional.empty(), true);
 
 		// expect:
 		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
@@ -144,7 +163,7 @@ public class FreezeTransitionLogicTest {
 
 	@Test
 	public void rejectsInvalidUpdateTarget() {
-		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.feeSchedules())), Optional.empty());
+		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.feeSchedules())), Optional.empty(), false);
 
 		// expect:
 		assertEquals(INVALID_FILE_ID, subject.semanticCheck().apply(freezeTxn));
@@ -152,7 +171,7 @@ public class FreezeTransitionLogicTest {
 
 	@Test
 	public void rejectsMissingFileHash() {
-		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty());
+		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty(), false);
 
 		// expect:
 		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
@@ -172,18 +191,28 @@ public class FreezeTransitionLogicTest {
 	}
 
 	private void givenTxnCtx() {
-		givenTxnCtx(true, Optional.empty(), Optional.empty());
+		givenTxnCtx(true, Optional.empty(), Optional.empty(), false);
 	}
 
-	private void givenTxnCtx(boolean validTime, Optional<FileID> updateTarget, Optional<ByteString> fileHash) {
+	private void givenTxnCtx(boolean validTime, Optional<FileID> updateTarget,
+			Optional<ByteString> fileHash, boolean useTimeStamp) {
 		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId());
 
 		var op = FreezeTransactionBody.newBuilder();
-		if (validTime) {
-			plusValidTime(op);
-		} else {
-			plusInvalidTime(op);
+		if(!useTimeStamp) {
+			if (validTime) {
+				plusValidTime(op);
+			} else {
+				plusInvalidTime(op);
+			}
+		}
+		else {
+			if (validTime) {
+				setValidFreezeStartTimeStamp(op);
+			} else {
+				setInvalidFreezeStartTimeStamp(op);
+			}
 		}
 		updateTarget.ifPresent(op::setUpdateFile);
 		fileHash.ifPresent(op::setFileHash);
@@ -200,6 +229,20 @@ public class FreezeTransitionLogicTest {
 
 	private void plusInvalidTime(FreezeTransactionBody.Builder op) {
 		op.setStartHour(24).setStartMin(15).setEndHour(15).setEndMin(20);
+	}
+
+	private void setValidFreezeStartTimeStamp(FreezeTransactionBody.Builder op) {
+		Instant validFreezeStartTime = Instant.now().plusSeconds(120);
+		op.setStartTime(Timestamp.newBuilder()
+				.setSeconds(validFreezeStartTime.getEpochSecond())
+				.setNanos(validFreezeStartTime.getNano()));
+	}
+
+	private void setInvalidFreezeStartTimeStamp(FreezeTransactionBody.Builder op) {
+		Instant inValidFreezeStartTime = Instant.now().minusSeconds(60);
+		op.setStartTime(Timestamp.newBuilder()
+				.setSeconds(inValidFreezeStartTime.getEpochSecond())
+				.setNanos(inValidFreezeStartTime.getNano()));
 	}
 
 	private TransactionID ourTxnId() {

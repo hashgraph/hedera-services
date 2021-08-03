@@ -25,7 +25,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,9 +88,19 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	public ResponseCodeEnum validate(TransactionBody freezeTxn) {
 		var op = freezeTxn.getFreeze();
-		if (!isValidTime(op.getStartHour(), op.getStartMin()) || !isValidTime(op.getEndHour(), op.getEndMin())) {
-			return INVALID_FREEZE_TRANSACTION_BODY;
+
+		if(op.hasStartTime()) {
+			Timestamp txnStartTime = freezeTxn.getTransactionID().getTransactionValidStart();
+			if(!isValidTimestamp(op.getStartTime(), txnStartTime)) {
+				return INVALID_FREEZE_TRANSACTION_BODY;
+			}
 		}
+		else {
+			if (!isValidTime(op.getStartHour(), op.getStartMin()) || !isValidTime(op.getEndHour(), op.getEndMin())) {
+				return INVALID_FREEZE_TRANSACTION_BODY;
+			}
+		}
+
 		if (op.hasUpdateFile()) {
 			if (!op.getUpdateFile().equals(softwareUpdateZipFid)) {
 				return INVALID_FILE_ID;
@@ -102,5 +114,13 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	private boolean isValidTime(int hr, int min) {
 		return hr >= 0 && hr <= 23 && min >= 0 && min <= 59;
+	}
+
+	private boolean isValidTimestamp(Timestamp freezeStartTime, Timestamp txnStartTime) {
+		if (Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos())
+				.isBefore(Instant.ofEpochSecond(txnStartTime.getSeconds(),txnStartTime.getNanos()))) {
+			return false;
+		}
+		return true;
 	}
 }

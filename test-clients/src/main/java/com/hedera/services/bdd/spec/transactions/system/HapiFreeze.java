@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -45,12 +46,16 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
-	int delay = 5;
-	int duration = 30;
+	private final static int DELAY_DEFAULT = 5;
+	private final static int DURATION_DEFAULT = 30;
 	boolean settingDelayUnits = true;
 	ChronoUnit delayUnit = SECONDS;
 	ChronoUnit durationUnit = SECONDS;
+
+	private Optional<Integer> delay = Optional.empty();
+	private Optional<Integer> duration = Optional.empty();
 	ZonedDateTime start, end;
+	private Optional<Instant> freezeStartTime = Optional.empty();
 	private String fileID = null;
 	private String fileName = null;
 	private Optional<byte[]> fileHash = Optional.empty();
@@ -59,13 +64,19 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		return this;
 	}
 
+	public HapiFreeze startAt(Instant startTime) {
+		freezeStartTime = Optional.of(startTime);
+		return this;
+	}
+
 	public HapiFreeze startingIn(int n) {
-		this.delay = n;
+		delay = Optional.of(n);
 		settingDelayUnits = true;
 		return this;
 	}
+
 	public HapiFreeze andLasting(int n) {
-		this.duration = n;
+		duration = Optional.of(n);
 		settingDelayUnits =false;
 		return this;
 	}
@@ -111,29 +122,54 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	}
 
 	@Override
-	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		Instant moment = Instant.now().plus(delay, delayUnit);
-		start = ZonedDateTime.ofInstant(moment, ZoneId.of("GMT"));
-		end = ZonedDateTime.ofInstant(moment.plus(duration, durationUnit), ZoneId.of("GMT"));
-		FreezeTransactionBody opBody = spec
-				.txns()
-				.<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
-						FreezeTransactionBody.class, b -> {
-							b.setStartHour(start.getHour());
-							b.setStartMin(start.getMinute());
-							b.setEndHour(end.getHour());
-							b.setEndMin(end.getMinute());
-							if (fileID!=null) {
-								b.setUpdateFile(asFileId(fileID, spec));
+	protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+		FreezeTransactionBody opBody  = FreezeTransactionBody.getDefaultInstance();
+		if(delay.isPresent() || duration.isPresent()) {
+			if(delay.isPresent() && duration.isEmpty()) {
+				duration = Optional.of(DURATION_DEFAULT);
+			}
+			else {
+				delay = Optional.of(DELAY_DEFAULT);
+			}
+			Instant moment = Instant.now().plus(delay.get(), delayUnit);
+			start = ZonedDateTime.ofInstant(moment, ZoneId.of("GMT"));
+			end = ZonedDateTime.ofInstant(moment.plus(duration.get(), durationUnit), ZoneId.of("GMT"));
+			opBody = spec
+					.txns()
+					.<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
+							FreezeTransactionBody.class, b -> {
+								b.setStartHour(start.getHour());
+								b.setStartMin(start.getMinute());
+								b.setEndHour(end.getHour());
+								b.setEndMin(end.getMinute());
+								fillRestOfTxnBody(b, spec);
 							}
-							if (fileName !=null){
-								FileID foundID = spec.registry().getFileId(fileName);
-								b.setUpdateFile(foundID);
+					);
+		}
+		else if(freezeStartTime.isPresent()) {
+			Instant startTime = freezeStartTime.get();
+			opBody = spec.txns()
+					.<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
+							FreezeTransactionBody.class, b -> {
+								b.setStartTime(Timestamp.newBuilder().setSeconds(startTime.getEpochSecond())
+										.setNanos(startTime.getNano()));
+								fillRestOfTxnBody(b, spec);
 							}
-							fileHash.ifPresent(x -> b.setFileHash(ByteString.copyFrom(x)));
-						}
-				);
-		return b -> b.setFreeze(opBody);
+					);
+		}
+		final FreezeTransactionBody txnBody = opBody;
+		return b -> b.setFreeze(txnBody);
+	}
+
+	private void fillRestOfTxnBody(FreezeTransactionBody.Builder b, HapiApiSpec spec) {
+		if (fileID!=null) {
+			b.setUpdateFile(asFileId(fileID, spec));
+		}
+		if (fileName !=null){
+			FileID foundID = spec.registry().getFileId(fileName);
+			b.setUpdateFile(foundID);
+		}
+		fileHash.ifPresent(x -> b.setFileHash(ByteString.copyFrom(x)));
 	}
 
 	@Override
