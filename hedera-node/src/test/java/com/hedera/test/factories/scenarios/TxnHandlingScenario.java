@@ -123,6 +123,11 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(RECEIVER_SIG_KT).get()
 				).withAccount(
+						SYS_ACCOUNT_ID,
+						newAccount()
+								.balance(DEFAULT_BALANCE)
+								.accountKeys(SYS_ACCOUNT_KT).get()
+				).withAccount(
 						MISC_ACCOUNT_ID,
 						newAccount()
 								.balance(DEFAULT_BALANCE)
