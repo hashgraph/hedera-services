@@ -28,6 +28,7 @@ import com.swirlds.common.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
@@ -244,5 +245,43 @@ class BackingAccountsTest {
 		secondFcm.put(new MerkleLong(667L), new MerkleLong(667L));
 		/* And now changing the once-mutable value throws MutabilityException */
 		assertThrows(MutabilityException.class, mutableTwo::increment);
+	}
+
+	@Test
+	void g4mOrderMatters() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+		final var crypto = new CryptoEngine();
+		// and:
+		final var firstFcm = new FCMap<MerkleLong, MerkleLong>();
+		final var secondFcm = new FCMap<MerkleLong, MerkleLong>();
+
+		// when:
+		for (long i = 0; i < 10; i++) {
+			firstFcm.put(new MerkleLong(i), new MerkleLong(i));
+			secondFcm.put(new MerkleLong(i), new MerkleLong(i));
+		}
+		// and:
+		crypto.digestTreeSync(firstFcm);
+		crypto.digestTreeSync(secondFcm);
+		// expect:
+		assertEquals(firstFcm.getRootHash(), secondFcm.getRootHash());
+
+		// and when:
+		firstFcm.getForModify(new MerkleLong(2)).increment();
+		firstFcm.getForModify(new MerkleLong(3)).increment();
+		firstFcm.getForModify(new MerkleLong(5)).increment();
+		// and:
+		secondFcm.getForModify(new MerkleLong(5)).increment();
+		secondFcm.getForModify(new MerkleLong(3)).increment();
+		secondFcm.getForModify(new MerkleLong(2)).increment();
+		// and:
+		crypto.digestTreeSync(firstFcm);
+		crypto.digestTreeSync(secondFcm);
+		// expect:
+		assertEquals(firstFcm.getRootHash(), secondFcm.getRootHash());
 	}
 }
