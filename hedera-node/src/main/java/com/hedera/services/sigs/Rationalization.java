@@ -44,20 +44,41 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
 
 public class Rationalization {
-	private final TxnAccessor txnAccessor;
-	private final SyncVerifier syncVerifier;
-	private final PubKeyToSigBytes pkToSigFn;
-	private final HederaSigningOrder keyOrderer;
-	private final TxnScopedPlatformSigFactory sigFactory;
+	private TxnAccessor txnAccessor;
+	private SyncVerifier syncVerifier;
+	private PubKeyToSigBytes pkToSigFn;
+	private HederaSigningOrder keyOrderer;
+	private TxnScopedPlatformSigFactory sigFactory;
 
-	private JKey reqPayerSig = null;
-	private boolean verifiedSync = false;
-	private List<JKey> reqOthersSigs = null;
+	private JKey reqPayerSig;
+	private boolean verifiedSync;
+	private List<JKey> reqOthersSigs;
 	private ResponseCodeEnum finalStatus;
 	private List<TransactionSignature> txnSigs;
 	private SigningOrderResult<ResponseCodeEnum> lastOrderResult;
+	private List<TransactionSignature> realPayerSigs = new ArrayList<>();
+	private List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
 
-	public Rationalization(
+	public void performFor(
+			TxnAccessor txnAccessor,
+			SyncVerifier syncVerifier,
+			HederaSigningOrder keyOrderer,
+			PubKeyToSigBytes pkToSigFn,
+			TxnScopedPlatformSigFactory sigFactory
+	) {
+		resetFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		execute();
+	}
+
+	public ResponseCodeEnum finalStatus() {
+		return finalStatus;
+	}
+
+	public boolean usedSyncVerification() {
+		return verifiedSync;
+	}
+
+	void resetFor(
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
@@ -71,19 +92,19 @@ public class Rationalization {
 		this.syncVerifier = syncVerifier;
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
+		realPayerSigs.clear();
+		realOtherPartySigs.clear();
+
+		finalStatus = null;
+		verifiedSync = false;
+
+		reqPayerSig = null;
+		reqOthersSigs = null;
+		lastOrderResult = null;
 	}
 
-	public ResponseCodeEnum finalStatus() {
-		return finalStatus;
-	}
-
-	public boolean usedSyncVerification() {
-		return verifiedSync;
-	}
-
-	public void execute() {
+	private void execute() {
 		ResponseCodeEnum otherFailure = null;
-		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
 		final var payerStatus = expandIn(realPayerSigs, keyOrderer::keysForPayer);
 		if (payerStatus != OK) {
@@ -158,5 +179,70 @@ public class Rationalization {
 		}
 		target.addAll(creation.getPlatformSigs());
 		return OK;
+	}
+
+	/* --- Only used by unit tests --- */
+	TxnAccessor getTxnAccessor() {
+		return txnAccessor;
+	}
+
+	SyncVerifier getSyncVerifier() {
+		return syncVerifier;
+	}
+
+	PubKeyToSigBytes getPkToSigFn() {
+		return pkToSigFn;
+	}
+
+	HederaSigningOrder getKeyOrderer() {
+		return keyOrderer;
+	}
+
+	TxnScopedPlatformSigFactory getSigFactory() {
+		return sigFactory;
+	}
+
+	List<TransactionSignature> getRealPayerSigs() {
+		return realPayerSigs;
+	}
+
+	List<TransactionSignature> getRealOtherPartySigs() {
+		return realOtherPartySigs;
+	}
+
+	List<TransactionSignature> getTxnSigs() {
+		return txnSigs;
+	}
+
+	void setReqOthersSigs(List<JKey> reqOthersSigs) {
+		this.reqOthersSigs = reqOthersSigs;
+	}
+
+	List<JKey> getReqOthersSigs() {
+		return reqOthersSigs;
+	}
+
+	void setLastOrderResult(SigningOrderResult<ResponseCodeEnum> lastOrderResult) {
+		this.lastOrderResult = lastOrderResult;
+	}
+
+	SigningOrderResult<ResponseCodeEnum> getLastOrderResult() {
+		return lastOrderResult;
+	}
+
+	void setReqPayerSig(JKey reqPayerSig) {
+		this.reqPayerSig = reqPayerSig;
+	}
+
+	JKey getReqPayerSig() {
+		return reqPayerSig;
+	}
+
+	void setFinalStatus(ResponseCodeEnum finalStatus) {
+		this.finalStatus = finalStatus;
+	}
+
+	void setVerifiedSync(boolean verifiedSync) {
+		this.verifiedSync = verifiedSync;
 	}
 }

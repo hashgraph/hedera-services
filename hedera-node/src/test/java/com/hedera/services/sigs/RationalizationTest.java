@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -32,6 +33,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,9 +41,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -75,10 +83,48 @@ class RationalizationTest {
 
 	@BeforeEach
 	void setUp() {
-		given(txnAccessor.getTxn()).willReturn(txn);
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
 
-		subject = new Rationalization(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		subject = new Rationalization();
+	}
+
+	@Test
+	void resetWorks() {
+		// setup:
+		final List<TransactionSignature> mockSigs = new ArrayList<>();
+		final JKey fake = new JEd25519Key("FAKE".getBytes(StandardCharsets.UTF_8));
+
+		subject = new Rationalization();
+
+		given(swirldsTxn.getSignatures()).willReturn(mockSigs);
+		// and:
+		subject.getRealPayerSigs().add(null);
+		subject.getRealOtherPartySigs().add(null);
+		subject.setReqPayerSig(fake);
+		subject.setReqOthersSigs(List.of(fake));
+		subject.setLastOrderResult(CODE_ORDER_RESULT_FACTORY.forGeneralError(null));
+		subject.setFinalStatus(INVALID_ACCOUNT_ID);
+		subject.setVerifiedSync(true);
+
+		// when:
+		subject.resetFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+
+		// then:
+		assertSame(txnAccessor, subject.getTxnAccessor());
+		assertSame(syncVerifier, subject.getSyncVerifier());
+		assertSame(keyOrderer, subject.getKeyOrderer());
+		assertSame(pkToSigFn, subject.getPkToSigFn());
+		assertSame(sigFactory, subject.getSigFactory());
+		assertSame(mockSigs, subject.getTxnSigs());
+		// and:
+		assertTrue(subject.getRealPayerSigs().isEmpty());
+		assertTrue(subject.getRealOtherPartySigs().isEmpty());
+		// and:
+		assertFalse(subject.usedSyncVerification());
+		assertNull(subject.finalStatus());
+		assertNull(subject.getReqPayerSig());
+		assertNull(subject.getReqOthersSigs());
+		assertNull(subject.getLastOrderResult());
 	}
 
 	@Test
@@ -86,10 +132,11 @@ class RationalizationTest {
 		// setup:
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
+		given(txnAccessor.getTxn()).willReturn(txn);
 		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(generalError);
 
 		// when:
-		subject.execute();
+		subject.performFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
 
 		// then:
 		assertEquals(generalError.getErrorReport(), subject.finalStatus());
@@ -103,12 +150,13 @@ class RationalizationTest {
 		// setup:
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
+		given(txnAccessor.getTxn()).willReturn(txn);
 		given(mockOrderResult.getPayerKey()).willReturn(payerKey);
 		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(mockOrderResult);
 		given(keyOrderer.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(othersError);
 
 		// when:
-		subject.execute();
+		subject.performFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
 
 		// then:
 		assertEquals(othersError.getErrorReport(), subject.finalStatus());

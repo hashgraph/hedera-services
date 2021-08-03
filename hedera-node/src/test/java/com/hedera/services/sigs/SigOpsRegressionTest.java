@@ -62,7 +62,6 @@ import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -402,6 +401,9 @@ class SigOpsRegressionTest {
 	}
 
 	private Rationalization invokeRationalizationScenario() {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
@@ -411,12 +413,14 @@ class SigOpsRegressionTest {
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
 
-		return rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				syncVerifier,
 				keyOrder,
 				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn));
+
+		return rationalization;
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {

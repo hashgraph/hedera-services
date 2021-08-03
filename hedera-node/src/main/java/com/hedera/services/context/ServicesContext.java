@@ -208,6 +208,7 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
@@ -1786,7 +1787,8 @@ public class ServicesContext {
 
 	public ProcessLogic logic() {
 		if (logic == null) {
-			logic = new AwareProcessLogic(this);
+			final var rationalization = new Rationalization();
+			logic = new AwareProcessLogic(this, rationalization);
 		}
 		return logic;
 	}
