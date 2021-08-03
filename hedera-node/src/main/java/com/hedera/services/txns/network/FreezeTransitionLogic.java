@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -117,10 +116,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	private boolean isValidTimestamp(Timestamp freezeStartTime, Timestamp txnStartTime) {
-		if (Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos())
-				.isBefore(Instant.ofEpochSecond(txnStartTime.getSeconds(),txnStartTime.getNanos()))) {
-			return false;
-		}
-		return true;
+		return Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos())
+				.isAfter(Instant.ofEpochSecond(txnStartTime.getSeconds(),txnStartTime.getNanos()));
 	}
 }
