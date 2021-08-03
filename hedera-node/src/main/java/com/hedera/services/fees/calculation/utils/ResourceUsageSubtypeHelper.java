@@ -27,6 +27,7 @@ import java.util.Optional;
 
 /**
  * A helper class used for determining the subtype of the token, involved in fee calculation.
+ * Defaulted to `TOKEN_FUNGIBLE_COMMON` unless its a `NON_FUNGIBLE_UNIQUE` token
  */
 public class ResourceUsageSubtypeHelper {
 	public SubType determineTokenType(Optional<TokenType> tokenType) {
