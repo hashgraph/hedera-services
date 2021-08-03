@@ -29,8 +29,8 @@ public class MemoryIndexDiskKeyValueStore {
         fileCollection.startWriting();
     }
 
-    public void endWriting() throws IOException {
-        fileCollection.endWriting();
+    public void endWriting(long minimumValidKey, long maximumValidKey) throws IOException {
+        fileCollection.endWriting(minimumValidKey, maximumValidKey);
     }
 
     public void put(long key, ByteBuffer data) throws IOException {

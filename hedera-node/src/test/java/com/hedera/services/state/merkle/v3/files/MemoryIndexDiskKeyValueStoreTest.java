@@ -1,15 +1,12 @@
 package com.hedera.services.state.merkle.v3.files;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 
 import static com.hedera.services.state.merkle.v3.V3TestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.merkle.v3.V3TestUtils.hash;
@@ -79,6 +76,6 @@ public class MemoryIndexDiskKeyValueStoreTest {
             buf.flip();
             store.put(i,buf);
         }
-        store.endWriting();
+        store.endWriting(0, Integer.MAX_VALUE);
     }
 }

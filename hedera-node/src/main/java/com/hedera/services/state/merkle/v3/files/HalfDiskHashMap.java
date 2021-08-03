@@ -8,7 +8,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -22,7 +21,7 @@ import java.util.function.Supplier;
  */
 public class HalfDiskHashMap<K extends VirtualKey> {
     /**
-     * Nominal value for a bucket location that doesn't exist. It is zero so we don't need fill empty index memory
+     * Nominal value for a bucket location that doesn't exist. It is zero, so we don't need to fill empty index memory
      * with some other value.
      */
     private static final long NON_EXISTENT_BUCKET = 0;
@@ -40,15 +39,12 @@ public class HalfDiskHashMap<K extends VirtualKey> {
     private final int numOfBuckets;
     private final int entriesPerBucket;
     private final long mapSize;
-    private final Supplier<K> keyConstructor;
     /** Temporary bucket buffers. */
-    @SuppressWarnings("Convert2MethodRef")
     private final ThreadLocal<Bucket<K>> bucket;
     private IntObjectHashMap<ObjectLongHashMap<K>> oneTransactionsData = null;
 
     public HalfDiskHashMap(long mapSize, int keySize, Supplier<K> keyConstructor, Path storeDir, String storeName) throws IOException {
         this.mapSize = mapSize;
-        this.keyConstructor = keyConstructor;
         // create store dir
         Files.createDirectories(storeDir);
         // create file collection
@@ -58,26 +54,10 @@ public class HalfDiskHashMap<K extends VirtualKey> {
         // calculate number of entries we can store in a disk page
         valueOffsetInEntry = Integer.BYTES + Integer.BYTES + keySize;
         entrySize = valueOffsetInEntry + Long.BYTES; // key hash code, key serialization version, serialized key, long value
-        entriesPerBucket = (int)((DISK_PAGE_SIZE_BYTES-BUCKET_HEADER_SIZE) / entrySize);
+        entriesPerBucket = ((DISK_PAGE_SIZE_BYTES-BUCKET_HEADER_SIZE) / entrySize);
         minimumBuckets = (int)Math.ceil(((double)mapSize/LOADING_FACTOR)/entriesPerBucket);
         numOfBuckets = Integer.highestOneBit(minimumBuckets)*2; // nearest greater power of two
-        bucket = ThreadLocal.withInitial(() -> new Bucket<K>(entrySize, valueOffsetInEntry, entriesPerBucket, keyConstructor));
-        //
-    }
-
-    public void printStats() {
-        System.out.println("HalfDiskHashMap Stats {");
-        System.out.println("    mapSize = " + mapSize);
-        System.out.println("    minimumBuckets = " + minimumBuckets);
-        System.out.println("    numOfBuckets = " + numOfBuckets);
-        System.out.println("    entriesPerBucket = " + entriesPerBucket);
-        System.out.println("    entrySize = " + entrySize);
-        System.out.println("    valueOffsetInEntry = " + valueOffsetInEntry);
-        System.out.println("}");
-    }
-
-    public boolean isOpenForWriting() {
-        return fileCollection.isOpenForWriting();
+        bucket = ThreadLocal.withInitial(() -> new Bucket<>(entrySize, valueOffsetInEntry, entriesPerBucket, keyConstructor));
     }
 
     public void startWriting() throws IOException {
@@ -104,7 +84,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
                     // for each changed key in bucket, update bucket
                     bucketMap.forEachKeyValue((k,v) -> bucket.putValue(hash(k),k,v));
                     // save bucket
-                    long bucketLocation = 0;
+                    long bucketLocation;
                     bucket.bucketBuffer.rewind();
                     bucketLocation = fileCollection.storeData(bucketIndex, bucket.bucketBuffer);
                     // update bucketIndexToBucketLocation
@@ -115,7 +95,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
                 }
             });
             // close files session
-            fileCollection.endWriting();
+            fileCollection.endWriting(0,numOfBuckets);
         }
         // clear put cache
         oneTransactionsData = null;
@@ -140,15 +120,20 @@ public class HalfDiskHashMap<K extends VirtualKey> {
             Bucket<K> bucket = this.bucket.get().clear();
             // load bucket
             fileCollection.readData(currentBucketLocation,bucket.bucketBuffer, DataFile.DataToRead.VALUE);
-//            System.out.println("get key="+key+" keyHash="+keyHash+" bucket = " + bucket.toString());
             // get
             return bucket.findValue(keyHash,key,notFoundValue);
         }
         return notFoundValue;
     }
 
+    /**
+     * Computes which bucket a key with the given hash falls. Depends on the fact the numOfBuckets is a power of two.
+     * Based on same calculation that is used in java HashMap.
+     *
+     * @param keyHash the int hash for key
+     * @return the index of the bucket that key falls in
+     */
     private int computeBucketIndex(int keyHash) {
-//        return keyHash % numOfBuckets;
         return (numOfBuckets-1) & keyHash;
     }
 
@@ -175,6 +160,20 @@ public class HalfDiskHashMap<K extends VirtualKey> {
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
+    /** Debug dump stats for this map */
+    public void printStats() {
+        System.out.println("HalfDiskHashMap Stats {");
+        System.out.println("    mapSize = " + mapSize);
+        System.out.println("    minimumBuckets = " + minimumBuckets);
+        System.out.println("    numOfBuckets = " + numOfBuckets);
+        System.out.println("    entriesPerBucket = " + entriesPerBucket);
+        System.out.println("    entrySize = " + entrySize);
+        System.out.println("    valueOffsetInEntry = " + valueOffsetInEntry);
+        System.out.println("}");
+    }
+
+    /** Useful debug method to print the current state of the transaction cache */
+    @SuppressWarnings("unused")
     public void debugDumpTransactionCache() {
         System.out.println("=========== TRANSACTION CACHE ==========================");
         for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
@@ -200,6 +199,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
      *  - Count of keys stored
      *  - Long pointer to next bucket if this one is full. TODO implement this
      */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     private static final class Bucket<K extends VirtualKey> {
         private static final int BUCKET_ENTRY_COUNT_OFFSET = Integer.BYTES;
         private static final int NEXT_BUCKET_OFFSET = BUCKET_ENTRY_COUNT_OFFSET + Integer.BYTES;
@@ -244,6 +244,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
             return bucketBuffer.getLong(NEXT_BUCKET_OFFSET);
         }
 
+        @SuppressWarnings("unused") // TODO still needs to be implemented over flow into a second bucket
         public void setNextBucketLocation(long bucketLocation) {
             this.bucketBuffer.putLong(NEXT_BUCKET_OFFSET,bucketLocation);
         }
@@ -324,6 +325,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
             }
         }
 
+        /** toString for debugging */
         @Override
         public String toString() {
             final int entryCount =  getBucketEntryCount();
@@ -353,13 +355,6 @@ public class HalfDiskHashMap<K extends VirtualKey> {
             IntBuffer intBuf = buf.asIntBuffer();
             int[] array = new int[intBuf.remaining()];
             intBuf.get(array);
-            buf.rewind();
-            return Arrays.toString(array);
-        }
-        public String toLongsString(ByteBuffer buf) {
-            LongBuffer longBuf = buf.asLongBuffer();
-            long[] array = new long[longBuf.remaining()];
-            longBuf.get(array);
             buf.rewind();
             return Arrays.toString(array);
         }

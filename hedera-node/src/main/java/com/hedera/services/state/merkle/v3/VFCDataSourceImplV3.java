@@ -122,7 +122,12 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     }
 
     /**
-     * Save a batch of data to data store
+     * Save a batch of data to data store.
+     *
+     * @param firstLeafPath the tree path for first leaf
+     * @param lastLeafPath the tree path for last leaf
+     * @param internalRecords list of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
+     * @param leafRecords list of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
      */
     public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords, List<VirtualLeafRecord<K, V>> leafRecords) {
         // TODO work out how to delete things using firstLeafPath & lastLeafPath
@@ -159,7 +164,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
                             keyHashValueBuffer.flip();
                             pathToKeyHashValue.put(path, keyHashValueBuffer);
                         }
-                        pathToKeyHashValue.endWriting();
+                        pathToKeyHashValue.endWriting(firstLeafPath,lastLeafPath);
                     } catch (IOException e) {
                         throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
                     }
@@ -394,7 +399,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     @Override
     public void commitTransaction(Object handle) {
         try {
-            pathToKeyHashValue.endWriting();
+            pathToKeyHashValue.endWriting(0, Integer.MAX_VALUE);
             if (!isLongKeyMode) objectKeyToPath.endWriting();
         } catch (IOException e) {
             e.printStackTrace();
