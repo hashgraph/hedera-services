@@ -300,8 +300,11 @@ but _also_ on the [`UniqTokenViewsManager.treasuryReturnNotice()`](https://githu
 On the one hand, the `HederaTokenStore.changeOwner()` method **directly** updates the 
 `uniqueOwnershipAssociations` relation via `UniqTokenViewsManager`.  On the other hand, 
 it **defers** changes to the `uniqueTokens` FCM until `HederaLedger.commit()` is called. 
-But if `CryptoTransfer.rollback()` is called instead, the changes to `uniqueOwnershipAssociations` 
-will not be reverted; and the view and state will become inconsistent.
+But if `HederaLedger.dropPendingTokenChanges()` is called before `commit()`, the changes 
+to `uniqueOwnershipAssociations` will not be reverted along with the FCM changes; and 
+the view and state will become inconsistent.  
+(C.f. [#1918](https://github.com/hashgraph/hedera-services/issues/1918).)
+
 
 ### The `uniqueTreasuryOwnershipAssociations` one-to-many relation
 
@@ -344,7 +347,7 @@ tokens appear in the `uniqueTreasuryOwnershipAssociations` relation.
 
 :no_entry:&nbsp;Just as above, the `CryptoTransfer` implementation has an 
 atomicity failure, since there is no mechanism to rollback changes to this
-relation when `HederaLedger.rollback()` is called.
+relation when `HederaLedger.rollback()` is called. (C.f. [#1918](https://github.com/hashgraph/hedera-services/issues/1918).)
 
 ### The `txnHistories` map and `payerRecordExpiries` queue
 
@@ -378,26 +381,13 @@ queue, since they operate on the top-level `TransactionID` shared by all transac
 #### Consistency audit
 
 :building_construction:&nbsp;**Rebuilding** these structure relies on the payer
-records stored in state in the `accounts` FCM. First, we [scan the `accounts` FCM](https://github.com/hashgraph/hedera-services/blob/d4c87420876a7ca63eb877c41a0e950cdafad90c/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L133)
-and sort all the records 
+records stored in state in the `accounts` FCM. That is, we [scan the `accounts` FCM](https://github.com/hashgraph/hedera-services/blob/d4c87420876a7ca63eb877c41a0e950cdafad90c/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L133)
+and, for each payer record, both (1) "stage" it in the relevant `txnHistories` entry; 
+and (2) add its "expiration event" to an unsorted list. After all records have been 
+processed, we sort these expiration events by consensus time, and use the 
+`payerRecordExpiries.track()` method to rebuild the `payerRecordExpiries` queue. 
+Finally, for each entry in the `txnHistories` map, we initialize its duplicate 
+classification internals by calling [`TxnIdRecentHistory.observeStaged()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/records/TxnIdRecentHistory.java#L115).
 
-
-
-:memo:&nbsp;**Maintaining** this structure again works differently based
-on the the value of `tokens.nfts.useTreasuryWildcards`. As noted above, 
-it is simply not used when `tokens.nfts.useTreasuryWildcards=false`.  
-When `tokens.nfts.useTreasuryWildcards=true`,
-
-1. For `CryptoTransfer`, the [`HederaTokenStore.changeOwner()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/HederaTokenStore.java#L356) again delegates to the 
-`UniqTokenViewsManager` methods; here the `uniqueOwnershipAssociations` relation
-only changes on use of the [`UniqTokenViewsManager.treasuryReturnNotice()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L201) and
-[`UniqTokenViewsManager.treasuryExitNotice()` methods](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L179), since only treasury-owned 
-tokens appear in the `uniqueTreasuryOwnershipAssociations` relation.
-2. For `TokenMint`, the `TypedTokenStore.persistToken()` method uses
-[`TypedTokenStore.persistMinted()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L332) to simultaneously update the state FCM and `uniqueTreasuryOwnershipAssociations`.
-3. For `TokenBurn`, the `TypedTokenStore.persistToken()` method uses
-[`TypedTokenStore.destroyRemoved()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L319) to simultaneously update the state FCM and `uniqueTreasuryOwnershipAssociations`.
-
-:no_entry:&nbsp;Just as above, the `CryptoTransfer` implementation has an 
-atomicity failure, since there is no mechanism to rollback changes to this
-relation when `HederaLedger.rollback()` is called.
+:memo:&nbsp;**Maintaining** these structures has two aspects. First, each 
+time a new record is added to state via `Hedera
