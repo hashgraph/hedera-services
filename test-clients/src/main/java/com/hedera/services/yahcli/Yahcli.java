@@ -31,6 +31,7 @@ import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.FreezeSuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
@@ -121,6 +122,7 @@ public class Yahcli implements Callable<Integer> {
 				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
 				SchedulesValidationSuite.class,
+				FreezeSuite.class,
 				MapPropertySource.class,
 				HapiApiClients.class,
 				FeesAndRatesProvider.class,
