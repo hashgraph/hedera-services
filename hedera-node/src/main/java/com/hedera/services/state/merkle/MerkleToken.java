@@ -503,6 +503,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return wipeKey;
 	}
 
+	public JKey getAdminKey() {
+		return adminKey;
+	}
+
 	public JKey getKycKey() {
 		return kycKey;
 	}

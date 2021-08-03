@@ -23,8 +23,16 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.store.CreationResult;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -35,23 +43,26 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
+import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -70,22 +81,28 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mockStatic;
 
 class TokenCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -101,165 +118,144 @@ class TokenCreateTransitionLogicTest {
 	private List<TokenID> createdList = List.of(created);
 	private TransactionBody tokenCreateTxn;
 
+	private Token newProvisionalToken;
+	private Token denom;
+	private Id denomId = Id.fromGrpcToken(IdUtils.asToken("17.71.77"));
+	private Id modelTreasuryId = IdUtils.asModelId("1.2.3");
+	;
+	private Account modelTreasury;
+	private Id modelAccountId = IdUtils.asModelId("4.5.6");
+	private Account modelAutoRenewAccount;
+	private CopyOnWriteIds treasuryAssociatedTokenIds;
+
 	private OptionValidator validator;
 	private TokenStore store;
+	private TypedTokenStore typedTokenStore;
+	private AccountStore accountStore;
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private GlobalDynamicProperties dynamicProperties;
+	private EntityIdSource ids;
 
 	private TokenCreateTransitionLogic subject;
+	private MockedStatic<Token> staticTokenHandle;
+	private TokenID misc = IdUtils.asToken("3.2.1");
+	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
+	private Account feeCollectorModel = mock(Account.class);
+	private AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
+	private Account hbarFeeCollectorModel = mock(Account.class);
+	private AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
+	private Account fixedFeeCollectorModel = mock(Account.class);
+	private AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
+	private Account fractionalFeeCollectorModel = mock(Account.class);
+	private AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
+	private Account nonAutoEnabledFeeCollectorModel = mock(Account.class);
+	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
+	private CustomFee customFixedFeeA = builder.withFixedFee(fixedHts(200L));
+	private CustomFee customFractionalFeeA = builder.withFractionalFee(
+			fractional(15L, 100L)
+					.setMinimumAmount(10L)
+					.setMaximumAmount(50L));
+	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).withFixedFee(fixedHbar(100L));
+	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).withFixedFee(
+			fixedHts(misc, 100L));
+	private CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).withFixedFee(fixedHts(300L));
+	private CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).withFractionalFee(
+			fractional(15L, 100L)
+					.setMinimumAmount(5L)
+					.setMaximumAmount(15L));
+	private List<CustomFee> grpcCustomFees = List.of(
+			customFixedFeeInHbar,
+			customFixedFeeInHts,
+			customFixedFeeA,
+			customFixedFeeB,
+			customFractionalFeeA,
+			customFractionalFeeB
+	);
 
 	@BeforeEach
 	private void setup() {
 		validator = mock(OptionValidator.class);
 		store = mock(TokenStore.class);
+		typedTokenStore = mock(TypedTokenStore.class);
+		accountStore = mock(AccountStore.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		ids = mock(EntityIdSource.class);
+		given(ids.newTokenId(any())).willReturn(created);
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(Instant.now());
 		withAlwaysValidValidator();
 
-		subject = new TokenCreateTransitionLogic(validator, store, ledger, txnCtx, dynamicProperties);
+		newProvisionalToken = mock(Token.class);
+		modelTreasury = mock(Account.class);
+		modelAutoRenewAccount = mock(Account.class);
+		treasuryAssociatedTokenIds = mock(CopyOnWriteIds.class);
+		denom = mock(Token.class);
+
+		staticTokenHandle = mockStatic(Token.class);
+		subject = new TokenCreateTransitionLogic(
+				validator, typedTokenStore, accountStore, txnCtx, dynamicProperties, ids);
+	}
+
+	@AfterEach
+	void cleanup() {
+		staticTokenHandle.close();
 	}
 
 	@Test
-	void setsFailInvalidIfUnhandledException() {
+	void doesNotApplyChangesOnThrownException() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willThrow(IllegalStateException.class);
+		mockProvisionalToken();
+		mockModelTreasury();
 
+		doThrow(new InvalidTransactionException(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)).when(modelTreasury).associateWith(any(), anyInt());
 		// when:
-		subject.doStateTransition();
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
 		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(FAIL_INVALID);
-		// and:
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
-	}
-
-	@Test
-	void abortsIfCreationFails() {
-		givenValidTxnCtx();
-		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(INVALID_ADMIN_KEY);
-		// and:
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
-	}
-
-	@Test
-	void abortsIfTokenIdIsMissingInTheResult() {
-		givenValidTxnCtx();
-		CreationResult<TokenID> result = mock(CreationResult.class);
-
-		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(result);
-		given(result.getStatus()).willReturn(OK);
-		given(result.getCreated()).willReturn(Optional.empty());
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
+		verify(typedTokenStore, never()).persistNew(any());
+		verify(typedTokenStore, never()).persistTokenRelationships(anyList());
 	}
 
 	@Test
 	void abortsIfInitialExpiryIsInvalid() {
 		givenValidTxnCtx();
+		mockModelTreasury();
+		mockProvisionalToken();
 		given(validator.isValidExpiry(any())).willReturn(false);
 
 		// when:
-		subject.doStateTransition();
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_EXPIRATION_TIME);
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
 		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
+		verify(typedTokenStore, never()).persistNew(any());
 	}
 
 	@Test
-	void abortsIfAdjustmentFailsDueToTokenLimitPerAccountExceeded() {
+	void abortsIfAnyAssociationFails() {
 		givenValidTxnCtx();
+		mockModelTreasury();
+		mockProvisionalToken();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
-		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
-				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(false);
+		doThrow(new InvalidTransactionException(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED))
+				.when(modelTreasury)
+				.associateWith(anyList(), anyInt());
 
-		// when:
-		subject.doStateTransition();
+		// when & then:
+		assertFailsWith(() -> subject.doStateTransition(), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
-		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 		// and:
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
-	}
-
-	@Test
-	void abortsIfAssociationFails() {
-		givenValidTxnCtx(false, true, false, false);
-		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-		// and:
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
-	}
-
-	@Test
-	void abortsIfUnfreezeFails() {
-		givenValidTxnCtx(false, true, false, false);
-		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
-		given(ledger.unfreeze(treasury, created)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-		// and:
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
+		verify(accountStore, never()).persistAccount(modelTreasury);
+		verify(typedTokenStore, never()).persistTokenRelationships(anyList());
+		verify(typedTokenStore, never()).persistNew(any());
 	}
 
 	@Test
@@ -269,137 +265,150 @@ class TokenCreateTransitionLogicTest {
 				.setTokenCreation(tokenCreateTxn.getTokenCreation().toBuilder().setTokenType(NON_FUNGIBLE_UNIQUE))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(treasury, createdList)).willReturn(OK);
+		mockModelTreasury();
+		mockProvisionalToken();
+
+		final var treasuryRelMock = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
 
 		subject.doStateTransition();
 
-		verify(store).associate(treasury, createdList);
 		verify(ledger, never()).unfreeze(any(), any());
 		verify(ledger, never()).grantKyc(any(), any());
 
 		verify(ledger, never()).adjustTokenBalance(any(AccountID.class), any(TokenID.class), anyLong());
 
-		verify(store).commitCreation();
-		verify(txnCtx).setCreated(created);
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(typedTokenStore).persistNew(any());
+		verify(typedTokenStore).persistTokenRelationships(anyList());
 	}
 
 	@Test
-	void followsHappyPathWithAllKeys() {
+	void followsHappyPathForCustomFees() {
 		givenValidTxnCtx(true, true, true, false);
 
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(treasury, createdList)).willReturn(OK);
-		given(store.associate(feeCollector, createdList)).willReturn(OK);
-		given(store.associate(fixedFeeCollector, createdList)).willReturn(OK);
-		given(store.associate(fractionalFeeCollector, createdList)).willReturn(OK);
-		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
-		given(ledger.unfreeze(fixedFeeCollector, created)).willReturn(OK);
-		given(ledger.unfreeze(fractionalFeeCollector, created)).willReturn(OK);
-		given(ledger.grantKyc(treasury, created)).willReturn(OK);
-		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
-		given(ledger.grantKyc(fixedFeeCollector, created)).willReturn(OK);
-		given(ledger.grantKyc(fractionalFeeCollector, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
-				.willReturn(OK);
+		mockModelTreasury();
+		mockProvisionalToken();
+		mockFeeCollectors();
+
+		final var treasuryRelMock = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		final var hbarFeeCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(hbarFeeCollectorModel)).willReturn(hbarFeeCollectorRel);
+		final var feeCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(feeCollectorModel)).willReturn(feeCollectorRel);
+		final var fixedFeeCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(fixedFeeCollectorModel)).willReturn(fixedFeeCollectorRel);
+		final var fractionalFeeCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(fractionalFeeCollectorModel)).willReturn(fractionalFeeCollectorRel);
+		final var nonAutoEnabledCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(nonAutoEnabledFeeCollectorModel)).willReturn(nonAutoEnabledCollectorRel);
+
+		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(100);
+		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
+		given(typedTokenStore.loadTokenOrFailWith(eq(Id.fromGrpcToken(misc)), any())).willReturn(denom);
+		given(denom.getId()).willReturn(denomId);
+		given(denom.getType()).willReturn(FUNGIBLE_COMMON);
+		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(true);
+		given(newProvisionalToken.hasKycKey()).willReturn(true);
+		given(newProvisionalToken.hasFreezeKey()).willReturn(true);
 
 		subject.doStateTransition();
 
-		verify(store, times(1)).associate(treasury, createdList);
-		verify(ledger, times(1)).unfreeze(treasury, created);
-		verify(ledger, times(1)).grantKyc(treasury, created);
-		verify(store, times(1)).associate(feeCollector, createdList);
-		verify(ledger, times(1)).unfreeze(feeCollector, created);
-		verify(ledger, times(1)).grantKyc(feeCollector, created);
-		verify(store, times(1)).associate(fixedFeeCollector, createdList);
-		verify(ledger, times(1)).unfreeze(fixedFeeCollector, created);
-		verify(ledger, times(1)).grantKyc(fixedFeeCollector, created);
-		verify(store, times(1)).associate(fractionalFeeCollector, createdList);
-		verify(ledger, times(1)).unfreeze(fractionalFeeCollector, created);
-		verify(ledger, times(1)).grantKyc(fractionalFeeCollector, created);
-
-		verify(txnCtx).setCreated(created);
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(store).commitCreation();
+		assertNotNull(newProvisionalToken.getCustomFees());
+		verify(typedTokenStore).persistTokenRelationships(anyList());
 	}
 
 	@Test
 	void abortsIfFeeCollectorEnablementFails() {
 		givenValidTxnCtx(true, true, true, false);
+		mockModelTreasury();
+		mockProvisionalToken();
+		mockFeeCollectors();
+
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.grantKyc(treasury, created)).willReturn(OK);
-		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
-		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
-				.willReturn(OK);
-		given(store.associate(treasury, createdList)).willReturn(OK);
-		given(store.associate(feeCollector, createdList)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(100);
+		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
+		given(typedTokenStore.loadTokenOrFailWith(eq(Id.fromGrpcToken(misc)), any())).willReturn(denom);
+		given(denom.getId()).willReturn(denomId);
+		given(denom.getType()).willReturn(FUNGIBLE_COMMON);
+		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(false);
 
 		// when:
-		subject.doStateTransition();
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
 
 		// then:
-		verify(txnCtx, never()).setCreated(created);
-		verify(txnCtx).setStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-		// and:
-		verify(store, never()).commitCreation();
-		verify(store).rollbackCreation();
-		verify(ledger).dropPendingTokenChanges();
+		verify(typedTokenStore, never()).persistNew(any());
+		verify(typedTokenStore, never()).persistTokenRelationships(anyList());
+	}
+
+	@Test
+	void abortsOnNotFullySpecifiedCustomFeeList() {
+		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
+		var builder = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setInitialSupply(initialSupply)
+						.setTreasury(treasury)
+						.setAdminKey(key)
+						.setExpiry(expiry));
+		builder.getTokenCreationBuilder().addAllCustomFees(List.of(CustomFee.newBuilder().build()));
+		tokenCreateTxn = builder.build();
+		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(validator.isValidExpiry(expiry)).willReturn(true);
+
+		mockModelTreasury();
+		mockProvisionalToken();
+		mockFeeCollectors();
+
+		final var treasuryRelMock = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
+
+		assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 	}
 
 	@Test
 	void doesntUnfreezeIfNoKeyIsPresent() {
 		givenValidTxnCtx(true, false, false, false);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
-		given(ledger.grantKyc(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
-				.willReturn(OK);
+		mockModelTreasury();
+		mockProvisionalToken();
 
+		final var mockRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury))
+				.willReturn(mockRel);
+		given(modelTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger, never()).unfreeze(treasury, created);
-		verify(ledger).grantKyc(treasury, created);
+		verify(mockRel, never()).setFrozen(true);
 		// and:
-		verify(txnCtx).setCreated(created);
-		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		verify(store).commitCreation();
+		verify(typedTokenStore).persistNew(any());
+		verify(typedTokenStore).persistTokenRelationships(anyList());
 	}
 
 	@Test
 	void doesntGrantKycIfNoKeyIsPresent() {
 		givenValidTxnCtx(false, true, false, false);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
-		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
-				.willReturn(OK);
+		mockModelTreasury();
+		mockProvisionalToken();
+		final var mockRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury))
+				.willReturn(mockRel);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger).unfreeze(treasury, created);
-		verify(ledger, never()).grantKyc(treasury, created);
+		verify(mockRel, never()).setKycGranted(true);
 		// and:
-		verify(txnCtx).setCreated(created);
-		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		verify(store).commitCreation();
+		verify(typedTokenStore).persistNew(any());
+		verify(typedTokenStore).persistTokenRelationships(anyList());
 	}
 
 	@Test
@@ -646,7 +655,6 @@ class TokenCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(store.isCreationPending()).willReturn(true);
 		given(validator.isValidExpiry(expiry)).willReturn(true);
 	}
 
@@ -819,32 +827,40 @@ class TokenCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 	}
 
-	private TokenID misc = IdUtils.asToken("3.2.1");
-	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
-	private AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
-	private AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
-	private AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
-	private AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
-	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
-	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).withFixedFee(fixedHbar(100L));
-	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).withFixedFee(
-			fixedHts(misc, 100L));
-	private CustomFee customFixedFeeA = builder.withFixedFee(fixedHts(200L));
-	private CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).withFixedFee(fixedHts(300L));
-	private CustomFee customFractionalFeeA = builder.withFractionalFee(
-			fractional(15L, 100L)
-					.setMinimumAmount(10L)
-					.setMaximumAmount(50L));
-	private CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).withFractionalFee(
-			fractional(15L, 100L)
-					.setMinimumAmount(5L)
-					.setMaximumAmount(15L));
-	private List<CustomFee> grpcCustomFees = List.of(
-			customFixedFeeInHbar,
-			customFixedFeeInHts,
-			customFixedFeeA,
-			customFixedFeeB,
-			customFractionalFeeA,
-			customFractionalFeeB
-	);
+	private void mockProvisionalToken() {
+		given(newProvisionalToken.getId()).willReturn(Id.fromGrpcToken(created));
+		given(newProvisionalToken.getType()).willReturn(FUNGIBLE_COMMON);
+		staticTokenHandle.when(() -> Token.fromGrpcTokenCreate(any(), any(), any(), any(), any(), anyLong())).thenReturn(newProvisionalToken);
+	}
+
+	private void mockModelTreasury() {
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(treasury)), any())).willReturn(modelTreasury);
+		given(modelTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(modelTreasury.getId()).willReturn(modelTreasuryId);
+	}
+
+	private void mockFeeCollectors() {
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(feeCollector)), any())).willReturn(feeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(fixedFeeCollector)), any())).willReturn(fixedFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(fractionalFeeCollector)), any())).willReturn(fractionalFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(hbarFeeCollector)), any())).willReturn(hbarFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(nonAutoEnabledFeeCollector)), any())).willReturn(nonAutoEnabledFeeCollectorModel);
+
+		given(accountStore.loadAccount(Id.fromGrpcAccount(feeCollector))).willReturn(feeCollectorModel);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(fixedFeeCollector))).willReturn(fixedFeeCollectorModel);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(fractionalFeeCollector))).willReturn(fractionalFeeCollectorModel);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(hbarFeeCollector))).willReturn(hbarFeeCollectorModel);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(nonAutoEnabledFeeCollector))).willReturn(nonAutoEnabledFeeCollectorModel);
+
+		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(fixedFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(fractionalFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(hbarFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(nonAutoEnabledFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
+	}
 }

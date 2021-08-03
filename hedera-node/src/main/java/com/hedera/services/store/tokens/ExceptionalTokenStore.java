@@ -116,6 +116,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public void addKnownTreasury(final AccountID aId, final TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void commitCreation() {
 		throw new UnsupportedOperationException();
 	}

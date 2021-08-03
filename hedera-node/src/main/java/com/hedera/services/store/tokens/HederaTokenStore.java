@@ -565,6 +565,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return (a > 0 && b > 0);
 	}
 
+	@Override
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}

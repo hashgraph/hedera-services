@@ -62,7 +62,7 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var op = txnCtx.accessor().getTxn().getTokenDeletion();
-			var outcome = store.delete(op.getToken());
+			final var outcome = store.delete(op.getToken());
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);

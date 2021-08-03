@@ -24,6 +24,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -38,10 +40,13 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,10 +58,12 @@ import java.util.List;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,6 +89,9 @@ class TypedTokenStoreTest {
 	@Mock
 	private BackingTokenRels backingTokenRels;
 
+	@Mock
+	private TokenStore tokenStore;
+
 	private TypedTokenStore subject;
 
 	@BeforeEach
@@ -96,7 +106,8 @@ class TypedTokenStoreTest {
 				() -> uniqueTokens,
 				() -> tokenRels,
 				backingTokenRels,
-				uniqTokenViewsManager);
+				uniqTokenViewsManager,
+				tokenStore::addKnownTreasury);
 	}
 
 	/* --- Token relationship loading --- */
@@ -292,6 +303,9 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
+		expectedReplacementToken.setMemo(memo);
+		expectedReplacementToken.setAutoRenewPeriod(autoRenewPeriod);
+
 		// and:
 		final var expectedReplacementToken2 = new MerkleToken(
 				expiry, tokenSupply * 4, 0,
@@ -303,6 +317,8 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setFreezeKey(freezeKey);
 		expectedReplacementToken2.setKycKey(kycKey);
 		expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
+		expectedReplacementToken2.setMemo(memo);
+		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
 		// and:
 		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
 		final var expectedNewUniqTokenId2 = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo2);
@@ -323,7 +339,11 @@ class TypedTokenStoreTest {
 		modelToken.mintedUniqueTokens().add(mintedToken);
 		modelToken.setIsDeleted(false);
 		modelToken.setExpiry(expiry);
+		modelToken.setAutoRenewPeriod(autoRenewPeriod);
 		modelToken.removedUniqueTokens().add(wipedToken);
+		modelToken.setAutoRenewPeriod(autoRenewPeriod);
+		modelToken.setCustomFees(List.of());
+		modelToken.setMemo(memo);
 		// and:
 		subject.persistToken(modelToken);
 
@@ -347,6 +367,7 @@ class TypedTokenStoreTest {
 		modelToken.setIsDeleted(false);
 		modelToken.setExpiry(expiry);
 		modelToken.removedUniqueTokens().add(burnedToken);
+		modelToken.setCustomFees(List.of());
 		// and:
 		subject.persistToken(modelToken);
 
@@ -359,6 +380,41 @@ class TypedTokenStoreTest {
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
 		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId2, treasuryId);
 		verify(uniqTokenViewsManager).burnNotice(expectedPastUniqTokenId2, treasuryId);
+	}
+
+	@Test
+	void persistsNewTokenAsExpected() {
+		final var newToken = new Token(IdUtils.asModelId("1.2.3"));
+		newToken.setNew(true);
+		newToken.setExpiry(123);
+		newToken.setTreasury(treasuryAccount);
+		newToken.setMemo("memo");
+		newToken.setName("name");
+		newToken.setType(TokenType.FUNGIBLE_COMMON);
+		newToken.initSupplyConstraints(TokenSupplyType.INFINITE, 0);
+		newToken.setTotalSupply(1000);
+		newToken.setKycKey(kycKey);
+		newToken.setFreezeKey(freezeKey);
+		newToken.setSupplyKey(supplyKey);
+		newToken.setWipeKey(wipeKey);
+		newToken.setAdminKey(adminKey);
+		newToken.setCustomFees(List.of());
+
+		subject.persistNew(newToken);
+		verify(tokens).put(any(), any());
+		verify(transactionRecordService).includeChangesToToken(newToken);
+	}
+
+	@Test
+	void loadOrFailsWorksAsExpected() {
+		assertFailsWith(() -> subject.loadTokenOrFailWith(Id.DEFAULT, FAIL_INVALID), FAIL_INVALID);
+		given(tokens.get(any(MerkleEntityId.class))).willReturn(merkleToken);
+		assertNotNull(subject.loadTokenOrFailWith(IdUtils.asModelId("1.2.3"), FAIL_INVALID));
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = Assert.assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
@@ -428,6 +484,7 @@ class TypedTokenStoreTest {
 	private final long miscAccountNum = 1_234L;
 	private final long treasuryAccountNum = 2_234L;
 	private final long autoRenewAccountNum = 3_234L;
+	private final long autoRenewPeriod = 1234L;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id treasuryId = new Id(0, 0, treasuryAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
@@ -438,10 +495,13 @@ class TypedTokenStoreTest {
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
+	private final JKey wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
+	private final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
 	private final long tokenNum = 4_234L;
 	private final long tokenSupply = 777L;
 	private final String name = "Testing123";
 	private final String symbol = "T123";
+	private final String memo = "memo";
 	private final MerkleEntityId merkleTokenId = new MerkleEntityId(0, 0, tokenNum);
 	private final Id tokenId = new Id(0, 0, tokenNum);
 	private final Token token = new Token(tokenId);

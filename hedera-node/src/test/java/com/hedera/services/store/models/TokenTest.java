@@ -28,12 +28,19 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,6 +89,48 @@ class TokenTest {
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
+	}
+
+	@Test
+	void constructsOkToken() {
+		final var feeScheduleKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey();
+		final var op = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
+						.setInitialSupply(25)
+						.setMaxSupply(21_000_000)
+						.setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE)
+						.setDecimals(10)
+						.setFreezeDefault(false)
+						.setMemo("the mother")
+						.setName("bitcoin")
+						.setSymbol("BTC")
+						.setFeeScheduleKey(feeScheduleKey)
+						.addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
+								FixedFee.newBuilder().setAmount(10).build())
+								.setFeeCollectorAccountId(IdUtils.asAccount("1.2.3")).build()))
+						.setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
+						.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+						.build())
+				.build();
+
+		subject = Token.fromGrpcTokenCreate(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, new ArrayList<>(),123);
+
+		assertEquals("bitcoin", subject.getName());
+		assertEquals(123L, subject.getExpiry());
+		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
+		assertNotNull(subject.getFeeScheduleKey());
+	}
+
+	@Test
+	void okCreationRelationship() {
+		final var frzKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
+		final var kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
+		subject.setFreezeKey(frzKey);
+		subject.setKycKey(kycKey);
+		final var rel = subject.newEnabledRelationship(treasuryAccount);
+		assertNotNull(rel);
+		assertFalse(rel.isFrozen());
 	}
 
 	@Test
@@ -155,13 +205,13 @@ class TokenTest {
 	@Test
 	void failsInvalidIfLogicImplTriesToChangeNonTreasurySupply() {
 		assertFailsWith(() -> subject.burn(nonTreasuryRel, 1L), FAIL_INVALID);
-		assertFailsWith(() -> subject.mint(nonTreasuryRel, 1L), FAIL_INVALID);
+		assertFailsWith(() -> subject.mint(nonTreasuryRel, 1L, false), FAIL_INVALID);
 	}
 
 	@Test
 	void cantBurnOrMintNegativeAmounts() {
 		assertFailsWith(() -> subject.burn(treasuryRel, -1L), INVALID_TOKEN_BURN_AMOUNT);
-		assertFailsWith(() -> subject.mint(treasuryRel, -1L), INVALID_TOKEN_MINT_AMOUNT);
+		assertFailsWith(() -> subject.mint(treasuryRel, -1L, false), INVALID_TOKEN_MINT_AMOUNT);
 	}
 
 	@Test
@@ -169,7 +219,7 @@ class TokenTest {
 		subject.setSupplyKey(null);
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 		assertFailsWith(() -> subject.burn(treasuryRel, 1L), TOKEN_HAS_NO_SUPPLY_KEY);
-		assertFailsWith(() -> subject.mint(treasuryRel, 1L), TOKEN_HAS_NO_SUPPLY_KEY);
+		assertFailsWith(() -> subject.mint(treasuryRel, 1L, false), TOKEN_HAS_NO_SUPPLY_KEY);
 	}
 
 	@Test
@@ -191,7 +241,7 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 
-		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint), INVALID_TOKEN_MINT_AMOUNT);
+		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint, false), INVALID_TOKEN_MINT_AMOUNT);
 		assertFailsWith(() -> subject.burn(treasuryRel, initialSupply + 1), INVALID_TOKEN_BURN_AMOUNT);
 	}
 
@@ -266,7 +316,7 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 
 		// when:
-		subject.mint(treasuryRel, mintAmount);
+		subject.mint(treasuryRel, mintAmount, false);
 
 		// then:
 		assertEquals(initialSupply + mintAmount, subject.getTotalSupply());

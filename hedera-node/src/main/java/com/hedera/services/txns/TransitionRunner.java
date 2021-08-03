@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
@@ -53,6 +54,7 @@ public class TransitionRunner {
 			TokenGrantKycToAccount, TokenRevokeKycFromAccount,
 			TokenAssociateToAccount, TokenDissociateFromAccount,
 			TokenAccountWipe,
+			TokenCreate,
 			CryptoTransfer
 	);
 
@@ -92,12 +94,14 @@ public class TransitionRunner {
 				if (refactoredOps.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}
+				transition.resetCreatedIds();
 			} catch (InvalidTransactionException ite) {
 				final var code = ite.getResponseCode();
 				txnCtx.setStatus(code);
 				if (code == FAIL_INVALID) {
 					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxnWrapper(), ite);
 				}
+				logic.get().reclaimCreatedIds();
 			}
 			return true;
 		}

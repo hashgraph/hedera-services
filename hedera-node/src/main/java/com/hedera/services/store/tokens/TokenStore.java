@@ -52,6 +52,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	boolean isKnownTreasury(AccountID id);
 
+	void addKnownTreasury(AccountID aId, TokenID tId);
+
 	boolean associationExists(AccountID aId, TokenID tId);
 
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
