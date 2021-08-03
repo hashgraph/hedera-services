@@ -73,7 +73,7 @@ public class PrecheckKeyReqsTest {
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(factory.forGeneralError(txnId));
+				.willReturn(factory.forGeneralError());
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// expect:
@@ -85,7 +85,7 @@ public class PrecheckKeyReqsTest {
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(factory.forMissingAccount(invalidAccount, txnId));
+				.willReturn(factory.forMissingAccount());
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// expect:
@@ -94,8 +94,7 @@ public class PrecheckKeyReqsTest {
 
 	@Test
 	void throwsInvalidPayerAccountAsExpected() {
-		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(factory.forInvalidAccount(invalidAccount, txnId));
+		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(factory.forInvalidAccount());
 		givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
 
 		// expect:

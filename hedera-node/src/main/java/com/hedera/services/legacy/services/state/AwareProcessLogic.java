@@ -201,11 +201,13 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	ResponseCodeEnum rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
 		bodySigningFactory.resetFor(accessor);
+
 		rationalization.performFor(
 				accessor, ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
 				accessor.getPkToSigsFn(),
 				bodySigningFactory);
+
 		final var status = rationalization.finalStatus();
 		if (status == OK) {
 			if (rationalization.usedSyncVerification()) {

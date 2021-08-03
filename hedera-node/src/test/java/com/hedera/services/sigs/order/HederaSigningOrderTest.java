@@ -75,12 +75,9 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_ACCOUNT_ID;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_CONTRACT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_FILE_WACL_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_TOPIC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISC_TOPIC_SUBMIT_KT;
-import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISSING_ACCOUNT;
-import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.MISSING_TOPIC;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.NEW_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.SCHEDULE_ADMIN_KT;
@@ -204,7 +201,6 @@ import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.DEFAULT_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.FileCreateFactory.DEFAULT_WACL_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -217,7 +213,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -361,7 +356,7 @@ class HederaSigningOrderTest {
 		subject.keysForPayer(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forInvalidAccount(MISSING_ACCOUNT, txn.getTransactionID());
+		verify(mockSummaryFactory).forInvalidAccount();
 	}
 
 	@Test
@@ -374,7 +369,7 @@ class HederaSigningOrderTest {
 		subject.keysForPayer(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forGeneralPayerError(asAccount(DEFAULT_PAYER_ID), txn.getTransactionID());
+		verify(mockSummaryFactory).forGeneralPayerError();
 	}
 
 	@Test
@@ -437,13 +432,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAccount(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingAccount(MISSING_ACCOUNT, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingAccount();
 	}
 
 	@Test
@@ -466,13 +461,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forGeneralError(any())).willReturn(result);
+		given(mockSummaryFactory.forGeneralError()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forGeneralError(txn.getTransactionID());
+		verify(mockSummaryFactory).forGeneralError();
 	}
 
 	@Test
@@ -587,13 +582,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAccount(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingAccount(MISSING_ACCOUNT, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingAccount();
 	}
 
 	@Test
@@ -726,13 +721,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingFile(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingFile()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingFile(TxnHandlingScenario.MISSING_FILE, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingFile();
 	}
 
 	@Test
@@ -978,13 +973,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forInvalidContract(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forInvalidContract()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forInvalidContract(MISC_CONTRACT, txn.getTransactionID());
+		verify(mockSummaryFactory).forInvalidContract();
 	}
 
 	@Test
@@ -996,13 +991,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forInvalidContract(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forInvalidContract()).willReturn(result);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		//then:
-		verify(mockSummaryFactory).forInvalidContract(MISC_CONTRACT, txn.getTransactionID());
+		verify(mockSummaryFactory).forInvalidContract();
 	}
 
 	@Test
@@ -1101,13 +1096,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingAutoRenewAccount()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingAutoRenewAccount(MISSING_ACCOUNT, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingAutoRenewAccount();
 	}
 
 	@Test
@@ -1143,13 +1138,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingTopic(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingTopic(MISSING_TOPIC, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingTopic();
 	}
 
 	@Test
@@ -1185,13 +1180,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingTopic(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingTopic(MISSING_TOPIC, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingTopic();
 	}
 
 	@Test
@@ -1239,13 +1234,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingTopic(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingTopic(MISSING_TOPIC, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingTopic();
 	}
 
 	@Test
@@ -1257,13 +1252,13 @@ class HederaSigningOrderTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any())).willReturn(result);
+		given(mockSummaryFactory.forMissingAutoRenewAccount()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingAutoRenewAccount(MISSING_ACCOUNT, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingAutoRenewAccount();
 	}
 
 	@Test

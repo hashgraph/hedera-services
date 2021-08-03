@@ -59,10 +59,8 @@ import static org.mockito.Mockito.verify;
 class RationalizationTest {
 	private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	private final TransactionBody txn = TransactionBody.getDefaultInstance();
-	private final SigningOrderResult<ResponseCodeEnum> generalError =
-			CODE_ORDER_RESULT_FACTORY.forGeneralError(null);
-	private final SigningOrderResult<ResponseCodeEnum> othersError =
-			CODE_ORDER_RESULT_FACTORY.forImmutableContract(null, null);
+	private final SigningOrderResult<ResponseCodeEnum> generalError = CODE_ORDER_RESULT_FACTORY.forGeneralError();
+	private final SigningOrderResult<ResponseCodeEnum> othersError = CODE_ORDER_RESULT_FACTORY.forImmutableContract();
 
 	@Mock
 	private SwirldTransaction swirldsTxn;
@@ -102,7 +100,7 @@ class RationalizationTest {
 		subject.getRealOtherPartySigs().add(null);
 		subject.setReqPayerSig(fake);
 		subject.setReqOthersSigs(List.of(fake));
-		subject.setLastOrderResult(CODE_ORDER_RESULT_FACTORY.forGeneralError(null));
+		subject.setLastOrderResult(CODE_ORDER_RESULT_FACTORY.forGeneralError());
 		subject.setFinalStatus(INVALID_ACCOUNT_ID);
 		subject.setVerifiedSync(true);
 

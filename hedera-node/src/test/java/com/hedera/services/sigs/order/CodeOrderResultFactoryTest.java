@@ -48,20 +48,20 @@ class CodeOrderResultFactoryTest {
 	@Test
 	void errorReportsReturnSingletons() {
 		// expect:
-		assertSame(CodeOrderResultFactory.INVALID_ACCOUNT_RESULT, subject.forInvalidAccount(null, null));
-		assertSame(CodeOrderResultFactory.GENERAL_ERROR_RESULT, subject.forGeneralError(null));
-		assertSame(CodeOrderResultFactory.GENERAL_PAYER_ERROR_RESULT, subject.forGeneralPayerError(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_ACCOUNT_RESULT, subject.forMissingAccount(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_FILE_RESULT, subject.forMissingFile(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_CONTRACT_RESULT, subject.forInvalidContract(null, null));
-		assertSame(CodeOrderResultFactory.IMMUTABLE_CONTRACT_RESULT, subject.forImmutableContract(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_TOPIC_RESULT, subject.forMissingTopic(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_AUTORENEW_RESULT, subject.forMissingAutoRenewAccount(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_TOKEN_RESULT, subject.forMissingToken(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule(null, null));
-		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule(null, null));
-		assertSame(CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT, subject.forUnresolvableRequiredSigners(null, null, null));
-		assertSame(CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT, subject.forUnschedulableTxn(null));
-		assertSame(CodeOrderResultFactory.MISSING_FEE_COLLECTOR_RESULT, subject.forMissingFeeCollector(null));
+		assertSame(CodeOrderResultFactory.INVALID_ACCOUNT_RESULT, subject.forInvalidAccount());
+		assertSame(CodeOrderResultFactory.GENERAL_ERROR_RESULT, subject.forGeneralError());
+		assertSame(CodeOrderResultFactory.GENERAL_PAYER_ERROR_RESULT, subject.forGeneralPayerError());
+		assertSame(CodeOrderResultFactory.MISSING_ACCOUNT_RESULT, subject.forMissingAccount());
+		assertSame(CodeOrderResultFactory.MISSING_FILE_RESULT, subject.forMissingFile());
+		assertSame(CodeOrderResultFactory.MISSING_CONTRACT_RESULT, subject.forInvalidContract());
+		assertSame(CodeOrderResultFactory.IMMUTABLE_CONTRACT_RESULT, subject.forImmutableContract());
+		assertSame(CodeOrderResultFactory.MISSING_TOPIC_RESULT, subject.forMissingTopic());
+		assertSame(CodeOrderResultFactory.MISSING_AUTORENEW_RESULT, subject.forMissingAutoRenewAccount());
+		assertSame(CodeOrderResultFactory.MISSING_TOKEN_RESULT, subject.forMissingToken());
+		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule());
+		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule());
+		assertSame(CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT, subject.forUnresolvableRequiredSigners());
+		assertSame(CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT, subject.forUnschedulableTxn());
+		assertSame(CodeOrderResultFactory.MISSING_FEE_COLLECTOR_RESULT, subject.forMissingFeeCollector());
 	}
 }
