@@ -286,6 +286,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public void setNftsOwned(long nftsOwned) {
+		assertMutable("nftsOwned");
 		this.nftsOwned = nftsOwned;
 	}
 

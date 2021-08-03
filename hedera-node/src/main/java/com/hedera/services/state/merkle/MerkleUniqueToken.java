@@ -33,6 +33,10 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.nanosFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.secondsFrom;
+
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
@@ -45,8 +49,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
 
 	private int ownerCode;
-	private int creationNanos;
-	private long creationSecs;
+	private long packedCreationTime;
 	private byte[] metadata;
 
 	/**
@@ -66,8 +69,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	) {
 		this.ownerCode = owner.identityCode();
 		this.metadata = metadata;
-		this.creationSecs = creationTime.getSeconds();
-		this.creationNanos = creationTime.getNanos();
+		this.packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
 	}
 
 	/**
@@ -75,23 +77,20 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	 *
 	 * @param ownerCode the number of the owning entity as an unsigned {@code int}
 	 * @param metadata the metadata of the unique token
-	 * @param creationSecs the seconds past the consensus epoch when the NFT was minted
-	 * @param creationNanos the nanos past the above consensus second when the NFT was minted
+	 * @param packedCreationTime the "packed" representation of the consensus time at which the token was minted
 	 */
 	public MerkleUniqueToken(
 			int ownerCode,
 			byte[] metadata,
-			long creationSecs,
-			int creationNanos
+			long packedCreationTime
 	) {
 		this.ownerCode = ownerCode;
 		this.metadata = metadata;
-		this.creationSecs = creationSecs;
-		this.creationNanos = creationNanos;
+		this.packedCreationTime = packedCreationTime;
 	}
 
 	public MerkleUniqueToken() {
-		/* No-op. */
+		/* RuntimeConstructable */
 	}
 
 	/* Object */
@@ -106,8 +105,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 
 		var that = (MerkleUniqueToken) o;
 		return this.ownerCode == that.ownerCode &&
-				this.creationSecs == that.creationSecs &&
-				this.creationNanos == that.creationNanos &&
+				this.packedCreationTime == that.packedCreationTime &&
 				Objects.deepEquals(this.metadata, that.metadata);
 	}
 
@@ -115,22 +113,21 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	public int hashCode() {
 		return Objects.hash(
 				ownerCode,
-				creationSecs,
-				creationNanos,
+				packedCreationTime,
 				Arrays.hashCode(metadata));
 	}
 
 	@Override
 	public String toString() {
+		final var then = Instant.ofEpochSecond(secondsFrom(packedCreationTime), nanosFrom(packedCreationTime));
 		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
 				.add("owner", EntityId.fromIdentityCode(ownerCode).toAbbrevString())
-				.add("creationTime", Instant.ofEpochSecond(creationSecs, creationNanos))
+				.add("creationTime", then)
 				.add("metadata", metadata)
 				.toString();
 	}
 
 	/* --- MerkleLeaf --- */
-
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -144,16 +141,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
 		ownerCode = in.readInt();
-		creationSecs = in.readLong();
-		creationNanos = in.readInt();
+		packedCreationTime = in.readLong();
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeInt(ownerCode);
-		out.writeLong(creationSecs);
-		out.writeInt(creationNanos);
+		out.writeLong(packedCreationTime);
 		out.writeByteArray(metadata);
 	}
 
@@ -161,11 +156,11 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	@Override
 	public MerkleUniqueToken copy() {
 		setImmutable(true);
-		return new MerkleUniqueToken(ownerCode, metadata, creationSecs, creationNanos);
+		return new MerkleUniqueToken(ownerCode, metadata, packedCreationTime);
 	}
 
 	public void setOwner(EntityId owner) {
-		throwIfImmutable();
+		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
 		this.ownerCode = owner.identityCode();
 	}
 
@@ -178,7 +173,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	}
 
 	public RichInstant getCreationTime() {
-		return new RichInstant(creationSecs, creationNanos);
+		return new RichInstant(secondsFrom(packedCreationTime), nanosFrom(packedCreationTime));
 	}
 
 	public boolean isTreasuryOwned() {

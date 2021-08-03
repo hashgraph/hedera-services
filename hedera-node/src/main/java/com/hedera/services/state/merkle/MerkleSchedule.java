@@ -232,6 +232,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 
 	@Override
 	public MerkleSchedule copy() {
+		setImmutable(true);
 		var fc = new MerkleSchedule();
 
 		/* These fields are all immutable or effectively immutable, we can share them between copies */
@@ -272,6 +273,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 	}
 
 	public void setMemo(String memo) {
+		throwIfImmutable("Cannot change this schedule's memo if it's immutable.");
 		this.memo = memo;
 	}
 
@@ -284,10 +286,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 	}
 
 	public void setAdminKey(JKey adminKey) {
+		throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
 		this.adminKey = adminKey;
 	}
 
 	public void setPayer(EntityId payer) {
+		throwIfImmutable("Cannot change this schedule's payer if it's immutable.");
 		this.payer = payer;
 	}
 
@@ -316,6 +320,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 	}
 
 	public void setExpiry(long expiry) {
+		throwIfImmutable("Cannot change this schedule's expiry time if it's immutable.");
 		this.expiry = expiry;
 	}
 
@@ -324,11 +329,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 	}
 
 	public void markDeleted(Instant at) {
+		throwIfImmutable("Cannot change this schedule to deleted if it's immutable.");
 		resolutionTime = RichInstant.fromJava(at);
 		deleted = true;
 	}
 
 	public void markExecuted(Instant at) {
+		throwIfImmutable("Cannot change this schedule to executed if it's immutable.");
 		resolutionTime = RichInstant.fromJava(at);
 		executed = true;
 	}

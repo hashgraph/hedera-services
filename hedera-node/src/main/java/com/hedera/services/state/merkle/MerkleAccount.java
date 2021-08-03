@@ -155,6 +155,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
+		throwIfImmutable("Cannot change this account's transaction records if it's immutable.");
 		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
@@ -163,6 +164,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setTokens(MerkleAccountTokens tokens) {
+		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 
@@ -170,13 +172,17 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public long getNftsOwned() { return state().nftsOwned(); }
 
-	public void setNftsOwned(long nftsOwned) { state().setNftsOwned(nftsOwned); }
+	public void setNftsOwned(long nftsOwned) {
+		throwIfImmutable("Cannot change this account's owned NFTs if it's immutable.");
+		state().setNftsOwned(nftsOwned);
+	}
 
 	public String getMemo() {
 		return state().memo();
 	}
 
 	public void setMemo(String memo) {
+		throwIfImmutable("Cannot change this account's memo if it's immutable.");
 		state().setMemo(memo);
 	}
 
@@ -185,6 +191,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setSmartContract(boolean smartContract) {
+		throwIfImmutable("Cannot change this account's smart contract if it's immutable.");
 		state().setSmartContract(smartContract);
 	}
 
@@ -196,6 +203,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		if (balance < 0) {
 			throw new NegativeAccountBalanceException(String.format("Illegal balance: %d!", balance));
 		}
+		throwIfImmutable("Cannot change this account's hbar balance if it's immutable.");
 		state().setHbarBalance(balance);
 	}
 
@@ -203,6 +211,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		if (balance < 0) {
 			throw new IllegalArgumentException("Cannot set an ℏ balance to " + balance);
 		}
+		throwIfImmutable("Cannot change this account's hbar balance if it's immutable.");
 		state().setHbarBalance(balance);
 	}
 
@@ -211,6 +220,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setReceiverSigRequired(boolean receiverSigRequired) {
+		throwIfImmutable("Cannot change this account's receiver signature required setting if it's immutable.");
 		state().setReceiverSigRequired(receiverSigRequired);
 	}
 
@@ -219,6 +229,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setKey(JKey key) {
+		throwIfImmutable("Cannot change this account's key if it's immutable.");
 		state().setKey(key);
 	}
 
@@ -227,6 +238,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setProxy(EntityId proxy) {
+		throwIfImmutable("Cannot change this account's proxy if it's immutable.");
 		state().setProxy(proxy);
 	}
 
@@ -235,6 +247,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setAutoRenewSecs(long autoRenewSecs) {
+		throwIfImmutable("Cannot change this account's auto renewal seconds if it's immutable.");
 		state().setAutoRenewSecs(autoRenewSecs);
 	}
 
@@ -243,6 +256,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setDeleted(boolean deleted) {
+		throwIfImmutable("Cannot change this account's deleted status if it's immutable.");
 		state().setDeleted(deleted);
 	}
 
@@ -251,6 +265,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setExpiry(long expiry) {
+		throwIfImmutable("Cannot change this account's expiry time if it's immutable.");
 		state().setExpiry(expiry);
 	}
 

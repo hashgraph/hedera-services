@@ -27,7 +27,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -39,6 +38,7 @@ import java.time.Instant;
 import java.util.Arrays;
 
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -73,10 +73,6 @@ class MerkleUniqueTokenTest {
 		anotherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL, 1));
 
 		subject = new MerkleUniqueToken(owner, metadata, timestamp);
-	}
-
-	@AfterEach
-	public void cleanup() {
 	}
 
 	@Test
@@ -141,22 +137,20 @@ class MerkleUniqueTokenTest {
 
 		// then:
 		inOrder.verify(out).writeInt(owner.identityCode());
-		inOrder.verify(out).writeLong(timestamp.getSeconds());
-		inOrder.verify(out).writeInt(timestamp.getNanos());
+		inOrder.verify(out).writeLong(packedTime(timestamp.getSeconds(), timestamp.getNanos()));
 		inOrder.verify(out).writeByteArray(metadata);
-
 	}
 
 	@Test
 	void deserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
+		// and:
+		final var packedTime = packedTime(timestamp.getSeconds(), timestamp.getNanos());
 
 		given(in.readByteArray(anyInt())).willReturn(metadata);
-		given(in.readLong()).willReturn(timestampL);
-		given(in.readInt())
-				.willReturn(owner.identityCode())
-				.willReturn(0);
+		given(in.readLong()).willReturn(packedTime);
+		given(in.readInt()).willReturn(owner.identityCode());
 
 		// and:
 		var read = new MerkleUniqueToken();

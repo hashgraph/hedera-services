@@ -133,8 +133,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(opCounters).countHandled(TokenMint);
-		verify(networkCtx).updateSnapshotsFrom(handleThrottling);
-		verify(networkCtx).updateCongestionStartsFrom(feeMultiplierSource);
+		verify(networkCtx).syncThrottling(handleThrottling);
+		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 	}
 
 	@Test

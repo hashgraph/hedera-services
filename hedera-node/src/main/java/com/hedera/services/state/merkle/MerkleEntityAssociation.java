@@ -146,6 +146,7 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleEntityAssociation copy() {
+		setImmutable(true);
 		return new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
 	}
 
