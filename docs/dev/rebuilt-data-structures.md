@@ -215,4 +215,68 @@ simultaneously updates the state FCM and `knownTreasuries`.
 3. For `TokenDelete`, the [`HederaTokenStore.delete()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/HederaTokenStore.java#L645) removes
 the mapping for a deleted token's treasury from `knownTreasuries`.
 
+### The `uniqueTokenAssociations` one-to-many relation
 
+```
+FCOneToManyRelation<Integer, Long> uniqueTokenAssociations = new FCOneToManyRelation<>();
+```
+
+This structure supports the `TokenGetNftInfos` query logic by providing
+efficient iteration through the NFTs minted by a unique token type. 
+
+:gear:&nbsp;The `TokenMint`, `TokenBurn`, and `TokenAccountWipe` HAPI operations 
+can all change `uniqueTokenAssociations`. 
+
+#### Consistency audit
+
+:building_construction:&nbsp;**Rebuilding** this structure consists of 
+[iterating over the unique tokens in state and updating the relation for each](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L246). 
+
+:memo:&nbsp;**Maintaining** this structure works as below.
+1. For `TokenMint`, the [`TypedTokenStore.persistToken()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L304) uses [`TypedTokenStore.persistMinted()`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L332) 
+to simultaneously update the `uniqueTokens` FCM and `uniqueTokenAssociations`.
+2. For `TokenBurn`, the [`TypedTokenStore.persistToken()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L304) uses [`TypedTokenStore.destroyRemoved()`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L319) 
+to simultaneously update the `uniqueTokens` FCM and `uniqueTokenAssociations`.
+3. For `TokenAccountWipe`, again the [`TypedTokenStore.persistToken()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L304) uses [`TypedTokenStore.destroyRemoved()`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L319) 
+to simultaneously update the `uniqueTokens` FCM and `uniqueTokenAssociations`.
+
+In both cases, the actual mutations to the `uniqueTokenAssociations` 
+relation are done by the appropriate method in [`UniqTokenViewsManager`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L35).
+
+### The `uniqueOwnershipAssociations` one-to-many relation
+
+```
+FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+```
+
+This structure supports the `TokenGetAccountNftInfos` query logic by providing
+efficient iteration through the NFTs owned by a specific crypto account. (Note
+that when [`tokens.nfts.useTreasuryWildcards=true`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/resources/bootstrap.properties#L89), this iteration is refined to 
+include _only_ the NFTs that account owns by virtue of a `CryptoTransfer`; it
+may _also_ own NFTs by virtue of serving as treasury for one or more unique tokens.)
+
+:gear:&nbsp;HAPI operations affect the `uniqueOwnershipAssociations` relation
+differently depending on the value of `tokens.nfts.useTreasuryWildcards`.
+- When `tokens.nfts.useTreasuryWildcards=true`, only `TokenAccountWipe` and 
+`CryptoTransfer` can change this relation.
+- When `tokens.nfts.useTreasuryWildcards=false`, both `TokenMint` and `TokenBurn`
+can also change the `uniqueOwnershipAssociations` relation.
+
+#### Consistency audit
+
+:building_construction:&nbsp;**Rebuilding** this structure uses different
+logic based on the value of `tokens.nfts.useTreasuryWildcards`.
+- When `tokens.nfts.useTreasuryWildcards=true`, rebuilding consists of 
+[iterating over the unique tokens in state and updating the relation for non-treasury 
+owned NFTs](https://github.com/hashgraph/hedera-services/blob/01682-M-AuditRebuiltDataStructures/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L246). 
+- When `tokens.nfts.useTreasuryWildcards=false`, rebuilding consists of
+[iterating over the unique tokens in state and updating the relation for all NFTs](https://github.com/hashgraph/hedera-services/blob/01682-M-AuditRebuiltDataStructures/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L242). 
+
+:memo:&nbsp;**Maintaining** this structure again works differently based
+on the the value of `tokens.nfts.useTreasuryWildcards`.
+
+First, with `tokens.nfts.useTreasuryWildcards=true`, 
+1. For `TokenAccountWipe`, the [`TypedTokenStore.persistToken()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L304) uses [`TypedTokenStore.destroyRemoved()`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L319) 
+to simultaneously update the `uniqueTokens` FCM and `uniqueOwnershipAssociations`; where the
+actual mutation is done by [`UniqTokenViewsManager.wipeNotice()`](https://github.com/hashgraph/hedera-services/blob/01682-M-AuditRebuiltDataStructures/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L125).
+2. For `CryptoTransfer`, the [`HederaTokenStore.changeOwner()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/HederaTokenStore.java#L356) relies ...
