@@ -41,7 +41,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 	private Yahcli yahcli;
 
 	@CommandLine.Option(names = { "-s", "--start-time"},
-			paramLabel = "Freeze start time",
+			paramLabel = "Freeze start time, use format 'yyyy-MM-dd HH:mm:ss'",
 			defaultValue = "")
 	private String freezeStartTimeStr;
 
@@ -50,7 +50,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 	public Integer call() throws Exception {
 		var config = configFrom(yahcli);
 
-		freezeStartTime = ensureFreezeStartTime(freezeStartTimeStr);
+		freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
 
 		var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
 		delegate.runSuiteSync();
@@ -58,11 +58,10 @@ public class SysFreezeCommand implements Callable<Integer> {
 		return 0;
 	}
 
-	private Instant ensureFreezeStartTime(String timeStampInStr) {
+	private Instant getFreezeStartTime(String timeStampInStr) {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
 		Instant startTime = Instant.from(dtf.parse(timeStampInStr));
-
 		return startTime;
 
 	}
