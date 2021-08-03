@@ -21,15 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.List;
 
@@ -59,76 +51,72 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forGeneralError(TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forGeneralError() {
 		return GENERAL_ERROR_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forInvalidAccount(AccountID account, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forInvalidAccount() {
 		return INVALID_ACCOUNT_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forInvalidContract(ContractID contract, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forInvalidContract() {
 		return MISSING_CONTRACT_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forImmutableContract(ContractID contract, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forImmutableContract() {
 		return IMMUTABLE_CONTRACT_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingFile(FileID file, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingFile() {
 		return MISSING_FILE_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingAccount(AccountID account, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingAccount() {
 		return MISSING_ACCOUNT_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingToken(TokenID id, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingToken() {
 		return MISSING_TOKEN_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingSchedule(ScheduleID id, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingSchedule() {
 		return MISSING_SCHEDULE_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forGeneralPayerError(AccountID payer, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forGeneralPayerError() {
 		return GENERAL_PAYER_ERROR_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingTopic(TopicID topic, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingTopic() {
 		return MISSING_TOPIC_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingAutoRenewAccount(AccountID account, TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingAutoRenewAccount() {
 		return MISSING_AUTORENEW_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forUnresolvableRequiredSigners(
-			TransactionBody scheduled,
-			TransactionID txnId,
-			ResponseCodeEnum errorReport
-	) {
+	public SigningOrderResult<ResponseCodeEnum> forUnresolvableRequiredSigners() {
 		return UNRESOLVABLE_SIGNERS_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forUnschedulableTxn(TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forUnschedulableTxn() {
 		return UNSCHEDULABLE_TRANSACTION_RESULT;
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingFeeCollector(TransactionID txnId) {
+	public SigningOrderResult<ResponseCodeEnum> forMissingFeeCollector() {
 		return MISSING_FEE_COLLECTOR_RESULT;
 	}
 

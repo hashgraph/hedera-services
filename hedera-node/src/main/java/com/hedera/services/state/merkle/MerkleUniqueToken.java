@@ -160,7 +160,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	}
 
 	public void setOwner(EntityId owner) {
-		throwIfImmutable();
+		throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
 		this.ownerCode = owner.identityCode();
 	}
 

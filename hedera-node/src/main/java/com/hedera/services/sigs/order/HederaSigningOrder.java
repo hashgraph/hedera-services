@@ -162,9 +162,9 @@ public class HederaSigningOrder {
 			return factory.forValidOrder(List.of(result.metadata().getKey()));
 		} else {
 			if (result.failureIfAny() == MISSING_ACCOUNT) {
-				return factory.forInvalidAccount(payer, txn.getTransactionID());
+				return factory.forInvalidAccount();
 			} else {
-				return factory.forGeneralPayerError(payer, txn.getTransactionID());
+				return factory.forGeneralPayerError();
 			}
 		}
 	}
@@ -201,7 +201,7 @@ public class HederaSigningOrder {
 		} else if (txn.hasScheduleSign()) {
 			return scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory);
 		} else if (txn.hasScheduleDelete()) {
-			return scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory);
+			return scheduleDelete(txn.getScheduleDelete().getScheduleID(), factory);
 		} else {
 			return null;
 		}
@@ -211,9 +211,9 @@ public class HederaSigningOrder {
 		if (txn.hasTokenCreation()) {
 			return tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory);
 		} else if (txn.hasTokenAssociate()) {
-			return tokenAssociate(txn.getTransactionID(), txn.getTokenAssociate(), factory);
+			return tokenAssociate(txn.getTokenAssociate(), factory);
 		} else if (txn.hasTokenDissociate()) {
-			return tokenDissociate(txn.getTransactionID(), txn.getTokenDissociate(), factory);
+			return tokenDissociate(txn.getTokenDissociate(), factory);
 		} else if (txn.hasTokenFreeze()) {
 			return tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory);
 		} else if (txn.hasTokenUnfreeze()) {
@@ -285,7 +285,7 @@ public class HederaSigningOrder {
 			var beneficiary = op.getTransferAccountID();
 			var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary);
 			if (!beneficiaryResult.succeeded()) {
-				return factory.forInvalidAccount(beneficiary, txnId);
+				return factory.forInvalidAccount();
 			} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
 				required.add(beneficiaryResult.metadata().getKey());
 			}
@@ -293,7 +293,7 @@ public class HederaSigningOrder {
 			var beneficiary = op.getTransferContractID();
 			var beneficiaryResult = sigMetaLookup.contractSigningMetaFor(beneficiary);
 			if (!beneficiaryResult.succeeded()) {
-				return factory.forInvalidContract(beneficiary, txnId);
+				return factory.forInvalidContract();
 			} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
 				required.add(beneficiaryResult.metadata().getKey());
 			}
@@ -360,7 +360,7 @@ public class HederaSigningOrder {
 		var target = op.getFileID();
 		var targetResult = sigMetaLookup.fileSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return factory.forMissingFile(target, txnId);
+			return factory.forMissingFile();
 		} else {
 			var wacl = targetResult.metadata().getWacl();
 			return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
@@ -378,7 +378,7 @@ public class HederaSigningOrder {
 		final var target = op.getFileID();
 		final var targetResult = sigMetaLookup.fileSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return factory.forMissingFile(target, txnId);
+			return factory.forMissingFile();
 		} else {
 			List<JKey> required = new ArrayList<>();
 			if (targetWaclMustSign) {
@@ -405,7 +405,7 @@ public class HederaSigningOrder {
 		var target = op.getFileID();
 		var targetResult = sigMetaLookup.fileSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return factory.forMissingFile(target, txnId);
+			return factory.forMissingFile();
 		} else {
 			if (targetWaclMustSign) {
 				var wacl = targetResult.metadata().getWacl();
@@ -522,11 +522,11 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		if (type == INVALID_CONTRACT) {
-			return factory.forInvalidContract(id, txnId);
+			return factory.forInvalidContract();
 		} else if (type == IMMUTABLE_CONTRACT) {
-			return factory.forImmutableContract(id, txnId);
+			return factory.forImmutableContract();
 		} else {
-			return factory.forGeneralError(txnId);
+			return factory.forGeneralError();
 		}
 	}
 
@@ -537,13 +537,13 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		if (type == INVALID_ACCOUNT) {
-			return factory.forInvalidAccount(id, txnId);
+			return factory.forInvalidAccount();
 		} else if (type == MISSING_ACCOUNT) {
-			return factory.forMissingAccount(id, txnId);
+			return factory.forMissingAccount();
 		} else if (type == MISSING_AUTORENEW_ACCOUNT) {
-			return factory.forMissingAutoRenewAccount(id, txnId);
+			return factory.forMissingAutoRenewAccount();
 		} else {
-			return factory.forGeneralError(txnId);
+			return factory.forGeneralError();
 		}
 	}
 
@@ -554,9 +554,9 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		if (type == INVALID_TOPIC) {
-			return factory.forMissingTopic(id, txnId);
+			return factory.forMissingTopic();
 		} else {
-			return factory.forGeneralError(txnId);
+			return factory.forGeneralError();
 		}
 	}
 
@@ -637,7 +637,7 @@ public class HederaSigningOrder {
 					? addAccountIfReceiverSigRequired(collector, required)
 					: addAccount(collector, required, true);
 			if (!couldAddCollector) {
-				return factory.forMissingFeeCollector(txnId);
+				return factory.forMissingFeeCollector();
 			}
 		}
 
@@ -692,7 +692,7 @@ public class HederaSigningOrder {
 					final var collector = customFee.getFeeCollectorAccountId();
 					final var couldAddCollector = addAccountIfReceiverSigRequired(collector, required);
 					if (!couldAddCollector) {
-						return factory.forMissingFeeCollector(txnId);
+						return factory.forMissingFeeCollector();
 					}
 				}
 				return factory.forValidOrder(required);
@@ -701,7 +701,7 @@ public class HederaSigningOrder {
 				return SigningOrderResult.noKnownKeys();
 			}
 		} else {
-			return factory.forMissingToken(id, txnId);
+			return factory.forMissingToken();
 		}
 	}
 
@@ -790,7 +790,7 @@ public class HederaSigningOrder {
 				candidate.ifPresent(required::add);
 			});
 		} else {
-			return factory.forMissingToken(id, txnId);
+			return factory.forMissingToken();
 		}
 		return factory.forValidOrder(required);
 	}
@@ -813,25 +813,23 @@ public class HederaSigningOrder {
 				return SigningOrderResult.noKnownKeys();
 			}
 		} else {
-			return factory.forMissingToken(id, txnId);
+			return factory.forMissingToken();
 		}
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenAssociate(
-			TransactionID txnId,
 			TokenAssociateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		return forSingleAccount(txnId, op.getAccount(), factory);
+		return forSingleAccount(op.getAccount(), factory);
 	}
 
 	private <T> SigningOrderResult<T> tokenDissociate(
-			TransactionID txnId,
 			TokenDissociateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		return forSingleAccount(txnId, op.getAccount(), factory);
+		return forSingleAccount(op.getAccount(), factory);
 	}
 
 	private <T> SigningOrderResult<T> scheduleCreate(
@@ -864,7 +862,7 @@ public class HederaSigningOrder {
 		}
 
 		var scheduledTxn = MiscUtils.asOrdinary(op.getScheduledTransactionBody());
-		var mergeError = mergeScheduledKeys(required, txnId, scheduledTxn, factory);
+		var mergeError = mergeScheduledKeys(required, scheduledTxn, factory);
 		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
@@ -877,7 +875,7 @@ public class HederaSigningOrder {
 
 		var result = sigMetaLookup.scheduleSigningMetaFor(id);
 		if (!result.succeeded()) {
-			return factory.forMissingSchedule(id, txnId);
+			return factory.forMissingSchedule();
 		}
 		var optionalPayer = result.metadata().overridePayer();
 		if (optionalPayer.isPresent()) {
@@ -891,27 +889,23 @@ public class HederaSigningOrder {
 			}
 		}
 		var scheduledTxn = result.metadata().scheduledTxn();
-		var mergeError = mergeScheduledKeys(required, txnId, scheduledTxn, factory);
+		var mergeError = mergeScheduledKeys(required, scheduledTxn, factory);
 		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
 	private <T> Optional<SigningOrderResult<T>> mergeScheduledKeys(
 			List<JKey> required,
-			TransactionID txnId,
 			TransactionBody scheduledTxn,
 			SigningOrderResultFactory<T> factory
 	) {
 		try {
 			var scheduledFunction = MiscUtils.functionOf(scheduledTxn);
 			if (!properties.schedulingWhitelist().contains(scheduledFunction)) {
-				return Optional.of(factory.forUnschedulableTxn(txnId));
+				return Optional.of(factory.forUnschedulableTxn());
 			}
 			var scheduledOrderResult = keysForOtherParties(scheduledTxn, factory);
 			if (scheduledOrderResult.hasErrorReport()) {
-				return Optional.of(factory.forUnresolvableRequiredSigners(
-						scheduledTxn,
-						txnId,
-						scheduledOrderResult.getErrorReport()));
+				return Optional.of(factory.forUnresolvableRequiredSigners());
 			} else {
 				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
 				for (JKey key : scheduledKeys) {
@@ -921,13 +915,12 @@ public class HederaSigningOrder {
 				}
 			}
 		} catch (UnknownHederaFunctionality e) {
-			return Optional.of(factory.forUnschedulableTxn(txnId));
+			return Optional.of(factory.forUnschedulableTxn());
 		}
 		return Optional.empty();
 	}
 
 	private <T> SigningOrderResult<T> scheduleDelete(
-			TransactionID txnId,
 			ScheduleID id,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -940,14 +933,13 @@ public class HederaSigningOrder {
 				required.add(meta.adminKey().get());
 			}
 		} else {
-			return factory.forMissingSchedule(id, txnId);
+			return factory.forMissingSchedule();
 		}
 
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> forSingleAccount(
-			TransactionID txnId,
 			AccountID target,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -959,7 +951,7 @@ public class HederaSigningOrder {
 			required = mutable(required);
 			required.add(meta.getKey());
 		} else {
-			return factory.forMissingAccount(target, txnId);
+			return factory.forMissingAccount();
 		}
 
 		return factory.forValidOrder(required);

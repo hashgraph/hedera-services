@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
@@ -138,11 +137,14 @@ class HederaToPlatformSigOpsTest {
 
 	@Test
 	void rationalizesMissingSigs() throws Exception {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		// given:
 		wellBehavedOrdersAndSigSources();
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
@@ -150,19 +152,22 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertEquals(OK, ans.finalStatus());
-		assertTrue(ans.usedSyncVerification());
+		assertEquals(OK, rationalization.finalStatus());
+		assertTrue(rationalization.usedSyncVerification());
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
 	@Test
 	void stopImmediatelyOnPayerKeyOrderFailure() {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
@@ -170,18 +175,21 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertEquals(INVALID_ACCOUNT_ID, ans.finalStatus());
+		assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
 	}
 
 	@Test
 	void stopImmediatelyOnOtherPartiesKeyOrderFailure() throws Exception {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		// given:
 		wellBehavedOrdersAndSigSources();
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
@@ -189,11 +197,14 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertEquals(INVALID_ACCOUNT_ID, ans.finalStatus());
+		assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
 	}
 
 	@Test
 	void stopImmediatelyOnOtherPartiesSigCreationFailure() throws Exception {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(payerKey));
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
@@ -205,7 +216,7 @@ class HederaToPlatformSigOpsTest {
 				.willThrow(KeyPrefixMismatchException.class);
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
@@ -213,11 +224,14 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertEquals(KEY_PREFIX_MISMATCH, ans.finalStatus());
+		assertEquals(KEY_PREFIX_MISMATCH, rationalization.finalStatus());
 	}
 
 	@Test
 	void rationalizesOnlyMissingSigs() throws Exception {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		// given:
 		wellBehavedOrdersAndSigSources();
 		platformTxn.getPlatformTxn().addAll(
@@ -232,7 +246,7 @@ class HederaToPlatformSigOpsTest {
 		};
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				syncVerifier,
 				keyOrdering,
@@ -240,21 +254,24 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertTrue(ans.usedSyncVerification());
-		assertEquals(OK, ans.finalStatus());
+		assertTrue(rationalization.usedSyncVerification());
+		assertEquals(OK, rationalization.finalStatus());
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
 	@Test
 	void rationalizesSigsWithUnknownStatus() throws Exception {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		// given:
 		wellBehavedOrdersAndSigSources();
 		platformTxn.getPlatformTxn().addAll(
 				expectedSigsWithNoErrors().subList(0, 1).toArray(new TransactionSignature[0]));
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
@@ -262,14 +279,17 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertTrue(ans.usedSyncVerification());
-		assertEquals(OK, ans.finalStatus());
+		assertTrue(rationalization.usedSyncVerification());
+		assertEquals(OK, rationalization.finalStatus());
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
 	@Test
 	void doesNothingToTxnIfAllSigsAreRational() throws Exception {
+		// setup:
+		final var rationalization = new Rationalization();
+
 		// given:
 		wellBehavedOrdersAndSigSources();
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()));
@@ -281,7 +301,7 @@ class HederaToPlatformSigOpsTest {
 		};
 
 		// when:
-		final var ans = rationalizeIn(
+		rationalization.performFor(
 				platformTxn,
 				syncVerifier,
 				keyOrdering,
@@ -289,8 +309,8 @@ class HederaToPlatformSigOpsTest {
 				new BodySigningSigFactory(platformTxn));
 
 		// then:
-		assertFalse(ans.usedSyncVerification());
-		assertEquals(OK, ans.finalStatus());
+		assertFalse(rationalization.usedSyncVerification());
+		assertEquals(OK, rationalization.finalStatus());
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 		assertFalse(((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn()).hasClearBeenCalled());

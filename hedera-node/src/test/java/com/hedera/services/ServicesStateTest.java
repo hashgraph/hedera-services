@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,7 +58,9 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerkleBinaryTree;
 import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkletree.MerkleTreeInternalNode;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -422,13 +424,17 @@ class ServicesStateTest {
 		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
 		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 		final var nftKey = new MerkleUniqueTokenId(MISSING_ENTITY_ID, 1L);
+		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
 		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
 		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
+		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
 		// and:
-		nfts.put(nftKey, new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT));
-		tokenRels.put(tokenRelsKey, new MerkleTokenRelStatus(1_234L, true, false));
+		nfts.put(nftKey, nftVal);
+		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:
 		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels);
 
@@ -446,16 +452,16 @@ class ServicesStateTest {
 				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
-				nfts.get(nftKey),
+				nftVal,
 				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
-		assertEquals(nfts.get(nftKey), subject.uniqueTokens().get(nftKey));
+		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
 		assertEquals(
-				tokenRels.get(tokenRelsKey),
+				tokenRelsVal,
 				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
-		assertEquals(tokenRels.get(tokenRelsKey), subject.tokenAssociations().get(tokenRelsKey));
+		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
 	}
 
 	@Test

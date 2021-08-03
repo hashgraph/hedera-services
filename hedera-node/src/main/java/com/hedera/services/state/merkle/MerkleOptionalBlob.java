@@ -71,6 +71,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	}
 
 	public void modify(byte[] newContents) {
+		throwIfImmutable("Cannot modify the state of this immutable MerkleOptionalBlob.");
 		var newDelegate = blobStoreSupplier.get().put(newContents);
 		if (delegate != MISSING_DELEGATE) {
 			delegate.release();
@@ -152,6 +153,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleOptionalBlob copy() {
+		setImmutable(true);
 		return new MerkleOptionalBlob(delegate.copy());
 	}
 

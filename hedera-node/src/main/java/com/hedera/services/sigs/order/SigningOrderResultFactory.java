@@ -21,14 +21,6 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.List;
 
@@ -57,129 +49,100 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a non-specific error that occurred when listing signing keys for some txn.
 	 *
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forGeneralError(TransactionID txnId);
+	SigningOrderResult<T> forGeneralError();
 
 	/**
 	 * Report an invalid account encountered when listing signing keys for some txn.
 	 *
-	 * @param account the invalid account.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forInvalidAccount(AccountID account, TransactionID txnId);
+	SigningOrderResult<T> forInvalidAccount();
 
 	/**
 	 * Report an invalid smart contract encountered when listing signing keys for some txn.
 	 *
-	 * @param contract the invalid account.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forInvalidContract(ContractID contract, TransactionID txnId);
+	SigningOrderResult<T> forInvalidContract();
 
 	/**
 	 * Report a smart contract with no admin key that was encountered when listing signing
 	 * keys for some txn. (The current semantics of {@link HederaSigningOrder} mean it is
 	 * never valid to reference such smart contracts in a transaction.)
 	 *
-	 * @param contract the invalid contract.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forImmutableContract(ContractID contract, TransactionID txnId);
+	SigningOrderResult<T> forImmutableContract();
 
 	/**
 	 * Report a missing file encountered when listing signing keys for some txn.
 	 *
-	 * @param file the missing file.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingFile(FileID file, TransactionID txnId);
+	SigningOrderResult<T> forMissingFile();
 
 	/**
 	 * Report a missing account encountered when listing signing keys for some txn.
 	 *
-	 * @param account the missing account.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingAccount(AccountID account, TransactionID txnId);
+	SigningOrderResult<T> forMissingAccount();
 
 	/**
 	 * Report a missing token encountered when listing signing keys for some txn.
 	 *
-	 * @param id the missing token.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingToken(TokenID id, TransactionID txnId);
+	SigningOrderResult<T> forMissingToken();
 
 	/**
 	 * Report a missing schedule encountered when listing signing keys for some txn.
 	 *
-	 * @param id the missing schedule.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingSchedule(ScheduleID id, TransactionID txnId);
+	SigningOrderResult<T> forMissingSchedule();
 
 	/**
 	 * Report a non-specific payer error that occurred when listing signing keys for some txn.
 	 *
-	 * @param payer the problematic payer.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forGeneralPayerError(AccountID payer, TransactionID txnId);
+	SigningOrderResult<T> forGeneralPayerError();
 
 	/**
 	 * Report a missing topic occurring during listing signing keys for a txn.
 	 *
-	 * @param topic the missing topic
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingTopic(TopicID topic, TransactionID txnId);
+	SigningOrderResult<T> forMissingTopic();
 
 	/**
 	 * Report a missing auto renew account encountered when listing signing keys for some txn.
 	 *
-	 * @param account the missing account.
-	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingAutoRenewAccount(AccountID account, TransactionID txnId);
+	SigningOrderResult<T> forMissingAutoRenewAccount();
 
 	/**
 	 * Report a failure resolving required signers for a scheduled transaction.
 	 *
-	 * @param scheduled the transaction that was attempted to be scheduled.
-	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate} or {@code ScheduleSign} txn.
-	 * @param errorReport the error to be reported on failure
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forUnresolvableRequiredSigners(
-			TransactionBody scheduled,
-			TransactionID txnId,
-			T errorReport);
+	SigningOrderResult<T> forUnresolvableRequiredSigners();
 
 	/**
 	 * Report an invalid attempt to schedule a ScheduleCreate transaction.
 	 *
-	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}
 	 * @return the error summary
 	 */
-	SigningOrderResult<T> forUnschedulableTxn(TransactionID txnId);
+	SigningOrderResult<T> forUnschedulableTxn();
 
 	/**
 	 * Report an invalid fee collection account in a TokenCreate or TokenUpdate.
 	 *
-	 * @param txnId the {@link TransactionID} of the problematic token operation
 	 * @return the error summary
 	 */
-	SigningOrderResult<T> forMissingFeeCollector(TransactionID txnId);
+	SigningOrderResult<T> forMissingFeeCollector();
 }
