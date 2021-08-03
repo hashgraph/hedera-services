@@ -7,7 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * An off-heap in memory store of longs, it stores them in 8Mb direct buffers and adds buffers as needed.
+ * An off-heap in memory store of longs, it stores them in 8Mb direct buffers and adds buffers as needed. It uses memory
+ * from 0 to the highest index used. If your use case starts at a high minimum index then this will waste a load of ram.
  *
  * It is thread safe for concurrent access.
  */
@@ -16,7 +17,7 @@ public final class OffHeapLongList {
     private static final int CHUNK_SIZE_MB = 8;
     private static final int MEMORY_CHUNK_SIZE = CHUNK_SIZE_MB*MB;
     private static final long NUM_LONGS_PER_CHUNK = MEMORY_CHUNK_SIZE/Long.BYTES;
-    private final List<LongBuffer> data = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<LongBuffer> data = new CopyOnWriteArrayList<>();
     private final AtomicLong maxIndexThatCanBeStored = new AtomicLong(-1);
 
     /**
