@@ -389,5 +389,29 @@ processed, we sort these expiration events by consensus time, and use the
 Finally, for each entry in the `txnHistories` map, we initialize its duplicate 
 classification internals by calling [`TxnIdRecentHistory.observeStaged()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/records/TxnIdRecentHistory.java#L115).
 
-:memo:&nbsp;**Maintaining** these structures has two aspects. First, each 
-time a new record is added to state via `Hedera
+:memo:&nbsp;**Maintaining** these structures has two aspects. 
+
+First, each time we add a new record to state via [`HederaLedger.commit()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/ledger/HederaLedger.java#L197), the 
+[`TxnAwareRecordsHistorian.saveExpirableTxnRecord()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/records/TxnAwareRecordsHistorian.java#L72) method will consecutively
+save the new payer record to state, add its expiration event to the 
+`payerRecordExpiries` queue, and update the `txnHistories` map---the
+first two via a call to [`ExpiringCreations.saveExpiringRecord()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiringCreations.java#L84), and the 
+third via a call to [`RecordCache.setPostConsensus()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/records/RecordCache.java#L72).
+
+Second, at the beginning of each call to `handleTransaction, we invoke 
+[`ExpiryManager.purge()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/legacy/services/state/AwareProcessLogic.java#L94). For the first transaction handled in each
+consensus second, this will trigger a series of calls to the 
+[`MonotonicFullQueueExpiries.expireNextAt()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/MonotonicFullQueueExpiries.java#L54) of `payerRecordExpiries`,
+as long as the queue contains an expiration event whose expiration is 
+not after the current consensus second. For each expiration event, 
+we then [consistently update](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L179) the related records FCQ in the `accounts` 
+FCM and the `txnHistories` map.
+
+:information_desk_person:&nbsp;Note that here we depend on the "invariance"
+of the FCM root hash to the order of `getForModify()` calls made within
+a single `handleTransaction()`, since the order that expiration events with
+the same consensus time appear in a rebuilt `payerRecordExpiries` may _not_
+be the same as the order they appear in a constantly maintained queue.
+(C.f. [Platform #3655](https://github.com/swirlds/swirlds-platform/issues/3655).)
+
+## The `shortLivedEntityExpiries` priority queue
