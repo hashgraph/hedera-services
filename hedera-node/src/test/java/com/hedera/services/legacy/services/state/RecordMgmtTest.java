@@ -24,6 +24,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
@@ -62,12 +63,14 @@ class RecordMgmtTest {
 	private NonBlockingHandoff nonBlockingHandoff;
 	@Mock
 	private Rationalization rationalization;
+	@Mock
+	private ReusableBodySigningFactory bodySigningFactory;
 
 	private AwareProcessLogic subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AwareProcessLogic(ctx, rationalization);
+		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory);
 	}
 
 	@Test

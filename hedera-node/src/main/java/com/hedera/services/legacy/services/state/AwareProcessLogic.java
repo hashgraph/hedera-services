@@ -23,7 +23,7 @@ package com.hedera.services.legacy.services.state;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.sigs.Rationalization;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -69,13 +69,19 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private final ServicesContext ctx;
 	private final Rationalization rationalization;
+	private final ReusableBodySigningFactory bodySigningFactory;
 
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx, this::addRecordToStream, this::processTriggeredTxnInCtx, this::warnOf);
 
-	public AwareProcessLogic(ServicesContext ctx, Rationalization rationalization) {
+	public AwareProcessLogic(
+			ServicesContext ctx,
+			Rationalization rationalization,
+			ReusableBodySigningFactory bodySigningFactory
+	) {
 		this.ctx = ctx;
 		this.rationalization = rationalization;
+		this.bodySigningFactory = bodySigningFactory;
 	}
 
 	@Override
@@ -194,12 +200,12 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	ResponseCodeEnum rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
+		bodySigningFactory.resetFor(accessor);
 		rationalization.performFor(
-				accessor,
-				ctx.syncVerifier(),
+				accessor, ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
 				accessor.getPkToSigsFn(),
-				new BodySigningSigFactory(accessor));
+				bodySigningFactory);
 		final var status = rationalization.finalStatus();
 		if (status == OK) {
 			if (rationalization.usedSyncVerification()) {
