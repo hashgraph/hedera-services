@@ -41,7 +41,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 	private Yahcli yahcli;
 
 	@CommandLine.Option(names = { "-s", "--start-time"},
-			paramLabel = "Freeze start time, use format 'yyyy-MM-dd HH:mm:ss'",
+			paramLabel = "Freeze start time in UTC, use format 'yyyy-MM-dd.HH:mm:ss'",
 			defaultValue = "")
 	private String freezeStartTimeStr;
 
@@ -58,7 +58,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 	}
 
 	private Instant getFreezeStartTime(String timeStampInStr) {
-		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss").withZone(ZoneId.of("Etc/UTC"));
 
 		return Instant.from(dtf.parse(timeStampInStr));
 
