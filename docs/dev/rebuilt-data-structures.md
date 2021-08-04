@@ -398,7 +398,7 @@ save the new payer record to state, add its expiration event to the
 first two via a call to [`ExpiringCreations.saveExpiringRecord()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiringCreations.java#L84), and the 
 third via a call to [`RecordCache.setPostConsensus()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/records/RecordCache.java#L72).
 
-Second, at the beginning of each call to `handleTransaction, we invoke 
+Second, at the beginning of each call to `handleTransaction`, we invoke 
 [`ExpiryManager.purge()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/legacy/services/state/AwareProcessLogic.java#L94). For the first transaction handled in each
 consensus second, this can trigger one or more calls to the 
 [`MonotonicFullQueueExpiries.expireNextAt()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/MonotonicFullQueueExpiries.java#L54) of `payerRecordExpiries`,
@@ -454,7 +454,7 @@ First, a successful `ScheduleCreate` updates the transaction context with an [`E
 representing the newly scheduled transaction. The [`HederaLedger.commit()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/ledger/HederaLedger.java#L202) at the end of `handleTransaction()`
 then triggers the `ExpiryManager` to [begin tracking](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L113) the expiring entity.
 
-Second, at the beginning of each call to `handleTransaction, we invoke 
+Second, at the beginning of each call to `handleTransaction`, we invoke 
 [`ExpiryManager.purge()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/legacy/services/state/AwareProcessLogic.java#L94). For the first transaction handled in each
 consensus second, this can trigger one or more calls to the [`PriorityQueueExpiries.expireNextAt()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/PriorityQueueExpiries.java#L55)
 method, continuing until the head of the queue is an expiration event whose 
