@@ -114,16 +114,49 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 			rebuildState();
 		}
 
-		long x = DEFAULT_MULTIPLIER;
-		long[] multipliers = activeConfig.multipliers();
+		long x = maxMultiplierOfActiveConfig(activeConfig.multipliers());
+		updateCongestionLevelStartsWith(activeConfig.multipliers(), x, consensusNow);
+		long minPeriod = properties.feesMinCongestionPeriod();
+		multiplier = highestMultiplierNotShorterThan(activeConfig.multipliers(), minPeriod, consensusNow);
+
+		if (multiplier != previousMultiplier) {
+			logMultiplierChange(previousMultiplier, multiplier);
+		}
+		previousMultiplier = multiplier;
+	}
+
+	private long maxMultiplierOfActiveConfig(final long[] multipliers) {
+		long max = DEFAULT_MULTIPLIER;
 		for (int i = 0; i < activeTriggerValues.length; i++) {
 			long used = activeThrottles.get(i).used();
 			for (int j = 0; j < multipliers.length; j++) {
 				if (used >= activeTriggerValues[i][j]) {
-					x = Math.max(x, multipliers[j]);
+					max = Math.max(max, multipliers[j]);
 				}
 			}
 		}
+		return max;
+	}
+
+	/* Use the highest multiplier whose congestion level we have
+		stayed above for at least the minimum number of seconds. */
+	private long highestMultiplierNotShorterThan(final long[] multipliers,
+			final long period, final Instant consensusNow) {
+		multiplier = DEFAULT_MULTIPLIER;
+		for (int i = multipliers.length - 1; i >= 0; i--) {
+			var levelStart = congestionLevelStarts[i];
+			if (levelStart != null) {
+				long secsAtLevel = Duration.between(levelStart, consensusNow).getSeconds();
+				if (secsAtLevel >= period) {
+					multiplier = multipliers[i];
+					break;
+				}
+			}
+		}
+		return multiplier;
+	}
+
+	private void updateCongestionLevelStartsWith(final long[] multipliers, long x, Instant consensusNow) {
 		for (int i = 0; i < multipliers.length; i++) {
 			if (x < multipliers[i]) {
 				congestionLevelStarts[i] = null;
@@ -131,26 +164,6 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 				congestionLevelStarts[i] = consensusNow;
 			}
 		}
-
-		/* Use the highest multiplier whose congestion level we have
-		stayed above for at least the minimum number of seconds. */
-		long minPeriod = properties.feesMinCongestionPeriod();
-		multiplier = DEFAULT_MULTIPLIER;
-		for (int i = multipliers.length - 1; i >= 0; i--) {
-			var levelStart = congestionLevelStarts[i];
-			if (levelStart != null) {
-				long secsAtLevel = Duration.between(levelStart, consensusNow).getSeconds();
-				if (secsAtLevel >= minPeriod) {
-					multiplier = multipliers[i];
-					break;
-				}
-			}
-		}
-
-		if (multiplier != previousMultiplier) {
-			logMultiplierChange(previousMultiplier, multiplier);
-		}
-		previousMultiplier = multiplier;
 	}
 
 	@Override

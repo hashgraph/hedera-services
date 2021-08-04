@@ -22,6 +22,8 @@ package com.hedera.services.grpc.marshalling;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.List;
@@ -35,6 +37,12 @@ public class FeeAssessor {
 	private final HtsFeeAssessor htsFeeAssessor;
 	private final HbarFeeAssessor hbarFeeAssessor;
 	private final FractionalFeeAssessor fractionalFeeAssessor;
+
+	enum FixedFeeProcessingResult {
+		ASSESSMENT_FINISHED,
+		FRACTIONAL_FEE_ASSESSMENT_PENDING,
+		ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED
+	}
 
 	public FeeAssessor(
 			HtsFeeAssessor htsFeeAssessor,
@@ -63,8 +71,31 @@ public class FeeAssessor {
 		if (fees.isEmpty() || feeMeta.getTreasuryId().equals(payer)) {
 			return OK;
 		}
-		var hasFractionalFees = false;
+		FixedFeeProcessingResult fixedFeeProcessingResult;
 		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
+
+		fixedFeeProcessingResult = processFixedCustomFees(fees, payer, balanceChangeManager, accumulator, maxBalanceChanges);
+		if(fixedFeeProcessingResult == FixedFeeProcessingResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
+			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+		}
+
+		if (fixedFeeProcessingResult == FixedFeeProcessingResult.FRACTIONAL_FEE_ASSESSMENT_PENDING) {
+			final var fractionalValidity =
+					fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager, accumulator);
+			if (fractionalValidity != OK) {
+				return fractionalValidity;
+			}
+		}
+		return (balanceChangeManager.numChangesSoFar() > maxBalanceChanges)
+				? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS : OK;
+	}
+
+	private FixedFeeProcessingResult processFixedCustomFees(final List<FcCustomFee> fees,
+			final Id payer,
+			final BalanceChangeManager balanceChangeManager,
+			final List<FcAssessedCustomFee> accumulator,
+			final int maxBalanceChanges) {
+		FixedFeeProcessingResult result = FixedFeeProcessingResult.ASSESSMENT_FINISHED;
 		for (var fee : fees) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (payer.equals(collector)) {
@@ -78,20 +109,12 @@ public class FeeAssessor {
 					htsFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
 				}
 				if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
-					return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+					return FixedFeeProcessingResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
 				}
 			} else {
-				hasFractionalFees = true;
+				 result = FixedFeeProcessingResult.FRACTIONAL_FEE_ASSESSMENT_PENDING;
 			}
 		}
-		if (hasFractionalFees) {
-			final var fractionalValidity =
-					fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager, accumulator);
-			if (fractionalValidity != OK) {
-				return fractionalValidity;
-			}
-		}
-		return (balanceChangeManager.numChangesSoFar() > maxBalanceChanges)
-				? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS : OK;
+		return result;
 	}
 }
