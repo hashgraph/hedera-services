@@ -39,5 +39,12 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
 					newSignedCryptoDelete(MISC_ACCOUNT_ID, RECEIVER_SIG_ID).get()
 			));
 		}
-	}
+	},
+	CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoDelete(MISC_ACCOUNT_ID, MISSING_ACCOUNT_ID).get()
+			));
+		}
+	},
 }
