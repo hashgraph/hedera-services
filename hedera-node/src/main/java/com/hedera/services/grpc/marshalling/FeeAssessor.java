@@ -95,6 +95,7 @@ public class FeeAssessor {
 			final BalanceChangeManager balanceChangeManager,
 			final List<FcAssessedCustomFee> accumulator,
 			final int maxBalanceChanges) {
+		FixedFeeProcessingResult result = FixedFeeProcessingResult.ASSESSMENT_FINISHED;
 		for (var fee : fees) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (payer.equals(collector)) {
@@ -111,9 +112,9 @@ public class FeeAssessor {
 					return FixedFeeProcessingResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
 				}
 			} else {
-				return FixedFeeProcessingResult.FRACTIONAL_FEE_ASSESSMENT_PENDING;
+				 result = FixedFeeProcessingResult.FRACTIONAL_FEE_ASSESSMENT_PENDING;
 			}
 		}
-		return FixedFeeProcessingResult.ASSESSMENT_FINISHED;
+		return result;
 	}
 }
