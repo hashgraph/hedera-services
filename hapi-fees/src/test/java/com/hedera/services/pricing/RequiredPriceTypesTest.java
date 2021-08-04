@@ -2,7 +2,7 @@ package com.hedera.services.pricing;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​

@@ -1225,6 +1225,45 @@
 		  "hederaFunctionality": "TokenMint",
 		  "fees": [
 			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 94092119,
+				"bpt": 150425,
+				"vpt": 376062755,
+				"rbh": 100,
+				"sbh": 8,
+				"gas": 1003,
+				"bpr": 150425,
+				"sbpr": 3761,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			},
+			{
 			  "subType": "TOKEN_FUNGIBLE_COMMON",
 			  "nodedata": {
 				"constant": 94092119,
@@ -1309,6 +1348,45 @@
 		"transactionFeeSchedule": {
 		  "hederaFunctionality": "TokenBurn",
 		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 94092119,
+				"bpt": 150425,
+				"vpt": 376062755,
+				"rbh": 100,
+				"sbh": 8,
+				"gas": 1003,
+				"bpr": 150425,
+				"sbpr": 3761,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			},
 			{
 			  "subType": "TOKEN_FUNGIBLE_COMMON",
 			  "nodedata": {
@@ -1664,6 +1742,45 @@
 		"transactionFeeSchedule": {
 		  "hederaFunctionality": "TokenAccountWipe",
 		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 94092119,
+				"bpt": 150425,
+				"vpt": 376062755,
+				"rbh": 100,
+				"sbh": 8,
+				"gas": 1003,
+				"bpr": 150425,
+				"sbpr": 3761,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			},
 			{
 			  "subType": "TOKEN_FUNGIBLE_COMMON",
 			  "nodedata": {
@@ -2961,7 +3078,7 @@
 		}
 	  },
 	  {
-		"expiryTime": 1645810078
+		"expiryTime": 1630800000
 	  }
 	]
   },
@@ -4191,6 +4308,45 @@
 		  "hederaFunctionality": "TokenMint",
 		  "fees": [
 			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 94092119,
+				"bpt": 150425,
+				"vpt": 376062755,
+				"rbh": 100,
+				"sbh": 8,
+				"gas": 1003,
+				"bpr": 150425,
+				"sbpr": 3761,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			},
+			{
 			  "subType": "TOKEN_FUNGIBLE_COMMON",
 			  "nodedata": {
 				"constant": 94092119,
@@ -4275,6 +4431,45 @@
 		"transactionFeeSchedule": {
 		  "hederaFunctionality": "TokenBurn",
 		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 94092119,
+				"bpt": 150425,
+				"vpt": 376062755,
+				"rbh": 100,
+				"sbh": 8,
+				"gas": 1003,
+				"bpr": 150425,
+				"sbpr": 3761,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			},
 			{
 			  "subType": "TOKEN_FUNGIBLE_COMMON",
 			  "nodedata": {
@@ -4630,6 +4825,45 @@
 		"transactionFeeSchedule": {
 		  "hederaFunctionality": "TokenAccountWipe",
 		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 94092119,
+				"bpt": 150425,
+				"vpt": 376062755,
+				"rbh": 100,
+				"sbh": 8,
+				"gas": 1003,
+				"bpr": 150425,
+				"sbpr": 3761,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 1505473906,
+				"bpt": 2406802,
+				"vpt": 6017004081,
+				"rbh": 1605,
+				"sbh": 120,
+				"gas": 16045,
+				"bpr": 2406802,
+				"sbpr": 60170,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			},
 			{
 			  "subType": "TOKEN_FUNGIBLE_COMMON",
 			  "nodedata": {
@@ -5927,7 +6161,7 @@
 		}
 	  },
 	  {
-		"expiryTime": 1677346078
+		"expiryTime": 1633392000
 	  }
 	]
   }

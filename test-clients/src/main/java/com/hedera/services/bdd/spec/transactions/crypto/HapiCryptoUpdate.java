@@ -59,6 +59,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	static final Logger log = LogManager.getLogger(HapiCryptoUpdate.class);
 
 	private boolean useContractKey = false;
+	private boolean skipNewKeyRegistryUpdate = false;
 	private final String account;
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
@@ -72,6 +73,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
+	}
+
+	public HapiCryptoUpdate notUpdatingRegistryWithNewKey() {
+		skipNewKeyRegistryUpdate = true;
+		return this;
 	}
 
 	public HapiCryptoUpdate sendThreshold(long v) {
@@ -126,7 +132,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
-		if (actualStatus != SUCCESS) {
+		if (actualStatus != SUCCESS || skipNewKeyRegistryUpdate) {
 			return;
 		}
 		updKey.ifPresent(k -> spec.registry().saveKey(account, k));

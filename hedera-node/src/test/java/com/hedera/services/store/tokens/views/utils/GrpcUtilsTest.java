@@ -54,7 +54,7 @@ class GrpcUtilsTest {
 		final var iae = assertThrows(IllegalArgumentException.class,
 				() -> GrpcUtils.reprOf(token, treasurySerial, nft, null));
 
-		assertEquals("6.6.6.2 has wildcard owner, but no treasury information was provided", iae.getMessage());
+		assertEquals("0.0.6.2 has wildcard owner, but no treasury information was provided", iae.getMessage());
 	}
 
 	@Test
@@ -68,17 +68,17 @@ class GrpcUtilsTest {
 
 	@Test
 	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, () -> new GrpcUtils());
+		assertThrows(IllegalStateException.class, GrpcUtils::new);
 	}
 
 	private final long nonTreasurySerial = 1L;
 	private final long treasurySerial = 2L;
 	private final byte[] meta = "As you wish...".getBytes(StandardCharsets.UTF_8);
 	private final RichInstant creationTime = new RichInstant(1_234_567L, 890);
-	private final TokenID token = new EntityId(6, 6, 6).toGrpcTokenId();
+	private final TokenID token = new EntityId(0, 0, 6).toGrpcTokenId();
 	private final EntityId wildcard = EntityId.MISSING_ENTITY_ID;
-	private final EntityId nonTreasuryOwner = new EntityId(1, 2, 3);
-	private final EntityId treasury = new EntityId(2, 3, 4);
+	private final EntityId nonTreasuryOwner = new EntityId(0, 0, 3);
+	private final EntityId treasury = new EntityId(0, 0, 4);
 
 	private TokenNftInfo expectedNftInfo(final long serial, final EntityId owner) {
 		return TokenNftInfo.newBuilder()

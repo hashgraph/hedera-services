@@ -26,20 +26,18 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.IOException;
 
-import static com.hedera.services.state.merkle.MerkleUniqueTokenId.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class MerkleUniqueTokenIdTest {
 	private MerkleUniqueTokenId subject;
@@ -51,8 +49,8 @@ class MerkleUniqueTokenIdTest {
 
 	@BeforeEach
 	void setup() {
-		tokenId = new EntityId(1, 2, 3);
-		otherTokenId = new EntityId(1, 2, 4);
+		tokenId = new EntityId(0, 0, 3);
+		otherTokenId = new EntityId(0, 0, 4);
 		serialNumber = 1;
 		otherSerialNumber = 2;
 
@@ -62,7 +60,7 @@ class MerkleUniqueTokenIdTest {
 	@Test
 	void reconstructsExpectedFromIdentityCodeWithSmallNums() {
 		// setup:
-		Long code = Long.valueOf((3L << 32) | 4L);
+		long code = (3L << 32) | 4L;
 		// and:
 		final var expected = new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
 
@@ -74,17 +72,24 @@ class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	void failsFastOnInvalidSerialNumber() {
+	void failsFastOnInvalidNums() {
+		// setup:
+		final var okEntityId = new EntityId(0, 0, 1);
+		final var notOkEntityId = new EntityId(0, 0, MAX_NUM_ALLOWED + 1);
+
 		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> new MerkleUniqueTokenId(new EntityId(0, 0, 1), MAX_NUM_ALLOWED + 1));
+				() -> new MerkleUniqueTokenId(okEntityId, MAX_NUM_ALLOWED + 1));
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> new MerkleUniqueTokenId(notOkEntityId, 1));
 	}
 
 	@Test
 	void reconstructsExpectedFromIdentityCodeWithLargeNums() {
 		// setup:
-		Long code = Long.valueOf((MAX_NUM_ALLOWED << 32) | MAX_NUM_ALLOWED);
+		long code = (MAX_NUM_ALLOWED << 32) | MAX_NUM_ALLOWED;
 		// and:
 		final var expected = new MerkleUniqueTokenId(
 				new EntityId(0, 0, MAX_NUM_ALLOWED),
@@ -131,11 +136,11 @@ class MerkleUniqueTokenIdTest {
 
 	@Test
 	void toStringWorks() {
-		// given:
-		assertEquals("MerkleUniqueTokenId{" +
-						"tokenId=" + tokenId + ", " +
-						"serialNumber=" + serialNumber + "}",
-				subject.toString());
+		// setup:
+		final var desired = "MerkleUniqueTokenId{tokenId=0.0.3, serialNumber=1}";
+
+		// expect:
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test
@@ -146,7 +151,6 @@ class MerkleUniqueTokenIdTest {
 		var dup = subject;
 
 		// expect:
-		assertNotSame(copyNftId, subject);
 		assertEquals(subject, copyNftId);
 		assertEquals(subject, dup);
 		assertNotEquals(subject, other);
@@ -156,15 +160,12 @@ class MerkleUniqueTokenIdTest {
 	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
 
 		// when:
 		subject.serialize(out);
 
 		// then:
-		inOrder.verify(out).writeSerializable(tokenId, true);
-		inOrder.verify(out).writeLong(serialNumber);
+		verify(out).writeLong(subject.identityCode());
 	}
 
 	@Test
@@ -172,8 +173,7 @@ class MerkleUniqueTokenIdTest {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
-		given(in.readSerializable()).willReturn(tokenId);
-		given(in.readLong()).willReturn(serialNumber);
+		given(in.readLong()).willReturn(subject.identityCode());
 
 		// and:
 		var read = new MerkleUniqueTokenId();
