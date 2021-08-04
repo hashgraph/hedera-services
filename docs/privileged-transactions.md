@@ -49,13 +49,13 @@ There are two kinds of privileges,
   1. _Authorization_ - some transaction types, such as `Freeze`, require authorization to submit to the network. All such transactions will be rejected with the status `UNAUTHORIZED` unless they are privileged.
   2. _Waived signing requirements_ - all unprivileged `CryptoUpdate` and `FileUpdate` transactions must be signed with the target entity's key, or they will fail with status `INVALID_SIGNATURE`. The network waives this requirement for certain privileged updates.
 
-This document lists all cases of privileged transactions currently recognized by the Hedera network. 
+This document lists the privileged transactions recognized by the Hedera network. 
 
 ## Authorization privileges
 
 First we consider the four transaction types that always require authorization to execute. These include:
   1. The `Freeze` transaction that schedules a maintenance window in which the network 
-  will stop accepting transactions for a specified period.
+  will stop accepting transactions and possibly perform a software update.
   2. The `SystemDelete` transaction that deletes a file or contract (even an immutable
   file or contract), without requiring the target entity's key to sign the transaction.
   3. The `SystemUndelete` transaction that reverses the action of a `SystemDelete` 
@@ -91,8 +91,8 @@ Next we consider `FileUpdate` and `FileAppend` transactions when targeting one o
 
 For the `CryptoUpdate` transaction, we have the minimal table below. The _only_ target account which 
 requires an authorized payer is account number [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties).
-(Note that before release `0.10.0`, a `CryptoUpdate` targeting _any_ system account required an 
-authorized payer. Since `0.10.0` it has been possible to, for example, update `0.0.88` with 
+(Note that before release 0.10.0, a `CryptoUpdate` targeting _any_ system account required an 
+authorized payer. Since 0.10.0 it has been possible to, for example, update `0.0.88` with 
 `0.0.12345` as the payer, as long as the key for `0.0.88` signs the transaction.)
 
 | Payer | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | 
@@ -105,16 +105,30 @@ The next class of privileges apply to certain `CryptoUpdate` and `FileUpdate`/`F
 operations whose target is a system account or file. These privileges waive the normal 
 requirement that the key associated to an entity sign any transaction that updates it.
 When the system entity's key is being updated, they _also_ waive the requirement that the 
-entity's new key sign the update transaction.The network grants these privileges so the 
-admin accounts can never be "locked out" of performing their system roles. For example, 
-even if we lose the key to the exchange rates file, the exchange rates admin can still 
-issue a `FileUpdate` transaction to change this file.
+entity's new key sign the update transaction. 
+
+The network grants these privileges so the admin accounts can never be "locked out" of 
+performing their system roles. For example, even if we lose the key to the exchange rates 
+file, the exchange rates admin can still issue a `FileUpdate` transaction to change this 
+file.
+
+### Waived signing requirements for file updates
 
 The waived signature privileges for `FileUpdate` and `FileAppend` are identical to 
-the corresponding authorization privileges in the tables above. The waived signature
-privileges for `CryptoUpdate` only apply to two authorized payers, as below.
+the corresponding authorization privileges in the tables above. 
+
+:tipping_hand_person:&nbps; This means that the keys attached to system files are 
+purely ornamental, since only authorized payers can update these files---but all 
+signing requirements are waived for authorized payers.
 
 ### Waived signing requirements for crypto updates
+
+The waived signature privileges for `CryptoUpdate` only apply to two authorized payers, 
+as below. 
+
+:warning:&nbsp; Notice that no signing requirements are waived for updates to the 
+treasury account. In particular, a `CryptoUpdate` that changes the key on the 
+treasury account always requires the new key to sign. 
 
 | Payer | Accounts after [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) and up to [`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties) | 
 | --- | :---: | 

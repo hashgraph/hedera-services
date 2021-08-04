@@ -20,7 +20,6 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -40,12 +39,8 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -60,14 +55,11 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -92,26 +84,18 @@ import static java.util.Collections.EMPTY_LIST;
  * @author Michael Tinker
  */
 public class HederaSigningOrder {
-	private static final Logger log = LogManager.getLogger(HederaSigningOrder.class);
-
-	final EntityNumbers entityNums;
-	final SigMetadataLookup sigMetaLookup;
-	final GlobalDynamicProperties properties;
-	final Predicate<TransactionBody> updateAccountSigns;
-	final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
+	private final SignatureWaivers signatureWaivers;
+	private final SigMetadataLookup sigMetaLookup;
+	private final GlobalDynamicProperties properties;
 
 	public HederaSigningOrder(
-			EntityNumbers entityNums,
 			SigMetadataLookup sigMetaLookup,
-			Predicate<TransactionBody> updateAccountSigns,
-			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns,
-			GlobalDynamicProperties properties
+			GlobalDynamicProperties properties,
+			SignatureWaivers signatureWaivers
 	) {
-		this.entityNums = entityNums;
 		this.properties = properties;
 		this.sigMetaLookup = sigMetaLookup;
-		this.targetWaclSigns = targetWaclSigns;
-		this.updateAccountSigns = updateAccountSigns;
+		this.signatureWaivers = signatureWaivers;
 	}
 
 	/**
@@ -136,51 +120,42 @@ public class HederaSigningOrder {
 	 * role in the given gRPC transaction. (Which could also include the payer crypto account.)
 	 *
 	 * @param txn
-	 * 		the gRPC transaction of interest.
+	 * 		the gRPC transaction of interest
 	 * @param factory
-	 * 		the result factory to use to summarize the listing attempt.
+	 * 		the result factory to use to summarize the listing attempt
 	 * @param <T>
-	 * 		the type of error report created by the factory.
-	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
+	 * 		the type of error report created by the factory
+	 * @return a {@link SigningOrderResult} summarizing the listing attempt
 	 */
 	public <T> SigningOrderResult<T> keysForOtherParties(TransactionBody txn, SigningOrderResultFactory<T> factory) {
-		var cryptoOrder = forCrypto(txn, factory);
-		if (cryptoOrder.isPresent()) {
-			return cryptoOrder.get();
+		final var cryptoOrder = forCrypto(txn, factory);
+		if (cryptoOrder != null) {
+			return cryptoOrder;
 		}
-
-		var consensusOrder = forConsensus(txn, factory);
-		if (consensusOrder.isPresent()) {
-			return consensusOrder.get();
+		final var consensusOrder = forConsensus(txn, factory);
+		if (consensusOrder != null) {
+			return consensusOrder;
 		}
-
-		var tokenOrder = forToken(txn, factory);
-		if (tokenOrder.isPresent()) {
-			return tokenOrder.get();
+		final var tokenOrder = forToken(txn, factory);
+		if (tokenOrder != null) {
+			return tokenOrder;
 		}
-
-		var scheduleOrder = forSchedule(txn, factory);
-		if (scheduleOrder.isPresent()) {
-			return scheduleOrder.get();
+		final var scheduleOrder = forSchedule(txn, factory);
+		if (scheduleOrder != null) {
+			return scheduleOrder;
 		}
-
 		var fileOrder = forFile(txn, factory);
-		if (fileOrder.isPresent()) {
-			return fileOrder.get();
+		if (fileOrder != null) {
+			return fileOrder;
 		}
-
-		var contractOrder = forContract(txn, factory);
-		if (contractOrder.isPresent()) {
-			return contractOrder.get();
+		final var contractOrder = forContract(txn, factory);
+		if (contractOrder != null) {
+			return contractOrder;
 		}
-
 		return SigningOrderResult.noKnownKeys();
 	}
 
-	private <T> SigningOrderResult<T> orderForPayer(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> orderForPayer(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		var payer = txn.getTransactionID().getAccountID();
 		var result = sigMetaLookup.accountSigningMetaFor(payer);
 		if (result.succeeded()) {
@@ -194,137 +169,101 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forContract(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forContract(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasContractCreateInstance()) {
-			return Optional.of(contractCreate(
-					txn.getContractCreateInstance(), factory));
+			return contractCreate(txn.getContractCreateInstance(), factory);
 		} else if (txn.hasContractUpdateInstance()) {
-			return Optional.of(contractUpdate(
-					txn.getTransactionID(), txn.getContractUpdateInstance(), factory));
+			return contractUpdate(txn.getTransactionID(), txn.getContractUpdateInstance(), factory);
 		} else if (txn.hasContractDeleteInstance()) {
-			return Optional.of(contractDelete(
-					txn.getTransactionID(), txn.getContractDeleteInstance(), factory));
+			return contractDelete(txn.getTransactionID(), txn.getContractDeleteInstance(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forCrypto(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forCrypto(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasCryptoCreateAccount()) {
-			return Optional.of(cryptoCreate(
-					txn.getCryptoCreateAccount(), factory));
+			return cryptoCreate(txn.getCryptoCreateAccount(), factory);
 		} else if (txn.hasCryptoTransfer()) {
-			return Optional.of(cryptoTransfer(
-					txn.getTransactionID(), txn.getCryptoTransfer(), factory));
+			return cryptoTransfer(txn.getTransactionID(), txn.getCryptoTransfer(), factory);
 		} else if (txn.hasCryptoUpdateAccount()) {
-			return Optional.of(cryptoUpdate(
-					txn.getTransactionID(), updateAccountSigns.test(txn), txn.getCryptoUpdateAccount(), factory));
+			return cryptoUpdate(txn.getTransactionID(), txn, factory);
 		} else if (txn.hasCryptoDelete()) {
-			return Optional.of(cryptoDelete(
-					txn.getTransactionID(), txn.getCryptoDelete(), factory));
+			return cryptoDelete(txn.getTransactionID(), txn.getCryptoDelete(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forSchedule(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forSchedule(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasScheduleCreate()) {
-			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory));
+			return scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory);
 		} else if (txn.hasScheduleSign()) {
-			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
+			return scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory);
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getScheduleDelete().getScheduleID(), factory));
+			return scheduleDelete(txn.getScheduleDelete().getScheduleID(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forToken(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forToken(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasTokenCreation()) {
-			return Optional.of(tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory));
+			return tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory);
 		} else if (txn.hasTokenAssociate()) {
-			return Optional.of(tokenAssociate(txn.getTokenAssociate(), factory));
+			return tokenAssociate(txn.getTokenAssociate(), factory);
 		} else if (txn.hasTokenDissociate()) {
-			return Optional.of(tokenDissociate(txn.getTokenDissociate(), factory));
+			return tokenDissociate(txn.getTokenDissociate(), factory);
 		} else if (txn.hasTokenFreeze()) {
-			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory));
+			return tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory);
 		} else if (txn.hasTokenUnfreeze()) {
-			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenUnfreeze().getToken(), factory));
+			return tokenFreezing(txn.getTransactionID(), txn.getTokenUnfreeze().getToken(), factory);
 		} else if (txn.hasTokenGrantKyc()) {
-			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenGrantKyc().getToken(), factory));
+			return tokenKnowing(txn.getTransactionID(), txn.getTokenGrantKyc().getToken(), factory);
 		} else if (txn.hasTokenRevokeKyc()) {
-			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenRevokeKyc().getToken(), factory));
+			return tokenKnowing(txn.getTransactionID(), txn.getTokenRevokeKyc().getToken(), factory);
 		} else if (txn.hasTokenMint()) {
-			return Optional.of(tokenRefloating(txn.getTransactionID(), txn.getTokenMint().getToken(), factory));
+			return tokenRefloating(txn.getTransactionID(), txn.getTokenMint().getToken(), factory);
 		} else if (txn.hasTokenBurn()) {
-			return Optional.of(tokenRefloating(txn.getTransactionID(), txn.getTokenBurn().getToken(), factory));
+			return tokenRefloating(txn.getTransactionID(), txn.getTokenBurn().getToken(), factory);
 		} else if (txn.hasTokenWipe()) {
-			return Optional.of(tokenWiping(txn.getTransactionID(), txn.getTokenWipe().getToken(), factory));
+			return tokenWiping(txn.getTransactionID(), txn.getTokenWipe().getToken(), factory);
 		} else if (txn.hasTokenDeletion()) {
-			return Optional.of(tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory));
+			return tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory);
 		} else if (txn.hasTokenUpdate()) {
-			return Optional.of(tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory));
+			return tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory);
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return Optional.of(tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory));
+			return tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forFile(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forFile(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasFileCreate()) {
-			return Optional.of(fileCreate(txn.getFileCreate(), factory));
-		} else if (txn.hasFileAppend() || txn.hasFileUpdate()) {
-			var isSuperuser = entityNums.accounts().isSuperuser(txn.getTransactionID().getAccountID().getAccountNum());
-			if (txn.hasFileAppend()) {
-				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileAppend);
-				return Optional.of(fileAppend(
-						txn.getTransactionID(), txn.getFileAppend(), waclShouldSign, isSuperuser, factory));
-			} else {
-				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileUpdate);
-				return Optional.of(fileUpdate(
-						txn.getTransactionID(), txn.getFileUpdate(), waclShouldSign, isSuperuser, factory));
-			}
+			return fileCreate(txn.getFileCreate(), factory);
+		} else if (txn.hasFileAppend()) {
+			return fileAppend(txn.getTransactionID(), txn, factory);
+		} else if (txn.hasFileUpdate()) {
+			return fileUpdate(txn.getTransactionID(), txn, factory);
 		} else if (txn.hasFileDelete()) {
-			return Optional.of(fileDelete(txn.getTransactionID(), txn.getFileDelete(), factory));
+			return fileDelete(txn.getTransactionID(), txn.getFileDelete(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
-	private <T> Optional<SigningOrderResult<T>> forConsensus(
-			TransactionBody txn,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> forConsensus(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasConsensusCreateTopic()) {
-			return Optional.of(topicCreate(
-					txn.getTransactionID(), txn.getConsensusCreateTopic(), factory));
+			return topicCreate(txn.getTransactionID(), txn.getConsensusCreateTopic(), factory);
 		} else if (txn.hasConsensusSubmitMessage()) {
-			return Optional.of(messageSubmit(
-					txn.getTransactionID(), txn.getConsensusSubmitMessage(), factory));
+			return messageSubmit(txn.getTransactionID(), txn.getConsensusSubmitMessage(), factory);
 		} else if (txn.hasConsensusUpdateTopic()) {
-			return Optional.of(topicUpdate(
-					txn.getTransactionID(), txn.getConsensusUpdateTopic(), factory));
+			return topicUpdate(txn.getTransactionID(), txn.getConsensusUpdateTopic(), factory);
 		} else if (txn.hasConsensusDeleteTopic()) {
-			return Optional.of(topicDelete(
-					txn.getTransactionID(), txn.getConsensusDeleteTopic(), factory));
+			return topicDelete(txn.getTransactionID(), txn.getConsensusDeleteTopic(), factory);
 		} else {
-			return Optional.empty();
+			return null;
 		}
 	}
 
@@ -430,56 +369,49 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> fileUpdate(
 			TransactionID txnId,
-			FileUpdateTransactionBody op,
-			boolean waclShouldSign,
-			boolean payerIsSuperuser,
+			TransactionBody fileUpdateTxn,
 			SigningOrderResultFactory<T> factory
 	) {
-		var target = op.getFileID();
-		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
-			return SigningOrderResult.noKnownKeys();
+		final var newWaclMustSign = !signatureWaivers.isNewFileWaclWaived(fileUpdateTxn);
+		final var targetWaclMustSign = !signatureWaivers.isTargetFileWaclWaived(fileUpdateTxn);
+		final var op = fileUpdateTxn.getFileUpdate();
+		final var target = op.getFileID();
+		final var targetResult = sigMetaLookup.fileSigningMetaFor(target);
+		if (!targetResult.succeeded()) {
+			return factory.forMissingFile();
 		} else {
-			var targetResult = sigMetaLookup.fileSigningMetaFor(target);
-			if (!targetResult.succeeded()) {
-				return factory.forMissingFile();
-			} else {
-				List<JKey> required = new ArrayList<>();
-				if (waclShouldSign) {
-					var wacl = targetResult.metadata().getWacl();
-					if (!wacl.isEmpty()) {
-						required.add(wacl);
-					}
-					if (op.hasKeys()) {
-						var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
-						candidate.ifPresent(required::add);
-					}
+			List<JKey> required = new ArrayList<>();
+			if (targetWaclMustSign) {
+				var wacl = targetResult.metadata().getWacl();
+				if (!wacl.isEmpty()) {
+					required.add(wacl);
 				}
-				return factory.forValidOrder(required);
 			}
+			if (newWaclMustSign && op.hasKeys()) {
+				var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
+				candidate.ifPresent(required::add);
+			}
+			return factory.forValidOrder(required);
 		}
 	}
 
 	private <T> SigningOrderResult<T> fileAppend(
 			TransactionID txnId,
-			FileAppendTransactionBody op,
-			boolean waclShouldSign,
-			boolean payerIsSuperuser,
+			TransactionBody fileAppendTxn,
 			SigningOrderResultFactory<T> factory
 	) {
+		final var targetWaclMustSign = !signatureWaivers.isAppendFileWaclWaived(fileAppendTxn);
+		final var op = fileAppendTxn.getFileAppend();
 		var target = op.getFileID();
-		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
-			return SigningOrderResult.noKnownKeys();
+		var targetResult = sigMetaLookup.fileSigningMetaFor(target);
+		if (!targetResult.succeeded()) {
+			return factory.forMissingFile();
 		} else {
-			var targetResult = sigMetaLookup.fileSigningMetaFor(target);
-			if (!targetResult.succeeded()) {
-				return factory.forMissingFile();
+			if (targetWaclMustSign) {
+				var wacl = targetResult.metadata().getWacl();
+				return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
 			} else {
-				if (!waclShouldSign) {
-					return SigningOrderResult.noKnownKeys();
-				} else {
-					var wacl = targetResult.metadata().getWacl();
-					return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
-				}
+				return SigningOrderResult.noKnownKeys();
 			}
 		}
 	}
@@ -522,20 +454,25 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> cryptoUpdate(
 			TransactionID txnId,
-			boolean targetMustSign,
-			CryptoUpdateTransactionBody op,
+			TransactionBody cryptoUpdateTxn,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = EMPTY_LIST;
 
+		final var newAccountKeyMustSign = !signatureWaivers.isNewAccountKeyWaived(cryptoUpdateTxn);
+		final var targetAccountKeyMustSign = !signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn);
+		final var op = cryptoUpdateTxn.getCryptoUpdateAccount();
 		var target = op.getAccountIDToUpdate();
 		var result = sigMetaLookup.accountSigningMetaFor(target);
 		if (!result.succeeded()) {
 			return accountFailure(target, txnId, result.failureIfAny(), factory);
-		} else if (targetMustSign) {
-			required = mutable(required);
-			required.add(result.metadata().getKey());
-			if (op.hasKey()) {
+		} else {
+			if (targetAccountKeyMustSign) {
+				required = mutable(required);
+				required.add(result.metadata().getKey());
+			}
+			if (newAccountKeyMustSign && op.hasKey()) {
+				required = mutable(required);
 				var candidate = asUsableFcKey(op.getKey());
 				candidate.ifPresent(required::add);
 			}
@@ -1032,7 +969,8 @@ public class HederaSigningOrder {
 		return result.failureIfAny();
 	}
 
-	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender, List<JKey> required) {
+	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender,
+			List<JKey> required) {
 		var result = sigMetaLookup.accountSigningMetaFor(accountID);
 		if (result.succeeded()) {
 			var meta = result.metadata();
