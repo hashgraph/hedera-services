@@ -25,12 +25,13 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Unit tests for support of Contract ID and RSA_3072Key in JKey.
@@ -60,10 +61,10 @@ public class JKeyAdditionalTypeSupportTest {
 
     // make sure jkey bytes the same
     byte[] ser1 = JKeySerializer.serialize(jkeyReborn);
-    Assert.assertArrayEquals(ser, ser1);
+    assertArrayEquals(ser, ser1);
 
     // make sure contract id the same
-    Assert.assertArrayEquals(key.getContractID().toByteArray(), key1.getContractID().toByteArray());
+    assertArrayEquals(key.getContractID().toByteArray(), key1.getContractID().toByteArray());
 
   }
 
@@ -87,9 +88,9 @@ public class JKeyAdditionalTypeSupportTest {
 
     // make sure jkey bytes the same
     byte[] ser1 = JKeySerializer.serialize(jkeyReborn);
-    Assert.assertArrayEquals(ser, ser1);
+    assertArrayEquals(ser, ser1);
 
     // make sure contract id the same
-    Assert.assertArrayEquals(key.getRSA3072().toByteArray(), key1.getRSA3072().toByteArray());
+    assertArrayEquals(key.getRSA3072().toByteArray(), key1.getRSA3072().toByteArray());
   }
 }

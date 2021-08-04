@@ -24,7 +24,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.blob.BinaryObjectNotFoundException;
 import com.swirlds.blob.internal.db.BlobStoragePipeline;
 import com.swirlds.blob.internal.db.DbManager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.util.Random;

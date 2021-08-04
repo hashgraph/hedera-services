@@ -23,8 +23,8 @@ package com.hedera.services.legacy.unit;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.builder.RequestBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
@@ -38,7 +38,7 @@ public class RequestBuilderTest {
   public void testExpirationTime() {
     Duration duration = RequestBuilder.getDuration(500);
     Timestamp expirationTime = RequestBuilder.getExpirationTime(Instant.now(), duration);
-    Assert.assertNotNull(expirationTime);
+    Assertions.assertNotNull(expirationTime);
     Instant timeStamp = RequestBuilder.convertProtoTimeStamp(expirationTime);
   }
 }

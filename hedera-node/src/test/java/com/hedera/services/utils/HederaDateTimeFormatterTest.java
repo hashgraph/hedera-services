@@ -20,7 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
