@@ -45,12 +45,11 @@ public class SysFreezeCommand implements Callable<Integer> {
 			defaultValue = "")
 	private String freezeStartTimeStr;
 
-	private Instant freezeStartTime;
 	@Override
 	public Integer call() throws Exception {
 		var config = configFrom(yahcli);
 
-		freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
+		var freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
 
 		var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
 		delegate.runSuiteSync();
@@ -61,8 +60,7 @@ public class SysFreezeCommand implements Callable<Integer> {
 	private Instant getFreezeStartTime(String timeStampInStr) {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
-		Instant startTime = Instant.from(dtf.parse(timeStampInStr));
-		return startTime;
+		return Instant.from(dtf.parse(timeStampInStr));
 
 	}
 
