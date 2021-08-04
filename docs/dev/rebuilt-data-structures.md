@@ -376,11 +376,11 @@ expires, we can use it to make the corresponding call to the correct
 thus keep the `txnHistories` up-to-date.
 
 :gear:&nbsp;All HAPI operations affect the `txnHistories` map and `payerRecordExpiries` 
-queue, since they operate on the top-level `TransactionID` shared by all transaction types. 
+queue, since they operate on the top-level `TransactionID` shared by all transaction types.
 
 #### Consistency audit
 
-:building_construction:&nbsp;**Rebuilding** these structure relies on the payer
+:building_construction:&nbsp;**Rebuilding** these structures relies on the payer
 records stored in state in the `accounts` FCM. That is, we [scan the `accounts` FCM](https://github.com/hashgraph/hedera-services/blob/d4c87420876a7ca63eb877c41a0e950cdafad90c/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L133)
 and, for each payer record, both (1) "stage" it in the relevant `txnHistories` entry; 
 and (2) add its "expiration event" to an unsorted list. After all records have been 
@@ -400,11 +400,11 @@ third via a call to [`RecordCache.setPostConsensus()`](https://github.com/hashgr
 
 Second, at the beginning of each call to `handleTransaction, we invoke 
 [`ExpiryManager.purge()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/legacy/services/state/AwareProcessLogic.java#L94). For the first transaction handled in each
-consensus second, this will trigger a series of calls to the 
+consensus second, this can trigger one or more calls to the 
 [`MonotonicFullQueueExpiries.expireNextAt()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/MonotonicFullQueueExpiries.java#L54) of `payerRecordExpiries`,
-as long as the queue contains an expiration event whose expiration is 
-not after the current consensus second. For each expiration event, 
-we then [consistently update](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L179) the related records FCQ in the `accounts` 
+continuing until the head of the queue is an expiration event whose 
+consensus time is not after the current consensus second. For each 
+expiration event, we then [consistently update](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L179) the related records FCQ in the `accounts` 
 FCM and the `txnHistories` map.
 
 :information_desk_person:&nbsp;Note that here we depend on the "invariance"
@@ -415,3 +415,50 @@ be the same as the order they appear in a constantly maintained queue.
 (C.f. [Platform #3655](https://github.com/swirlds/swirlds-platform/issues/3655).)
 
 ## The `shortLivedEntityExpiries` priority queue
+
+```
+/* Since the key in Pair<Long, Consumer<EntityId>> is the schedule entity number---and
+entity numbers are unique---the downstream comparator below will guarantee a fixed
+ordering for ExpiryEvents with the same expiry. The reason for different scheduled entities having
+the same expiry is that we round expiration times to a consensus second. */
+Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator
+		.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::getExpiry)
+		.thenComparingLong(ee -> ee.getId().getKey());
+
+PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries = new PriorityQueueExpiries<>(PQ_CMP);
+```
+
+This structure supports efficient expiration of schedule entities. Unlike 
+the `payerRecordExpiries` queue, which requires expiration events to be enqueue
+with monotonic increasing consensus times, the `shortLivedEntityExpiries` is 
+backed by a `java.util.PriorityQueue` ordered by the `PQ_CMP` above; so it supports
+insertion of schedule entities with expiration times in any order.
+
+:gear:&nbsp;Only `ScheduleCreate` HAPI operations can insert into the `shortLivedEntityExpiries`
+priority queue; but just as above with `payerRecordExpiries`, any call to `handleTransaction()` 
+can cause expiration events to be polled from this structure.
+
+#### Consistency audit
+
+:building_construction:&nbsp;**Rebuilding** this structure relies on the schedule
+entities stored in state in the `schedules` FCM. That is, we [scan the `schedules` FCM](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L148)
+and, for each schedule entity, add its "expiration event" to the `shortLivedEntityExpiries`. 
+
+:radioactive:&nbsp;The current implementation performs an unnecessary (and pointless)
+intermediate step of building a list with the expiration events in sorted order
+before it enqueues them. 
+
+:memo:&nbsp;**Maintaining** this structures has two aspects. 
+
+First, a successful `ScheduleCreate` updates the transaction context with an [`ExpiringEntity` instance](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/txns/schedule/ScheduleCreateTransitionLogic.java#L126)
+representing the newly scheduled transaction. The [`HederaLedger.commit()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/ledger/HederaLedger.java#L202) at the end of `handleTransaction()`
+then triggers the `ExpiryManager` to [begin tracking](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/ExpiryManager.java#L113) the expiring entity.
+
+Second, at the beginning of each call to `handleTransaction, we invoke 
+[`ExpiryManager.purge()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/legacy/services/state/AwareProcessLogic.java#L94). For the first transaction handled in each
+consensus second, this can trigger one or more calls to the [`PriorityQueueExpiries.expireNextAt()`](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/state/expiry/PriorityQueueExpiries.java#L55)
+method, continuing until the head of the queue is an expiration event whose 
+consensus time is not after the current consensus second. For each 
+expiration event, we then immediately remove the corresponding 
+entry in the `schedules` FCM via the expired entity's [`HederaScheduleStore.expire()` callback](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/schedule/HederaScheduleStore.java#L222).
+(Note that this method _also_ updates the `extantSchedules` rebuilt structure.)
