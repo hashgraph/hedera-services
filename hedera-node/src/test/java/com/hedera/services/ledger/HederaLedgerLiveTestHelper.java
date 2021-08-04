@@ -36,8 +36,10 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -221,18 +223,29 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
+
+		Account aa = new Account(Id.fromGrpcAccount(a));
+		aa.setAssociatedTokens(new CopyOnWriteIds());
+
+		Account ba = new Account(Id.fromGrpcAccount(b));
+		ba.setAssociatedTokens(new CopyOnWriteIds());
+
+		Account ca = new Account(Id.fromGrpcAccount(c));
+		ca.setAssociatedTokens(new CopyOnWriteIds());
+
+		Account da = new Account(Id.fromGrpcAccount(d));
+		da.setAssociatedTokens(new CopyOnWriteIds());
+
 		// and:
-		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond);
-		tA = rA.getCreated().get();
-		tokenStore.commitCreation();
-		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond);
-		tB = rB.getCreated().get();
-		tokenStore.commitCreation();
+		tA = ids.newTokenId(a);
+		tB = ids.newTokenId(b);
+		var rA = Token.fromGrpcTokenCreate(Id.fromGrpcToken(tA), stdWith("MINE", "MINE", a), aa, null, List.of(), thisSecond);
+		var rB = Token.fromGrpcTokenCreate(Id.fromGrpcToken(tB), stdWith("YOURS", "YOURS", b), ba, null, List.of(), thisSecond);
 		// and:
-		tokenStore.associate(a, List.of(tA, tB));
-		tokenStore.associate(b, List.of(tA, tB));
-		tokenStore.associate(c, List.of(tA, tB));
-		tokenStore.associate(d, List.of(tA, tB));
+		aa.associateWith(List.of(rA, rB), 10);
+		ba.associateWith(List.of(rA, rB), 10);
+		ca.associateWith(List.of(rA, rB), 10);
+		da.associateWith(List.of(rA, rB), 10);
 		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
@@ -252,7 +265,6 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 		subject.adjustTokenBalance(c, tA, +5000);
 		subject.freeze(a, tB);
 		subject.adjustTokenBalance(a, tB, +1_000_000);
-		accountsLedger.changeSetSoFar();
 
 		// then:
 		assertThat(

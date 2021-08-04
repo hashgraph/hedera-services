@@ -69,9 +69,7 @@ public class CustomFee {
 			final var fractionGrpc = fractionalFeeGrpc.getFractionalAmount();
 			validateFalse(fractionGrpc.getDenominator() == 0, FRACTION_DIVIDES_BY_ZERO);
 			validateTrue(areAllPositiveNumbers(fractionGrpc.getNumerator(),
-					fractionGrpc.getDenominator(),
-					fractionalFeeGrpc.getMinimumAmount(),
-					fractionalFeeGrpc.getMaximumAmount()), CUSTOM_FEE_MUST_BE_POSITIVE);
+					fractionGrpc.getDenominator(), fractionalFeeGrpc.getMaximumAmount(), fractionalFeeGrpc.getMinimumAmount()), CUSTOM_FEE_MUST_BE_POSITIVE);
 			validateTrue(fractionalFeeGrpc.getMinimumAmount() <= fractionalFeeGrpc.getMaximumAmount(), FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
 
 			final var fractionalFee = new FractionalFee(
@@ -132,7 +130,7 @@ public class CustomFee {
 	private static boolean areAllPositiveNumbers(long... numbers) {
 		boolean positive = true;
 		for (long n : numbers) {
-			positive &= n > 0;
+			positive &= n >= 0;
 		}
 		return positive;
 	}

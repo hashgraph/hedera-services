@@ -327,12 +327,8 @@ public class Token {
 	 */
 	public TokenRelationship newEnabledRelationship(final Account account) {
 		final var rel = new TokenRelationship(this, account);
-		if (hasKycKey()) {
-			rel.changeKycState(true);
-		}
-		if (hasFreezeKey()) {
-			rel.changeFrozenState(false);
-		}
+		rel.setKycGranted(!hasKycKey());
+		rel.setFrozen(false);
 		return rel;
 	}
 
@@ -649,7 +645,7 @@ public class Token {
 	}
 
 	public List<FcCustomFee> getCustomFeesAsMerkle() {
-		return customFees.stream().map(CustomFee::toMerkle).collect(Collectors.toUnmodifiableList());
+		return customFees.stream().map(CustomFee::toMerkle).collect(Collectors.toList());
 	}
 
 	public void setCustomFees(final List<CustomFee> customFees) {
