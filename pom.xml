@@ -161,7 +161,7 @@
     <eddsa.version>0.3.0</eddsa.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.39.0</grpc.version>
-    <jackson-databind.version>2.9.10.7</jackson-databind.version>
+    <jackson-databind.version>2.12.4</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <hapi-proto.version>0.17.0-SNAPSHOT</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
