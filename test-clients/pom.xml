@@ -16,7 +16,7 @@
   <properties>
     <maven-assembly.version>3.1.1</maven-assembly.version>
 
-    <bcpkix-jdk15on.version>1.61</bcpkix-jdk15on.version>
+    <bcpkix-jdk15on.version>1.69</bcpkix-jdk15on.version>
     <bcprov-jdk15on.version>1.61</bcprov-jdk15on.version>
     <BIP39.version>2019.01.27</BIP39.version>
     <picocli.version>4.5.2</picocli.version>
