@@ -118,7 +118,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		final var id = Id.fromGrpcToken(tokenId);
 		final var customFeesList = initCustomFees(op, id);
 		final var created = Token.fromGrpcTokenCreate(id, op, treasury, autoRenewModel, customFeesList, txnCtx.consensusTime().getEpochSecond());
-		final var relationsToPersist = updateAccountRelations(created, treasury, customFeesList, op.hasKycKey(), op.hasFreezeKey());
+		final var relationsToPersist = updateAccountRelations(created, treasury, customFeesList);
 
 		if (op.getInitialSupply() > 0) {
 			created.mint(relationsToPersist.get(0), op.getInitialSupply(), true);
@@ -141,11 +141,11 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	 * @param customFeeList a list of valid custom fees to be applied
 	 * @return list of formed relationships between the token and the account.
 	 */
-	private List<TokenRelationship> updateAccountRelations(Token created, Account treasury, List<CustomFee> customFeeList, boolean opHasKycKey, boolean opHasFreezeKey) {
+	private List<TokenRelationship> updateAccountRelations(Token created, Account treasury, List<CustomFee> customFeeList) {
 		final var relations = new ArrayList<TokenRelationship>();
 		final var associatedAccounts = new HashSet<Id>();
 
-		final var treasuryRel = created.newEnabledRelationship(treasury, opHasKycKey, opHasFreezeKey);
+		final var treasuryRel = created.newEnabledRelationship(treasury);
 		treasury.associateWith(List.of(created), dynamicProperties.maxTokensPerAccount());
 		relations.add(treasuryRel);
 		associatedAccounts.add(treasury.getId());
@@ -154,7 +154,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			if (fee.shouldBeEnabled()) {
 				final var collector = fee.getCollector();
 				if (!associatedAccounts.contains(collector.getId())) {
-					final var collectorRelation = created.newEnabledRelationship(collector, opHasKycKey, opHasFreezeKey);
+					final var collectorRelation = created.newEnabledRelationship(collector);
 					if (!collector.getAssociatedTokens().contains(created.getId())) {
 						collector.associateWith(List.of(created), dynamicProperties.maxTokensPerAccount());
 					}

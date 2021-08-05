@@ -128,9 +128,10 @@ class TokenTest {
 		final var kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 		subject.setFreezeKey(frzKey);
 		subject.setKycKey(kycKey);
-		final var rel = subject.newEnabledRelationship(treasuryAccount, true, true);
+		final var rel = subject.newEnabledRelationship(treasuryAccount);
 		assertNotNull(rel);
 		assertFalse(rel.isFrozen());
+		assertTrue(rel.isKycGranted());
 	}
 
 	@Test
