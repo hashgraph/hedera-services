@@ -260,24 +260,6 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.ethereum</groupId>
-          <artifactId>leveldbjni-all</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.ethereum</groupId>
-          <artifactId>rocksdbjni</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.ethereum</groupId>
-          <artifactId>solcJ-all</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-all</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -303,11 +285,6 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
-      <dependency>
-          <groupId>com.intellij</groupId>
-          <artifactId>annotations</artifactId>
-          <version>12.0</version>
-      </dependency>
   </dependencies>
 
   <repositories>
