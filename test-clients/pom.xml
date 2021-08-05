@@ -19,7 +19,7 @@
     <bouncycastle.version>1.69</bouncycastle.version>
     <BIP39.version>2019.01.27</BIP39.version>
     <picocli.version>4.5.2</picocli.version>
-    <commons-collections4.version>4.1</commons-collections4.version>
+    <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.26</snakeyaml.version>
 
