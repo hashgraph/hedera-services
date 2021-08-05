@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file.negative;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UpdateFailuresSpec extends HapiApiSuite {
 	private static final long A_LOT = 1_234_567_890L;
@@ -219,7 +219,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, infoOp);
 							var currExpiry =
 									infoOp.getResponse().getFileGetInfo().getFileInfo().getExpirationTime().getSeconds();
-							assertEquals("Expiry changed unexpectedly!", initialExpiry.get(), currExpiry);
+							assertEquals(initialExpiry.get(), currExpiry, "Expiry changed unexpectedly!");
 						})
 				);
 	}

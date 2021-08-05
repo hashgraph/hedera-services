@@ -53,7 +53,7 @@ import io.grpc.StatusRuntimeException;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -408,7 +408,7 @@ public class TestHelper {
 		}
 
 		Response transactionReceipts = cstub.getTransactionReceipts(query);
-		Assert.assertNotNull(transactionReceipts);
+		Assertions.assertNotNull(transactionReceipts);
 		ResponseCodeEnum precheckCode = transactionReceipts.getTransactionGetReceipt().getHeader()
 				.getNodeTransactionPrecheckCode();
 		if (!precheckCode.equals(ResponseCodeEnum.OK) && !precheckCode.equals(ResponseCodeEnum.BUSY)) {

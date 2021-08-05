@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -37,7 +37,7 @@ public class VerifyGetLiveHashNotSupported extends UtilOp {
 				.setAccountID(asAccount("0.0.2"));
 		Query query = Query.newBuilder().setCryptoGetLiveHash(op).build();
 		Response response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getLiveHash(query);
-		Assert.assertEquals(
+		Assertions.assertEquals(
 				NOT_SUPPORTED,
 				response.getCryptoGetLiveHash().getHeader().getNodeTransactionPrecheckCode());
 		return false;

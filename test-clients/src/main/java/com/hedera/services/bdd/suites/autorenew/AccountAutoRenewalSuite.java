@@ -28,7 +28,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.function.IntFunction;
@@ -170,7 +170,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 									.hasAnswerOnlyPrecheckFrom(OK, INVALID_ACCOUNT_ID);
 							allRunFor(spec, subOpA, subOpB, subOpC);
 							final var aStatus = subOpA.getResponse().getCryptogetAccountBalance()
-											.getHeader().getNodeTransactionPrecheckCode();
+									.getHeader().getNodeTransactionPrecheckCode();
 							final var bStatus = subOpB.getResponse().getCryptogetAccountBalance()
 									.getHeader().getNodeTransactionPrecheckCode();
 							final var cStatus = subOpC.getResponse().getCryptogetAccountBalance()
@@ -179,7 +179,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 							final long numRemoved = Stream.of(aStatus, bStatus, cStatus)
 									.filter(INVALID_ACCOUNT_ID::equals)
 									.count();
-							Assert.assertTrue("More than 2 entities were touched!", numRemoved <= 2L);
+							Assertions.assertTrue(numRemoved <= 2L, "More than 2 entities were touched!");
 						})
 				);
 	}
@@ -218,14 +218,14 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 									.toArray(HapiSpecOperation[]::new);
 							allRunFor(spec, subOps);
 							final long numRemoved = Stream.of(subOps)
-									.map(op -> ((HapiQueryOp<HapiGetAccountBalance>)op).getResponse()
+									.map(op -> ((HapiQueryOp<HapiGetAccountBalance>) op).getResponse()
 											.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode())
 									.peek(opLog::info)
 									.filter(INVALID_ACCOUNT_ID::equals)
 									.count();
-							Assert.assertTrue(
-									"More than " + abbrevMaxToScan + " entities were touched!",
-									numRemoved <= abbrevMaxToScan + 1);
+							Assertions.assertTrue(
+									numRemoved <= abbrevMaxToScan + 1,
+									"More than " + abbrevMaxToScan + " entities were touched!");
 						})
 				);
 	}

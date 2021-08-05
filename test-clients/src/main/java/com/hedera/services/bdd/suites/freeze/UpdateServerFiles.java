@@ -27,6 +27,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,8 +41,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
-import static junit.framework.TestCase.fail;
-
 
 public class UpdateServerFiles extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
@@ -118,7 +117,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 			data = Files.readAllBytes(Paths.get(uploadFile));
 		} catch (IOException e) {
 			log.error("Directory creation failed", e);
-			fail("Directory creation failed");
+			Assertions.fail("Directory creation failed");
 		}
 		final byte[] hash = UpdateFile150.sha384Digest(data);
 		return defaultHapiSpec("uploadFileAndUpdate")

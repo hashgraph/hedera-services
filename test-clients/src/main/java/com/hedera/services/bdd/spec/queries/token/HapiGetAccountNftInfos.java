@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,7 +90,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
                 var completedNft = expectedNftElement.build();
                 expectedInfo.add(completedNft);
             }
-            Assert.assertEquals(actualInfo, expectedInfo);
+            Assertions.assertEquals(actualInfo, expectedInfo);
         });
     }
 
