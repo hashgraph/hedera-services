@@ -58,7 +58,7 @@ import java.math.BigInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
-public class RepoNewCacheTest {
+class RepoNewCacheTest {
 	@Disabled
 	public void test() {
 		FCMap<MerkleEntityId, MerkleAccount> accountMap =
@@ -141,7 +141,7 @@ public class RepoNewCacheTest {
 	}
 
 	@Test
-	public void rollbackTest() {
+	void rollbackTest() {
 		FCMap<MerkleEntityId, MerkleAccount> accountMap =
 				new FCMap<>();
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
