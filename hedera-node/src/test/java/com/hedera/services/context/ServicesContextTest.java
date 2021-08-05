@@ -94,6 +94,7 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -705,6 +706,7 @@ class ServicesContextTest {
 		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
 		assertThat(ctx.uniqTokenViewsManager(), instanceOf(UniqTokenViewsManager.class));
 		assertThat(ctx.uniqTokenViewFactory(), instanceOf(ConfigDrivenUniqTokenViewFactory.class));
+		assertThat(ctx.signatureWaivers(), instanceOf(PolicyBasedSigWaivers.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

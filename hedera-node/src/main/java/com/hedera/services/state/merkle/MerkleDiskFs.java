@@ -89,6 +89,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	}
 
 	public MerkleDiskFs copy() {
+		setImmutable(true);
 		Map<FileID, byte[]> fileHashesCopy = fileHashes.entrySet()
 				.stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, HashMap::new));
@@ -125,6 +126,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	}
 
 	public synchronized void put(FileID fid, byte[] contents) {
+		throwIfImmutable("Cannot change this file's contents if it's immutable.");
 		try {
 			byte[] hash = noThrowSha384HashOf(contents);
 			writeHelper.allBytesTo(pathToContentsOf(fid), contents);
@@ -174,6 +176,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	}
 
 	private void setHashFromContents() {
+		throwIfImmutable("Cannot change this file's content hash if it's immutable.");
 		var baos = new ByteArrayOutputStream();
 		try (SerializableDataOutputStream out = new SerializableDataOutputStream(baos)) {
 			serializeFidInfo(out, fileHashes::get);
@@ -311,10 +314,12 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	}
 
 	void setBytesHelper(ThrowingBytesGetter bytesHelper) {
+		throwIfImmutable("Cannot change the file's bytes helper if it's immutable.");
 		this.bytesHelper = bytesHelper;
 	}
 
 	void setWriteHelper(ThrowingBytesWriter writeHelper) {
+		throwIfImmutable("Cannot change the file's write helper if it's immutable.");
 		this.writeHelper = writeHelper;
 	}
 

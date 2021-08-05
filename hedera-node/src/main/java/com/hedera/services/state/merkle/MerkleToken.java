@@ -286,6 +286,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleToken copy() {
+		setImmutable(true);
 		var fc = new MerkleToken(
 				expiry,
 				totalSupply,
@@ -359,10 +360,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setFreezeKey(JKey freezeKey) {
+		throwIfImmutable("Cannot change this token's freeze key if it's immutable.");
 		this.freezeKey = freezeKey;
 	}
 
 	public void setKycKey(JKey kycKey) {
+		throwIfImmutable("Cannot change this token's kyc key if it's immutable.");
 		this.kycKey = kycKey;
 	}
 
@@ -379,6 +382,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setSupplyKey(JKey supplyKey) {
+		throwIfImmutable("Cannot change this token's supply key if it's immutable.");
 		this.supplyKey = supplyKey;
 	}
 
@@ -391,6 +395,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setWipeKey(JKey wipeKey) {
+		throwIfImmutable("Cannot change this token's wipe key if it's immutable.");
 		this.wipeKey = wipeKey;
 	}
 
@@ -399,6 +404,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setDeleted(boolean deleted) {
+		throwIfImmutable("Cannot change this token's to be deleted if it's immutable.");
 		this.deleted = deleted;
 	}
 
@@ -407,6 +413,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setSymbol(String symbol) {
+		throwIfImmutable("Cannot change this token's symbol if it's immutable.");
 		this.symbol = symbol;
 	}
 
@@ -415,14 +422,17 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setName(String name) {
+		throwIfImmutable("Cannot change this token's name if it's immutable.");
 		this.name = name;
 	}
 
 	public void setTreasury(EntityId treasury) {
+		throwIfImmutable("Cannot change this token's treasure account if it's immutable.");
 		this.treasury = treasury;
 	}
 
 	public void setAdminKey(JKey adminKey) {
+		throwIfImmutable("Cannot change this token's admin key if it's immutable.");
 		this.adminKey = adminKey;
 	}
 
@@ -443,6 +453,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setExpiry(long expiry) {
+		throwIfImmutable("Cannot change this token's expiry time if it's immutable.");
 		this.expiry = expiry;
 	}
 
@@ -451,6 +462,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setAutoRenewPeriod(long autoRenewPeriod) {
+		throwIfImmutable("Cannot change this token's auto renewal period if it's immutable.");
 		this.autoRenewPeriod = autoRenewPeriod;
 	}
 
@@ -463,10 +475,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setAutoRenewAccount(EntityId autoRenewAccount) {
+		throwIfImmutable("Cannot change this token's auto renewal account if it's immutable.");
 		this.autoRenewAccount = autoRenewAccount;
 	}
 
 	public void adjustTotalSupplyBy(long amount) {
+		throwIfImmutable("Cannot adjust this token's total supply if it's immutable.");
 		var newTotalSupply = totalSupply + amount;
 		if (newTotalSupply < 0) {
 			throw new IllegalArgumentException(String.format(
@@ -498,6 +512,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setTotalSupply(long totalSupply) {
+		throwIfImmutable("Cannot change this token's total supply if it's immutable.");
 		this.totalSupply = totalSupply;
 	}
 
@@ -506,10 +521,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setMemo(String memo) {
+		throwIfImmutable("Cannot change this token's memo if it's immutable.");
 		this.memo = memo;
 	}
 
 	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+		throwIfImmutable("Cannot change this token's default frozen status if it's immutable.");
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 
@@ -518,6 +535,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setLastUsedSerialNumber(long serialNum) {
+		throwIfImmutable("Cannot change this token's last used serial number if it's immutable.");
 		this.lastUsedSerialNumber = serialNum;
 	}
 
@@ -526,10 +544,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setTokenType(TokenType tokenType) {
+		throwIfImmutable("Cannot change this token's token type if it's immutable.");
 		this.tokenType = tokenType;
 	}
 
 	public void setTokenType(int tokenTypeInt) {
+		throwIfImmutable("Cannot change this token's token type through value if it's immutable.");
 		this.tokenType = TokenType.values()[tokenTypeInt];
 	}
 
@@ -538,10 +558,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setSupplyType(TokenSupplyType supplyType) {
+		throwIfImmutable("Cannot change this token's supply type if it's immutable.");
 		this.supplyType = supplyType;
 	}
 
 	public void setSupplyType(int supplyTypeInt) {
+		throwIfImmutable("Cannot change this token's supply type through value if it's immutable.");
 		this.supplyType = TokenSupplyType.values()[supplyTypeInt];
 	}
 
@@ -550,6 +572,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setMaxSupply(long maxSupply) {
+		throwIfImmutable("Cannot change this token's max supply if it's immutable.");
 		this.maxSupply = maxSupply;
 	}
 
@@ -558,6 +581,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setFeeSchedule(List<FcCustomFee> feeSchedule) {
+		throwIfImmutable("Cannot change this token's fee schedule if it's immutable.");
 		this.feeSchedule = feeSchedule;
 	}
 
@@ -570,10 +594,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule, EntityId targetId) {
+		throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
 		feeSchedule = grpcFeeSchedule.stream().map(fee -> FcCustomFee.fromGrpc(fee, targetId)).collect(toList());
 	}
 
 	public void setFeeScheduleKey(final JKey feeScheduleKey) {
+		throwIfImmutable("Cannot change this token's fee schedule key if it's immutable.");
 		this.feeScheduleKey = feeScheduleKey;
 	}
 

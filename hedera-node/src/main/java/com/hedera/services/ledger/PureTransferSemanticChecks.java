@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -33,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
@@ -97,30 +99,39 @@ public class PureTransferSemanticChecks {
 			return OK;
 		}
 
+		return checkTokenTransfersList(tokenTransfersList,
+				areNftsEnabled,
+				maxOwnershipChanges,
+				maxListLen);
+	}
+
+	private ResponseCodeEnum checkTokenTransfersList(final List<TokenTransferList> tokenTransfersList,
+			final boolean areNftsEnabled,
+			final int maxOwnershipChanges,
+			final int maxListLen) {
 		var count = 0;
 		var numOwnershipChanges = 0;
 		for (var scopedTransfers : tokenTransfersList) {
 			final var ownershipChangesHere = scopedTransfers.getNftTransfersCount();
 			if (ownershipChangesHere > 0) {
-				if (!areNftsEnabled) {
+				if(!areNftsEnabled) {
 					return NOT_SUPPORTED;
 				}
 				numOwnershipChanges += ownershipChangesHere;
-				if (numOwnershipChanges > maxOwnershipChanges) {
-					return BATCH_SIZE_LIMIT_EXCEEDED;
-				}
 			} else {
 				int transferCounts = scopedTransfers.getTransfersCount();
-				if (transferCounts == 0) {
+				if(transferCounts == 0) {
 					return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 				}
 				count += transferCounts;
-				if (count > maxListLen) {
-					return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-				}
+			}
+			if(numOwnershipChanges > maxOwnershipChanges) {
+				return BATCH_SIZE_LIMIT_EXCEEDED;
+			}
+			if(count > maxListLen) {
+				return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 			}
 		}
-
 		return OK;
 	}
 

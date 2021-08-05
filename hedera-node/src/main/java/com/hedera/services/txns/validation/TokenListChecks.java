@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 
 import java.util.HashSet;
@@ -109,37 +108,47 @@ public class TokenListChecks {
 	) {
 		ResponseCodeEnum validity = OK;
 
-		if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
-			if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasKycKey) {
-			if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasWipeKey) {
-			if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasSupplyKey) {
-			if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasFreezeKey) {
-			if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasFeeScheduleKey) {
-			if ((validity = checkKey(feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY)) != OK) {
-				return validity;
-			}
+		validity = checkAdminKey(hasAdminKey, adminKey);
+		if(validity != OK) {
+			return validity;
 		}
 
+		validity = checkKeyOfType(hasKycKey, kycKey, INVALID_KYC_KEY);
+		if(validity != OK) {
+			return validity;
+		}
+
+		validity = checkKeyOfType(hasWipeKey, wipeKey, INVALID_WIPE_KEY);
+		if(validity != OK) {
+			return validity;
+		}
+
+		validity = checkKeyOfType(hasSupplyKey, supplyKey, INVALID_SUPPLY_KEY);
+		if(validity != OK) {
+			return validity;
+		}
+
+		validity = checkKeyOfType(hasFreezeKey, freezeKey, INVALID_FREEZE_KEY);
+		if(validity != OK) {
+			return validity;
+		}
+
+		validity = checkKeyOfType(hasFeeScheduleKey, feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY);
 		return validity;
+	}
+
+
+	private static ResponseCodeEnum checkAdminKey(boolean hasAdminKey, Key adminKey) {
+		if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
+			return checkKey(adminKey, INVALID_ADMIN_KEY);
+		}
+		return OK;
+	}
+
+	private static ResponseCodeEnum checkKeyOfType(boolean hasKey, Key key, ResponseCodeEnum code) {
+		if (hasKey) {
+			return checkKey(key, code);
+		}
+		return OK;
 	}
 }

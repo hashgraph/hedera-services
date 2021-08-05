@@ -45,6 +45,8 @@ public class ThrottleBucket {
 	String name;
 	List<ThrottleGroup> throttleGroups = new ArrayList<>();
 
+	private static final String BUCKET_PREFIX = "Bucket ";
+
 	public long getBurstPeriodMs() {
 		return burstPeriodMs;
 	}
@@ -117,7 +119,7 @@ public class ThrottleBucket {
 		if (throttleGroups.isEmpty()) {
 			throw new IllegalStateException(exceptionMsgFor(
 							BUCKET_HAS_NO_THROTTLE_GROUPS,
-					"Bucket " + name + " includes no throttle groups!"));
+					BUCKET_PREFIX + name + " includes no throttle groups!"));
 		}
 
 		assertMinimalOpsPerSec();
@@ -126,7 +128,7 @@ public class ThrottleBucket {
 		if (logicalMtps < 0) {
 			throw new IllegalStateException(exceptionMsgFor(
 					BUCKET_CAPACITY_OVERFLOW,
-					"Bucket " + name + " overflows with given throttle groups!"));
+					BUCKET_PREFIX + name + " overflows with given throttle groups!"));
 		}
 
 		return mappingWith(logicalMtps, n);
@@ -158,7 +160,7 @@ public class ThrottleBucket {
 		if (capacityReq < 0 || capacityReq > totalCapacity) {
 			throw new IllegalStateException(exceptionMsgFor(
 					NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
-					"Bucket " + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
+					BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
 		}
 
 		var functions = group.getOperations();
@@ -175,7 +177,7 @@ public class ThrottleBucket {
 		} else {
 			throw new IllegalStateException(exceptionMsgFor(
 					OPERATION_REPEATED_IN_BUCKET_GROUPS,
-					"Bucket " + name + " assigns an operation to multiple groups!"));
+					BUCKET_PREFIX + name + " assigns an operation to multiple groups!"));
 		}
 	}
 
@@ -186,11 +188,11 @@ public class ThrottleBucket {
 			if (unsatisfiable.getMessage().startsWith("Cannot free")) {
 				throw new IllegalStateException(exceptionMsgFor(
 						BUCKET_CAPACITY_OVERFLOW,
-						"Bucket " + name + " overflows with given throttle groups!"));
+						BUCKET_PREFIX + name + " overflows with given throttle groups!"));
 			} else {
 				throw new IllegalStateException(exceptionMsgFor(
 						NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
-						"Bucket " + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
+						BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
 			}
 		}
 	}
@@ -200,7 +202,7 @@ public class ThrottleBucket {
 			if (group.impliedMilliOpsPerSec() == 0) {
 				throw new IllegalStateException(exceptionMsgFor(
 						THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC,
-						"Bucket " + name + " contains a group with zero milliOpsPerSec!"));
+						BUCKET_PREFIX + name + " contains a group with zero milliOpsPerSec!"));
 			}
 		}
 	}

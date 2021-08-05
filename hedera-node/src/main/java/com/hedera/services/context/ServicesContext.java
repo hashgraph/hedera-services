@@ -210,6 +210,8 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -398,7 +400,6 @@ import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedPa
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultAccountRetryingLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
@@ -517,6 +518,7 @@ public class ServicesContext {
 	private ScheduleAnswers scheduleAnswers;
 	private InvariantChecks invariantChecks;
 	private TypedTokenStore typedTokenStore;
+	private SignatureWaivers signatureWaivers;
 	private MiscSpeedometers speedometers;
 	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
@@ -777,6 +779,13 @@ public class ServicesContext {
 			feeMultiplierSource = new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
 		}
 		return feeMultiplierSource;
+	}
+
+	public SignatureWaivers signatureWaivers() {
+		if (signatureWaivers == null) {
+			signatureWaivers = new PolicyBasedSigWaivers(entityNums(), systemOpPolicies());
+		}
+		return signatureWaivers;
 	}
 
 	public MiscSpeedometers speedometers() {
@@ -1323,14 +1332,7 @@ public class ServicesContext {
 	}
 
 	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
-		var policies = systemOpPolicies();
-		var properties = globalDynamicProperties();
-		return new HederaSigningOrder(
-				entityNums(),
-				lookups,
-				txn -> policies.check(txn, CryptoUpdate) != AUTHORIZED,
-				(txn, function) -> policies.check(txn, function) != AUTHORIZED,
-				properties);
+		return new HederaSigningOrder(lookups, globalDynamicProperties(), signatureWaivers());
 	}
 
 	public StoragePersistence storagePersistence() {

@@ -45,6 +45,15 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedFileUpdate(SYS_FILE_ID)
+							.payer(TREASURY_PAYER_ID)
+							.get()
+			));
+		}
+	},
 	MASTER_SYS_FILE_UPDATE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
@@ -66,6 +75,7 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedFileUpdate(MISC_FILE_ID)
+							.payer(TREASURY_PAYER_ID)
 							.newWaclKt(SIMPLE_NEW_WACL_KT)
 							.get()
 			));

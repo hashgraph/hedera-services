@@ -106,6 +106,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	}
 
 	public void setBalance(long balance) {
+		throwIfImmutable("Cannot change this token relation's balance if it's immutable.");
 		if (balance < 0) {
 			throw new IllegalArgumentException(String.format("Argument 'balance=%d' would negate %s!", balance, this));
 		}
@@ -117,6 +118,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	}
 
 	public void setFrozen(boolean frozen) {
+		throwIfImmutable("Cannot change this token relation's frozen status if it's immutable.");
 		this.frozen = frozen;
 	}
 
@@ -125,12 +127,14 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	}
 
 	public void setKycGranted(boolean kycGranted) {
+		throwIfImmutable("Cannot change this token relation's grant kyc if it's immutable.");
 		this.kycGranted = kycGranted;
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
+		setImmutable(true);
 		return new MerkleTokenRelStatus(balance, frozen, kycGranted);
 	}
 
