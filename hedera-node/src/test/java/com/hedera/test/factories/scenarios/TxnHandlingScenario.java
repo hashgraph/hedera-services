@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -458,6 +459,11 @@ public interface TxnHandlingScenario {
 	AccountID SECOND_TOKEN_SENDER = asAccount(SECOND_TOKEN_SENDER_ID);
 	String TOKEN_RECEIVER_ID = "0.0.1111";
 	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
+
+	NftID KNOWN_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(KNOWN_TOKEN_WITH_WIPE)
+			.setSerialNumber(1L)
+			.build();
 
 	String UNKNOWN_TOKEN_ID = "0.0.666";
 	TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);
