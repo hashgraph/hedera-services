@@ -26,8 +26,8 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -55,9 +55,9 @@ public final class ScheduleExecutor {
 	 * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
 	 */
 	ResponseCodeEnum processExecution(
-			@NotNull ScheduleID id,
-			@NotNull ScheduleStore store,
-			@NotNull TransactionContext context
+			@Nonnull ScheduleID id,
+			@Nonnull ScheduleStore store,
+			@Nonnull TransactionContext context
 	) throws InvalidProtocolBufferException {
 		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
 		Objects.requireNonNull(store, "The schedule entity store cannot be null");

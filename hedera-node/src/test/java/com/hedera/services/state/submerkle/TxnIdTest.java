@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -49,7 +47,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class TxnIdTest {
 	private AccountID payer = IdUtils.asAccount("0.0.75231");
 	private EntityId fcPayer = EntityId.fromGrpcAccountId(payer);

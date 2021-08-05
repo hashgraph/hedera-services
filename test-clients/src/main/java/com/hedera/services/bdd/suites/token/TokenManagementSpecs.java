@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Map;
@@ -489,7 +489,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 							var mintNFT = getTxnRecord("should-not-appear");
 							allRunFor(spec, mintNFT);
 							var receipt = mintNFT.getResponseRecord().getReceipt();
-							Assert.assertEquals(0, receipt.getNewTotalSupply());
+							Assertions.assertEquals(0, receipt.getNewTotalSupply());
 						})
 				);
 	}

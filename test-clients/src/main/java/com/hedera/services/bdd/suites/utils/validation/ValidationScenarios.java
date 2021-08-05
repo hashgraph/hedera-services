@@ -62,7 +62,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.introspector.Property;
@@ -1017,10 +1017,10 @@ public class ValidationScenarios extends HapiApiSuite {
 				var expectedKey = Key.newBuilder()
 						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 						.build();
-				Assert.assertEquals(
-						String.format("Account 0.0.%d had a different key than expected!", accountNo),
+				Assertions.assertEquals(
 						expectedKey,
-						info.getKey());
+						info.getKey(),
+						String.format("Account 0.0.%d had a different key than expected!", accountNo));
 				spec.registry().saveKey(name, expectedKey);
 				spec.registry().saveAccountId(name, accountId(accountNo));
 				spec.keys().incorporate(name, ocKeystore);
@@ -1155,10 +1155,10 @@ public class ValidationScenarios extends HapiApiSuite {
 												ByteString.copyFrom(
 														CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
 						.build();
-				Assert.assertEquals(
-						String.format("File 0.0.%d had a different key than expected!", fileNo),
+				Assertions.assertEquals(
 						expectedKey.getKeyList(),
-						info.getKeys());
+						info.getKeys(),
+						String.format("File 0.0.%d had a different key than expected!", fileNo));
 
 				var contentsCheck = getFileContents(literal)
 						.setNodeFrom(ValidationScenarios::nextNode)
@@ -1310,10 +1310,10 @@ public class ValidationScenarios extends HapiApiSuite {
 				var expectedKey = Key.newBuilder()
 						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 						.build();
-				Assert.assertEquals(
-						String.format("Contract 0.0.%d had a different key than expected!", contractNo),
+				Assertions.assertEquals(
 						expectedKey,
-						info.getAdminKey());
+						info.getAdminKey(),
+						String.format("Contract 0.0.%d had a different key than expected!", contractNo));
 
 				var bytecodeCheck = getContractBytecode(literal)
 						.setNodeFrom(ValidationScenarios::nextNode)
@@ -1494,10 +1494,10 @@ public class ValidationScenarios extends HapiApiSuite {
 				var expectedKey = Key.newBuilder()
 						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 						.build();
-				Assert.assertEquals(
-						String.format("Topic 0.0.%d had a different key than expected!", topicNo),
+				Assertions.assertEquals(
 						expectedKey,
-						info.getAdminKey());
+						info.getAdminKey(),
+						String.format("Topic 0.0.%d had a different key than expected!", topicNo));
 				expectedSeqNo.set(info.getSequenceNumber() + 1);
 				spec.registry().saveKey(name, expectedKey);
 				spec.registry().saveTopicId(name, topicId(topicNo));

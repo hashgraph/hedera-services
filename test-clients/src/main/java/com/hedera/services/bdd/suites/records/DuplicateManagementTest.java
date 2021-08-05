@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DuplicateManagementTest extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DuplicateManagementTest.class);
@@ -117,9 +117,10 @@ public class DuplicateManagementTest extends HapiApiSuite {
 							var costlyRecord = costlyGet.getResponseRecord();
 							var cheapPrice = getDeduction(cheapRecord.getTransferList(), payer).orElse(0);
 							var costlyPrice = getDeduction(costlyRecord.getTransferList(), payer).orElse(0);
-							assertEquals(String.format(
-									"Costly (%d) should be 3x more expensive than cheap (%d)!", cheapPrice, costlyPrice),
-									costlyPrice, 3 * cheapPrice);
+							assertEquals(
+									costlyPrice, 3 * cheapPrice,
+									String.format("Costly (%d) should be 3x more expensive than cheap (%d)!",
+											cheapPrice, costlyPrice));
 						})
 				);
 	}

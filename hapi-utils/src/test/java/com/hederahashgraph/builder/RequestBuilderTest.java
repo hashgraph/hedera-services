@@ -1,4 +1,4 @@
-package com.hedera.services.utils;
+package com.hederahashgraph.builder;
 
 /*-
  * ‌
@@ -20,20 +20,25 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+class RequestBuilderTest {
 
-class CommonUtilsTest {
 	@Test
-	void testNap() throws InterruptedException, IOException {
-		String filePath = "./src/test/resources/test.txt";
-		CommonUtils.writeToFile(filePath, "TEST".getBytes());
-		CommonUtils.nap(1);
-		assertTrue(new File(filePath).exists());
+	void testExpirationTime() {
+		final var seconds = 500L;
+		final var duration = RequestBuilder.getDuration(seconds);
+		final var now = Instant.now();
+
+		final var expirationTime = RequestBuilder.getExpirationTime(now, duration);
+		Assertions.assertNotNull(expirationTime);
+
+		final var expirationInstant = RequestBuilder.convertProtoTimeStamp(expirationTime);
+		final var between = Duration.between(now, expirationInstant);
+		Assertions.assertEquals(seconds, between.getSeconds());
 	}
 }

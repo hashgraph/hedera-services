@@ -38,7 +38,7 @@ import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Arrays;
 import java.util.List;
@@ -152,10 +152,10 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 			CustomSpecAssert.allRunFor(spec, subOp);
 			String newContents = new String(spec.registry().getBytes(registryEntry));
 			int propertyIndex = newContents.indexOf(property);
-			Assert.assertTrue(propertyIndex >= 0);
+			Assertions.assertTrue(propertyIndex >= 0);
 			int valueIndex = propertyIndex + property.length() + PROPERTY_VALUE_SPACE_LENGTH;
 			String actual = newContents.substring(valueIndex, valueIndex + expected.length());
-			Assert.assertEquals(expected, actual);
+			Assertions.assertEquals(expected, actual);
 		});
 	}
 

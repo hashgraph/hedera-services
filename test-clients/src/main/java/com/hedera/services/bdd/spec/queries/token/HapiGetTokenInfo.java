@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -218,75 +218,72 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
-		expectedTokenType.ifPresent(tokenType -> Assert.assertEquals(
-				"Wrong token type!",
+		expectedTokenType.ifPresent(tokenType -> Assertions.assertEquals(
 				tokenType,
-				actualInfo.getTokenType()
-		));
+				actualInfo.getTokenType(),
+				"Wrong token type!"));
 
-		expectedSupplyType.ifPresent(supplyType -> Assert.assertEquals(
-				"Wrong supply type!",
+		expectedSupplyType.ifPresent(supplyType -> Assertions.assertEquals(
 				supplyType,
-				actualInfo.getSupplyType()
-		));
+				actualInfo.getSupplyType(),
+				"Wrong supply type!"));
 
 		if (expectedSymbol.isPresent()) {
-			Assert.assertEquals(
-					"Wrong symbol!",
+			Assertions.assertEquals(
 					expectedSymbol.get(),
-					actualInfo.getSymbol());
+					actualInfo.getSymbol(),
+					"Wrong symbol!");
 		}
 
 		if (expectedName.isPresent()) {
-			Assert.assertEquals(
-					"Wrong name!",
+			Assertions.assertEquals(
 					expectedName.get(),
-					actualInfo.getName());
+					actualInfo.getName(),
+					"Wrong name!");
 		}
 
 		if (expectedAutoRenewAccount.isPresent()) {
 			var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
-			Assert.assertEquals(
-					"Wrong auto renew account!",
+			Assertions.assertEquals(
 					id,
-					actualInfo.getAutoRenewAccount());
+					actualInfo.getAutoRenewAccount(),
+					"Wrong auto renew account!");
 		}
 
 		if (expectedAutoRenewPeriod.isPresent()) {
-			Assert.assertEquals(
-					"Wrong auto renew period!",
+			Assertions.assertEquals(
 					expectedAutoRenewPeriod.getAsLong(),
-					actualInfo.getAutoRenewPeriod().getSeconds());
+					actualInfo.getAutoRenewPeriod().getSeconds(),
+					"Wrong auto renew period!");
 		}
 
 		if (expectedMaxSupply.isPresent()) {
-			Assert.assertEquals(
-					"Wrong max supply!",
+			Assertions.assertEquals(
 					expectedMaxSupply.getAsLong(),
-					actualInfo.getMaxSupply()
-			);
+					actualInfo.getMaxSupply(),
+					"Wrong max supply!");
 		}
 
 		if (expectedTotalSupply.isPresent()) {
-			Assert.assertEquals(
-					"Wrong total supply!",
+			Assertions.assertEquals(
 					expectedTotalSupply.getAsLong(),
-					actualInfo.getTotalSupply());
+					actualInfo.getTotalSupply(),
+					"Wrong total supply!");
 		}
 
 		if (expectedDecimals.isPresent()) {
-			Assert.assertEquals(
-					"Wrong decimals!",
+			Assertions.assertEquals(
 					expectedDecimals.getAsInt(),
-					actualInfo.getDecimals());
+					actualInfo.getDecimals(),
+					"Wrong decimals!");
 		}
 
 		if (expectedTreasury.isPresent()) {
 			var id = TxnUtils.asId(expectedTreasury.get(), spec);
-			Assert.assertEquals(
-					"Wrong treasury account!",
+			Assertions.assertEquals(
 					id,
-					actualInfo.getTreasury());
+					actualInfo.getTreasury(),
+					"Wrong treasury account!");
 		}
 
 		final var actualFees = actualInfo.getCustomFeesList();
@@ -294,10 +291,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 			expectedFee.accept(spec, actualFees);
 		}
 
-		expectedMemo.ifPresent(s -> Assert.assertEquals(
-				"Wrong memo!",
+		expectedMemo.ifPresent(s -> Assertions.assertEquals(
 				s,
-				actualInfo.getMemo()));
+				actualInfo.getMemo(),
+				"Wrong memo!"));
 
 		var registry = spec.registry();
 		assertFor(
@@ -363,7 +360,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	) {
 		if (possible.isPresent()) {
 			var expected = expectedFn.apply(possible.get(), registry);
-			Assert.assertEquals(error, expected, actual);
+			Assertions.assertEquals(expected, actual, error);
 		}
 	}
 

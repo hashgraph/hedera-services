@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.util.ByteUtil;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -67,7 +67,7 @@ public class SmartContractCreateContractSpec extends HapiApiSuite {
 		return defaultHapiSpec("contractCreateContractSpec")
 				.given(
 						cryptoCreate("payer")
-								.balance( 10_000_000_000L),
+								.balance(10_000_000_000L),
 						fileCreate("createTrivialBytecode")
 								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH)
 				).when(
@@ -88,13 +88,14 @@ public class SmartContractCreateContractSpec extends HapiApiSuite {
 							var subop2 = contractCallLocal("firstContract", ContractResources.GET_CHILD_RESULT_ABI)
 									.saveResultTo("contractCallContractResultBytes")
 									.gas(300_000L);
-							CustomSpecAssert.allRunFor(spec,  subop1, subop2);
+							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
-							byte[] 	resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(ContractResources.GET_CHILD_RESULT_ABI);
+							byte[] resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
+							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
+									ContractResources.GET_CHILD_RESULT_ABI);
 
 							int contractCallReturnVal = 0;
-							if(resultBytes != null && resultBytes.length > 0) {
+							if (resultBytes != null && resultBytes.length > 0) {
 								Object[] retResults = function.decodeResult(resultBytes);
 								if (retResults != null && retResults.length > 0) {
 									BigInteger retBi = (BigInteger) retResults[0];
@@ -103,20 +104,21 @@ public class SmartContractCreateContractSpec extends HapiApiSuite {
 							}
 
 							ctxLog.info("This contract call contract return value {}", contractCallReturnVal);
-							Assert.assertEquals(
-									"This contract call contract return value should be 7",
-									ContractResources.CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal);
+							Assertions.assertEquals(
+									ContractResources.CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal,
+									"This contract call contract return value should be 7");
 
 
 							// Get created contract's info with call to first contract
 							var subop3 = contractCallLocal("firstContract", ContractResources.GET_CHILD_ADDRESS_ABI)
 									.saveResultTo("getCreatedContractInfoResultBytes")
 									.gas(300_000L);
-							CustomSpecAssert.allRunFor(spec,  subop3);
+							CustomSpecAssert.allRunFor(spec, subop3);
 
 							resultBytes = spec.registry().getBytes("getCreatedContractInfoResultBytes");
 
-							function = CallTransaction.Function.fromJsonInterface(ContractResources.GET_CHILD_ADDRESS_ABI);
+							function = CallTransaction.Function.fromJsonInterface(
+									ContractResources.GET_CHILD_ADDRESS_ABI);
 
 							Object[] retResults = function.decodeResult(resultBytes);
 							String contractIDString = null;
@@ -128,8 +130,10 @@ public class SmartContractCreateContractSpec extends HapiApiSuite {
 								contractIDString = String.format("%d.%d.%d", realm, 0, accountNum);
 							}
 							ctxLog.info("The created contract ID {}", contractIDString);
-							Assert.assertNotEquals("Created contract doesn't have valid Contract ID",
-									ContractID.newBuilder().getDefaultInstanceForType(), TxnUtils.asContractId(contractIDString, spec));
+							Assertions.assertNotEquals(
+									ContractID.newBuilder().getDefaultInstanceForType(),
+									TxnUtils.asContractId(contractIDString, spec),
+									"Created contract doesn't have valid Contract ID");
 
 
 							var subop4 = getContractInfo(contractIDString)
@@ -137,11 +141,12 @@ public class SmartContractCreateContractSpec extends HapiApiSuite {
 
 							CustomSpecAssert.allRunFor(spec, subop4);
 
-							ContractGetInfoResponse.ContractInfo createdContratInfo = spec.registry().getContractInfo("createdContractInfoSaved");
+							ContractGetInfoResponse.ContractInfo createdContratInfo = spec.registry().getContractInfo(
+									"createdContractInfoSaved");
 
-							Assert.assertTrue(createdContratInfo.hasContractID());
-							Assert.assertTrue(createdContratInfo.hasAccountID());
-							Assert.assertTrue(createdContratInfo.hasExpirationTime());
+							Assertions.assertTrue(createdContratInfo.hasContractID());
+							Assertions.assertTrue(createdContratInfo.hasAccountID());
+							Assertions.assertTrue(createdContratInfo.hasExpirationTime());
 						})
 				);
 	}

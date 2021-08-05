@@ -27,7 +27,7 @@ import com.hedera.services.bdd.suites.SuiteRunner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Map;
@@ -101,7 +101,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 															.logged();
 													allRunFor(spec, getRecordOp);
 													gotCreationRecord = true;
-												} catch (Throwable ignoreAndRetry) { }
+												} catch (Throwable ignoreAndRetry) {
+												}
 											}
 											createdAuditablePayer = true;
 										} catch (Throwable ignoreAgainAndRetry) {
@@ -112,7 +113,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 											.getTransactionRecord("savedTxnRcd")
 											.getReceipt()
 											.getStatus();
-									Assert.assertEquals("Failed to create payer account!", SUCCESS, status);
+									Assertions.assertEquals(SUCCESS, status, "Failed to create payer account!");
 
 									var gotPayerInfo = false;
 									while (!gotPayerInfo) {
@@ -122,7 +123,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 													.logged();
 											allRunFor(spec, payerAccountInfo);
 											gotPayerInfo = true;
-										} catch (Throwable ignoreAndRetry) { }
+										} catch (Throwable ignoreAndRetry) {
+										}
 									}
 
 									//TODO Should be modified in a different way to avoid setting a static variable of

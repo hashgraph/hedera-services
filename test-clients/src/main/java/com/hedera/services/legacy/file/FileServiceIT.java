@@ -22,6 +22,7 @@ package com.hedera.services.legacy.file;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomProperties;
@@ -51,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
@@ -62,13 +62,13 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -86,8 +86,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author hua
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Ignore
+@TestMethodOrder(MethodOrderer.MethodName.class)
+@Disabled
 public class FileServiceIT {
 
 	private static final long MAX_TX_FEE = TestHelper.getFileMaxFee();
@@ -140,7 +140,7 @@ public class FileServiceIT {
 	protected static int productionFlag = 0;
 	protected static long fileDuration;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		init();
 		String filePath = files[0];
@@ -223,7 +223,7 @@ public class FileServiceIT {
 		log.info("Transfer: request = " + transferTxSigned);
 		TransactionResponse response = cstub.cryptoTransfer(transferTxSigned);
 		log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCode().name());
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 	}
 
 	@Test
@@ -266,10 +266,10 @@ public class FileServiceIT {
 			if (ResponseCodeEnum.OK.equals(response.getNodeTransactionPrecheckCode())) {
 				break;
 			}
-			Assert.assertEquals(ResponseCodeEnum.BUSY, response.getNodeTransactionPrecheckCode());
+			Assertions.assertEquals(ResponseCodeEnum.BUSY, response.getNodeTransactionPrecheckCode());
 			Thread.sleep(BUSY_RETRY_MS);
 		}
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		Assertions.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 	}
 
 	/**
@@ -316,8 +316,8 @@ public class FileServiceIT {
 		Response transactionReceipts = fetchReceipts(query, cstub);
 		fid = transactionReceipts.getTransactionGetReceipt().getReceipt().getFileID();
 		log.info("GetTxReceipt: file ID = " + fid);
-		Assert.assertNotNull(fid);
-		Assert.assertNotEquals(0, fid.getFileNum());
+		Assertions.assertNotNull(fid);
+		Assertions.assertNotEquals(0, fid.getFileNum());
 	}
 
 	@Test
@@ -345,7 +345,7 @@ public class FileServiceIT {
 		FileID actualFid = txRecord.getReceipt().getFileID();
 		System.out.println(actualFid);
 		System.out.println(fid + ":: is the fid");
-		Assert.assertEquals(fid, actualFid);
+		Assertions.assertEquals(fid, actualFid);
 	}
 
 	@Test
@@ -358,21 +358,21 @@ public class FileServiceIT {
 		log.info("\n-----------------------------------");
 		log.info("fileGetInfoQuery: query = " + query);
 		Response fileInfoResp = stub.getFileInfo(query);
-		Assert.assertEquals(ResponseCodeEnum.OK,
+		Assertions.assertEquals(ResponseCodeEnum.OK,
 				fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		long feeForFileInfo = fileInfoResp.getFileGetInfo().getHeader().getCost();
 		paymentTxSigned = getPaymentSigned(payerSeq, recvSeq, "fileGetInfoQuery", feeForFileInfo);
 		query = RequestBuilder.getFileGetInfoBuilder(paymentTxSigned, fid, ResponseType.ANSWER_ONLY);
 		fileInfoResp = stub.getFileInfo(query);
-		Assert.assertEquals(ResponseCodeEnum.OK,
+		Assertions.assertEquals(ResponseCodeEnum.OK,
 				fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		FileInfo fileInfo = fileInfoResp.getFileGetInfo().getFileInfo();
 		log.info("fileGetInfoQuery: info = " + fileInfo);
 		FileID actualFid = fileInfo.getFileID();
 		log.info("File Info deleted  response: " + fileInfo.getDeleted());
-		Assert.assertEquals(fid, actualFid);
+		Assertions.assertEquals(fid, actualFid);
 	}
 
 	@Test
@@ -393,7 +393,7 @@ public class FileServiceIT {
 		FileContents fileContent = fileContentResp.getFileGetContents().getFileContents();
 		ByteString actualFileData = fileContent.getContents();
 		log.info("FileGetContent: content = " + fileContent + "; file size = " + actualFileData.size());
-		Assert.assertEquals(fileData, actualFileData);
+		Assertions.assertEquals(fileData, actualFileData);
 	}
 
 	@Test
@@ -425,10 +425,10 @@ public class FileServiceIT {
 			if (ResponseCodeEnum.OK.equals(response.getNodeTransactionPrecheckCode())) {
 				break;
 			}
-			Assert.assertEquals(ResponseCodeEnum.BUSY, response.getNodeTransactionPrecheckCode());
+			Assertions.assertEquals(ResponseCodeEnum.BUSY, response.getNodeTransactionPrecheckCode());
 			Thread.sleep(BUSY_RETRY_MS);
 		}
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		Assertions.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 	}
 
 	@Test
@@ -468,8 +468,8 @@ public class FileServiceIT {
 		TransactionResponse response = stub.updateFile(txSigned);
 		log.info("FileUpdate with data, exp, and wacl respectively, Response :: "
 				+ response.getNodeTransactionPrecheckCode().name());
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 	}
 
 	@Test
@@ -492,8 +492,8 @@ public class FileServiceIT {
 
 		TransactionResponse response = stub.deleteFile(txSigned);
 		log.info("FileDelete Response :: " + response.getNodeTransactionPrecheckCode().name());
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 	}
 
 	@Test
@@ -508,11 +508,11 @@ public class FileServiceIT {
 		Response fileInfoResp = stub.getFileInfo(query);
 
 		log.info(fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		Assert.assertEquals(ResponseCodeEnum.OK,
+		Assertions.assertEquals(ResponseCodeEnum.OK,
 				fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
 		log.info("Finished File Service Test. Goodbye!");
 		channel.shutdown();
@@ -546,8 +546,8 @@ public class FileServiceIT {
 		Response getInfoResponse = cstub.getAccountInfo(cryptoGetInfoQuery);
 		log.info("Pre Check Response of getAccountInfo:: "
 				+ getInfoResponse.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode().name());
-		Assert.assertNotNull(getInfoResponse);
-		Assert.assertNotNull(getInfoResponse.getCryptoGetInfo());
+		Assertions.assertNotNull(getInfoResponse);
+		Assertions.assertNotNull(getInfoResponse.getCryptoGetInfo());
 		log.info("getInfoResponse :: " + getInfoResponse.getCryptoGetInfo());
 
 		AccountInfo accInfo = getInfoResponse.getCryptoGetInfo().getAccountInfo();
@@ -622,7 +622,7 @@ public class FileServiceIT {
 		log.info("createAccount: request = " + createAccountRequest);
 		TransactionResponse response = cstub.createAccount(createAccountRequest);
 		log.info("createAccount Response :: " + response.getNodeTransactionPrecheckCode().name());
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 
 		// get transaction receipt
 		log.info("preparing to getTransactionReceipts....");
@@ -644,7 +644,7 @@ public class FileServiceIT {
 		AccountInfo accInfo = getAccountInfo(accountID);
 		log.info("Created account info = " + accInfo);
 
-		Assert.assertEquals(body.getCryptoCreateAccount().getInitialBalance(),
+		Assertions.assertEquals(body.getCryptoCreateAccount().getInitialBalance(),
 				accInfo.getBalance());
 
 		return accountID;

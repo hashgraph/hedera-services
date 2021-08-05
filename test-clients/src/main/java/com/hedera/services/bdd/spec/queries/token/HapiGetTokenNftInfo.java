@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -99,24 +99,24 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 		var actualInfo = response.getTokenGetNftInfo().getNft();
 
 		if (expectedSerialNum.isPresent()) {
-			Assert.assertEquals(
-					"Wrong serial num!",
+			Assertions.assertEquals(
 					expectedSerialNum.getAsLong(),
-					actualInfo.getNftID().getSerialNumber());
+					actualInfo.getNftID().getSerialNumber(),
+					"Wrong serial num!");
 		}
 
 		if (expectedAccountID.isPresent()) {
 			var id = TxnUtils.asId(expectedAccountID.get(), spec);
-			Assert.assertEquals(
-					"Wrong account ID account!",
+			Assertions.assertEquals(
 					id,
-					actualInfo.getAccountID());
+					actualInfo.getAccountID(),
+					"Wrong account ID account!");
 		}
 
-		expectedMetadata.ifPresent(bytes -> Assert.assertEquals(
-				"Wrong metadata!",
+		expectedMetadata.ifPresent(bytes -> Assertions.assertEquals(
 				bytes,
-				actualInfo.getMetadata()));
+				actualInfo.getMetadata(),
+				"Wrong metadata!"));
 
 		assertFor(
 				actualInfo.getCreationTime(),
@@ -143,7 +143,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	) {
 		if (possible.isPresent()) {
 			var expected = expectedFn.apply(possible.get(), registry);
-			Assert.assertEquals(error, expected, actual);
+			Assertions.assertEquals(expected, actual, error);
 		}
 	}
 

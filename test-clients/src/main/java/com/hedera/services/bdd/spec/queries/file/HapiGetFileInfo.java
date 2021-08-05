@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 import java.util.function.LongPredicate;
@@ -120,7 +120,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		if (verboseLoggingOn) {
 			log.info("Info for file '" + file + "': " + response.getFileGetInfo());
 		}
-		if(saveFileInfoToReg.isPresent()) {
+		if (saveFileInfoToReg.isPresent()) {
 			spec.registry().saveFileInfo(saveFileInfoToReg.get(), response.getFileGetInfo().getFileInfo());
 		}
 	}
@@ -136,23 +136,23 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		var info = response.getFileGetInfo().getFileInfo();
 
-		Assert.assertEquals(
-				"Wrong file id!",
+		Assertions.assertEquals(
 				TxnUtils.asFileId(file, spec),
-				info.getFileID());
+				info.getFileID(),
+				"Wrong file id!");
 
 		if (immutable) {
-			Assert.assertFalse("Should have no WACL, expected immutable!", info.hasKeys());
+			Assertions.assertFalse(info.hasKeys(), "Should have no WACL, expected immutable!");
 		}
-		expectedWacl.ifPresent(k -> Assert.assertEquals(
-				"Bad WACL!",
+		expectedWacl.ifPresent(k -> Assertions.assertEquals(
 				spec.registry().getKey(k).getKeyList(),
-				info.getKeys()));
-		expectedDeleted.ifPresent(f -> Assert.assertEquals("Bad deletion status!", f, info.getDeleted()));
+				info.getKeys(),
+				"Bad WACL!"));
+		expectedDeleted.ifPresent(f -> Assertions.assertEquals(f, info.getDeleted(), "Bad deletion status!"));
 		long actual = info.getExpirationTime().getSeconds();
 		expiryTest.ifPresent(p ->
-				Assert.assertTrue(String.format("Expiry of %d was not as expected!", actual), p.test(actual)));
-		expectedMemo.ifPresent(e -> Assert.assertEquals(e, info.getMemo()));
+				Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
+		expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
 	}
 
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
@@ -160,9 +160,9 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		var id = TxnUtils.asFileId(file, spec);
 		fileId = id;
 		FileGetInfoQuery infoQuery = FileGetInfoQuery.newBuilder()
-			.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-			.setFileID(id)
-			.build();
+				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+				.setFileID(id)
+				.build();
 		return Query.newBuilder().setFileGetInfo(infoQuery).build();
 	}
 

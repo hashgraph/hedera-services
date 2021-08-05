@@ -21,7 +21,7 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,7 +31,7 @@ public class EqualityAssertsProviderFactory {
 	public static <T> ErroringAssertsProvider<T> shouldBe(T expected) {
 		return ignore -> actual -> {
 			try {
-				Assert.assertEquals(expected, actual);
+				Assertions.assertEquals(expected, actual);
 			} catch (Throwable t) {
 				return Arrays.asList(t);
 			}
@@ -42,7 +42,7 @@ public class EqualityAssertsProviderFactory {
 	public static <T> ErroringAssertsProvider<T> shouldNotBe(T unexpected) {
 		return ignore -> actual -> {
 			try {
-				Assert.assertNotEquals(unexpected, actual);
+				Assertions.assertNotEquals(unexpected, actual);
 			} catch (Throwable t) {
 				return Arrays.asList(t);
 			}
@@ -54,7 +54,7 @@ public class EqualityAssertsProviderFactory {
 		return spec -> actual -> {
 			try {
 				T expected = expectation.apply(spec);
-				Assert.assertEquals(expected, actual);
+				Assertions.assertEquals(expected, actual);
 			} catch (Throwable t) {
 				return Arrays.asList(t);
 			}

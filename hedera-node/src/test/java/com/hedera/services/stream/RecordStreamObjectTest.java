@@ -31,7 +31,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +51,8 @@ public class RecordStreamObjectTest {
 	private static final Transaction transaction = mock(Transaction.class);
 	private static final Instant consensusTimestamp = mock(Instant.class);
 	private static final Hash runningHashSoFar = mock(Hash.class);
-	private static final RecordStreamObject recordStreamObject = new RecordStreamObject(record, transaction, consensusTimestamp);
+	private static final RecordStreamObject recordStreamObject = new RecordStreamObject(record, transaction,
+			consensusTimestamp);
 
 	private static final RecordStreamObject realObject = getRecordStreamObject();
 
@@ -86,13 +86,15 @@ public class RecordStreamObjectTest {
 
 	@Test
 	public void toStringTest() {
-		final String expectedString = "RecordStreamObject[TransactionRecord=mock record,Transaction=mock transaction,ConsensusTimestamp=mock consensusTimestamp]";
+		final String expectedString = "RecordStreamObject[TransactionRecord=mock record,Transaction=mock transaction," +
+				"ConsensusTimestamp=mock consensusTimestamp]";
 		assertEquals(expectedString, recordStreamObject.toString());
 	}
 
 	@Test
 	public void toShortStringTest() {
-		final String expectedString = "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID],ConsensusTimestamp=mock consensusTimestamp]";
+		final String expectedString = "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID]," +
+				"ConsensusTimestamp=mock consensusTimestamp]";
 		assertEquals(expectedString, recordStreamObject.toShortString());
 	}
 
@@ -108,8 +110,10 @@ public class RecordStreamObjectTest {
 
 		assertNotEquals(recordStreamObject, realObject);
 		assertNotEquals(recordStreamObject, new RecordStreamObject(record, transaction, realObject.getTimestamp()));
-		assertNotEquals(recordStreamObject, new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
-		assertNotEquals(recordStreamObject, new RecordStreamObject(realObject.getTransactionRecord(), transaction, consensusTimestamp));
+		assertNotEquals(recordStreamObject,
+				new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
+		assertNotEquals(recordStreamObject,
+				new RecordStreamObject(realObject.getTransactionRecord(), transaction, consensusTimestamp));
 	}
 
 	@Test
@@ -123,8 +127,8 @@ public class RecordStreamObjectTest {
 				 SerializableDataInputStream input = new SerializableDataInputStream(byteArrayInputStream)) {
 				RecordStreamObject deserialized = new RecordStreamObject();
 				deserialized.deserialize(input, RecordStreamObject.CLASS_VERSION);
-				Assert.assertEquals(realObject, deserialized);
-				Assert.assertEquals(realObject.getTimestamp(), deserialized.getTimestamp());
+				assertEquals(realObject, deserialized);
+				assertEquals(realObject.getTimestamp(), deserialized.getTimestamp());
 			}
 		}
 	}
@@ -134,9 +138,12 @@ public class RecordStreamObjectTest {
 		final AccountID.Builder accountID = AccountID.newBuilder().setAccountNum(3);
 		final TransactionID.Builder transactionID = TransactionID.newBuilder().setAccountID(accountID);
 		final TransactionBody.Builder transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID);
-		final SignedTransaction.Builder signedTransaction = SignedTransaction.newBuilder().setBodyBytes(transactionBody.build().toByteString());
-		final Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.getBodyBytes()).build();
-		final TransactionRecord record = TransactionRecord.newBuilder().setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp)).setTransactionID(transactionID).build();
+		final SignedTransaction.Builder signedTransaction = SignedTransaction.newBuilder().setBodyBytes(
+				transactionBody.build().toByteString());
+		final Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(
+				signedTransaction.getBodyBytes()).build();
+		final TransactionRecord record = TransactionRecord.newBuilder().setConsensusTimestamp(
+				MiscUtils.asTimestamp(consensusTimestamp)).setTransactionID(transactionID).build();
 		return new RecordStreamObject(record, transaction, consensusTimestamp);
 	}
 }
