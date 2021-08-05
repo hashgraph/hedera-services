@@ -53,8 +53,8 @@ import io.grpc.ManagedChannelBuilder;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
@@ -77,11 +77,9 @@ import java.util.Properties;
  * @author Peter
  */
 public class SmartContractTestBitcarbon extends LegacySmartContractTest {
-
 	private static final String ARBITRARY_ADDRESS = "1234567890123456789012345678901234567890";
 	private static long DAY_SEC = 24 * 60 * 60; // secs in a day
 	private final Logger log = LogManager.getLogger(SmartContractTestBitcarbon.class);
-
 
 	private static final int MAX_RECEIPT_RETRIES = 60;
 	public static final String ADDRESS_BOOK_BIN = ContractResources.ADDRESS_BOOK_BYTECODE_PATH;
