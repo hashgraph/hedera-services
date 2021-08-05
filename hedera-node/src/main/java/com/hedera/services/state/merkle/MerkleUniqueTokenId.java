@@ -95,7 +95,20 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 
 	@Override
 	public int hashCode() {
-		return Long.hashCode(nftCode);
+		return leemonLongHash(nftCode);
+	}
+
+	private static int leemonLongHash(long x) {
+		x += x << 31;
+		x ^= x >> 15;
+		x += x << 17;
+		x ^= x >> 5;
+		x += x << 3;
+		x ^= x >> 33;
+		x += x << 7;
+		x ^= x >> 9;
+		x += x << 7;
+		return (int) x;
 	}
 
 	/* --- Bean --- */
@@ -146,7 +159,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 		this.nftCode = nftCode;
 	}
 
-	private static long nftCodeFrom(long num, long serialNo) {
+	static long nftCodeFrom(long num, long serialNo) {
 		assertValid(num);
 		assertValid(serialNo);
 		return (num << 32) | serialNo;
