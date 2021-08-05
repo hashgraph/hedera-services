@@ -324,10 +324,16 @@ public class Token {
 	 * @param account the Account for which to create the relationship
 	 * @return newly created {@link TokenRelationship}
 	 */
-	public TokenRelationship newEnabledRelationship(final Account account) {
+	public TokenRelationship newEnabledRelationship(final Account account, final boolean opHasKycKey, final boolean opHasFreezeKey) {
 		final var rel = new TokenRelationship(this, account);
-		rel.setKycGranted(true);
-		rel.setFrozen(false);
+		rel.setKycGranted(!hasKycKey());
+		rel.setFrozen(hasFreezeKey() && frozenByDefault);
+		if (opHasKycKey) {
+			rel.setKycGranted(true);
+		}
+		if (opHasFreezeKey) {
+			rel.setFrozen(false);
+		}
 		return rel;
 	}
 

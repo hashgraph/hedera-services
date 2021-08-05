@@ -92,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -269,7 +270,7 @@ class TokenCreateTransitionLogicTest {
 		mockProvisionalToken();
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(newProvisionalToken.newEnabledRelationship(eq(modelTreasury), anyBoolean(), anyBoolean())).willReturn(treasuryRelMock);
 
 		subject.doStateTransition();
 
@@ -291,17 +292,17 @@ class TokenCreateTransitionLogicTest {
 		mockFeeCollectors();
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(newProvisionalToken.newEnabledRelationship(eq(modelTreasury), anyBoolean(), anyBoolean())).willReturn(treasuryRelMock);
 		final var hbarFeeCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(hbarFeeCollectorModel)).willReturn(hbarFeeCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(eq(hbarFeeCollectorModel), anyBoolean(), anyBoolean())).willReturn(hbarFeeCollectorRel);
 		final var feeCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(feeCollectorModel)).willReturn(feeCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(eq(feeCollectorModel), anyBoolean(), anyBoolean())).willReturn(feeCollectorRel);
 		final var fixedFeeCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(fixedFeeCollectorModel)).willReturn(fixedFeeCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(eq(fixedFeeCollectorModel), anyBoolean(), anyBoolean())).willReturn(fixedFeeCollectorRel);
 		final var fractionalFeeCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(fractionalFeeCollectorModel)).willReturn(fractionalFeeCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(eq(fractionalFeeCollectorModel), anyBoolean(), anyBoolean())).willReturn(fractionalFeeCollectorRel);
 		final var nonAutoEnabledCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(nonAutoEnabledFeeCollectorModel)).willReturn(nonAutoEnabledCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(eq(nonAutoEnabledFeeCollectorModel), anyBoolean(), anyBoolean())).willReturn(nonAutoEnabledCollectorRel);
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(100);
 		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
@@ -364,7 +365,7 @@ class TokenCreateTransitionLogicTest {
 		mockFeeCollectors();
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(newProvisionalToken.newEnabledRelationship(eq(modelTreasury), anyBoolean(), anyBoolean())).willReturn(treasuryRelMock);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
 
 		assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEE_NOT_FULLY_SPECIFIED);
@@ -378,7 +379,7 @@ class TokenCreateTransitionLogicTest {
 		mockProvisionalToken();
 
 		final var mockRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury))
+		given(newProvisionalToken.newEnabledRelationship(eq(modelTreasury), anyBoolean(), anyBoolean()))
 				.willReturn(mockRel);
 		given(modelTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
 		// when:
@@ -398,7 +399,7 @@ class TokenCreateTransitionLogicTest {
 		mockModelTreasury();
 		mockProvisionalToken();
 		final var mockRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury))
+		given(newProvisionalToken.newEnabledRelationship(eq(modelTreasury), anyBoolean(), anyBoolean()))
 				.willReturn(mockRel);
 
 		// when:
