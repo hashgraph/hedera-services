@@ -20,12 +20,15 @@ package com.hedera.services.bdd.suites.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,6 +36,7 @@ import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -40,16 +44,20 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -60,6 +68,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidBurnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidMintToken;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -75,6 +85,7 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs.schedu
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -82,11 +93,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -99,6 +118,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
 	private static final int TMP_MAX_TRANSFER_LENGTH = 2;
 	private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
+	private static final String A_TOKEN = "token";
 
 	private static final String defaultTxExpiry =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
@@ -106,6 +126,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.transfers.maxLen");
 	private static final String defaultMaxTokenTransferLen =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.tokenTransfers.maxLen");
+	private static final String defaultWhitelist =
+			HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
+
+	String failingTxn = "failingTxn", successTxn = "successTxn", signTxn = "signTxn";
 
 	public static void main(String... args) {
 		new ScheduleExecutionSpecs().runSuiteSync();
@@ -143,14 +167,734 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact(),
 				scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact(),
 				scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact(),
+
+				scheduledMintExecutesProperly(),
+				scheduledUniqueMintExecutesProperly(),
+				scheduledMintFailsWithoutSupplyKey(),
+				scheduledUniqueMintFailsWithInvalidBatchSize(),
+				scheduledUniqueMintFailsWithInvalidMetadata(),
+				scheduledMintFailsWithInvalidAmount(),
+				scheduledMintWithInvalidTokenThrowsUnresolvableSigners(),
+				scheduledUniqueMintFailsWithNftsDisabled(),
+				scheduledMintFailsWithInvalidTxBody(),
+
+				scheduledBurnExecutesProperly(),
+				scheduledUniqueBurnExecutesProperly(),
+				scheduledUniqueBurnFailsWithInvalidBatchSize(),
+				scheduledUniqueBurnFailsWithInvalidNftId(),
+				scheduledBurnForUniqueFailsWithInvalidAmount(),
+				scheduledBurnForUniqueFailsWithExistingAmount(),
+				scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
+				scheduledUniqueBurnFailsWithNftsDisabled(),
+				scheduledBurnFailsWithInvalidTxBody(),
+
 				suiteCleanup(),
 		});
+	}
+
+	private HapiApiSpec scheduledMintFailsWithoutSupplyKey() {
+		return defaultHapiSpec("ScheduledMintFailsWithoutSupplyKey")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						tokenCreate(A_TOKEN)
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule", mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("metadata"))))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(TOKEN_HAS_NO_SUPPLY_KEY)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0)
+				);
+	}
+
+	private HapiApiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
+		return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						cryptoCreate("schedulePayer")
+				)
+				.when(
+						scheduleCreate("validSchedule", burnToken(
+								"0.0.123231", List.of(1L, 2L)
+						))
+								.designatingPayer("schedulePayer")
+								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
+				).then();
+	}
+
+	private HapiApiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
+		return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule", burnToken(A_TOKEN, List.of(1L, 2L)))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "false"
+								))
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(NOT_SUPPORTED)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "true"
+								))
+				);
+	}
+
+	private HapiApiSpec scheduledBurnFailsWithInvalidTxBody() {
+		return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule", invalidBurnToken(
+								A_TOKEN, List.of(1L, 2L), 123
+						))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_TRANSACTION_BODY))
+				);
+	}
+
+	private HapiApiSpec scheduledMintFailsWithInvalidTxBody() {
+		return defaultHapiSpec("ScheduledMintFailsWithInvalidTxBody")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule", invalidMintToken(
+								A_TOKEN, List.of(ByteString.copyFromUtf8("m1")), 123
+						))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_TRANSACTION_BODY)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0)
+				);
+	}
+
+	private HapiApiSpec scheduledUniqueMintFailsWithNftsDisabled() {
+		return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule", mintToken(
+								A_TOKEN, List.of(
+										ByteString.copyFromUtf8("m1")
+								)
+						))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "false"
+								))
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(NOT_SUPPORTED)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "true"
+								))
+				);
+	}
+
+	private HapiApiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
+		return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						cryptoCreate("schedulePayer")
+				)
+				.when(
+						scheduleCreate("validSchedule", mintToken(
+								"0.0.123231", List.of(
+										ByteString.copyFromUtf8("m1")
+								)
+						))
+								.designatingPayer("schedulePayer")
+								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
+				).then();
+	}
+
+	private HapiApiSpec scheduledUniqueBurnFailsWithInvalidBatchSize() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidBatchSize")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						mintToken(
+								A_TOKEN, List.of(
+										ByteString.copyFromUtf8("m1")
+								)
+						),
+						scheduleCreate("validSchedule", burnToken(A_TOKEN, List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L)))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(1),
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(BATCH_SIZE_LIMIT_EXCEEDED)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(1)
+				);
+	}
+
+	private HapiApiSpec scheduledUniqueBurnExecutesProperly() {
+		return defaultHapiSpec("ScheduledUniqueBurnExecutesProperly")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("metadata"))),
+						scheduleCreate("validSchedule",
+								burnToken(
+										A_TOKEN, List.of(1L)
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(successTxn)
+				)
+				.when(
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(1),
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.via(signTxn)
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord(successTxn);
+							var signTx = getTxnRecord(signTxn);
+							var triggeredTx = getTxnRecord(successTxn).scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx);
+
+							Assert.assertEquals("Wrong consensus timestamp!",
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Assert.assertEquals("Wrong transaction valid start!",
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+
+							Assert.assertEquals("Wrong record account ID!",
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+
+							Assert.assertTrue("Transaction not scheduled!",
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+
+							Assert.assertEquals("Wrong schedule ID!",
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef());
+						}),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0)
+				);
+	}
+
+	private HapiApiSpec scheduledUniqueMintFailsWithInvalidMetadata() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidMetadata")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						overriding("tokens.nfts.areEnabled", "true"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule",
+								mintToken(
+										A_TOKEN, List.of(metadataOfLength(101))
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(METADATA_TOO_LONG)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0)
+				);
+	}
+
+	private HapiApiSpec scheduledUniqueBurnFailsWithInvalidNftId() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidNftId")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule",
+								burnToken(
+										A_TOKEN, List.of(123L)
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_NFT_ID))
+				);
+	}
+
+	private HapiApiSpec scheduledBurnForUniqueFailsWithExistingAmount() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledBurnForUniqueFailsWithExistingAmount")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						overriding("tokens.nfts.areEnabled", "true"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule",
+								burnToken(
+										A_TOKEN, 123L
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_TOKEN_BURN_METADATA)),
+						getTokenInfo(A_TOKEN).hasTotalSupply(0)
+				);
+	}
+
+	private HapiApiSpec scheduledBurnForUniqueFailsWithInvalidAmount() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledBurnForUniqueFailsWithInvalidAmount")
+				.given(
+						overriding("scheduling.whitelist", "TokenBurn"),
+						overriding("tokens.nfts.areEnabled", "true"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule",
+								burnToken(
+										A_TOKEN, -123L
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_TOKEN_BURN_AMOUNT)),
+						getTokenInfo(A_TOKEN).hasTotalSupply(0)
+				);
+	}
+
+	private ByteString metadataOfLength(int length) {
+		return ByteString.copyFrom(genRandomBytes(length));
+	}
+
+	private byte[] genRandomBytes(int numBytes) {
+		byte[] contents = new byte[numBytes];
+		(new Random()).nextBytes(contents);
+		return contents;
+	}
+
+	private HapiApiSpec scheduledUniqueMintFailsWithInvalidBatchSize() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						overriding("tokens.nfts.areEnabled", "true"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule",
+								mintToken(
+										A_TOKEN, List.of(
+												ByteString.copyFromUtf8("m1"),
+												ByteString.copyFromUtf8("m2"),
+												ByteString.copyFromUtf8("m3"),
+												ByteString.copyFromUtf8("m4"),
+												ByteString.copyFromUtf8("m5"),
+												ByteString.copyFromUtf8("m6"),
+												ByteString.copyFromUtf8("m7"),
+												ByteString.copyFromUtf8("m8"),
+												ByteString.copyFromUtf8("m9"),
+												ByteString.copyFromUtf8("m10"),
+												ByteString.copyFromUtf8("m11")
+										)
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(BATCH_SIZE_LIMIT_EXCEEDED)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0)
+				);
+	}
+
+	private HapiApiSpec scheduledMintFailsWithInvalidAmount() {
+		String failingTxn = "failingTxn";
+		return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
+				.given(
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.initialSupply(101),
+						overriding("scheduling.whitelist", "TokenMint"),
+						scheduleCreate("validSchedule",
+								mintToken(
+										A_TOKEN, 0
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_TOKEN_MINT_AMOUNT)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(101)
+				);
+	}
+
+
+	private HapiApiSpec scheduledUniqueMintExecutesProperly() {
+		String successTxn = "successTxn", signTxn = "signTxn";
+		return defaultHapiSpec("ScheduledUniqueMintExecutesProperly")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						overriding("tokens.nfts.areEnabled", "true"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule",
+								mintToken(
+										A_TOKEN, List.of(ByteString.copyFromUtf8("somemetadata1"), ByteString.copyFromUtf8("somemetadata2"))
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(successTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.via(signTxn)
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord(successTxn);
+							var signTx = getTxnRecord(signTxn);
+							var triggeredTx = getTxnRecord(successTxn).scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx);
+
+							Assert.assertEquals("Wrong consensus timestamp!",
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Assert.assertEquals("Wrong transaction valid start!",
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+
+							Assert.assertEquals("Wrong record account ID!",
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+
+							Assert.assertTrue("Transaction not scheduled!",
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+
+							Assert.assertEquals("Wrong schedule ID!",
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef());
+						}),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(2)
+				);
 	}
 
 	private HapiApiSpec suiteCleanup() {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry),
+						overriding("scheduling.whitelist", defaultWhitelist),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "true"
+								))
+				);
+	}
+
+	private HapiApiSpec scheduledMintExecutesProperly() {
+		String successTxn = "successTxn", signTxn = "signTxn";
+		return defaultHapiSpec("ScheduledMintExecutesProperly")
+				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.initialSupply(101),
+						scheduleCreate("validSchedule",
+								mintToken(
+										A_TOKEN, 10
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(successTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.via(signTxn)
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord(successTxn);
+							var signTx = getTxnRecord(signTxn);
+							var triggeredTx = getTxnRecord(successTxn).scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx);
+
+							Assert.assertEquals("Wrong consensus timestamp!",
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Assert.assertEquals("Wrong transaction valid start!",
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+
+							Assert.assertEquals("Wrong record account ID!",
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+
+							Assert.assertTrue("Transaction not scheduled!",
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+
+							Assert.assertEquals("Wrong schedule ID!",
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef());
+						}),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(111)
+				);
+	}
+
+	private HapiApiSpec scheduledBurnExecutesProperly() {
+		String successTxn = "successTxn", signTxn = "signTxn";
+		return defaultHapiSpec("ScheduledBurnExecutesProperly")
+				.given(
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.supplyKey("supplyKey")
+								.treasury("treasury")
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(101),
+						overriding("scheduling.whitelist", "TokenBurn"),
+						scheduleCreate("validSchedule",
+								burnToken(
+										A_TOKEN, 10
+								)
+						)
+								.designatingPayer("schedulePayer")
+								.via(successTxn)
+				)
+				.when(
+						scheduleSign("validSchedule")
+								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+								.via(signTxn)
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						withOpContext((spec, opLog) -> {
+							var createTx = getTxnRecord(successTxn);
+							var signTx = getTxnRecord(signTxn);
+							var triggeredTx = getTxnRecord(successTxn).scheduled();
+							allRunFor(spec, createTx, signTx, triggeredTx);
+
+							Assert.assertEquals("Wrong consensus timestamp!",
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+
+							Assert.assertEquals("Wrong transaction valid start!",
+									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+
+							Assert.assertEquals("Wrong record account ID!",
+									createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+
+							Assert.assertTrue("Transaction not scheduled!",
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+
+							Assert.assertEquals("Wrong schedule ID!",
+									createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef());
+						}),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(91)
 				);
 	}
 
