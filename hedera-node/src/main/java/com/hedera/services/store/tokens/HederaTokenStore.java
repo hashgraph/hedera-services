@@ -62,9 +62,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
@@ -331,41 +331,48 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 
-			final var nftType = nftId.tokenId();
-			final var fromRel = asTokenRel(from, nftType);
-			final var toRel = asTokenRel(to, nftType);
-			final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
-			final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
-			final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
-			final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
-
-			final var isTreasuryReturn = isTreasuryForToken(to, tId);
-			if (isTreasuryReturn) {
-				nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);
-			} else {
-				nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
-			}
-
-			accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
-			accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
-			tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
-			tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
-
-			final var merkleNftId = new MerkleUniqueTokenId(fromGrpcTokenId(nftId.tokenId()), nftId.serialNo());
-			final var receiver = fromGrpcAccountId(to);
-			if (isTreasuryReturn) {
-				uniqTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
-			} else {
-				final var isTreasuryExit = isTreasuryForToken(from, tId);
-				if (isTreasuryExit) {
-					uniqTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
-				} else {
-					uniqTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
-				}
-			}
-			hederaLedger.updateOwnershipChanges(nftId, from, to);
+			updateLedgers(nftId, from, to, tId, owner);
 			return OK;
 		});
+	}
+
+	private void updateLedgers(final NftId nftId,
+			final AccountID from,
+			final AccountID to,
+			final TokenID tId,
+			final EntityId owner) {
+		final var nftType = nftId.tokenId();
+		final var fromRel = asTokenRel(from, nftType);
+		final var toRel = asTokenRel(to, nftType);
+		final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
+		final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
+		final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
+		final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
+		final var isTreasuryReturn = isTreasuryForToken(to, tId);
+		if (isTreasuryReturn) {
+			nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);
+		} else {
+			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
+		}
+
+		accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
+		accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
+		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
+		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
+
+		final var merkleNftId = new MerkleUniqueTokenId(fromGrpcTokenId(nftId.tokenId()), nftId.serialNo());
+		final var receiver = fromGrpcAccountId(to);
+		if (isTreasuryReturn) {
+			uniqTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
+		} else {
+			final var isTreasuryExit = isTreasuryForToken(from, tId);
+			if (isTreasuryExit) {
+				uniqTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
+			} else {
+				uniqTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
+			}
+		}
+		hederaLedger.updateOwnershipChanges(nftId, from, to);
 	}
 
 	@Override
@@ -665,14 +672,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 		var validity = OK;
 		var isExpiryOnly = affectsExpiryAtMost(changes);
-		var hasNewSymbol = changes.getSymbol().length() > 0;
-		var hasNewTokenName = changes.getName().length() > 0;
-		var hasAutoRenewAccount = changes.hasAutoRenewAccount();
-		if (hasAutoRenewAccount) {
-			validity = usableOrElse(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (validity != OK) {
-				return validity;
-			}
+
+		validity = checkAutoRenewAccount(changes);
+		if(validity != OK) {
+			return validity;
 		}
 
 		final var newKycKey = changes.hasKycKey()
@@ -688,101 +691,173 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
-			var candidateExpiry = changes.getExpiry().getSeconds();
-			if (candidateExpiry != 0 && candidateExpiry < token.expiry()) {
-				appliedValidity.set(INVALID_EXPIRATION_TIME);
-			}
-			if (hasAutoRenewAccount || token.hasAutoRenewAccount()) {
-				long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
-				if ((changedAutoRenewPeriod != 0 || !token.hasAutoRenewAccount()) &&
-						!isValidAutoRenewPeriod(changedAutoRenewPeriod)) {
-					appliedValidity.set(INVALID_RENEWAL_PERIOD);
-				}
-			}
-			if (!token.hasKycKey() && newKycKey.isPresent()) {
-				appliedValidity.set(TOKEN_HAS_NO_KYC_KEY);
-			}
-			if (!token.hasFreezeKey() && newFreezeKey.isPresent()) {
-				appliedValidity.set(TOKEN_HAS_NO_FREEZE_KEY);
-			}
-			if (!token.hasWipeKey() && newWipeKey.isPresent()) {
-				appliedValidity.set(TOKEN_HAS_NO_WIPE_KEY);
-			}
-			if (!token.hasSupplyKey() && newSupplyKey.isPresent()) {
-				appliedValidity.set(TOKEN_HAS_NO_SUPPLY_KEY);
-			}
-			if (!token.hasAdminKey() && !isExpiryOnly) {
-				appliedValidity.set(TOKEN_IS_IMMUTABLE);
-			}
-			if (!token.hasFeeScheduleKey() && newFeeScheduleKey.isPresent()) {
-				appliedValidity.set(TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
-			}
+			processExpiry(appliedValidity, changes, token);
+			processAutoRenewAccount(appliedValidity,  changes, token);
+
+			checkKeyOfType(appliedValidity, token.hasKycKey(), newKycKey.isPresent(), TOKEN_HAS_NO_KYC_KEY);
+			checkKeyOfType(appliedValidity, token.hasFreezeKey(), newFreezeKey.isPresent(), TOKEN_HAS_NO_FREEZE_KEY);
+			checkKeyOfType(appliedValidity, token.hasWipeKey(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
+			checkKeyOfType(appliedValidity, token.hasSupplyKey(), newSupplyKey.isPresent(), TOKEN_HAS_NO_SUPPLY_KEY);
+			checkKeyOfType(appliedValidity, token.hasAdminKey(), !isExpiryOnly, TOKEN_IS_IMMUTABLE);
+			checkKeyOfType(appliedValidity, token.hasFeeScheduleKey(), newFeeScheduleKey.isPresent(),  TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
 			if (OK != appliedValidity.get()) {
 				return;
 			}
-			if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-				var relationship = asTokenRel(changes.getTreasury(), tId);
-				long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-				if (balance != 0) {
-					appliedValidity.set(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-					return;
-				}
+
+			ResponseCodeEnum ret = checkNftBalances(token, tId, changes);
+			if(ret != OK) {
+				appliedValidity.set(ret);
+				return;
 			}
-			if (changes.hasAdminKey()) {
-				var newAdminKey = changes.getAdminKey();
-				if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
-					token.setAdminKey(UNUSED_KEY);
-				} else {
-					token.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
-				}
-			}
-			if (changes.hasAutoRenewAccount()) {
-				token.setAutoRenewAccount(fromGrpcAccountId(changes.getAutoRenewAccount()));
-			}
-			if (token.hasAutoRenewAccount()) {
-				long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
-				if (changedAutoRenewPeriod > 0) {
-					token.setAutoRenewPeriod(changedAutoRenewPeriod);
-				}
-			}
-			if (changes.hasFreezeKey()) {
-				token.setFreezeKey(asFcKeyUnchecked(changes.getFreezeKey()));
-			}
-			if (changes.hasKycKey()) {
-				token.setKycKey(asFcKeyUnchecked(changes.getKycKey()));
-			}
-			if (changes.hasSupplyKey()) {
-				token.setSupplyKey(asFcKeyUnchecked(changes.getSupplyKey()));
-			}
-			if (changes.hasWipeKey()) {
-				token.setWipeKey(asFcKeyUnchecked(changes.getWipeKey()));
-			}
-			if (changes.hasFeeScheduleKey()) {
-				token.setFeeScheduleKey(asFcKeyUnchecked(changes.getFeeScheduleKey()));
-			}
-			if (hasNewSymbol) {
-				var newSymbol = changes.getSymbol();
-				token.setSymbol(newSymbol);
-			}
-			if (hasNewTokenName) {
-				var newName = changes.getName();
-				token.setName(newName);
-			}
-			if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
-				var treasuryId = fromGrpcAccountId(changes.getTreasury());
-				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
-				token.setTreasury(treasuryId);
-				addKnownTreasury(changes.getTreasury(), tId);
-			}
-			if (changes.hasMemo()) {
-				token.setMemo(changes.getMemo().getValue());
-			}
-			var expiry = changes.getExpiry().getSeconds();
-			if (expiry != 0) {
-				token.setExpiry(expiry);
-			}
+
+			updateAdminKeyIfAppropriate(token, changes);
+			updateAutoRenewAccountIfAppropriate(token, changes);
+			updateAutoRenewPeriodIfAppropriate(token, changes);
+
+			updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
+			updateKeyOfTypeIfAppropriate(changes.hasKycKey(),  token::setKycKey, changes::getKycKey);
+			updateKeyOfTypeIfAppropriate(changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey);
+			updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey);
+			updateKeyOfTypeIfAppropriate(changes.hasFeeScheduleKey(), token::setFeeScheduleKey, changes::getFeeScheduleKey);
+
+			updateTokenSymbolIfAppropriate(token, changes);
+			updateTokenNameIfAppropriate(token, changes);
+			updateTreasuryIfAppropriate(token, changes, tId);
+			updateMemoIfAppropriate(token, changes);
+			updateExpiryIfAppropriate(token, changes);
 		});
 		return appliedValidity.get();
+	}
+
+	private ResponseCodeEnum checkAutoRenewAccount(final TokenUpdateTransactionBody changes) {
+		ResponseCodeEnum validity = OK;
+		var hasAutoRenewAccount = changes.hasAutoRenewAccount();
+		if (hasAutoRenewAccount) {
+			validity = usableOrElse(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+			if (validity != OK) {
+				return validity;
+			}
+		}
+		return validity;
+	}
+
+	private void processExpiry(AtomicReference<ResponseCodeEnum> appliedValidity,
+			final TokenUpdateTransactionBody changes,
+			final MerkleToken token) {
+		var candidateExpiry = changes.getExpiry().getSeconds();
+		if (candidateExpiry != 0 && candidateExpiry < token.expiry()) {
+			appliedValidity.set(INVALID_EXPIRATION_TIME);
+		}
+	}
+
+	private void processAutoRenewAccount(AtomicReference<ResponseCodeEnum> appliedValidity,
+			final TokenUpdateTransactionBody changes,
+			final MerkleToken token) {
+		if (changes.hasAutoRenewAccount() || token.hasAutoRenewAccount()) {
+			long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
+			if ((changedAutoRenewPeriod != 0 || !token.hasAutoRenewAccount()) &&
+					!isValidAutoRenewPeriod(changedAutoRenewPeriod)) {
+				appliedValidity.set(INVALID_RENEWAL_PERIOD);
+			}
+		}
+	}
+
+	private void checkKeyOfType(AtomicReference<ResponseCodeEnum> appliedValidity,
+			final boolean hasKey,
+			final boolean keyPresentOrExpiryOnly,
+			final ResponseCodeEnum code) {
+		if (!hasKey && keyPresentOrExpiryOnly) {
+			appliedValidity.set(code);
+		}
+	}
+
+	private ResponseCodeEnum checkNftBalances(//AtomicReference appliedValidity,
+			final MerkleToken token,
+			TokenID tId,
+			final TokenUpdateTransactionBody changes) {
+		if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+			var relationship = asTokenRel(changes.getTreasury(), tId);
+			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			if (balance != 0) {
+				return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+			}
+		}
+		return  OK;
+	}
+
+	private void updateAdminKeyIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		if (changes.hasAdminKey()) {
+			var newAdminKey = changes.getAdminKey();
+			if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
+				token.setAdminKey(UNUSED_KEY);
+			} else {
+				token.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
+			}
+		}
+	}
+
+	private void updateAutoRenewAccountIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		if (changes.hasAutoRenewAccount()) {
+			token.setAutoRenewAccount(fromGrpcAccountId(changes.getAutoRenewAccount()));
+		}
+	}
+
+	private void updateAutoRenewPeriodIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		if (token.hasAutoRenewAccount()) {
+			long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
+			if (changedAutoRenewPeriod > 0) {
+				token.setAutoRenewPeriod(changedAutoRenewPeriod);
+			}
+		}
+	}
+
+	private void updateTokenSymbolIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		if (changes.getSymbol().length() > 0) {
+			token.setSymbol(changes.getSymbol());
+		}
+	}
+
+	private void updateTokenNameIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		if (changes.getName().length() > 0) {
+			token.setName(changes.getName());
+		}
+	}
+
+	private void updateMemoIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		if (changes.hasMemo()) {
+			token.setMemo(changes.getMemo().getValue());
+		}
+	}
+
+	private void updateExpiryIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes) {
+		var expiry = changes.getExpiry().getSeconds();
+		if (expiry != 0) {
+			token.setExpiry(expiry);
+		}
+	}
+
+	private void updateTreasuryIfAppropriate(final MerkleToken token,
+			final TokenUpdateTransactionBody changes,
+			final TokenID tId) {
+		if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
+			var treasuryId = fromGrpcAccountId(changes.getTreasury());
+			removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
+			token.setTreasury(treasuryId);
+			addKnownTreasury(changes.getTreasury(), tId);
+		}
+	}
+
+	private void updateKeyOfTypeIfAppropriate(boolean check, Consumer<JKey> consumer, Supplier<Key> supplier) {
+		if(check) {
+			consumer.accept(asFcKeyUnchecked(supplier.get()));
+		}
 	}
 
 	@Override

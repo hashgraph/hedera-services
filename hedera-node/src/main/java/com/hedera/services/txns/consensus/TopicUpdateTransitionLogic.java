@@ -32,6 +32,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
@@ -237,37 +238,49 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		}
 		var topicId = op.getTopicID();
 		try {
-			if (op.hasAdminKey()) {
-				var newAdminKey = op.getAdminKey();
-				if (!validator.hasGoodEncoding(newAdminKey)) {
-					log.error("Update topic {} has invalid admin key specified, " +
-							"which should have been caught during signature validation", topicId);
-					transactionContext.setStatus(BAD_ENCODING);
-					return false;
-				}
-				var fcKey = JKey.mapKey(newAdminKey);
-				if (fcKey.isEmpty()) {
-					boolean opRemovesAutoRenewId = op.hasAutoRenewAccount() &&
-							designatesAccountRemoval(op.getAutoRenewAccount());
-					if (topic.hasAutoRenewAccountId() && !opRemovesAutoRenewId) {
-						transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
-						return false;
-					}
-				}
+			if (op.hasAdminKey()  && !applyNewAdminKey(op, topicId, topic)) {
+				return false;
 			}
 
-			if (op.hasSubmitKey()) {
-				var newSubmitKey = op.getSubmitKey();
-				if (!validator.hasGoodEncoding(newSubmitKey)) {
-					transactionContext.setStatus(BAD_ENCODING);
-					return false;
-				}
-				JKey.mapKey(newSubmitKey);
+			if (op.hasSubmitKey()  && !applyNewSubmitKey(op)) {
+				return false;
 			}
 		} catch (DecoderException e) {
 			log.error("Decoder exception updating topic {}. ", topicId, e);
 			transactionContext.setStatus(BAD_ENCODING);
 			return false;
+		}
+		return true;
+	}
+
+	private boolean applyNewSubmitKey(final ConsensusUpdateTopicTransactionBody op) throws DecoderException {
+		var newSubmitKey = op.getSubmitKey();
+		if (!validator.hasGoodEncoding(newSubmitKey)) {
+			transactionContext.setStatus(BAD_ENCODING);
+			return false;
+		}
+		JKey.mapKey(newSubmitKey);
+		return true;
+	}
+
+	private boolean applyNewAdminKey(final ConsensusUpdateTopicTransactionBody op,
+			final TopicID topicId,
+			final MerkleTopic topic) throws DecoderException {
+		var newAdminKey = op.getAdminKey();
+		if (!validator.hasGoodEncoding(newAdminKey)) {
+			log.error("Update topic {} has invalid admin key specified, " +
+					"which should have been caught during signature validation", topicId);
+			transactionContext.setStatus(BAD_ENCODING);
+			return false;
+		}
+		var fcKey = JKey.mapKey(newAdminKey);
+		if (fcKey.isEmpty()) {
+			boolean opRemovesAutoRenewId = op.hasAutoRenewAccount() &&
+					designatesAccountRemoval(op.getAutoRenewAccount());
+			if (topic.hasAutoRenewAccountId() && !opRemovesAutoRenewId) {
+				transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
+				return false;
+			}
 		}
 		return true;
 	}

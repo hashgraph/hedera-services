@@ -53,8 +53,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
-	static final int RELEASE_070_VERSION = 1;
-	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_0120_VERSION = 3;
 	static final int RELEASE_0160_VERSION = 4;
 	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
@@ -354,57 +352,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return this;
 	}
 
-	/* --- Helpers --- */
-
-	public static ExpirableTxnRecord fromGprc(TransactionRecord record) {
-		List<EntityId> tokens = NO_TOKENS;
-		List<CurrencyAdjustments> tokenAdjustments = null;
-		List<NftAdjustments> nftTokenAdjustments = null;
-		int n = record.getTokenTransferListsCount();
-		if (n > 0) {
-			tokens = new ArrayList<>();
-			for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
-				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				if (!tokenTransfers.getTransfersList().isEmpty()) {
-					if (tokenAdjustments == null) {
-						tokenAdjustments = new ArrayList<>();
-					}
-					tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-				}
-				if (!tokenTransfers.getNftTransfersList().isEmpty()) {
-					if (nftTokenAdjustments == null) {
-						nftTokenAdjustments = new ArrayList<>();
-					}
-					nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
-				}
-			}
-
-		}
-
-		final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
-				? record.getAssessedCustomFeesList().stream().map(FcAssessedCustomFee::fromGrpc).collect(toList())
-				: null;
-		return ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
-				.setTxnHash(record.getTransactionHash().toByteArray())
-				.setTxnId(TxnId.fromGrpc(record.getTransactionID()))
-				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
-				.setMemo(record.getMemo())
-				.setFee(record.getTransactionFee())
-				.setTransferList(
-						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
-				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
-						record.getContractCallResult()) : null)
-				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(
-						record.getContractCreateResult()) : null)
-				.setTokens(tokens)
-				.setTokenAdjustments(tokenAdjustments)
-				.setNftTokenAdjustments(nftTokenAdjustments)
-				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
-				.setCustomFeesCharged(fcAssessedFees)
-				.build();
-	}
-
 	public static List<TransactionRecord> allToGrpc(List<ExpirableTxnRecord> records) {
 		return records.stream()
 				.map(ExpirableTxnRecord::asGrpc)
@@ -441,17 +388,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setContractCreateResult(contractCreateResult.toGrpc());
 		}
 		if (tokens != NO_TOKENS) {
-			for (int i = 0, n = tokens.size(); i < n; i++) {
-				var tokenTransferList = TokenTransferList.newBuilder()
-						.setToken(tokens.get(i).toGrpcTokenId());
-				if (tokenAdjustments != null && !tokenAdjustments.isEmpty()) {
-					tokenTransferList.addAllTransfers(tokenAdjustments.get(i).toGrpc().getAccountAmountsList());
-				}
-				if (nftTokenAdjustments != null && !nftTokenAdjustments.isEmpty()) {
-					tokenTransferList.addAllNftTransfers(nftTokenAdjustments.get(i).toGrpc().getNftTransfersList());
-				}
-				grpc.addTokenTransferLists(tokenTransferList);
-			}
+			setGrpcTokens(grpc, tokens, tokenAdjustments, nftTokenAdjustments);
 		}
 
 		if (scheduleRef != NO_SCHEDULE_REF) {
@@ -464,6 +401,24 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		return grpc.build();
+	}
+
+
+	private static void setGrpcTokens(TransactionRecord.Builder grpcBuilder,
+			final List<EntityId> tokens,
+			final List<CurrencyAdjustments> tokenAdjustments,
+			final List<NftAdjustments> nftTokenAdjustments) {
+		for (int i = 0, n = tokens.size(); i < n; i++) {
+			var tokenTransferList = TokenTransferList.newBuilder()
+					.setToken(tokens.get(i).toGrpcTokenId());
+			if (tokenAdjustments != null && !tokenAdjustments.isEmpty()) {
+				tokenTransferList.addAllTransfers(tokenAdjustments.get(i).toGrpc().getAccountAmountsList());
+			}
+			if (nftTokenAdjustments != null && !nftTokenAdjustments.isEmpty()) {
+				tokenTransferList.addAllNftTransfers(nftTokenAdjustments.get(i).toGrpc().getNftTransfersList());
+			}
+			grpcBuilder.addTokenTransferLists(tokenTransferList);
+		}
 	}
 
 	public static Builder newBuilder() {
