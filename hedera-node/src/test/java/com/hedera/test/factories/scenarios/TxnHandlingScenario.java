@@ -160,6 +160,11 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(DILIGENT_SIGNING_PAYER_KT).get()
 				).withContract(
+						IMMUTABLE_CONTRACT_ID,
+						newContract()
+								.balance(DEFAULT_BALANCE)
+								.get()
+				).withContract(
 						MISC_CONTRACT_ID,
 						newContract()
 								.balance(DEFAULT_BALANCE)
@@ -404,10 +409,14 @@ public interface TxnHandlingScenario {
 
 	KeyTree SIMPLE_NEW_WACL_KT = withRoot(list(ed25519()));
 
-	String MISSING_CONTRACT_ID = "1.2.3";
+	String MISSING_CONTRACT_ID = "3.6.9";
+	ContractID MISSING_CONTRACT = asContract(MISSING_CONTRACT_ID);
 
 	String MISC_RECIEVER_SIG_CONTRACT_ID = "0.0.7337";
 	ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
+
+	String IMMUTABLE_CONTRACT_ID = "0.0.9339";
+	ContractID IMMUTABLE_CONTRACT = asContract(IMMUTABLE_CONTRACT_ID);
 
 	String MISC_CONTRACT_ID = "0.0.3337";
 	ContractID MISC_CONTRACT = asContract(MISC_CONTRACT_ID);

@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -52,7 +51,6 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
@@ -175,7 +173,7 @@ public class HederaSigningOrder {
 		} else if (txn.hasContractUpdateInstance()) {
 			return contractUpdate(txn.getTransactionID(), txn.getContractUpdateInstance(), factory);
 		} else if (txn.hasContractDeleteInstance()) {
-			return contractDelete(txn.getTransactionID(), txn.getContractDeleteInstance(), factory);
+			return contractDelete(txn.getContractDeleteInstance(), factory);
 		} else {
 			return null;
 		}
@@ -185,7 +183,7 @@ public class HederaSigningOrder {
 		if (txn.hasCryptoCreateAccount()) {
 			return cryptoCreate(txn.getCryptoCreateAccount(), factory);
 		} else if (txn.hasCryptoTransfer()) {
-			return cryptoTransfer(txn.getTransactionID(), txn.getCryptoTransfer(), factory);
+			return cryptoTransfer(txn.getCryptoTransfer(), factory);
 		} else if (txn.hasCryptoUpdateAccount()) {
 			return cryptoUpdate(txn.getTransactionID(), txn, factory);
 		} else if (txn.hasCryptoDelete()) {
@@ -197,9 +195,9 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> forSchedule(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasScheduleCreate()) {
-			return scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory);
+			return scheduleCreate(txn.getScheduleCreate(), factory);
 		} else if (txn.hasScheduleSign()) {
-			return scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory);
+			return scheduleSign(txn.getScheduleSign().getScheduleID(), factory);
 		} else if (txn.hasScheduleDelete()) {
 			return scheduleDelete(txn.getScheduleDelete().getScheduleID(), factory);
 		} else {
@@ -209,7 +207,7 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> forToken(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasTokenCreation()) {
-			return tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory);
+			return tokenCreate(txn.getTokenCreation(), factory);
 		} else if (txn.hasTokenAssociate()) {
 			return tokenAssociate(txn.getTokenAssociate(), factory);
 		} else if (txn.hasTokenDissociate()) {
@@ -255,20 +253,19 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> forConsensus(TransactionBody txn, SigningOrderResultFactory<T> factory) {
 		if (txn.hasConsensusCreateTopic()) {
-			return topicCreate(txn.getTransactionID(), txn.getConsensusCreateTopic(), factory);
+			return topicCreate(txn.getConsensusCreateTopic(), factory);
 		} else if (txn.hasConsensusSubmitMessage()) {
-			return messageSubmit(txn.getTransactionID(), txn.getConsensusSubmitMessage(), factory);
+			return messageSubmit(txn.getConsensusSubmitMessage(), factory);
 		} else if (txn.hasConsensusUpdateTopic()) {
-			return topicUpdate(txn.getTransactionID(), txn.getConsensusUpdateTopic(), factory);
+			return topicUpdate(txn.getConsensusUpdateTopic(), factory);
 		} else if (txn.hasConsensusDeleteTopic()) {
-			return topicDelete(txn.getTransactionID(), txn.getConsensusDeleteTopic(), factory);
+			return topicDelete(txn.getConsensusDeleteTopic(), factory);
 		} else {
 			return null;
 		}
 	}
 
 	private <T> SigningOrderResult<T> contractDelete(
-			TransactionID txnId,
 			ContractDeleteTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -277,7 +274,7 @@ public class HederaSigningOrder {
 		var target = op.getContractID();
 		var targetResult = sigMetaLookup.contractSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return contractFailure(target, txnId, targetResult.failureIfAny(), factory);
+			return contractFailure(targetResult.failureIfAny(), factory);
 		}
 		required.add(targetResult.metadata().getKey());
 
@@ -313,7 +310,7 @@ public class HederaSigningOrder {
 		var result = sigMetaLookup.contractSigningMetaFor(target);
 		if (needsCurrentAdminSig(op)) {
 			if (!result.succeeded()) {
-				return contractFailure(target, txnId, result.failureIfAny(), factory);
+				return contractFailure(result.failureIfAny(), factory);
 			}
 			required.add(result.metadata().getKey());
 		}
@@ -436,7 +433,7 @@ public class HederaSigningOrder {
 		var target = op.getDeleteAccountID();
 		var targetResult = sigMetaLookup.accountSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return accountFailure(target, txnId, targetResult.failureIfAny(), factory);
+			return accountFailure(targetResult.failureIfAny(), factory);
 		}
 		required = mutable(required);
 		required.add(targetResult.metadata().getKey());
@@ -444,7 +441,7 @@ public class HederaSigningOrder {
 		var beneficiary = op.getTransferAccountID();
 		var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary);
 		if (!beneficiaryResult.succeeded()) {
-			return accountFailure(beneficiary, txnId, beneficiaryResult.failureIfAny(), factory);
+			return accountFailure(beneficiaryResult.failureIfAny(), factory);
 		} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
 			required.add(beneficiaryResult.metadata().getKey());
 		}
@@ -465,7 +462,7 @@ public class HederaSigningOrder {
 		var target = op.getAccountIDToUpdate();
 		var result = sigMetaLookup.accountSigningMetaFor(target);
 		if (!result.succeeded()) {
-			return accountFailure(target, txnId, result.failureIfAny(), factory);
+			return accountFailure(result.failureIfAny(), factory);
 		} else {
 			if (targetAccountKeyMustSign) {
 				required = mutable(required);
@@ -482,7 +479,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> cryptoTransfer(
-			TransactionID txnId,
 			CryptoTransferTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -493,49 +489,40 @@ public class HederaSigningOrder {
 			// fungible tokens
 			for (AccountAmount adjust : xfers.getTransfersList()) {
 				if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
-					return accountFailure(adjust.getAccountID(), txnId, failure, factory);
+					return accountFailure(failure, factory);
 				}
 			}
 			// non fungible tokens
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
 				if ((failure = includeIfPresentAndNecessary(adjust.getSenderAccountID(), true, required)) != NONE) {
-					return accountFailure(adjust.getSenderAccountID(), txnId, failure, factory);
+					return accountFailure(failure, factory);
 				}
 				if ((failure = includeIfPresentAndNecessary(adjust.getReceiverAccountID(), false, required)) != NONE) {
-					return accountFailure(adjust.getReceiverAccountID(), txnId, failure, factory);
+					return accountFailure(failure, factory);
 				}
 			}
 		}
 		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
 			if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
-				return accountFailure(adjust.getAccountID(), txnId, failure, factory);
+				return accountFailure(failure, factory);
 			}
 		}
 
 		return factory.forValidOrder(required);
 	}
 
-	private <T> SigningOrderResult<T> contractFailure(
-			ContractID id,
-			TransactionID txnId,
-			KeyOrderingFailure type,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> contractFailure(KeyOrderingFailure type, SigningOrderResultFactory<T> factory) {
 		if (type == INVALID_CONTRACT) {
 			return factory.forInvalidContract();
 		} else if (type == IMMUTABLE_CONTRACT) {
 			return factory.forImmutableContract();
 		} else {
+			System.out.println("BINGO");
 			return factory.forGeneralError();
 		}
 	}
 
-	private <T> SigningOrderResult<T> accountFailure(
-			AccountID id,
-			TransactionID txnId,
-			KeyOrderingFailure type,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> accountFailure(KeyOrderingFailure type, SigningOrderResultFactory<T> factory) {
 		if (type == INVALID_ACCOUNT) {
 			return factory.forInvalidAccount();
 		} else if (type == MISSING_ACCOUNT) {
@@ -547,12 +534,7 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private <T> SigningOrderResult<T> topicFailure(
-			TopicID id,
-			TransactionID txnId,
-			KeyOrderingFailure type,
-			SigningOrderResultFactory<T> factory
-	) {
+	private <T> SigningOrderResult<T> topicFailure(KeyOrderingFailure type, SigningOrderResultFactory<T> factory) {
 		if (type == INVALID_TOPIC) {
 			return factory.forMissingTopic();
 		} else {
@@ -579,7 +561,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> topicCreate(
-			TransactionID txnId,
 			ConsensusCreateTopicTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -595,14 +576,13 @@ public class HederaSigningOrder {
 				ConsensusCreateTopicTransactionBody::hasAutoRenewAccount,
 				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
 				required)) {
-			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
 		}
 
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenCreate(
-			TransactionID txnId,
 			TokenCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -614,7 +594,7 @@ public class HederaSigningOrder {
 				TokenCreateTransactionBody::getTreasury,
 				required);
 		if (!couldAddTreasury) {
-			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
+			return accountFailure(MISSING_ACCOUNT, factory);
 		}
 		final var couldAddAutoRenew = addAccount(
 				op,
@@ -622,7 +602,7 @@ public class HederaSigningOrder {
 				TokenCreateTransactionBody::getAutoRenewAccount,
 				required);
 		if (!couldAddAutoRenew) {
-			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
 		}
 		addToMutableReqIfPresent(
 				op,
@@ -718,14 +698,14 @@ public class HederaSigningOrder {
 				TokenUpdateTransactionBody::hasAutoRenewAccount,
 				TokenUpdateTransactionBody::getAutoRenewAccount,
 				required)) {
-			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
 		}
 		if (!addAccount(
 				op,
 				TokenUpdateTransactionBody::hasTreasury,
 				TokenUpdateTransactionBody::getTreasury,
 				required)) {
-			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
+			return accountFailure(MISSING_ACCOUNT, factory);
 		}
 		addToMutableReqIfPresent(
 				op,
@@ -833,7 +813,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> scheduleCreate(
-			TransactionID txnId,
 			ScheduleCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -852,7 +831,7 @@ public class HederaSigningOrder {
 				ScheduleCreateTransactionBody::getPayerAccountID,
 				required);
 		if (!couldAddPayer) {
-			return accountFailure(op.getPayerAccountID(), txnId, INVALID_ACCOUNT, factory);
+			return accountFailure(INVALID_ACCOUNT, factory);
 		}
 		int after = required.size();
 		if (after > before) {
@@ -867,7 +846,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> scheduleSign(
-			TransactionID txnId,
 			ScheduleID id,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -881,7 +859,7 @@ public class HederaSigningOrder {
 		if (optionalPayer.isPresent()) {
 			var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get());
 			if (!payerResult.succeeded()) {
-				return accountFailure(optionalPayer.get(), txnId, INVALID_ACCOUNT, factory);
+				return accountFailure(INVALID_ACCOUNT, factory);
 			} else {
 				var dupKey = payerResult.metadata().getKey().duplicate();
 				dupKey.setForScheduledTxn(true);
@@ -998,7 +976,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> messageSubmit(
-			TransactionID txnId,
 			ConsensusSubmitMessageTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -1006,7 +983,7 @@ public class HederaSigningOrder {
 		var target = op.getTopicID();
 		var result = sigMetaLookup.topicSigningMetaFor(target);
 		if (!result.succeeded()) {
-			return topicFailure(target, txnId, result.failureIfAny(), factory);
+			return topicFailure(result.failureIfAny(), factory);
 		}
 		if (result.metadata().hasSubmitKey()) {
 			required = mutable(required);
@@ -1016,7 +993,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> topicUpdate(
-			TransactionID txnId,
 			ConsensusUpdateTopicTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -1028,7 +1004,7 @@ public class HederaSigningOrder {
 		var target = op.getTopicID();
 		var targetResult = sigMetaLookup.topicSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return topicFailure(target, txnId, targetResult.failureIfAny(), factory);
+			return topicFailure(targetResult.failureIfAny(), factory);
 		}
 		var meta = targetResult.metadata();
 		if (meta.hasAdminKey()) {
@@ -1048,7 +1024,7 @@ public class HederaSigningOrder {
 				required = mutable(required);
 				required.add(autoRenewResult.metadata().getKey());
 			} else {
-				return accountFailure(account, txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+				return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
 			}
 		}
 
@@ -1069,7 +1045,6 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> topicDelete(
-			TransactionID txnId,
 			ConsensusDeleteTopicTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -1078,7 +1053,7 @@ public class HederaSigningOrder {
 		var target = op.getTopicID();
 		var targetResult = sigMetaLookup.topicSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return topicFailure(target, txnId, targetResult.failureIfAny(), factory);
+			return topicFailure(targetResult.failureIfAny(), factory);
 		} else if (targetResult.metadata().hasAdminKey()) {
 			required = mutable(required);
 			required.add(targetResult.metadata().getAdminKey());

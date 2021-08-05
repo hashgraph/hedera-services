@@ -98,6 +98,9 @@ import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_NO_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_WITH_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_IMMUTABLE_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_CONTRACT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO;
@@ -137,6 +140,7 @@ import static com.hedera.test.factories.scenarios.FileAppendScenarios.TREASURY_S
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.VANILLA_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.VANILLA_FILE_CREATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.IMMUTABLE_FILE_DELETE_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileDeleteScenarios.MISSING_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.VANILLA_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_NEW_WACL_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.IMMUTABLE_FILE_UPDATE_SCENARIO;
@@ -209,8 +213,11 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -260,7 +267,6 @@ class HederaSigningOrderTest {
 		}
 	}
 
-	private static final boolean IN_HANDLE_TXN_DYNAMIC_CTX = false;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
 			new DelegatingSigMetadataLookup(
 					FileAdapter.throwingUoe(),
@@ -277,6 +283,14 @@ class HederaSigningOrderTest {
 	);
 	private static final SigMetadataLookup IMMUTABLE_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
+	);
+	private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
+			ContractAdapter.withSafe(id -> {
+				System.out.println("HEY");
+				final SafeLookupResult<ContractSigningMetadata> ans = SafeLookupResult.failure(KeyOrderingFailure.MISSING_TOKEN_TREASURY);
+				System.out.println(ans);
+				return ans;
+			})
 	);
 
 	private HederaFs hfs;
@@ -764,6 +778,18 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
+	void getsFileDeleteMissing() throws Throwable {
+		// given:
+		setupFor(MISSING_FILE_DELETE_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
 	void getsContractCreateNoAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_CREATE_NO_ADMIN_KEY);
@@ -773,6 +799,32 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void getsContractDeleteImmutable() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(MODIFYING_IMMUTABLE_CONTRACT, summary.getErrorReport());
+	}
+
+	@Test
+	void getsContractDeleteNonsense() throws Throwable {
+		// given:
+		setupForNonStdLookup(CONTRACT_DELETE_IMMUTABLE_SCENARIO, NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(MODIFYING_IMMUTABLE_CONTRACT, summary.getErrorReport());
 	}
 
 	@Test
@@ -946,6 +998,32 @@ class HederaSigningOrderTest {
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()),
 				contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsContractDeleteMissingAccountBeneficiary() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsContractDeleteMissingContractBeneficiary() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_CONTRACT_ID, summary.getErrorReport());
 	}
 
 	@Test
