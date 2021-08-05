@@ -426,6 +426,10 @@ ${git.signoff}
         <version>${ethereum-core.version}</version>
         <exclusions>
           <exclusion>
+            <groupId>*</groupId>
+            <artifactId>junit</artifactId>
+          </exclusion>
+          <exclusion>
             <groupId>com.cedarsoftware</groupId>
             <artifactId>*</artifactId>
           </exclusion>
