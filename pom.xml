@@ -165,7 +165,7 @@
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <hapi-proto.version>0.17.0-SNAPSHOT</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
-    <log4j.version>2.13.2</log4j.version>
+    <log4j.version>2.14.1</log4j.version>
     <netty.version>4.1.66.Final</netty.version>
     <swirlds.version>0.16.0</swirlds.version>
     <!-- Test dependency properties -->
