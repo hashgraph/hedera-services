@@ -25,8 +25,10 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
@@ -257,12 +259,15 @@ class UniqTokenViewsManagerTest {
 
 	private void givenWellKnownNfts() {
 		willAnswer(invocationOnMock -> {
-			final BiConsumer<MerkleUniqueTokenId, MerkleUniqueToken> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(aOneNftId, firstOwnedANft);
-			consumer.accept(bOneNftId, firstOwnedBNft);
-			consumer.accept(missingTokenNftId, tokenDeletedNft);
+			final var onePair = new MerklePair<>(aOneNftId, firstOwnedANft);
+			final var twoPair = new MerklePair<>(bOneNftId, firstOwnedBNft);
+			final var missingPair = new MerklePair<>(missingTokenNftId, tokenDeletedNft);
+			final Consumer<MerkleNode> consumer = invocationOnMock.getArgument(0);
+			consumer.accept(onePair);
+			consumer.accept(twoPair);
+			consumer.accept(missingPair);
 			return null;
-		}).given(nfts).forEach(any());
+		}).given(nfts).forEachNode(any());
 	}
 
 	private void setupTreasuryTrackingSubject() {

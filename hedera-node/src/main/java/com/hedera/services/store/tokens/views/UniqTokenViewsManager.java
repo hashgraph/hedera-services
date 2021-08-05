@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -250,18 +251,25 @@ public class UniqTokenViewsManager {
 	) {
 		final var curNftsByType = nftsByType.get();
 		final var curNftsByOwner = nftsByOwner.get();
-		nfts.forEach((nftId, nft) -> {
-			final var tokenId = nftId.tokenId();
-			if (nft.isTreasuryOwned()) {
-				final var token = tokens.get(tokenId.asMerkle());
-				if (token == null) {
-					return;
+
+		nfts.forEachNode(node -> {
+			if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
+				final var pair = (MerklePair<MerkleUniqueTokenId, MerkleUniqueToken>) node;
+
+				final var nftId = pair.getKey();
+				final var nft = pair.getValue();
+				final var tokenId = nftId.tokenId();
+				if (nft.isTreasuryOwned()) {
+					final var token = tokens.get(tokenId.asMerkle());
+					if (token == null) {
+						return;
+					}
+					treasuryOwnedAction.accept(token.treasury(), nftId);
+				} else {
+					curNftsByOwner.associate(nft.getOwner().identityCode(), nftId.identityCode());
 				}
-				treasuryOwnedAction.accept(token.treasury(), nftId);
-			} else {
-				curNftsByOwner.associate(nft.getOwner().identityCode(), nftId.identityCode());
+				curNftsByType.associate(nftId.tokenId().identityCode(), nftId.identityCode());
 			}
-			curNftsByType.associate(nftId.tokenId().identityCode(), nftId.identityCode());
 		});
 	}
 }
