@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -364,6 +365,6 @@ class GetTxnRecordAnswerTest {
 						asAccount("0.0.1001"), 2L,
 						asAccount("0.0.1002"), 2L))
 				.build();
-		return ExpirableTxnRecord.fromGprc(record);
+		return fromGprc(record);
 	}
 }

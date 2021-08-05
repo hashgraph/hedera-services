@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -57,16 +58,8 @@ public class UpdateCustomizerFactory {
 
 		var cid = updateOp.getContractID();
 		var customizer = new HederaAccountCustomizer();
-		if (updateOp.hasAdminKey()) {
-			if (IMMUTABILITY_SENTINEL_KEY.equals(updateOp.getAdminKey())) {
-				customizer.key(new JContractIDKey(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum()));
-			} else {
-				var resolution = keyIfAcceptable(updateOp.getAdminKey());
-				if (resolution.isEmpty()) {
-					return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
-				}
-				customizer.key(resolution.get());
-			}
+		if (updateOp.hasAdminKey() && processAdminKey(updateOp, cid, customizer)) {
+			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
 		if (updateOp.hasProxyAccountID()) {
 			customizer.proxy(fromGrpcAccountId(updateOp.getProxyAccountID()));
@@ -81,14 +74,35 @@ public class UpdateCustomizerFactory {
 			customizer.expiry(updateOp.getExpirationTime().getSeconds());
 		}
 		if (affectsMemo(updateOp)) {
-			if (updateOp.hasMemoWrapper()) {
-				customizer.memo(updateOp.getMemoWrapper().getValue());
-			} else {
-				customizer.memo(updateOp.getMemo());
-			}
+			processMemo(updateOp, customizer);
 		}
 
 		return Pair.of(Optional.of(customizer), OK);
+	}
+
+	private void processMemo(final ContractUpdateTransactionBody updateOp,
+			final HederaAccountCustomizer customizer) {
+		if (updateOp.hasMemoWrapper()) {
+			customizer.memo(updateOp.getMemoWrapper().getValue());
+		} else {
+			customizer.memo(updateOp.getMemo());
+		}
+	}
+
+	private boolean processAdminKey(final ContractUpdateTransactionBody updateOp,
+			final ContractID cid,
+			final HederaAccountCustomizer customizer) {
+		if (IMMUTABILITY_SENTINEL_KEY.equals(updateOp.getAdminKey())) {
+			customizer.key(new JContractIDKey(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum()));
+		} else {
+			var resolution = keyIfAcceptable(updateOp.getAdminKey());
+			if (resolution.isEmpty()) {
+				//return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
+				return true;
+			}
+			customizer.key(resolution.get());
+		}
+		return false;
 	}
 
 	boolean isMutable(MerkleAccount contract) {

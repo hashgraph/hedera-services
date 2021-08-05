@@ -260,7 +260,11 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		if (op.getFreezeDefault() && !op.hasFreezeKey()) {
 			return TOKEN_HAS_NO_FREEZE_KEY;
 		}
+		return validateAutoRenewAccount(op);
+	}
 
+	private ResponseCodeEnum validateAutoRenewAccount(final TokenCreateTransactionBody op) {
+		ResponseCodeEnum validity = OK;
 		if (op.hasAutoRenewAccount()) {
 			validity = validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()) ? OK : INVALID_RENEWAL_PERIOD;
 			return validity;
@@ -269,7 +273,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 				return INVALID_EXPIRATION_TIME;
 			}
 		}
-
-		return OK;
+		return validity;
 	}
 }
