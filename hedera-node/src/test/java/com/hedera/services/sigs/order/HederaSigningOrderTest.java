@@ -217,6 +217,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -285,12 +286,7 @@ class HederaSigningOrderTest {
 			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
 	);
 	private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
-			ContractAdapter.withSafe(id -> {
-				System.out.println("HEY");
-				final SafeLookupResult<ContractSigningMetadata> ans = SafeLookupResult.failure(KeyOrderingFailure.MISSING_TOKEN_TREASURY);
-				System.out.println(ans);
-				return ans;
-			})
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE))
 	);
 
 	private HederaFs hfs;
@@ -824,7 +820,7 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(MODIFYING_IMMUTABLE_CONTRACT, summary.getErrorReport());
+		assertEquals(INVALID_SIGNATURE, summary.getErrorReport());
 	}
 
 	@Test

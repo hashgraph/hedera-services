@@ -517,7 +517,6 @@ public class HederaSigningOrder {
 		} else if (type == IMMUTABLE_CONTRACT) {
 			return factory.forImmutableContract();
 		} else {
-			System.out.println("BINGO");
 			return factory.forGeneralError();
 		}
 	}
