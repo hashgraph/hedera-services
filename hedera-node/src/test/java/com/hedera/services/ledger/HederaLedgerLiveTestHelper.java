@@ -61,7 +61,6 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -274,12 +273,6 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 						AccountAmount.newBuilder().setAccountID(b).setAmount(5_250L).build(),
 						AccountAmount.newBuilder().setAccountID(c).setAmount(4_250L).build(),
 						AccountAmount.newBuilder().setAccountID(genesis).setAmount(-11_000L).build()));
-		// and:
-		assertThat(subject.netTokenTransfersInTxn(),
-				contains(
-						construct(tA, aa(a, +5_000), aa(c, +5_000)),
-						construct(tB, aa(b, +10_000), aa(c, +50))
-				));
 	}
 
 	@Test

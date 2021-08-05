@@ -406,6 +406,7 @@ public class TypedTokenStore {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();
 		if (newAutoRenewAccount != null) {
 			mutableToken.setAutoRenewAccount(new EntityId(newAutoRenewAccount.getId()));
+			mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
 		}
 		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
 		mutableToken.setTotalSupply(token.getTotalSupply());
@@ -432,7 +433,6 @@ public class TypedTokenStore {
 		}
 
 		mutableToken.setExpiry(token.getExpiry());
-		mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
 	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {

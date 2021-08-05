@@ -162,7 +162,6 @@ public class Token {
 		token.setDecimals(op.getDecimals());
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
-		token.setAutoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
 		token.setCustomFees(customFees);
 
 		token.setNew(true);
@@ -327,7 +326,7 @@ public class Token {
 	 */
 	public TokenRelationship newEnabledRelationship(final Account account) {
 		final var rel = new TokenRelationship(this, account);
-		rel.setKycGranted(!hasKycKey());
+		rel.setKycGranted(true);
 		rel.setFrozen(false);
 		return rel;
 	}
