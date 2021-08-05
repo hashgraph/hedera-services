@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.blob.BinaryObjectNotFoundException;
 import com.swirlds.blob.internal.db.BlobStoragePipeline;
 import com.swirlds.blob.internal.db.DbManager;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Disabled
 class LegacyMerkleOptionalBlobTest {
 	Random random = new Random();
 
