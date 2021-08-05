@@ -539,28 +539,6 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void deserializeWorksForPre0130() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		given(serdes.readNullableInstant(in).toJava()).willReturn(consensusTimeOfLastHandledTxn);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.PRE_RELEASE_0130_VERSION);
-
-		// then:
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertSame(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-	}
-
-	@Test
 	void deserializeWorksFor0130() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
@@ -688,50 +666,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void deserializeWorksFor0140NullInstants() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		subject = new MerkleNetworkContext();
-
-		given(in.readInt())
-				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length)
-				.willReturn(stateVersion);
-		given(in.readLong())
-				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(lastScannedEntity)
-				.willReturn(entitiesScannedThisSecond)
-				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in)).willReturn(null);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
-
-		// then:
-		assertNull(subject.getConsensusTimeOfLastHandledTxn());
-		assertNull(subject.lastMidnightBoundaryCheck());
-		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
-		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
-		assertArrayEquals(new DeterministicThrottle.UsageSnapshot[] {
-				new DeterministicThrottle.UsageSnapshot(usageSnapshots[0].used(), null),
-				new DeterministicThrottle.UsageSnapshot(usageSnapshots[1].used(), null)
-		}, subject.usageSnapshots());
-		assertArrayEquals(new Instant[] { null, null }, subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-		// and:
-		assertEquals(lastScannedEntity, subject.lastScannedEntity());
-		assertEquals(stateVersion, subject.getStateVersion());
-	}
-
-	@Test
-	void deserializeWorksFor0150NullInstants() throws IOException {
+	void deserializeWorksForNullInstants() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
