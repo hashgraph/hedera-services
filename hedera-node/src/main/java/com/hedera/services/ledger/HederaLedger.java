@@ -73,9 +73,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -134,6 +131,7 @@ public class HederaLedger {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
+	private MerkleAccountScopedCheck scopedCheck;
 
 	int numTouches = 0;
 	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
@@ -159,6 +157,7 @@ public class HederaLedger {
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
+		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
@@ -389,7 +388,10 @@ public class HederaLedger {
 		var validity = OK;
 		for (var change : changes) {
 			if (change.isForHbar()) {
-				validity = plausibilityOf(change);
+				validity = accountsLedger.validate(
+						change.accountId(),
+						scopedCheck.setBalanceChange(change)
+				);
 			} else {
 				validity = tokenStore.tryTokenChange(change);
 			}
@@ -503,26 +505,6 @@ public class HederaLedger {
 	/* -- HELPERS -- */
 	private boolean isLegalToAdjust(long balance, long adjustment) {
 		return (balance + adjustment >= 0);
-	}
-
-	private ResponseCodeEnum plausibilityOf(BalanceChange change) {
-		final var id = change.accountId();
-		if (!exists(id) || isSmartContract(id)) {
-			return INVALID_ACCOUNT_ID;
-		}
-		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
-			return ACCOUNT_DELETED;
-		}
-		if (isDetached(id)) {
-			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		}
-		final var balance = getBalance(id);
-		final var newBalance = balance + change.units();
-		if (newBalance < 0L) {
-			return change.codeForInsufficientBalance();
-		}
-		change.setNewBalance(newBalance);
-		return OK;
 	}
 
 	private long computeNewBalance(AccountID id, long adjustment) {

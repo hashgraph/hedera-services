@@ -157,8 +157,8 @@ public class NetworkCtxManager {
 		opCounters.countHandled(op);
 
 		var networkCtxNow = networkCtx.get();
-		networkCtxNow.updateSnapshotsFrom(handleThrottling);
-		networkCtxNow.updateCongestionStartsFrom(feeMultiplierSource);
+		networkCtxNow.syncThrottling(handleThrottling);
+		networkCtxNow.syncMultiplierSource(feeMultiplierSource);
 	}
 
 	public static boolean inSameUtcDay(Instant now, Instant then) {

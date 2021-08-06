@@ -43,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -201,7 +202,7 @@ class MerkleAccountPropertyTest {
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
-		return ExpirableTxnRecord.fromGprc(
+		return fromGprc(
 				TransactionRecord.newBuilder()
 						.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
 						.build()

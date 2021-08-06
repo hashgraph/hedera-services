@@ -45,7 +45,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	static final int UNRECORDED_STATE_VERSION = -1;
 
-	static final int PRE_RELEASE_0130_VERSION = 1;
 	static final int RELEASE_0130_VERSION = 2;
 	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
@@ -69,6 +68,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
 	private long entitiesTouchedThisSecond = 0L;
+	private FeeMultiplierSource multiplierSource = null;
+	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 
 	public MerkleNetworkContext() {
@@ -152,30 +153,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.lastScannedEntity = lastScannedEntity;
 	}
 
-	public void updateSnapshotsFrom(FunctionalityThrottling throttling) {
-		throwIfImmutable("Cannot update usage snapshots on an immutable context");
-		var activeThrottles = throttling.allActiveThrottles();
-		int n = activeThrottles.size();
-		if (n == 0) {
-			usageSnapshots = NO_SNAPSHOTS;
-		} else {
-			usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
-			for (int i = 0; i < n; i++) {
-				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
-			}
-		}
+	public void syncThrottling(FunctionalityThrottling throttling) {
+		this.throttling = throttling;
 	}
 
-	public void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
-		throwIfImmutable("Cannot update congestion starts on an immutable context");
-		final var congestionStarts = feeMultiplierSource.congestionLevelStarts();
-		if (null == congestionStarts) {
-			congestionLevelStarts = NO_CONGESTION_STARTS;
-		} else {
-			congestionLevelStarts = congestionStarts;
-		}
+	public void syncMultiplierSource(FeeMultiplierSource multiplierSource) {
+		this.multiplierSource = multiplierSource;
 	}
-
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
 		throwIfImmutable("Cannot set consensus time of last transaction on an immutable context");
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
@@ -194,7 +178,17 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	/* --- MerkleLeaf --- */
 	@Override
 	public MerkleNetworkContext copy() {
+		if (throttling != null) {
+			updateSnapshotsFrom(throttling);
+			throttling = null;
+		}
+		if (multiplierSource != null) {
+			updateCongestionStartsFrom(multiplierSource);
+			multiplierSource = null;
+		}
+
 		setImmutable(true);
+
 		return new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
@@ -218,36 +212,49 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
 		if (version >= RELEASE_0130_VERSION) {
-			int numUsageSnapshots = in.readInt();
-			if (numUsageSnapshots > 0) {
-				usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
-				for (int i = 0; i < numUsageSnapshots; i++) {
-					var used = in.readLong();
-					var lastUsed = serdes.readNullableInstant(in);
-					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
-							used, (lastUsed == null) ? null : lastUsed.toJava());
-				}
-			}
-
-			int numCongestionStarts = in.readInt();
-			if (numCongestionStarts > 0) {
-				congestionLevelStarts = new Instant[numCongestionStarts];
-				for (int i = 0; i < numCongestionStarts; i++) {
-					final var levelStart = serdes.readNullableInstant(in);
-					congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
-				}
-			}
+			readCongestionControlData(in);
 		}
+
 		if (version >= RELEASE_0140_VERSION) {
-			lastScannedEntity = in.readLong();
-			entitiesScannedThisSecond = in.readLong();
-			entitiesTouchedThisSecond = in.readLong();
-			stateVersion = in.readInt();
+			whenVersionHigherOrEqualTo0140(in);
 		}
 		if (version >= RELEASE_0150_VERSION) {
-			final var lastBoundaryCheck = serdes.readNullableInstant(in);
-			lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+			whenVersionHigherOrEqualTo0150(in);
 		}
+	}
+
+	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
+		int numUsageSnapshots = in.readInt();
+		if (numUsageSnapshots > 0) {
+			usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
+			for (int i = 0; i < numUsageSnapshots; i++) {
+				var used = in.readLong();
+				var lastUsed = serdes.readNullableInstant(in);
+				usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
+						used, (lastUsed == null) ? null : lastUsed.toJava());
+			}
+		}
+
+		int numCongestionStarts = in.readInt();
+		if (numCongestionStarts > 0) {
+			congestionLevelStarts = new Instant[numCongestionStarts];
+			for (int i = 0; i < numCongestionStarts; i++) {
+				final var levelStart = serdes.readNullableInstant(in);
+				congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
+			}
+		}
+	}
+
+	private void whenVersionHigherOrEqualTo0140(final SerializableDataInputStream in) throws IOException {
+		lastScannedEntity = in.readLong();
+		entitiesScannedThisSecond = in.readLong();
+		entitiesTouchedThisSecond = in.readLong();
+		stateVersion = in.readInt();
+	}
+
+	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
+		final var lastBoundaryCheck = serdes.readNullableInstant(in);
+		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
 	}
 
 	@Override
@@ -353,6 +360,30 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* --- Internal helpers --- */
+	void updateSnapshotsFrom(FunctionalityThrottling throttling) {
+		throwIfImmutable("Cannot update usage snapshots on an immutable context");
+		var activeThrottles = throttling.allActiveThrottles();
+		int n = activeThrottles.size();
+		if (n == 0) {
+			usageSnapshots = NO_SNAPSHOTS;
+		} else {
+			usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
+			for (int i = 0; i < n; i++) {
+				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
+			}
+		}
+	}
+
+	void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
+		throwIfImmutable("Cannot update congestion starts on an immutable context");
+		final var congestionStarts = feeMultiplierSource.congestionLevelStarts();
+		if (null == congestionStarts) {
+			congestionLevelStarts = NO_CONGESTION_STARTS;
+		} else {
+			congestionLevelStarts = congestionStarts;
+		}
+	}
+
 	private void reset(List<DeterministicThrottle> throttles) {
 		var currUsageSnapshots = throttles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
@@ -399,15 +430,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return consensusTimeOfLastHandledTxn;
 	}
 
-	DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
-		return usageSnapshots;
-	}
-
 	void setUsageSnapshots(DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
 		this.usageSnapshots = usageSnapshots;
 	}
 
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
 		return usageSnapshots;
+	}
+
+	FeeMultiplierSource getMultiplierSource() {
+		return multiplierSource;
+	}
+
+	FunctionalityThrottling getThrottling() {
+		return throttling;
 	}
 }

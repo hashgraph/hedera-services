@@ -54,10 +54,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.BDDMockito.given;
@@ -149,14 +151,63 @@ class MerkleNetworkContextTest {
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
 		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
-		assertSame(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
+		assertSame(subjectCopy.usageSnapshots(), subject.usageSnapshots());
 		assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
 		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		// and:
-		Assertions.assertTrue(subject.isImmutable());
-		Assertions.assertFalse(subjectCopy.isImmutable());
+		assertTrue(subject.isImmutable());
+		assertFalse(subjectCopy.isImmutable());
+		assertNull(subject.getThrottling());
+		assertNull(subject.getMultiplierSource());
+		assertNull(subjectCopy.getThrottling());
+		assertNull(subjectCopy.getMultiplierSource());
+	}
+
+	@Test
+	void copyWorksWithSyncedThrottles() {
+		// setup:
+		throttling = mock(FunctionalityThrottling.class);
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+		final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
+		someThrottle.allow(1);
+		final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
+		final var syncedStarts = new Instant[] { someStart };
+
+		given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
+		given(feeMultiplierSource.congestionLevelStarts()).willReturn(syncedStarts);
+		// and:
+		subject.syncThrottling(throttling);
+		subject.syncMultiplierSource(feeMultiplierSource);
+
+		// when:
+		var subjectCopy = subject.copy();
+
+		// expect:
+		assertSame(subjectCopy.lastMidnightBoundaryCheck(), subject.lastMidnightBoundaryCheck());
+		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
+		assertEquals(seqNoCopy, subjectCopy.seqNo());
+		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
+		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
+		// and:
+		assertEquals(someThrottle.usageSnapshot(), subject.usageSnapshots()[0]);
+		assertSame(subjectCopy.usageSnapshots(), subject.usageSnapshots());
+		// and:
+		assertEquals(syncedStarts, subject.getCongestionLevelStarts());
+		assertSame(subject.getCongestionLevelStarts(), subjectCopy.getCongestionLevelStarts());
+		// and:
+		assertEquals(subjectCopy.getStateVersion(), stateVersion);
+		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
+		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
+		// and:
+		assertTrue(subject.isImmutable());
+		assertFalse(subjectCopy.isImmutable());
+		// and:
+		assertNull(subject.getThrottling());
+		assertNull(subject.getMultiplierSource());
+		assertNull(subjectCopy.getThrottling());
+		assertNull(subjectCopy.getMultiplierSource());
 	}
 
 	@Test
@@ -184,6 +235,21 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertSame(newLmbc, subject.lastMidnightBoundaryCheck());
+	}
+
+	@Test
+	void syncsWork() {
+		// setup:
+		throttling = mock(FunctionalityThrottling.class);
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
+		// when:
+		subject.syncThrottling(throttling);
+		subject.syncMultiplierSource(feeMultiplierSource);
+
+		// then:
+		assertSame(throttling, subject.getThrottling());
+		assertSame(feeMultiplierSource, subject.getMultiplierSource());
 	}
 
 	@Test
@@ -473,28 +539,6 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void deserializeWorksForPre0130() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		given(serdes.readNullableInstant(in).toJava()).willReturn(consensusTimeOfLastHandledTxn);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.PRE_RELEASE_0130_VERSION);
-
-		// then:
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertSame(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-	}
-
-	@Test
 	void deserializeWorksFor0130() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
@@ -644,7 +688,7 @@ class MerkleNetworkContextTest {
 		given(serdes.readNullableInstant(in)).willReturn(null);
 
 		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
+		subject.deserialize(in, MerkleNetworkContext.RELEASE_0150_VERSION);
 
 		// then:
 		assertNull(subject.getConsensusTimeOfLastHandledTxn());

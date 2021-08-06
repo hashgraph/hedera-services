@@ -4,7 +4,7 @@
 ##  * Configuration from /opt/hedera/services/config-mount; and, 
 ##  * Logs at /opt/hedera/services/output; and, 
 ##  * Saved states under /opt/hedera/services/output
-FROM ubuntu:20.10 AS base-runtime
+FROM ubuntu:21.10 AS base-runtime
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y dos2unix openssl openjdk-15-jdk libsodium23 postgresql-client

@@ -21,15 +21,14 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.hedera.services.legacy.core.TestHelper;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Calendar;
 import java.util.Properties;
 import java.util.TimeZone;
 
 public class Utilities {
-
 	private static final Logger log = LogManager.getLogger(Utilities.class);
 	protected static String DEFAULT_NODE_ACCOUNT_ID_STR = "0.0.3";
 

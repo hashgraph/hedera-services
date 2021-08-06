@@ -33,7 +33,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromLiteral;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 /**
@@ -57,6 +57,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 
 	static final String newTreasuryStartUpAccountLoc = "DevStableTestnetStartUpAccount.txt";
 	static final String newTreasuryPemLoc = "dev-stabletestnet-account2.pem";
+	static final String oldEnggKeyPemLoc = "engineering-account2.pem";
 
 	private HapiApiSpec rekeyTreasury() {
 		final var treasury = HapiPropertySource.asAccount("0.0.2");
@@ -74,7 +75,12 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 						"default.payer.pemKeyPassphrase", passphraseForOriginalPemLoc
 				))
 				.given(
-						keyFromLiteral(newTreasuryKey, hexedNewEd25519PrivateKey),
+						/* Use this for reusing the pem file. */
+						keyFromPem(oldEnggKeyPemLoc)
+								.passphrase("swirlds")
+								.name(newTreasuryKey),
+						/* Use this for creating a new key */
+//						keyFromLiteral(newTreasuryKey, hexedNewEd25519PrivateKey),
 						withOpContext((spec, opLog) -> {
 							spec.keys().exportSimpleKeyAsLegacyStartUpAccount(
 									newTreasuryKey,

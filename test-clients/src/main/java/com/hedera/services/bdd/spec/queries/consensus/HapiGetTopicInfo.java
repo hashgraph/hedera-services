@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,9 +41,9 @@ import java.util.function.LongSupplier;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTopicInfo.class);
@@ -77,7 +77,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		return this;
 	}
 
-	public HapiGetTopicInfo hasSeqNo(LongSupplier supplier)	{
+	public HapiGetTopicInfo hasSeqNo(LongSupplier supplier) {
 		seqNoFn = Optional.of(supplier);
 		return this;
 	}
@@ -92,26 +92,31 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		return this;
 	}
 
-	public HapiGetTopicInfo hasExpiry(long exp)	{
+	public HapiGetTopicInfo hasExpiry(long exp) {
 		expiry = OptionalLong.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasAutoRenewPeriod(long exp) {
 		autoRenewPeriod = OptionalLong.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasAdminKey(String exp) {
 		adminKey = Optional.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasNoAdminKey() {
 		hasNoAdminKey = true;
 		return this;
 	}
+
 	public HapiGetTopicInfo hasSubmitKey(String exp) {
 		submitKey = Optional.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasAutoRenewAccount(String exp) {
 		autoRenewAccount = Optional.of(exp);
 		return this;
@@ -147,26 +152,27 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) {
 		ConsensusTopicInfo info = response.getConsensusGetTopicInfo().getTopicInfo();
-		topicMemo.ifPresent(exp -> assertEquals("Bad memo!", exp, info.getMemo()));
+		topicMemo.ifPresent(exp -> assertEquals(exp, info.getMemo(), "Bad memo!"));
 		if (seqNoFn.isPresent()) {
 			seqNo = OptionalLong.of(seqNoFn.get().getAsLong());
 		}
-		seqNo.ifPresent(exp -> assertEquals("Bad sequence number!", exp, info.getSequenceNumber()));
+		seqNo.ifPresent(exp -> assertEquals(exp, info.getSequenceNumber(), "Bad sequence number!"));
 		seqNoInfoObserver.ifPresent(obs -> obs.accept(info.getSequenceNumber()));
 		runningHashEntry.ifPresent(entry -> runningHash = Optional.of(spec.registry().getBytes(entry)));
-		runningHash.ifPresent(exp -> assertArrayEquals("Bad running hash!", exp,
-				info.getRunningHash().toByteArray()));
-		expiry.ifPresent(exp -> assertEquals("Bad expiry!", exp, info.getExpirationTime().getSeconds()));
+		runningHash.ifPresent(exp -> assertArrayEquals(exp,
+				info.getRunningHash().toByteArray(),
+				"Bad running hash!"));
+		expiry.ifPresent(exp -> assertEquals(exp, info.getExpirationTime().getSeconds(), "Bad expiry!"));
 		autoRenewPeriod.ifPresent(exp ->
-				assertEquals("Bad auto-renew period!", exp, info.getAutoRenewPeriod().getSeconds()));
+				assertEquals(exp, info.getAutoRenewPeriod().getSeconds(), "Bad auto-renew period!"));
 		adminKey.ifPresent(exp ->
-				assertEquals("Bad admin key!", spec.registry().getKey(exp), info.getAdminKey()));
+				assertEquals(spec.registry().getKey(exp), info.getAdminKey(), "Bad admin key!"));
 		submitKey.ifPresent(exp ->
-				assertEquals("Bad submit key!", spec.registry().getKey(exp), info.getSubmitKey()));
+				assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
 		autoRenewAccount.ifPresent(exp ->
-			assertEquals("Bad auto-renew account!", asId(exp, spec), info.getAutoRenewAccount()));
+				assertEquals(asId(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
 		if (hasNoAdminKey) {
-			assertFalse("Should have no admin key!", info.hasAdminKey());
+			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}
 	}
 

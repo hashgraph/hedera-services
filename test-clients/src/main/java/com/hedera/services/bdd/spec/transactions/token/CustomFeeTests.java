@@ -22,7 +22,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.OptionalLong;
@@ -76,6 +76,6 @@ public class CustomFeeTests {
 				return;
 			}
 		}
-		Assert.fail("Expected a " + detail + " fee " + expected + ", but only had: " + actual);
+		Assertions.fail("Expected a " + detail + " fee " + expected + ", but only had: " + actual);
 	}
 }

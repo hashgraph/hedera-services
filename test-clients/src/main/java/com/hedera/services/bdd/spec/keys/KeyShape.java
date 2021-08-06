@@ -20,7 +20,7 @@ package com.hedera.services.bdd.spec.keys;
  * ‍
  */
 
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ public class KeyShape extends SigControl {
 	}
 
 	public static KeyShape threshOf(int M, int N) {
-		Assert.assertTrue("A threshold key requires M <= N!", M <= N);
+		Assertions.assertTrue(M <= N, "A threshold key requires M <= N!");
 		return threshOf(M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
 	}
 
@@ -116,19 +116,19 @@ public class KeyShape extends SigControl {
 
 	public SigControl signedWith(Object control) {
 		if (SIMPLE.getNature().equals(this.getNature())) {
-			Assert.assertTrue(
-					"Shape is simple but multiple controls given!",
-					(control instanceof SigControl));
+			Assertions.assertTrue(
+					(control instanceof SigControl),
+					"Shape is simple but multiple controls given!");
 			return (SigControl) control;
 		} else {
 			KeyShape[] childShapes = (KeyShape[]) getChildControls();
 			int size = childShapes.length;
 			List<Object> controls = (List<Object>) control;
-			Assert.assertEquals(
+			Assertions.assertEquals(
+					size, controls.size(),
 					"Shape is " + this.getNature() + "[n=" + size
 							+ (this.getNature().equals(Nature.THRESHOLD) ? ",m=" + this.getThreshold() : "")
-							+ "] but " + controls.size() + " controls given!",
-					size, controls.size());
+							+ "] but " + controls.size() + " controls given!");
 			SigControl[] childControls = IntStream
 					.range(0, size)
 					.mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
