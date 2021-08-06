@@ -26,7 +26,6 @@ import com.hedera.services.utils.UnzipUtility;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -106,12 +105,11 @@ public class FreezeHandler {
 			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
 			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
 		}
-		final Instant naturalFreezeStart;
-		if(op.hasStartTime()) {
-			Timestamp ts = op.getStartTime();
-			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(),ts.getNanos());
-		}
-		else{
+		Instant naturalFreezeStart;
+		if (op.hasStartTime()) {
+			final var ts = op.getStartTime();
+			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+		} else {
 			naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
 		}
 		try {
