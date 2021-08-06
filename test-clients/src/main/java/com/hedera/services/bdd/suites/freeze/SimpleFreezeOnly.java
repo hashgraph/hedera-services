@@ -32,7 +32,6 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
@@ -57,13 +56,13 @@ public class SimpleFreezeOnly extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-               // NOTE: we can't run the following tests at the same time now with dual SwirldsState.
-               // SimpleFreezeWithHorsAndMins(),
-				SimpleFreezeWithTimestamp()
+				// NOTE: we can't run the following tests at the same time now with dual SwirldsState.
+				// simpleFreezeWithHoursAndMins(),
+				simpleFreezeWithTimestamp()
 		);
 	}
 
-	private HapiApiSpec SimpleFreezeWithHorsAndMins() {
+	private HapiApiSpec simpleFreezeWithHoursAndMins() {
 		return defaultHapiSpec("SimpleFreezeWithHoursAndMins")
 				.given(
 				).when(
@@ -71,7 +70,8 @@ public class SimpleFreezeOnly extends HapiApiSuite {
 				).then(
 				);
 	}
-	private HapiApiSpec SimpleFreezeWithTimestamp() {
+
+	private HapiApiSpec simpleFreezeWithTimestamp() {
 		return defaultHapiSpec("SimpleFreezeWithTimeStamp")
 				.given(
 						freeze().payingWith(GENESIS).startAt(Instant.now().plusSeconds(10))

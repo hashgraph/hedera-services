@@ -40,28 +40,25 @@ public class SysFreezeCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private Yahcli yahcli;
 
-	@CommandLine.Option(names = { "-s", "--start-time"},
+	@CommandLine.Option(names = { "-s", "--start-time" },
 			paramLabel = "Freeze start time in UTC, use format 'yyyy-MM-dd.HH:mm:ss'",
 			defaultValue = "")
 	private String freezeStartTimeStr;
 
 	@Override
 	public Integer call() throws Exception {
-		var config = configFrom(yahcli);
+		final var config = configFrom(yahcli);
+		final var freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
+		final var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
 
-		var freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
-
-		var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
 		delegate.runSuiteSync();
 
 		return 0;
 	}
 
-	private Instant getFreezeStartTime(String timeStampInStr) {
-		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss").withZone(ZoneId.of("Etc/UTC"));
+	private Instant getFreezeStartTime(final String timeStampInStr) {
+		final var dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss").withZone(ZoneId.of("Etc/UTC"));
 
 		return Instant.from(dtf.parse(timeStampInStr));
-
 	}
-
 }

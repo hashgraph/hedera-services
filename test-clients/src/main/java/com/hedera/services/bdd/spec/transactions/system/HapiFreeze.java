@@ -37,6 +37,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -46,40 +47,40 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
-	private final static int DELAY_DEFAULT = 5;
-	private final static int DURATION_DEFAULT = 30;
-	boolean settingDelayUnits = true;
-	ChronoUnit delayUnit = SECONDS;
-	ChronoUnit durationUnit = SECONDS;
+	private int delay = 5;
+	private int duration = 30;
+	private boolean settingDelayUnits = true;
+	private ChronoUnit delayUnit = SECONDS;
+	private ChronoUnit durationUnit = SECONDS;
 
-	private Optional<Integer> delay = Optional.empty();
-	private Optional<Integer> duration = Optional.empty();
-	ZonedDateTime start, end;
+	private ZonedDateTime start, end;
 	private Optional<Instant> freezeStartTime = Optional.empty();
 	private String fileID = null;
 	private String fileName = null;
 	private Optional<byte[]> fileHash = Optional.empty();
+
 	@Override
 	protected HapiFreeze self() {
 		return this;
 	}
 
-	public HapiFreeze startAt(Instant startTime) {
+	public HapiFreeze startAt(final Instant startTime) {
 		freezeStartTime = Optional.of(startTime);
 		return this;
 	}
 
-	public HapiFreeze startingIn(int n) {
-		delay = Optional.of(n);
+	public HapiFreeze startingIn(final int units) {
+		delay = units;
 		settingDelayUnits = true;
 		return this;
 	}
 
-	public HapiFreeze andLasting(int n) {
-		duration = Optional.of(n);
-		settingDelayUnits =false;
+	public HapiFreeze andLasting(final int units) {
+		duration = units;
+		settingDelayUnits = false;
 		return this;
 	}
+
 	public HapiFreeze seconds() {
 		if (settingDelayUnits) {
 			this.delayUnit = SECONDS;
@@ -88,6 +89,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		}
 		return this;
 	}
+
 	public HapiFreeze minutes() {
 		if (settingDelayUnits) {
 			this.delayUnit = MINUTES;
@@ -111,10 +113,6 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		fileHash = Optional.of(data);
 		return this;
 	}
-	public HapiFreeze setFileHash(String data) {
-		fileHash = Optional.of(data.getBytes());
-		return this;
-	}
 
 	@Override
 	public HederaFunctionality type() {
@@ -123,53 +121,47 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
-		FreezeTransactionBody opBody  = FreezeTransactionBody.getDefaultInstance();
-		if(delay.isPresent() || duration.isPresent()) {
-			if(delay.isPresent() && duration.isEmpty()) {
-				duration = Optional.of(DURATION_DEFAULT);
-			}
-			else {
-				delay = Optional.of(DELAY_DEFAULT);
-			}
-			Instant moment = Instant.now().plus(delay.get(), delayUnit);
-			start = ZonedDateTime.ofInstant(moment, ZoneId.of("GMT"));
-			end = ZonedDateTime.ofInstant(moment.plus(duration.get(), durationUnit), ZoneId.of("GMT"));
-			opBody = spec
-					.txns()
-					.<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
-							FreezeTransactionBody.class, b -> {
-								b.setStartHour(start.getHour());
-								b.setStartMin(start.getMinute());
-								b.setEndHour(end.getHour());
-								b.setEndMin(end.getMinute());
-								fillRestOfTxnBody(b, spec);
-							}
-					);
-		}
-		else if(freezeStartTime.isPresent()) {
-			Instant startTime = freezeStartTime.get();
-			opBody = spec.txns()
-					.<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
-							FreezeTransactionBody.class, b -> {
-								b.setStartTime(Timestamp.newBuilder().setSeconds(startTime.getEpochSecond())
-										.setNanos(startTime.getNano()));
-								fillRestOfTxnBody(b, spec);
-							}
-					);
-		}
-		final FreezeTransactionBody txnBody = opBody;
-		return b -> b.setFreeze(txnBody);
+		final var opBody = spec.txns()
+				.<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
+						FreezeTransactionBody.class,
+						freezeStartTime.isPresent()
+								? withStartTime(freezeStartTime.get(), spec)
+								: withHoursAndMins(spec));
+		return b -> b.setFreeze(opBody);
 	}
 
-	private void fillRestOfTxnBody(FreezeTransactionBody.Builder b, HapiApiSpec spec) {
-		if (fileID!=null) {
-			b.setUpdateFile(asFileId(fileID, spec));
+	private Consumer<FreezeTransactionBody.Builder> withStartTime(final Instant startTime, final HapiApiSpec spec) {
+		final var startTimestamp = Timestamp.newBuilder()
+				.setSeconds(startTime.getEpochSecond())
+				.setNanos(startTime.getNano());
+		return b -> {
+			b.setStartTime(startTimestamp);
+			fillRestOfTxnBody(b, spec);
+		};
+	}
+
+	private Consumer<FreezeTransactionBody.Builder> withHoursAndMins(final HapiApiSpec spec) {
+		final var moment = Instant.now().plus(delay, delayUnit);
+		start = ZonedDateTime.ofInstant(moment, ZoneId.of("GMT"));
+		end = ZonedDateTime.ofInstant(moment.plus(duration, durationUnit), ZoneId.of("GMT"));
+		return b -> {
+			b.setStartHour(start.getHour());
+			b.setStartMin(start.getMinute());
+			b.setEndHour(end.getHour());
+			b.setEndMin(end.getMinute());
+			fillRestOfTxnBody(b, spec);
+		};
+	}
+
+	private void fillRestOfTxnBody(final FreezeTransactionBody.Builder builder, final HapiApiSpec spec) {
+		if (fileID != null) {
+			builder.setUpdateFile(asFileId(fileID, spec));
 		}
-		if (fileName !=null){
+		if (fileName != null) {
 			FileID foundID = spec.registry().getFileId(fileName);
-			b.setUpdateFile(foundID);
+			builder.setUpdateFile(foundID);
 		}
-		fileHash.ifPresent(x -> b.setFileHash(ByteString.copyFrom(x)));
+		fileHash.ifPresent(x -> builder.setFileHash(ByteString.copyFrom(x)));
 	}
 
 	@Override
@@ -186,8 +178,8 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper();
 		if (start != null && end != null) {
-				helper.add("start", String.format("%d:%d", start.getHour(), start.getMinute()))
-						.add("end", String.format("%d:%d", end.getHour(), end.getMinute()));
+			helper.add("start", String.format("%d:%d", start.getHour(), start.getMinute()))
+					.add("end", String.format("%d:%d", end.getHour(), end.getMinute()));
 		}
 		return helper;
 	}

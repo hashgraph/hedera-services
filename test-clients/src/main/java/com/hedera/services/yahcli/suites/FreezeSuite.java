@@ -26,36 +26,36 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiFreeze;
 
 public class FreezeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
-	private final Instant freezeStarttime;
+	private final Instant freezeStartTime;
 
 	private final Map<String, String> specConfig;
 
-	public FreezeSuite(final Map<String, String> specConfig, final Instant freezeStarttime) {
+	public FreezeSuite(final Map<String, String> specConfig, final Instant freezeStartTime) {
 		this.specConfig = specConfig;
-		this.freezeStarttime = freezeStarttime;
+		this.freezeStartTime = freezeStartTime;
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		List<HapiApiSpec> specToRun = new ArrayList<>();
-		specToRun.add(freezeSystem(freezeStarttime));
-		return specToRun;
+		return List.of(new HapiApiSpec[] {
+				freezeSystem(freezeStartTime)
+		});
 	}
 
-	private HapiApiSpec freezeSystem(Instant freezeStarttime) {
+	private HapiApiSpec freezeSystem(final Instant freezeStartTime) {
 		return HapiApiSpec.customHapiSpec(("freezeSystem"))
 				.withProperties(specConfig)
 				.given().when()
 				.then(
-						hapiFreeze(freezeStarttime)
+						hapiFreeze(freezeStartTime)
 								.noLogging()
 								.yahcliLogging()
 				);
