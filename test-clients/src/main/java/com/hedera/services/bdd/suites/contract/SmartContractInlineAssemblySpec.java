@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -64,7 +64,7 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 		return defaultHapiSpec("smartContractInlineAssemblyCheck")
 				.given(
 						cryptoCreate("payer")
-								.balance( 10_000_000_000_000L),
+								.balance(10_000_000_000_000L),
 						fileCreate("simpleStorageByteCode")
 								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
 						fileCreate("inlineTestByteCode")
@@ -93,22 +93,24 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 									.saveToRegistry("payerAccountInfo");
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
-							ContractInfo simpleStorageContractInfo = spec.registry().getContractInfo("simpleStorageKey");
+							ContractInfo simpleStorageContractInfo = spec.registry().getContractInfo(
+									"simpleStorageKey");
 							String contractAddress = simpleStorageContractInfo.getContractAccountID();
 
-							var subop3 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI, contractAddress)
+							var subop3 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI,
+									contractAddress)
 									.saveResultTo("simpleStorageContractCodeSizeBytes")
 									.gas(300_000L);
 
-							CustomSpecAssert.allRunFor(spec,  subop3);
+							CustomSpecAssert.allRunFor(spec, subop3);
 
-							byte[] 	result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
+							byte[] result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
 							String funcJson = ContractResources.GET_CODE_SIZE_ABI.replaceAll("'", "\"");
 							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
 
 							int codeSize = 0;
-							if(result != null && result.length > 0) {
+							if (result != null && result.length > 0) {
 								Object[] retResults = function.decodeResult(result);
 								if (retResults != null && retResults.length > 0) {
 									BigInteger retBi = (BigInteger) retResults[0];
@@ -117,23 +119,24 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 							}
 
 							ctxLog.info("Contract code size {}", codeSize);
-							Assert.assertNotEquals(
-									"Real smart contract code size should be greater than 0",
-									0, codeSize);
+							Assertions.assertNotEquals(
+									0, codeSize,
+									"Real smart contract code size should be greater than 0");
 
 
 							AccountInfo payerAccountInfo = spec.registry().getAccountInfo("payerAccountInfo");
 							String acctAddress = payerAccountInfo.getContractAccountID();
 
-							var subop4 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI, acctAddress)
+							var subop4 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI,
+									acctAddress)
 									.saveResultTo("fakeCodeSizeBytes")
 									.gas(300_000L);
 
-							CustomSpecAssert.allRunFor(spec,  subop4);
+							CustomSpecAssert.allRunFor(spec, subop4);
 							result = spec.registry().getBytes("fakeCodeSizeBytes");
 
 							codeSize = 0;
-							if(result != null && result.length > 0) {
+							if (result != null && result.length > 0) {
 								Object[] retResults = function.decodeResult(result);
 								if (retResults != null && retResults.length > 0) {
 									BigInteger retBi = (BigInteger) retResults[0];
@@ -142,9 +145,9 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 							}
 
 							ctxLog.info("Fake contract code size {}", codeSize);
-							Assert.assertEquals(
-									"Fake contract code size should be 0",
-									0, codeSize);
+							Assertions.assertEquals(
+									0, codeSize,
+									"Fake contract code size should be 0");
 						})
 				);
 	}

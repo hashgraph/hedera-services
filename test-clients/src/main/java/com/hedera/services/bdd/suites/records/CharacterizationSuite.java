@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Arrays;
 import java.util.List;
@@ -95,7 +95,7 @@ public class CharacterizationSuite extends HapiApiSuite {
 				).when(
 						TxnVerbs.contractCall(
 								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
-									TRANSFER_AMOUNT, 0, "So we out-danced thought...")
+								TRANSFER_AMOUNT, 0, "So we out-danced thought...")
 								.via("noLogsCallTxn").sending(TRANSFER_AMOUNT),
 						TxnVerbs.contractCall(
 								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
@@ -115,10 +115,10 @@ public class CharacterizationSuite extends HapiApiSuite {
 									logsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
 							assertLog.info("Fee for logged record   = " + loggedRecord.getTransactionFee());
 							assertLog.info("Fee for unlogged record = " + unloggedRecord.getTransactionFee());
-							Assert.assertNotEquals(
-									"Result size should change the txn fee!",
+							Assertions.assertNotEquals(
 									unloggedRecord.getTransactionFee(),
-									loggedRecord.getTransactionFee());
+									loggedRecord.getTransactionFee(),
+									"Result size should change the txn fee!");
 						})
 				);
 	}

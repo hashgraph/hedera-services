@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -212,9 +212,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
 		if (waclControl.isPresent()) {
 			SigControl control = waclControl.get();
-			Assert.assertTrue(
-					"WACL must be a KeyList!",
-					control.getNature() == SigControl.Nature.LIST);
+			Assertions.assertEquals(SigControl.Nature.LIST, control.getNature(), "WACL must be a KeyList!");
 			waclKey = spec.keys().generateSubjectTo(control, generator);
 		} else {
 			waclKey = spec.keys().generate(KeyFactory.KeyType.LIST, generator);
@@ -232,7 +230,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		spec.registry().saveFileId(fileName, lastReceipt.getFileID());
 		spec.registry().saveTimestamp(fileName, expiryUsed.get());
 		if (verboseLoggingOn) {
-			log.info("Created file {} with ID {}.",  fileName , lastReceipt.getFileID());
+			log.info("Created file {} with ID {}.", fileName, lastReceipt.getFileID());
 		}
 
 		if (advertiseCreation) {

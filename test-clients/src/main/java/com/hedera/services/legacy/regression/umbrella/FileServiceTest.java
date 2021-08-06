@@ -48,7 +48,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.IOException;
@@ -96,7 +96,7 @@ public class FileServiceTest extends CryptoServiceTest {
 		for (int i = 0; i < 10; i++) {
 			Timestamp current = TestHelperComplex.getDefaultCurrentTimestampUTC();
 			log.info("i=" + i + "\n prev=" + prev.getNanos() + "\n curr=" + current.getNanos());
-			Assert.assertNotEquals(prev.getNanos(), current.getNanos());
+			Assertions.assertNotEquals(prev.getNanos(), current.getNanos());
 			prev = current;
 		}
 	}
@@ -157,8 +157,8 @@ public class FileServiceTest extends CryptoServiceTest {
 
 		log.info("FileUpdate with data, exp, and wacl respectively, Response :: "
 				+ response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
 		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
 				.extractTransactionBody(FileUpdateRequest);
 		TransactionID txId = body.getTransactionID();
@@ -166,7 +166,7 @@ public class FileServiceTest extends CryptoServiceTest {
 
 		if (getReceipt) {
 			TransactionReceipt receipt = getTxReceipt(txId);
-			Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
+			Assertions.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
 			getFileInfo(fid, payerID, nodeID);
 		}
 	}
@@ -242,7 +242,7 @@ public class FileServiceTest extends CryptoServiceTest {
 		TransactionResponse response = retryLoopTransaction(nodeID, txSigned, "deleteFile");
 
 		log.info("FileDelete Response :: " + response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
 				.extractTransactionBody(FileDeleteRequest);
 		TransactionID txId = body.getTransactionID();
@@ -250,7 +250,7 @@ public class FileServiceTest extends CryptoServiceTest {
 
 		if (getReceipt) {
 			TransactionReceipt receipt = getTxReceipt(txId);
-			Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
+			Assertions.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
 		}
 	}
 
@@ -304,8 +304,8 @@ public class FileServiceTest extends CryptoServiceTest {
 		TransactionResponse response = retryLoopTransaction(nodeID, filesigned, "createFile");
 
 		log.info("FileCreate Response :: " + response);
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
 		if (cacheTxID) {
 			cache.addTransactionID(txId);
 		}
@@ -322,8 +322,8 @@ public class FileServiceTest extends CryptoServiceTest {
 		}
 		FileID fid = receipt.getFileID();
 		log.info("GetTxReceipt: file ID = " + fid);
-		Assert.assertNotNull(fid);
-		Assert.assertNotEquals(0, fid.getFileNum());
+		Assertions.assertNotNull(fid);
+		Assertions.assertNotEquals(0, fid.getFileNum());
 
 		return fid;
 	}
@@ -554,7 +554,7 @@ public class FileServiceTest extends CryptoServiceTest {
 
 		// get file content and save to disk
 		byte[] content = getFileContent(fid, payerID, nodeID).toByteArray();
-		Assert.assertArrayEquals(bytes, content);
+		Assertions.assertArrayEquals(bytes, content);
 		saveFile(content, savePath);
 		return fid;
 	}
@@ -604,13 +604,13 @@ public class FileServiceTest extends CryptoServiceTest {
 		TransactionResponse response = retryLoopTransaction(nodeID, txSigned, "appendContent");
 
 		log.info("FileAppend Response :: " + response);
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
 		cache.addTransactionID(txId);
 
 		if (getReceipt) {
 			TransactionReceipt receipt = getTxReceipt(txId);
-			Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
+			Assertions.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
 
 			getFileInfo(fid, payerID, nodeID);
 		}
@@ -700,7 +700,7 @@ public class FileServiceTest extends CryptoServiceTest {
 
 		Response fileInfoResp = retryLoopQuery(nodeID, fileGetInfoQuery, "getFileInfo");
 
-		Assert.assertNotNull(fileInfoResp);
+		Assertions.assertNotNull(fileInfoResp);
 		ResponseCodeEnum code = fileInfoResp.getFileGetInfo().getHeader()
 				.getNodeTransactionPrecheckCode();
 		if (code != ResponseCodeEnum.OK) {
@@ -711,7 +711,7 @@ public class FileServiceTest extends CryptoServiceTest {
 		FileInfo fileInfo = fileInfoResp.getFileGetInfo().getFileInfo();
 		log.info("fileGetInfoQuery: info = " + fileInfo);
 		FileID actualFid = fileInfo.getFileID();
-		Assert.assertEquals(fid, actualFid);
+		Assertions.assertEquals(fid, actualFid);
 		return fileInfo;
 	}
 

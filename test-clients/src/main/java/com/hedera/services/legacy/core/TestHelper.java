@@ -51,9 +51,9 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -74,8 +74,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 public class TestHelper {
-
-	private static final org.apache.log4j.Logger log = LogManager.getLogger(TestHelper.class);
+	private static final Logger log = LogManager.getLogger(TestHelper.class);
 
 	public static long DEFAULT_SEND_RECV_RECORD_THRESHOLD = 5000000000000000000L;
 	public static long DEFAULT_WIND_SEC = -30; // seconds to wind back the UTC clock
@@ -408,7 +407,7 @@ public class TestHelper {
 		}
 
 		Response transactionReceipts = cstub.getTransactionReceipts(query);
-		Assert.assertNotNull(transactionReceipts);
+		Assertions.assertNotNull(transactionReceipts);
 		ResponseCodeEnum precheckCode = transactionReceipts.getTransactionGetReceipt().getHeader()
 				.getNodeTransactionPrecheckCode();
 		if (!precheckCode.equals(ResponseCodeEnum.OK) && !precheckCode.equals(ResponseCodeEnum.BUSY)) {

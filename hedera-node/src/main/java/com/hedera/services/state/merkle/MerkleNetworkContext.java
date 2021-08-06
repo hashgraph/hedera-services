@@ -45,6 +45,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	static final int UNRECORDED_STATE_VERSION = -1;
 
+	static final int RELEASE_0130_VERSION = 2;
+	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
 	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
@@ -209,14 +211,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
-		readCongestionControlData(in);
+		if (version >= RELEASE_0130_VERSION) {
+			readCongestionControlData(in);
+		}
 
-		lastScannedEntity = in.readLong();
-		entitiesScannedThisSecond = in.readLong();
-		entitiesTouchedThisSecond = in.readLong();
-		stateVersion = in.readInt();
-		final var lastBoundaryCheck = serdes.readNullableInstant(in);
-		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+		if (version >= RELEASE_0140_VERSION) {
+			whenVersionHigherOrEqualTo0140(in);
+		}
+		if (version >= RELEASE_0150_VERSION) {
+			whenVersionHigherOrEqualTo0150(in);
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -240,7 +244,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			}
 		}
 	}
-	
+
+	private void whenVersionHigherOrEqualTo0140(final SerializableDataInputStream in) throws IOException {
+		lastScannedEntity = in.readLong();
+		entitiesScannedThisSecond = in.readLong();
+		entitiesTouchedThisSecond = in.readLong();
+		stateVersion = in.readInt();
+	}
+
+	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
+		final var lastBoundaryCheck = serdes.readNullableInstant(in);
+		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+	}
+
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		serdes.writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);

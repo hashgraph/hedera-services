@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -35,7 +35,7 @@ public class VerifyGetFastRecordNotSupported extends UtilOp {
 		TransactionGetFastRecordQuery.Builder op = TransactionGetFastRecordQuery.newBuilder();
 		Query query = Query.newBuilder().setTransactionGetFastRecord(op).build();
 		Response response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getFastTransactionRecord(query);
-		Assert.assertEquals(
+		Assertions.assertEquals(
 				NOT_SUPPORTED,
 				response.getTransactionGetFastRecord().getHeader().getNodeTransactionPrecheckCode());
 		return false;

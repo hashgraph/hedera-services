@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static com.cedarsoftware.util.UrlUtilities.getHostName;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -51,6 +50,7 @@ import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeRecon
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static org.apache.commons.lang3.SystemUtils.getHostName;
 
 public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateSchedulesBeforeReconnect.class);

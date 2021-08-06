@@ -55,7 +55,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -141,7 +141,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 
 		log.debug("createContract: request=" + createContractRequest);
 		TransactionResponse response = retryLoopTransaction(createContractRequest, "createContract");
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 		log.info(
 				"createContract: Pre Check Response=" + response.getNodeTransactionPrecheckCode().name());
 
@@ -154,14 +154,14 @@ public class SmartContractServiceTest extends FileServiceTest {
 		if (getReceipt) {
 			TransactionReceipt contractCreateReceipt = TestHelperComplex
 					.getTxReceipt(transactionID, cstub, log, host);
-			Assert.assertNotNull(contractCreateReceipt);
+			Assertions.assertNotNull(contractCreateReceipt);
 			if (!contractCreateReceipt.getStatus().name().equals(ResponseCodeEnum.SUCCESS.name())) {
 				throw new Exception(
 						"Problem creating contract: receipt=" + contractCreateReceipt + ", request="
 								+ createContractRequest);
 			}
 			createdContract = contractCreateReceipt.getContractID();
-			Assert.assertNotEquals(0, createdContract.getContractNum());
+			Assertions.assertNotEquals(0, createdContract.getContractNum());
 			contractIDMap.put(createdContract, contractFileName);
 			if (addAdminKey) {
 				contract2ComplexKeyMap.put(createdContract, adminKey);
@@ -218,7 +218,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 				pubKey2privKeyMap);
 		log.debug("updateContract: request=" + updateContractRequest);
 		TransactionResponse response = retryLoopTransaction(updateContractRequest, "updateContract");
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 		TransactionBody updateContractBody = com.hedera.services.legacy.proto.utils.CommonUtils
 				.extractTransactionBody(updateContractRequest);
 		log.info(
@@ -231,7 +231,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 			contractUpdateReceipt = TestHelperComplex
 					.getTxReceipt(transactionID, cstub, log, host);
 			log.debug("updateContract: receipt=" + contractUpdateReceipt);
-			Assert.assertNotNull(contractUpdateReceipt);
+			Assertions.assertNotNull(contractUpdateReceipt);
 			if (!contractUpdateReceipt.getStatus().name().equals(ResponseCodeEnum.SUCCESS.name())) {
 				if (oldAdminKey != null) // restore original admin key
 				{
@@ -271,7 +271,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 				ResponseType.ANSWER_ONLY);
 		log.debug("getContractInfo: request=" + getContractInfoQuery);
 		Response respToReturn = retryLoopQuery(getContractInfoQuery, "getContractInfo");
-		Assert.assertNotNull(respToReturn);
+		Assertions.assertNotNull(respToReturn);
 		log.debug("getContractInfo: Response=" + respToReturn);
 		ContractInfo contractInfToReturn = null;
 		contractInfToReturn = respToReturn.getContractGetInfo().getContractInfo();
@@ -332,7 +332,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 		TransactionBody callContractBody = com.hedera.services.legacy.proto.utils.CommonUtils
 				.extractTransactionBody(callContractRequest);
 		TransactionResponse response = retryLoopTransaction(callContractRequest, "contractCallMethod");
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 		// check precheck code
 		ResponseCodeEnum code = response.getNodeTransactionPrecheckCode();
 		if (!code.equals(ResponseCodeEnum.OK)) {
@@ -344,7 +344,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 		cache.addTransactionID(transactionID);
 		TransactionReceipt contractCallReceipt = TestHelperComplex
 				.getTxReceipt(transactionID, cstub, log, host);
-		Assert.assertNotNull(contractCallReceipt);
+		Assertions.assertNotNull(contractCallReceipt);
 		if (contractCallReceipt.getStatus().name().equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
 			TransactionRecord trRecord = getTransactionRecord(
 					callContractBody.getTransactionID(),
@@ -377,7 +377,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 		Query getRecordQuery = RequestBuilder.getTransactionGetRecordQuery(transactionId, paymentTx,
 				ResponseType.ANSWER_ONLY);
 		Response recordResp = retryLoopQuery(getRecordQuery, "getTxRecordByTxID");
-		Assert.assertNotNull(recordResp);
+		Assertions.assertNotNull(recordResp);
 		TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
 		log.info("tx record = " + txRecord);
 		return txRecord;
@@ -457,7 +457,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 
 		log.debug("callContractLocal: request = " + contractCallLocal);
 		Response callResp = retryLoopQuery(contractCallLocal, "contractCallLocalMethod");
-		Assert.assertNotNull(callResp);
+		Assertions.assertNotNull(callResp);
 		log.info("callContractLocal: response = " + callResp);
 		ByteString functionResults = callResp.getContractCallLocal().getFunctionResult()
 				.getContractCallResult();
@@ -529,7 +529,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 		Query getContractBytecodeQuery = RequestBuilder
 				.getContractGetBytecodeQuery(contractId, paymentTx, ResponseType.ANSWER_ONLY);
 		Response respToReturn = retryLoopQuery(getContractBytecodeQuery, "contractGetBytecode");
-		Assert.assertNotNull(respToReturn);
+		Assertions.assertNotNull(respToReturn);
 		ByteString contractByteCode = null;
 		contractByteCode = respToReturn.getContractGetBytecodeResponse().getBytecode();
 		if (contractByteCode != null && !contractByteCode.isEmpty()) {
@@ -568,7 +568,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 				solidityId, paymentTx, ResponseType.ANSWER_ONLY);
 
 		Response respToReturn = retryLoopQuery(getBySolidityIdQuery, "getBySolidityID");
-		Assert.assertNotNull(respToReturn);
+		Assertions.assertNotNull(respToReturn);
 		GetBySolidityIDResponse bySolidityReturn = null;
 		bySolidityReturn = respToReturn.getGetBySolidityID();
 		ContractID contractID = bySolidityReturn.getContractID();
@@ -615,10 +615,10 @@ public class SmartContractServiceTest extends FileServiceTest {
 		Query query = RequestBuilder
 				.getContractRecordsQuery(contractId, paymentTxSigned, ResponseType.ANSWER_ONLY);
 		Response transactionRecord = retryLoopQuery(query, "getTxRecordByContractID");
-		Assert.assertNotNull(transactionRecord);
-		Assert.assertNotNull(transactionRecord);
+		Assertions.assertNotNull(transactionRecord);
+		Assertions.assertNotNull(transactionRecord);
 		ContractGetRecordsResponse response = transactionRecord.getContractGetRecordsResponse();
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 		List<TransactionRecord> records = response.getRecordsList();
 		return records;
 	}

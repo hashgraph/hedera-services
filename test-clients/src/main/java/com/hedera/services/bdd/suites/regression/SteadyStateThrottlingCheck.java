@@ -31,7 +31,7 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Map;
@@ -160,7 +160,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 									String.format("%.3f", actualTps),
 									String.format("%.3f", expectedTps),
 									String.format("%.3f", percentDeviation));
-							Assert.assertEquals(0.0, percentDeviation, toleratedPercentDeviation);
+							Assertions.assertEquals(0.0, percentDeviation, toleratedPercentDeviation);
 						})
 				);
 	}
@@ -209,7 +209,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 							String.format("%.3f", actualQps),
 							String.format("%.3f", expectedQps),
 							String.format("%.3f", percentDeviation));
-					Assert.assertEquals(0.0, percentDeviation, toleratedPercentDeviation);
+					Assertions.assertEquals(0.0, percentDeviation, toleratedPercentDeviation);
 				})
 		);
 	}

@@ -42,7 +42,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import javax.inject.Inject;
@@ -54,6 +53,7 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Stream;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static java.lang.Thread.sleep;
@@ -224,25 +224,22 @@ class FreezeHandlerTest {
 
 	@Test
 	void freezeUpdateWarnsWhenFileNotDeleted() throws Exception {
-		// setup:
-		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
-		byte[] data = Files.readAllBytes(Paths.get(zipFile));
-		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
-		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
-
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
-
+		final var zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
+		final var data = Files.readAllBytes(Paths.get(zipFile));
+		final var hash = CommonUtils.noThrowSha384HashOf(data);
+		final var fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
+		final var transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
 		given(hfs.exists(fileID)).willReturn(true);
 		given(hfs.cat(fileID)).willReturn(data);
 
-		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = subject.freeze(txBody, consensusTime);
+		final var txBody = CommonUtils.extractTransactionBody(transaction);
+		final var record = subject.freeze(txBody, consensusTime);
 		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
-			// mockito set up
+		try (final var utilities = Mockito.mockStatic(Files.class)) {
+			utilities.when(() -> Files.walk(any())).thenReturn(Stream.empty());
 			utilities.when(() -> Files.delete(any())).thenThrow(new IOException());
-			// when:
+
 			subject.handleUpdateFeature();
 		}
 
