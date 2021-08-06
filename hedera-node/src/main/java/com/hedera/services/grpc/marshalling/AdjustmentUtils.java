@@ -32,9 +32,9 @@ public class AdjustmentUtils {
 		adjustedChange(collector, denom, +amount, manager, false);
 	}
 
-	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager, boolean changeSender) {
+	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager, boolean simpleAdjust) {
 		/* Always append a new change for an HTS debit since it could trigger another assessed fee */
-		if (denom != Id.MISSING_ID && amount < 0 && !changeSender) {
+		if (denom != Id.MISSING_ID && amount < 0 && !simpleAdjust) {
 			return includedHtsChange(account, denom, amount, manager);
 		}
 

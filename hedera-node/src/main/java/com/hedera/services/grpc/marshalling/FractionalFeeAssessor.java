@@ -93,8 +93,8 @@ public class FractionalFeeAssessor {
 //				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 //			}
 				// If charging sender, simply adjust the debit total
-				adjustedChange(payer, denom, -assessedAmount, changeManager, chargeSender);
-				adjustedChange(collector, denom, assessedAmount, changeManager, chargeSender);
+				adjustedChange(payer, denom, -assessedAmount, changeManager, true);
+				adjustedChange(collector, denom, assessedAmount, changeManager, false);
 				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(),
 						assessedAmount);
 				accumulator.add(assessed);
@@ -129,7 +129,7 @@ public class FractionalFeeAssessor {
 					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 				}
 
-				adjustedChange(collector, denom, assessedAmount, changeManager, chargeSender);
+				adjustedChange(collector, denom, assessedAmount, changeManager, false);
 				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
 				accumulator.add(assessed);
 			}
