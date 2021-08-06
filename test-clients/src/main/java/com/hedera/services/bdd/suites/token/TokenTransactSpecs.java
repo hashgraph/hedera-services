@@ -98,38 +98,39 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						balancesChangeOnTokenTransfer(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreValid(),
-						balancesAreChecked(),
-						duplicateAccountsInTokenTransferRejected(),
-						tokenOnlyTxnsAreAtomic(),
-						tokenPlusHbarTxnsAreAtomic(),
-						nonZeroTransfersRejected(),
-						prechecksWork(),
-						missingEntitiesRejected(),
-						allRequiredSigsAreChecked(),
-						uniqueTokenTxnAccountBalance(),
-						uniqueTokenTxnAccountBalancesForTreasury(),
-						uniqueTokenTxnWithNoAssociation(),
-						uniqueTokenTxnWithFrozenAccount(),
-						uniqueTokenTxnWithSenderNotSigned(),
-						uniqueTokenTxnWithReceiverNotSigned(),
-						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn(),
-						cannotSendFungibleToDissociatedContractsOrAccounts(),
-						cannotGiveNftsToDissociatedContractsOrAccounts(),
-						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-						transferListsEnforceTokenTypeRestrictions(),
-						/* HIP-18 charging case studies */
-						fixedHbarCaseStudy(),
-						fractionalCaseStudy(),
-						simpleHtsFeeCaseStudy(),
-						nestedHbarCaseStudy(),
-						nestedFractionalCaseStudy(),
-						nestedHtsCaseStudy(),
-						treasuriesAreExemptFromAllCustomFees(),
-						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+//						balancesChangeOnTokenTransfer(),
+//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+//						senderSigsAreValid(),
+//						balancesAreChecked(),
+//						duplicateAccountsInTokenTransferRejected(),
+//						tokenOnlyTxnsAreAtomic(),
+//						tokenPlusHbarTxnsAreAtomic(),
+//						nonZeroTransfersRejected(),
+//						prechecksWork(),
+//						missingEntitiesRejected(),
+//						allRequiredSigsAreChecked(),
+//						uniqueTokenTxnAccountBalance(),
+//						uniqueTokenTxnAccountBalancesForTreasury(),
+//						uniqueTokenTxnWithNoAssociation(),
+//						uniqueTokenTxnWithFrozenAccount(),
+//						uniqueTokenTxnWithSenderNotSigned(),
+//						uniqueTokenTxnWithReceiverNotSigned(),
+//						uniqueTokenTxnsAreAtomic(),
+//						uniqueTokenDeletedTxn(),
+//						cannotSendFungibleToDissociatedContractsOrAccounts(),
+//						cannotGiveNftsToDissociatedContractsOrAccounts(),
+//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+//						transferListsEnforceTokenTypeRestrictions(),
+//						/* HIP-18 charging case studies */
+//						fixedHbarCaseStudy(),
+//						fractionalCaseStudy(),
+//						simpleHtsFeeCaseStudy(),
+//						nestedHbarCaseStudy(),
+//						nestedFractionalCaseStudy(),
+//						nestedHtsCaseStudy(),
+//						treasuriesAreExemptFromAllCustomFees(),
+//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+						canTransactInTokenWithSelfDenominatedFixedFee(),
 				}
 		);
 	}
@@ -1299,6 +1300,36 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(tokenWithHtsFee, Long.MAX_VALUE - 1_000L),
 						getAccountBalance(DEFAULT_PAYER)
 								.hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L)
+				);
+	}
+
+	public HapiApiSpec canTransactInTokenWithSelfDenominatedFixedFee() {
+		final var protocolToken = "protocolToken";
+		final var gabriella = "gabriella";
+		final var harry = "harry";
+		final var feeExemptTxn = "feeExemptTxn";
+		final var nonExemptTxn = "nonExemptTxn";
+
+		return defaultHapiSpec("CanTransactInTokenWithSelfDenominatedFixedFee")
+				.given(
+						cryptoCreate(gabriella),
+						cryptoCreate(harry),
+						tokenCreate(protocolToken)
+								.blankMemo()
+								.name("Self-absorption")
+								.symbol("SELF")
+								.initialSupply(1_234_567L)
+								.treasury(gabriella)
+								.withCustom(fixedHtsFee(1, "0.0.0", gabriella))
+				).when(
+						tokenAssociate(harry, protocolToken),
+						cryptoTransfer(moving(100, protocolToken).between(gabriella, harry))
+								.via(feeExemptTxn),
+						getTxnRecord(feeExemptTxn).logged()
+				).then(
+						cryptoTransfer(moving(100, protocolToken).between(harry, gabriella))
+								.via(nonExemptTxn),
+						getTxnRecord(nonExemptTxn).logged()
 				);
 	}
 
