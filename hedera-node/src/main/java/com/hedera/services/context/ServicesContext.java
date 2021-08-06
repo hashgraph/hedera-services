@@ -270,6 +270,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -2320,15 +2321,15 @@ public class ServicesContext {
 		return state.uniqueTokens();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueTokenAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
 		return state.uniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
 		return state.uniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations() {
 		return state.uniqueTreasuryOwnershipAssociations();
 	}
 

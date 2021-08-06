@@ -662,4 +662,24 @@ public class MiscUtils {
 		}
 		return ordinary.build();
 	}
+
+	/**
+	 * A permutation (invertible function) on 64 bits.
+	 * The constants were found by automated search, to optimize avalanche.
+	 * This means that for a random number x, flipping bit i of x has about
+	 * a 50% chance of flipping bit j in perm64(x). And this is close to 50%
+	 * for every choice of (i,j).
+	 */
+	public static long perm64(long x) {
+		x += x << 10;
+		x ^= x >> 15;
+		x += x << 22;
+		x ^= x >> 2;
+		x += x << 3;
+		x ^= x >> 38;
+		x += x << 7;
+		x ^= x >> 11;
+		x += x << 22;
+		return x;
+	}
 }

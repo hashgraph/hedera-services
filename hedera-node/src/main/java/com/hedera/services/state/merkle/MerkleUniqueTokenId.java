@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -95,21 +96,9 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 
 	@Override
 	public int hashCode() {
-		return leemonLongHash(nftCode);
+		return (int) MiscUtils.perm64(nftCode);
 	}
 
-	private static int leemonLongHash(long x) {
-		x += x << 31;
-		x ^= x >> 15;
-		x += x << 17;
-		x ^= x >> 5;
-		x += x << 3;
-		x ^= x >> 33;
-		x += x << 7;
-		x ^= x >> 9;
-		x += x << 7;
-		return (int) x;
-	}
 
 	/* --- Bean --- */
 	@Override

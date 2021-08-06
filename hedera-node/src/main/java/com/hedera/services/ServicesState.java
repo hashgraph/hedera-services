@@ -48,6 +48,7 @@ import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -308,15 +309,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueTokenAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
 		return metadata.getUniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
 		return metadata.getUniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueTreasuryOwnershipAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations() {
 		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 

@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -59,7 +61,7 @@ class AbstractUniqTokenViewTest {
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<Integer, Long> nftsByType;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
 
 	private AbstractUniqTokenView subject;
 
@@ -79,7 +81,7 @@ class AbstractUniqTokenViewTest {
 		final var interpolatedInfo = GrpcUtils.reprOf(grpcTokenId, wildcardSerial, wildcardNft,
 				treasuryId.toGrpcAccountId());
 		setupFirstMockRange();
-		given(nftsByType.get(tokenId.identityCode(), start, end)).willReturn(firstMockRange);
+		given(nftsByType.get(asPhi(tokenId.identityCode()), start, end)).willReturn(firstMockRange);
 		given(tokens.get(tokenId.asMerkle())).willReturn(someToken);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
@@ -95,7 +97,7 @@ class AbstractUniqTokenViewTest {
 		// and:
 		final var desired = "MerkleUniqueTokenId{tokenId=0.0.6, serialNumber=1} was removed during query answering";
 
-		given(nftsByType.get(tokenId.identityCode(), start, end)).willReturn(firstMockRange);
+		given(nftsByType.get(asPhi(tokenId.identityCode()), start, end)).willReturn(firstMockRange);
 		given(tokens.get(tokenId.asMerkle())).willReturn(someToken);
 
 		// when:

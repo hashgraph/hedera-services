@@ -134,6 +134,7 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -212,9 +213,9 @@ class ServicesContextTest {
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations;
 	private AddressBook addresses;
 	private MerkleDiskFs diskFs;
 

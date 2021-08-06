@@ -43,6 +43,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -168,9 +169,9 @@ class StateViewTest {
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private FCMap<MerkleEntityId, MerkleAccount> contracts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
-	private FCOneToManyRelation<Integer, Long> nftsByType;
-	private FCOneToManyRelation<Integer, Long> nftsByOwner;
-	private FCOneToManyRelation<Integer, Long> treasuryNftsByType;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
+	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -314,9 +315,9 @@ class StateViewTest {
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
-		nftsByOwner = (FCOneToManyRelation<Integer, Long>) mock(FCOneToManyRelation.class);
-		nftsByType = (FCOneToManyRelation<Integer, Long>) mock(FCOneToManyRelation.class);
-		treasuryNftsByType = (FCOneToManyRelation<Integer, Long>) mock(FCOneToManyRelation.class);
+		nftsByOwner = (FCOneToManyRelation<PermHashInteger, Long>) mock(FCOneToManyRelation.class);
+		nftsByType = (FCOneToManyRelation<PermHashInteger, Long>) mock(FCOneToManyRelation.class);
+		treasuryNftsByType = (FCOneToManyRelation<PermHashInteger, Long>) mock(FCOneToManyRelation.class);
 		uniqTokenView = mock(UniqTokenView.class);
 		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
 

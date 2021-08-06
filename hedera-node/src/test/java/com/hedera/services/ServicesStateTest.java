@@ -40,6 +40,7 @@ import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -467,9 +468,9 @@ class ServicesStateTest {
 	@Test
 	void forwardsFcomtrAsExpected() {
 		// setup:
-		final FCOneToManyRelation<Integer, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<Integer, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<Integer, Long> c = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<PermHashInteger, Long> a = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<PermHashInteger, Long> b = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<PermHashInteger, Long> c = new FCOneToManyRelation<>();
 		// and:
 		subject.setMetadata(metadata);
 

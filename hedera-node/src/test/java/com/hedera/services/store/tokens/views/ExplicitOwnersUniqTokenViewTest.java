@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -56,9 +57,9 @@ class ExplicitOwnersUniqTokenViewTest {
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<Integer, Long> nftsByType;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
 	@Mock
-	private FCOneToManyRelation<Integer, Long> nftsByOwner;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
 
 	private ExplicitOwnersUniqTokenView subject;
 
@@ -74,7 +75,7 @@ class ExplicitOwnersUniqTokenViewTest {
 				grpcOwnerId);
 		setupFirstMockRange();
 
-		given(nftsByOwner.get(ownerId.identityCode(), start, end)).willReturn(firstMockRange);
+		given(nftsByOwner.get(PermHashInteger.asPhi(ownerId.identityCode()), start, end)).willReturn(firstMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 

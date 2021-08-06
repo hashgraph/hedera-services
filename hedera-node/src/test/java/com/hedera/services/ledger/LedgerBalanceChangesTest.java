@@ -46,6 +46,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -89,9 +90,9 @@ class LedgerBalanceChangesTest {
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private final FCOneToManyRelation<Integer, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
