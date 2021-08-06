@@ -663,7 +663,7 @@ class MerkleTokenTest {
 				"tokenDenomination=1" +
 				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, FcCustomFee{feeType=FRACTIONAL_FEE, " +
 				"fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, " +
-				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}], " +
+				"maximumUnitsToCollect=55, netOfTransfers=false}, feeCollector=EntityId{shard=4, realm=5, num=6}}], " +
 				"feeScheduleKey=<JEd25519Key: ed25519 hex=6e6f742d612d7265616c2d6665652d7363686564756c652d6b6579>}";
 
 		// expect:

@@ -330,5 +330,6 @@ class FeeAssessorTest {
 			denominator,
 			minAmountOfFractionalFee,
 			maxAmountOfFractionalFee,
+			false,
 			fractionalFeeCollector);
 }

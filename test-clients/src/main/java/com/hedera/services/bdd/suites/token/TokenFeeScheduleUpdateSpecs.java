@@ -158,7 +158,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
-										tokenCollector)),
+										false,tokenCollector)),
 						tokenCreate(immutableTokenWithFeeScheduleKey)
 								.feeScheduleKey(feeScheduleKey)
 								.treasury(tokenCollector)
@@ -167,6 +167,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector)),
 						tokenCreate(noFeeScheduleKeyToken)
 								.adminKey(adminKey)
@@ -176,6 +177,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -186,36 +188,42 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, 0,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenFeeScheduleUpdate(noFeeScheduleKeyToken)
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fractionalFee(
 										numerator, 0,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fractionalFee(
 										-numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										-minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(-maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
@@ -248,6 +256,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										newNumerator, newDenominator,
 										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
+										false,
 										newTokenCollector))
 				).then(
 						getTokenInfo(token)

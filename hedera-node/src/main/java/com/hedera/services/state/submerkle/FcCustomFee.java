@@ -90,10 +90,11 @@ public class FcCustomFee implements SelfSerializable {
 			long denominator,
 			long minimumUnitsToCollect,
 			long maximumUnitsToCollect,
+			boolean netOfTransfers,
 			EntityId feeCollector
 	) {
 		Objects.requireNonNull(feeCollector);
-		final var spec = new FractionalFeeSpec(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
+		final var spec = new FractionalFeeSpec(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
 		return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec);
 	}
 
@@ -123,12 +124,14 @@ public class FcCustomFee implements SelfSerializable {
 			final var fractionalSource = source.getFractionalFee();
 			final var fraction = fractionalSource.getFractionalAmount();
 			final var nominalMax = fractionalSource.getMaximumAmount();
+			final var netOfTransfers = fractionalSource.getNetOfTransfers();
 			final var effectiveMax = nominalMax == 0 ? Long.MAX_VALUE : nominalMax;
 			return fractionalFee(
 					fraction.getNumerator(),
 					fraction.getDenominator(),
 					fractionalSource.getMinimumAmount(),
 					effectiveMax,
+					netOfTransfers,
 					feeCollector);
 		}
 	}
@@ -225,8 +228,9 @@ public class FcCustomFee implements SelfSerializable {
 			var denominator = din.readLong();
 			var minimumUnitsToCollect = din.readLong();
 			var maximumUnitsToCollect = din.readLong();
+			var netOfTransfers = din.readBoolean();
 			fractionalFeeSpec = new FractionalFeeSpec(
-					numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
+					numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
 		}
 
 		feeCollector = din.readSerializable(true, EntityId::new);
@@ -244,6 +248,7 @@ public class FcCustomFee implements SelfSerializable {
 			dos.writeLong(fractionalFeeSpec.getDenominator());
 			dos.writeLong(fractionalFeeSpec.getMinimumAmount());
 			dos.writeLong(fractionalFeeSpec.getMaximumUnitsToCollect());
+			dos.writeBoolean(fractionalFeeSpec.getNetOfTransfers());
 		}
 		dos.writeSerializable(feeCollector, true);
 	}
@@ -263,12 +268,14 @@ public class FcCustomFee implements SelfSerializable {
 		private final long denominator;
 		private final long minimumUnitsToCollect;
 		private final long maximumUnitsToCollect;
+		private final boolean netOfTransfers;
 
 		public FractionalFeeSpec(
 				long numerator,
 				long denominator,
 				long minimumUnitsToCollect,
-				long maximumUnitsToCollect
+				long maximumUnitsToCollect,
+				boolean netOfTransfers
 		) {
 			if (denominator == 0) {
 				throw new IllegalArgumentException("Division by zero is not allowed");
@@ -283,6 +290,7 @@ public class FcCustomFee implements SelfSerializable {
 			this.denominator = denominator;
 			this.minimumUnitsToCollect = minimumUnitsToCollect;
 			this.maximumUnitsToCollect = maximumUnitsToCollect;
+			this.netOfTransfers = netOfTransfers;
 		}
 
 		public long getNumerator() {
@@ -301,6 +309,10 @@ public class FcCustomFee implements SelfSerializable {
 			return maximumUnitsToCollect;
 		}
 
+		public boolean getNetOfTransfers() {
+			return netOfTransfers;
+		}
+
 		@Override
 		public boolean equals(Object obj) {
 			if (this == obj) {
@@ -314,7 +326,8 @@ public class FcCustomFee implements SelfSerializable {
 			return this.numerator == that.numerator &&
 					this.denominator == that.denominator &&
 					this.minimumUnitsToCollect == that.minimumUnitsToCollect &&
-					this.maximumUnitsToCollect == that.maximumUnitsToCollect;
+					this.maximumUnitsToCollect == that.maximumUnitsToCollect &&
+					this.netOfTransfers == that.netOfTransfers;
 		}
 
 		@Override
@@ -329,6 +342,7 @@ public class FcCustomFee implements SelfSerializable {
 					.add("denominator", denominator)
 					.add("minimumUnitsToCollect", minimumUnitsToCollect)
 					.add("maximumUnitsToCollect", maximumUnitsToCollect)
+					.add("netOfTransfers", netOfTransfers)
 					.toString();
 		}
 	}

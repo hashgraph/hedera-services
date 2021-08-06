@@ -27,14 +27,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 
 public class AdjustmentUtils {
 	static void adjustForAssessed(Id payer, Id collector, Id denom, long amount, BalanceChangeManager manager) {
-		final var payerChange = adjustedChange(payer, denom, -amount, manager);
+		final var payerChange = adjustedChange(payer, denom, -amount, manager, false);
 		payerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
-		adjustedChange(collector, denom, +amount, manager);
+		adjustedChange(collector, denom, +amount, manager, false);
 	}
 
-	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager) {
+	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager, boolean changeSender) {
 		/* Always append a new change for an HTS debit since it could trigger another assessed fee */
-		if (denom != Id.MISSING_ID && amount < 0) {
+		if (denom != Id.MISSING_ID && amount < 0 && !changeSender) {
 			return includedHtsChange(account, denom, amount, manager);
 		}
 

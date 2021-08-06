@@ -55,7 +55,11 @@ class BalanceChangeManagerTest {
 	void understandsTriggerCandidates() {
 		// expect:
 		assertSame(firstFungibleTrigger, subject.nextAssessableChange());
+//		assertSame(secondFungibleTrigger, subject.nextAssessableChange());
+		assertSame(firstFungibleNonTrigger, subject.nextAssessableChange());
+		//assertSame(firstFungibleNonTrigger, subject.nextAssessableChange());
 		assertSame(secondFungibleTrigger, subject.nextAssessableChange());
+		assertSame(secondFungibleNonTrigger, subject.nextAssessableChange());
 		assertSame(firstNonFungibleTrigger, subject.nextAssessableChange());
 		assertNull(subject.nextAssessableChange());
 	}
@@ -116,7 +120,8 @@ class BalanceChangeManagerTest {
 		subject.includeChange(secondNonFungibleTrigger);
 		subject.includeChange(firstCredit);
 		subject.includeChange(secondCredit);
-		assertSame(secondNonFungibleTrigger, subject.nextAssessableChange());
+		//assertSame(secondNonFungibleTrigger, subject.nextAssessableChange());
+		assertSame(firstCredit, subject.nextAssessableChange());
 
 		// expect:
 		bothCreditsInCurrentLevel();
@@ -154,7 +159,8 @@ class BalanceChangeManagerTest {
 		subject.includeChange(secondFungibleTrigger);
 		subject.includeChange(secondFungibleNonTrigger);
 		// and:
-		assertSame(secondFungibleTrigger, subject.nextAssessableChange());
+		//assertSame(secondFungibleTrigger, subject.nextAssessableChange());
+		assertSame(firstFungibleNonTrigger, subject.nextAssessableChange());
 
 		// then:
 		assertEquals(2, subject.getLevelNo());

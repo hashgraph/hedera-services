@@ -61,7 +61,7 @@ public class CustomFeeTests {
 			String collector
 	) {
 		return (spec, actual) -> {
-			final var expected = builtFractional(numerator, denominator, min, max, collector, spec);
+			final var expected = builtFractional(numerator, denominator, min, max, false, collector, spec);
 			failUnlessPresent("fractional", actual, expected);
 		};
 	}

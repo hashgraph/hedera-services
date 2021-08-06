@@ -51,9 +51,21 @@ public class CustomFeeSpecs {
 			long denominator,
 			long min,
 			OptionalLong max,
+			boolean netOfTransfers,
 			String collector
 	) {
-		return spec -> builtFractional(numerator, denominator, min, max, collector, spec);
+		return spec -> builtFractional(numerator, denominator, min, max, false, collector, spec);
+	}
+
+	public static Function<HapiApiSpec, CustomFee> fractionalFeeTemp(
+			long numerator,
+			long denominator,
+			long min,
+			OptionalLong max,
+			boolean netOfTransfers,
+			String collector
+	) {
+		return spec -> builtFractional(numerator, denominator, min, max, netOfTransfers, collector, spec);
 	}
 
 	public static Function<HapiApiSpec, CustomFee> incompleteCustomFee(String collector) {
@@ -91,6 +103,7 @@ public class CustomFeeSpecs {
 			long denominator,
 			long min,
 			OptionalLong max,
+			boolean netOfTransfer,
 			String collector,
 			HapiApiSpec spec
 	) {
@@ -99,7 +112,8 @@ public class CustomFeeSpecs {
 				.setFractionalAmount(Fraction.newBuilder()
 						.setNumerator(numerator)
 						.setDenominator(denominator))
-				.setMinimumAmount(min);
+				.setMinimumAmount(min)
+				.setNetOfTransfers(netOfTransfer);
 		max.ifPresent(fractionalBuilder::setMaximumAmount);
 		return  CustomFee.newBuilder()
 				.setFractionalFee(fractionalBuilder)

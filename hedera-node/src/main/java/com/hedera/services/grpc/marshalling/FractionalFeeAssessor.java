@@ -41,19 +41,42 @@ public class FractionalFeeAssessor {
 			BalanceChangeManager changeManager,
 			List<FcAssessedCustomFee> accumulator
 	) {
-		final var initialUnits = -change.units();
-		if (initialUnits < 0) {
-			throw new IllegalArgumentException("Cannot assess fees to a credit");
+		if (feesWithFractional.isEmpty()) {
+			throw new IllegalArgumentException("Custom fees can't be empty here");
 		}
-
-		var unitsLeft = initialUnits;
 		final var payer = change.getAccount();
-		final var denom = change.getToken();
+
+		// Check all fractional fee schedules, for transfer may pay multiple fractional fees to different collector(?)
+		// we need to process the combo (change, fractional fee schedule) one by one
 		for (var fee : feesWithFractional) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
 				continue;
 			}
+
+			ResponseCodeEnum result = assessOneFractionalForThisChange(change, fee, changeManager, accumulator);
+			if(result != OK) {
+				return result;
+			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum assessOneFractionalForThisChange(final BalanceChange change,
+			final FcCustomFee fee,
+			BalanceChangeManager changeManager,
+			List<FcAssessedCustomFee> accumulator) {
+
+		final boolean chargeSender = fee.getFractionalFeeSpec().getNetOfTransfers();
+		final var collector = fee.getFeeCollectorAsId();
+		if(chargeSender) {
+			if (change.units() < 0) { //     // charge sender
+				//if(chargeSender && change.units() < 0) { // ? this doesn't work
+			final var initialUnits = -change.units();
+
+			var totalCharge = initialUnits;
+			final var payer = change.getAccount();
+			final var denom = change.getToken();
 
 			var assessedAmount = 0L;
 			try {
@@ -62,20 +85,54 @@ public class FractionalFeeAssessor {
 				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 			}
 
-			unitsLeft -= assessedAmount;
-			if (unitsLeft < 0) {
-				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
-			}
-			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
-			try {
-				reclaim(assessedAmount, creditsToReclaimFrom);
-			} catch (ArithmeticException ignore) {
-				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-			}
+			System.out.println("token fee: " + assessedAmount);
 
-			adjustedChange(collector, denom, assessedAmount, changeManager);
-			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+//			totalCharge += assessedAmount;
+//			check if its account balance is sufficient
+//			if (totalCharge > payer.asMerkle()) {
+//				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+//			}
+
+			adjustedChange(payer, denom, -assessedAmount, changeManager, chargeSender);
+			adjustedChange(collector, denom, assessedAmount, changeManager, chargeSender);
+			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(),
+					-assessedAmount);
 			accumulator.add(assessed);
+			}
+		}
+		else {
+			if (change.units() > 0 ) { //  charge receiver
+               // else if (change.units() > 0 && !chargeSender) { //
+
+				final var initialUnits = change.units();
+
+				System.out.println("Processing charge receiver: " + change.getAccount());
+
+				var unitsLeft = initialUnits;
+				final var denom = change.getToken();
+
+				var assessedAmount = 0L;
+				try {
+					assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
+				} catch (ArithmeticException ignore) {
+					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				}
+
+				unitsLeft -= assessedAmount;
+				if (unitsLeft < 0) {
+					return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+				}
+				final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
+				try {
+					reclaim(assessedAmount, creditsToReclaimFrom);
+				} catch (ArithmeticException ignore) {
+					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				}
+
+				adjustedChange(collector, denom, assessedAmount, changeManager, chargeSender);
+				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+				accumulator.add(assessed);
+			}
 		}
 		return OK;
 	}

@@ -83,7 +83,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+				subject.assessAllFractional(vanillaTriggerForReceiver, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(OK, result);
@@ -112,7 +112,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+				subject.assessAllFractional(vanillaTriggerForReceiver, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -125,7 +125,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+				subject.assessAllFractional(vanillaTriggerForReceiver, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -138,7 +138,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(wildlyInsufficientChange, fees, changeManager, accumulator);
+				subject.assessAllFractional(wildlyInsufficientChangeForReceiver, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE, result);
@@ -286,31 +286,40 @@ class FractionalFeeAssessorTest {
 			firstDenominator,
 			firstMinAmountOfFractionalFee,
 			firstMaxAmountOfFractionalFee,
+			false,
 			firstFractionalFeeCollector);
 	private final FcCustomFee secondFractionalFee = FcCustomFee.fractionalFee(
 			secondNumerator,
 			secondDenominator,
 			secondMinAmountOfFractionalFee,
 			secondMaxAmountOfFractionalFee,
+			false,
 			secondFractionalFeeCollector);
 	private final FcCustomFee exemptFractionalFee = FcCustomFee.fractionalFee(
 			firstNumerator,
 			secondDenominator,
 			firstMinAmountOfFractionalFee,
 			secondMaxAmountOfFractionalFee,
+			false,
 			payer.asEntityId());
 	private final FcCustomFee nonsenseFee = FcCustomFee.fractionalFee(
 			nonsenseNumerator,
 			nonsenseDenominator,
 			0,
 			0,
+			false,
 			secondFractionalFeeCollector);
 	private final BalanceChange vanillaTrigger = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -vanillaTriggerAmount);
+	private final BalanceChange vanillaTriggerForReceiver = BalanceChange.tokenAdjust(
+			payer, tokenWithFractionalFee, vanillaTriggerAmount);
+
 	private final BalanceChange firstVanillaReclaim = BalanceChange.tokenAdjust(
 			firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
 	private final BalanceChange secondVanillaReclaim = BalanceChange.tokenAdjust(
 			secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
 	private final BalanceChange wildlyInsufficientChange = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -1);
+	private final BalanceChange wildlyInsufficientChangeForReceiver = BalanceChange.tokenAdjust(
+			payer, tokenWithFractionalFee, 1);
 }

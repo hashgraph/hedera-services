@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeTemp;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -123,7 +124,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						transferListsEnforceTokenTypeRestrictions(),
 						/* HIP-18 charging case studies */
 						fixedHbarCaseStudy(),
-						fractionalCaseStudy(),
+						fractionalChargeFeeToReceiver(),
+						fractionalChargeFeeToSender(),
+
 						simpleHtsFeeCaseStudy(),
 						nestedHbarCaseStudy(),
 						nestedFractionalCaseStudy(),
@@ -622,6 +625,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate(FIRST_USER, A_TOKEN),
+						//tokenAssociate(SECOND_USER, A_TOKEN),
 						tokenAssociate(SECOND_USER, B_TOKEN)
 				).when(
 						cryptoTransfer(
@@ -961,25 +965,30 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec fractionalCaseStudy() {
+	public HapiApiSpec fractionalChargeFeeToSender() {
 		final var alice = "Alice";
 		final var bob = "Bob";
 		final var tokenWithFractionalFee = "TokenWithFractionalFee";
 		final var treasuryForToken = "TokenTreasury";
+		final var collectorForToken = "AnotherTokenTreasury";
 
 		final var txnFromTreasury = "txnFromTreasury";
 		final var txnFromBob = "txnFromBob";
 
-		return defaultHapiSpec("FractionalCaseStudy")
+		return defaultHapiSpec("fractionalChargeFeeToSender")
 				.given(
 						cryptoCreate(alice),
 						cryptoCreate(bob),
 						cryptoCreate(treasuryForToken),
+						cryptoCreate(collectorForToken),
 						tokenCreate(tokenWithFractionalFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForToken)
-								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), treasuryForToken)),
+								.withCustom(fractionalFeeTemp(1L, 100L, 1L, OptionalLong.of(5L), true,treasuryForToken)),
+
+
 						tokenAssociate(alice, tokenWithFractionalFee),
+						tokenAssociate(collectorForToken, tokenWithFractionalFee),
 						tokenAssociate(bob, tokenWithFractionalFee),
 						cryptoTransfer(moving(1_000_000L, tokenWithFractionalFee).between(treasuryForToken, bob))
 								.payingWith(treasuryForToken)
@@ -992,23 +1001,83 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.payingWith(bob)
 								.fee(ONE_HBAR)
 								.via(txnFromBob)
+						.hasKnownStatus(SUCCESS)
 				).then(
-						getTxnRecord(txnFromTreasury)
+						getTxnRecord(txnFromTreasury).logged()
 								.hasTokenAmount(tokenWithFractionalFee, bob, 1_000_000L)
 								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, -1_000_000L),
 						getTxnRecord(txnFromBob)
-								.hasTokenAmount(tokenWithFractionalFee, bob, -1_000L)
-								.hasTokenAmount(tokenWithFractionalFee, alice, 995L)
-								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, 5L)
+								.hasTokenAmount(tokenWithFractionalFee, bob, -1_005L)
+								.hasTokenAmount(tokenWithFractionalFee, alice, 1000L)
+								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, -5L)
 								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, 5L),
 						getAccountBalance(alice)
-								.hasTokenBalance(tokenWithFractionalFee, 995L),
+								.hasTokenBalance(tokenWithFractionalFee, 1_000L),
 						getAccountBalance(bob)
-								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L),
+								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_005L),
 						getAccountBalance(treasuryForToken)
 								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L)
 				);
 	}
+
+
+
+	public HapiApiSpec fractionalChargeFeeToReceiver() {
+		final var alice = "Alice";
+		final var bob = "Bob";
+		final var tokenWithFractionalFee = "TokenWithFractionalFee";
+		final var treasuryForToken = "TokenTreasury";
+		final var collectorForToken = "AnotherTokenTreasury";
+
+		final var txnFromTreasury = "txnFromTreasury";
+		final var txnFromBob = "txnFromBob";
+
+		return defaultHapiSpec("fractionalChargeFeeToReceiver")
+				.given(
+						cryptoCreate(alice),
+						cryptoCreate(bob),
+						cryptoCreate(treasuryForToken),
+						cryptoCreate(collectorForToken),
+						tokenCreate(tokenWithFractionalFee)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasuryForToken)
+								.withCustom(fractionalFeeTemp(1L, 100L, 1L, OptionalLong.of(5L), false,treasuryForToken)),
+
+
+						tokenAssociate(alice, tokenWithFractionalFee),
+						tokenAssociate(collectorForToken, tokenWithFractionalFee),
+						tokenAssociate(bob, tokenWithFractionalFee),
+						cryptoTransfer(moving(1_000_000L, tokenWithFractionalFee).between(treasuryForToken, bob))
+								.payingWith(treasuryForToken)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury)
+				).when(
+						cryptoTransfer(
+								moving(1_000L, tokenWithFractionalFee).between(bob, alice)
+						)
+								.payingWith(bob)
+								.fee(ONE_HBAR)
+								.via(txnFromBob)
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getTxnRecord(txnFromTreasury).logged()
+								.hasTokenAmount(tokenWithFractionalFee, bob, 1_000_000L - 5L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, -1_000_000L + 5L),
+						getTxnRecord(txnFromBob)
+								.hasTokenAmount(tokenWithFractionalFee, bob, -1_000L)
+								.hasTokenAmount(tokenWithFractionalFee, alice, 995L)
+								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, 5L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, 5L) ,
+
+						getAccountBalance(alice)
+								.hasTokenBalance(tokenWithFractionalFee, 995L),
+						getAccountBalance(bob)
+								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L -5L),
+						getAccountBalance(treasuryForToken)
+								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 10L)
+				);
+	}
+
 
 	public HapiApiSpec simpleHtsFeeCaseStudy() {
 		final var claire = "Claire";
@@ -1045,7 +1114,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								moving(100L, simpleHtsFeeToken).between(claire, debbie)
 						)
-								.payingWith(claire)
+								//.payingWith(claire)
 								.fee(ONE_HBAR)
 								.via(txnFromClaire)
 				).then(
@@ -1166,6 +1235,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForNestedCollection)
 								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L),
+										false,
 										treasuryForNestedCollection)),
 						tokenAssociate(treasuryForTopLevelCollection, tokenWithFractionalFee),
 						tokenCreate(tokenWithNestedFee)
@@ -1330,7 +1400,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury(treasuryForTopLevel)
 								.withCustom(fixedHbarFee(ONE_HBAR, collectorForTopLevel))
 								.withCustom(fixedHtsFee(50L, feeToken, collectorForTopLevel))
-								.withCustom(fractionalFee(1L, 10L, 5L, OptionalLong.of(50L), collectorForTopLevel))
+								.withCustom(fractionalFee(1L, 10L, 5L, OptionalLong.of(50L),
+										false, collectorForTopLevel))
 								.signedBy(DEFAULT_PAYER, treasuryForTopLevel, collectorForTopLevel),
 						tokenAssociate(nonTreasury, List.of(topLevelToken, feeToken)),
 						tokenAssociate(edgar, topLevelToken),
@@ -1414,8 +1485,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury(treasuryForTopLevel)
 								.withCustom(fixedHbarFee(ONE_HBAR, firstCollectorForTopLevel))
 								.withCustom(fixedHbarFee(2 * ONE_HBAR, secondCollectorForTopLevel))
-								.withCustom(fractionalFee(1L, 20L, 0L, OptionalLong.of(0L), firstCollectorForTopLevel))
-								.withCustom(fractionalFee(1L, 10L, 0L, OptionalLong.of(0L), secondCollectorForTopLevel))
+								.withCustom(fractionalFee(1L, 20L, 0L, OptionalLong.of(0L),
+										false, firstCollectorForTopLevel))
+								.withCustom(fractionalFee(1L, 10L, 0L, OptionalLong.of(0L),
+										false, secondCollectorForTopLevel))
 								.signedBy(DEFAULT_PAYER, treasuryForTopLevel, firstCollectorForTopLevel,
 										secondCollectorForTopLevel),
 						tokenAssociate(edgar, topLevelToken),

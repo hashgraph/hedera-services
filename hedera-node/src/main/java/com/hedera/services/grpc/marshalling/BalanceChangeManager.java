@@ -123,7 +123,8 @@ public class BalanceChangeManager {
 	}
 
 	private boolean couldTriggerCustomFees(BalanceChange candidate) {
-		return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
+		//return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
+		return candidate.isForNft() || (!candidate.isForHbar());
 	}
 
 	private boolean matches(BalanceChange change, Id account, Id denom) {

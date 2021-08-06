@@ -47,7 +47,7 @@ class AdjustmentUtilsTest {
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
 		// when:
-		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager);
+		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager, false);
 
 		// then:
 		Assertions.assertEquals(expectedChange, change);
@@ -64,7 +64,7 @@ class AdjustmentUtilsTest {
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
 		// when:
-		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager);
+		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager, false);
 
 		// then:
 		Assertions.assertEquals(expectedChange, change);

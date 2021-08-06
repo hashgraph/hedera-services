@@ -547,7 +547,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, 0,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
-										tokenCollector))
+										false, tokenCollector))
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenCreate(token)
 								.treasury(tokenCollector)
@@ -580,6 +580,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, -denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenCreate(token)
@@ -587,6 +588,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										-minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenCreate(token)
@@ -594,6 +596,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(-maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenCreate(token)
@@ -601,6 +604,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										-numerator, -denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenCreate(token)
@@ -608,6 +612,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(minimumToCollect - 1),
+										false,
 										tokenCollector))
 								.hasKnownStatus(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT),
 						tokenCreate(token)
@@ -615,6 +620,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(minimumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(SUCCESS),
 						fileUpdate(APP_PROPERTIES)
@@ -628,6 +634,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 				).then(
 						getTokenInfo(token)
@@ -656,7 +663,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, 0,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
-										tokenCollector))
+										false, tokenCollector))
 								.hasKnownStatus(INVALID_SIGNATURE),
 						tokenCreate(token)
 								.treasury(TOKEN_TREASURY)
@@ -667,6 +674,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, -denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.hasKnownStatus(INVALID_SIGNATURE),
 						tokenCreate(token)
@@ -676,6 +684,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 								.signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector)
 				).then(

@@ -135,6 +135,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minHtsFee, OptionalLong.of(maxHtsFee),
+										false,
 										htsCollector)),
 
 						tokenAssociate(tokenReceiver, token),
