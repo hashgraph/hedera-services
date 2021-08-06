@@ -33,13 +33,10 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.runners.MethodSorters;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -62,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * desez 5) Create a Key Proto, sez & desez
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @DisplayName("JKeySerializer Test Suite")
 public class JkeySerializerTest {
 
@@ -184,7 +180,7 @@ public class JkeySerializerTest {
 
       //verify the size
       int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals(1, size);
+      assertEquals(1, size);
     } else if (depth == 2) {
       List<Key> keys = new ArrayList<>();
       keys.add(genSingleEd25519Key(pubKey2privKeyMap));
@@ -194,7 +190,7 @@ public class JkeySerializerTest {
 
       //verify the size
       int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals(1 + numKeys * 2, size);
+      assertEquals(1 + numKeys * 2, size);
     } else {
       throw new Exception("Not implemented yet.");
     }

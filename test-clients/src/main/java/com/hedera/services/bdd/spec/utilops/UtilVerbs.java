@@ -67,7 +67,7 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -119,7 +119,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
@@ -508,7 +508,9 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {}, op -> {});
+				op -> {
+				}, op -> {
+				});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -586,15 +588,15 @@ public class UtilVerbs {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			long contractListSize = spec.registry().getAmount(contractList + "Size");
-			Assert.assertEquals(contractList + " has bad size!", expectedSize, contractListSize);
+			Assertions.assertEquals(expectedSize, contractListSize, contractList + " has bad size!");
 			if (contractListSize > 1) {
 				ContractID currentID = spec.registry().getContractId(contractList + "0");
 				long nextIndex = 1;
 				while (nextIndex < contractListSize) {
 					ContractID nextID = spec.registry().getContractId(contractList + nextIndex);
-					Assert.assertEquals(currentID.getShardNum(), nextID.getShardNum());
-					Assert.assertEquals(currentID.getRealmNum(), nextID.getRealmNum());
-					Assert.assertTrue(currentID.getContractNum() < nextID.getContractNum());
+					Assertions.assertEquals(currentID.getShardNum(), nextID.getShardNum());
+					Assertions.assertEquals(currentID.getRealmNum(), nextID.getRealmNum());
+					Assertions.assertTrue(currentID.getContractNum() < nextID.getContractNum());
 					currentID = nextID;
 					nextIndex++;
 				}
@@ -635,14 +637,15 @@ public class UtilVerbs {
 					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
 					/ 100;
 			assertEquals(
+					expectedUsd,
+					actualUsdCharged,
+					(allowedPercentDiff / 100.0) * expectedUsd,
 					String.format(
 							"%s fee (%s) more than %.2f percent different than expected!",
 							CryptoTransferSuite.sdec(actualUsdCharged, 4),
 							txn,
-							allowedPercentDiff),
-					expectedUsd,
-					actualUsdCharged,
-					(allowedPercentDiff / 100.0) * expectedUsd);
+							allowedPercentDiff)
+			);
 		});
 	}
 
@@ -693,7 +696,7 @@ public class UtilVerbs {
 					.filter(aa -> feeRecipients.contains(aa.getAccountID()))
 					.mapToLong(AccountAmount::getAmount)
 					.sum();
-			Assert.assertEquals("Inconsistent transactionFee field!", realFee, record.getTransactionFee());
+			Assertions.assertEquals(realFee, record.getTransactionFee(), "Inconsistent transactionFee field!");
 		});
 	}
 
@@ -763,9 +766,9 @@ public class UtilVerbs {
 				long actualBalance = actualBalances.getOrDefault(account, -1L);
 				assertLog.info("Balance of " + account + " was expected to be " + expectedBalance
 						+ ", is actually " + actualBalance + "...");
-				Assert.assertEquals(
-						"New balance for " + account + " should be " + expectedBalance + " tinyBars.",
-						expectedBalance, actualBalance);
+				Assertions.assertEquals(
+						expectedBalance, actualBalance,
+						"New balance for " + account + " should be " + expectedBalance + " tinyBars.");
 			});
 		});
 	}

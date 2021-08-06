@@ -27,10 +27,11 @@ import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
+import com.hedera.services.legacy.client.util.KeyExpansion;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -38,12 +39,11 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.client.util.TransactionSigner;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -231,8 +231,8 @@ public class KeyFactory implements Serializable {
 
 	private Entry<Key, SigControl> asAuthor(Key key, Map<Key, SigControl> overrides) {
 		SigControl control = overrides.getOrDefault(key, controlMap.get(key));
-		Assert.assertNotNull("Missing sig control!", control);
-		Assert.assertTrue("Key shape doesn't match sig control! control=" + control, control.appliesTo(key));
+		Assertions.assertNotNull(control, "Missing sig control!");
+		Assertions.assertTrue(control.appliesTo(key), "Key shape doesn't match sig control! control=" + control);
 		return new AbstractMap.SimpleEntry<>(key, control);
 	}
 
@@ -403,7 +403,7 @@ public class KeyFactory implements Serializable {
 		}
 
 		private KeyList composing(KeyLabel[] ls, SigControl[] cs) {
-			Assert.assertEquals("Incompatible ls and cs!", ls.length, cs.length);
+			Assertions.assertEquals(ls.length, cs.length, "Incompatible ls and cs!");
 			int N = ls.length;
 			return KeyList.newBuilder().addAllKeys(
 					IntStream.range(0, N)

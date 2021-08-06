@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
@@ -128,7 +127,7 @@ public class FeesJsonToProtoSerdeTest {
 	@Test
 	public void throwIseOnFailure() {
 		// expect:
-		assertThrows(IOException.class, () -> loadFeeScheduleFromJson("no-such-resource.json"));
+		assertThrows(IllegalArgumentException.class, () -> loadFeeScheduleFromJson("no-such-resource.json"));
 	}
 
 	@Test

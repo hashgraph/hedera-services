@@ -49,7 +49,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.time.Instant;
@@ -334,7 +334,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 				}
 			}
 			if (!gotFileContents) {
-				Assert.fail("Unable to use 'overridingProps', couldn't get existing file contents!");
+				Assertions.fail("Unable to use 'overridingProps', couldn't get existing file contents!");
 			}
 			try {
 				byte[] bytes = subOp.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();

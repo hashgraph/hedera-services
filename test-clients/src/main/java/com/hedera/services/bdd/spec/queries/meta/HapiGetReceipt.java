@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 
@@ -66,6 +66,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	public HapiGetReceipt(String txn) {
 		this.txn = txn;
 	}
+
 	public HapiGetReceipt(TransactionID txnId) {
 		explicitTxnId = Optional.of(txnId);
 	}
@@ -123,23 +124,23 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		var receipt = response.getTransactionGetReceipt().getReceipt();
 		if (expectedPriorityStatus.isPresent()) {
 			ResponseCodeEnum actualStatus = receipt.getStatus();
-			Assert.assertEquals(expectedPriorityStatus.get(), actualStatus);
+			Assertions.assertEquals(expectedPriorityStatus.get(), actualStatus);
 		}
 		if (expectedDuplicateStatuses.isPresent()) {
 			var duplicates = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList()
 					.stream()
 					.map(TransactionReceipt::getStatus)
 					.toArray(n -> new ResponseCodeEnum[n]);
-			Assert.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
+			Assertions.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
 		}
 		if (expectedScheduledTxnId.isPresent()) {
 			var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
 			var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
-			Assert.assertEquals("Wrong scheduled transaction id!", expected, actual);
+			Assertions.assertEquals(expected, actual, "Wrong scheduled transaction id!");
 		}
 		if (expectedSchedule.isPresent()) {
 			var schedule = TxnUtils.asScheduleId(expectedSchedule.get(), spec);
-			Assert.assertEquals("Wrong/missing schedule id!", schedule, receipt.getScheduleID());
+			Assertions.assertEquals(schedule, receipt.getScheduleID(), "Wrong/missing schedule id!");
 		}
 	}
 
@@ -147,10 +148,16 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	protected boolean needsPayment() {
 		return false;
 	}
+
 	@Override
-	protected long costOnlyNodePayment(HapiApiSpec spec) { return 0L; }
+	protected long costOnlyNodePayment(HapiApiSpec spec) {
+		return 0L;
+	}
+
 	@Override
-	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) { return 0L; }
+	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) {
+		return 0L;
+	}
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
