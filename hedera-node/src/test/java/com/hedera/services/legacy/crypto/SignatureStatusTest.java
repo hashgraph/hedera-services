@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SignatureStatusTest {
 	@Test
-	public void formatsUnresolvableSigners() {
+	void formatsUnresolvableSigners() {
 		// given:
 		String expMsg = "Cannot resolve required signers for scheduled txn " +
 				"[ source = 'handleTransaction', scheduled = '', error = 'INVALID_SCHEDULE_ID' ]";
@@ -57,7 +57,7 @@ class SignatureStatusTest {
 	}
 
 	@Test
-	public void formatsNestedScheduleCreate() {
+	void formatsNestedScheduleCreate() {
 		// setup:
 		var txnId = TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.75231")).build();
 		// given:

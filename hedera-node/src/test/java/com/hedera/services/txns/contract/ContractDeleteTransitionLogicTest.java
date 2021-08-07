@@ -86,7 +86,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -95,7 +95,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsDetached() {
+	void rejectsDetached() {
 		givenValidTxnCtx();
 		given(ledger.exists(transfer)).willReturn(true);
 		given(ledger.isDetached(transfer)).willReturn(true);
@@ -109,7 +109,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesBadDelete() {
+	void capturesBadDelete() {
 		// setup:
 		TransactionRecord deleteRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -129,7 +129,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
+	void followsHappyPathWithOverrides() {
 		// setup:
 		TransactionRecord updateRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -149,7 +149,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -157,7 +157,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() {
+	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
@@ -167,7 +167,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 
 		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);

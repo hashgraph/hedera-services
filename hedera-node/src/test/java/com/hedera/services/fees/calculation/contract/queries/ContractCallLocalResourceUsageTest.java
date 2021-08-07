@@ -85,7 +85,7 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		var applicable = localCallQuery(target, COST_ANSWER);
 		var inapplicable = Query.getDefaultInstance();
@@ -96,7 +96,7 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	@Test
-	public void setsResultInQueryCxtIfPresent() throws Exception {
+	void setsResultInQueryCxtIfPresent() throws Exception {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 		var response = okResponse();
@@ -127,7 +127,7 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	@Test
-	public void treatsAnswerOnlyEstimateAsExpected() {
+	void treatsAnswerOnlyEstimateAsExpected() {
 		// setup:
 		var response = subject.dummyResponse(target);
 		var expected = expectedUsage();
@@ -146,7 +146,7 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	@Test
-	public void translatesDelegateException() throws Exception {
+	void translatesDelegateException() throws Exception {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 
@@ -159,7 +159,7 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	@Test
-	public void dummyResponseAsExpected() {
+	void dummyResponseAsExpected() {
 		// given:
 		var dummy = subject.dummyResponse(target);
 

@@ -49,14 +49,14 @@ class FreezeResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(freezeTxn));
 		assertFalse(subject.applicableTo(nonFreezeTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(null, null, null));
 	}

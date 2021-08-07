@@ -35,7 +35,7 @@ class UncheckedSubmitTransitionLogicTest {
 	UncheckedSubmitTransitionLogic subject = new UncheckedSubmitTransitionLogic();
 
 	@Test
-	public void hasExpectedApplicability() {
+	void hasExpectedApplicability() {
 		// setup:
 		var applicability = subject.applicability();
 
@@ -49,13 +49,13 @@ class UncheckedSubmitTransitionLogicTest {
 	}
 
 	@Test
-	public void rubberstampsEverything() {
+	void rubberstampsEverything() {
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
-	public void throwsIseOnTransitionAttempt() {
+	void throwsIseOnTransitionAttempt() {
 		// expect:
 		assertDoesNotThrow(subject::doStateTransition);
 	}

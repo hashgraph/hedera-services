@@ -101,7 +101,7 @@ public class TxnAwareRecordsHistorianTest {
 	private TxnAwareRecordsHistorian subject;
 
 	@Test
-	public void lastAddedIsEmptyAtFirst() {
+	void lastAddedIsEmptyAtFirst() {
 		setupForAdd();
 
 		// expect:
@@ -109,7 +109,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void addsRecordToAllQualifyingAccounts() {
+	void addsRecordToAllQualifyingAccounts() {
 		setupForAdd();
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
@@ -129,7 +129,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void managesAddNewEntities() {
+	void managesAddNewEntities() {
 		setupForAdd();
 
 		// when:
@@ -145,7 +145,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void doesNotTrackExpiringEntity() {
+	void doesNotTrackExpiringEntity() {
 		setupForAdd();
 		given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
 
@@ -162,7 +162,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void managesReviewRecordsCorrectly() {
+	void managesReviewRecordsCorrectly() {
 		setupForReview();
 
 		// when:

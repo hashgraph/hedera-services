@@ -56,28 +56,28 @@ public class JKeyListTest {
 	}
 
 	@Test
-	public void defaultConstructor() {
+	void defaultConstructor() {
 		final var cut = new JKeyList();
 
 		assertEquals(0, cut.getKeysList().size());
 	}
 
 	@Test
-	public void isEmptySubkeys() {
+	void isEmptySubkeys() {
 		final var cut = new JKeyList(List.of(new JEd25519Key(new byte[0])));
 
 		assertTrue(cut.isEmpty());
 	}
 
 	@Test
-	public void isNotEmpty() {
+	void isNotEmpty() {
 		final var cut = new JKeyList(List.of(new JECDSA_384Key(new byte[1])));
 
 		assertFalse(cut.isEmpty());
 	}
 
 	@Test
-	public void invalidJKeyListTest() throws Exception {
+	void invalidJKeyListTest() throws Exception {
 		Key validED25519Key = Key.newBuilder().setEd25519(
 				TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
@@ -99,7 +99,7 @@ public class JKeyListTest {
 	}
 
 	@Test
-	public void validJKeyListTest() throws Exception {
+	void validJKeyListTest() throws Exception {
 		Key validED25519Key = Key.newBuilder().setEd25519(
 				TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
@@ -124,7 +124,7 @@ public class JKeyListTest {
 	}
 
 	@Test
-	public void requiresAnExplicitScheduledChild() {
+	void requiresAnExplicitScheduledChild() {
 		// setup:
 		var ed25519Key = new JEd25519Key("ed25519".getBytes());
 		var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
@@ -147,7 +147,7 @@ public class JKeyListTest {
 	}
 
 	@Test
-	public void propagatesScheduleScope() {
+	void propagatesScheduleScope() {
 		// setup:
 		var ed25519Key = new JEd25519Key("ed25519".getBytes());
 		var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());

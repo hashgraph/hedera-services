@@ -52,13 +52,13 @@ public class SingletonContextsManagerTest {
 	}
 
 	@Test
-	public void failsFastOnMissingContext() {
+	void failsFastOnMissingContext() {
 		// expect:
 		assertThrows(ContextNotFoundException.class, () -> CONTEXTS.lookup(1L));
 	}
 
 	@Test
-	public void createsExpectedContext() {
+	void createsExpectedContext() {
 		// given:
 		assertFalse(CONTEXTS.isInitialized(1L));
 

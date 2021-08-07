@@ -33,7 +33,7 @@ public class MerkleAccountCustomizerTest {
 	HederaAccountCustomizer subject = new HederaAccountCustomizer();
 
 	@Test
-	public void hasExpectedOptionProps() {
+	void hasExpectedOptionProps() {
 		// given:
 		Map<Option, AccountProperty> optionProperties = subject.getOptionProperties();
 

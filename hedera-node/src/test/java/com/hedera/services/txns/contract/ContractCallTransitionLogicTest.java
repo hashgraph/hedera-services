@@ -88,7 +88,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -97,7 +97,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesBadCall() {
+	void capturesBadCall() {
 		// setup:
 		TransactionRecord callRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -119,7 +119,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
+	void followsHappyPathWithOverrides() {
 		// setup:
 		TransactionRecord callRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -141,7 +141,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -149,7 +149,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeSend() {
+	void rejectsNegativeSend() {
 		// setup:
 		sent = -1;
 
@@ -160,7 +160,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeGas() {
+	void rejectsNegativeGas() {
 		// setup:
 		gas = -1;
 
@@ -171,7 +171,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() {
+	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
@@ -181,7 +181,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 
 		given(delegate.perform(any(), any(), any())).willThrow(IllegalStateException.class);

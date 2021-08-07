@@ -41,7 +41,7 @@ public class PrecheckUtilsTest {
 	final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
 
 	@Test
-	public void queryPaymentsMustBeCryptoTransfers() throws Throwable {
+	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 			newSignedCryptoUpdate("0.0.2").get()
@@ -52,7 +52,7 @@ public class PrecheckUtilsTest {
 	}
 
 	@Test
-	public void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
+	void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
@@ -65,7 +65,7 @@ public class PrecheckUtilsTest {
 	}
 
 	@Test
-	public void queryPaymentTransfersToTargetNode() throws Throwable {
+	void queryPaymentTransfersToTargetNode() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(

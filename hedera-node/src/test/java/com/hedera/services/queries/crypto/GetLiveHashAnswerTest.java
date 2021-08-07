@@ -44,7 +44,7 @@ public class GetLiveHashAnswerTest {
 	Query query = Query.getDefaultInstance();
 
 	@Test
-	public void neverDoesOrNeedsAnything() {
+	void neverDoesOrNeedsAnything() {
 		// expect:
 		assertFalse(subject.needsAnswerOnlyCost(query));
 		assertFalse(subject.requiresNodePayment(query));
@@ -52,7 +52,7 @@ public class GetLiveHashAnswerTest {
 	}
 
 	@Test
-	public void extractsValidity() {
+	void extractsValidity() {
 		// given:
 		Response response = Response.newBuilder()
 				.setCryptoGetLiveHash(CryptoGetLiveHashResponse.newBuilder()
@@ -64,7 +64,7 @@ public class GetLiveHashAnswerTest {
 	}
 
 	@Test
-	public void respectsTypeOfUnsupportedQuery() {
+	void respectsTypeOfUnsupportedQuery() {
 		// given:
 		Query costAnswer = getLiveHashQuery(COST_ANSWER);
 		Query answerOnly = getLiveHashQuery(ANSWER_ONLY);
@@ -83,13 +83,13 @@ public class GetLiveHashAnswerTest {
 
 
 	@Test
-	public void alwaysUnsupported() {
+	void alwaysUnsupported() {
 		// expect:
 		assertEquals(NOT_SUPPORTED, subject.checkValidity(query, StateView.EMPTY_VIEW));
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.CryptoGetLiveHash, subject.canonicalFunction());
 	}

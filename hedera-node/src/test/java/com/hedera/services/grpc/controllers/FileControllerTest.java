@@ -66,7 +66,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsUpdateAsExpected() {
+	void forwardsUpdateAsExpected() {
 		// when:
 		subject.updateFile(txn, txnObserver);
 
@@ -75,7 +75,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsCreateAsExpected() {
+	void forwardsCreateAsExpected() {
 		// when:
 		subject.createFile(txn, txnObserver);
 
@@ -84,7 +84,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsDeleteAsExpected() {
+	void forwardsDeleteAsExpected() {
 		// when:
 		subject.deleteFile(txn, txnObserver);
 
@@ -93,7 +93,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsAppendAsExpected() {
+	void forwardsAppendAsExpected() {
 		// when:
 		subject.appendContent(txn, txnObserver);
 
@@ -102,7 +102,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsSysDelAsExpected() {
+	void forwardsSysDelAsExpected() {
 		// when:
 		subject.systemDelete(txn, txnObserver);
 
@@ -111,7 +111,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsSysUndelAsExpected() {
+	void forwardsSysUndelAsExpected() {
 		// when:
 		subject.systemUndelete(txn, txnObserver);
 
@@ -120,7 +120,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsFileInfoAsExpected() {
+	void forwardsFileInfoAsExpected() {
 		// when:
 		subject.getFileInfo(query, queryObserver);
 
@@ -130,7 +130,7 @@ public class FileControllerTest {
 	}
 
 	@Test
-	public void forwardsFileContentsAsExpected() {
+	void forwardsFileContentsAsExpected() {
 		// when:
 		subject.getFileContent(query, queryObserver);
 

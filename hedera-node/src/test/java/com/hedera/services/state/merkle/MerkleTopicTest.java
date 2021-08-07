@@ -64,7 +64,7 @@ class MerkleTopicTest {
 	}
 
 	@Test
-	public void toStringWorks() throws IOException, NoSuchAlgorithmException {
+	void toStringWorks() throws IOException, NoSuchAlgorithmException {
 		// expect:
 		assertEquals(
 				"MerkleTopic{"

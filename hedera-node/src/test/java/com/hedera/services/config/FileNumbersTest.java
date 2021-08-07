@@ -58,7 +58,7 @@ class FileNumbersTest {
 	}
 
 	@Test
-	public void hasExpectedNumbers() {
+	void hasExpectedNumbers() {
 		// expect:
 		assertEquals(101, subject.addressBook());
 		assertEquals(102, subject.nodeDetails());
@@ -71,7 +71,7 @@ class FileNumbersTest {
 	}
 
 	@Test
-	public void getsExpectedFid() {
+	void getsExpectedFid() {
 		// when:
 		var fid = subject.toFid(3L);
 

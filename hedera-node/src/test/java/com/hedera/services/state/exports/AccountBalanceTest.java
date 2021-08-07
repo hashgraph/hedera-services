@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AccountBalanceTest {
 	@Test
-	public void comparesAllIdParts() {
+	void comparesAllIdParts() {
 		// setup:
 		var a = new AccountBalance(5, 4, 3, 5);
 		var b = new AccountBalance(15, 20, 1, 25);
@@ -41,7 +41,7 @@ class AccountBalanceTest {
 	}
 
 	@Test
-	public void beanWorks() {
+	void beanWorks() {
 		// setup:
 		var a = new AccountBalance(5, 4, 3, 6);
 
@@ -53,7 +53,7 @@ class AccountBalanceTest {
 	}
 
 	@Test
-	public void hashCodeWorks() {
+	void hashCodeWorks() {
 		// given:
 		AccountBalance acc = new AccountBalance(5, 4, 3, 6);
 

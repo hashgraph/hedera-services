@@ -41,7 +41,7 @@ public class ChangeSummaryManagerTest {
 	}
 
 	@Test
-	public void persistsExpectedChanges() {
+	void persistsExpectedChanges() {
 		// given:
 		Object thing = new Object();
 		TestAccount a = new TestAccount(1L, thing, false);
@@ -57,7 +57,7 @@ public class ChangeSummaryManagerTest {
 	}
 
 	@Test
-	public void setsFlagWithPrimitiveArg() {
+	void setsFlagWithPrimitiveArg() {
 		// when:
 		subject.update(changes, FLAG, true);
 
@@ -66,7 +66,7 @@ public class ChangeSummaryManagerTest {
 	}
 
 	@Test
-	public void setsValueWithPrimitiveArg() {
+	void setsValueWithPrimitiveArg() {
 		// when:
 		subject.update(changes, LONG, 5L);
 
@@ -75,7 +75,7 @@ public class ChangeSummaryManagerTest {
 	}
 
 	@Test
-	public void setsThing() {
+	void setsThing() {
 		// given:
 		Object thing = new Object();
 

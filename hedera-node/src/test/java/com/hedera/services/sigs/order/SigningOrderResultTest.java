@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SigningOrderResultTest {
 	@Test
-	public void representsErrorsAccurately() {
+	void representsErrorsAccurately() {
 		// given:
 		SigningOrderResult<String> subject = new SigningOrderResult<>("NOPE!");
 
@@ -38,7 +38,7 @@ public class SigningOrderResultTest {
 	}
 
 	@Test
-	public void representsSuccessAccurately() {
+	void representsSuccessAccurately() {
 		// given:
 		SigningOrderResult<String> subject = new SigningOrderResult<>(EMPTY_LIST);
 

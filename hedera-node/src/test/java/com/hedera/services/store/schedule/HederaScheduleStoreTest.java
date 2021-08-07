@@ -190,14 +190,14 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void commitAndRollbackThrowIseIfNoPendingCreation() {
+	void commitAndRollbackThrowIseIfNoPendingCreation() {
 		// expect:
 		assertThrows(IllegalStateException.class, subject::commitCreation);
 		assertThrows(IllegalStateException.class, subject::rollbackCreation);
 	}
 
 	@Test
-	public void commitPutsToMapAndClears() {
+	void commitPutsToMapAndClears() {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = schedule;
@@ -217,7 +217,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rollbackReclaimsIdAndClears() {
+	void rollbackReclaimsIdAndClears() {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = schedule;
@@ -234,7 +234,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void understandsPendingCreation() {
+	void understandsPendingCreation() {
 		// expect:
 		assertFalse(subject.isCreationPending());
 
@@ -246,7 +246,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void getThrowsIseOnMissing() {
+	void getThrowsIseOnMissing() {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
 		// expect:
@@ -254,7 +254,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void applicationRejectsMissing() {
+	void applicationRejectsMissing() {
 		// setup:
 		var change = mock(Consumer.class);
 
@@ -281,7 +281,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void applicationWorks() {
+	void applicationWorks() {
 		// setup:
 		var change = mock(Consumer.class);
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
@@ -297,7 +297,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void applicationAlwaysReplacesModifiableSchedule() {
+	void applicationAlwaysReplacesModifiableSchedule() {
 		// setup:
 		var change = mock(Consumer.class);
 		var key = fromScheduleId(created);
@@ -311,7 +311,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void createProvisionallyWorks() {
+	void createProvisionallyWorks() {
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
 				entityMemo,
@@ -333,7 +333,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void createProvisionallyRejectsInvalidPayer() {
+	void createProvisionallyRejectsInvalidPayer() {
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
 				entityMemo,
@@ -350,7 +350,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void getCanReturnPending() {
+	void getCanReturnPending() {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = schedule;
@@ -360,13 +360,13 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
+	void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
 		// expect:
 		assertFalse(subject.exists(HederaScheduleStore.NO_PENDING_ID));
 	}
 
 	@Test
-	public void createProvisionallyRejectsInvalidScheduler() {
+	void createProvisionallyRejectsInvalidScheduler() {
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
 				entityMemo,
@@ -386,7 +386,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsCreateProvisionallyDeletedPayer() {
+	void rejectsCreateProvisionallyDeletedPayer() {
 		// given:
 		given(hederaLedger.isDeleted(payerId)).willReturn(true);
 
@@ -409,7 +409,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsCreateProvisionallyDeletedScheduler() {
+	void rejectsCreateProvisionallyDeletedScheduler() {
 		given(hederaLedger.isDeleted(schedulingAccount)).willReturn(true);
 
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
@@ -431,7 +431,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsCreateProvisionallyWithMissingSchedulingAccount() {
+	void rejectsCreateProvisionallyWithMissingSchedulingAccount() {
 		given(accountsLedger.exists(schedulingAccount)).willReturn(false);
 
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
@@ -453,7 +453,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void recognizesCollidingSchedule() {
+	void recognizesCollidingSchedule() {
 		// setup:
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
@@ -474,7 +474,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void recognizesCollisionWithPending() {
+	void recognizesCollisionWithPending() {
 		// setup:
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
@@ -495,7 +495,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void understandsMissing() {
+	void understandsMissing() {
 		// setup:
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
@@ -513,7 +513,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void deletesAsExpected() {
+	void deletesAsExpected() {
 		// setup:
 		var now = schedulingTXValidStart.toJava();
 
@@ -531,7 +531,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsDeletionMissingAdminKey() {
+	void rejectsDeletionMissingAdminKey() {
 		// given:
 		given(schedule.adminKey()).willReturn(Optional.empty());
 
@@ -545,7 +545,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsDeletionAlreadyDeleted() {
+	void rejectsDeletionAlreadyDeleted() {
 		// given:
 		given(schedule.isDeleted()).willReturn(true);
 
@@ -557,7 +557,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsExecutionWhenDeleted() {
+	void rejectsExecutionWhenDeleted() {
 		// given:
 		given(schedule.isDeleted()).willReturn(true);
 
@@ -569,7 +569,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsExecutionWhenExecuted() {
+	void rejectsExecutionWhenExecuted() {
 		// given:
 		given(schedule.isExecuted()).willReturn(true);
 
@@ -581,7 +581,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsDeletionMissingSchedule() {
+	void rejectsDeletionMissingSchedule() {
 		// given:
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
@@ -595,7 +595,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void rejectsExecutionMissingSchedule() {
+	void rejectsExecutionMissingSchedule() {
 		// given:
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
@@ -607,7 +607,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void marksExecutedAsExpected() {
+	void marksExecutedAsExpected() {
 		// setup:
 		var now = schedulingTXValidStart.toJava();
 
@@ -638,7 +638,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void throwsOnExpiringMissingSchedule() {
+	void throwsOnExpiringMissingSchedule() {
 		// given:
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
@@ -647,7 +647,7 @@ public class HederaScheduleStoreTest {
 	}
 
 	@Test
-	public void throwsOnExpiringPending() {
+	void throwsOnExpiringPending() {
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
 				entityMemo,

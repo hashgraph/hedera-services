@@ -82,14 +82,14 @@ class ContractUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(contractUpdateTxn));
 		assertFalse(subject.applicableTo(nonContractUpdateTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		subject.usageGiven(contractUpdateTxn, sigUsage, view);
 
@@ -98,7 +98,7 @@ class ContractUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void returnsDefaultUsageOnException() throws Exception {
+	void returnsDefaultUsageOnException() throws Exception {
 		// when:
 		FeeData actual = subject.usageGiven(contractUpdateTxn, sigUsage, null);
 

@@ -50,7 +50,7 @@ class BlobStoragePersistenceTest {
 	}
 
 	@Test
-	public void delegatesExistence() {
+	void delegatesExistence() {
 		given(storage.containsKey(argThat((byte[] bytes) -> Arrays.equals(address, bytes)))).willReturn(true);
 
 		// expect:
@@ -58,7 +58,7 @@ class BlobStoragePersistenceTest {
 	}
 
 	@Test
-	public void delegatesPersistence() {
+	void delegatesPersistence() {
 		// when:
 		subject.persist(address, addressStorage, 0, 0);
 
@@ -69,7 +69,7 @@ class BlobStoragePersistenceTest {
 	}
 
 	@Test
-	public void delegatesGet() {
+	void delegatesGet() {
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(address, bytes)))).willReturn(addressStorage);
 
 		// when:

@@ -54,14 +54,14 @@ public class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	public void initTest() {
+	void initTest() {
 		assertEquals(runningHash, runningHashLeaf.getRunningHash());
 		assertFalse(runningHashLeaf.isDataExternal());
 		assertTrue(runningHashLeaf.isImmutable());
 	}
 
 	@Test
-	public void copyTest() {
+	void copyTest() {
 		RecordsRunningHashLeaf copy = runningHashLeaf.copy();
 		assertEquals(runningHashLeaf, copy);
 		assertTrue(runningHashLeaf.isImmutable());
@@ -75,7 +75,7 @@ public class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	public void setRunningHashTest() {
+	void setRunningHashTest() {
 		// initializes a leaf without setting RunningHash
 		RecordsRunningHashLeaf leafForTestingRunningHash = new RecordsRunningHashLeaf();
 		assertNull(leafForTestingRunningHash.getRunningHash());
@@ -93,7 +93,7 @@ public class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	public void updateRunningHashInvalidateHashTest() {
+	void updateRunningHashInvalidateHashTest() {
 		RunningHash runningHash = new RunningHash();
 		// sets Hash for the RunningHash
 		runningHash.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
@@ -113,7 +113,7 @@ public class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	public void serializationDeserializationTest() throws IOException, InterruptedException {
+	void serializationDeserializationTest() throws IOException, InterruptedException {
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			 SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			runningHashLeaf.serialize(out);

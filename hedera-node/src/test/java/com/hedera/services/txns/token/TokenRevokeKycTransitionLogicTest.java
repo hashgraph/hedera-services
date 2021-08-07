@@ -88,7 +88,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesInvalidRevokeKyc() {
+	void capturesInvalidRevokeKyc() {
 		givenValidTxnCtx();
 		// and:
 		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_KYC_KEY))
@@ -100,7 +100,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
 		given(token.hasKycKey()).willReturn(true);
@@ -114,7 +114,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -123,7 +123,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -131,7 +131,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingToken() {
+	void rejectsMissingToken() {
 		givenMissingToken();
 
 		// expect:
@@ -139,7 +139,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingAccount() {
+	void rejectsMissingAccount() {
 		givenMissingAccount();
 
 		// expect:

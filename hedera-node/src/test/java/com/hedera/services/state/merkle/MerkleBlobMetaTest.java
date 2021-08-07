@@ -47,7 +47,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleBlobMeta.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleBlobMeta.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -55,7 +55,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -71,7 +71,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -85,7 +85,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleBlobMeta();
 		var two = new MerkleBlobMeta(path);
@@ -104,7 +104,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleBlobMeta{path=" + path + "}",
@@ -112,7 +112,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = subject.copy();
 
@@ -122,7 +122,7 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void deleteIsNoop() {
+	void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}

@@ -82,7 +82,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void returnsAccountExpiryIfAvail() {
+	void returnsAccountExpiryIfAvail() {
 		// setup:
 		MerkleAccount account = mock(MerkleAccount.class);
 		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
@@ -99,7 +99,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void returnsZeroFileExpiryIfUnavail() {
+	void returnsZeroFileExpiryIfUnavail() {
 		// setup:
 		StateView view = mock(StateView.class);
 		FileID fid = IdUtils.asFile("1.2.3");
@@ -114,7 +114,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void returnsZeroAccountExpiryIfUnavail() {
+	void returnsZeroAccountExpiryIfUnavail() {
 		// when:
 		Timestamp actual = lookupAccountExpiry(null, null);
 
@@ -123,7 +123,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void returnsFileExpiryIfAvail() throws Exception {
+	void returnsFileExpiryIfAvail() throws Exception {
 		// setup:
 		StateView view = mock(StateView.class);
 		FileID fid = IdUtils.asFile("1.2.3");
@@ -143,7 +143,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void constructsExpectedPath() {
+	void constructsExpectedPath() {
 		// given:
 		FileID fid = IdUtils.asFile("1.2.3");
 		// and:
@@ -161,7 +161,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void constructsExpectedMetaPath() {
+	void constructsExpectedMetaPath() {
 		// given:
 		FileID fid = IdUtils.asFile("1.2.3");
 		// and:
@@ -179,7 +179,7 @@ public class FeeCalcUtilsTest {
 	}
 
 	@Test
-	public void sumsAsExpected() {
+	void sumsAsExpected() {
 		// given:
 		FeeComponents aComp = FeeComponents.newBuilder()
 				.setMin(2).setMax(1_234_567)

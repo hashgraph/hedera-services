@@ -42,7 +42,7 @@ public class StdStateMigrationsTest {
 	}
 
 	@Test
-	public void isNoop() {
+	void isNoop() {
 		// expect:
 		assertDoesNotThrow(() -> subject.runAllFor(ctx));
 	}

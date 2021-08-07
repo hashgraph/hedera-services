@@ -31,7 +31,7 @@ class HcsAnswersTest {
 	HcsAnswers subject;
 
 	@Test
-	public void hasExpectedAnswers() {
+	void hasExpectedAnswers() {
 		// given:
 		subject = new HcsAnswers(getTopicInfo);
 

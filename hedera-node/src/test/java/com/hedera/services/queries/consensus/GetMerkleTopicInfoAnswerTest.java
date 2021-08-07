@@ -120,7 +120,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckRequiresId() {
+	void syntaxCheckRequiresId() {
 		// given:
 		ConsensusGetTopicInfoQuery op = ConsensusGetTopicInfoQuery.newBuilder().build();
 		Query query = Query.newBuilder().setConsensusGetTopicInfo(op).build();
@@ -133,7 +133,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void requiresOkMetaValidity() {
+	void requiresOkMetaValidity() {
 		// setup:
 		TopicID id = asTopic(idLit);
 
@@ -155,7 +155,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckValidatesTidIfPresent() {
+	void syntaxCheckValidatesTidIfPresent() {
 		// setup:
 		TopicID tid = asTopic(idLit);
 
@@ -175,7 +175,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
@@ -190,7 +190,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder()
 				.setConsensusGetTopicInfo(
@@ -204,27 +204,27 @@ class GetMerkleTopicInfoAnswerTest {
 
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.ConsensusGetTopicInfo, subject.canonicalFunction());
 	}
 
 	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+	void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		// expect:
 		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
 		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
 	}
 
 	@Test
-	public void requiresAnswerOnlyPayment() throws Throwable {
+	void requiresAnswerOnlyPayment() throws Throwable {
 		// expect:
 		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
 		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
 	}
 
 	@Test
-	public void getsExpectedPayment() throws Throwable {
+	void getsExpectedPayment() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
@@ -233,7 +233,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void getsTheTopicInfo() throws Throwable {
+	void getsTheTopicInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
@@ -259,7 +259,7 @@ class GetMerkleTopicInfoAnswerTest {
 	}
 
 	@Test
-	public void getsTopicInfoWithEmptyRunningHash() throws Throwable {
+	void getsTopicInfoWithEmptyRunningHash() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 		merkleTopic.setRunningHash(null);

@@ -80,7 +80,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -89,7 +89,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesBadDelete() {
+	void capturesBadDelete() {
 		// setup:
 		TransactionRecord sysDelRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -109,7 +109,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
+	void followsHappyPathWithOverrides() {
 		// setup:
 		TransactionRecord updateRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -129,7 +129,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -137,7 +137,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsDeletedContract() {
+	void acceptsDeletedContract() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
@@ -147,7 +147,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() {
+	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(INVALID_CONTRACT_ID);
@@ -157,7 +157,7 @@ public class ContractSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 
 		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);

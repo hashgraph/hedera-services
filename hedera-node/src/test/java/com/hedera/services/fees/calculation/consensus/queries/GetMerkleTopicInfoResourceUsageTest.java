@@ -79,7 +79,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		Query topicInfoQuery = topicInfoQuery(topicId, COST_ANSWER);
 		Query nonTopicInfoQuery = nonTopicInfoQuery();
@@ -90,7 +90,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	}
 
 	@Test
-	public void throwsIaeWhenTopicDoesNotExist() {
+	void throwsIaeWhenTopicDoesNotExist() {
 		// given:
 		Query query = topicInfoQuery(topicId, ANSWER_ONLY);
 

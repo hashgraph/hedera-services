@@ -61,7 +61,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void directlyCustomizesAnAccount() {
+	void directlyCustomizesAnAccount() {
 		setupWithLiveChangeManager();
 
 		// given:
@@ -77,7 +77,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void setsCustomizedProperties() {
+	void setsCustomizedProperties() {
 		setupWithLiveChangeManager();
 
 		// given:
@@ -100,7 +100,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedKeyProperty() {
+	void changesExpectedKeyProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -117,7 +117,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedMemoProperty() {
+	void changesExpectedMemoProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -134,7 +134,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedProxyProperty() {
+	void changesExpectedProxyProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -151,7 +151,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedExpiryProperty() {
+	void changesExpectedExpiryProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -168,7 +168,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedAutoRenewProperty() {
+	void changesExpectedAutoRenewProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -185,7 +185,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedIsSmartContractProperty() {
+	void changesExpectedIsSmartContractProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -202,7 +202,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedIsDeletedProperty() {
+	void changesExpectedIsDeletedProperty() {
 		setupWithMockChangeManager();
 
 		// given:
@@ -219,7 +219,7 @@ public class AccountCustomizerTest {
 	}
 
 	@Test
-	public void changesExpectedReceiverSigRequiredProperty() {
+	void changesExpectedReceiverSigRequiredProperty() {
 		setupWithMockChangeManager();
 
 		// given:

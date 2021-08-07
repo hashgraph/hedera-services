@@ -116,7 +116,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 
 		// expect:
@@ -125,7 +125,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx);
 
@@ -150,7 +150,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckTestsMemo() {
+	void syntaxCheckTestsMemo() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		given(validator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
@@ -163,7 +163,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
+	void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 
@@ -177,7 +177,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckRejectsMissingExpiry() {
+	void syntaxCheckRejectsMissingExpiry() {
 		givenTxnCtxCreating(EnumSet.of(CONTENTS, KEY));
 
 		// when:
@@ -189,7 +189,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void handleAllowsImmutable() {
+	void handleAllowsImmutable() {
 		givenTxnCtxCreating(EnumSet.of(CONTENTS, EXPIRY));
 
 		// when:
@@ -206,7 +206,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void handleRejectsBadWacl() {
+	void handleRejectsBadWacl() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		given(validator.hasGoodEncoding(wacl)).willReturn(false);
 
@@ -218,7 +218,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void handleRejectsAlreadyExpired() {
+	void handleRejectsAlreadyExpired() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED.toString()))
 				.given(hfs).create(any(), any(), any());
@@ -231,7 +231,7 @@ class FileCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void recoversFromUnknownException() {
+	void recoversFromUnknownException() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		willThrow(new IllegalStateException("OOPS!")).given(hfs).create(any(), any(), any());
 

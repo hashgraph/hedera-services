@@ -150,7 +150,7 @@ class ThrottleDefsManagerTest {
 	}
 
 	@Test
-	public void reusesResponseCodeFromMapperFailure() {
+	void reusesResponseCodeFromMapperFailure() {
 		// setup:
 		int nodes = 7;
 		var pojoDefs = new com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions();
@@ -174,7 +174,7 @@ class ThrottleDefsManagerTest {
 	}
 
 	@Test
-	public void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
+	void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
 		// setup:
 		int nodes = 7;
 		var pojoDefs = new com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions();
@@ -195,7 +195,7 @@ class ThrottleDefsManagerTest {
 	}
 
 	@Test
-	public void rejectsInvalidBytes() {
+	void rejectsInvalidBytes() {
 		byte[] invalidBytes = "NONSENSE".getBytes();
 
 		// when:

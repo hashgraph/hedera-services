@@ -113,7 +113,7 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void invokesEstimatorAsExpectedForType() {
+	void invokesEstimatorAsExpectedForType() {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
@@ -142,7 +142,7 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void returnsSummedUsagesIfDuplicatesPresent() {
+	void returnsSummedUsagesIfDuplicatesPresent() {
 		// setup:
 		FeeData answerOnlyUsage = mock(FeeData.class);
 		FeeData summedUsage = mock(FeeData.class);
@@ -166,7 +166,7 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void setsDuplicateRecordsInQueryCtxIfAppropos() {
+	void setsDuplicateRecordsInQueryCtxIfAppropos() {
 		// setup:
 		FeeData answerOnlyUsage = mock(FeeData.class);
 		var queryCtx = new HashMap<String, Object>();
@@ -188,7 +188,7 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void setsPriorityRecordInQueryCxtIfPresent() {
+	void setsPriorityRecordInQueryCxtIfPresent() {
 		// setup:
 		FeeData answerOnlyUsage = mock(FeeData.class);
 		var queryCtx = new HashMap<String, Object>();
@@ -205,7 +205,7 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void onlySetsPriorityRecordInQueryCxtIfFound() {
+	void onlySetsPriorityRecordInQueryCxtIfFound() {
 		// setup:
 		FeeData answerOnlyUsage = mock(FeeData.class);
 		var queryCtx = new HashMap<String, Object>();
@@ -225,7 +225,7 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQueries() {
+	void recognizesApplicableQueries() {
 		// given:
 		Query no = nonTxnRecordQuery();
 		Query yes = txnRecordQuery(targetTxnId, ANSWER_ONLY);

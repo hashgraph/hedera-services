@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AddressKeyedMapFactoryTest {
 	@Test
-	public void toAddressConversion() {
+	void toAddressConversion() {
 		// given:
 		var mapper = toAddressMapping(LEGACY_BYTECODE_PATH_PATTERN);
 		var key = "/666/s888";
@@ -57,7 +57,7 @@ class AddressKeyedMapFactoryTest {
 	}
 
 	@Test
-	public void toKeyConversionWorks() {
+	void toKeyConversionWorks() {
 		// given:
 		var mapper = toKeyMapping(LEGACY_BYTECODE_PATH_TEMPLATE);
 		var address = EntityIdUtils.asSolidityAddress(0, 666, 888);
@@ -72,7 +72,7 @@ class AddressKeyedMapFactoryTest {
 	}
 
 	@Test
-	public void isRelevantWorks() {
+	void isRelevantWorks() {
 		// given:
 		var realKey = "/666/s888";
 		var fakeKey = "/a66/s888";
@@ -84,7 +84,7 @@ class AddressKeyedMapFactoryTest {
 	}
 
 	@Test
-	public void bytecodeProductHasMapSemantics() {
+	void bytecodeProductHasMapSemantics() {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(("/2/s7"), "APRIORI".getBytes());
@@ -128,7 +128,7 @@ class AddressKeyedMapFactoryTest {
 	}
 
 	@Test
-	public void productHasFilterSet() {
+	void productHasFilterSet() {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(("NOT-REAL-KEY"), "APRIORI".getBytes());
@@ -141,7 +141,7 @@ class AddressKeyedMapFactoryTest {
 	}
 
 	@Test
-	public void storageProductHasMapSemantics() {
+	void storageProductHasMapSemantics() {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(("/2/d7"), "APRIORI".getBytes());

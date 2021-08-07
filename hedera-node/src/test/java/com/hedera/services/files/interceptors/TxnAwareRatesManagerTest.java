@@ -118,7 +118,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void hasExpectedRelevanceAndPriority() {
+	void hasExpectedRelevanceAndPriority() {
 		// expect:
 		assertTrue(subject.priorityForCandidate(otherFile).isEmpty());
 		// and:
@@ -126,19 +126,19 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void rubberstampsPreDelete() {
+	void rubberstampsPreDelete() {
 		// expect:
 		assertEquals(YES_VERDICT, subject.preDelete(exchangeRates));
 	}
 
 	@Test
-	public void rubberstampsPreChange() {
+	void rubberstampsPreChange() {
 		// expect:
 		assertEquals(YES_VERDICT, subject.preAttrChange(exchangeRates, attr));
 	}
 
 	@Test
-	public void ingnoresPostUpdateForIrrelevantFile() {
+	void ingnoresPostUpdateForIrrelevantFile() {
 		// when:
 		subject.postUpdate(otherFile, validRates);
 
@@ -147,7 +147,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void ingnoresPostUpdateForSomehowInvalidBytes() {
+	void ingnoresPostUpdateForSomehowInvalidBytes() {
 		// when:
 		subject.postUpdate(exchangeRates, invalidBytes);
 
@@ -156,7 +156,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void invokesCbPostUpdateOnlyIfNotMaster() {
+	void invokesCbPostUpdateOnlyIfNotMaster() {
 		givenPayer(treasury);
 
 		// when:
@@ -168,7 +168,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void updatesMidnightRatesIfMasterUpdate() {
+	void updatesMidnightRatesIfMasterUpdate() {
 		givenPayer(master);
 
 		// when:
@@ -180,7 +180,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void allowsLargeValidChangeFromMaster() {
+	void allowsLargeValidChangeFromMaster() {
 		givenPayer(master);
 		givenLargeChange();
 
@@ -192,7 +192,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void allowsLargeValidChangeFromTreasury() {
+	void allowsLargeValidChangeFromTreasury() {
 		givenPayer(treasury);
 		givenLargeChange();
 
@@ -204,7 +204,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void rejectsLargeValidChangeFromAdmin() {
+	void rejectsLargeValidChangeFromAdmin() {
 		givenPayer(ratesAdmin);
 		givenLargeChange();
 
@@ -218,7 +218,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void acceptsSmallValidChangeFromAdmin() {
+	void acceptsSmallValidChangeFromAdmin() {
 		givenPayer(ratesAdmin);
 		givenSmallChange();
 
@@ -232,7 +232,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void rejectsInvalidBytes() {
+	void rejectsInvalidBytes() {
 		givenPayer(treasury);
 
 		// when:
@@ -243,7 +243,7 @@ class TxnAwareRatesManagerTest {
 	}
 
 	@Test
-	public void rubberstampsIrrelevantFiles() {
+	void rubberstampsIrrelevantFiles() {
 		givenPayer(treasury);
 
 		// when:
