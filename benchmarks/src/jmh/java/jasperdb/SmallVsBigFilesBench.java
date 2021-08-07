@@ -1,15 +1,16 @@
 package jasperdb;
 
-import com.hedera.services.state.merkle.v3.files.DataFile;
-import com.hedera.services.state.merkle.v3.files.DataFileCollection;
+import com.hedera.services.state.merkle.v3.files.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 @SuppressWarnings({"DefaultAnnotationParam", "DuplicatedCode"})
 @State(Scope.Thread)
@@ -22,36 +23,62 @@ public class SmallVsBigFilesBench {
     private static final long KB = 1024;
     private static final long MB = 1024*KB;
     private static final long GB = 1024*MB;
-    private static final int BLOCK_SIZE = 512;
 
     @Param({"1","128","512"})
     public int fileSizeGb;
+    @Param({"64","128","256","512"})
+    public int dataValueSize;
+    @Param({"5","20","40"})
+    public int readThreads;
+    @Param({"DataFileReaderSynchronous","DataFileReaderAsynchronous","DataFileReaderThreadLocal"})
+    public String dataFileImpl;
 
     private final Random random = new Random(32146486);
     private DataFileCollection dataFileCollection;
     private int numOfFiles;
     private int numOfDataItemsPerFile;
-    private final ByteBuffer dataReadBuffer = ByteBuffer.allocate(BLOCK_SIZE - Long.BYTES - Integer.BYTES);
+    private final ThreadLocal<ByteBuffer> dataReadBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(dataValueSize - Long.BYTES - Integer.BYTES));
+    private long[] randomDataLocations;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
         // calculate number of files, number of data items per file
         numOfFiles = 512 / fileSizeGb;
         System.out.println("numOfFiles = " + numOfFiles);
-        numOfDataItemsPerFile = (int) ((fileSizeGb * GB) / BLOCK_SIZE);
+        numOfDataItemsPerFile = (int) ((fileSizeGb * GB) / dataValueSize);
         System.out.println("numOfDataItemsPerFile = " + numOfDataItemsPerFile);
         long numOfDataItems = (long) numOfDataItemsPerFile * (long) numOfFiles;
         System.out.println("numOfDataItems = " + numOfDataItems);
+        // create data file factory
+        DataFileReaderFactory dataFileFactory = new DataFileReaderFactory() {
+            @Override
+            public DataFileReader newDataFileReader(Path path) throws IOException {
+                return switch(dataFileImpl) {
+                    case "DataFileReaderAsynchronous" -> new DataFileReaderAsynchronous(path);
+                    case "DataFileReaderThreadLocal" -> new DataFileReaderThreadLocal(path);
+                    default -> new DataFileReaderSynchronous(path);
+                };
+            }
+
+            @Override
+            public DataFileReader newDataFileReader(Path path, DataFileMetadata dataFileMetadata) throws IOException {
+                return switch(dataFileImpl) {
+                    case "DataFileReaderAsynchronous" -> new DataFileReaderAsynchronous(path,dataFileMetadata);
+                    case "DataFileReaderThreadLocal" -> new DataFileReaderThreadLocal(path,dataFileMetadata);
+                    default -> new DataFileReaderSynchronous(path,dataFileMetadata);
+                };
+            }
+        };
         // create 1Tb of data
-        Path dataDir = Path.of("jasperdb_"+fileSizeGb);
+        Path dataDir = Path.of("jasperdb_fs"+fileSizeGb+"_bs"+ dataValueSize);
         if (Files.isDirectory(dataDir)) {
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", BLOCK_SIZE);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize, dataFileFactory);
         } else { // new
             Files.createDirectories(dataDir);
             //
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", BLOCK_SIZE);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize, dataFileFactory);
             // create some random data to write
-            ByteBuffer dataBuffer = ByteBuffer.allocate(BLOCK_SIZE - Long.BYTES - Integer.BYTES);
+            ByteBuffer dataBuffer = ByteBuffer.allocate(dataValueSize);
             new Random(123456).nextBytes(dataBuffer.array());
             // create files
             long START = System.currentTimeMillis();
@@ -63,7 +90,13 @@ public class SmallVsBigFilesBench {
                     dataFileCollection.storeData(count, dataBuffer);
                     if (count % 10_000_000 == 0) System.out.printf("count = %,d\n",count);
                 }
+
+                System.out.println("writes done");
+                long START2 = System.currentTimeMillis();
                 dataFileCollection.endWriting(0, count);
+
+                double timeTakenSeconds = (double)(System.currentTimeMillis()-START2)/1000d;
+                System.out.printf("endWriting %,.2f seconds\n",timeTakenSeconds);
             }
             long timeTaken = System.currentTimeMillis()-START;
             System.out.println("YAY!! finished writing all data");
@@ -72,18 +105,44 @@ public class SmallVsBigFilesBench {
         }
     }
 
+    @Setup(Level.Invocation)
+    public void random(){
+        randomDataLocations = IntStream.range(0,readThreads*200)
+                .parallel()
+                .mapToLong(i -> {
+                    // pick random file
+                    int fileIndex = random.nextInt(numOfFiles);
+                    // pick random offset
+                    long blockOffset = random.nextInt(numOfDataItemsPerFile);
+                    // data location
+                    return DataFileCommon.dataLocation(fileIndex,blockOffset*dataValueSize);
+                }).toArray();
+    }
+
     @Benchmark
     public void randomRead(Blackhole blackHole) throws Exception {
-        // pick random file
-        int fileIndex = random.nextInt(numOfFiles);
-        long fileIndexShifted = (long)(fileIndex+1) << 32;
-        // pick random offset
-        int blockOffset = random.nextInt(numOfDataItemsPerFile);
-        // data location
-        long dataLocation = fileIndexShifted | blockOffset;
+        ByteBuffer dataReadBuffer = this.dataReadBuffer.get();
         // read data
         dataReadBuffer.clear();
-        blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer, DataFile.DataToRead.KEY_VALUE));
+        blackHole.consume(dataFileCollection.readData(randomDataLocations[0],dataReadBuffer, DataFileReader.DataToRead.KEY_VALUE));
+    }
+
+    @Benchmark
+    public void randomReadThreaded(Blackhole blackHole) {
+        IntStream.range(0,readThreads).parallel().forEach(thread -> {
+            ByteBuffer dataReadBuffer = this.dataReadBuffer.get();
+            for (int i = 0; i < 200; i++) {
+                // data location
+                long dataLocation = randomDataLocations[i*thread];
+                // read data
+                dataReadBuffer.clear();
+                try {
+                    blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer, DataFileReader.DataToRead.KEY_VALUE));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
 }

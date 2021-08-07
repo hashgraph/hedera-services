@@ -16,9 +16,9 @@ public class MemoryIndexDiskKeyValueStoreTest {
     private static final int HASH_SIZE = 48+4;
     @Test
     public void createDataAndCheck() throws Exception {
-        // lets store hashes as easy test class
+        // let's store hashes as easy test class
         Path tempDir = Files.createTempDirectory("DataFileTest");
-        MemoryIndexDiskKeyValueStore store = new MemoryIndexDiskKeyValueStore(tempDir,"MemoryIndexDiskKeyValueStoreTest",1024);
+        MemoryIndexDiskKeyValueStore store = new MemoryIndexDiskKeyValueStore(tempDir,"MemoryIndexDiskKeyValueStoreTest",HASH_SIZE);
         // write some batches of data, then check all the contents, we should end up with 3 files
         writeBatch(store,0,1000);
         checkRange(store,0,1000);
@@ -38,7 +38,7 @@ public class MemoryIndexDiskKeyValueStoreTest {
             for (int i = start; i < (start + count); i++) {
                 // read value only
                 buf.clear();
-                store.get(i, buf, DataFile.DataToRead.KEY);
+                store.get(i, buf);
                 // check read key
                 assertEquals(i,buf.getLong());
             }
@@ -48,7 +48,7 @@ public class MemoryIndexDiskKeyValueStoreTest {
             for (int i = start; i < (start + count); i++) {
                 // read value only
                 buf.clear();
-                store.get(i, buf, DataFile.DataToRead.VALUE);
+                store.get(i, buf);
                 // check read hash
                 assertEquals(hash(i), Hash.fromByteBuffer(buf));
             }
@@ -58,7 +58,7 @@ public class MemoryIndexDiskKeyValueStoreTest {
             for (int i = start; i < (start + count); i++) {
                 // read value only
                 buf.clear();
-                store.get(i, buf, DataFile.DataToRead.KEY_VALUE);
+                store.get(i, buf);
                 // check read key
                 assertEquals(i,buf.getLong(),"Failed to read key for i="+i);
                 // check read hash

@@ -2,7 +2,6 @@ package com.hedera.services.state.merkle.v3.offheap;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 

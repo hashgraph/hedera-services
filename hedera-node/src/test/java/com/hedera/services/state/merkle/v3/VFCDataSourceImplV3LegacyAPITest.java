@@ -169,7 +169,7 @@ public class VFCDataSourceImplV3LegacyAPITest {
     @Test
     public void contractKey_testRandomHashUpdates() {
         var dataSource = createContractKeyDataSource(1000);
-        // create some -1 hashes
+        // create some hashes in random order
         for (int i : shuffle(RANDOM,IntStream.range(0,1000).toArray())) dataSource.saveInternal(i,hash(i));
         // check all the node hashes
         IntStream.range(0,1000).forEach(i -> assertEquals(hash(i), dataSource.loadInternalHash(i)));
