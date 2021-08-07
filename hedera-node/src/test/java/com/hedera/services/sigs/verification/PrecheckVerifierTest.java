@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class PrecheckVerifierTest {
+class PrecheckVerifierTest {
 	private static List<JKey> reqKeys;
 	private static final TransactionBody txnBody = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))

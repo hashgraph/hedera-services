@@ -109,7 +109,7 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
-public class SmartContractRequestHandlerMiscTest {
+class SmartContractRequestHandlerMiscTest {
 
   public static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
   public static final String FALLBACK_BIN = "/testfiles/Fallback.bin";

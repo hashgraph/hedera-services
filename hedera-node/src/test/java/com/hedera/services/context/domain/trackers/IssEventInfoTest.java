@@ -52,13 +52,13 @@ class IssEventInfoTest {
 	}
 
 	@Test
-	public void startsClean() {
+	void startsClean() {
 		// expect:
 		assertEquals(NO_KNOWN_ISS, subject.status());
 	}
 
 	@Test
-	public void alertWorks() {
+	void alertWorks() {
 		// when:
 		subject.alert(firstIssTime);
 
@@ -79,7 +79,7 @@ class IssEventInfoTest {
 	}
 
 	@Test
-	public void relaxWorks() {
+	void relaxWorks() {
 		// given:
 		subject.alert(firstIssTime);
 

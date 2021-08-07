@@ -45,7 +45,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ScheduleDeleteResourceUsageTest {
+class ScheduleDeleteResourceUsageTest {
     TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setScheduled(true)
             .setAccountID(IdUtils.asAccount("0.0.2"))

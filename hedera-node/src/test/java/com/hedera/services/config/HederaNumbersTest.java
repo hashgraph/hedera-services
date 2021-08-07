@@ -42,7 +42,7 @@ class HederaNumbersTest {
 	}
 
 	@Test
-	public void hasExpectedNumbers() {
+	void hasExpectedNumbers() {
 		// expect:
 		assertEquals(1L, subject.shard());
 		assertEquals(2L, subject.realm());

@@ -55,7 +55,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void unsupportedOpsThrow() {
+	void unsupportedOpsThrow() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.reset());
 		assertThrows(UnsupportedOperationException.class, () -> subject.prefixLookup(new byte[0], 0));
@@ -63,7 +63,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void noopsSanityCheck() {
+	void noopsSanityCheck() {
 		// expect:
 		assertFalse(subject.flush());
 		assertFalse(subject.isAlive());
@@ -74,7 +74,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void nameSetterWorks() {
+	void nameSetterWorks() {
 		// when:
 		subject.setName("testing123");
 
@@ -83,7 +83,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void delegatesGetOfMissing() {
+	void delegatesGetOfMissing() {
 		given(blobDelegate.get(any())).willReturn(null);
 
 		// expect:
@@ -93,7 +93,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void delegatesGetOfPresent() {
+	void delegatesGetOfPresent() {
 		given(blobDelegate.get(any())).willReturn(storage);
 
 		// when:
@@ -106,7 +106,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void delegatesPut() {
+	void delegatesPut() {
 		// when:
 		subject.put(address, storage);
 
@@ -117,7 +117,7 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
-	public void delegatesDelete() {
+	void delegatesDelete() {
 		// when:
 		subject.delete(address);
 

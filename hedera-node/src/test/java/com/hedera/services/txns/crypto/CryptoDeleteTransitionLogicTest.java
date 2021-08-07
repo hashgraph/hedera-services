@@ -66,7 +66,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(LogCaptureExtension.class)
-public class CryptoDeleteTransitionLogicTest {
+class CryptoDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private boolean withKnownTreasury = true;

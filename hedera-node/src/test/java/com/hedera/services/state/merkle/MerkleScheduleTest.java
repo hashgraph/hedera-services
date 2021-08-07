@@ -113,7 +113,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void factoryWorks() {
+	void factoryWorks() {
 		// expect:
 		assertFalse(subject.isDeleted());
 		assertFalse(subject.isExecuted());
@@ -130,7 +130,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void factoryTranslatesImpossibleParseError() {
+	void factoryTranslatesImpossibleParseError() {
 		// expect:
 		final var iae = assertThrows(IllegalArgumentException.class,
 				() -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
@@ -200,13 +200,13 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void releaseIsNoop() {
+	void releaseIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 
 	@Test
-	public void signatoriesArePublished() {
+	void signatoriesArePublished() {
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
@@ -217,7 +217,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -243,7 +243,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
@@ -278,7 +278,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void nonessentialFieldsDontAffectIdentity() {
+	void nonessentialFieldsDontAffectIdentity() {
 		// given:
 		var diffBodyBytes = parentTxn.toBuilder()
 				.setTransactionID(parentTxn.getTransactionID().toBuilder()
@@ -299,7 +299,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void differentAdminKeysNotIdentical() {
+	void differentAdminKeysNotIdentical() {
 		// setup:
 		var bodyBytesDiffAdminKey = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
@@ -316,7 +316,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void differentMemosNotIdentical() {
+	void differentMemosNotIdentical() {
 		// setup:
 		var bodyBytesDiffMemo = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
@@ -333,7 +333,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void differentScheduledTxnNotIdentical() {
+	void differentScheduledTxnNotIdentical() {
 		// setup:
 		var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
@@ -350,7 +350,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void validToString() {
+	void validToString() {
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
@@ -377,7 +377,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void validEqualityChecks() {
+	void validEqualityChecks() {
 		// expect:
 		assertEquals(subject, subject);
 		// and:
@@ -387,25 +387,25 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void validVersion() {
+	void validVersion() {
 		// expect:
 		assertEquals(MerkleSchedule.MERKLE_VERSION, subject.getVersion());
 	}
 
 	@Test
-	public void validRuntimeConstructableID() {
+	void validRuntimeConstructableID() {
 		// expect:
 		assertEquals(MerkleSchedule.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void validIsLeaf() {
+	void validIsLeaf() {
 		// expect:
 		assertTrue(subject.isLeaf());
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// setup:
 		subject.markDeleted(resolutionTime);
 		subject.witnessValidEd25519Signature(tpk);
@@ -434,7 +434,7 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void cavWorks() {
+	void cavWorks() {
 		// setup:
 		subject.markDeleted(resolutionTime);
 		subject.markExecuted(resolutionTime);

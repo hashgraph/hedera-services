@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FeesJsonToProtoSerdeTest {
+class FeesJsonToProtoSerdeTest {
 	private static final String UNTYPED_FEE_SCHEDULE_REPR_PATH = "src/test/resources/sysfiles/r4FeeSchedule.bin";
 	private static final String TYPED_FEE_SCHEDULE_JSON_PATH = "src/test/resources/sysfiles/r16feeSchedules.json";
 	private static final String TYPED_FEE_SCHEDULE_JSON_RESOURCE = "sysfiles/r16feeSchedules.json";
@@ -59,7 +59,7 @@ public class FeesJsonToProtoSerdeTest {
 	}
 
 	@Test
-	public void serializesTypedFeeScheduleFromStream() throws Exception {
+	void serializesTypedFeeScheduleFromStream() throws Exception {
 		// setup:
 		final var in = java.nio.file.Files.newInputStream(Paths.get(TYPED_FEE_SCHEDULE_JSON_PATH));
 
@@ -77,7 +77,7 @@ public class FeesJsonToProtoSerdeTest {
 	}
 
 	@Test
-	public void serializesTypedFeeScheduleFromLoadedJsonResource() throws Exception {
+	void serializesTypedFeeScheduleFromLoadedJsonResource() throws Exception {
 		// given:
 		final var typedSchedules = loadFeeScheduleFromJson(TYPED_FEE_SCHEDULE_JSON_RESOURCE);
 		// and:
@@ -112,7 +112,7 @@ public class FeesJsonToProtoSerdeTest {
 	}
 
 	@Test
-	public void preservesR4Behavior() throws Exception {
+	void preservesR4Behavior() throws Exception {
 		// given:
 		CurrentAndNextFeeSchedule expectedR4 =
 				CurrentAndNextFeeSchedule.parseFrom(Files.toByteArray(new File(UNTYPED_FEE_SCHEDULE_REPR_PATH)));
@@ -125,7 +125,7 @@ public class FeesJsonToProtoSerdeTest {
 	}
 
 	@Test
-	public void throwIseOnFailure() {
+	void throwIseOnFailure() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> loadFeeScheduleFromJson("no-such-resource.json"));
 	}

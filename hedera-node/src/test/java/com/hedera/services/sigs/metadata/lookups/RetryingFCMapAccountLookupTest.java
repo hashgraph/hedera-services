@@ -52,7 +52,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verifyZeroInteractions;
 
-public class RetryingFCMapAccountLookupTest {
+class RetryingFCMapAccountLookupTest {
 	private NodeLocalProperties properties;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
@@ -83,7 +83,7 @@ public class RetryingFCMapAccountLookupTest {
 	}
 
 	@Test
-	public void neverRetriesIfAccountAlreadyExists() throws Exception {
+	void neverRetriesIfAccountAlreadyExists() throws Exception {
 		given(accounts.get(accountKey)).willReturn(accountValue);
 		// and:
 		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
@@ -98,7 +98,7 @@ public class RetryingFCMapAccountLookupTest {
 	}
 
 	@Test
-	public void retriesTwiceWithStats() throws Exception {
+	void retriesTwiceWithStats() throws Exception {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(accountValue);
 		// and:
@@ -122,7 +122,7 @@ public class RetryingFCMapAccountLookupTest {
 	}
 
 	@Test
-	public void retriesOnceWithSleepingPause() throws Exception {
+	void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
 		subject = new RetryingFCMapAccountLookup(defaultPause, properties, () -> accounts, runningAvgs, speedometers);
@@ -143,7 +143,7 @@ public class RetryingFCMapAccountLookupTest {
 	}
 
 	@Test
-	public void retriesTwiceAndAbortsOnFailure() {
+	void retriesTwiceAndAbortsOnFailure() {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
@@ -165,7 +165,7 @@ public class RetryingFCMapAccountLookupTest {
 	}
 
 	@Test
-	public void abortsIfPauseFails() {
+	void abortsIfPauseFails() {
 		given(pause.forMs(anyLong())).willReturn(true).willReturn(false);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:

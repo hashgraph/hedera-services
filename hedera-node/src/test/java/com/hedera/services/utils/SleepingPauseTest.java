@@ -27,17 +27,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SleepingPauseTest {
+class SleepingPauseTest {
 	final Pause subject = SleepingPause.SLEEPING_PAUSE;
 
 	@Test
-	public void returnsTrueWhenNotInterrupted() {
+	void returnsTrueWhenNotInterrupted() {
 		// expect:
 		assertTrue(subject.forMs(1L));
 	}
 
 	@Test
-	public void returnsFalseWhenInterrupted() {
+	void returnsFalseWhenInterrupted() {
 		// setup:
 		AtomicBoolean retValue = new AtomicBoolean(true);
 		Thread sleepingThread = new Thread(() -> retValue.set(subject.forMs(5_000L)));

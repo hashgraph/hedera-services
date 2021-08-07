@@ -30,7 +30,7 @@ class DiscreteLeakyBucketTest {
 	private long capacityUsed = totalCapacity / 4;
 
 	@Test
-	public void requiresPositiveCapacity() {
+	void requiresPositiveCapacity() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(-1L));
 		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L));

@@ -30,9 +30,9 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class StatusUtilsTest {
+class StatusUtilsTest {
 	@Test
-	public void usesTxnIdForStatus() throws Throwable {
+	void usesTxnIdForStatus() throws Throwable {
 		// given:
 		PlatformTxnAccessor platformTxn = new PlatformTxnAccessor(from(newSignedSystemDelete().get()));
 		SignatureStatus expectedStatus = new SignatureStatus(

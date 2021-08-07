@@ -87,14 +87,14 @@ class TokenCreateResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenCreateTxn));
 		assertFalse(subject.applicableTo(nonTokenCreateTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		var actual = subject.usageGiven(tokenCreateTxn, obj, view);
 

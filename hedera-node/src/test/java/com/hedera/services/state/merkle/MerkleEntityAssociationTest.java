@@ -57,13 +57,13 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void toAbbrevStringWorks() {
+	void toAbbrevStringWorks() {
 		// expect:
 		assertEquals("13.25.7 <-> 31.52.0", subject.toAbbrevString());
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleEntityAssociation();
 		var two = new MerkleEntityAssociation(toShard, toRealm, toNum, fromShard, fromRealm, fromNum);
@@ -80,7 +80,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void factoryWorks() {
+	void factoryWorks() {
 		// expect:
 		assertEquals(
 				subject,
@@ -88,7 +88,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleEntityAssociation.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleEntityAssociation.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -96,7 +96,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -115,7 +115,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -133,7 +133,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleEntityAssociation{fromShard=" + fromShard
@@ -147,7 +147,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = subject.copy();
 
@@ -157,7 +157,7 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void deleteIsNoop() {
+	void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}

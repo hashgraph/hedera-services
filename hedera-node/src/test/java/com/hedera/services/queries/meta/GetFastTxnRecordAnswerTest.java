@@ -45,7 +45,7 @@ class GetFastTxnRecordAnswerTest {
 	Query query = Query.getDefaultInstance();
 
 	@Test
-	public void neverDoesOrNeedsAnything() {
+	void neverDoesOrNeedsAnything() {
 		// expect:
 		assertFalse(subject.needsAnswerOnlyCost(query));
 		assertFalse(subject.requiresNodePayment(query));
@@ -53,7 +53,7 @@ class GetFastTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void extractsValidity() {
+	void extractsValidity() {
 		// given:
 		Response response = Response.newBuilder()
 				.setTransactionGetFastRecord(TransactionGetFastRecordResponse.newBuilder()
@@ -65,7 +65,7 @@ class GetFastTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void respectsTypeOfUnsupportedQuery() {
+	void respectsTypeOfUnsupportedQuery() {
 		// given:
 		Query costAnswer = getFastTxnRecordQuery(COST_ANSWER);
 		Query answerOnly = getFastTxnRecordQuery(ANSWER_ONLY);
@@ -83,13 +83,13 @@ class GetFastTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void alwaysUnsupported() {
+	void alwaysUnsupported() {
 		// expect:
 		assertEquals(NOT_SUPPORTED, subject.checkValidity(query, StateView.EMPTY_VIEW));
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.TransactionGetRecord, subject.canonicalFunction());
 	}

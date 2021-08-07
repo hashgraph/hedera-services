@@ -55,14 +55,14 @@ class ContractCallResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(contractCallTxn));
 		assertFalse(subject.applicableTo(nonContractCallTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		subject.usageGiven(contractCallTxn, sigUsage, null);
 

@@ -94,7 +94,7 @@ class PlatformSubmissionManagerTest {
 	}
 
 	@Test
-	public void updatesRecordCacheWhenTxnIsCreated() {
+	void updatesRecordCacheWhenTxnIsCreated() {
 		// setup:
 		ArgumentCaptor<SwirldTransaction> captor =
 				ArgumentCaptor.forClass(SwirldTransaction.class);
@@ -112,7 +112,7 @@ class PlatformSubmissionManagerTest {
 	}
 
 	@Test
-	public void updatesNotCreatedStatOnFail() {
+	void updatesNotCreatedStatOnFail() {
 		given(platform.createTransaction(any())).willReturn(false);
 
 		// when:
@@ -126,7 +126,7 @@ class PlatformSubmissionManagerTest {
 	}
 
 	@Test
-	public void submitsChildInsteadOfParentForUnchecked() {
+	void submitsChildInsteadOfParentForUnchecked() {
 		// setup:
 		ArgumentCaptor<SwirldTransaction> captor =
 				ArgumentCaptor.forClass(SwirldTransaction.class);
@@ -144,7 +144,7 @@ class PlatformSubmissionManagerTest {
 	}
 
 	@Test
-	public void handlesInvalidUncheckedSubmitAsExpected() {
+	void handlesInvalidUncheckedSubmitAsExpected() {
 		given(platform.createTransaction(any())).willReturn(true);
 
 		// when:

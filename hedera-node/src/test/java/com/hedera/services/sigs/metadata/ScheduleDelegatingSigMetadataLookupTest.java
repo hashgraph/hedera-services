@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class ScheduleDelegatingSigMetadataLookupTest {
+class ScheduleDelegatingSigMetadataLookupTest {
     final int TX_BYTES_LENGTH = 64;
 
     byte[] transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES_LENGTH);

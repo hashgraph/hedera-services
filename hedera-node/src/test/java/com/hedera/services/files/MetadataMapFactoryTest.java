@@ -48,19 +48,19 @@ class MetadataMapFactoryTest {
 	private long expiry = 1_234_567L;
 
 	@Test
-	public void toAttrMirrorsNulls()  {
+	void toAttrMirrorsNulls()  {
 		// expect:
 		assertTrue(null == toAttr(null));
 	}
 
 	@Test
-	public void toAttrThrowsIaeOnError() {
+	void toAttrThrowsIaeOnError() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> toAttr("NONSENSE".getBytes()));
 	}
 
 	@Test
-	public void toValueThrowsIaeOnError() throws IOException {
+	void toValueThrowsIaeOnError() throws IOException {
 		HFileMeta suspect = mock(HFileMeta.class);
 
 		given(suspect.serialize()).willThrow(IllegalStateException.class);
@@ -70,7 +70,7 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void toValueConversionWorks() throws Throwable {
+	void toValueConversionWorks() throws Throwable {
 		// given:
 		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
 		var attr = new HFileMeta(false, validKey, expiry);
@@ -85,7 +85,7 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void toAttrConversionWorks() throws Throwable {
+	void toAttrConversionWorks() throws Throwable {
 		// given:
 		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
 		var expected = new HFileMeta(false, validKey, expiry);
@@ -100,7 +100,7 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void toFidConversionWorks() {
+	void toFidConversionWorks() {
 		// given:
 		var key = "/666/k888";
 		// and:
@@ -114,7 +114,7 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void toKeyConversionWorks() {
+	void toKeyConversionWorks() {
 		// given:
 		var fid = IdUtils.asFile("0.2.3");
 		// and:
@@ -128,7 +128,7 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void productHasMapSemantics() throws Throwable {
+	void productHasMapSemantics() throws Throwable {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		var wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
@@ -184,7 +184,7 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void cannotBeConstructed() {
+	void cannotBeConstructed() {
 		// expect:
 		assertThrows(IllegalStateException.class, MetadataMapFactory::new);
 	}

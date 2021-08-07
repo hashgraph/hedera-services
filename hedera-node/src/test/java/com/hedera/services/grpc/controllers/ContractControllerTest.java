@@ -69,7 +69,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsCreate() {
+	void forwardsCreate() {
 		// when:
 		subject.createContract(txn, txnObserver);
 
@@ -78,7 +78,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsUpdate() {
+	void forwardsUpdate() {
 		// when:
 		subject.updateContract(txn, txnObserver);
 
@@ -87,7 +87,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsCall() {
+	void forwardsCall() {
 		// when:
 		subject.contractCallMethod(txn, txnObserver);
 
@@ -96,7 +96,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsGetInfo() {
+	void forwardsGetInfo() {
 		// when:
 		subject.getContractInfo(query, queryObserver);
 
@@ -106,7 +106,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsLocalCall() {
+	void forwardsLocalCall() {
 		// when:
 		subject.contractCallLocalMethod(query, queryObserver);
 
@@ -116,7 +116,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsGetBytecode() {
+	void forwardsGetBytecode() {
 		// when:
 		subject.contractGetBytecode(query, queryObserver);
 
@@ -126,7 +126,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsGetBySolidity() {
+	void forwardsGetBySolidity() {
 		// when:
 		subject.getBySolidityID(query, queryObserver);
 
@@ -136,7 +136,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsGetRecord() {
+	void forwardsGetRecord() {
 		// when:
 		subject.getTxRecordByContractID(query, queryObserver);
 
@@ -146,7 +146,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsDelete() {
+	void forwardsDelete() {
 		// when:
 		subject.deleteContract(txn, txnObserver);
 
@@ -155,7 +155,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsSystemDelete() {
+	void forwardsSystemDelete() {
 		// when:
 		subject.systemDelete(txn, txnObserver);
 
@@ -164,7 +164,7 @@ class ContractControllerTest {
 	}
 
 	@Test
-	public void forwardsSystemUndelete() {
+	void forwardsSystemUndelete() {
 		// when:
 		subject.systemUndelete(txn, txnObserver);
 

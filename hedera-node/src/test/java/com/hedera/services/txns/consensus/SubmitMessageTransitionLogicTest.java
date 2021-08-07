@@ -86,13 +86,13 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void rubberstampsSyntax() {
+	void rubberstampsSyntax() {
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(null));
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		// given:
 		givenValidTransactionContext();
 
@@ -102,7 +102,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		// given:
 		givenValidTransactionContext();
 
@@ -123,7 +123,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void failsWithEmptyMessage() {
+	void failsWithEmptyMessage() {
 		// given:
 		givenTransactionContextNoMessage();
 
@@ -136,7 +136,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void failsForLargeMessage() {
+	void failsForLargeMessage() {
 		// given:
 		givenValidTransactionContext();
 		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(5);
@@ -152,7 +152,7 @@ class SubmitMessageTransitionLogicTest {
 
 
 	@Test
-	public void failsForInvalidTopic() {
+	void failsForInvalidTopic() {
 		// given:
 		givenTransactionContextInvalidTopic();
 
@@ -165,7 +165,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void failsForInvalidChunkNumber() {
+	void failsForInvalidChunkNumber() {
 		// given:
 		givenChunkMessage(2, 3, defaultTxnId());
 
@@ -177,7 +177,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void failsForDifferentPayers() {
+	void failsForDifferentPayers() {
 		// given:
 		AccountID initialTransactionPayer = AccountID
 				.newBuilder()
@@ -193,7 +193,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
+	void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
 		// given:
 		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
 
@@ -205,7 +205,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
+	void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
 
@@ -217,7 +217,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
+	void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(1, 1, defaultTxnId());
 

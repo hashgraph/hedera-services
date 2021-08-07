@@ -93,7 +93,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	public void respectsActivity() {
+	void respectsActivity() {
 		given(areActive.allKeysAreActive(
 				argThat(List.of(expectedKey)::equals),
 				any(), any(), any(), any(), any(), any(), any())).willReturn(false);
@@ -112,7 +112,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	public void filtersContracts() {
+	void filtersContracts() {
 		given(areActive.allKeysAreActive(
 				argThat(List.of(expectedKey)::equals),
 				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
@@ -127,7 +127,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	public void filtersNoSigRequired() {
+	void filtersNoSigRequired() {
 		given(areActive.allKeysAreActive(
 				argThat(List.of(expectedKey)::equals),
 				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
@@ -144,7 +144,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	public void filtersPayerSinceSigIsGuaranteed() {
+	void filtersPayerSinceSigIsGuaranteed() {
 		touched = Set.of(payer, noSigRequired);
 
 		// when:

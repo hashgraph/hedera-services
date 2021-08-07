@@ -86,7 +86,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
-public class UsageBasedFeeCalculatorTest {
+class UsageBasedFeeCalculatorTest {
 	private FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(1_234_567L)
 			.setGas(5_000_000L)

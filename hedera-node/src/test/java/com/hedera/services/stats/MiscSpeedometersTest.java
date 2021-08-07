@@ -54,7 +54,7 @@ class MiscSpeedometersTest {
 	}
 
 	@Test
-	public void registersExpectedStatEntries() {
+	void registersExpectedStatEntries() {
 		// setup:
 		StatEntry sync = mock(StatEntry.class);
 		StatEntry async = mock(StatEntry.class);
@@ -89,7 +89,7 @@ class MiscSpeedometersTest {
 	}
 
 	@Test
-	public void cyclesExpectedSpeedometers() {
+	void cyclesExpectedSpeedometers() {
 		// setup:
 		StatsSpeedometer retries = mock(StatsSpeedometer.class);
 		StatsSpeedometer sync = mock(StatsSpeedometer.class);
