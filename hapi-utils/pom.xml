@@ -105,16 +105,6 @@
 
   <repositories>
     <repository>
-      <id>sdk-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1118/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
