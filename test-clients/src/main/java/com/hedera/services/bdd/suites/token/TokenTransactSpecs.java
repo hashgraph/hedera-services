@@ -1344,9 +1344,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	*   2. Create non-fungible "artToken" with custom fee of 1 unit protocolToken.
 	*   3. Use account "gabriella" as treasury for both tokens.
 	*   4. Create account "harry" associated ONLY to artToken.
-	*   5. Mint serial no 1 for art token, transfer to harry (no custom fee since gabriella is treasury and exempt)
-	*   6. Transfer serial no 1 back to gabriella from harry
-	*     - Transfer fails (correctly) with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, as harry isn't associated to protocolToken
+	*   5. Mint serial no 1 for art token, transfer to harry (no custom fee since gabriella is treasury and exempt).
+	*   6. Transfer serial no 1 back to gabriella from harry.
+	*     - Transfer fails (correctly) with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, as harry
+	*       isn't associated to protocolToken and can't pay the custom fee
 	*     - But...a following getTokenNftInfo query shows that harry is no longer the owner of serial no 1!
 	*     - This is because nftsLedger.rollback() wasn't actually called, even thought the transfer failed.
 	* */
