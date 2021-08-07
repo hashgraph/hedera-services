@@ -132,8 +132,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 //						nestedHtsCaseStudy(),
 //						treasuriesAreExemptFromAllCustomFees(),
 //						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-//						canTransactInTokenWithSelfDenominatedFixedFee(),
-						nftOwnersChangeAtomically(),
+						canTransactInTokenWithSelfDenominatedFixedFee(),
+//						nftOwnersChangeAtomically(),
 				}
 		);
 	}

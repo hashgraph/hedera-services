@@ -189,6 +189,11 @@ class BalanceChangeManagerTest {
 			.build();
 	private final BalanceChange firstFungibleTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+	private final BalanceChange exemptFungibleTrigger = BalanceChange.changingFtUnits(
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+	{
+		exemptFungibleTrigger.setExemptFromCustomFees(true);
+	}
 	private final BalanceChange firstFungibleNonTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleCredit);
 	private final BalanceChange secondFungibleTrigger = BalanceChange.changingFtUnits(
@@ -215,6 +220,7 @@ class BalanceChangeManagerTest {
 	{
 		startingList.add(payerHbarAdjust);
 		startingList.add(fundingHbarAdjust);
+		startingList.add(exemptFungibleTrigger);
 		startingList.add(firstFungibleTrigger);
 		startingList.add(firstFungibleNonTrigger);
 		startingList.add(secondFungibleTrigger);
