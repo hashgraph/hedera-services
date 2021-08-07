@@ -2250,7 +2250,6 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 01925-M-TrackFeeExemptBalanceChanges
                   - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
