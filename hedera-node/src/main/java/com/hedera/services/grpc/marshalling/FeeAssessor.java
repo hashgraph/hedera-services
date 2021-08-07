@@ -67,7 +67,9 @@ public class FeeAssessor {
 		if (balanceChangeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
-		final var feeMeta = customSchedulesManager.managedSchedulesFor(change.getToken());
+		final var chargingToken = change.getToken();
+
+		final var feeMeta = customSchedulesManager.managedSchedulesFor(chargingToken);
 		final var payer = change.getAccount();
 		final var fees = feeMeta.getCustomFees();
 		/* Token treasuries are exempt from all custom fees */
@@ -78,7 +80,8 @@ public class FeeAssessor {
 		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
 
 		FixedFeeResult result;
-		result = processFixedCustomFees(fees, payer, balanceChangeManager, accumulator, maxBalanceChanges);
+		result = processFixedCustomFees(
+				chargingToken, fees, payer, balanceChangeManager, accumulator, maxBalanceChanges);
 		if (result == TOO_MANY_CHANGES_REQUIRED_FOR_FIXED_FEES) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 		}
@@ -95,11 +98,12 @@ public class FeeAssessor {
 	}
 
 	private FixedFeeResult processFixedCustomFees(
-			final List<FcCustomFee> fees,
-			final Id payer,
-			final BalanceChangeManager balanceChangeManager,
-			final List<FcAssessedCustomFee> accumulator,
-			final int maxBalanceChanges
+			Id chargingToken,
+			List<FcCustomFee> fees,
+			Id payer,
+			BalanceChangeManager balanceChangeManager,
+			List<FcAssessedCustomFee> accumulator,
+			int maxBalanceChanges
 	) {
 		var result = NO_MORE_FEES;
 		for (var fee : fees) {
@@ -112,7 +116,7 @@ public class FeeAssessor {
 				if (fixedSpec.getTokenDenomination() == null) {
 					hbarFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
 				} else {
-					htsFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
+					htsFeeAssessor.assess(payer, chargingToken, fee, balanceChangeManager, accumulator);
 				}
 				if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
 					return TOO_MANY_CHANGES_REQUIRED_FOR_FIXED_FEES;

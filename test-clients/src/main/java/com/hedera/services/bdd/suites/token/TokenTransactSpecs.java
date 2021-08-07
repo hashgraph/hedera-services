@@ -33,7 +33,9 @@ import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
+import static com.hedera.services.bdd.spec.assertions.NoFungibleTransfers.changingNoFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.NoNftTransfers.changingNoNftOwners;
+import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingSomeFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -70,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -100,38 +103,38 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						balancesChangeOnTokenTransfer(),
-//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-//						senderSigsAreValid(),
-//						balancesAreChecked(),
-//						duplicateAccountsInTokenTransferRejected(),
-//						tokenOnlyTxnsAreAtomic(),
-//						tokenPlusHbarTxnsAreAtomic(),
-//						nonZeroTransfersRejected(),
-//						prechecksWork(),
-//						missingEntitiesRejected(),
-//						allRequiredSigsAreChecked(),
-//						uniqueTokenTxnAccountBalance(),
-//						uniqueTokenTxnAccountBalancesForTreasury(),
-//						uniqueTokenTxnWithNoAssociation(),
-//						uniqueTokenTxnWithFrozenAccount(),
-//						uniqueTokenTxnWithSenderNotSigned(),
-//						uniqueTokenTxnWithReceiverNotSigned(),
-//						uniqueTokenTxnsAreAtomic(),
-//						uniqueTokenDeletedTxn(),
-//						cannotSendFungibleToDissociatedContractsOrAccounts(),
-//						cannotGiveNftsToDissociatedContractsOrAccounts(),
-//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-//						transferListsEnforceTokenTypeRestrictions(),
-//						/* HIP-18 charging case studies */
-//						fixedHbarCaseStudy(),
-//						fractionalCaseStudy(),
-//						simpleHtsFeeCaseStudy(),
-//						nestedHbarCaseStudy(),
-//						nestedFractionalCaseStudy(),
-//						nestedHtsCaseStudy(),
-//						treasuriesAreExemptFromAllCustomFees(),
-//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+						balancesChangeOnTokenTransfer(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+						senderSigsAreValid(),
+						balancesAreChecked(),
+						duplicateAccountsInTokenTransferRejected(),
+						tokenOnlyTxnsAreAtomic(),
+						tokenPlusHbarTxnsAreAtomic(),
+						nonZeroTransfersRejected(),
+						prechecksWork(),
+						missingEntitiesRejected(),
+						allRequiredSigsAreChecked(),
+						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnAccountBalancesForTreasury(),
+						uniqueTokenTxnWithNoAssociation(),
+						uniqueTokenTxnWithFrozenAccount(),
+						uniqueTokenTxnWithSenderNotSigned(),
+						uniqueTokenTxnWithReceiverNotSigned(),
+						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn(),
+						cannotSendFungibleToDissociatedContractsOrAccounts(),
+						cannotGiveNftsToDissociatedContractsOrAccounts(),
+						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+						transferListsEnforceTokenTypeRestrictions(),
+						/* HIP-18 charging case studies */
+						fixedHbarCaseStudy(),
+						fractionalCaseStudy(),
+						simpleHtsFeeCaseStudy(),
+						nestedHbarCaseStudy(),
+						nestedFractionalCaseStudy(),
+						nestedHtsCaseStudy(),
+						treasuriesAreExemptFromAllCustomFees(),
+						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
 						canTransactInTokenWithSelfDenominatedFixedFee(),
 //						nftOwnersChangeAtomically(),
 				}
@@ -1311,7 +1314,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var gabriella = "gabriella";
 		final var harry = "harry";
 		final var feeExemptTxn = "feeExemptTxn";
-		final var nonExemptTxn = "nonExemptTxn";
+		final var nonExemptUnderfundedTxn = "nonExemptUnderfundedTxn";
+		final var nonExemptFundedTxn = "nonExemptFundedTxn";
 
 		return defaultHapiSpec("CanTransactInTokenWithSelfDenominatedFixedFee")
 				.given(
@@ -1331,26 +1335,36 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getTxnRecord(feeExemptTxn).logged()
 				).then(
 						cryptoTransfer(moving(100, protocolToken).between(harry, gabriella))
-								.via(nonExemptTxn),
-						getTxnRecord(nonExemptTxn).logged()
+								.via(nonExemptUnderfundedTxn)
+								.hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
+						getTxnRecord(nonExemptUnderfundedTxn)
+								.hasPriority(recordWith()
+										.tokenTransfers(changingNoFungibleBalances())),
+						cryptoTransfer(moving(99, protocolToken).between(harry, gabriella))
+								.via(nonExemptFundedTxn),
+						getTxnRecord(nonExemptFundedTxn)
+								.hasPriority(recordWith()
+										.tokenTransfers(changingSomeFungibleBalances()
+												.including(protocolToken, gabriella, +100L)
+												.including(protocolToken, harry, -100L)))
 				);
 	}
 
 	/* ⛔️ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1919 ⛔️
 	 *
-	* SCENARIO:
-	* ---------
-	*   1. Create fungible "protocolToken" to use for a custom fee.
-	*   2. Create non-fungible "artToken" with custom fee of 1 unit protocolToken.
-	*   3. Use account "gabriella" as treasury for both tokens.
-	*   4. Create account "harry" associated ONLY to artToken.
-	*   5. Mint serial no 1 for art token, transfer to harry (no custom fee since gabriella is treasury and exempt).
-	*   6. Transfer serial no 1 back to gabriella from harry.
-	*     - Transfer fails (correctly) with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, as harry
-	*       isn't associated to protocolToken and can't pay the custom fee
-	*     - But...a following getTokenNftInfo query shows that harry is no longer the owner of serial no 1!
-	*     - This is because nftsLedger.rollback() wasn't actually called, even thought the transfer failed.
-	* */
+	 * SCENARIO:
+	 * ---------
+	 *   1. Create fungible "protocolToken" to use for a custom fee.
+	 *   2. Create non-fungible "artToken" with custom fee of 1 unit protocolToken.
+	 *   3. Use account "gabriella" as treasury for both tokens.
+	 *   4. Create account "harry" associated ONLY to artToken.
+	 *   5. Mint serial no 1 for art token, transfer to harry (no custom fee since gabriella is treasury and exempt).
+	 *   6. Transfer serial no 1 back to gabriella from harry.
+	 *     - Transfer fails (correctly) with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, as harry
+	 *       isn't associated to protocolToken and can't pay the custom fee
+	 *     - But...a following getTokenNftInfo query shows that harry is no longer the owner of serial no 1!
+	 *     - This is because nftsLedger.rollback() wasn't actually called, even thought the transfer failed.
+	 * */
 	public HapiApiSpec nftOwnersChangeAtomically() {
 		final var artToken = "artToken";
 		final var protocolToken = "protocolToken";
@@ -1358,6 +1372,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var harry = "harry";
 		final var uncompletableTxn = "uncompletableTxn";
 		final var supplyKey = "supplyKey";
+		final var serialNo1Meta = ByteString.copyFromUtf8("PRICELESS");
 
 		return defaultHapiSpec("CanTransactInTokenWithSelfDenominatedFixedFee")
 				.given(
@@ -1380,7 +1395,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury(gabriella)
 								.withCustom(fixedHtsFee(1, protocolToken, gabriella))
 				).when(
-						mintToken(artToken, List.of(ByteString.copyFromUtf8("PRICELESS"))),
+						mintToken(artToken, List.of(serialNo1Meta)),
 						tokenAssociate(harry, artToken),
 						cryptoTransfer(movingUnique(artToken, 1L).between(gabriella, harry))
 				).then(
@@ -1388,11 +1403,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.via(uncompletableTxn)
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						getTxnRecord(uncompletableTxn)
-								.logged()
 								.hasPriority(recordWith().tokenTransfers(changingNoNftOwners())),
 						getTokenNftInfo(artToken, 1L)
 								.hasAccountID(harry)
-								.logged()
+						/* ⛔️ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1918 ⛔️ */
+//						getAccountNftInfos(harry, 0, 1)
+//								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
+
 				);
 	}
 
