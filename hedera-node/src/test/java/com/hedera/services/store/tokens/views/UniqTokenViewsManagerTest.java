@@ -26,7 +26,9 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
@@ -37,28 +39,23 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class UniqTokenViewsManagerTest {
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
-	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
+
+	private FCMap<MerkleEntityId, MerkleToken> realTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> realNfts;
 
 	private UniqTokenViewsManager subject;
 
@@ -207,19 +204,19 @@ class UniqTokenViewsManagerTest {
 	}
 
 	@Test
-	void treasuryTrackingSafelyRebuildsAndDifferentiatesTreasuryOwned() {
+	void treasuryTrackingSafelyRebuildsAndDifferentiatesTreasuryOwned() throws ConstructableRegistryException {
 		setupTreasuryTrackingSubject();
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
 		// expect:
 		Assertions.assertTrue(subject.isUsingTreasuryWildcards());
 
 		// and:
-		givenWellKnownNfts();
-		// and:
-		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
+		givenRealNfts();
 
 		// when:
-		subject.rebuildNotice(tokens, nfts);
+		subject.rebuildNotice(realTokens, realNfts);
 
 		// then:
 		verify(nftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
@@ -233,19 +230,19 @@ class UniqTokenViewsManagerTest {
 	}
 
 	@Test
-	void nonTreasuryTrackingRebuildsEverythingExplicitly() {
+	void nonTreasuryTrackingRebuildsEverythingExplicitly() throws ConstructableRegistryException {
 		setupNonTreasuryTrackingSubject();
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
 		// expect:
 		Assertions.assertFalse(subject.isUsingTreasuryWildcards());
 
 		// and:
-		givenWellKnownNfts();
-		// and:
-		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
+		givenRealNfts();
 
 		// when:
-		subject.rebuildNotice(tokens, nfts);
+		subject.rebuildNotice(realTokens, realNfts);
 
 		// then:
 		verify(nftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
@@ -258,17 +255,15 @@ class UniqTokenViewsManagerTest {
 		verifyNoMoreInteractions(nftsByOwner);
 	}
 
-	private void givenWellKnownNfts() {
-		willAnswer(invocationOnMock -> {
-			final var onePair = new MerklePair<>(aOneNftId, firstOwnedANft);
-			final var twoPair = new MerklePair<>(bOneNftId, firstOwnedBNft);
-			final var missingPair = new MerklePair<>(missingTokenNftId, tokenDeletedNft);
-			final Consumer<MerkleNode> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(onePair);
-			consumer.accept(twoPair);
-			consumer.accept(missingPair);
-			return null;
-		}).given(nfts).forEachNode(any());
+	private void givenRealNfts() {
+		realNfts = new FCMap<>();
+		realNfts.put(aOneNftId, firstOwnedANft);
+		realNfts.put(bOneNftId, firstOwnedBNft);
+		realNfts.put(missingTokenNftId, tokenDeletedNft);
+
+		realTokens = new FCMap<>();
+		realTokens.put(aTokenId.asMerkle(), aToken);
+		realTokens.put(bTokenId.asMerkle(), bToken);
 	}
 
 	private void setupTreasuryTrackingSubject() {
