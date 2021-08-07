@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JEd25519KeyTest {
+class JEd25519KeyTest {
   @Test
   public void emptyJEd25519KeyTest() {
     JEd25519Key key1 = new JEd25519Key(null);

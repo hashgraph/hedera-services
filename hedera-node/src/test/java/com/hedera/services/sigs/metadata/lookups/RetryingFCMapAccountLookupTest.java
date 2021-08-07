@@ -52,7 +52,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verifyZeroInteractions;
 
-public class RetryingFCMapAccountLookupTest {
+class RetryingFCMapAccountLookupTest {
 	private NodeLocalProperties properties;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;

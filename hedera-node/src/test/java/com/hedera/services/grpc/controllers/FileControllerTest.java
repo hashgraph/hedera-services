@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class FileControllerTest {
+class FileControllerTest {
 	Query query = Query.getDefaultInstance();
 	Transaction txn = Transaction.getDefaultInstance();
 	FileAnswers answers;

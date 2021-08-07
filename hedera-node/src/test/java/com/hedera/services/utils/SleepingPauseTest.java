@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SleepingPauseTest {
+class SleepingPauseTest {
 	final Pause subject = SleepingPause.SLEEPING_PAUSE;
 
 	@Test

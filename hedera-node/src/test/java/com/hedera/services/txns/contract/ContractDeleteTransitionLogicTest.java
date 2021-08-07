@@ -55,7 +55,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-public class ContractDeleteTransitionLogicTest {
+class ContractDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	final private AccountID transfer = AccountID.newBuilder().setAccountNum(4_321L).build();

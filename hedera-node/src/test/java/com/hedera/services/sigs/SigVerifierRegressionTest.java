@@ -72,7 +72,7 @@ import static org.mockito.BDDMockito.anyInt;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class SigVerifierRegressionTest {
+class SigVerifierRegressionTest {
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier precheckVerifier;
 	private HederaSigningOrder keyOrder;

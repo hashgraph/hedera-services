@@ -39,7 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class GetLiveHashAnswerTest {
+class GetLiveHashAnswerTest {
 	GetLiveHashAnswer subject = new GetLiveHashAnswer();
 	Query query = Query.getDefaultInstance();
 

@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("JKeySerializer Test Suite")
-public class JkeySerializerTest {
+class JkeySerializerTest {
 
 
   @BeforeAll

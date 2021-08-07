@@ -78,7 +78,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class HederaScheduleStoreTest {
+class HederaScheduleStoreTest {
 	static final int SIGNATURE_BYTES = 64;
 	EntityIdSource ids;
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;

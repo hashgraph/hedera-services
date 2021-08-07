@@ -47,7 +47,7 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class AccountCustomizerTest {
+class AccountCustomizerTest {
 	private TestAccountCustomizer subject;
 	private ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager;
 

@@ -57,7 +57,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
-public class TxnAwareRecordsHistorianTest {
+class TxnAwareRecordsHistorianTest {
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
 	final private EntityId aEntity = EntityId.fromGrpcAccountId(a);

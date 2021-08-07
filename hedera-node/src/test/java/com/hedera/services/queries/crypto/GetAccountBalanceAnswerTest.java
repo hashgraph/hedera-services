@@ -72,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class GetAccountBalanceAnswerTest {
+class GetAccountBalanceAnswerTest {
 	private FCMap accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private StateView view;

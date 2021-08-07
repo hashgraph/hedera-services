@@ -74,7 +74,7 @@ import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class CryptoCreateTransitionLogicTest {
+class CryptoCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long customAutoRenewPeriod = 100_001L;
 	final private long customSendThreshold = 49_000L;

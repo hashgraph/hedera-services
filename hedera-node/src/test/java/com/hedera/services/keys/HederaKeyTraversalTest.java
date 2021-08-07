@@ -39,7 +39,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class HederaKeyTraversalTest {
+class HederaKeyTraversalTest {
 	static KeyTree kt;
 
 	@BeforeAll

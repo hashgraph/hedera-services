@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.mock;
 
-public class StdStateMigrationsTest {
+class StdStateMigrationsTest {
 	Pause pause;
 	ServicesContext ctx;
 	StdStateMigrations subject;

@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RecordStreamObjectTest {
+class RecordStreamObjectTest {
 	private static final TransactionRecord record = mock(TransactionRecord.class);
 	private static final TransactionID transactionID = mock(TransactionID.class);
 	private static final Transaction transaction = mock(Transaction.class);

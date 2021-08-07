@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RecordStreamTypeTest {
+class RecordStreamTypeTest {
 	public static final File NULL_FILE = null;
 
 	public static final String RECORD_FILE_NAME = "test.rcd";

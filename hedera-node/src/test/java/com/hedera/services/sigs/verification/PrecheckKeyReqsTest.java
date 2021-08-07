@@ -47,7 +47,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 
-public class PrecheckKeyReqsTest {
+class PrecheckKeyReqsTest {
 	private List<JKey> keys;
 	private PrecheckKeyReqs subject;
 	private HederaSigningOrder keyOrder;

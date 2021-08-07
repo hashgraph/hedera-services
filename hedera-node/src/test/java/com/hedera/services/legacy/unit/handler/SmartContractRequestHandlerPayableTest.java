@@ -101,7 +101,7 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
  */
 
-public class SmartContractRequestHandlerPayableTest {
+class SmartContractRequestHandlerPayableTest {
 
   public static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
   public static final int DEPOSIT_AMOUNT = 12345;

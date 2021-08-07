@@ -62,7 +62,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-public class ContractCreateTransitionLogicTest {
+class ContractCreateTransitionLogicTest {
 	private long gas = 33_333L;
 	private long customAutoRenewPeriod = 100_001L;
 	private Long balance = 1_234L;
