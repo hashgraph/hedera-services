@@ -1,8 +1,6 @@
 package com.hedera.services.state.merkle.v3;
 
-import com.hedera.services.state.merkle.v3.files.DataFile;
-import com.hedera.services.state.merkle.v3.files.HalfDiskHashMap;
-import com.hedera.services.state.merkle.v3.files.MemoryIndexDiskKeyValueStore;
+import com.hedera.services.state.merkle.v3.files.*;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 import com.swirlds.common.crypto.DigestType;
@@ -18,6 +16,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -42,6 +42,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     private final MemoryIndexDiskKeyValueStore pathToKeyHashValue;
     private final ThreadLocal<ByteBuffer> leafKey;
     private final ThreadLocal<ByteBuffer> keyHashValue;
+    private final ScheduledThreadPoolExecutor mergingSeScheduledThreadPoolExecutor;
 
     /**
      * Create new VFCDataSourceImplV3
@@ -55,6 +56,21 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
      */
     public VFCDataSourceImplV3(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
                                 Path storageDir, long maxNumOfKeys) throws IOException {
+        this(keySizeBytes, keyConstructor, valueSizeBytes,valueConstructor,storageDir,maxNumOfKeys,true);
+    }
+
+    /**
+     * Create new VFCDataSourceImplV3
+     *
+     * @param keySizeBytes the size of key when serialized in bytes
+     * @param keyConstructor constructor for creating keys for deserialization
+     * @param valueSizeBytes the size of value when serialized in bytes
+     * @param valueConstructor constructor for creating values for deserialization
+     * @param storageDir directory to store data files in
+     * @param maxNumOfKeys the maximum number of unique keys. This is used for calculating in memory index sizes
+     */
+    public VFCDataSourceImplV3(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
+                                Path storageDir, long maxNumOfKeys, boolean mergingEnabled) throws IOException {
         this.keySizeBytes = Integer.BYTES + keySizeBytes;
         this.keyConstructor = keyConstructor;
         this.valueSizeBytes = Integer.BYTES + valueSizeBytes;
@@ -71,10 +87,32 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
             objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySizeBytes,keyConstructor,storageDir,"objectKeyToPath");
         }
         final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes;
-        System.out.println("keyHashValueSize = " + keyHashValueSize);
-        final int keyHashValueSizePower2 = Integer.highestOneBit(keyHashValueSize)*2; // nearest greater power of two
-        System.out.println("keyHashValueSizePower2 = " + keyHashValueSizePower2);
-        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSizePower2);
+        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSize);
+        // If merging is enabled then merge all data files every 30 seconds, TODO this is just a initial implementation
+        if (mergingEnabled) {
+            ThreadGroup mergingThreadGroup = new ThreadGroup("Merging Threads");
+            mergingSeScheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1,r -> new Thread(mergingThreadGroup,r));
+            mergingSeScheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+                final long START = System.currentTimeMillis();
+                if (objectKeyToPath != null) {
+                    try {
+                        objectKeyToPath.mergeAll();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                try {
+                    pathToKeyHashValue.mergeAll();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                final long mergeTook = System.currentTimeMillis() - START;
+                double timeSeconds = (double)mergeTook/1000d;
+                System.out.printf("Merged in %,.2f seconds\n",timeSeconds);
+            },10,10, TimeUnit.SECONDS);
+        } else {
+            mergingSeScheduledThreadPoolExecutor = null;
+        }
     }
 
 
@@ -99,7 +137,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         // get reusable buffer
         ByteBuffer keyHashValueBuffer = this.keyHashValue.get().clear();
         // read value
-        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer, DataFile.DataToRead.VALUE);
+        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer);
         if (!found) return null;
         // deserialize
         keyHashValueBuffer.rewind();
@@ -203,7 +241,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         ByteBuffer keyHashValueBuffer = this.keyHashValue.get().clear();
         // read value
-        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer, DataFile.DataToRead.VALUE);
+        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer);
         if (!found) return null;
         // deserialize hash
         keyHashValueBuffer.rewind();
@@ -247,7 +285,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         ByteBuffer keyHashValueBuffer = this.keyHashValue.get().clear();
         // read value
-        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer, DataFile.DataToRead.VALUE);
+        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer);
         if (!found) return null;
         // deserialize value
         keyHashValueBuffer.rewind();
@@ -285,7 +323,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         ByteBuffer keyBuffer = this.leafKey.get().clear();
         // read key
-        boolean found = pathToKeyHashValue.get(path,keyBuffer, DataFile.DataToRead.VALUE);
+        boolean found = pathToKeyHashValue.get(path,keyBuffer);
         if (!found) return null;
         keyBuffer.rewind();
         final int keySerializationVersion =  keyBuffer.getInt();

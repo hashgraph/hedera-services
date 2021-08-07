@@ -1,10 +1,10 @@
 package jasperdb;
 
-import com.hedera.services.state.merkle.v3.files.DataFile;
-import com.hedera.services.state.merkle.v3.files.DataFileCollection;
+import com.hedera.services.state.merkle.v3.files.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +26,8 @@ public class PageAlignmentBench {
 
     @Param({"4096","4000"})
     public int blockSize;
+    @Param({"DataFileReaderSynchronous","DataFileReaderAsynchronous","DataFileReaderThreadLocal"})
+    public String dataFileImpl;
 
     private final Random random = new Random(32146486);
     private DataFileCollection dataFileCollection;
@@ -44,14 +46,34 @@ public class PageAlignmentBench {
         System.out.println("numOfDataItemsPerFile = " + numOfDataItemsPerFile);
         numOfDataItems = (long)numOfDataItemsPerFile * (long)numOfFiles;
         System.out.println("numOfDataItems = " + numOfDataItems);
+        // create data file factory
+        DataFileReaderFactory dataFileFactory = new DataFileReaderFactory() {
+            @Override
+            public DataFileReader newDataFileReader(Path path) throws IOException {
+                return switch(dataFileImpl) {
+                    case "DataFileReaderAsynchronous" -> new DataFileReaderAsynchronous(path);
+                    case "DataFileReaderThreadLocal" -> new DataFileReaderThreadLocal(path);
+                    default -> new DataFileReaderSynchronous(path);
+                };
+            }
+
+            @Override
+            public DataFileReader newDataFileReader(Path path, DataFileMetadata dataFileMetadata) throws IOException {
+                return switch(dataFileImpl) {
+                    case "DataFileReaderAsynchronous" -> new DataFileReaderAsynchronous(path,dataFileMetadata);
+                    case "DataFileReaderThreadLocal" -> new DataFileReaderThreadLocal(path,dataFileMetadata);
+                    default -> new DataFileReaderSynchronous(path,dataFileMetadata);
+                };
+            }
+        };
         // create 1Tb of data
         Path dataDir = Path.of("jasperdb_"+blockSize);
         if (Files.isDirectory(dataDir)) {
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize, dataFileFactory);
         } else { // new
             Files.createDirectories(dataDir);
             //
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize, dataFileFactory);
             // create some random data to write
             ByteBuffer dataBuffer = ByteBuffer.allocate(blockSize - Long.BYTES - Integer.BYTES);
             new Random(123456).nextBytes(dataBuffer.array());
@@ -77,7 +99,7 @@ public class PageAlignmentBench {
     @Benchmark
     public void randomRead(Blackhole blackHole) throws Exception {
         // pick random file
-        int fileIndex = 1;
+        int fileIndex = 0;
         long fileIndexShifted = (long)(fileIndex+1) << 32;
         // pick random offset
         int blockOffset = random.nextInt(numOfDataItemsPerFile);
@@ -85,7 +107,7 @@ public class PageAlignmentBench {
         long dataLocation = fileIndexShifted | blockOffset;
         // read data
         dataReadBuffer.clear();
-        blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer, DataFile.DataToRead.KEY_VALUE));
+        blackHole.consume(dataFileCollection.readData(dataLocation,dataReadBuffer, DataFileReader.DataToRead.KEY_VALUE));
     }
 
 }

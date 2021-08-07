@@ -11,6 +11,7 @@ import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -19,7 +20,7 @@ import java.util.function.Supplier;
  *
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
  */
-public class HalfDiskHashMap<K extends VirtualKey> {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /**
      * Nominal value for a bucket location that doesn't exist. It is zero, so we don't need to fill empty index memory
      * with some other value.
@@ -39,16 +40,26 @@ public class HalfDiskHashMap<K extends VirtualKey> {
     private final int numOfBuckets;
     private final int entriesPerBucket;
     private final long mapSize;
+    private final String storeName;
     /** Temporary bucket buffers. */
     private final ThreadLocal<Bucket<K>> bucket;
     private IntObjectHashMap<ObjectLongHashMap<K>> oneTransactionsData = null;
 
     public HalfDiskHashMap(long mapSize, int keySize, Supplier<K> keyConstructor, Path storeDir, String storeName) throws IOException {
         this.mapSize = mapSize;
+        this.storeName = storeName;
         // create store dir
         Files.createDirectories(storeDir);
         // create file collection
-        fileCollection = new DataFileCollection(storeDir,storeName,DISK_PAGE_SIZE_BYTES);
+        fileCollection = new DataFileCollection(storeDir,storeName,DISK_PAGE_SIZE_BYTES, new DataFileReaderFactory() {
+            public DataFileReader newDataFileReader(Path path) throws IOException {
+                return new DataFileReaderThreadLocal(path);
+            }
+
+            public DataFileReader newDataFileReader(Path path, DataFileMetadata metadata) throws IOException {
+                return new DataFileReaderThreadLocal(path, metadata);
+            }
+        });
         // create bucket index
         bucketIndexToBucketLocation = new OffHeapLongList();
         // calculate number of entries we can store in a disk page
@@ -58,6 +69,27 @@ public class HalfDiskHashMap<K extends VirtualKey> {
         minimumBuckets = (int)Math.ceil(((double)mapSize/LOADING_FACTOR)/entriesPerBucket);
         numOfBuckets = Integer.highestOneBit(minimumBuckets)*2; // nearest greater power of two
         bucket = ThreadLocal.withInitial(() -> new Bucket<>(entrySize, valueOffsetInEntry, entriesPerBucket, keyConstructor));
+    }
+
+    /**
+     * Merge all read only files
+     *
+     * @throws IOException if there was a problem mergeing
+     */
+    public void mergeAll() throws IOException {
+        List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles();
+        System.out.println("Starting to merge " + filesToMerge.size()+" files in collection "+storeName);
+        fileCollection.mergeOldFiles(moves -> {
+            // update index with all moved data
+            moves.forEachKeyValue((key, move) -> {
+                bucketIndexToBucketLocation.put(key, move[1]);
+            });
+        }, filesToMerge);
+    }
+
+    @Override
+    public void close() throws IOException {
+        fileCollection.close();
     }
 
     public void startWriting() throws IOException {
@@ -79,7 +111,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
                         bucket.setBucketIndex(bucketIndex);
                     } else {
                         // load bucket
-                        fileCollection.readData(currentBucketLocation, bucket.bucketBuffer, DataFile.DataToRead.VALUE);
+                        fileCollection.readData(currentBucketLocation, bucket.bucketBuffer, DataFileReaderAsynchronous.DataToRead.VALUE);
                     }
                     // for each changed key in bucket, update bucket
                     bucketMap.forEachKeyValue((k,v) -> bucket.putValue(hash(k),k,v));
@@ -119,7 +151,7 @@ public class HalfDiskHashMap<K extends VirtualKey> {
         if (currentBucketLocation != NON_EXISTENT_BUCKET) {
             Bucket<K> bucket = this.bucket.get().clear();
             // load bucket
-            fileCollection.readData(currentBucketLocation,bucket.bucketBuffer, DataFile.DataToRead.VALUE);
+            fileCollection.readData(currentBucketLocation,bucket.bucketBuffer, DataFileReaderAsynchronous.DataToRead.VALUE);
             // get
             return bucket.findValue(keyHash,key,notFoundValue);
         }

@@ -29,7 +29,7 @@ public class HalfDiskHashMapTest {
 
     private static void createSomeData(HalfDiskHashMap<ContractKey> map, int start, int count, long dataMultiplier) throws IOException  {
         map.startWriting();
-        for (int i = start; i <= (start+count); i++) {
+        for (int i = start; i < (start+count); i++) {
             map.put(newContractKey(i),i*dataMultiplier);
         }
 //        map.debugDumpTransactionCache();
@@ -40,7 +40,7 @@ public class HalfDiskHashMapTest {
 
     private static void checkData(HalfDiskHashMap<ContractKey> map, int start, int count, long dataMultiplier) throws IOException  {
         long START = System.currentTimeMillis();
-        for (int i = start; i <= (start+count); i++) {
+        for (int i = start; i < (start+count); i++) {
             long result = map.get(newContractKey(i),0);
             assertEquals(i*dataMultiplier,result);
         }
@@ -86,13 +86,13 @@ public class HalfDiskHashMapTest {
         // create map
         HalfDiskHashMap<ContractKey> map = createNewTempMap(1000);
         // create some data
-        createSomeData(map,1,1000,1);
-        checkData(map,1,1000,1);
+        createSomeData(map,0,1000,1);
+        checkData(map,0,1000,1);
         // update some data
         createSomeData(map,200,400,2);
-        checkData(map,1,100,1);
+        checkData(map,0,200,1);
         checkData(map,200,400,2);
-        checkData(map,600,1000,1);
+        checkData(map,600,400,1);
     }
 
 

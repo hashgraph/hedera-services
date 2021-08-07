@@ -12,6 +12,7 @@ import org.openjdk.jmh.annotations.*;
 import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
 import lmdb.VFCDataSourceLmdbTwoIndexes;
+import org.openjdk.jmh.infra.Blackhole;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
@@ -233,25 +234,61 @@ public class VFCDataSourceImplGetBench {
     public void w3_MoveLeaf() throws Exception {
         dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
     }
+
+    @Benchmark
+    public void r_loadLeafPath() throws Exception {
+        dataSource.loadLeafPath(key1);
+    }
+
+    @Benchmark
+    public void r_loadLeafKey() throws Exception {
+        dataSource.loadLeafKey(randomLeafIndex1);
+    }
+
+    @Benchmark
+    public void r_loadLeafValueByPath() throws Exception {
+        dataSource.loadLeafValue(randomLeafIndex2);
+    }
+
+    @Benchmark
+    public void r_loadLeafValueByKey() throws Exception {
+        dataSource.loadLeafValue(key2);
+    }
+
+    @Benchmark
+    public void r_loadInternalHash() throws Exception {
+        dataSource.loadInternalHash(randomNodeIndex1);
+    }
+
+    @Benchmark
+    public void r_loadLeafHash() throws Exception {
+        dataSource.loadLeafHash(randomLeafIndex1);
+    }
 //
 //    /**
 //     * This is designed to mimic our transaction round
 //     */
 //    @Benchmark
-//    public void t_transaction() {
-//        IntStream.range(0,3).parallel().forEach(thread -> {
+//    public void t_transaction(Blackhole blackHole) {
+//        IntStream.range(0,7).parallel().forEach(thread -> {
 //            try {
 //                switch (thread) {
-//                    case 0 -> {
+//                    case 0: // this is the transaction 5 threads that reads leaf values
+//                    case 1:
+//                    case 2:
+//                    case 3:
+//                    case 4:
+//                    {
 //                        Thread.currentThread().setName("transaction");
-//                        // this is the transaction thread that reads leaf values
-//                        for (int i = 0; i < 20_000; i++) {
+//                        for (int i = 0; i < 4_000; i++) {
 //                            randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
 //                            key2 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
-//                            dataSource.loadLeafValue(key2);
+//                            blackHole.consume(dataSource.loadLeafValue(key2));
 //                        }
+//                        break;
 //                    }
-//                    case 1 -> {
+//                    case 5:
+//                    {
 //                        // this is the hashing thread that reads hashes
 //                        final int chunk = 20_000/hashThreads;
 //                        IntStream.range(0,hashThreads).parallel().forEach(hashChunk -> {
@@ -265,8 +302,10 @@ public class VFCDataSourceImplGetBench {
 //                                }
 //                            }
 //                        });
+//                        break;
 //                    }
-//                    case 2 -> {
+//                    case 6 :
+//                    {
 //                        Thread.currentThread().setName("archiver");
 //                        // this is the archive thread that writes nodes and leaves
 //                        final int chunk = 20_000/writeThreads;
@@ -298,6 +337,7 @@ public class VFCDataSourceImplGetBench {
 //                            }
 //                            dataSource.commitTransaction(transaction);
 //                        });
+//                        break;
 //                    }
 //                }
 //            } catch (IOException e) {
@@ -305,35 +345,5 @@ public class VFCDataSourceImplGetBench {
 //            }
 //        });
 //    }
-
-    @Benchmark
-    public void r_loadLeafPath() throws Exception {
-        dataSource.loadLeafPath(key1);
-    }
-
-    @Benchmark
-    public void r_loadLeafKey() throws Exception {
-        dataSource.loadLeafKey(randomLeafIndex1);
-    }
-
-    @Benchmark
-    public void r_loadLeafValueByPath() throws Exception {
-        dataSource.loadLeafValue(randomLeafIndex2);
-    }
-
-    @Benchmark
-    public void r_loadLeafValueByKey() throws Exception {
-        dataSource.loadLeafValue(key2);
-    }
-
-    @Benchmark
-    public void r_loadInternalHash() throws Exception {
-        dataSource.loadInternalHash(randomNodeIndex1);
-    }
-
-    @Benchmark
-    public void r_loadLeafHash() throws Exception {
-        dataSource.loadLeafHash(randomLeafIndex1);
-    }
 
 }

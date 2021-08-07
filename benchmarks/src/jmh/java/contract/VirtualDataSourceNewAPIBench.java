@@ -13,7 +13,6 @@ import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
 import lmdb.VFCDataSourceLmdbHashesRam;
 import lmdb.VFCDataSourceLmdbTwoIndexes;
-import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.openjdk.jmh.annotations.*;
 import rockdb.VFCDataSourceRocksDb;
@@ -33,7 +32,7 @@ import static fcmmap.FCVirtualMapTestUtils.hash;
 @SuppressWarnings({"jol", "DuplicatedCode", "DefaultAnnotationParam", "SameParameterValue", "SpellCheckingInspection"})
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5, time = 120, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -61,8 +60,6 @@ public class VirtualDataSourceNewAPIBench {
         System.out.println("------- Setup -----------------------------");
         storePath = Path.of("store-"+impl);
         try {
-            // delete any old store
-            if (impl.equals("v3")) FCVirtualMapTestUtils.deleteDirectoryAndContents(storePath);
             final boolean storeExists = Files.exists(storePath);
             // get slot index suppliers
             dataSource = switch (impl) {
@@ -95,7 +92,7 @@ public class VirtualDataSourceNewAPIBench {
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,
-                            numEntities*2); // TODO see if 2x fixes it
+                            numEntities+10_000_000); // TODO see if 10 millionls extra is enough for add method
                 default ->
                     throw new IllegalStateException("Unexpected value: " + impl);
             };
@@ -124,6 +121,13 @@ public class VirtualDataSourceNewAPIBench {
                 System.out.println("================================================================================");
                 // set nextPath
                 nextPath = numEntities;
+                // let merge catch up
+                try {
+                    System.out.println("Waiting for merge");
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             } else {
                 System.out.println("Loaded existing data");
             }
@@ -186,6 +190,12 @@ public class VirtualDataSourceNewAPIBench {
                         i+numEntities,hash((int)i),new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(randomNodeIndex1) )
                 ).collect(Collectors.toList())
         );
+        // add a small delay between iterations for merging to get a chance on write heavy benchmarks
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
     }
 
     /**
