@@ -1313,7 +1313,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var protocolToken = "protocolToken";
 		final var gabriella = "gabriella";
 		final var harry = "harry";
-		final var feeExemptTxn = "feeExemptTxn";
 		final var nonExemptUnderfundedTxn = "nonExemptUnderfundedTxn";
 		final var nonExemptFundedTxn = "nonExemptFundedTxn";
 
@@ -1331,16 +1330,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						tokenAssociate(harry, protocolToken),
 						cryptoTransfer(moving(100, protocolToken).between(gabriella, harry))
-								.via(feeExemptTxn),
-						getTxnRecord(feeExemptTxn).logged()
 				).then(
 						cryptoTransfer(moving(100, protocolToken).between(harry, gabriella))
 								.via(nonExemptUnderfundedTxn)
+								.fee(ONE_HBAR)
 								.hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
 						getTxnRecord(nonExemptUnderfundedTxn)
 								.hasPriority(recordWith()
 										.tokenTransfers(changingNoFungibleBalances())),
 						cryptoTransfer(moving(99, protocolToken).between(harry, gabriella))
+								.fee(ONE_HBAR)
 								.via(nonExemptFundedTxn),
 						getTxnRecord(nonExemptFundedTxn)
 								.hasPriority(recordWith()
