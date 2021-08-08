@@ -134,14 +134,6 @@ public class BalanceChange {
 		return token == null;
 	}
 
-	public boolean isCustomFeeFractional() {
-		return customFeeFractional;
-	}
-
-	public void setCustomFeeFractional(boolean val) {
-		this.customFeeFractional = val;
-	}
-
 	public boolean isForNft() {
 		return token != null && counterPartyAccountId != null;
 	}

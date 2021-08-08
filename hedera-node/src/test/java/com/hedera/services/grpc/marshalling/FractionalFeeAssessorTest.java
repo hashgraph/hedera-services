@@ -40,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -100,6 +101,32 @@ class FractionalFeeAssessorTest {
 		assertEquals(2, accumulator.size());
 		assertEquals(expFirstAssess, accumulator.get(0));
 		assertEquals(expSecondAssess, accumulator.get(1));
+	}
+
+	@Test
+	void chargeCustomFeeToSenderAsExpected() {
+		// setup:
+		final var fees = List.of(fractionalFeeChargeSender);
+		given(ledger.getTokenBalance(any(), any())).willReturn(10000L);
+		// when:
+		final var result =
+				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator, ledger);
+
+		// then:
+		assertEquals(OK, result);
+	}
+
+	@Test
+	void chargeCustomFeeToSenderNoSufficientBalance() {
+		// setup:
+		final var fees = List.of(fractionalFeeChargeSender);
+		given(ledger.getTokenBalance(any(), any())).willReturn(1000L);
+		// when:
+		final var result =
+				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator, ledger);
+
+		// then:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE, result);
 	}
 
 	@Test
@@ -291,6 +318,7 @@ class FractionalFeeAssessorTest {
 			firstMaxAmountOfFractionalFee,
 			false,
 			firstFractionalFeeCollector);
+
 	private final FcCustomFee secondFractionalFee = FcCustomFee.fractionalFee(
 			secondNumerator,
 			secondDenominator,
@@ -298,6 +326,16 @@ class FractionalFeeAssessorTest {
 			secondMaxAmountOfFractionalFee,
 			false,
 			secondFractionalFeeCollector);
+
+
+	private final FcCustomFee fractionalFeeChargeSender = FcCustomFee.fractionalFee(
+			firstNumerator,
+			firstDenominator,
+			firstMinAmountOfFractionalFee,
+			firstMaxAmountOfFractionalFee,
+			true,
+			firstFractionalFeeCollector);
+
 	private final FcCustomFee exemptFractionalFee = FcCustomFee.fractionalFee(
 			firstNumerator,
 			secondDenominator,
