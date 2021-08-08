@@ -126,7 +126,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						fixedHbarCaseStudy(),
 						fractionalChargeFeeToReceiver(),
 						fractionalChargeFeeToSender(),
-
 						simpleHtsFeeCaseStudy(),
 						nestedHbarCaseStudy(),
 						nestedFractionalCaseStudy(),
@@ -971,7 +970,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var tokenWithFractionalFee = "TokenWithFractionalFee";
 		final var treasuryForToken = "TokenTreasury";
 		final var collectorForToken = "AnotherTokenTreasury";
-
 		final var txnFromTreasury = "txnFromTreasury";
 		final var txnFromBob = "txnFromBob";
 
@@ -984,8 +982,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(tokenWithFractionalFee)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(treasuryForToken)
-								.withCustom(fractionalFeeTemp(1L, 100L, 1L, OptionalLong.of(5L), true,treasuryForToken)),
-
+								.withCustom(fractionalFeeTemp(1L, 100L, 1L,
+										OptionalLong.of(5L), true,treasuryForToken)),
 
 						tokenAssociate(alice, tokenWithFractionalFee),
 						tokenAssociate(collectorForToken, tokenWithFractionalFee),
@@ -1009,7 +1007,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getTxnRecord(txnFromBob)
 								.hasTokenAmount(tokenWithFractionalFee, bob, -1_005L)
 								.hasTokenAmount(tokenWithFractionalFee, alice, 1000L)
-								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, -5L)
+								.hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, 5L)
 								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, 5L),
 						getAccountBalance(alice)
 								.hasTokenBalance(tokenWithFractionalFee, 1_000L),
@@ -1019,8 +1017,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L)
 				);
 	}
-
-
 
 	public HapiApiSpec fractionalChargeFeeToReceiver() {
 		final var alice = "Alice";
@@ -1061,8 +1057,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS)
 				).then(
 						getTxnRecord(txnFromTreasury).logged()
-								.hasTokenAmount(tokenWithFractionalFee, bob, 1_000_000L - 5L)
-								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, -1_000_000L + 5L),
+								.hasTokenAmount(tokenWithFractionalFee, bob, 1_000_000L)
+								.hasTokenAmount(tokenWithFractionalFee, treasuryForToken, -1_000_000L),
 						getTxnRecord(txnFromBob)
 								.hasTokenAmount(tokenWithFractionalFee, bob, -1_000L)
 								.hasTokenAmount(tokenWithFractionalFee, alice, 995L)
@@ -1072,9 +1068,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance(alice)
 								.hasTokenBalance(tokenWithFractionalFee, 995L),
 						getAccountBalance(bob)
-								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L -5L),
+								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L ),
 						getAccountBalance(treasuryForToken)
-								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 10L)
+								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L)
 				);
 	}
 

@@ -158,7 +158,8 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
-										false,tokenCollector)),
+										false,
+										tokenCollector)),
 						tokenCreate(immutableTokenWithFeeScheduleKey)
 								.feeScheduleKey(feeScheduleKey)
 								.treasury(tokenCollector)

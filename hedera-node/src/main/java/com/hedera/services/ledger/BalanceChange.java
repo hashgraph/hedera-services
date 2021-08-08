@@ -61,6 +61,7 @@ public class BalanceChange {
 	private TokenID tokenId = null;
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
+	private boolean customFeeFractional = false;
 
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
@@ -131,6 +132,14 @@ public class BalanceChange {
 
 	public boolean isForHbar() {
 		return token == null;
+	}
+
+	public boolean isCustomFeeFractional() {
+		return customFeeFractional;
+	}
+
+	public void setCustomFeeFractional(boolean val) {
+		this.customFeeFractional = val;
 	}
 
 	public boolean isForNft() {

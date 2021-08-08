@@ -35,88 +35,57 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FractionalFeeAssessor {
+
 	public ResponseCodeEnum assessAllFractional(
 			BalanceChange change,
 			List<FcCustomFee> feesWithFractional,
 			BalanceChangeManager changeManager,
 			List<FcAssessedCustomFee> accumulator
 	) {
-		if (feesWithFractional.isEmpty()) {
-			throw new IllegalArgumentException("Custom fees can't be empty here");
+		final var initialUnits = -change.units();
+		if (initialUnits < 0) {
+			throw new IllegalArgumentException("Cannot assess fees to a credit");
 		}
-		final var payer = change.getAccount();
 
-		// Check all fractional fee schedules, for transfer may pay multiple fractional fees to different collector(?)
-		// we need to process the combo (change, fractional fee schedule) one by one
+		var unitsLeft = initialUnits;
+		final var payer = change.getAccount();
+		final var denom = change.getToken();
 		for (var fee : feesWithFractional) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
 				continue;
 			}
 
-			ResponseCodeEnum result = assessOneFractionalForThisChange(change, fee, changeManager, accumulator);
-			if(result != OK) {
-				return result;
-			}
-		}
-		return OK;
-	}
-
-	private ResponseCodeEnum assessOneFractionalForThisChange(final BalanceChange change,
-			final FcCustomFee fee,
-			BalanceChangeManager changeManager,
-			List<FcAssessedCustomFee> accumulator) {
-
-		final boolean chargeSender = fee.getFractionalFeeSpec().getNetOfTransfers();
-		final var collector = fee.getFeeCollectorAsId();
-		if(chargeSender && change.units() < 0) { // charge sender
-			final var initialUnits = -change.units();
-
-			var totalCharge = initialUnits;
-			final var payer = change.getAccount();
-			final var denom = change.getToken();
-
 			var assessedAmount = 0L;
 			try {
 				assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
 			} catch (ArithmeticException ignore) {
 				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 			}
+
+			boolean chargeSender = fee.getFractionalFeeSpec().getNetOfTransfers();
+
+			if(!chargeSender) { // charge receiver
+				unitsLeft -= assessedAmount;
+				if (unitsLeft < 0) {
+					return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+				}
+				final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
+				try {
+					reclaim(assessedAmount, creditsToReclaimFrom);
+				} catch (ArithmeticException ignore) {
+					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				}
+			}
+			else {
 
 //			totalCharge += assessedAmount;
 //			check if its account balance is sufficient
 //			if (totalCharge > payer.asMerkle()) {
 //				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 //			}
-			// If charging sender, simply adjust the debit total
-			adjustedChange(payer, denom, -assessedAmount, changeManager, true);
-			adjustedChange(collector, denom, assessedAmount, changeManager, false);
-			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(),
-					assessedAmount);
-			accumulator.add(assessed);
-		}
-		else if (change.units() > 0 && !chargeSender) { // charge receiver
-			final var initialUnits = change.units();
-
-			var unitsLeft = initialUnits;
-			final var denom = change.getToken();
-
-			var assessedAmount = 0L;
-			try {
-				assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
-			} catch (ArithmeticException ignore) {
-				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-			}
-
-			unitsLeft -= assessedAmount;
-			if (unitsLeft < 0) {
-				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
-			}
-			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
-			try {
-				reclaim(assessedAmount, creditsToReclaimFrom);
-			} catch (ArithmeticException ignore) {
-				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				// If charging sender, simply adjust the debit total
+				adjustedChange(payer, denom, -assessedAmount, changeManager, true);
 			}
 
 			adjustedChange(collector, denom, assessedAmount, changeManager, false);

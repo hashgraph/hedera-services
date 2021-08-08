@@ -94,7 +94,8 @@ public class FeeAssessor {
 			final Id payer,
 			final BalanceChangeManager balanceChangeManager,
 			final List<FcAssessedCustomFee> accumulator,
-			final int maxBalanceChanges) {
+			final int maxBalanceChanges
+	) {
 		FixedFeeProcessingResult result = FixedFeeProcessingResult.ASSESSMENT_FINISHED;
 		for (var fee : fees) {
 			final var collector = fee.getFeeCollectorAsId();

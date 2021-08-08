@@ -468,12 +468,12 @@ class FcCustomFeeTest {
 		long d = 7;
 		long min = 22;
 		long max = 99;
-		final var aFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max,false);
-		final var bFractionalSpec = new FcCustomFee.FractionalFeeSpec(n + 1, d, min, max,false);
-		final var cFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d + 1, min, max,true);
-		final var dFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min + 1, max,false);
-		final var eFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max + 1,true);
-		final var fFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max,false);
+		final var aFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max, false);
+		final var bFractionalSpec = new FcCustomFee.FractionalFeeSpec(n + 1, d, min, max, false);
+		final var cFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d + 1, min, max, true);
+		final var dFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min + 1, max, false);
+		final var eFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max + 1, true);
+		final var fFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max, false);
 		final var gFractionalSpec = aFractionalSpec;
 
 		assertEquals(aFractionalSpec, fFractionalSpec);
