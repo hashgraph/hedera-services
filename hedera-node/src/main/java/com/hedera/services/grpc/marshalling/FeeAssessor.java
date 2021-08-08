@@ -21,6 +21,7 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -55,11 +56,12 @@ public class FeeAssessor {
 	}
 
 	public ResponseCodeEnum assess(
-			BalanceChange change,
-			CustomSchedulesManager customSchedulesManager,
-			BalanceChangeManager balanceChangeManager,
-			List<FcAssessedCustomFee> accumulator,
-			ImpliedTransfersMeta.ValidationProps props
+			final BalanceChange change,
+			final CustomSchedulesManager customSchedulesManager,
+			final BalanceChangeManager balanceChangeManager,
+			final List<FcAssessedCustomFee> accumulator,
+			final ImpliedTransfersMeta.ValidationProps props,
+			final HederaLedger ledger
 	) {
 		if (balanceChangeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
@@ -81,7 +83,7 @@ public class FeeAssessor {
 
 		if (fixedFeeProcessingResult == FixedFeeProcessingResult.FRACTIONAL_FEE_ASSESSMENT_PENDING) {
 			final var fractionalValidity =
-					fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager, accumulator);
+					fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager, accumulator, ledger);
 			if (fractionalValidity != OK) {
 				return fractionalValidity;
 			}

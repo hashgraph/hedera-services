@@ -23,6 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
@@ -56,15 +57,18 @@ public class SpanMapManager {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
+	private final HederaLedger ledger;
 
 	public SpanMapManager(
 			ImpliedTransfersMarshal impliedTransfersMarshal,
 			GlobalDynamicProperties dynamicProperties,
-			CustomFeeSchedules customFeeSchedules
+			CustomFeeSchedules customFeeSchedules,
+			final  HederaLedger ledger
 	) {
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 		this.dynamicProperties = dynamicProperties;
 		this.customFeeSchedules = customFeeSchedules;
+		this.ledger = ledger;
 	}
 
 	public void expandSpan(TxnAccessor accessor) {
@@ -89,7 +93,7 @@ public class SpanMapManager {
 
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
-		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, ledger);
 		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}

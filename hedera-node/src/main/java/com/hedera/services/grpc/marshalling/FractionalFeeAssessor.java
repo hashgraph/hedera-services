@@ -21,6 +21,7 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -37,10 +38,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class FractionalFeeAssessor {
 
 	public ResponseCodeEnum assessAllFractional(
-			BalanceChange change,
-			List<FcCustomFee> feesWithFractional,
-			BalanceChangeManager changeManager,
-			List<FcAssessedCustomFee> accumulator
+			final BalanceChange change,
+			final List<FcCustomFee> feesWithFractional,
+			final BalanceChangeManager changeManager,
+			final List<FcAssessedCustomFee> accumulator,
+			final HederaLedger ledger
 	) {
 		final var initialUnits = -change.units();
 		if (initialUnits < 0) {
@@ -78,13 +80,10 @@ public class FractionalFeeAssessor {
 				}
 			}
 			else {
-
-//			totalCharge += assessedAmount;
-//			check if its account balance is sufficient
-//			if (totalCharge > payer.asMerkle()) {
-//				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
-//			}
-				// If charging sender, simply adjust the debit total
+				final long totalCharge = initialUnits + assessedAmount;
+				if (totalCharge > ledger.getTokenBalance(payer.asGrpcAccount(), denom.asGrpcToken())) {
+					return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+				}
 				adjustedChange(payer, denom, -assessedAmount, changeManager, true);
 			}
 

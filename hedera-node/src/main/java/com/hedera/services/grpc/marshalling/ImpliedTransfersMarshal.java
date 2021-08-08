@@ -22,6 +22,7 @@ package com.hedera.services.grpc.marshalling;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
@@ -62,7 +63,7 @@ public class ImpliedTransfersMarshal {
 		this.schedulesManagerFactory = schedulesManagerFactory;
 	}
 
-	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
+	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op, HederaLedger ledger) {
 		final var props = currentProps();
 		final var validity = checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props);
 		if (validity != OK) {
@@ -90,7 +91,7 @@ public class ImpliedTransfersMarshal {
 		final List<FcAssessedCustomFee> fees = new ArrayList<>();
 		var change = changeManager.nextAssessableChange();
 		while (change != null) {
-			final var status = feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
+			final var status = feeAssessor.assess(change, schedulesManager, changeManager, fees, props, ledger);
 			if (status != OK) {
 				return ImpliedTransfers.invalid(props, schedulesManager.metaUsed(), status);
 			}

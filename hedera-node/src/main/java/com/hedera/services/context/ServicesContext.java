@@ -1891,7 +1891,7 @@ public class ServicesContext {
 	public SpanMapManager spanMapManager() {
 		if (spanMapManager == null) {
 			spanMapManager = new SpanMapManager(
-					impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules());
+					impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules(),ledger());
 		}
 		return spanMapManager;
 	}

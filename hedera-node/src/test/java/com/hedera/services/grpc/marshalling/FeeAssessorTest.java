@@ -21,6 +21,7 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -62,6 +63,8 @@ class FeeAssessorTest {
 	private CustomSchedulesManager customSchedulesManager;
 	@Mock
 	private BalanceChangeManager balanceChangeManager;
+	@Mock
+	private HederaLedger ledger;
 
 	private FeeAssessor subject;
 
@@ -76,7 +79,7 @@ class FeeAssessorTest {
 
 		assertEquals(
 				CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH,
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props));
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger));
 	}
 
 	@Test
@@ -85,7 +88,7 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verifyNoInteractions(hbarFeeAssessor, htsFeeAssessor, fractionalFeeAssessor);
@@ -98,7 +101,7 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(treasuryTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(treasuryTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verifyNoInteractions(hbarFeeAssessor, htsFeeAssessor, fractionalFeeAssessor);
@@ -110,12 +113,12 @@ class FeeAssessorTest {
 		// setup:
 		final var fees = List.of(hbarFee, htsFee, fractionalFee);
 		givenFees(fungibleTokenId.asEntityId(), fees);
-		given(fractionalFeeAssessor.assessAllFractional(collectorTrigger, fees, balanceChangeManager, accumulator))
+		given(fractionalFeeAssessor.assessAllFractional(collectorTrigger, fees, balanceChangeManager, accumulator, ledger))
 				.willReturn(OK);
 
 		// when:
 		final var result =
-				subject.assess(collectorTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(collectorTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verifyNoInteractions(htsFeeAssessor);
@@ -128,7 +131,7 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
@@ -142,17 +145,17 @@ class FeeAssessorTest {
 		// setup:
 		final var fees = List.of(hbarFee, htsFee, fractionalFee, htsFee);
 		givenFees(fungibleTokenId.asEntityId(), fees);
-		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator))
+		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger))
 				.willReturn(OK);
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
 		verify(htsFeeAssessor, times(2)).assess(payer, htsFee, balanceChangeManager, accumulator);
-		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger);
 		assertEquals(OK, result);
 	}
 
@@ -162,7 +165,7 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
@@ -174,16 +177,16 @@ class FeeAssessorTest {
 		// setup:
 		final var fees = List.of(fractionalFee);
 		givenFees(fungibleTokenId.asEntityId(), fees);
-		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator))
+		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger))
 				.willReturn(OK);
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(fractionalFeeAssessor)
-				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger);
 		assertEquals(OK, result);
 	}
 
@@ -195,11 +198,11 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(fractionalFeeAssessor, never())
-				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger);
 		assertEquals(OK, result);
 	}
 
@@ -209,7 +212,7 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
@@ -227,13 +230,13 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
 		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
 		verify(fractionalFeeAssessor, never())
-				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger);
 		assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
 	}
 
@@ -242,17 +245,17 @@ class FeeAssessorTest {
 		// setup:
 		final var fees = List.of(hbarFee, htsFee, fractionalFee);
 		givenFees(fungibleTokenId.asEntityId(), fees);
-		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator))
+		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger))
 				.willReturn(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
 		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
-		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger);
 		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
 	}
 
@@ -265,18 +268,18 @@ class FeeAssessorTest {
 				.willReturn(19)
 				.willReturn(20)
 				.willReturn(21);
-		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator))
+		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger))
 				.willReturn(OK);
 
 		// when:
 		final var result =
-				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props, ledger);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
 		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
 		verify(fractionalFeeAssessor)
-				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator, ledger);
 		assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
 	}
 

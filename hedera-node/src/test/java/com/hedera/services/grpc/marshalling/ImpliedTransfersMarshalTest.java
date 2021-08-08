@@ -22,6 +22,7 @@ package com.hedera.services.grpc.marshalling;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
@@ -80,6 +81,8 @@ class ImpliedTransfersMarshalTest {
 	private BalanceChangeManager changeManager;
 	@Mock
 	private CustomSchedulesManager schedulesManager;
+	@Mock
+	private HederaLedger ledger;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -105,7 +108,7 @@ class ImpliedTransfersMarshalTest {
 		givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// when:
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, ledger);
 
 		// then:
 		assertEquals(result.getMeta(), expectedMeta);
@@ -122,7 +125,7 @@ class ImpliedTransfersMarshalTest {
 		givenValidity(OK);
 
 		// when:
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, ledger);
 
 		// then:
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
@@ -145,15 +148,15 @@ class ImpliedTransfersMarshalTest {
 		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
 		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
 		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
-		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props), eq(ledger)))
 				.willReturn(OK);
-		given(feeAssessor.assess(eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+		given(feeAssessor.assess(eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props), eq(ledger)))
 				.willReturn(OK);
 		// and:
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
 		// when:
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, ledger);
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
@@ -175,13 +178,13 @@ class ImpliedTransfersMarshalTest {
 		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
 		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
 		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
-		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props), eq(ledger)))
 				.willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
 		// and:
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
 		// when:
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, ledger);
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());

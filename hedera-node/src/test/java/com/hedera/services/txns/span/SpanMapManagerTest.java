@@ -25,6 +25,7 @@ import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -106,12 +107,13 @@ class SpanMapManagerTest {
 	private ImpliedTransfers mockImpliedTransfers;
 	@Mock
 	private CustomFeeSchedules customFeeSchedules;
-
+	@Mock
+	private HederaLedger ledger;
 	private SpanMapManager subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules);
+		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules, ledger);
 	}
 
 	@Test
@@ -120,7 +122,7 @@ class SpanMapManagerTest {
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), ledger))
 				.willReturn(someImpliedXfers);
 
 		// when:
@@ -136,7 +138,7 @@ class SpanMapManagerTest {
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), ledger))
 				.willReturn(mockImpliedTransfers);
 		given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
 
@@ -164,7 +166,7 @@ class SpanMapManagerTest {
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any());
+		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any(), any());
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -177,14 +179,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), ledger))
 				.willReturn(someOtherImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), ledger);
 		assertSame(someOtherImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -197,14 +199,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, validImpliedTransfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), ledger))
 				.willReturn(feeChangedImpliedTransfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), ledger);
 		assertSame(feeChangedImpliedTransfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 }

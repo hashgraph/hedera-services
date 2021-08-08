@@ -21,6 +21,7 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -49,6 +50,8 @@ class FractionalFeeAssessorTest {
 
 	@Mock
 	private BalanceChangeManager changeManager;
+	@Mock
+	private HederaLedger ledger;
 
 	@Test
 	void appliesFeesAsExpected() {
@@ -83,7 +86,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(vanillaTriggerForReceiver, fees, changeManager, accumulator);
+				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator, ledger);
 
 		// then:
 		assertEquals(OK, result);
@@ -112,7 +115,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(vanillaTriggerForReceiver, fees, changeManager, accumulator);
+				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator, ledger);
 
 		// then:
 		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -125,7 +128,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(vanillaTriggerForReceiver, fees, changeManager, accumulator);
+				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator, ledger);
 
 		// then:
 		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -138,7 +141,7 @@ class FractionalFeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assessAllFractional(wildlyInsufficientChangeForReceiver, fees, changeManager, accumulator);
+				subject.assessAllFractional(wildlyInsufficientChange, fees, changeManager, accumulator, ledger);
 
 		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE, result);
@@ -151,7 +154,7 @@ class FractionalFeeAssessorTest {
 
 		// expect:
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.assessAllFractional(vanillaTrigger, List.of(), changeManager, accumulator));
+				() -> subject.assessAllFractional(vanillaTrigger, List.of(), changeManager, accumulator, ledger));
 	}
 
 	@Test
@@ -311,15 +314,15 @@ class FractionalFeeAssessorTest {
 			secondFractionalFeeCollector);
 	private final BalanceChange vanillaTrigger = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -vanillaTriggerAmount);
-	private final BalanceChange vanillaTriggerForReceiver = BalanceChange.tokenAdjust(
-			payer, tokenWithFractionalFee, vanillaTriggerAmount);
-
+//	private final BalanceChange vanillaTriggerForReceiver = BalanceChange.tokenAdjust(
+//			payer, tokenWithFractionalFee, vanillaTriggerAmount);
+//
 	private final BalanceChange firstVanillaReclaim = BalanceChange.tokenAdjust(
 			firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
 	private final BalanceChange secondVanillaReclaim = BalanceChange.tokenAdjust(
 			secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
 	private final BalanceChange wildlyInsufficientChange = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -1);
-	private final BalanceChange wildlyInsufficientChangeForReceiver = BalanceChange.tokenAdjust(
-			payer, tokenWithFractionalFee, 1);
+//	private final BalanceChange wildlyInsufficientChangeForReceiver = BalanceChange.tokenAdjust(
+//			payer, tokenWithFractionalFee, 1);
 }
