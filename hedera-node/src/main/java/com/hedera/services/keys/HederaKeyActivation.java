@@ -59,9 +59,14 @@ public class HederaKeyActivation {
 	 *
 	 * @param accessor
 	 * 		the txn to evaluate.
+	 * @param validity
+	 * 		the logic deciding if a given simple key is activated by a given platform sig.
 	 * @return whether the payer's Hedera key is active
 	 */
-	public static boolean payerSigIsActive(TxnAccessor accessor) {
+	public static boolean payerSigIsActive(
+			TxnAccessor accessor,
+			BiPredicate<JKey, TransactionSignature> validity
+	) {
 		final var sigMeta = accessor.getSigMeta();
 
 		if (sigMeta == null) {
@@ -71,7 +76,7 @@ public class HederaKeyActivation {
 			return false;
 		}
 
-		return isActive(sigMeta.payerKey(), sigMeta.pkToVerifiedSigFn(), ONLY_IF_SIG_IS_VALID);
+		return isActive(sigMeta.payerKey(), sigMeta.pkToVerifiedSigFn(), validity);
 	}
 
 	/**
@@ -86,26 +91,26 @@ public class HederaKeyActivation {
 	 * 		the top-level Hedera key to test for activation.
 	 * @param sigsFn
 	 * 		the source of platform signatures for the simple keys in the Hedera key.
-	 * @param tests
+	 * @param validity
 	 * 		the logic deciding if a given simple key is activated by a given platform sig.
 	 * @return whether the Hedera key is active.
 	 */
 	public static boolean isActive(
 			JKey key,
 			Function<byte[], TransactionSignature> sigsFn,
-			BiPredicate<JKey, TransactionSignature> tests
+			BiPredicate<JKey, TransactionSignature> validity
 	) {
-		return isActive(key, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS);
+		return isActive(key, sigsFn, validity, DEFAULT_ACTIVATION_CHARACTERISTICS);
 	}
 
 	public static boolean isActive(
 			JKey key,
 			Function<byte[], TransactionSignature> sigsFn,
-			BiPredicate<JKey, TransactionSignature> tests,
+			BiPredicate<JKey, TransactionSignature> validity,
 			KeyActivationCharacteristics characteristics
 	) {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
-			return tests.test(key, sigsFn.apply(key.getEd25519()));
+			return validity.test(key, sigsFn.apply(key.getEd25519()));
 		} else {
 			final List<JKey> children = key.hasKeyList()
 					? key.getKeyList().getKeysList()
@@ -115,7 +120,7 @@ public class HederaKeyActivation {
 					: characteristics.sigsNeededForThreshold((JThresholdKey) key);
 			var n = 0;
 			for (var child : children) {
-				if (isActive(child, sigsFn, tests)) {
+				if (isActive(child, sigsFn, validity)) {
 					n++;
 				}
 			}

@@ -9,9 +9,9 @@ package com.hedera.services.legacy.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.legacy.services.state;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -30,23 +31,30 @@ import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.crypto.TransactionSignature;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 
-@ExtendWith(MockitoExtension.class)
-class RecordMgmtTest {
+@ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
+class TargetedAwareProcessLogicTest {
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
 
 	@Mock
@@ -65,12 +73,45 @@ class RecordMgmtTest {
 	private Rationalization rationalization;
 	@Mock
 	private ReusableBodySigningFactory bodySigningFactory;
+	@Mock
+	private BiPredicate<JKey, TransactionSignature> validityTest;
+	@Mock
+	private AwareProcessLogic.PayerSigValidity payerSigValidity;
 
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
 	private AwareProcessLogic subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory);
+		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
+	}
+
+	@Test
+	void usesPayerSigValidityWithValidityTest() {
+		// setup:
+		subject.setPayerSigValidity(payerSigValidity);
+
+		given(payerSigValidity.test(txnAccessor, validityTest)).willReturn(true);
+
+		// expect:
+		Assertions.assertTrue(subject.hasActivePayerSig(txnAccessor));
+	}
+
+	@Test
+	void defaultsFalseIfValidityTestThrows() {
+		// setup:
+		subject.setPayerSigValidity(payerSigValidity);
+
+		given(payerSigValidity.test(txnAccessor, validityTest)).willThrow(RuntimeException.class);
+
+		// expect:
+		Assertions.assertFalse(subject.hasActivePayerSig(txnAccessor));
+		// and:
+		Assertions.assertTrue(logCaptor.warnLogs().get(0)
+				.startsWith("Unhandled exception when testing payer sig activation"));
 	}
 
 	@Test

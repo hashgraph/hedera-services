@@ -22,6 +22,8 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.keys.HederaKeyActivation;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.state.logic.ServicesTxnManager;
@@ -32,14 +34,14 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.function.BiPredicate;
 
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -70,16 +72,21 @@ public class AwareProcessLogic implements ProcessLogic {
 	private final ServicesContext ctx;
 	private final Rationalization rationalization;
 	private final ReusableBodySigningFactory bodySigningFactory;
+	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx, this::addRecordToStream, this::processTriggeredTxnInCtx, this::warnOf);
 
+	private PayerSigValidity payerSigValidity = HederaKeyActivation::payerSigIsActive;
+
 	public AwareProcessLogic(
 			ServicesContext ctx,
 			Rationalization rationalization,
-			ReusableBodySigningFactory bodySigningFactory
+			ReusableBodySigningFactory bodySigningFactory,
+			BiPredicate<JKey, TransactionSignature> validityTest
 	) {
 		this.ctx = ctx;
+		this.validityTest = validityTest;
 		this.rationalization = rationalization;
 		this.bodySigningFactory = bodySigningFactory;
 	}
@@ -171,7 +178,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().setStatus(sigStatus);
 			return;
 		}
-		if (!ctx.activationHelper().areOtherPartiesActive(ONLY_IF_SIG_IS_VALID)) {
+		if (!ctx.activationHelper().areOtherPartiesActive(validityTest)) {
 			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
 			return;
 		}
@@ -190,11 +197,11 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 	}
 
-	private boolean hasActivePayerSig(TxnAccessor accessor) {
+	boolean hasActivePayerSig(TxnAccessor accessor) {
 		try {
-			return payerSigIsActive(accessor);
-		} catch (Exception edgeCase) {
-			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
+			return payerSigValidity.test(accessor, validityTest);
+		} catch (Exception unknown) {
+			log.warn("Unhandled exception when testing payer sig activation", unknown);
 		}
 		return false;
 	}
@@ -203,11 +210,11 @@ public class AwareProcessLogic implements ProcessLogic {
 		bodySigningFactory.resetFor(accessor);
 
 		rationalization.performFor(
-				accessor, ctx.syncVerifier(),
+				accessor,
+				ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
 				accessor.getPkToSigsFn(),
 				bodySigningFactory);
-
 		final var status = rationalization.finalStatus();
 		if (status == OK) {
 			if (rationalization.usedSyncVerification()) {
@@ -230,5 +237,14 @@ public class AwareProcessLogic implements ProcessLogic {
 		while (!handoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */
 		}
+	}
+
+	@FunctionalInterface
+	interface PayerSigValidity {
+		boolean test(TxnAccessor accessor, BiPredicate<JKey, TransactionSignature> test);
+	}
+
+	void setPayerSigValidity(PayerSigValidity payerSigValidity) {
+		this.payerSigValidity = payerSigValidity;
 	}
 }

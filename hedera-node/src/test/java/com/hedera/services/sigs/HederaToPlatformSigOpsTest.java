@@ -261,31 +261,6 @@ class HederaToPlatformSigOpsTest {
 	}
 
 	@Test
-	void rationalizesSigsWithUnknownStatus() throws Exception {
-		// setup:
-		final var rationalization = new Rationalization();
-
-		// given:
-		wellBehavedOrdersAndSigSources();
-		platformTxn.getPlatformTxn().addAll(
-				expectedSigsWithNoErrors().subList(0, 1).toArray(new TransactionSignature[0]));
-
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				ALWAYS_VALID,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
-
-		// then:
-		assertTrue(rationalization.usedSyncVerification());
-		assertEquals(OK, rationalization.finalStatus());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-	}
-
-	@Test
 	void doesNothingToTxnIfAllSigsAreRational() throws Exception {
 		// setup:
 		final var rationalization = new Rationalization();
