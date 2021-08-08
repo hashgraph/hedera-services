@@ -45,7 +45,7 @@ class SequenceNumberTest {
 	}
 
 	@Test
-	public void incWorks() {
+	void incWorks() {
 		// when:
 		long seqNo = initSubject.getAndIncrement();
 
@@ -58,7 +58,7 @@ class SequenceNumberTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = initSubject.copy();
 
@@ -67,7 +67,7 @@ class SequenceNumberTest {
 	}
 
 	@Test
-	public void serializesAsExpected() throws IOException {
+	void serializesAsExpected() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		InOrder inOrder = inOrder(out);
@@ -80,7 +80,7 @@ class SequenceNumberTest {
 	}
 
 	@Test
-	public void deserializesAsExpected() throws IOException {
+	void deserializesAsExpected() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 

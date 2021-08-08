@@ -76,13 +76,13 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void rubberstampsIrrelevantInvocation() {
+	void rubberstampsIrrelevantInvocation() {
 		// expect:
 		assertEquals(YES_VERDICT, subject.preUpdate(otherFile, invalidBytes));
 	}
 
 	@Test
-	public void approvesValidSchedules() {
+	void approvesValidSchedules() {
 		// given:
 		var verdict = subject.preUpdate(feeSchedule, validBytes);
 
@@ -91,7 +91,7 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void oksInvalidScheduleForNow() {
+	void oksInvalidScheduleForNow() {
 		// when:
 		var verdict = subject.preUpdate(feeSchedule, invalidBytes);
 
@@ -100,7 +100,7 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void reloadsOnValidUpdate() {
+	void reloadsOnValidUpdate() {
 		// when:
 		subject.postUpdate(feeSchedule, validBytes);
 
@@ -109,7 +109,7 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void doesntReloadOnInvalidUpdate() {
+	void doesntReloadOnInvalidUpdate() {
 		// when:
 		subject.postUpdate(feeSchedule, invalidBytes);
 
@@ -118,7 +118,7 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void doesntReloadOnIrrelevantUpdate() {
+	void doesntReloadOnIrrelevantUpdate() {
 		// when:
 		subject.postUpdate(otherFile, validBytes);
 
@@ -127,7 +127,7 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void hasExpectedRelevanceAndPriority() {
+	void hasExpectedRelevanceAndPriority() {
 		// expect:
 		assertTrue(subject.priorityForCandidate(otherFile).isEmpty());
 		// and:
@@ -135,13 +135,13 @@ class FeeSchedulesManagerTest {
 	}
 
 	@Test
-	public void rubberstampsPreDelete() {
+	void rubberstampsPreDelete() {
 		// expect:
 		assertEquals(YES_VERDICT, subject.preDelete(feeSchedule));
 	}
 
 	@Test
-	public void rubberstampsPreChange() {
+	void rubberstampsPreChange() {
 		// expect:
 		assertEquals(YES_VERDICT, subject.preAttrChange(feeSchedule, attr));
 	}

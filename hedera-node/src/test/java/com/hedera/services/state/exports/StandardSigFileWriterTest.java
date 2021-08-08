@@ -46,14 +46,14 @@ class StandardSigFileWriterTest {
 	SigFileWriter subject = new StandardSigFileWriter();
 
 	@Test
-	public void rethrowsIaeOnIoFailure() {
+	void rethrowsIaeOnIoFailure() {
 		// expect:
 		Assertions.assertThrows(UncheckedIOException.class, () ->
 				subject.writeSigFile(cannotSign, new byte[0], new byte[0]));
 	}
 
 	@Test
-	public void writesExpectedFile() throws Exception {
+	void writesExpectedFile() throws Exception {
 		// setup:
 		var hash = hashReader.readHash(toSign);
 

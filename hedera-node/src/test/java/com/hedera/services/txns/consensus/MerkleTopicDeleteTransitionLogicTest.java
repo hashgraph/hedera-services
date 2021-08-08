@@ -82,13 +82,13 @@ class MerkleTopicDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rubberstampsSyntax() {
+	void rubberstampsSyntax() {
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(null));
 	}
 
 	@Test
-	public void hasCorrectApplicability() throws Throwable {
+	void hasCorrectApplicability() throws Throwable {
 		givenValidTransactionContext();
 
 		// expect:
@@ -97,7 +97,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() throws Throwable {
+	void followsHappyPath() throws Throwable {
 		// setup:
 		givenMocksForHappyPath();
 		// and:
@@ -126,7 +126,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void failsForTopicWithoutAdminKey() {
+	void failsForTopicWithoutAdminKey() {
 		// given:
 		givenTransactionContextNoAdminKey();
 
@@ -141,7 +141,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void failsForInvalidTopic() {
+	void failsForInvalidTopic() {
 		// given:
 		givenTransactionContextInvalidTopic();
 

@@ -122,7 +122,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsExpectedPayment() throws Throwable {
+	void getsExpectedPayment() throws Throwable {
 		// given:
 		Query query = getRecordQuery(targetTxnId, COST_ANSWER, 5L);
 
@@ -131,7 +131,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder().setTransactionGetRecord(
 				TransactionGetRecordResponse.newBuilder()
@@ -142,7 +142,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = getRecordQuery(targetTxnId, COST_ANSWER, fee);
 
@@ -158,7 +158,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsRecordWhenAvailable() throws Throwable {
+	void getsRecordWhenAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
@@ -177,7 +177,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsRecordFromCtxWhenAvailable() throws Throwable {
+	void getsRecordFromCtxWhenAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 		Map<String, Object> ctx = new HashMap<>();
@@ -198,7 +198,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsDuplicateRecordsFromCtxWhenAvailable() throws Throwable {
+	void getsDuplicateRecordsFromCtxWhenAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
 		Map<String, Object> ctx = new HashMap<>();
@@ -219,7 +219,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void recognizesMissingRecordWhenCtxGiven() throws Throwable {
+	void recognizesMissingRecordWhenCtxGiven() throws Throwable {
 		// setup:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 
@@ -234,7 +234,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void getsDuplicateRecordsWhenRequested() throws Throwable {
+	void getsDuplicateRecordsWhenRequested() throws Throwable {
 		// setup:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
 		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
@@ -253,7 +253,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void recognizesUnavailableRecordFromMiss() throws Throwable {
+	void recognizesUnavailableRecordFromMiss() throws Throwable {
 		// setup:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
@@ -269,7 +269,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void respectsMetaValidity() throws Throwable {
+	void respectsMetaValidity() throws Throwable {
 		// given:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 
@@ -282,21 +282,21 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void requiresAnswerOnlyPaymentButNotCostAnswer() throws Throwable {
+	void requiresAnswerOnlyPaymentButNotCostAnswer() throws Throwable {
 		// expect:
 		assertFalse(subject.requiresNodePayment(getRecordQuery(targetTxnId, COST_ANSWER, 0)));
 		assertTrue(subject.requiresNodePayment(getRecordQuery(targetTxnId, ANSWER_ONLY, 0)));
 	}
 
 	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+	void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		// expect:
 		assertTrue(subject.needsAnswerOnlyCost(getRecordQuery(targetTxnId, COST_ANSWER, 0)));
 		assertFalse(subject.needsAnswerOnlyCost(getRecordQuery(targetTxnId, ANSWER_ONLY, 0)));
 	}
 
 	@Test
-	public void syntaxCheckPrioritizesAccountStatus() throws Throwable {
+	void syntaxCheckPrioritizesAccountStatus() throws Throwable {
 		// setup:
 		Query query = getRecordQuery(targetTxnId, ANSWER_ONLY, 123L);
 
@@ -310,13 +310,13 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckShortCircuitsOnDefaultAccountID() {
+	void syntaxCheckShortCircuitsOnDefaultAccountID() {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(Query.getDefaultInstance(), view));
 	}
 
 	@Test
-	public void syntaxCheckOkForFindableRecord() throws Throwable {
+	void syntaxCheckOkForFindableRecord() throws Throwable {
 		Query query = getRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
 
 		given(answerFunctions.txnRecord(recordCache, view, query)).willReturn(Optional.of(cachedTargetRecord));
@@ -330,7 +330,7 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.TransactionGetRecord, subject.canonicalFunction());
 	}

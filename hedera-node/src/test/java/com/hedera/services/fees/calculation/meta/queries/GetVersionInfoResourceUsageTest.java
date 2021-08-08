@@ -49,14 +49,14 @@ class GetVersionInfoResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(versionInfoQuery));
 		assertFalse(subject.applicableTo(nonVersionInfoQuery));
 	}
 
 	@Test
-	public void getsExpectedUsage() {
+	void getsExpectedUsage() {
 		// expect:
 		assertEquals(
 				FixedUsageEstimates.getVersionInfoUsage(),

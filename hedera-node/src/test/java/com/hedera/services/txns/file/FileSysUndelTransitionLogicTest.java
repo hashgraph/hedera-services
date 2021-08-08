@@ -108,7 +108,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
@@ -128,7 +128,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void destroysIfOldExpiryIsPast() {
+	void destroysIfOldExpiryIsPast() {
 		givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.PAST);
 
 		// when:
@@ -141,7 +141,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsUndeleted() {
+	void detectsUndeleted() {
 		givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
 
 		// when:
@@ -152,7 +152,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsMissing() {
+	void detectsMissing() {
 		givenTxnCtxSysUndeleting(TargetType.MISSING, OldExpiryType.FUTURE);
 
 		// when:
@@ -163,7 +163,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsUserDeleted() {
+	void detectsUserDeleted() {
 		givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.NONE);
 
 		// when:
@@ -174,7 +174,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		// setup:
 		SystemUndeleteTransactionBody.Builder op = SystemUndeleteTransactionBody.newBuilder()
 				.setContractID(IdUtils.asContract("0.0.1001"));
@@ -191,7 +191,7 @@ class FileSysUndelTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckRubberstamps() {
+	void syntaxCheckRubberstamps() {
 		// given:
 		var syntaxCheck = subject.semanticCheck();
 

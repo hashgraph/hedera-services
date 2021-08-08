@@ -52,9 +52,9 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MerkleTopicTest {
+class MerkleTopicTest {
 	@Test
-	public void defaultConstructorTestingAccessors() {
+	void defaultConstructorTestingAccessors() {
 		// given:
 		var topic = new MerkleTopic();
 
@@ -63,7 +63,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void constructorWithNullsTestingAccessors() {
+	void constructorWithNullsTestingAccessors() {
 		// given:
 		var topic = new MerkleTopic(null, null, null, 0L, null, null);
 
@@ -72,7 +72,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void constructorWithEmptyValuesTestingAccessors() {
+	void constructorWithEmptyValuesTestingAccessors() {
 		// given:
 		var topic = new MerkleTopic("", new JKeyList(), new JKeyList(), 0L, new EntityId(), new RichInstant());
 
@@ -105,7 +105,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void copyConstructorWithDefaultsTestingAccessors() throws Exception {
+	void copyConstructorWithDefaultsTestingAccessors() throws Exception {
 		// given:
 		var topic = new MerkleTopic(new MerkleTopic());
 
@@ -114,7 +114,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void copyConstructorWithValuesTestingAccessors() throws Exception {
+	void copyConstructorWithValuesTestingAccessors() throws Exception {
 		// given:
 		var memo = "memo";
 		var adminKey = new JEd25519Key(new byte[32]);
@@ -141,25 +141,25 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void equalsDefault() {
+	void equalsDefault() {
 		// expect:
 		assertTrue(new MerkleTopic().equals(new MerkleTopic()));
 	}
 
 	@Test
-	public void equalsNull() {
+	void equalsNull() {
 		// expect:
 		assertFalse(new MerkleTopic().equals(null));
 	}
 
 	@Test
-	public void equalsWrongClass() {
+	void equalsWrongClass() {
 		// expect:
 		assertFalse(new MerkleTopic().equals(""));
 	}
 
 	@Test
-	public void equalsSame() {
+	void equalsSame() {
 		// given:
 		var topic = new MerkleTopic();
 		// expect:
@@ -228,7 +228,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void hashIsSafeOnDefault() {
+	void hashIsSafeOnDefault() {
 		// expect:
 		assertDoesNotThrow(() -> new MerkleTopic().hashCode());
 	}
@@ -249,7 +249,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void setRunningHashNull() {
+	void setRunningHashNull() {
 		// given:
 		var topic = new MerkleTopic();
 
@@ -261,7 +261,7 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void setRunningHashEmpty() {
+	void setRunningHashEmpty() {
 		// given:
 		var topic = new MerkleTopic();
 

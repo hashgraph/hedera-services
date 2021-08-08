@@ -105,7 +105,13 @@ public class FreezeHandler {
 			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
 			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
 		}
-		final var naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
+		Instant naturalFreezeStart;
+		if (op.hasStartTime()) {
+			final var ts = op.getStartTime();
+			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+		} else {
+			naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
+		}
 		try {
 			final var dual = dualState.get();
 			dual.setFreezeTime(naturalFreezeStart);

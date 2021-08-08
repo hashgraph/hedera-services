@@ -102,7 +102,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void helpersSanityCheck() throws IOException {
+	void helpersSanityCheck() throws IOException {
 		// given:
 		String tmpBase = MOCK_DISKFS_DIR + File.separator + "a" + File.separator + "b" + File.separator;
 		Path tmpLoc = Paths.get(tmpBase + "c.txt");
@@ -190,7 +190,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleDiskFs{fileHashes=[0.0.150 :: " + CommonUtils.hex(origFileHash) + "]}",
@@ -198,7 +198,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void checkLogsErrorOnMismatch() throws Exception {
+	void checkLogsErrorOnMismatch() throws Exception {
 		// setup:
 		subject.put(file150, origContents);
 		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
@@ -215,7 +215,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void saveFileHashCorrect() throws Exception {
+	void saveFileHashCorrect() throws Exception {
 		// setup:
 		subject.put(file150, origContents);
 		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
@@ -229,7 +229,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void putChangesHash() throws IOException {
+	void putChangesHash() throws IOException {
 		// when:
 		subject.put(file150, newContents);
 
@@ -240,7 +240,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void fileNotExistNoDebug() throws IOException {
+	void fileNotExistNoDebug() throws IOException {
 		// setup:
 		subject = new MerkleDiskFs();
 		// and:
@@ -271,7 +271,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		byte[] expectedBytes = "ABCDEFGH".getBytes();
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
@@ -292,7 +292,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void serializePropagatesException() throws IOException {
+	void serializePropagatesException() throws IOException {
 		// setup:
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
 		subject.setBytesHelper(getter);
@@ -305,7 +305,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copySubject = subject.copy();
 
@@ -315,7 +315,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void deserializeAbbreviatedWorks() throws IOException {
+	void deserializeAbbreviatedWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
@@ -340,7 +340,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
@@ -369,13 +369,13 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void hasExpectedHash() {
+	void hasExpectedHash() {
 		// expect:
 		assertArrayEquals(hashWithOrigContents(), subject.getHash().getValue());
 	}
 
 	@Test
-	public void emptyContentsHaveExpectedHash() {
+	void emptyContentsHaveExpectedHash() {
 		// expect:
 		assertEquals(new Hash(noThrowSha384HashOf(new byte[0])), new MerkleDiskFs().getHash());
 	}

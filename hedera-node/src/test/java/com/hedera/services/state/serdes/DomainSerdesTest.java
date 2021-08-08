@@ -75,7 +75,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsExpectedForNonNullableSerializable() throws IOException {
+	void readsExpectedForNonNullableSerializable() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -93,7 +93,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsNullForNullableSerializable() throws IOException {
+	void readsNullForNullableSerializable() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -112,7 +112,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesFalseForNullString() throws IOException {
+	void writesFalseForNullString() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -125,7 +125,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesForNonNullString() throws IOException {
+	void writesForNonNullString() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -141,7 +141,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesExpectedForNonNullInstant() throws IOException {
+	void writesExpectedForNonNullInstant() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -159,7 +159,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesFalseForNullInstant() throws IOException {
+	void writesFalseForNullInstant() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -172,7 +172,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesFalseForNullWritable() throws IOException {
+	void writesFalseForNullWritable() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -188,7 +188,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsExpectedForNonNullString() throws IOException {
+	void readsExpectedForNonNullString() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -205,7 +205,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsLegacyTimestamp() throws IOException {
+	void readsLegacyTimestamp() throws IOException {
 		// setup:
 		var in = mock(DataInputStream.class);
 		// and:
@@ -225,7 +225,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsExpectedForNonNullInstant() throws IOException {
+	void readsExpectedForNonNullInstant() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -243,7 +243,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsNullForNullInstant() throws IOException {
+	void readsNullForNullInstant() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 
@@ -260,7 +260,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsNullForNullString() throws IOException {
+	void readsNullForNullString() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 
@@ -277,7 +277,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsNullForNullReadable() throws IOException {
+	void readsNullForNullReadable() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -296,7 +296,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void readsExpectedForNonNullReadable() throws IOException {
+	void readsExpectedForNonNullReadable() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -315,7 +315,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesForNonNullWritable() throws IOException {
+	void writesForNonNullWritable() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -333,7 +333,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesFalseForNullSerializable() throws IOException {
+	void writesFalseForNullSerializable() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -346,7 +346,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void writesExpectedForNonNullSerializable() throws IOException {
+	void writesExpectedForNonNullSerializable() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -362,7 +362,7 @@ public class DomainSerdesTest {
 
 
 	@Test
-	public void idSerdesWork() throws Exception {
+	void idSerdesWork() throws Exception {
 		// given:
 		EntityId idIn = new EntityId(1,2, 3);
 
@@ -376,7 +376,7 @@ public class DomainSerdesTest {
 	}
 
 	@Test
-	public void keySerdesWork() throws Exception {
+	void keySerdesWork() throws Exception {
 		// given:
 		JKey keyIn = COMPLEX_KEY_ACCOUNT_KT.asJKey();
 

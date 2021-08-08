@@ -64,7 +64,7 @@ class QueryResponseHelperTest {
 	}
 
 	@Test
-	public void helpsWithAnswerHappyPath() {
+	void helpsWithAnswerHappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(answerFlow, opCounters, observer);
 
@@ -83,7 +83,7 @@ class QueryResponseHelperTest {
 	}
 
 	@Test
-	public void helpsWithAnswerUnhappyPath() {
+	void helpsWithAnswerUnhappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(answerFlow, opCounters, observer);
 

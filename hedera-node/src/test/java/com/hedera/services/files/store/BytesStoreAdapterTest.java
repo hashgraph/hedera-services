@@ -65,7 +65,7 @@ class BytesStoreAdapterTest {
 	}
 
 	@Test
-	public void preservesSemantics() {
+	void preservesSemantics() {
 		subject.put(1, new StringBuilder().append("First byte"));
 		subject.put(2, new StringBuilder().append("Second byte"));
 		subject.put(3, new StringBuilder().append("Third byte"));
@@ -90,7 +90,7 @@ class BytesStoreAdapterTest {
 	}
 
 	@Test
-	public void usesFilterIfPresent() {
+	void usesFilterIfPresent() {
 		// setup:
 		delegate.put("NOT-A-VALID_KEY", bytes("Nope."));
 

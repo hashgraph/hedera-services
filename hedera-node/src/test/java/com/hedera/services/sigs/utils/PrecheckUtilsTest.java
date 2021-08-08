@@ -35,13 +35,13 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class PrecheckUtilsTest {
+class PrecheckUtilsTest {
 	final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
 	final AccountID node = SignedTxnFactory.DEFAULT_NODE;
 	final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
 
 	@Test
-	public void queryPaymentsMustBeCryptoTransfers() throws Throwable {
+	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 			newSignedCryptoUpdate("0.0.2").get()
@@ -52,7 +52,7 @@ public class PrecheckUtilsTest {
 	}
 
 	@Test
-	public void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
+	void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
@@ -65,7 +65,7 @@ public class PrecheckUtilsTest {
 	}
 
 	@Test
-	public void queryPaymentTransfersToTargetNode() throws Throwable {
+	void queryPaymentTransfersToTargetNode() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(

@@ -52,7 +52,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnNetTransfersIfNotInTxn() {
+	void throwsOnNetTransfersIfNotInTxn() {
 		// setup:
 		doThrow(IllegalStateException.class).when(accountsLedger).throwIfNotInTxn();
 
@@ -61,7 +61,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnTransferWithDeletedFromAccount() {
+	void throwsOnTransferWithDeletedFromAccount() {
 		// setup:
 		DeletedAccountException e = null;
 
@@ -78,7 +78,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnTransferWithDeletedToAccount() {
+	void throwsOnTransferWithDeletedToAccount() {
 		// setup:
 		DeletedAccountException e = null;
 
@@ -95,7 +95,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnTransfersWithDeleted() {
+	void throwsOnTransfersWithDeleted() {
 		// given:
 		TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, deleted, -2, genesis, 1);
 		DeletedAccountException e = null;
@@ -113,7 +113,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnTransfersWithDetached() {
+	void throwsOnTransfersWithDetached() {
 		// setup:
 		TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
 		DetachedAccountException e = null;
@@ -140,7 +140,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void notDetachedUntilGivenChanceToRenew() {
+	void notDetachedUntilGivenChanceToRenew() {
 		// setup:
 		TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
 		DetachedAccountException e = null;
@@ -159,7 +159,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void doesReasonableTransfers() {
+	void doesReasonableTransfers() {
 		// given:
 		TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, rand, -2, genesis, 1);
 
@@ -173,7 +173,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnImpossibleTransfers() {
+	void throwsOnImpossibleTransfers() {
 		// given:
 		TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, rand, 2, genesis, 3);
 
@@ -182,7 +182,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void doesReasonableTransfer() {
+	void doesReasonableTransfer() {
 		// setup:
 		long amount = 1_234L;
 
@@ -195,7 +195,7 @@ public class HederaLedgerXfersTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnImpossibleTransferWithBrokerPayer() {
+	void throwsOnImpossibleTransferWithBrokerPayer() {
 		// setup:
 		long amount = GENESIS_BALANCE + 1;
 		InsufficientFundsException e = null;
