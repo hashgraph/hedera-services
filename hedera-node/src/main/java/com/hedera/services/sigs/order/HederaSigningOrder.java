@@ -78,8 +78,6 @@ import static java.util.Collections.EMPTY_LIST;
  * Two strategy predicates are injected into this class, one with logic to decide if the WACL for a
  * file targeted by the gRPC transaction must have an active signature; and one with logic to make an
  * equivalent decision for a crypto account.
- *
- * @author Michael Tinker
  */
 public class HederaSigningOrder {
 	private final SignatureWaivers signatureWaivers;

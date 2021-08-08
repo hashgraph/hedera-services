@@ -114,6 +114,7 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_TARGET;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -603,6 +604,19 @@ class HederaSigningOrderTest {
 	void getsCryptoDeleteMissingReceiverAccount() throws Throwable {
 		// given:
 		setupFor(CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoDeleteMissingTarget() throws Throwable {
+		// given:
+		setupFor(CRYPTO_DELETE_MISSING_TARGET);
 
 		// when:
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
