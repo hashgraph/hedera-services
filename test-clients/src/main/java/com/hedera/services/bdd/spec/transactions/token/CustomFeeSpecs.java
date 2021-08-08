@@ -54,20 +54,9 @@ public class CustomFeeSpecs {
 			boolean netOfTransfers,
 			String collector
 	) {
-		return spec -> builtFractional(numerator, denominator, min, max, false, collector, spec);
-	}
-
-	public static Function<HapiApiSpec, CustomFee> fractionalFeeTemp(
-			long numerator,
-			long denominator,
-			long min,
-			OptionalLong max,
-			boolean netOfTransfers,
-			String collector
-	) {
 		return spec -> builtFractional(numerator, denominator, min, max, netOfTransfers, collector, spec);
 	}
-
+	
 	public static Function<HapiApiSpec, CustomFee> incompleteCustomFee(String collector) {
 		return spec -> buildIncompleteCustomFee(collector, spec);
 	}

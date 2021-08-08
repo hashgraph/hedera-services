@@ -31,11 +31,8 @@ import java.util.List;
 import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -44,10 +41,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeTemp;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -171,7 +166,7 @@ public class Hip18TransactSpecs extends HapiApiSuite {
 						tokenCreate(TOKEN_WITH_FRACTIONAL_FEE)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(TREASURY_FOR_TOKEN)
-								.withCustom(fractionalFeeTemp(1L, 100L, 1L,
+								.withCustom(fractionalFee(1L, 100L, 1L,
 										OptionalLong.of(5L), true, TREASURY_FOR_TOKEN)),
 
 						tokenAssociate(ALICE, TOKEN_WITH_FRACTIONAL_FEE),
@@ -218,7 +213,7 @@ public class Hip18TransactSpecs extends HapiApiSuite {
 						tokenCreate(TOKEN_WITH_FRACTIONAL_FEE)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(TREASURY_FOR_TOKEN)
-								.withCustom(fractionalFeeTemp(1L, 100L, 1L,
+								.withCustom(fractionalFee(1L, 100L, 1L,
 										OptionalLong.of(5L), true, TREASURY_FOR_TOKEN)),
 
 						tokenAssociate(ALICE, TOKEN_WITH_FRACTIONAL_FEE),
@@ -261,7 +256,7 @@ public class Hip18TransactSpecs extends HapiApiSuite {
 						tokenCreate(TOKEN_WITH_FRACTIONAL_FEE)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(TREASURY_FOR_TOKEN)
-								.withCustom(fractionalFeeTemp(1L, 100L, 1L,
+								.withCustom(fractionalFee(1L, 100L, 1L,
 										OptionalLong.of(5L), true, TREASURY_FOR_TOKEN)),
 
 						tokenAssociate(ALICE, TOKEN_WITH_FRACTIONAL_FEE),
@@ -309,7 +304,7 @@ public class Hip18TransactSpecs extends HapiApiSuite {
 						tokenCreate(TOKEN_WITH_FRACTIONAL_FEE)
 								.initialSupply(Long.MAX_VALUE)
 								.treasury(TREASURY_FOR_TOKEN)
-								.withCustom(fractionalFeeTemp(1L, 100L, 1L, OptionalLong.of(5L), false,
+								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), false,
 										TREASURY_FOR_TOKEN)),
 
 
