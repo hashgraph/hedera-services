@@ -23,9 +23,9 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
+import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 
 /**
  * Represents a custom fee attached to an HTS token type. Custom fees are
@@ -61,6 +62,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 public class FcCustomFee implements SelfSerializable {
 	static final byte FIXED_CODE = (byte) (1 << 0);
 	static final byte FRACTIONAL_CODE = (byte) (1 << 1);
+	static final byte ROYALTY_CODE = (byte) (1 << 2);
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa433940f137L;
@@ -69,6 +71,7 @@ public class FcCustomFee implements SelfSerializable {
 	private EntityId feeCollector;
 	private FixedFeeSpec fixedFeeSpec;
 	private FractionalFeeSpec fractionalFeeSpec;
+	private RoyaltyFeeSpec royaltyFeeSpec;
 
 	public enum FeeType {
 		FRACTIONAL_FEE, FIXED_FEE, ROYALTY_FEE
@@ -82,12 +85,25 @@ public class FcCustomFee implements SelfSerializable {
 			FeeType feeType,
 			EntityId feeCollector,
 			FixedFeeSpec fixedFeeSpec,
-			FractionalFeeSpec fractionalFeeSpec
+			FractionalFeeSpec fractionalFeeSpec,
+			RoyaltyFeeSpec royaltyFeeSpec
 	) {
 		this.feeType = feeType;
 		this.feeCollector = feeCollector;
 		this.fixedFeeSpec = fixedFeeSpec;
+		this.royaltyFeeSpec = royaltyFeeSpec;
 		this.fractionalFeeSpec = fractionalFeeSpec;
+	}
+
+	public static FcCustomFee royaltyFee(
+			long numerator,
+			long denominator,
+			FixedFeeSpec fallbackFee,
+			EntityId feeCollector
+	) {
+		Objects.requireNonNull(feeCollector);
+		final var spec = new RoyaltyFeeSpec(numerator, denominator, fallbackFee);
+		return new FcCustomFee(FeeType.ROYALTY_FEE, feeCollector, null, null, spec);
 	}
 
 	public static FcCustomFee fractionalFee(
@@ -99,7 +115,7 @@ public class FcCustomFee implements SelfSerializable {
 	) {
 		Objects.requireNonNull(feeCollector);
 		final var spec = new FractionalFeeSpec(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
-		return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec);
+		return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec, null);
 	}
 
 	public static FcCustomFee fixedFee(
@@ -109,7 +125,7 @@ public class FcCustomFee implements SelfSerializable {
 	) {
 		Objects.requireNonNull(feeCollector);
 		final var spec = new FixedFeeSpec(unitsToCollect, tokenDenomination);
-		return new FcCustomFee(FIXED_FEE, feeCollector, spec, null);
+		return new FcCustomFee(FIXED_FEE, feeCollector, spec, null, null);
 	}
 
 	public static FcCustomFee fromGrpc(CustomFee source, EntityId targetId) {
@@ -124,7 +140,7 @@ public class FcCustomFee implements SelfSerializable {
 				}
 			}
 			return fixedFee(fixedSource.getAmount(), denom, feeCollector);
-		} else {
+		} else if (source.hasFractionalFee()) {
 			final var fractionalSource = source.getFractionalFee();
 			final var fraction = fractionalSource.getFractionalAmount();
 			final var nominalMax = fractionalSource.getMaximumAmount();
@@ -135,6 +151,14 @@ public class FcCustomFee implements SelfSerializable {
 					fractionalSource.getMinimumAmount(),
 					effectiveMax,
 					feeCollector);
+		} else {
+			final var royaltySource = source.getRoyaltyFee();
+			final var fraction = royaltySource.getExchangeValueFraction();
+			return royaltyFee(
+					fraction.getNumerator(),
+					fraction.getDenominator(),
+					royaltySource.hasFallbackFee() ? FixedFeeSpec.fromGrpc(royaltySource.getFallbackFee()) : null,
+					feeCollector);
 		}
 	}
 
@@ -143,13 +167,8 @@ public class FcCustomFee implements SelfSerializable {
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId());
 		if (feeType == FIXED_FEE) {
 			final var spec = fixedFeeSpec;
-			final var fixedBuilder = FixedFee.newBuilder()
-					.setAmount(spec.getUnitsToCollect());
-			if (spec.getTokenDenomination() != null) {
-				fixedBuilder.setDenominatingTokenId(spec.getTokenDenomination().toGrpcTokenId());
-			}
-			builder.setFixedFee(fixedBuilder);
-		} else {
+			builder.setFixedFee(spec.asGrpc());
+		} else if (feeType == FRACTIONAL_FEE) {
 			final var spec = fractionalFeeSpec;
 			final var fracBuilder = FractionalFee.newBuilder()
 					.setFractionalAmount(Fraction.newBuilder()
@@ -160,6 +179,17 @@ public class FcCustomFee implements SelfSerializable {
 				fracBuilder.setMaximumAmount(spec.getMaximumUnitsToCollect());
 			}
 			builder.setFractionalFee(fracBuilder);
+		} else {
+			final var spec = royaltyFeeSpec;
+			final var royaltyBuilder = RoyaltyFee.newBuilder()
+					.setExchangeValueFraction(Fraction.newBuilder()
+							.setNumerator(spec.getNumerator())
+							.setDenominator(spec.getDenominator()));
+			final var fallback = spec.getFallbackFee();
+			if (fallback != null) {
+				royaltyBuilder.setFallbackFee(fallback.asGrpc());
+			}
+			builder.setRoyaltyFee(royaltyBuilder);
 		}
 		return builder.build();
 	}
@@ -184,6 +214,10 @@ public class FcCustomFee implements SelfSerializable {
 		return fractionalFeeSpec;
 	}
 
+	public RoyaltyFeeSpec getRoyaltyFeeSpec() {
+		return royaltyFeeSpec;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -197,7 +231,8 @@ public class FcCustomFee implements SelfSerializable {
 		return this.feeType == that.feeType &&
 				Objects.equals(this.feeCollector, that.feeCollector) &&
 				Objects.equals(this.fixedFeeSpec, that.fixedFeeSpec) &&
-				Objects.equals(this.fractionalFeeSpec, that.fractionalFeeSpec);
+				Objects.equals(this.fractionalFeeSpec, that.fractionalFeeSpec) &&
+				Objects.equals(this.royaltyFeeSpec, that.royaltyFeeSpec);
 	}
 
 	@Override
@@ -212,6 +247,7 @@ public class FcCustomFee implements SelfSerializable {
 				.add("feeType", feeType)
 				.add("fixedFee", fixedFeeSpec)
 				.add("fractionalFee", fractionalFeeSpec)
+				.add("royaltyFee", royaltyFeeSpec)
 				.add("feeCollector", feeCollector)
 				.toString();
 	}
@@ -224,7 +260,7 @@ public class FcCustomFee implements SelfSerializable {
 			var unitsToCollect = din.readLong();
 			EntityId denom = din.readSerializable(true, EntityId::new);
 			fixedFeeSpec = new FixedFeeSpec(unitsToCollect, denom);
-		} else {
+		} else if (byteCode == FRACTIONAL_CODE) {
 			feeType = FeeType.FRACTIONAL_FEE;
 			var numerator = din.readLong();
 			var denominator = din.readLong();
@@ -232,6 +268,19 @@ public class FcCustomFee implements SelfSerializable {
 			var maximumUnitsToCollect = din.readLong();
 			fractionalFeeSpec = new FractionalFeeSpec(
 					numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
+		} else {
+			feeType = FeeType.ROYALTY_FEE;
+			var numerator = din.readLong();
+			var denominator = din.readLong();
+			var hasFallback = din.readBoolean();
+			if (hasFallback) {
+				var unitsToCollect = din.readLong();
+				EntityId denom = din.readSerializable(true, EntityId::new);
+				var fallbackFee = new FixedFeeSpec(unitsToCollect, denom);
+				royaltyFeeSpec = new RoyaltyFeeSpec(numerator, denominator, fallbackFee);
+			} else {
+				royaltyFeeSpec = new RoyaltyFeeSpec(numerator, denominator, null);
+			}
 		}
 
 		feeCollector = din.readSerializable(true, EntityId::new);
@@ -241,14 +290,23 @@ public class FcCustomFee implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream dos) throws IOException {
 		if (feeType == FIXED_FEE) {
 			dos.writeByte(FIXED_CODE);
-			dos.writeLong(fixedFeeSpec.getUnitsToCollect());
-			dos.writeSerializable(fixedFeeSpec.getTokenDenomination(), true);
-		} else {
+			serializeFixed(fixedFeeSpec, dos);
+		} else if (feeType == FRACTIONAL_FEE) {
 			dos.writeByte(FRACTIONAL_CODE);
 			dos.writeLong(fractionalFeeSpec.getNumerator());
 			dos.writeLong(fractionalFeeSpec.getDenominator());
 			dos.writeLong(fractionalFeeSpec.getMinimumAmount());
 			dos.writeLong(fractionalFeeSpec.getMaximumUnitsToCollect());
+		} else {
+			dos.writeByte(ROYALTY_CODE);
+			dos.writeLong(royaltyFeeSpec.getNumerator());
+			dos.writeLong(royaltyFeeSpec.getDenominator());
+			if (royaltyFeeSpec.getFallbackFee() == null) {
+				dos.writeBoolean(false);
+			} else {
+				dos.writeBoolean(true);
+				serializeFixed(royaltyFeeSpec.getFallbackFee(), dos);
+			}
 		}
 		dos.writeSerializable(feeCollector, true);
 	}
@@ -261,5 +319,10 @@ public class FcCustomFee implements SelfSerializable {
 	@Override
 	public int getVersion() {
 		return MERKLE_VERSION;
+	}
+
+	private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos) throws IOException {
+		dos.writeLong(fee.getUnitsToCollect());
+		dos.writeSerializable(fee.getTokenDenomination(), true);
 	}
 }

@@ -1,6 +1,7 @@
 package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Objects;
@@ -16,6 +17,24 @@ public class FixedFeeSpec {
 		}
 		this.unitsToCollect = unitsToCollect;
 		this.tokenDenomination = tokenDenomination;
+	}
+
+	public static FixedFeeSpec fromGrpc(FixedFee fixedFee) {
+		if (fixedFee.hasDenominatingTokenId()) {
+			final var denom = EntityId.fromGrpcTokenId(fixedFee.getDenominatingTokenId());
+			return new FixedFeeSpec(fixedFee.getAmount(), denom);
+		} else {
+			return new FixedFeeSpec(fixedFee.getAmount(), null);
+		}
+	}
+
+	public FixedFee asGrpc() {
+		final var builder = FixedFee.newBuilder()
+				.setAmount(unitsToCollect);
+		if (tokenDenomination != null) {
+			builder.setDenominatingTokenId(tokenDenomination.toGrpcTokenId());
+		}
+		return builder.build();
 	}
 
 	public long getUnitsToCollect() {

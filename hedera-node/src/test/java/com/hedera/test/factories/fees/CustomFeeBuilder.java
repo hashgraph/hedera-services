@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public class CustomFeeBuilder {
@@ -45,6 +46,10 @@ public class CustomFeeBuilder {
 
 	public CustomFee withOnlyFeeCollector() {
 		return builder().build();
+	}
+
+	public CustomFee withRoyaltyFee(RoyaltyFee.Builder fee) {
+		return  builder().setRoyaltyFee(fee).build();
 	}
 
 	public CustomFee withFixedFee(final FixedFee.Builder fee) {

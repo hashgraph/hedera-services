@@ -22,6 +22,9 @@ package com.hedera.services.state.submerkle;
 
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -36,6 +39,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
@@ -60,6 +64,7 @@ class FcCustomFeeTest {
 	private final EntityId feeCollector = new EntityId(4, 5, 6);
 	private final AccountID grpcFeeCollector = feeCollector.toGrpcAccountId();
 	private final CustomFeeBuilder builder = new CustomFeeBuilder(grpcFeeCollector);
+	private final FixedFeeSpec fallbackFee = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 
 	@Mock
 	private SerializableDataInputStream din;
@@ -83,6 +88,90 @@ class FcCustomFeeTest {
 		assertEquals(expectedHtsSubject, htsSubject);
 		assertEquals(expectedHtsSameTokenSubject, htsSameTokenSubject);
 		assertEquals(expectedHbarSubject, hbarSubject);
+	}
+
+	@Test
+	void grpcReprWorksForRoyaltyNoFallback() {
+		// setup:
+		final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+						.setNumerator(validNumerator)
+						.setDenominator(validDenominator)));
+
+		// given:
+		final var royaltySubject =
+				FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector);
+
+		// when:
+		final var repr = royaltySubject.asGrpc();
+
+		// then:
+		assertEquals(royaltyGrpc, repr);
+	}
+
+	@Test
+	void grpcConversionWorksForRoyaltyNoFallback() {
+		// setup:
+		final var targetId = new EntityId(7, 8, 9);
+		final var expectedRoyaltySubject =
+				FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector);
+
+		// given:
+		final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+						.setNumerator(validNumerator)
+						.setDenominator(validDenominator)));
+
+		// when:
+		final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc, targetId);
+
+		// then:
+		assertEquals(expectedRoyaltySubject, actualSubject);
+	}
+
+	@Test
+	void grpcConversionWorksForRoyalty() {
+		// setup:
+		final var targetId = new EntityId(7, 8, 9);
+		final var expectedRoyaltySubject =
+				FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector);
+
+		// given:
+		final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+						.setNumerator(validNumerator)
+						.setDenominator(validDenominator))
+				.setFallbackFee(FixedFee.newBuilder()
+						.setAmount(fallbackFee.getUnitsToCollect())
+						.setDenominatingTokenId(fallbackFee.getTokenDenomination().toGrpcTokenId())));
+
+		// when:
+		final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc, targetId);
+
+		// then:
+		assertEquals(expectedRoyaltySubject, actualSubject);
+	}
+
+	@Test
+	void grpcReprWorksForRoyalty() {
+		// setup:
+		final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+						.setNumerator(validNumerator)
+						.setDenominator(validDenominator))
+				.setFallbackFee(FixedFee.newBuilder()
+						.setAmount(fallbackFee.getUnitsToCollect())
+						.setDenominatingTokenId(fallbackFee.getTokenDenomination().toGrpcTokenId())));
+
+		// given:
+		final var royaltySubject =
+				FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector);
+
+		// when:
+		final var repr = royaltySubject.asGrpc();
+
+		// then:
+		assertEquals(royaltyGrpc, repr);
 	}
 
 	@Test
@@ -167,6 +256,50 @@ class FcCustomFeeTest {
 
 		assertEquals(expectedExplicitMaxSubject, explicitMaxSubject);
 		assertEquals(expectedNoExplicitMaxSubject, noExplicitMaxSubject);
+	}
+
+	@Test
+	void liveFireSerdesWorkForRoyaltyWithFallback() throws IOException {
+		final var subject = FcCustomFee.royaltyFee(
+				validNumerator,
+				validDenominator,
+				new FixedFeeSpec(123, denom),
+				feeCollector);
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+		subject.serialize(dos);
+		dos.flush();
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		final var newSubject = new FcCustomFee();
+		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+
+		assertEquals(subject.getRoyaltyFeeSpec(), newSubject.getRoyaltyFeeSpec());
+		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
+	}
+
+	@Test
+	void liveFireSerdesWorkForRoyaltyNoFallback() throws IOException {
+		final var subject = FcCustomFee.royaltyFee(
+				validNumerator,
+				validDenominator,
+				null,
+				feeCollector);
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+		subject.serialize(dos);
+		dos.flush();
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		final var newSubject = new FcCustomFee();
+		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+
+		assertEquals(subject.getRoyaltyFeeSpec(), newSubject.getRoyaltyFeeSpec());
+		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
 	}
 
 	@Test
@@ -339,6 +472,19 @@ class FcCustomFeeTest {
 		assertEquals(expectedFractionalSpec, fractionalSubject.getFractionalFeeSpec());
 		assertNull(fractionalSubject.getFixedFeeSpec());
 		assertEquals(feeCollector, fractionalSubject.getFeeCollector());
+	}
+
+	@Test
+	void royaltyFactoryWorks() {
+		final var expectedRoyaltySpec = new RoyaltyFeeSpec(validNumerator, validDenominator, fallbackFee);
+
+		// given:
+		final var royaltySubject = FcCustomFee.royaltyFee(
+				validNumerator, validDenominator, fallbackFee, feeCollector);
+
+		// expect:
+		assertEquals(FcCustomFee.FeeType.ROYALTY_FEE, royaltySubject.getFeeType());
+		assertEquals(expectedRoyaltySpec, royaltySubject.getRoyaltyFeeSpec());
 	}
 
 	@Test
