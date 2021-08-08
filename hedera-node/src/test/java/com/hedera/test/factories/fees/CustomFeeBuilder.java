@@ -69,6 +69,21 @@ public class CustomFeeBuilder {
 		return fixedHbar(units).setDenominatingTokenId(denom);
 	}
 
+	public static RoyaltyFee.Builder royaltyNoFallback(long numerator, long denominator) {
+		return RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+						.setNumerator(numerator)
+						.setDenominator(denominator));
+	}
+
+	public static RoyaltyFee.Builder royaltyWithFallback(long numerator, long denominator, FixedFee.Builder fallback) {
+		return RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+								.setNumerator(numerator)
+								.setDenominator(denominator))
+				.setFallbackFee(fallback);
+	}
+
 	public static FixedFee.Builder fixedHts(final long units) {
 		return fixedHts(TokenID.getDefaultInstance(), units);
 	}

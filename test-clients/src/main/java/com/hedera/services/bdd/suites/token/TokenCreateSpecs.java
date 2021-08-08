@@ -53,9 +53,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.incompleteCustomFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -67,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -83,12 +88,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
@@ -307,7 +314,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.name("012345678912")
 								.symbol("ABCD")
 								.initialSupply(0L)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount(autoRenew)
 								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
@@ -320,7 +327,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.name("012345678912")
 								.symbol("ABCD")
 								.initialSupply(0L)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount(autoRenew)
 								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
@@ -377,7 +384,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.feeScheduleKey("feeScheduleKey")
 								.via("createTxn"),
 						tokenCreate("non-fungible-unique-finite")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.FINITE)
 								.initialSupply(0)
 								.maxSupply(100)
@@ -411,7 +418,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getTokenInfo("non-fungible-unique-finite")
 								.hasRegisteredId("non-fungible-unique-finite")
-								.hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.hasTokenType(NON_FUNGIBLE_UNIQUE)
 								.hasSupplyType(TokenSupplyType.FINITE)
 								.hasTotalSupply(0)
 								.hasMaxSupply(100),
@@ -491,12 +498,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				.when()
 				.then(
 						tokenCreate("primary")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.initialSupply(1)
 								.decimals(0)
 								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
 						tokenCreate("primary")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
 								.decimals(1)
 								.hasPrecheck(INVALID_TOKEN_DECIMALS)
@@ -617,6 +624,60 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										minimumToCollect, OptionalLong.of(minimumToCollect),
 										tokenCollector))
 								.hasKnownStatus(SUCCESS),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeNoFallback(1, 2, tokenCollector))
+								.hasKnownStatus(CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeNoFallback(-1, 2, tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeNoFallback(1, -2, tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeNoFallback(1, 0, tokenCollector))
+								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeNoFallback(2, 1, tokenCollector))
+								.hasKnownStatus(ROYALTY_FRACTION_CANNOT_EXCEED_ONE),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeWithFallback(
+										1, 2,
+										fixedHbarFeeInheritingRoyaltyCollector(-100),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(tokenCollector)
+								.withCustom(royaltyFeeWithFallback(
+										1, 2,
+										fixedHtsFeeInheritingRoyaltyCollector(100, "1.2.3"),
+										tokenCollector))
+								.hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
+						tokenCreate(token)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(htsCollector)
+								.withCustom(royaltyFeeWithFallback(
+										1, 2,
+										fixedHtsFeeInheritingRoyaltyCollector(100, feeDenom),
+										htsCollector)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
