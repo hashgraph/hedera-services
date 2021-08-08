@@ -52,6 +52,11 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
  * defining the custom fee. It specifies the fraction of the units
  * moved that should go to the fee collection account, along with an
  * optional minimum and maximum number of units to be charged.
+ *
+ * A <i>royalty fee</i> is used with a non-fungible unique token type and
+ * sets a fraction of the fungible value received for a NFT that should
+ * be collected as royalty. (If no fungible value is received, a fixed fee
+ * can be charged to the NFT's new owner, if desired.)
  */
 public class FcCustomFee implements SelfSerializable {
 	static final byte FIXED_CODE = (byte) (1 << 0);
@@ -66,7 +71,7 @@ public class FcCustomFee implements SelfSerializable {
 	private FractionalFeeSpec fractionalFeeSpec;
 
 	public enum FeeType {
-		FRACTIONAL_FEE, FIXED_FEE
+		FRACTIONAL_FEE, FIXED_FEE, ROYALTY_FEE
 	}
 
 	public FcCustomFee() {
@@ -237,7 +242,7 @@ public class FcCustomFee implements SelfSerializable {
 		if (feeType == FIXED_FEE) {
 			dos.writeByte(FIXED_CODE);
 			dos.writeLong(fixedFeeSpec.getUnitsToCollect());
-			dos.writeSerializable(fixedFeeSpec.tokenDenomination, true);
+			dos.writeSerializable(fixedFeeSpec.getTokenDenomination(), true);
 		} else {
 			dos.writeByte(FRACTIONAL_CODE);
 			dos.writeLong(fractionalFeeSpec.getNumerator());
@@ -256,129 +261,5 @@ public class FcCustomFee implements SelfSerializable {
 	@Override
 	public int getVersion() {
 		return MERKLE_VERSION;
-	}
-
-	public static class FractionalFeeSpec {
-		private final long numerator;
-		private final long denominator;
-		private final long minimumUnitsToCollect;
-		private final long maximumUnitsToCollect;
-
-		public FractionalFeeSpec(
-				long numerator,
-				long denominator,
-				long minimumUnitsToCollect,
-				long maximumUnitsToCollect
-		) {
-			if (denominator == 0) {
-				throw new IllegalArgumentException("Division by zero is not allowed");
-			}
-			if (numerator < 0 || denominator < 0 || minimumUnitsToCollect < 0) {
-				throw new IllegalArgumentException("Negative values are not allowed");
-			}
-			if (maximumUnitsToCollect < minimumUnitsToCollect) {
-				throw new IllegalArgumentException("maximumUnitsToCollect cannot be less than minimumUnitsToCollect");
-			}
-			this.numerator = numerator;
-			this.denominator = denominator;
-			this.minimumUnitsToCollect = minimumUnitsToCollect;
-			this.maximumUnitsToCollect = maximumUnitsToCollect;
-		}
-
-		public long getNumerator() {
-			return numerator;
-		}
-
-		public long getDenominator() {
-			return denominator;
-		}
-
-		public long getMinimumAmount() {
-			return minimumUnitsToCollect;
-		}
-
-		public long getMaximumUnitsToCollect() {
-			return maximumUnitsToCollect;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null || !obj.getClass().equals(FractionalFeeSpec.class)) {
-				return false;
-			}
-
-			final var that = (FractionalFeeSpec) obj;
-			return this.numerator == that.numerator &&
-					this.denominator == that.denominator &&
-					this.minimumUnitsToCollect == that.minimumUnitsToCollect &&
-					this.maximumUnitsToCollect == that.maximumUnitsToCollect;
-		}
-
-		@Override
-		public int hashCode() {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
-
-		@Override
-		public String toString() {
-			return MoreObjects.toStringHelper(FractionalFeeSpec.class)
-					.add("numerator", numerator)
-					.add("denominator", denominator)
-					.add("minimumUnitsToCollect", minimumUnitsToCollect)
-					.add("maximumUnitsToCollect", maximumUnitsToCollect)
-					.toString();
-		}
-	}
-
-	public static class FixedFeeSpec {
-		private final long unitsToCollect;
-		/* If null, fee is collected in ℏ */
-		private final EntityId tokenDenomination;
-
-		public FixedFeeSpec(long unitsToCollect, EntityId tokenDenomination) {
-			if (unitsToCollect <= 0) {
-				throw new IllegalArgumentException("Only positive values are allowed");
-			}
-			this.unitsToCollect = unitsToCollect;
-			this.tokenDenomination = tokenDenomination;
-		}
-
-		public long getUnitsToCollect() {
-			return unitsToCollect;
-		}
-
-		public EntityId getTokenDenomination() {
-			return tokenDenomination;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null || !obj.getClass().equals(FixedFeeSpec.class)) {
-				return false;
-			}
-
-			final var that = (FixedFeeSpec) obj;
-			return this.unitsToCollect == that.unitsToCollect &&
-					Objects.equals(this.tokenDenomination, that.tokenDenomination);
-		}
-
-		@Override
-		public int hashCode() {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
-
-		@Override
-		public String toString() {
-			return MoreObjects.toStringHelper(FixedFeeSpec.class)
-					.add("unitsToCollect", unitsToCollect)
-					.add("tokenDenomination", tokenDenomination == null ? "ℏ" : tokenDenomination.toAbbrevString())
-					.toString();
-		}
 	}
 }

@@ -23,6 +23,7 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.math.BigInteger;
@@ -109,7 +110,7 @@ public class FractionalFeeAssessor {
 		}
 	}
 
-	long amountOwedGiven(long initialUnits, FcCustomFee.FractionalFeeSpec spec) {
+	long amountOwedGiven(long initialUnits, FractionalFeeSpec spec) {
 		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
 		long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
 		if (spec.getMaximumUnitsToCollect() > 0) {

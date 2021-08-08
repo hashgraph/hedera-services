@@ -230,7 +230,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void deserializeWorksAsExpectedForFixed() throws IOException {
-		final var expectedFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var expectedFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 		given(din.readByte()).willReturn(FcCustomFee.FIXED_CODE);
 		given(din.readLong()).willReturn(fixedUnitsToCollect);
 		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(denom).willReturn(feeCollector);
@@ -246,7 +246,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void deserializeWorksAsExpectedForFractional() throws IOException {
-		final var expectedFractionalSpec = new FcCustomFee.FractionalFeeSpec(
+		final var expectedFractionalSpec = new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -312,7 +312,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void fixedFactoryWorks() {
-		final var expectedFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var expectedFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 		final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
 		assertEquals(FcCustomFee.FeeType.FIXED_FEE, fixedSubject.getFeeType());
@@ -323,7 +323,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void fractionalFactoryWorks() {
-		final var expectedFractionalSpec = new FcCustomFee.FractionalFeeSpec(
+		final var expectedFractionalSpec = new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -343,12 +343,12 @@ class FcCustomFeeTest {
 
 	@Test
 	void toStringsWork() {
-		final var fractionalSpec = new FcCustomFee.FractionalFeeSpec(
+		final var fractionalSpec = new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
-		final var fixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var fixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 		final var desiredFracRepr = "FractionalFeeSpec{numerator=5, denominator=100, " +
 				"minimumUnitsToCollect=1, maximumUnitsToCollect=55}";
 		final var desiredFixedRepr = "FixedFeeSpec{unitsToCollect=7, tokenDenomination=1.2.3}";
@@ -359,38 +359,38 @@ class FcCustomFeeTest {
 
 	@Test
 	void failsFastIfNonPositiveFeeUsed() {
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FixedFeeSpec(0, denom));
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FixedFeeSpec(-1, denom));
+		assertThrows(IllegalArgumentException.class, () -> new FixedFeeSpec(0, denom));
+		assertThrows(IllegalArgumentException.class, () -> new FixedFeeSpec(-1, denom));
 	}
 
 	@Test
 	void failFastIfInvalidFractionUsed() {
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FractionalFeeSpec(
 				validNumerator,
 				invalidDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FractionalFeeSpec(
 				-validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FractionalFeeSpec(
 				validNumerator,
 				-validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				-minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				-maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				maximumUnitsToCollect,
@@ -399,12 +399,12 @@ class FcCustomFeeTest {
 
 	@Test
 	void gettersWork() {
-		final var fractionalSpec = new FcCustomFee.FractionalFeeSpec(
+		final var fractionalSpec = new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
-		final var fixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var fixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 
 		assertEquals(validNumerator, fractionalSpec.getNumerator());
 		assertEquals(validDenominator, fractionalSpec.getDenominator());
@@ -416,12 +416,12 @@ class FcCustomFeeTest {
 
 	@Test
 	void hashCodeWorks() {
-		final var fractionalSpec = new FcCustomFee.FractionalFeeSpec(
+		final var fractionalSpec = new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
-		final var fixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var fixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 
 		assertDoesNotThrow(fractionalSpec::hashCode);
 		assertDoesNotThrow(fixedSpec::hashCode);
@@ -429,10 +429,10 @@ class FcCustomFeeTest {
 
 	@Test
 	void fixedFeeEqualsWorks() {
-		final var aFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
-		final var bFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
-		final var cFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect + 1, denom);
-		final var dFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, null);
+		final var aFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var bFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var cFixedSpec = new FixedFeeSpec(fixedUnitsToCollect + 1, denom);
+		final var dFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, null);
 		final var eFixedSpec = aFixedSpec;
 
 		assertEquals(aFixedSpec, bFixedSpec);
@@ -449,12 +449,12 @@ class FcCustomFeeTest {
 		long d = 7;
 		long min = 22;
 		long max = 99;
-		final var aFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max);
-		final var bFractionalSpec = new FcCustomFee.FractionalFeeSpec(n + 1, d, min, max);
-		final var cFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d + 1, min, max);
-		final var dFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min + 1, max);
-		final var eFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max + 1);
-		final var fFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max);
+		final var aFractionalSpec = new FractionalFeeSpec(n, d, min, max);
+		final var bFractionalSpec = new FractionalFeeSpec(n + 1, d, min, max);
+		final var cFractionalSpec = new FractionalFeeSpec(n, d + 1, min, max);
+		final var dFractionalSpec = new FractionalFeeSpec(n, d, min + 1, max);
+		final var eFractionalSpec = new FractionalFeeSpec(n, d, min, max + 1);
+		final var fFractionalSpec = new FractionalFeeSpec(n, d, min, max);
 		final var gFractionalSpec = aFractionalSpec;
 
 		assertEquals(aFractionalSpec, fFractionalSpec);
