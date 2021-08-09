@@ -144,6 +144,7 @@ import com.hedera.services.grpc.marshalling.FractionalFeeAssessor;
 import com.hedera.services.grpc.marshalling.HbarFeeAssessor;
 import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.RoyaltyFeeAssessor;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -828,8 +829,11 @@ public class ServicesContext {
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			final var feeAssessor =
-					new FeeAssessor(new HtsFeeAssessor(), new HbarFeeAssessor(), new FractionalFeeAssessor());
+			final var htsAssessor = new HtsFeeAssessor();
+			final var hbarAssessor = new HbarFeeAssessor();
+			final var royaltyAssessor = new RoyaltyFeeAssessor(htsAssessor, hbarAssessor);
+			final var fractionalAssessor = new FractionalFeeAssessor();
+			final var feeAssessor = new FeeAssessor(htsAssessor, hbarAssessor, royaltyAssessor, fractionalAssessor);
 			impliedTransfersMarshal = new ImpliedTransfersMarshal(
 					feeAssessor,
 					customFeeSchedules(),
