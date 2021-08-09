@@ -117,6 +117,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleEntityId copy() {
+		setImmutable(true);
 		return new MerkleEntityId(shard, realm, num);
 	}
 
@@ -126,6 +127,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	}
 
 	public void setShard(final long shard) {
+		throwIfImmutable("Cannot change this entity's shard if it's immutable.");
 		this.shard = shard;
 	}
 
@@ -134,6 +136,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	}
 
 	public void setRealm(final long realm) {
+		throwIfImmutable("Cannot change this entity's realm if it's immutable.");
 		this.realm = realm;
 	}
 
@@ -142,6 +145,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	}
 
 	public void setNum(final long num) {
+		throwIfImmutable("Cannot change this entity's number if it's immutable.");
 		this.num = num;
 	}
 

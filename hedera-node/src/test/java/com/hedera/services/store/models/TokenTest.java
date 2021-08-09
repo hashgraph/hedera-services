@@ -25,7 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -445,7 +445,7 @@ class TokenTest {
 		// setup:
 		final var twoMeta = List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("Z"));
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-		subject.setLastUsedSerialNumber(MerkleUniqueTokenId.MAX_NUM_ALLOWED - 1);
+		subject.setLastUsedSerialNumber(IdentityCodeUtils.MAX_NUM_ALLOWED - 1);
 
 		assertFailsWith(
 				() -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
