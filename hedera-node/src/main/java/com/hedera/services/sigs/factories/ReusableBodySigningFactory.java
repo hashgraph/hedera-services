@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.sigs.factories;
 
 /*-
  * ‌
@@ -20,5 +20,23 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class InvalidAccountIDException extends Exception {
+import com.hedera.services.utils.TxnAccessor;
+import com.swirlds.common.crypto.TransactionSignature;
+
+public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
+	private TxnAccessor accessor;
+
+	public void resetFor(TxnAccessor accessor) {
+		this.accessor = accessor;
+	}
+
+	@Override
+	public TransactionSignature create(byte[] publicKey, byte[] sigBytes) {
+		return PlatformSigFactory.createEd25519(publicKey, sigBytes, accessor.getTxnBytes());
+	}
+
+	/* --- Only used by unit tests --- */
+	TxnAccessor getAccessor() {
+		return accessor;
+	}
 }

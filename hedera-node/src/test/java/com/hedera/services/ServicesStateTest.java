@@ -27,7 +27,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -47,7 +46,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
@@ -64,6 +62,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -865,8 +864,8 @@ class ServicesStateTest {
 						.build();
 		platformTxn = PlatformTxnFactory.from(signedTxn);
 		JKey key = new JEd25519Key(mockPk.toByteArray());
-		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
-		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
+		SigningOrderResult<ResponseCodeEnum> payerOrderResult = new SigningOrderResult<>(List.of(key));
+		SigningOrderResult<ResponseCodeEnum> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
 		// and:
 		expandHandleSpan = mock(ExpandHandleSpan.class);
@@ -942,8 +941,8 @@ class ServicesStateTest {
 						.build();
 		platformTxn = PlatformTxnFactory.from(txn);
 		JKey key = new JEd25519Key(mockPk.toByteArray());
-		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
-		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
+		SigningOrderResult<ResponseCodeEnum> payerOrderResult = new SigningOrderResult<>(List.of(key));
+		SigningOrderResult<ResponseCodeEnum> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
 		// and:
 		expandHandleSpan = mock(ExpandHandleSpan.class);

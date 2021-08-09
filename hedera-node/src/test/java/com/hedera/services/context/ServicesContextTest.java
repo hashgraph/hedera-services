@@ -69,6 +69,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -679,6 +680,7 @@ class ServicesContextTest {
 		assertThat(ctx.uniqTokenViewsManager(), instanceOf(UniqTokenViewsManager.class));
 		assertThat(ctx.uniqTokenViewFactory(), instanceOf(ConfigDrivenUniqTokenViewFactory.class));
 		assertThat(ctx.signatureWaivers(), instanceOf(PolicyBasedSigWaivers.class));
+		assertThat(ctx.validityTest(), instanceOf(OnlyIfSigVerifiableValid.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

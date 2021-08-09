@@ -27,12 +27,17 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.InvariantChecks;
@@ -41,19 +46,20 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.crypto.TransactionSignature;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,8 +67,11 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -71,6 +80,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.when;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class AwareProcessLogicTest {
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
@@ -82,19 +92,22 @@ class AwareProcessLogicTest {
 	private TransactionContext txnCtx;
 	private ExpandHandleSpan expandHandleSpan;
 	private NonBlockingHandoff nonBlockingHandoff;
+	private PlatformTxnAccessor txnAccessor;
+	private Rationalization rationalization;
+	private HederaSigningOrder keyOrder;
+	private MiscSpeedometers speedometers;
+	private ReusableBodySigningFactory bodySigningFactory;
+	private BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private AwareProcessLogic subject;
 
 	@BeforeEach
 	void setup() {
 		final SwirldTransaction txn = mock(SwirldTransaction.class);
-		final PlatformTxnAccessor txnAccessor = mock(PlatformTxnAccessor.class);
 		final HederaLedger ledger = mock(HederaLedger.class);
 		final AccountRecordsHistorian historian = mock(AccountRecordsHistorian.class);
-		final HederaSigningOrder keyOrder = mock(HederaSigningOrder.class);
 		final SigningOrderResult orderResult = mock(SigningOrderResult.class);
 		final MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
-		final MiscSpeedometers speedometers = mock(MiscSpeedometers.class);
 		final FeeCalculator fees = mock(FeeCalculator.class);
 		final TxnIdRecentHistory recentHistory = mock(TxnIdRecentHistory.class);
 		final Map<TransactionID, TxnIdRecentHistory> histories = mock(Map.class);
@@ -104,10 +117,15 @@ class AwareProcessLogicTest {
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
 		final EntityAutoRenewal entityAutoRenewal = mock(EntityAutoRenewal.class);
 
+		bodySigningFactory = mock(ReusableBodySigningFactory.class);
+		speedometers = mock(MiscSpeedometers.class);
 		invariantChecks = mock(InvariantChecks.class);
 		expiryManager = mock(ExpiryManager.class);
-
+		keyOrder = mock(HederaSigningOrder.class);
 		txnCtx = mock(TransactionContext.class);
+		txnAccessor = mock(PlatformTxnAccessor.class);
+		rationalization = mock(Rationalization.class);
+		validityTest = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
 		TransactionBody txnBody = mock(TransactionBody.class);
 
@@ -137,7 +155,8 @@ class AwareProcessLogicTest {
 
 		given(histories.get(any())).willReturn(recentHistory);
 
-		final com.hederahashgraph.api.proto.java.Transaction signedTxn = mock(com.hederahashgraph.api.proto.java.Transaction.class);
+		final com.hederahashgraph.api.proto.java.Transaction signedTxn = mock(
+				com.hederahashgraph.api.proto.java.Transaction.class);
 		final TransactionID txnId = mock(TransactionID.class);
 
 		given(txnAccessor.getSignedTxnWrapper()).willReturn(signedTxn);
@@ -149,12 +168,77 @@ class AwareProcessLogicTest {
 		given(recentHistory.currentDuplicityFor(anyLong())).willReturn(BELIEVED_UNIQUE);
 
 		given(txnBody.getNodeAccountID()).willReturn(accountID);
-		given(policy.apply(any())).willReturn(ResponseCodeEnum.OK);
+		given(policy.apply(any())).willReturn(OK);
 		given(policies.check(any())).willReturn(SystemOpAuthorization.AUTHORIZED);
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
 
-		subject = new AwareProcessLogic(ctx);
+		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
+	}
+
+	@Test
+	void cyclesAsyncVerificationWhenAppropros() {
+		// setup:
+		final var sigBytesFn = mock(PubKeyToSigBytes.class);
+		final var syncVerifier = mock(SyncVerifier.class);
+
+		given(ctx.syncVerifier()).willReturn(syncVerifier);
+		given(txnAccessor.getPkToSigsFn()).willReturn(sigBytesFn);
+		given(rationalization.finalStatus()).willReturn(OK);
+
+		// when:
+		final var result = subject.rationalizeWithPreConsensusSigs(txnAccessor);
+
+		// then:
+		verify(bodySigningFactory).resetFor(txnAccessor);
+		verify(rationalization).performFor(txnAccessor, syncVerifier, keyOrder, sigBytesFn, bodySigningFactory);
+		verify(speedometers).cycleAsyncVerifications();
+		// and:
+		Assertions.assertEquals(OK, result);
+	}
+
+	@Test
+	void cyclesSyncVerificationWhenAppropros() {
+		// setup:
+		final var sigBytesFn = mock(PubKeyToSigBytes.class);
+		final var syncVerifier = mock(SyncVerifier.class);
+
+		given(ctx.syncVerifier()).willReturn(syncVerifier);
+		given(txnAccessor.getPkToSigsFn()).willReturn(sigBytesFn);
+		given(rationalization.finalStatus()).willReturn(OK);
+		given(rationalization.usedSyncVerification()).willReturn(true);
+
+		// when:
+		final var result = subject.rationalizeWithPreConsensusSigs(txnAccessor);
+
+		// then:
+		verify(bodySigningFactory).resetFor(txnAccessor);
+		verify(rationalization).performFor(txnAccessor, syncVerifier, keyOrder, sigBytesFn, bodySigningFactory);
+		verify(speedometers).cycleSyncVerifications();
+		// and:
+		Assertions.assertEquals(OK, result);
+	}
+
+	@Test
+	void noVerificationCyclesWhenRationalizationNotOk() {
+		// setup:
+		final var sigBytesFn = mock(PubKeyToSigBytes.class);
+		final var syncVerifier = mock(SyncVerifier.class);
+
+		given(ctx.syncVerifier()).willReturn(syncVerifier);
+		given(txnAccessor.getPkToSigsFn()).willReturn(sigBytesFn);
+		given(rationalization.finalStatus()).willReturn(INVALID_ACCOUNT_ID);
+
+		// when:
+		final var result = subject.rationalizeWithPreConsensusSigs(txnAccessor);
+
+		// then:
+		verify(bodySigningFactory).resetFor(txnAccessor);
+		verify(rationalization).performFor(eq(txnAccessor), eq(syncVerifier), eq(keyOrder), eq(sigBytesFn), any());
+		verify(rationalization, never()).usedSyncVerification();
+		verifyNoInteractions(speedometers);
+		// and:
+		Assertions.assertEquals(INVALID_ACCOUNT_ID, result);
 	}
 
 	@Test

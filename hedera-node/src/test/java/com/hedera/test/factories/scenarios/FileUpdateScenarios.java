@@ -80,5 +80,15 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
 							.get()
 			));
 		}
+	},
+	FILE_UPDATE_MISSING_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedFileUpdate(MISSING_FILE_ID)
+							.payer(TREASURY_PAYER_ID)
+							.newWaclKt(SIMPLE_NEW_WACL_KT)
+							.get()
+			));
+		}
 	}
 }
