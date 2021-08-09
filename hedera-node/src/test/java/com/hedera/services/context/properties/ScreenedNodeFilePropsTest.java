@@ -59,7 +59,7 @@ class ScreenedNodeFilePropsTest {
 	}
 
 	@Test
-	public void warnsOfFailedTransform() {
+	void warnsOfFailedTransform() {
 		// setup:
 		ScreenedNodeFileProps.NODE_PROPS_LOC = BROKEN_NODE_PROPS_LOC;
 		ScreenedNodeFileProps.LEGACY_NODE_PROPS_LOC = EMPTY_NODE_PROPS_LOC;
@@ -78,7 +78,7 @@ class ScreenedNodeFilePropsTest {
 	}
 
 	@Test
-	public void warnsOfUnparseableAndDeprecated() {
+	void warnsOfUnparseableAndDeprecated() {
 		// expect:
 		verify(log).warn(String.format(
 				ScreenedNodeFileProps.DEPRECATED_PROP_TPL,
@@ -94,13 +94,13 @@ class ScreenedNodeFilePropsTest {
 	}
 
 	@Test
-	public void ignoresNonNodeProps() {
+	void ignoresNonNodeProps() {
 		// expect:
 		verify(log).warn(String.format(ScreenedNodeFileProps.MISPLACED_PROP_TPL, "hedera.shard"));
 	}
 
 	@Test
-	public void hasExpectedProps() {
+	void hasExpectedProps() {
 		// expect:
 		for (String name : expectedProps.keySet()) {
 			assertTrue(subject.containsProperty(name), "Should have '" + name + "'!");

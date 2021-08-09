@@ -50,16 +50,16 @@ import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryImpl;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
-public class RepoNewCacheTest {
-	@Ignore
+class RepoNewCacheTest {
+	@Disabled
 	public void test() {
 		FCMap<MerkleEntityId, MerkleAccount> accountMap =
 				new FCMap<>();
@@ -141,7 +141,7 @@ public class RepoNewCacheTest {
 	}
 
 	@Test
-	public void rollbackTest() {
+	void rollbackTest() {
 		FCMap<MerkleEntityId, MerkleAccount> accountMap =
 				new FCMap<>();
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();

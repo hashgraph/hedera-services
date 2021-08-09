@@ -44,7 +44,7 @@ class GetStakersAnswerTest {
 	Query query = Query.getDefaultInstance();
 
 	@Test
-	public void neverDoesOrNeedsAnything() {
+	void neverDoesOrNeedsAnything() {
 		// expect:
 		assertFalse(subject.needsAnswerOnlyCost(query));
 		assertFalse(subject.requiresNodePayment(query));
@@ -52,7 +52,7 @@ class GetStakersAnswerTest {
 	}
 
 	@Test
-	public void extractsValidity() {
+	void extractsValidity() {
 		// given:
 		Response response = Response.newBuilder()
 				.setCryptoGetProxyStakers(CryptoGetStakersResponse.newBuilder()
@@ -64,7 +64,7 @@ class GetStakersAnswerTest {
 	}
 
 	@Test
-	public void respectsTypeOfUnsupportedQuery() {
+	void respectsTypeOfUnsupportedQuery() {
 		// given:
 		Query costAnswer = getStakersQuery(COST_ANSWER);
 		Query answerOnly = getStakersQuery(ANSWER_ONLY);
@@ -83,13 +83,13 @@ class GetStakersAnswerTest {
 
 
 	@Test
-	public void alwaysUnsupported() {
+	void alwaysUnsupported() {
 		// expect:
 		assertEquals(NOT_SUPPORTED, subject.checkValidity(query, StateView.EMPTY_VIEW));
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.CryptoGetStakers, subject.canonicalFunction());
 	}

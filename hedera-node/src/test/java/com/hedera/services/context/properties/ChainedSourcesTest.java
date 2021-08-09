@@ -60,7 +60,7 @@ class ChainedSourcesTest {
 	}
 
 	@Test
-	public void ordersContains() {
+	void ordersContains() {
 		// when:
 		var flag = subject.containsProperty(firstName);
 
@@ -71,7 +71,7 @@ class ChainedSourcesTest {
 	}
 
 	@Test
-	public void ordersContainsTwo() {
+	void ordersContainsTwo() {
 		// when:
 		var flag = subject.containsProperty(secondName);
 
@@ -82,14 +82,14 @@ class ChainedSourcesTest {
 	}
 
 	@Test
-	public void getsFromExpectedSource() {
+	void getsFromExpectedSource() {
 		// expect:
 		assertSame(firstValue, subject.getProperty(firstName));
 		assertSame(secondValue, subject.getProperty(secondName));
 	}
 
 	@Test
-	public void getsAllProperties() {
+	void getsAllProperties() {
 		// expect;
 		assertEquals(
 				Set.of("somethingElse", "anotherThing", "something"),

@@ -51,7 +51,7 @@ class PureRatesValidationTest {
 	}
 
 	@Test
-	public void isSmallChangeTest() {
+	void isSmallChangeTest() {
 		ExchangeRateSet smallChangeIncrease =
 				newRates(midnightRates, true, true, true);
 		Assertions.assertTrue(isNormalIntradayChange(midnightRates, smallChangeIncrease, bound));
@@ -147,7 +147,7 @@ class PureRatesValidationTest {
 	}
 
 	@Test
-	public void cannotBeConstructed() {
+	void cannotBeConstructed() {
 		// expect:
 		assertThrows(IllegalStateException.class, PureRatesValidation::new);
 	}

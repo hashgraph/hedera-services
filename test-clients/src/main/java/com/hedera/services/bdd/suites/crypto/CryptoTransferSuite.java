@@ -30,7 +30,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -330,15 +330,15 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							double pureOneTokenTwoAccountsUsd = rates.toUsdWithActiveRates(t1a2Fee);
 							double pureTwoTokensFourAccountsUsd = rates.toUsdWithActiveRates(t2a4Fee);
 							double pureThreeTokensSixAccountsUsd = rates.toUsdWithActiveRates(t3a6Fee);
-							Assert.assertEquals(
+							Assertions.assertEquals(
 									10.0,
 									pureOneTokenTwoAccountsUsd / pureHbarUsd,
 									1.0);
-							Assert.assertEquals(
+							Assertions.assertEquals(
 									20.0,
 									pureTwoTokensFourAccountsUsd / pureHbarUsd,
 									2.0);
-							Assert.assertEquals(
+							Assertions.assertEquals(
 									30.0,
 									pureThreeTokensSixAccountsUsd / pureHbarUsd,
 									3.0);

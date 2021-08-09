@@ -26,6 +26,7 @@ import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryp
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
+import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
@@ -35,6 +36,25 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                     newSignedScheduleCreate()
                             .missingAdmin()
                             .creating(newSignedScheduleSign().signing(KNOWN_SCHEDULE_IMMUTABLE).get())
+                            .get()
+            ));
+        }
+    },
+    SCHEDULE_CREATE_NOT_IN_WHITELIST {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .creating(newSignedTokenMint().minting(KNOWN_TOKEN_IMMUTABLE).get())
+                            .get()
+            ));
+        }
+    },
+    SCHEDULE_CREATE_NONSENSE {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .schedulingNonsense()
                             .get()
             ));
         }

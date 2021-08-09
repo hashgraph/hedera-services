@@ -9,9 +9,9 @@ package com.hedera.test.factories.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.crypto.SignatureType;
-import org.junit.Assert;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +37,7 @@ import java.util.function.Supplier;
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SigMapGenerator {
 	private static final byte[] NONSENSE_SIG = "'Twas brillig, and the slithy toves...".getBytes();
@@ -48,9 +48,11 @@ public class SigMapGenerator {
 	public static SigMapGenerator withUniquePrefixes() {
 		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, 1));
 	}
+
 	public static SigMapGenerator withAmbiguousPrefixes() {
 		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, Integer.MAX_VALUE));
 	}
+
 	public static SigMapGenerator withRandomPrefixes() {
 		return new SigMapGenerator(trie -> key -> trie.randomPrefix(key.length));
 	}
@@ -73,6 +75,7 @@ public class SigMapGenerator {
 				.collect(collectingAndThen(toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
 
 	}
+
 	private SignaturePair from(byte[] pubKeyPrefix, byte[] sig, SignatureType sigType) {
 		SignaturePair.Builder sp = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(pubKeyPrefix));
 		entryNo++;
@@ -95,15 +98,18 @@ public class SigMapGenerator {
 			int count = 1;
 			Node[] children = new Node[256];
 		}
+
 		Node root = new Node();
 		Random r = new Random();
 
 		public ByteTrie(List<byte[]> allA) {
 			allA.stream().forEach(a -> insert(a));
 		}
+
 		private void insert(byte[] a) {
 			insert(a, root, 0);
 		}
+
 		private void insert(byte[] a, Node n, int i) {
 			if (i == a.length) {
 				return;
@@ -122,12 +128,13 @@ public class SigMapGenerator {
 			byte[] prefix = new byte[len];
 			return randomPrefix(prefix, 0);
 		}
+
 		private byte[] randomPrefix(byte[] prefix, int i) {
 			if (i == prefix.length) {
 				return prefix;
 			}
 			int v = r.nextInt(256);
-			byte next = (byte)((v < 128) ? v : v - 256);
+			byte next = (byte) ((v < 128) ? v : v - 256);
 			prefix[i] = next;
 			return randomPrefix(prefix, i + 1);
 		}
@@ -135,8 +142,9 @@ public class SigMapGenerator {
 		public byte[] shortestPrefix(byte[] a, int maxPrefixCard) {
 			return shortestPrefix(a, root, maxPrefixCard, 1);
 		}
+
 		private byte[] shortestPrefix(byte[] a, Node n, int maxPrefixCard, int lenUsed) {
-			Assert.assertTrue("No unique prefix exists!", lenUsed <= a.length);
+			assertTrue(lenUsed <= a.length, "No unique prefix exists!");
 			int v = vAt(a, lenUsed - 1);
 			if (n.children[v].count <= maxPrefixCard) {
 				return Arrays.copyOfRange(a, 0, lenUsed);
@@ -144,6 +152,7 @@ public class SigMapGenerator {
 				return shortestPrefix(a, n.children[v], maxPrefixCard, lenUsed + 1);
 			}
 		}
+
 		private int vAt(byte[] a, int i) {
 			byte next = a[i];
 			return (next < 0) ? (next + 256) : next;

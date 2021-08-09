@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.unit;
+package com.hedera.services.sigs.factories;
 
 /*-
  * ‌
@@ -20,25 +20,23 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.builder.RequestBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import com.hedera.services.utils.TxnAccessor;
+import com.swirlds.common.crypto.TransactionSignature;
 
-import java.time.Instant;
+public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
+	private TxnAccessor accessor;
 
-/**
- * @author Akshay
- * @Date : 8/10/2018
- */
-public class RequestBuilderTest {
+	public void resetFor(TxnAccessor accessor) {
+		this.accessor = accessor;
+	}
 
-  @Test
-  public void testExpirationTime() {
-    Duration duration = RequestBuilder.getDuration(500);
-    Timestamp expirationTime = RequestBuilder.getExpirationTime(Instant.now(), duration);
-    Assert.assertNotNull(expirationTime);
-    Instant timeStamp = RequestBuilder.convertProtoTimeStamp(expirationTime);
-  }
+	@Override
+	public TransactionSignature create(byte[] publicKey, byte[] sigBytes) {
+		return PlatformSigFactory.createEd25519(publicKey, sigBytes, accessor.getTxnBytes());
+	}
+
+	/* --- Only used by unit tests --- */
+	TxnAccessor getAccessor() {
+		return accessor;
+	}
 }

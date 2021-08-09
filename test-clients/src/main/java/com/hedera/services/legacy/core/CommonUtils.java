@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.ethereum.util.ByteUtil;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -265,25 +265,25 @@ public class CommonUtils {
 	public static void checkRecord(TransactionRecord record, TransactionBody body) {
 		TransactionID txID = body.getTransactionID();
 		System.out.println("$$$$ record=" + record + ", txID=" + txID);
-		Assert.assertEquals(txID, record.getTransactionID());
-		Assert.assertEquals(body.getMemo(), record.getMemo());
-		Assert.assertEquals(true, record.getConsensusTimestamp().getSeconds() > 0);
+		Assertions.assertEquals(txID, record.getTransactionID());
+		Assertions.assertEquals(body.getMemo(), record.getMemo());
+		Assertions.assertEquals(true, record.getConsensusTimestamp().getSeconds() > 0);
 		//in some cases contract create /contract call could charge more than the declared fee
 		if (!body.hasContractCall() && !body.hasContractCreateInstance()) {
-			Assert.assertEquals(true, body.getTransactionFee() >= record.getTransactionFee());
+			Assertions.assertEquals(true, body.getTransactionFee() >= record.getTransactionFee());
 		}
 
-		Assert.assertEquals(true, record.getTransactionHash().size() > 0);
+		Assertions.assertEquals(true, record.getTransactionHash().size() > 0);
 
 		if (ResponseCodeEnum.INVALID_PAYER_SIGNATURE.equals(record.getReceipt().getStatus())) {
-			Assert.assertEquals(false, record.hasTransferList());
+			Assertions.assertEquals(false, record.hasTransferList());
 		} else {
-			Assert.assertEquals(true, record.hasTransferList());
+			Assertions.assertEquals(true, record.hasTransferList());
 		}
 
 		if (body.hasCryptoTransfer() && ResponseCodeEnum.SUCCESS.equals(record.getReceipt().getStatus())) {
 			TransferList transferList = body.getCryptoTransfer().getTransfers();
-			Assert.assertEquals(true, record.getTransferList().toString().contains(transferList.toString()));
+			Assertions.assertEquals(true, record.getTransferList().toString().contains(transferList.toString()));
 		}
 
 		System.out.println(":) record check success!");

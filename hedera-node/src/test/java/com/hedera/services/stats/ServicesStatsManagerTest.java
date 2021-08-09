@@ -84,7 +84,7 @@ class ServicesStatsManagerTest {
 	}
 
 	@Test
-	public void initsAsExpected() {
+	void initsAsExpected() {
 		// setup:
 		Thread thread = mock(Thread.class);
 		ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);

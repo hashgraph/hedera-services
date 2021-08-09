@@ -28,7 +28,7 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.time.Duration;
 import java.util.List;
@@ -166,11 +166,11 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 
 						/* check if the multiplier took effect in the contract call operation */
 						withOpContext((spec, opLog) -> {
-							Assert.assertEquals(
-									"~10x multiplier should be in affect!",
+							Assertions.assertEquals(
 									10.0,
 									(1.0 * tenXPrice.get()) / normalPrice.get(),
-									0.1);
+									0.1,
+									"~10x multiplier should be in affect!");
 						}),
 
 						/* revert the multiplier before test ends */

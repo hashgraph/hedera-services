@@ -130,17 +130,21 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		}
 
 		if (op.getAmount() <= 0 && op.getSerialNumbersCount() > 0) {
-			var validity = validator.maxBatchSizeBurnCheck(op.getSerialNumbersCount());
-			if (validity != OK) {
-				return validity;
-			}
-			for (long serialNum : op.getSerialNumbersList()) {
-				if (serialNum <= 0) {
-					return INVALID_NFT_ID;
-				}
+			return validateNfts(op);
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateNfts(final TokenBurnTransactionBody op) {
+		var validity = validator.maxBatchSizeBurnCheck(op.getSerialNumbersCount());
+		if (validity != OK) {
+			return validity;
+		}
+		for (long serialNum : op.getSerialNumbersList()) {
+			if (serialNum <= 0) {
+				return INVALID_NFT_ID;
 			}
 		}
-
 		return OK;
 	}
 }

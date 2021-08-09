@@ -111,7 +111,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void registerWorks() {
+	void registerWorks() {
 		// when:
 		subject.register(lowInterceptor);
 		// and:
@@ -123,7 +123,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void appendsWithExpectedResultSansInterception() {
+	void appendsWithExpectedResultSansInterception() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 		// and:
@@ -144,7 +144,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void overwritesWithExpectedResultSansInterception() {
+	void overwritesWithExpectedResultSansInterception() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
@@ -159,7 +159,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void highPriorityInterceptorSetsOutcome() {
+	void highPriorityInterceptorSetsOutcome() {
 		given(highInterceptor.preUpdate(fid, newContents))
 				.willReturn(
 						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.FAIL_FEE, true));
@@ -183,7 +183,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void relevantInterceptorsGetPostCb() {
+	void relevantInterceptorsGetPostCb() {
 		InOrder inOrder = inOrder(highInterceptor, lowInterceptor);
 
 		given(highInterceptor.preUpdate(fid, newContents))
@@ -212,7 +212,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void shortCircuitsIfInterceptorRejects() {
+	void shortCircuitsIfInterceptorRejects() {
 		given(highInterceptor.preUpdate(fid, newContents))
 				.willReturn(
 						new AbstractMap.SimpleEntry<>(ResponseCodeEnum.AUTHORIZATION_FAILED, false));
@@ -236,7 +236,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void appendRejectsOversizeContents() {
+	void appendRejectsOversizeContents() {
 		// setup:
 		IllegalArgumentException iae = null;
 		var stretchContents = new byte[BYTES_PER_KB - 1];
@@ -262,7 +262,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void appendAllowsOversizeContentsForDiskFs() {
+	void appendAllowsOversizeContentsForDiskFs() {
 		// setup:
 		var stretchContents = new byte[BYTES_PER_KB - 1];
 		var burstContents = new byte[2];
@@ -289,7 +289,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void overwritePermitsOversizeContentsForDiskFs() {
+	void overwritePermitsOversizeContentsForDiskFs() {
 		// setup:
 		var oversizeContents = new byte[BYTES_PER_KB + 1];
 
@@ -314,7 +314,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void overwriteRejectsOversizeContents() {
+	void overwriteRejectsOversizeContents() {
 		// setup:
 		IllegalArgumentException iae = null;
 		var oversizeContents = new byte[BYTES_PER_KB + 1];
@@ -338,7 +338,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void rmThrowsOnMissing() {
+	void rmThrowsOnMissing() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -358,7 +358,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void rmPurgesAsExpected() {
+	void rmPurgesAsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 		// and:
@@ -373,7 +373,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void deleteThrowsOnMissing() {
+	void deleteThrowsOnMissing() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -393,7 +393,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void deleteThrowsOnDeleted() {
+	void deleteThrowsOnDeleted() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -414,7 +414,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void deleteRespectsInterceptors() {
+	void deleteRespectsInterceptors() {
 		// setup:
 		FileUpdateInterceptor authPolicy = mock(FileUpdateInterceptor.class);
 		given(authPolicy.priorityForCandidate(fid)).willReturn(OptionalInt.of(Integer.MIN_VALUE));
@@ -437,7 +437,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void deleteUpdatesAttrAsExpected() {
+	void deleteUpdatesAttrAsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
@@ -457,7 +457,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void appendThrowsOnMissing() {
+	void appendThrowsOnMissing() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -477,7 +477,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void overwriteThrowsOnMissing() {
+	void overwriteThrowsOnMissing() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -497,7 +497,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void appendThrowsOnDeleted() {
+	void appendThrowsOnDeleted() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -518,7 +518,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void overwriteThrowsOnDeleted() {
+	void overwriteThrowsOnDeleted() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -539,7 +539,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void lsThrowsOnMissing() {
+	void lsThrowsOnMissing() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -559,7 +559,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void lsGetsExpected() {
+	void lsGetsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
@@ -571,7 +571,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void catThrowsOnMissing() {
+	void catThrowsOnMissing() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -591,7 +591,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void catThrowsOnDeleted() {
+	void catThrowsOnDeleted() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -612,7 +612,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void catGetsExpected() {
+	void catGetsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 		given(data.get(fid)).willReturn(origContents);
@@ -627,7 +627,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void usesMetadataToCheckExistence() {
+	void usesMetadataToCheckExistence() {
 		given(metadata.containsKey(fid)).willReturn(true);
 
 		// when:
@@ -644,7 +644,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void sudoSetattrAllowsDeletedFile() {
+	void sudoSetattrAllowsDeletedFile() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(deletedAttr);
 
@@ -659,7 +659,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void setattrRejectsDeletedFile() {
+	void setattrRejectsDeletedFile() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -680,7 +680,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void sudoSetattrRejectsMissingFile() {
+	void sudoSetattrRejectsMissingFile() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -701,7 +701,7 @@ class TieredHederaFsTest {
 
 
 	@Test
-	public void setattrRejectsMissingFile() {
+	void setattrRejectsMissingFile() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -721,7 +721,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void setattrUpdatesAsExpected() {
+	void setattrUpdatesAsExpected() {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 
@@ -736,7 +736,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void setattrRespectsInterceptors() {
+	void setattrRespectsInterceptors() {
 		// setup:
 		FileUpdateInterceptor authPolicy = mock(FileUpdateInterceptor.class);
 		given(authPolicy.priorityForCandidate(fid)).willReturn(OptionalInt.of(Integer.MIN_VALUE));
@@ -758,7 +758,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void setattrRejectsExpiredFile() {
+	void setattrRejectsExpiredFile() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -779,7 +779,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void createRejectsExpiredFile() {
+	void createRejectsExpiredFile() {
 		// given:
 		IllegalArgumentException iae = null;
 
@@ -797,7 +797,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void createRejectsOversizeContents() {
+	void createRejectsOversizeContents() {
 		// setup:
 		IllegalArgumentException iae = null;
 
@@ -819,7 +819,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void createUsesNextEntityId() {
+	void createUsesNextEntityId() {
 		given(ids.newFileId(sponsor)).willReturn(fid);
 
 		// when:
@@ -832,7 +832,7 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	public void createNewFile150ThenReadAndAppend() {
+	void createNewFile150ThenReadAndAppend() {
 		FileID fileID = FileID.newBuilder().setFileNum(150L).build();
 		given(metadata.containsKey(fileID)).willReturn(true);
 		given(metadata.get(fileID)).willReturn(livingAttr);

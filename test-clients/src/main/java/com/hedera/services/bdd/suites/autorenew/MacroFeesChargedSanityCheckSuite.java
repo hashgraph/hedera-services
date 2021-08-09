@@ -27,9 +27,9 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Key;
-import junit.framework.Assert;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Collections;
 import java.util.List;
@@ -190,7 +190,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 							final int numRenewals = (int) (expiryChange / reqAutoRenew);
 							opLog.info("{} renewals happened, extending expiry by {} and reducing balance by {}",
 									numRenewals, expiryChange, balanceChange);
-							Assert.assertEquals(balanceChange, numRenewals * tbFee);
+							Assertions.assertEquals(balanceChange, numRenewals * tbFee);
 						}),
 						cryptoDelete(target)
 				);

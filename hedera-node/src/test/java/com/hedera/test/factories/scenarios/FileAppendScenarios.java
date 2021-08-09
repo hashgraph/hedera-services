@@ -35,6 +35,15 @@ public enum FileAppendScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER{
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedFileAppend(SYS_FILE_ID)
+							.payer(MASTER_PAYER_ID)
+							.get()
+			));
+		}
+	},
 	TREASURY_SYS_FILE_APPEND_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(

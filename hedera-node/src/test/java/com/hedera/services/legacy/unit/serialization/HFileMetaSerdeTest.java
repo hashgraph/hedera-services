@@ -54,8 +54,8 @@ import static com.hedera.services.files.HFileMetaSerde.MAX_CONCEIVABLE_MEMO_UTF8
 import static com.hedera.services.files.HFileMetaSerde.MEMO_VERSION;
 import static com.hedera.services.files.HFileMetaSerde.deserialize;
 import static com.hedera.services.files.HFileMetaSerde.streamContentDiscovery;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -103,7 +103,7 @@ public class HFileMetaSerdeTest {
 	}
 
 	@Test
-	public void deserializesNewVersionAsExpected() throws IOException {
+	void deserializesNewVersionAsExpected() throws IOException {
 		// setup:
 		doStaticMocking();
 		// and:
@@ -169,7 +169,7 @@ public class HFileMetaSerdeTest {
 	}
 
 	@Test
-	public void legacySerdeTest() throws Exception {
+	void legacySerdeTest() throws Exception {
 		// setup:
 		var fid = IdUtils.asFile("0.0.1001");
 

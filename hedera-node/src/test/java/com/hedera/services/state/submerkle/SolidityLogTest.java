@@ -72,7 +72,7 @@ class SolidityLogTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"SolidityLog{data="	+ CommonUtils.hex(data) + ", " +
@@ -84,7 +84,7 @@ class SolidityLogTest {
 	}
 
 	@Test
-	public void objectContractWorks() {
+	void objectContractWorks() {
 		// given:
 		var one = subject;
 		var two = new SolidityLog(contractId, bloom, topics, otherData);
@@ -102,7 +102,7 @@ class SolidityLogTest {
 	}
 
 	@Test
-	public void beanWorks() {
+	void beanWorks() {
 		// expect:
 		assertEquals(
 				new SolidityLog(
@@ -114,14 +114,14 @@ class SolidityLogTest {
 	}
 
 	@Test
-	public void serializableDetWorks() {
+	void serializableDetWorks() {
 		// expect;
 		assertEquals(SolidityLog.MERKLE_VERSION, subject.getVersion());
 		assertEquals(SolidityLog.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -141,7 +141,7 @@ class SolidityLogTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:

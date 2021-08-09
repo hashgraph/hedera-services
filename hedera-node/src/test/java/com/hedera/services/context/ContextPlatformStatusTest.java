@@ -30,13 +30,13 @@ class ContextPlatformStatusTest {
 	ContextPlatformStatus subject = new ContextPlatformStatus();
 
 	@Test
-	public void beginsAsStartingUp() {
+	void beginsAsStartingUp() {
 		// expect:
 		assertEquals(STARTING_UP, subject.get());
 	}
 
 	@Test
-	public void setterWorks() {
+	void setterWorks() {
 		// when:
 		subject.set(MAINTENANCE);
 

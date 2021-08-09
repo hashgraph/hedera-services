@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.Collections.EMPTY_LIST;
 
@@ -40,7 +39,7 @@ import static java.util.Collections.EMPTY_LIST;
  */
 public class SigningOrderResult<T> {
 	private final List<JKey> orderedKeys;
-	private final Optional<T> errorReport;
+	private final T errorReport;
 
 	private static final SigningOrderResult<?> NO_KNOWN_KEYS = new SigningOrderResult<>(EMPTY_LIST);
 
@@ -50,22 +49,20 @@ public class SigningOrderResult<T> {
 	}
 
 	public SigningOrderResult(List<JKey> orderedKeys) {
-		this(orderedKeys, Optional.empty());
+		this(orderedKeys, null);
 	}
+
 	public SigningOrderResult(T errorReport) {
-		this(EMPTY_LIST, Optional.of(errorReport));
+		this(EMPTY_LIST, errorReport);
 	}
-	public SigningOrderResult(List<JKey> orderedKeys, Optional<T> errorReport) {
+
+	private SigningOrderResult(List<JKey> orderedKeys, T errorReport) {
 		this.orderedKeys = orderedKeys;
 		this.errorReport = errorReport;
 	}
 
-	public boolean hasKnownOrder() {
-		return errorReport.isEmpty();
-	}
-
 	public boolean hasErrorReport() {
-		return errorReport.isPresent();
+		return errorReport !=  null;
 	}
 
 	public List<JKey> getOrderedKeys() {
@@ -77,7 +74,7 @@ public class SigningOrderResult<T> {
 	}
 
 	public T getErrorReport() {
-		return errorReport.get();
+		return errorReport;
 	}
 
 	@Override
@@ -85,7 +82,7 @@ public class SigningOrderResult<T> {
 		if (hasErrorReport()) {
 			return MoreObjects.toStringHelper(SigningOrderResult.class)
 					.add("outcome", "FAILURE")
-					.add("details", errorReport.get())
+					.add("details", errorReport)
 					.toString();
 		} else {
 			return MoreObjects.toStringHelper(SigningOrderResult.class)

@@ -35,7 +35,7 @@ class ContractAnswersTest {
 	ContractAnswers subject;
 
 	@Test
-	public void hasExpectedAnswers() {
+	void hasExpectedAnswers() {
 		// given:
 		subject = new ContractAnswers(
 				getBytecodeAnswer,

@@ -55,14 +55,14 @@ class ContractDeleteResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(contractDeleteTxn));
 		assertFalse(subject.applicableTo(nonContractDeleteTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		subject.usageGiven(contractDeleteTxn, sigUsage, null);
 

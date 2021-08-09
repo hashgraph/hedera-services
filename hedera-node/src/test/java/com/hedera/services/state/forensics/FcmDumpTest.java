@@ -145,7 +145,7 @@ class FcmDumpTest {
 	}
 
 	@Test
-	public void merkleSupplierWorks() {
+	void merkleSupplierWorks() {
 		// given:
 		var okPath = "src/test/resources/tmp.nothing";
 
@@ -159,7 +159,7 @@ class FcmDumpTest {
 	}
 
 	@Test
-	public void merkleSupplierFnDoesntBlowUp() {
+	void merkleSupplierFnDoesntBlowUp() {
 		// given:
 		var badPath = "/impermissible/path";
 

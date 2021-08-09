@@ -30,9 +30,11 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.config.BlockchainConfig;
 import org.ethereum.config.CommonConfig;
 import org.ethereum.config.SystemProperties;
@@ -60,7 +62,6 @@ import org.ethereum.vm.program.invoke.ProgramInvoke;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactory;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactoryImpl;
 import org.ethereum.vm.program.invoke.ProgramInvokeImpl;
-import com.swirlds.common.CommonUtils;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -97,7 +98,7 @@ import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
 import static org.ethereum.vm.VMUtils.zipAndEncode;
 
 public class SolidityExecutor {
-	private static final Logger logger = Logger.getLogger(SolidityExecutor.class);
+	private static final Logger logger = LogManager.getLogger(SolidityExecutor.class);
 	private static final BlockStore NULL_BLOCK_STORE = null;
 
 	private final EthereumListener listener = new EthereumListenerAdapter();

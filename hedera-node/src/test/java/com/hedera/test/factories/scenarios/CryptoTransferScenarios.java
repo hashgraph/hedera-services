@@ -29,7 +29,6 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
-
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
 	CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
@@ -159,6 +158,46 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.adjusting(MISSING_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
 							.nonPayerKts(FIRST_TOKEN_SENDER_KT, SECOND_TOKEN_SENDER_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, TOKEN_RECEIVER)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, RECEIVER_SIG)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, MISSING_ACCOUNT, TOKEN_RECEIVER)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, MISSING_ACCOUNT)
 							.get()
 			));
 		}

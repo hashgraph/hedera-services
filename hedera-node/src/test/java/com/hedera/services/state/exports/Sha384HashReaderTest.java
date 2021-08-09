@@ -39,13 +39,13 @@ class Sha384HashReaderTest {
 	Sha384HashReader subject = new Sha384HashReader();
 
 	@Test
-	public void rethrowsIllegalArgumentExceptionIfMissingFile() {
+	void rethrowsIllegalArgumentExceptionIfMissingFile() {
 		// expect:
 		assertThrows(UncheckedIOException.class, () -> subject.readHash(imaginaryLoc));
 	}
 
 	@Test
-	public void matchesLegacyValue() throws IOException, NoSuchAlgorithmException {
+	void matchesLegacyValue() throws IOException, NoSuchAlgorithmException {
 		// expect:
 		assertArrayEquals(legacy(extantLoc), subject.readHash(extantLoc));
 	}

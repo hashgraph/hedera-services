@@ -56,7 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -99,7 +99,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() throws Throwable {
+	void rejectsInvalidCid() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
 		// and:
@@ -110,7 +110,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void rejectsNegativeGas() throws Throwable {
+	void rejectsNegativeGas() throws Throwable {
 		// setup:
 		gas = -1;
 
@@ -122,7 +122,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void noCopyPasteErrors() throws Throwable {
+	void noCopyPasteErrors() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee);
 
@@ -138,7 +138,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void getsInvalidResponse() throws Throwable {
+	void getsInvalidResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
 
@@ -153,7 +153,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
 
@@ -169,7 +169,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void throwsOnAvailCtxWithNoCachedResponse() throws Throwable {
+	void throwsOnAvailCtxWithNoCachedResponse() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		Map<String, Object> queryCtx = new HashMap<>();
@@ -180,7 +180,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void usesCtxWhenAvail() throws Throwable {
+	void usesCtxWhenAvail() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		Map<String, Object> queryCtx = new HashMap<>();
@@ -200,7 +200,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void getsCallResponseWhenNoCtx() throws Throwable {
+	void getsCallResponseWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 		var delegateResponse = response(CONTRACT_EXECUTION_EXCEPTION);
@@ -220,7 +220,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void translatesFailWhenNoCtx() throws Throwable {
+	void translatesFailWhenNoCtx() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
@@ -236,7 +236,7 @@ class ContractCallLocalAnswerTest {
 	}
 
 	@Test
-	public void respectsMetaValidity() throws Throwable {
+	void respectsMetaValidity() throws Throwable {
 		// given:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 

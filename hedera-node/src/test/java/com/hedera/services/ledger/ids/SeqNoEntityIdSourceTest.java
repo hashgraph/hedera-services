@@ -50,7 +50,7 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
-	public void returnsExpectedAccountId() {
+	void returnsExpectedAccountId() {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 
 		// when:
@@ -61,7 +61,7 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
-	public void returnsExpectedFileId() {
+	void returnsExpectedFileId() {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 
 		// when:
@@ -72,7 +72,7 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
-	public void returnsExpectedTokenId() {
+	void returnsExpectedTokenId() {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 
 		// when:
@@ -83,7 +83,7 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
-	public void reclaimDecrementsId() {
+	void reclaimDecrementsId() {
 		// when:
 		subject.reclaimLastId();
 

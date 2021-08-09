@@ -84,7 +84,7 @@ class FileUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		fileUpdateTxn = mock(TransactionBody.class);
 		given(fileUpdateTxn.hasFileUpdate()).willReturn(true);
 
@@ -97,7 +97,7 @@ class FileUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void missingCtxScans() {
+	void missingCtxScans() {
 		// setup:
 		long now = 1_234_567L;
 
@@ -112,7 +112,7 @@ class FileUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void delegatesToCorrectEstimateWhenUnknown() throws Exception {
+	void delegatesToCorrectEstimateWhenUnknown() throws Exception {
 		// setup:
 		expected = mock(FeeData.class);
 		// and:
@@ -133,7 +133,7 @@ class FileUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void delegatesToCorrectEstimateWhenKnown() throws Exception {
+	void delegatesToCorrectEstimateWhenKnown() throws Exception {
 		// setup:
 		expected = mock(FeeData.class);
 		// and:

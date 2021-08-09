@@ -75,7 +75,7 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TokenAssociationSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
@@ -90,8 +90,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite(){
-		return List.of(new HapiApiSpec[]{
+	protected List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
 						dissociateHasExpectedSemantics(),
 						associateHasExpectedSemantics(),
@@ -108,7 +108,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 	public HapiApiSpec handlesUseOfDefaultTokenId() {
 		return defaultHapiSpec("HandlesUseOfDefaultTokenId")
-				.given( ).when( ).then(
+				.given().when().then(
 						tokenAssociate(DEFAULT_PAYER, "0.0.0")
 								.hasKnownStatus(INVALID_TOKEN_ID)
 				);
@@ -287,27 +287,32 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 												return tokenXfers -> {
 													try {
 														assertEquals(
-																"Wrong number of tokens transferred!",
 																1,
-																tokenXfers.size());
+																tokenXfers.size(),
+																"Wrong number of tokens transferred!");
 														TokenTransferList xfers = tokenXfers.get(0);
-														assertEquals("Wrong token transferred!",
+														assertEquals(
 																spec.registry().getTokenID(expiringToken),
-																xfers.getToken());
+																xfers.getToken(),
+																"Wrong token transferred!");
 														AccountAmount toTreasury = xfers.getTransfers(0);
-														assertEquals("Treasury should come first!",
+														assertEquals(
 																spec.registry().getAccountID(treasury),
-																toTreasury.getAccountID());
-														assertEquals("Treasury should get 100 tokens back!",
+																toTreasury.getAccountID(),
+																"Treasury should come first!");
+														assertEquals(
 																100L,
-																toTreasury.getAmount());
+																toTreasury.getAmount(),
+																"Treasury should get 100 tokens back!");
 														AccountAmount fromAccount = xfers.getTransfers(1);
-														assertEquals("Account should come second!",
+														assertEquals(
 																spec.registry().getAccountID(unfrozenAccount),
-																fromAccount.getAccountID());
-														assertEquals("Account should send 100 tokens back!",
+																fromAccount.getAccountID(),
+																"Account should come second!");
+														assertEquals(
 																-100L,
-																fromAccount.getAmount());
+																fromAccount.getAmount(),
+																"Account should send 100 tokens back!");
 													} catch (Throwable error) {
 														return List.of(error);
 													}

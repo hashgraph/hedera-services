@@ -57,7 +57,7 @@ class SystemOpPoliciesTest {
 	SystemOpPolicies subject = new SystemOpPolicies(new MockEntityNumbers());
 
 	@Test
-	public void treasuryCanUpdateAllNonAccountEntities() {
+	void treasuryCanUpdateAllNonAccountEntities() {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 101));
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 102));
@@ -70,7 +70,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void sysAdminCanUpdateKnownSystemFiles() {
+	void sysAdminCanUpdateKnownSystemFiles() {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 101));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 102));
@@ -83,7 +83,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void addressBookAdminCanUpdateExpected() {
+	void addressBookAdminCanUpdateExpected() {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 101));
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 102));
@@ -96,7 +96,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void feeSchedulesAdminCanUpdateExpected() {
+	void feeSchedulesAdminCanUpdateExpected() {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(56, 111));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 101));
@@ -109,7 +109,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void exchangeRatesAdminCanUpdateExpected() {
+	void exchangeRatesAdminCanUpdateExpected() {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 122));
@@ -122,7 +122,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void uncheckedSubmitRejectsUnauthorized() throws InvalidProtocolBufferException {
+	void uncheckedSubmitRejectsUnauthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setUncheckedSubmit(UncheckedSubmitBody
@@ -133,7 +133,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void sysAdminCanSubmitUnchecked() throws InvalidProtocolBufferException {
+	void sysAdminCanSubmitUnchecked() throws InvalidProtocolBufferException {
 		// given:
 		var txn = sysAdminTxn()
 				.setUncheckedSubmit(UncheckedSubmitBody
@@ -144,7 +144,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void treasuryCanSubmitUnchecked() throws InvalidProtocolBufferException {
+	void treasuryCanSubmitUnchecked() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setUncheckedSubmit(UncheckedSubmitBody
@@ -155,7 +155,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
+	void cryptoUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
@@ -166,7 +166,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesUnnecessaryForSystem() throws InvalidProtocolBufferException {
+	void cryptoUpdateRecognizesUnnecessaryForSystem() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
@@ -177,7 +177,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesUnnecessaryForNonSystem() throws InvalidProtocolBufferException {
+	void cryptoUpdateRecognizesUnnecessaryForNonSystem() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
@@ -188,7 +188,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesAuthorizedForTreasury() throws InvalidProtocolBufferException {
+	void cryptoUpdateRecognizesAuthorizedForTreasury() throws InvalidProtocolBufferException {
 		// given:
 		var selfUpdateTxn = treasuryTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
@@ -204,7 +204,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+	void cryptoUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
 		// given:
 		var civilianTxn = civilianTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
@@ -220,7 +220,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void fileUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+	void fileUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFileUpdate(FileUpdateTransactionBody
@@ -231,7 +231,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void fileAppendRecognizesUnauthorized() throws InvalidProtocolBufferException {
+	void fileAppendRecognizesUnauthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFileAppend(FileAppendTransactionBody
@@ -242,7 +242,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void fileAppendRecognizesAuthorized() throws InvalidProtocolBufferException {
+	void fileAppendRecognizesAuthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFileAppend(FileAppendTransactionBody
@@ -253,7 +253,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void treasuryCanFreeze() throws InvalidProtocolBufferException {
+	void treasuryCanFreeze() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
@@ -262,7 +262,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void sysAdminCanFreeze() throws InvalidProtocolBufferException {
+	void sysAdminCanFreeze() throws InvalidProtocolBufferException {
 		// given:
 		var txn = sysAdminTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
@@ -271,7 +271,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void freezeAdminCanFreeze() throws InvalidProtocolBufferException {
+	void freezeAdminCanFreeze() throws InvalidProtocolBufferException {
 		// given:
 		var txn = freezeAdminTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
@@ -280,7 +280,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void randomAdminCannotFreeze() throws InvalidProtocolBufferException {
+	void randomAdminCannotFreeze() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
@@ -289,7 +289,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemDeleteRecognizesImpermissibleContractDel() throws InvalidProtocolBufferException {
+	void systemDeleteRecognizesImpermissibleContractDel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setSystemDelete(SystemDeleteTransactionBody
@@ -300,7 +300,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemUndeleteRecognizesImpermissibleContractUndel() throws InvalidProtocolBufferException {
+	void systemUndeleteRecognizesImpermissibleContractUndel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setSystemUndelete(SystemUndeleteTransactionBody
@@ -311,7 +311,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemUndeleteRecognizesUnauthorizedContractUndel() throws InvalidProtocolBufferException {
+	void systemUndeleteRecognizesUnauthorizedContractUndel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setSystemUndelete(SystemUndeleteTransactionBody
@@ -322,7 +322,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemUndeleteRecognizesAuthorizedContractUndel() throws InvalidProtocolBufferException {
+	void systemUndeleteRecognizesAuthorizedContractUndel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = sysUndeleteTxn()
 				.setSystemUndelete(SystemUndeleteTransactionBody
@@ -333,7 +333,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemUndeleteRecognizesAuthorizedFileUndel() throws InvalidProtocolBufferException {
+	void systemUndeleteRecognizesAuthorizedFileUndel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = sysUndeleteTxn()
 				.setSystemUndelete(SystemUndeleteTransactionBody
@@ -344,7 +344,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemUndeleteRecognizesUnauthorizedFileUndel() throws InvalidProtocolBufferException {
+	void systemUndeleteRecognizesUnauthorizedFileUndel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setSystemUndelete(SystemUndeleteTransactionBody
@@ -355,7 +355,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemUndeleteRecognizesImpermissibleFileUndel() throws InvalidProtocolBufferException {
+	void systemUndeleteRecognizesImpermissibleFileUndel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setSystemUndelete(SystemUndeleteTransactionBody
@@ -366,7 +366,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemDeleteRecognizesImpermissibleFileDel() throws InvalidProtocolBufferException {
+	void systemDeleteRecognizesImpermissibleFileDel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setSystemDelete(SystemDeleteTransactionBody
@@ -377,7 +377,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemDeleteRecognizesUnauthorizedFileDel() throws InvalidProtocolBufferException {
+	void systemDeleteRecognizesUnauthorizedFileDel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setSystemDelete(SystemDeleteTransactionBody
@@ -388,7 +388,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemDeleteRecognizesAuthorizedFileDel() throws InvalidProtocolBufferException {
+	void systemDeleteRecognizesAuthorizedFileDel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = sysDeleteTxn()
 				.setSystemDelete(SystemDeleteTransactionBody
@@ -399,7 +399,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemDeleteRecognizesUnauthorizedContractDel() throws InvalidProtocolBufferException {
+	void systemDeleteRecognizesUnauthorizedContractDel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setSystemDelete(SystemDeleteTransactionBody
@@ -410,7 +410,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemDeleteRecognizesAuthorizedContractDel() throws InvalidProtocolBufferException {
+	void systemDeleteRecognizesAuthorizedContractDel() throws InvalidProtocolBufferException {
 		// given:
 		var txn = sysDeleteTxn()
 				.setSystemDelete(SystemDeleteTransactionBody
@@ -421,7 +421,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void fileAppendRecognizesUnnecessary() throws InvalidProtocolBufferException {
+	void fileAppendRecognizesUnnecessary() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFileAppend(FileAppendTransactionBody
@@ -432,7 +432,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void contractUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
+	void contractUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setContractUpdateInstance(ContractUpdateTransactionBody
@@ -443,7 +443,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void contractUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
+	void contractUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setContractUpdateInstance(ContractUpdateTransactionBody
@@ -454,7 +454,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void fileUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
+	void fileUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFileUpdate(FileUpdateTransactionBody
@@ -465,7 +465,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void freezeAdminCanUpdateZipFile() throws InvalidProtocolBufferException {
+	void freezeAdminCanUpdateZipFile() throws InvalidProtocolBufferException {
 		// given:
 		var txn = freezeAdminTxn()
 				.setFileUpdate(FileUpdateTransactionBody
@@ -477,7 +477,7 @@ class SystemOpPoliciesTest {
 
 
 	@Test
-	public void fileUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
+	void fileUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
 				.setFileUpdate(FileUpdateTransactionBody
@@ -488,7 +488,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemFilesCannotBeDeleted() throws InvalidProtocolBufferException {
+	void systemFilesCannotBeDeleted() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setFileDelete(FileDeleteTransactionBody
@@ -500,7 +500,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void civilianFilesAreDeletable() throws InvalidProtocolBufferException {
+	void civilianFilesAreDeletable() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setFileDelete(FileDeleteTransactionBody
@@ -512,7 +512,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemContractsCannotBeDeleted() throws InvalidProtocolBufferException {
+	void systemContractsCannotBeDeleted() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setContractDeleteInstance(ContractDeleteTransactionBody
@@ -524,7 +524,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void civilianContractsAreDeletable() throws InvalidProtocolBufferException {
+	void civilianContractsAreDeletable() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setContractDeleteInstance(ContractDeleteTransactionBody
@@ -536,7 +536,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void systemAccountsCannotBeDeleted() throws InvalidProtocolBufferException {
+	void systemAccountsCannotBeDeleted() throws InvalidProtocolBufferException {
 		// given:
 		var txn = treasuryTxn()
 				.setCryptoDelete(CryptoDeleteTransactionBody
@@ -548,7 +548,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void civilianAccountsAreDeletable() throws InvalidProtocolBufferException {
+	void civilianAccountsAreDeletable() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setCryptoDelete(CryptoDeleteTransactionBody
@@ -560,7 +560,7 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void createAccountAlwaysOk() throws InvalidProtocolBufferException {
+	void createAccountAlwaysOk() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());

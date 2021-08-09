@@ -26,8 +26,8 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nonnull;
 import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -70,10 +70,11 @@ public class TransitionRunner {
 	 * Tries to find and run transition logic for the transaction wrapped by the
 	 * given accessor.
 	 *
-	 * @param accessor the transaction accessor
+	 * @param accessor
+	 * 		the transaction accessor
 	 * @return true if the logic was run to completion
 	 */
-	public boolean tryTransition(@NotNull TxnAccessor accessor) {
+	public boolean tryTransition(@Nonnull TxnAccessor accessor) {
 		final var txn = accessor.getTxn();
 		final var function = accessor.getFunction();
 		final var logic = lookup.lookupFor(function, txn);

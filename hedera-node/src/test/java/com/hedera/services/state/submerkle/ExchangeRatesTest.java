@@ -74,7 +74,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void notAutoInitialized() {
+	void notAutoInitialized() {
 		// given:
 		subject = new ExchangeRates();
 
@@ -83,7 +83,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var subjectCopy = subject.copy();
 
@@ -98,7 +98,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void serializesAsExpected() throws IOException {
+	void serializesAsExpected() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		InOrder inOrder = inOrder(out);
@@ -117,7 +117,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void deserializesAsExpected() throws IOException {
+	void deserializesAsExpected() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		subject = new ExchangeRates();
@@ -145,7 +145,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void sanityChecks() {
+	void sanityChecks() {
 		// expect:
 		assertEquals(expCurrentHbarEquiv, subject.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subject.getCurrCentEquiv());
@@ -157,7 +157,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void replaces() {
+	void replaces() {
 		// setup:
 		var newRates = ExchangeRateSet.newBuilder()
 				.setCurrentRate(
@@ -189,7 +189,7 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"ExchangeRates{currHbarEquiv=" + expCurrentHbarEquiv +
@@ -202,13 +202,13 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void viewWorks() {
+	void viewWorks() {
 		// expect:
 		assertEquals(grpc, subject.toGrpc());
 	}
 
 	@Test
-	public void factoryWorks() {
+	void factoryWorks() {
 		// expect:
 		assertEquals(subject, ExchangeRates.fromGrpc(grpc));
 	}

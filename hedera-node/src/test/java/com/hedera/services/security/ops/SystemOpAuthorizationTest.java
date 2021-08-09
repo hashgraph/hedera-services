@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SystemOpAuthorizationTest {
 	@Test
-	public void haveExpectedStatusRepresentations() {
+	void haveExpectedStatusRepresentations() {
 		// expect:
 		assertEquals(OK, UNNECESSARY.asStatus());
 		assertEquals(OK, AUTHORIZED.asStatus());

@@ -197,7 +197,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
@@ -212,7 +212,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void getsInvalidResponse() throws Throwable {
+	void getsInvalidResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
@@ -227,7 +227,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void identifiesFailInvalid() throws Throwable {
+	void identifiesFailInvalid() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 		// and:
@@ -245,7 +245,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void getsTheAccountInfo() throws Throwable {
+	void getsTheAccountInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
@@ -293,7 +293,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void usesValidator() throws Throwable {
+	void usesValidator() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
@@ -309,7 +309,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void getsExpectedPayment() throws Throwable {
+	void getsExpectedPayment() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
@@ -318,21 +318,21 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+	void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		// expect:
 		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
 		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
 	}
 
 	@Test
-	public void requiresAnswerOnlyPayment() throws Throwable {
+	void requiresAnswerOnlyPayment() throws Throwable {
 		// expect:
 		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
 		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder().setCryptoGetInfo(
 				CryptoGetInfoResponse.newBuilder()
@@ -343,7 +343,7 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(CryptoGetInfo, subject.canonicalFunction());
 	}

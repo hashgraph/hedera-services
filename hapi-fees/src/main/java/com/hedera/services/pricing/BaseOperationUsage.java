@@ -113,6 +113,9 @@ class BaseOperationUsage {
 			.build();
 	private static final AccountID AN_ACCOUNT = AccountID.newBuilder().setAccountNum(1_234L).build();
 
+	private static final String A_TOKEN_NAME = "012345678912";
+	private static final String A_TOKEN_SYMBOL = "ABCD";
+
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
 	private static final CryptoOpsUsage CRYPTO_OPS_USAGE = new CryptoOpsUsage();
@@ -241,8 +244,8 @@ class BaseOperationUsage {
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setAutoRenewAccount(AN_ACCOUNT)
 						.setTreasury(AN_ACCOUNT)
-						.setName("012345678912")
-						.setSymbol("ABCD")
+						.setName(A_TOKEN_NAME)
+						.setSymbol(A_TOKEN_SYMBOL)
 						.setAdminKey(A_KEY)
 						.setFeeScheduleKey(A_KEY)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
@@ -266,8 +269,8 @@ class BaseOperationUsage {
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setTreasury(AN_ACCOUNT)
 						.setAutoRenewAccount(AN_ACCOUNT)
-						.setName("012345678912")
-						.setSymbol("ABCD")
+						.setName(A_TOKEN_NAME)
+						.setSymbol(A_TOKEN_SYMBOL)
 						.setAdminKey(A_KEY)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.setTokenType(TokenType.FUNGIBLE_COMMON))
@@ -286,8 +289,8 @@ class BaseOperationUsage {
 						.setTreasury(AN_ACCOUNT)
 						.setAutoRenewAccount(AN_ACCOUNT)
 						.setInitialSupply(0L)
-						.setName("012345678912")
-						.setSymbol("ABCD")
+						.setName(A_TOKEN_NAME)
+						.setSymbol(A_TOKEN_SYMBOL)
 						.setAdminKey(A_KEY)
 						.setSupplyKey(A_KEY)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
@@ -308,8 +311,8 @@ class BaseOperationUsage {
 						.setTreasury(AN_ACCOUNT)
 						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 						.setInitialSupply(0L)
-						.setName("012345678912")
-						.setSymbol("ABCD")
+						.setName(A_TOKEN_NAME)
+						.setSymbol(A_TOKEN_SYMBOL)
 						.setAdminKey(A_KEY)
 						.setSupplyKey(A_KEY)
 						.setFeeScheduleKey(A_KEY)

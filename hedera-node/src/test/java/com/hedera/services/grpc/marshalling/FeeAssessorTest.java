@@ -44,6 +44,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class FeeAssessorTest {
@@ -118,6 +119,40 @@ class FeeAssessorTest {
 
 		// then:
 		verifyNoInteractions(htsFeeAssessor);
+		assertEquals(OK, result);
+	}
+
+	@Test
+	void processMultiFeesCorrectly() {
+		givenFees(fungibleTokenId.asEntityId(), List.of(htsFee, hbarFee, htsFee));
+
+		// when:
+		final var result =
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+
+		// then:
+		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor, times(2)).assess(payer, htsFee, balanceChangeManager, accumulator);
+		assertEquals(OK, result);
+	}
+
+
+	@Test
+	void shouldProcessAllFixedFees() {
+		// setup:
+		final var fees = List.of(hbarFee, htsFee, fractionalFee, htsFee);
+		givenFees(fungibleTokenId.asEntityId(), fees);
+		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator))
+				.willReturn(OK);
+
+		// when:
+		final var result =
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+
+		// then:
+		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor, times(2)).assess(payer, htsFee, balanceChangeManager, accumulator);
+		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
 		assertEquals(OK, result);
 	}
 

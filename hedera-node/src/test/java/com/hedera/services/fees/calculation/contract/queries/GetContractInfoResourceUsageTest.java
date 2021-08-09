@@ -100,7 +100,7 @@ class GetContractInfoResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		var applicable = contractInfoQuery(target, COST_ANSWER);
 		var inapplicable = Query.getDefaultInstance();
@@ -111,7 +111,7 @@ class GetContractInfoResourceUsageTest {
 	}
 
 	@Test
-	public void usesEstimator() {
+	void usesEstimator() {
 		// when:
 		var usage = subject.usageGiven(contractInfoQuery(target, ANSWER_ONLY), view);
 
@@ -124,7 +124,7 @@ class GetContractInfoResourceUsageTest {
 	}
 
 	@Test
-	public void setsInfoInQueryCxtIfPresent() {
+	void setsInfoInQueryCxtIfPresent() {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 
@@ -136,7 +136,7 @@ class GetContractInfoResourceUsageTest {
 	}
 
 	@Test
-	public void onlySetsContractInfoInQueryCxtIfFound() {
+	void onlySetsContractInfoInQueryCxtIfFound() {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 

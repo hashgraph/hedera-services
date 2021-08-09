@@ -74,14 +74,14 @@ class FileAppendResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(fileAppendTxn));
 		assertFalse(subject.applicableTo(nonFileAppendTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// setup:
 		JKey wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
 		HFileMeta jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);

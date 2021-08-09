@@ -134,6 +134,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		if (bothPresent) {
 			return INVALID_TRANSACTION_BODY;
 		}
+		return validateNfts(op);
+	}
+
+	private ResponseCodeEnum validateNfts(final TokenWipeAccountTransactionBody op) {
 		if (op.getAmount() <= 0 && op.getSerialNumbersCount() > 0) {
 			var validity = validator.maxBatchSizeWipeCheck(op.getSerialNumbersCount());
 			if (validity != OK) {
@@ -145,7 +149,6 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 				}
 			}
 		}
-
 		return OK;
 	}
 }

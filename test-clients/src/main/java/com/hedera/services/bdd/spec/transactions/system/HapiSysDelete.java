@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -73,7 +73,7 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		if (file.isPresent() && contract.isPresent()) {
-			Assert.fail("Ambiguous SystemDelete---both file and contract present!");
+			Assertions.fail("Ambiguous SystemDelete---both file and contract present!");
 		}
 		SystemDeleteTransactionBody opBody = spec
 				.txns()
