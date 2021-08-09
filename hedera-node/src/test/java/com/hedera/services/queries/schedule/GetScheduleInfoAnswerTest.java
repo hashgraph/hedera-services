@@ -78,7 +78,7 @@ class GetScheduleInfoAnswerTest {
     GetScheduleInfoAnswer subject;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         info = ScheduleInfo.newBuilder()
                 .setScheduleID(scheduleID)
                 .setPayerAccountID(payerAccount)
@@ -92,7 +92,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void getsTheInfo() throws Throwable {
+    void getsTheInfo() throws Throwable {
         // setup:
         Query query = validQuery(ANSWER_ONLY, fee, scheduleID);
 
@@ -113,7 +113,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void getsInfoFromCtxWhenAvailable() throws Throwable {
+    void getsInfoFromCtxWhenAvailable() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, scheduleID);
         Map<String, Object> ctx = new HashMap<>();
@@ -134,7 +134,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
+    void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, scheduleID);
 
@@ -150,7 +150,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void recognizesMissingInfoWhenCtxGiven() throws Throwable {
+    void recognizesMissingInfoWhenCtxGiven() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, scheduleID);
 
@@ -165,7 +165,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void getsCostAnswerResponse() throws Throwable {
+    void getsCostAnswerResponse() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, scheduleID);
 
@@ -180,7 +180,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void getsInvalidResponse() throws Throwable {
+    void getsInvalidResponse() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, scheduleID);
 
@@ -197,27 +197,27 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void recognizesFunction() {
+    void recognizesFunction() {
         // expect:
         assertEquals(HederaFunctionality.ScheduleGetInfo, subject.canonicalFunction());
     }
 
     @Test
-    public void requiresAnswerOnlyPayment() throws Throwable {
+    void requiresAnswerOnlyPayment() throws Throwable {
         // expect:
         assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, scheduleID)));
         assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, scheduleID)));
     }
 
     @Test
-    public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+    void requiresAnswerOnlyCostAsExpected() throws Throwable {
         // expect:
         assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, scheduleID)));
         assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, scheduleID)));
     }
 
     @Test
-    public void getsValidity() {
+    void getsValidity() {
         // given:
         Response response = Response.newBuilder().setScheduleGetInfo(
                 ScheduleGetInfoResponse.newBuilder()
@@ -228,7 +228,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void usesViewToValidate() throws Throwable {
+    void usesViewToValidate() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, scheduleID);
 
@@ -242,7 +242,7 @@ class GetScheduleInfoAnswerTest {
     }
 
     @Test
-    public void getsExpectedPayment() throws Throwable {
+    void getsExpectedPayment() throws Throwable {
         // given:
         Query query = validQuery(COST_ANSWER, fee, scheduleID);
 

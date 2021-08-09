@@ -90,7 +90,7 @@ class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // given:
         var applicable = scheduleInfoQuery(target);
         var inapplicable = Query.getDefaultInstance();
@@ -101,7 +101,7 @@ class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeData() {
+    void calculatesFeeData() {
         ArgumentCaptor<ExtantScheduleContext> captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
 
         // setup:
@@ -125,7 +125,7 @@ class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeDataAsResolvedIfExecuted() {
+    void calculatesFeeDataAsResolvedIfExecuted() {
         // setup:
         info = info.toBuilder()
                 .clearDeletionTime()
@@ -155,7 +155,7 @@ class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeDataScheduleNotPresent() {
+    void calculatesFeeDataScheduleNotPresent() {
         // given:
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
         // when:
@@ -167,7 +167,7 @@ class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeDataWithContext() {
+    void calculatesFeeDataWithContext() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -183,7 +183,7 @@ class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void onlySetsScheduleInfoInQueryCxtIfFound() {
+    void onlySetsScheduleInfoInQueryCxtIfFound() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 

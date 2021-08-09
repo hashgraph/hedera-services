@@ -22,134 +22,81 @@ package com.hedera.services.legacy.unit;
 
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-@TestInstance(Lifecycle.PER_CLASS)
+import static com.hedera.test.utils.TxnUtils.randomUtf8Bytes;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class StorageWrapperTest {
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
 	private static final String TEST_CREATE_FILE_PATH = "/0/a1234/";
-	private static final String TEST_EXPIRATION_AFTER_CREATE_FILE_PATH = "/0/a1235/";
 	private static final String TEST_CREATE_DELETE_FILE_PATH = "/0/a1236/";
 	private static final String TEST_CREATE_APPEND_FILE_PATH = "/0/a1237/";
-	private static final String TEST_UPDATE_EXPIRATION_FILE_PATH = "/0/a1238/";
 	private static final String TEST_OVERRIDE_FILE_PATH = "/0/a1239/";
-	private static long TEST_FILE_CREATE_EXPIRATION_TIME = 4114602824L;
-	private static long TEST_FILE_CREATE_CREATION_TIME = 4111012835L;
-	private static long TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME = 4111033835L;
 
 	@Test
 	void testFileCreateRead() {
-		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
-		storageWrapper.fileCreate(TEST_CREATE_FILE_PATH, fileCreateContent, TEST_FILE_CREATE_CREATION_TIME, 0,
-				TEST_FILE_CREATE_EXPIRATION_TIME, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_CREATE_FILE_PATH));
-		byte[] fileReadContent = storageWrapper.fileRead(TEST_CREATE_FILE_PATH);
-		Assertions.assertTrue(ArrayUtils.isEquals(fileCreateContent, fileReadContent));
+		final var fileCreateContent = randomUtf8Bytes(5000);
+		final var storageWrapper = new FCStorageWrapper(storageMap);
+
+		storageWrapper.fileCreate(TEST_CREATE_FILE_PATH, fileCreateContent);
+		final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_FILE_PATH);
+
+		assertTrue(storageWrapper.fileExists(TEST_CREATE_FILE_PATH));
+		assertArrayEquals(fileCreateContent, fileReadContent);
 	}
 
 	@Test
-	void testFileExpirationAfterCreate() {
-		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
-		long expirationTime = ThreadLocalRandom.current().nextLong(TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME,
-				TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME + 1000000);
-		storageWrapper.fileCreate(TEST_EXPIRATION_AFTER_CREATE_FILE_PATH, fileCreateContent,
-				TEST_FILE_CREATE_CREATION_TIME, 0, expirationTime, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_EXPIRATION_AFTER_CREATE_FILE_PATH));
-	}
+	void testFileCreateDelete() throws StorageKeyNotFoundException {
+		final var fileCreateContent = randomUtf8Bytes(5000);
+		final var storageWrapper = new FCStorageWrapper(storageMap);
 
+		storageWrapper.fileCreate(TEST_CREATE_DELETE_FILE_PATH, fileCreateContent);
+		assertTrue(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
 
-	@Test
-	void testFileCreateDelete() throws StorageKeyNotFoundException, ConstructableRegistryException {
-		// setup:
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-
-		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
-		storageWrapper.fileCreate(TEST_CREATE_DELETE_FILE_PATH, fileCreateContent, TEST_FILE_CREATE_CREATION_TIME, 0,
-				TEST_FILE_CREATE_EXPIRATION_TIME, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
-		Instant modifyTimeStamp = Instant.now();
-		long modifyTimeSec = modifyTimeStamp.getEpochSecond();
-		storageWrapper.delete(TEST_CREATE_DELETE_FILE_PATH, modifyTimeSec, 0);
+		storageWrapper.delete(TEST_CREATE_DELETE_FILE_PATH);
 		Assertions.assertFalse(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
 	}
 
 	@Test
-	void testFileCreateAppend() throws ConstructableRegistryException {
-		// setup:
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-
-		byte[] fileCombinedContentExpected = fillByteArrayWithRandomValues(6000);
-		int fistChunklength = ThreadLocalRandom.current().nextInt(1000, 5000);
-		byte[] file1Content = Arrays.copyOfRange(fileCombinedContentExpected, 0, fistChunklength);
-		byte[] file2Content = Arrays.copyOfRange(fileCombinedContentExpected, fistChunklength,
+	void testFileCreateAppend() {
+		final var fileCombinedContentExpected = randomUtf8Bytes(6000);
+		final var fistChunklength = ThreadLocalRandom.current().nextInt(1000, 5000);
+		final var file1Content = Arrays.copyOfRange(fileCombinedContentExpected, 0, fistChunklength);
+		final var file2Content = Arrays.copyOfRange(fileCombinedContentExpected, fistChunklength,
 				fileCombinedContentExpected.length);
+		final var storageWrapper = new FCStorageWrapper(storageMap);
 
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
-		storageWrapper.fileCreate(TEST_CREATE_APPEND_FILE_PATH, file1Content, TEST_FILE_CREATE_CREATION_TIME, 0,
-				TEST_FILE_CREATE_EXPIRATION_TIME, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_CREATE_APPEND_FILE_PATH));
-		Instant modifyTimeStamp = Instant.now();
-		long modifyTimeSec = modifyTimeStamp.getEpochSecond();
-		storageWrapper.fileUpdate(TEST_CREATE_APPEND_FILE_PATH, file2Content, modifyTimeSec, 0,
-				TEST_FILE_CREATE_EXPIRATION_TIME);
-		byte[] fileReadContent = storageWrapper.fileRead(TEST_CREATE_APPEND_FILE_PATH);
-		Assertions.assertTrue(Arrays.equals(fileCombinedContentExpected, fileReadContent));
-	}
+		storageWrapper.fileCreate(TEST_CREATE_APPEND_FILE_PATH, file1Content);
+		assertTrue(storageWrapper.fileExists(TEST_CREATE_APPEND_FILE_PATH));
 
-	@Test
-	void testFileExpirationUpdate() throws ConstructableRegistryException {
-		// setup:
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-
-		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
-		long expirationTime = ThreadLocalRandom.current().nextLong(TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME,
-				TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME + 1000000);
-		storageWrapper.fileCreate(TEST_UPDATE_EXPIRATION_FILE_PATH, fileCreateContent, TEST_FILE_CREATE_CREATION_TIME
-                , 0,
-				expirationTime, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_UPDATE_EXPIRATION_FILE_PATH));
+		storageWrapper.fileUpdate(TEST_CREATE_APPEND_FILE_PATH, file2Content);
+		final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_APPEND_FILE_PATH);
+		assertArrayEquals(fileCombinedContentExpected, fileReadContent);
 	}
 
 	@Test
 	void testOverrideFile() {
-		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
-		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileCreateContent, TEST_FILE_CREATE_CREATION_TIME, 0,
-				TEST_FILE_CREATE_EXPIRATION_TIME, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
-		byte[] fileReadContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
-		Assertions.assertTrue(Arrays.equals(fileCreateContent, fileReadContent));
-		byte[] fileOverRideContent = fillByteArrayWithRandomValues(2000);
-		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileOverRideContent, TEST_FILE_CREATE_CREATION_TIME, 0,
-				TEST_FILE_CREATE_EXPIRATION_TIME, null);
-		Assertions.assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
-		byte[] fileReadAfterOverrideContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
-		Assertions.assertTrue(Arrays.equals(fileOverRideContent, fileReadAfterOverrideContent));
-	}
+		final var fileCreateContent = randomUtf8Bytes(5000);
+		final var storageWrapper = new FCStorageWrapper(storageMap);
 
-	private byte[] fillByteArrayWithRandomValues(int arraySize) {
-		byte[] arrayToReturn = new byte[arraySize];
-		ThreadLocalRandom.current().nextBytes(arrayToReturn);
-		return arrayToReturn;
+		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileCreateContent);
+		assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
+
+		final var fileReadContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
+		assertArrayEquals(fileCreateContent, fileReadContent);
+
+		final var fileOverriddenContent = randomUtf8Bytes(2000);
+		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileOverriddenContent);
+		assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
+
+		final var fileReadAfterOverrideContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
+		assertArrayEquals(fileOverriddenContent, fileReadAfterOverrideContent);
 	}
 }

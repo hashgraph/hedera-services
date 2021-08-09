@@ -34,21 +34,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JThresholdKeyTest {
   @Test
-  public void isEmpty() {
+  void isEmpty() {
     final var cut = new JThresholdKey(new JKeyList(), 0);
 
     assertTrue(cut.isEmpty());
   }
 
   @Test
-  public void isEmptySubkeys() {
+  void isEmptySubkeys() {
     final var cut = new JThresholdKey(new JKeyList(List.of(new JEd25519Key(new byte[0]))), 1);
 
     assertTrue(cut.isEmpty());
   }
 
   @Test
-  public void isNotEmpty() {
+  void isNotEmpty() {
     final var cut = new JThresholdKey(new JKeyList(List.of(new JEd25519Key(new byte[1]))), 1);
 
     assertFalse(cut.isEmpty());
@@ -65,7 +65,7 @@ class JThresholdKeyTest {
   }
 
   @Test
-  public void JThresholdKeyWithVariousThresholdTest() throws Exception {
+  void JThresholdKeyWithVariousThresholdTest() throws Exception {
     Key validContractIDKey = Key.newBuilder().setContractID(
             ContractID.newBuilder().setContractNum(1L).build()
     ).build();
@@ -81,7 +81,7 @@ class JThresholdKeyTest {
   }
 
   @Test
-  public void invalidJThresholdKeyTest() throws Exception {
+  void invalidJThresholdKeyTest() throws Exception {
     Key validED25519Key = Key.newBuilder().setEd25519(
             TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
     ).build();
@@ -104,7 +104,7 @@ class JThresholdKeyTest {
   }
 
   @Test
-  public void degenerateKeyNotForScheduledTxn() {
+  void degenerateKeyNotForScheduledTxn() {
     // given:
     var subject = new JThresholdKey(null, 0);
 
@@ -113,7 +113,7 @@ class JThresholdKeyTest {
   }
 
   @Test
-  public void delegatesScheduledScope() {
+  void delegatesScheduledScope() {
     // setup:
     var ed25519Key = new JEd25519Key("ed25519".getBytes());
     var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
@@ -137,7 +137,7 @@ class JThresholdKeyTest {
   }
 
   @Test
-  public void propagatesSettingScheduledScope() {
+  void propagatesSettingScheduledScope() {
     // setup:
     var ed25519Key = new JEd25519Key("ed25519".getBytes());
     var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());

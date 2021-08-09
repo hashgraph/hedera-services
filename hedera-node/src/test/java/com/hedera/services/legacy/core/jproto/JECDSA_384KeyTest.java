@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JECDSA_384KeyTest {
   @Test
-  public void emptyJECDSA_384KeyTest() {
+  void emptyJECDSA_384KeyTest() {
     JECDSA_384Key key1 = new JECDSA_384Key(null);
     assertTrue(key1.isEmpty());
     assertFalse(key1.isValid());
@@ -38,7 +38,7 @@ class JECDSA_384KeyTest {
   }
 
   @Test
-  public void nonEmptyJECDSA_384KeyTest() {
+  void nonEmptyJECDSA_384KeyTest() {
     JECDSA_384Key key = new JECDSA_384Key(new byte[1]);
     assertFalse(key.isEmpty());
     assertTrue(key.isValid());
