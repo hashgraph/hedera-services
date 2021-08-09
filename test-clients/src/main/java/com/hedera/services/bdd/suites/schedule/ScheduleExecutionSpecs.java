@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
@@ -57,6 +56,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidBurnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidMintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -68,8 +69,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidBurnToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidMintToken;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -461,24 +460,26 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							var triggeredTx = getTxnRecord(successTxn).scheduled();
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
-							Assert.assertEquals("Wrong consensus timestamp!",
+							Assertions.assertEquals(
 									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
-									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
 
-							Assert.assertEquals("Wrong transaction valid start!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
 
-							Assert.assertEquals("Wrong record account ID!",
-									createTx.getResponseRecord().getTransactionID().getAccountID(),
-									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+							Assertions.assertEquals(createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
 
-							Assert.assertTrue("Transaction not scheduled!",
-									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+							Assertions.assertTrue(triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
 
-							Assert.assertEquals("Wrong schedule ID!",
-									createTx.getResponseRecord().getReceipt().getScheduleID(),
-									triggeredTx.getResponseRecord().getScheduleRef());
+							Assertions.assertEquals(createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
 						}),
 						getTokenInfo(A_TOKEN)
 								.hasTotalSupply(0)
@@ -746,24 +747,26 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							var triggeredTx = getTxnRecord(successTxn).scheduled();
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
-							Assert.assertEquals("Wrong consensus timestamp!",
+							Assertions.assertEquals(
 									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
-									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
 
-							Assert.assertEquals("Wrong transaction valid start!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
 
-							Assert.assertEquals("Wrong record account ID!",
-									createTx.getResponseRecord().getTransactionID().getAccountID(),
-									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+							Assertions.assertEquals(createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
 
-							Assert.assertTrue("Transaction not scheduled!",
-									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+							Assertions.assertTrue(triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
 
-							Assert.assertEquals("Wrong schedule ID!",
-									createTx.getResponseRecord().getReceipt().getScheduleID(),
-									triggeredTx.getResponseRecord().getScheduleRef());
+							Assertions.assertEquals(createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
 						}),
 						getTokenInfo(A_TOKEN)
 								.hasTotalSupply(2)
@@ -816,24 +819,26 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							var triggeredTx = getTxnRecord(successTxn).scheduled();
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
-							Assert.assertEquals("Wrong consensus timestamp!",
+							Assertions.assertEquals(
 									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
-									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
 
-							Assert.assertEquals("Wrong transaction valid start!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
 
-							Assert.assertEquals("Wrong record account ID!",
-									createTx.getResponseRecord().getTransactionID().getAccountID(),
-									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+							Assertions.assertEquals(createTx.getResponseRecord().getTransactionID().getAccountID(),
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
 
-							Assert.assertTrue("Transaction not scheduled!",
-									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+							Assertions.assertTrue(triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
 
-							Assert.assertEquals("Wrong schedule ID!",
-									createTx.getResponseRecord().getReceipt().getScheduleID(),
-									triggeredTx.getResponseRecord().getScheduleRef());
+							Assertions.assertEquals(createTx.getResponseRecord().getReceipt().getScheduleID(),
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
 						}),
 						getTokenInfo(A_TOKEN)
 								.hasTotalSupply(111)
@@ -874,24 +879,29 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							var triggeredTx = getTxnRecord(successTxn).scheduled();
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
-							Assert.assertEquals("Wrong consensus timestamp!",
+							Assertions.assertEquals(
 									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
-									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
 
-							Assert.assertEquals("Wrong transaction valid start!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
 
-							Assert.assertEquals("Wrong record account ID!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getAccountID(),
-									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
 
-							Assert.assertTrue("Transaction not scheduled!",
-									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
 
-							Assert.assertEquals("Wrong schedule ID!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getReceipt().getScheduleID(),
-									triggeredTx.getResponseRecord().getScheduleRef());
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
 						}),
 						getTokenInfo(A_TOKEN)
 								.hasTotalSupply(91)
