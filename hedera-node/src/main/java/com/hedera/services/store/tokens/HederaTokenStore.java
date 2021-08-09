@@ -569,7 +569,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
 
-	void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
 		throwIfKnownTreasuryIsMissing(aId);
 		knownTreasuries.get(aId).remove(tId);
 		if (knownTreasuries.get(aId).isEmpty()) {
@@ -639,22 +639,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		ids.reclaimLastId();
 		resetPendingCreation();
-	}
-
-	@Override
-	public ResponseCodeEnum delete(TokenID tId) {
-		var outcome = TokenStore.super.delete(tId);
-		if (outcome != OK) {
-			return outcome;
-		}
-
-		var treasury = tokens.get().get(fromTokenId(tId)).treasury().toGrpcAccountId();
-		var tokensServed = knownTreasuries.get(treasury);
-		tokensServed.remove(tId);
-		if (tokensServed.isEmpty()) {
-			knownTreasuries.remove(treasury);
-		}
-		return OK;
 	}
 
 	@Override

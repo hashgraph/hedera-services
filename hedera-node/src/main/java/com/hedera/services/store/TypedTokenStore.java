@@ -87,6 +87,7 @@ public class TypedTokenStore {
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
+	private final LegacyStore delegate;
 
 	public TypedTokenStore(
 			AccountStore accountStore,
@@ -95,7 +96,8 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
-			UniqTokenViewsManager uniqTokenViewsManager
+			UniqTokenViewsManager uniqTokenViewsManager,
+            LegacyStore delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -104,8 +106,9 @@ public class TypedTokenStore {
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
 
-		this.backingTokenRels = backingTokenRels;
-	}
+        this.backingTokenRels = backingTokenRels;
+        this.delegate = delegate;
+    }
 
 	/**
 	 * Returns the number of NFTs currently in the ledger state. (That is, the
@@ -313,6 +316,14 @@ public class TypedTokenStore {
 		if (token.hasRemovedUniqueTokens()) {
 			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
+
+		/* Only needed during HTS refactor.
+		Will be removed once all operations that refer to the knownTreasuries in-memory structure are refactored */
+		if (token.isDeleted()) {
+			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
+			final TokenID mutatedToken = token.getId().asGrpcToken();
+			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
+		}
 		transactionRecordService.includeChangesToToken(token);
 	}
 
@@ -361,7 +372,8 @@ public class TypedTokenStore {
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
-	}
+        mutableToken.setDeleted(token.isDeleted());
+    }
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
 		if (_autoRenewId != null) {
@@ -381,7 +393,8 @@ public class TypedTokenStore {
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setWipeKey(immutableToken.getWipeKey());
-		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+        token.setAdminKey(immutableToken.getAdminKey());
+        token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
@@ -403,4 +416,9 @@ public class TypedTokenStore {
 		final var accountId = rel.getAccount().getId();
 		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
 	}
+
+    @FunctionalInterface
+    public interface LegacyStore {
+        void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
+    }
 }
