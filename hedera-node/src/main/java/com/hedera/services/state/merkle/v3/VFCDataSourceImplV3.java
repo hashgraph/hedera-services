@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.v3;
 
 import com.hedera.services.state.merkle.v3.files.*;
+import com.hedera.services.state.merkle.v3.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 import com.swirlds.common.crypto.DigestType;
@@ -26,26 +27,42 @@ import static java.nio.ByteBuffer.allocateDirect;
 /**
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
  *
- * @param <K>
- * @param <V>
+ * @param <K> type for keys
+ * @param <V> type for values
  */
 public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     private final static int HASH_SIZE = Integer.BYTES+ DigestType.SHA_384.digestLength(); // TODO remove please for something better
+    /** The size in bytes for serialized key objects */
     private final int keySizeBytes;
+    /** The size in bytes of serialized value objects */
     private final int valueSizeBytes;
+    /** Constructor for creating new key objects during de-serialization */
     private final Supplier<K> keyConstructor;
+    /** Constructor for creating new value objects during de-serialization */
     private final Supplier<V> valueConstructor;
+    /** We have an optimized mode when the keys can be represented by a single long */
     private final boolean isLongKeyMode;
+    /**
+     * In memory off-heap store for internal node hashes. This data is never stored on disk so on load from disk, this
+     * will be empty. That should cause all internal node hashes to have to be computed on the first round which will be
+     * expensive. TODO is it worth saving this to disk on close?
+     */
     private final OffHeapHashList hashStore = new OffHeapHashList();
+    /** In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys are longs */
     private final OffHeapLongList longKeyToPath;
+    /** Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have complex keys. */
     private final HalfDiskHashMap<K> objectKeyToPath;
+    /** Mixed disk and off-heap memory store for path to leaf key, hash and value */
     private final MemoryIndexDiskKeyValueStore pathToKeyHashValue;
+    /** Thread local reusable buffer for reading keys */
     private final ThreadLocal<ByteBuffer> leafKey;
+    /** Thread local reusable buffer for reading key, hash and value sets */
     private final ThreadLocal<ByteBuffer> keyHashValue;
+    /** ScheduledThreadPool for executing merges */
     private final ScheduledThreadPoolExecutor mergingSeScheduledThreadPoolExecutor;
 
     /**
-     * Create new VFCDataSourceImplV3
+     * Create new VFCDataSourceImplV3 with merging enabled
      *
      * @param keySizeBytes the size of key when serialized in bytes
      * @param keyConstructor constructor for creating keys for deserialization
@@ -77,17 +94,26 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         this.valueConstructor = valueConstructor;
         this.leafKey = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
         this.keyHashValue = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes+HASH_SIZE+this.valueSizeBytes));
+        final LoadedDataCallback loadedDataCallback;
         if (keySizeBytes == Long.BYTES) {
             isLongKeyMode = true;
             longKeyToPath = new OffHeapLongList();
             objectKeyToPath = null;
+            loadedDataCallback = (path, dataLocation, keyHashValueData) -> {
+                // read key from keyHashValueData, as we are in isLongKeyMode mode then the key is a single long
+                long key = keyHashValueData.getLong(0);
+                // update index
+                longKeyToPath.put(key,path);
+            };
         } else {
             isLongKeyMode = false;
             longKeyToPath =  null;
             objectKeyToPath = new HalfDiskHashMap<>(maxNumOfKeys,keySizeBytes,keyConstructor,storageDir,"objectKeyToPath");
+            // we do not need callback as HalfDiskHashMap loads its own data from disk
+            loadedDataCallback = null;
         }
         final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes;
-        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSize);
+        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSize,loadedDataCallback);
         // If merging is enabled then merge all data files every 30 seconds, TODO this is just a initial implementation
         if (mergingEnabled) {
             ThreadGroup mergingThreadGroup = new ThreadGroup("Merging Threads");
@@ -262,16 +288,26 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         return hashStore.get(path);
     }
 
-    //==================================================================================================================
-    // Legacy API methods
-
     /**
-     * Close all data stores
+     * Wait for any merges to finish and then close all data stores.
      */
     @Override
     public void close() throws IOException {
-        pathToKeyHashValue.close();
+        try {
+            mergingSeScheduledThreadPoolExecutor.shutdown();
+            boolean finishedWithoutTimeout = mergingSeScheduledThreadPoolExecutor.awaitTermination(5,TimeUnit.MINUTES);
+            if (!finishedWithoutTimeout)
+                throw new IOException("Timeout while waiting for merge to finish.");
+        } catch (InterruptedException e) {
+            throw new IOException("Interrupted while waiting for merge to finish.",e);
+        } finally {
+            objectKeyToPath.close();
+            pathToKeyHashValue.close();
+        }
     }
+
+    //==================================================================================================================
+    // Legacy API methods
 
     /**
      * Load leaf's value

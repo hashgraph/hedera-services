@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 
 import java.io.IOException;
@@ -20,21 +21,31 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     private final OffHeapLongList index = new OffHeapLongList();
     /** On disk set of DataFiles that contain our key/value pairs */
     private final DataFileCollection fileCollection;
+    /**
+     * The name for the data store, this allows more than one data store in a single directory. Also, useful for
+     * identifying what files are used by what part of the code.
+     */
     private final String storeName;
 
-    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int dataValueSizeBytes) throws IOException {
+    /**
+     * Construct a new MemoryIndexDiskKeyValueStore
+     *
+     * @param storeDir The directory to store data files in
+     * @param storeName The name for the data store, this allows more than one data store in a single directory.
+     * @param dataValueSizeBytes the size in bytes for data values being stored. It can be set to
+     *                           DataFileCommon.VARIABLE_DATA_SIZE if you want to store variable size data values.
+     * @param loadedDataCallback call back for handing loaded data from existing files on startup. Can be null if not needed.
+     * @throws IOException
+     */
+    public MemoryIndexDiskKeyValueStore(Path storeDir, String storeName, int dataValueSizeBytes,
+                                        LoadedDataCallback loadedDataCallback) throws IOException {
         this.storeName = storeName;
         // create store dir
         Files.createDirectories(storeDir);
         // create file collection
-        fileCollection = new DataFileCollection(storeDir,storeName,dataValueSizeBytes, new DataFileReaderFactory() {
-            public DataFileReader newDataFileReader(Path path) throws IOException {
-                return new DataFileReaderThreadLocal(path);
-            }
-
-            public DataFileReader newDataFileReader(Path path, DataFileMetadata metadata) throws IOException {
-                return new DataFileReaderThreadLocal(path, metadata);
-            }
+        fileCollection = new DataFileCollection(storeDir,storeName,dataValueSizeBytes, (key, dataLocation, dataValue) -> {
+            index.put(key,dataLocation);
+            if (loadedDataCallback != null) loadedDataCallback.newIndexEntry(key,dataLocation,dataValue);
         });
     }
 

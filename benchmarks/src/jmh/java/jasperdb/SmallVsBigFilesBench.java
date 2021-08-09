@@ -72,11 +72,13 @@ public class SmallVsBigFilesBench {
         // create 1Tb of data
         Path dataDir = Path.of("jasperdb_fs"+fileSizeGb+"_bs"+ dataValueSize);
         if (Files.isDirectory(dataDir)) {
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize, dataFileFactory);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize,
+                    null, dataFileFactory);
         } else { // new
             Files.createDirectories(dataDir);
             //
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize, dataFileFactory);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", dataValueSize,
+                    null, dataFileFactory);
             // create some random data to write
             ByteBuffer dataBuffer = ByteBuffer.allocate(dataValueSize);
             new Random(123456).nextBytes(dataBuffer.array());
