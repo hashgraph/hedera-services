@@ -28,6 +28,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -52,6 +54,8 @@ import static java.util.concurrent.CompletableFuture.runAsync;
  * and an account owning an NFT because it is the designated treasury for the NFT's token type.
  */
 public class UniqTokenViewsManager {
+	private static final Logger log = LogManager.getLogger(UniqTokenViewsManager.class);
+
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
@@ -237,9 +241,27 @@ public class UniqTokenViewsManager {
 	) {
 		if (isUsingTreasuryWildcards()) {
 			return new CompletableFuture<?>[] {
-					runAsync(() -> rebuildNftsByType(tokens, nfts)),
-					runAsync(() -> rebuildTreasuryNftsByType(tokens, nfts)),
-					runAsync(() -> rebuildNonTreasuryNftsByOwner(tokens, nfts))
+					runAsync(() -> {
+						log.info(" - Started rebuilding NFTs by type in {}",
+								Thread.currentThread().getName());
+						rebuildNftsByType(tokens, nfts);
+						log.info(" - Finished rebuilding NFTs by type in {}",
+								Thread.currentThread().getName());
+					}),
+					runAsync(() -> {
+						log.info(" - Started rebuilding treasury NFTs by type in {}",
+								Thread.currentThread().getName());
+						rebuildTreasuryNftsByType(tokens, nfts);
+						log.info(" - Finished rebuilding treasury NFTs in {}",
+								Thread.currentThread().getName());
+					}),
+					runAsync(() -> {
+						log.info(" - Started rebuilding non-treasury NFTs by owner in {}",
+								Thread.currentThread().getName());
+						rebuildNonTreasuryNftsByOwner(tokens, nfts);
+						log.info(" - Finished rebuilding non-treasury NFTs by owner in {}",
+								Thread.currentThread().getName());
+					})
 			};
 		} else {
 			return new CompletableFuture<?>[] {
