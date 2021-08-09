@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,11 +36,11 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
     private final Exchanger<VirtualMap<K, V>> releaseExchanger = new Exchanger<>();
 
     /** This thread will hash the virtual map (which has a bunch of additional background threads) */
-    private final ExecutorService hashingService = Executors.newSingleThreadExecutor(threadFactory("HashingService"));
+    private final ExecutorService hashingService = Executors.newSingleThreadExecutor(threadFactory("HashingService", null));
     /** This thread will release the map and pass the map to the archive service */
-    private final ExecutorService releaseService = Executors.newSingleThreadExecutor(threadFactory("ReleaseService"));
+    private final ExecutorService releaseService = Executors.newSingleThreadExecutor(threadFactory("ReleaseService", null));
     /** This thread will archive the most recent map once per minute (the others it throws away) */
-    private final ScheduledExecutorService archiveService = Executors.newSingleThreadScheduledExecutor(threadFactory("ArchiveService"));
+    private final ScheduledExecutorService archiveService = Executors.newSingleThreadScheduledExecutor(threadFactory("ArchiveService", null));
 
     /**
      * This future is created by the hashing thread and passed back to the handle transaction thread via
@@ -72,6 +72,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         // we start the process over again.
         final var masterMap = new AtomicReference<VirtualMap<K, V>>(null);
         final var archiveStartTime = new AtomicLong(System.currentTimeMillis());
+        final var finishedArchiving = new AtomicBoolean(true);
         releaseService.submit(new Task(() -> {
             final var map = releaseExchanger.exchange(null);
             synchronized (masterMap) {
@@ -82,9 +83,9 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                 masterMap.set(map);
             }
 
-            while (System.currentTimeMillis() - archiveStartTime.get() > 10*1000) {
+            while (System.currentTimeMillis() - archiveStartTime.get() > 10*1000 && !finishedArchiving.get()) {
                 try{
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                 } catch (InterruptedException ignored) { }
             }
         }));
@@ -93,6 +94,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         archiveService.execute(() -> {
             //noinspection InfiniteLoopStatement
             while (true) {
+                finishedArchiving.set(false);
                 var time = System.currentTimeMillis();
                 if (time - archiveStartTime.get() > 10*1000) {
                     archiveStartTime.set(time);
@@ -104,6 +106,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
 
                         if (map != null) {
                             map.archive();
+                            finishedArchiving.set(true);
                         }
                     } catch (Throwable th) {
                         th.printStackTrace();
@@ -133,9 +136,9 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         }
     }
 
-    private ThreadFactory threadFactory(String namePrefix) {
+    public static ThreadFactory threadFactory(String namePrefix, ThreadGroup group) {
         return r -> {
-            Thread th = new Thread(r);
+            Thread th = group == null ? new Thread(r) : new Thread(group, r);
             th.setName(namePrefix);
             th.setDaemon(true);
             th.setUncaughtExceptionHandler((t, e) -> {
