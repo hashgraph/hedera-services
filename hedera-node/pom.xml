@@ -274,6 +274,10 @@
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-virtualmap</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
     </dependency>
     <dependency>
