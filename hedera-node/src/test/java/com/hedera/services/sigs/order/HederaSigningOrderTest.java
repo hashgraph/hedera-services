@@ -179,10 +179,12 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_COLLECTOR;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_TREASURY;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
@@ -1459,6 +1461,20 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
+	void getsTokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
 	void getsTokenCreateCustomFixedFeeAndCollectorSigReq() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
@@ -1470,6 +1486,20 @@ class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey()));
 	}
 
 	@Test

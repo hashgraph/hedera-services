@@ -595,11 +595,20 @@ public class HederaSigningOrder {
 				required);
 		for (var customFee : op.getCustomFeesList()) {
 			final var collector = customFee.getFeeCollectorAccountId();
-			/* A fractional fee collector must always sign a TokenCreate, since it is
-			automatically associated to the newly created token. */
-			final var couldAddCollector = customFee.hasFixedFee()
-					? addAccountIfReceiverSigRequired(collector, required)
-					: addAccount(collector, required, true);
+			/* A fractional fee collector and a collector for a fixed fee denominated
+			in the units of the newly created token both must always sign a TokenCreate,
+			since these are automatically associated to the newly created token. */
+			boolean couldAddCollector;
+			if (customFee.hasFixedFee()) {
+				final var fixedFee = customFee.getFixedFee();
+				final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+						&& fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+				couldAddCollector = addAccount(collector, required, alwaysAdd);
+			} else if (customFee.hasFractionalFee()) {
+				couldAddCollector = addAccount(collector, required, true);
+			} else {
+				couldAddCollector = true;
+			}
 			if (!couldAddCollector) {
 				return factory.forMissingFeeCollector();
 			}
