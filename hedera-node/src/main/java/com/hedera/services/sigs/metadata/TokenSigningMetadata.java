@@ -22,13 +22,12 @@ package com.hedera.services.sigs.metadata;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.FcCustomFee;
 
 import java.util.Optional;
 
 /**
  * Represents metadata about the signing attributes of a Hedera token.
- *
- * @author Michael Tinker
  */
 public class TokenSigningMetadata {
 	private final Optional<JKey> adminKey;
@@ -37,6 +36,7 @@ public class TokenSigningMetadata {
 	private final Optional<JKey> freezeKey;
 	private final Optional<JKey> supplyKey;
 	private final Optional<JKey> feeScheduleKey;
+	private final boolean hasRoyaltyWithFallback;
 
 	private TokenSigningMetadata(
 			Optional<JKey> adminKey,
@@ -44,7 +44,8 @@ public class TokenSigningMetadata {
 			Optional<JKey> wipeKey,
 			Optional<JKey> freezeKey,
 			Optional<JKey> supplyKey,
-			Optional<JKey> feeScheduleKey
+			Optional<JKey> feeScheduleKey,
+			boolean hasRoyaltyWithFallback
 	) {
 		this.adminKey = adminKey;
 		this.kycKey = kycKey;
@@ -52,16 +53,31 @@ public class TokenSigningMetadata {
 		this.freezeKey = freezeKey;
 		this.supplyKey = supplyKey;
 		this.feeScheduleKey = feeScheduleKey;
+		this.hasRoyaltyWithFallback = hasRoyaltyWithFallback;
 	}
 
 	public static TokenSigningMetadata from(MerkleToken token) {
+		boolean hasRoyaltyWithFallback = false;
+		final var customFees = token.customFeeSchedule();
+		if (!customFees.isEmpty()) {
+			for (var fee : customFees) {
+				if (fee.getFeeType() != FcCustomFee.FeeType.ROYALTY_FEE) {
+					continue;
+				}
+				if (fee.getRoyaltyFeeSpec().getFallbackFee() != null) {
+					hasRoyaltyWithFallback = true;
+					break;
+				}
+			}
+		}
 		return new TokenSigningMetadata(
 				token.adminKey(),
 				token.kycKey(),
 				token.wipeKey(),
 				token.freezeKey(),
 				token.supplyKey(),
-				token.feeScheduleKey());
+				token.feeScheduleKey(),
+				hasRoyaltyWithFallback);
 	}
 
 	public Optional<JKey> adminKey() {
@@ -86,5 +102,9 @@ public class TokenSigningMetadata {
 
 	public Optional<JKey> optionalFeeScheduleKey() {
 		return feeScheduleKey;
+	}
+
+	public boolean hasRoyaltyWithFallback() {
+		return hasRoyaltyWithFallback;
 	}
 }

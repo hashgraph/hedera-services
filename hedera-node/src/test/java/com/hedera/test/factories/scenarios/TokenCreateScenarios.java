@@ -21,6 +21,7 @@ package com.hedera.test.factories.scenarios;
  */
 
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -132,6 +133,47 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.plusCustomFee(royaltyFee(
 									1, 2,
 									null, collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(royaltyFee(
+									1, 2,
+									null, collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(royaltyFee(
+									1, 2,
+									new FixedFeeSpec(1, new EntityId(2, 3, 4)),
+									collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(royaltyFee(
+									1, 2,
+									new FixedFeeSpec(1, MISSING_ENTITY_ID),
+									collector))
 							.get()
 			));
 		}
