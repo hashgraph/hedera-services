@@ -20,6 +20,7 @@ dependencies {
     jmhImplementation("com.hedera.hashgraph:sdk:2.0.5")
     jmhImplementation("com.swirlds:swirlds-common:0.16.0-alpha.1_vmap")
     jmhImplementation("com.swirlds:swirlds-fcmap:0.16.0-alpha.1_vmap")
+    jmhImplementation("com.swirlds:swirlds-virtualmap:0.16.0-alpha.1_vmap")
     jmhImplementation("com.swirlds:swirlds-logging:0.16.0-alpha.1_vmap")
     jmhRuntimeOnly("io.grpc:grpc-okhttp:1.35.0")
     jmhRuntimeOnly("org.slf4j:slf4j-simple:1.7.29")
