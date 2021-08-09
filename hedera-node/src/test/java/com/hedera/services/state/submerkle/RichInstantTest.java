@@ -48,7 +48,7 @@ class RichInstantTest {
 	SerializableDataInputStream in;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		in = mock(SerializableDataInputStream.class);
 		din = mock(DataInputStream.class);
 

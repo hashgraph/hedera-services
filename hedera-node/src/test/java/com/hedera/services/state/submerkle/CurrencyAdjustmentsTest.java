@@ -61,7 +61,7 @@ class CurrencyAdjustmentsTest {
 	CurrencyAdjustments subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		din = mock(DataInputStream.class);
 
 		subject = new CurrencyAdjustments();

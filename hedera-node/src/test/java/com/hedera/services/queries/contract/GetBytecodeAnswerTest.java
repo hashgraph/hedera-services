@@ -71,7 +71,7 @@ class GetBytecodeAnswerTest {
 	GetBytecodeAnswer subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		contracts = mock(FCMap.class);
 
 		view = mock(StateView.class);

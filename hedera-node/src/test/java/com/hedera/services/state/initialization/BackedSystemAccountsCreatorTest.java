@@ -87,7 +87,7 @@ class BackedSystemAccountsCreatorTest {
 	private BackedSystemAccountsCreator subject;
 
 	@BeforeEach
-	public void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
+	void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
 		genesisKey = JKey.mapKey(Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
 						.addKeys(Key.newBuilder()
