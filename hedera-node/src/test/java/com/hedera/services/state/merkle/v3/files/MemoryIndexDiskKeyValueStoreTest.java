@@ -18,7 +18,7 @@ public class MemoryIndexDiskKeyValueStoreTest {
     public void createDataAndCheck() throws Exception {
         // let's store hashes as easy test class
         Path tempDir = Files.createTempDirectory("DataFileTest");
-        MemoryIndexDiskKeyValueStore store = new MemoryIndexDiskKeyValueStore(tempDir,"MemoryIndexDiskKeyValueStoreTest",HASH_SIZE);
+        MemoryIndexDiskKeyValueStore store = new MemoryIndexDiskKeyValueStore(tempDir,"MemoryIndexDiskKeyValueStoreTest",HASH_SIZE, null);
         // write some batches of data, then check all the contents, we should end up with 3 files
         writeBatch(store,0,1000);
         checkRange(store,0,1000);

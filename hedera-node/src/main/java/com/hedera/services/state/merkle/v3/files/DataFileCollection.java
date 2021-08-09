@@ -29,13 +29,49 @@ public class DataFileCollection {
     private final Path storeDir;
     private final String storeName;
     private final int dataItemValueSize;
+    private final boolean loadedFromExistingFiles;
     private final DataFileReaderFactory dataFileReaderFactory;
     private final AtomicInteger nextFileIndex = new AtomicInteger();
     private final AtomicReference<IndexedFileList> indexedFileList = new AtomicReference<>();
     private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
     private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.now());
 
-    public DataFileCollection(Path storeDir, String storeName, int dataItemValueSize, DataFileReaderFactory dataFileReaderFactory) throws IOException {
+    /**
+     * Construct a new DataFileCollection with the default DataFileReaderFactory
+     *
+     * @param storeDir The directory to store data files
+     * @param storeName Name for the data files, allowing more than one DataFileCollection to share a directory
+     * @param dataItemValueSize the size in bytes for data values being stored. It can be set to
+     *                          DataFileCommon.VARIABLE_DATA_SIZE if you want to store variable size data values.
+     * @param loadedDataCallback call back for rebuilding indexes from existing files, can be null if not needed.
+     * @throws IOException If there was a problem creating new data set or opening existing one
+     */
+    public DataFileCollection(Path storeDir, String storeName, int dataItemValueSize,
+                              LoadedDataCallback loadedDataCallback) throws IOException {
+         this(storeDir,storeName,dataItemValueSize, loadedDataCallback, new DataFileReaderFactory() {
+             public DataFileReader newDataFileReader(Path path) throws IOException {
+                 return new DataFileReaderThreadLocal(path);
+             }
+
+             public DataFileReader newDataFileReader(Path path, DataFileMetadata metadata) throws IOException {
+                 return new DataFileReaderThreadLocal(path, metadata);
+             }
+         });
+    }
+
+    /**
+     * Construct a new DataFileCollection with custom DataFileReaderFactory
+     *
+     * @param storeDir The directory to store data files
+     * @param storeName Name for the data files, allowing more than one DataFileCollection to share a directory
+     * @param dataItemValueSize the size in bytes for data values being stored.
+     * @param loadedDataCallback call back for rebuilding indexes from existing files, can be null if not needed.
+     * @param dataFileReaderFactory factory to use for creating data file readers, allows pluggable reader implementations
+     * @throws IOException If there was a problem creating new data set or opening existing one
+     */
+    public DataFileCollection(Path storeDir, String storeName, int dataItemValueSize,
+                              LoadedDataCallback loadedDataCallback, DataFileReaderFactory dataFileReaderFactory)
+                              throws IOException {
         this.storeDir = storeDir;
         this.storeName = storeName;
         this.dataItemValueSize = dataItemValueSize;
@@ -58,16 +94,43 @@ public class DataFileCollection {
                 indexedFileList.set(IndexedFileList.withExistingFiles(dataFileReaders));
                 // work out what the next index would be, the highest current index plus one
                 nextFileIndex.set(dataFileReaders[dataFileReaders.length-1].getMetadata().getIndex() + 1);
+                // we loaded an existing set of files
+                this.loadedFromExistingFiles = true;
+                // now call indexEntryCallback
+                if (loadedDataCallback != null) {
+                    // now iterate over every file and every key
+                    for(var file:dataFileReaders) {
+                        try (DataFileIterator iterator = new DataFileIterator(file.getPath(), file.getMetadata())) {
+                            while(iterator.next()) {
+                                loadedDataCallback.newIndexEntry(
+                                        iterator.getDataItemsKey(),
+                                        iterator.getDataItemsDataLocation(),
+                                        iterator.getDataItemData());
+                            }
+                        }
+                    }
+                }
             } else {
                 // next file will have index zero as we did not find any files even though the directory existed
                 nextFileIndex.set(0);
+                this.loadedFromExistingFiles = false;
             }
         } else {
             // create store dir
             Files.createDirectories(storeDir);
             // next file will have index zero
             nextFileIndex.set(0);
+            this.loadedFromExistingFiles = false;
         }
+    }
+
+    /**
+     * Get if this data file collection was loaded from an existing set of files or if it was a new empty collection
+     *
+     * @return true if loaded from existing, false if new set of files
+     */
+    public boolean isLoadedFromExistingFiles() {
+        return loadedFromExistingFiles;
     }
 
     /**
@@ -257,6 +320,19 @@ public class DataFileCollection {
     }
 
     // =================================================================================================================
+    // Index Callback Class
+
+    /**
+     * Simple callback class during reading an existing set of files during startup, so that indexes can be built
+     */
+    public interface LoadedDataCallback {
+        /**
+         * Add an index entry for the given key and data location and value
+         */
+        void newIndexEntry(long key, long dataLocation, ByteBuffer dataValue);
+    }
+
+    // =================================================================================================================
     // Private API
 
     /**
@@ -269,7 +345,12 @@ public class DataFileCollection {
         return this.indexedFileList.get().getFile(index);
     }
 
-
+    /**
+     * Create and add a new data file reader to end of indexedFileList
+     *
+     * @param filePath the path for the new data file
+     * @param metadata the metadata for the new file
+     */
     private void addNewDataFileReader(Path filePath, DataFileMetadata metadata) {
         this.indexedFileList.getAndUpdate(
                 currentIndexedFileList -> {
@@ -282,6 +363,12 @@ public class DataFileCollection {
                 });
     }
 
+    /**
+     * Delete a list of files from indexedFileList and then from disk
+     *
+     * @param filesToDelete the list of files to delete
+     * @throws IOException If there was a problem deleting the files
+     */
     private void deleteFiles(List<DataFileReader> filesToDelete) throws IOException {
         // remove files from index
         this.indexedFileList.getAndUpdate(

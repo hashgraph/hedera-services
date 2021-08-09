@@ -50,7 +50,8 @@ public class DataFileReaderCollectionVariableSizeDataTest {
         System.out.println("tempFileDir.toAbsolutePath() = " + tempFileDir.toAbsolutePath());
         deleteDirectoryAndContents(tempFileDir);
         // create collection
-        fileCollection = new DataFileCollection(tempFileDir, "TestDataStore", VARIABLE_DATA_SIZE, dataFileReaderFactory);
+        fileCollection = new DataFileCollection(tempFileDir, "TestDataStore", VARIABLE_DATA_SIZE,
+                null, dataFileReaderFactory);
     }
 
     @Test
@@ -113,7 +114,8 @@ public class DataFileReaderCollectionVariableSizeDataTest {
     @Order(50)
     public void closeAndReopen() throws Exception {
         fileCollection.close();
-        fileCollection = new DataFileCollection(tempFileDir, "TestDataStore", VARIABLE_DATA_SIZE, dataFileReaderFactory);
+        fileCollection = new DataFileCollection(tempFileDir, "TestDataStore", VARIABLE_DATA_SIZE,
+                null, dataFileReaderFactory);
     }
 
     @Test

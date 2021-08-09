@@ -69,11 +69,13 @@ public class PageAlignmentBench {
         // create 1Tb of data
         Path dataDir = Path.of("jasperdb_"+blockSize);
         if (Files.isDirectory(dataDir)) {
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize, dataFileFactory);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize,
+                    null, dataFileFactory);
         } else { // new
             Files.createDirectories(dataDir);
             //
-            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize, dataFileFactory);
+            dataFileCollection = new DataFileCollection(dataDir, "jasperdb", blockSize,
+                    null, dataFileFactory);
             // create some random data to write
             ByteBuffer dataBuffer = ByteBuffer.allocate(blockSize - Long.BYTES - Integer.BYTES);
             new Random(123456).nextBytes(dataBuffer.array());

@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 import com.swirlds.virtualmap.VirtualKey;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -16,7 +17,12 @@ import java.util.function.Supplier;
 
 /**
  * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk. It maps a VKey to a
- * long value.
+ * long value. This allows very large maps with minimal RAM usage and the best performance profile as by using an in
+ * memory index we avoid the need for random disk writes. Random disk writes are horrible performance wise in our
+ * testing.
+ *
+ * This implementation depends on good hashCode() implementation on the keys, if there are too many hash collisions the
+ * performance can get bad.
  *
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
  */
@@ -45,21 +51,22 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     private final ThreadLocal<Bucket<K>> bucket;
     private IntObjectHashMap<ObjectLongHashMap<K>> oneTransactionsData = null;
 
-    public HalfDiskHashMap(long mapSize, int keySize, Supplier<K> keyConstructor, Path storeDir, String storeName) throws IOException {
+    /**
+     * Construct a new HalfDiskHashMap
+     *
+     * @param mapSize The maximum map number of entries. This should be more than big enough to avoid too many key collisions.
+     * @param keySize The key size in bytes when serialized to a ByteBuffer
+     * @param keyConstructor The constructor to use for creating new de-serialized keys
+     * @param storeDir The directory to use for storing data files.
+     * @param storeName The name for the data store, this allows more than one data store in a single directory.
+     * @throws IOException If there was a problem creating or opening a set of data files.
+     */
+    public HalfDiskHashMap(long mapSize, int keySize, Supplier<K> keyConstructor, Path storeDir,
+                           String storeName) throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;
         // create store dir
         Files.createDirectories(storeDir);
-        // create file collection
-        fileCollection = new DataFileCollection(storeDir,storeName,DISK_PAGE_SIZE_BYTES, new DataFileReaderFactory() {
-            public DataFileReader newDataFileReader(Path path) throws IOException {
-                return new DataFileReaderThreadLocal(path);
-            }
-
-            public DataFileReader newDataFileReader(Path path, DataFileMetadata metadata) throws IOException {
-                return new DataFileReaderThreadLocal(path, metadata);
-            }
-        });
         // create bucket index
         bucketIndexToBucketLocation = new OffHeapLongList();
         // calculate number of entries we can store in a disk page
@@ -69,63 +76,102 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         minimumBuckets = (int)Math.ceil(((double)mapSize/LOADING_FACTOR)/entriesPerBucket);
         numOfBuckets = Integer.highestOneBit(minimumBuckets)*2; // nearest greater power of two
         bucket = ThreadLocal.withInitial(() -> new Bucket<>(entrySize, valueOffsetInEntry, entriesPerBucket, keyConstructor));
+        // create file collection
+        fileCollection = new DataFileCollection(storeDir,storeName,DISK_PAGE_SIZE_BYTES,
+                (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key,dataLocation));
     }
 
     /**
      * Merge all read only files
      *
-     * @throws IOException if there was a problem mergeing
+     * @throws IOException if there was a problem merging
      */
     public void mergeAll() throws IOException {
         List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles();
         System.out.println("Starting to merge " + filesToMerge.size()+" files in collection "+storeName);
         fileCollection.mergeOldFiles(moves -> {
             // update index with all moved data
-            moves.forEachKeyValue((key, move) -> {
-                bucketIndexToBucketLocation.put(key, move[1]);
-            });
+            moves.forEachKeyValue((key, move) -> bucketIndexToBucketLocation.put(key, move[1]));
         }, filesToMerge);
     }
 
+    /**
+     * Close this HalfDiskHashMap's data files. Once closed this HalfDiskHashMap can not be reused. You should make
+     * sure you call close before system exit otherwise any files being written might not be in a good state.
+     *
+     * @throws IOException If there was a problem closing the data files.
+     */
     @Override
     public void close() throws IOException {
         fileCollection.close();
     }
 
-    public void startWriting() throws IOException {
+    // =================================================================================================================
+    // Writing API - Single thead safe
+
+    /**
+     * Start a writing session to the map. Each new writing session results in a new data file on disk, so you should
+     * ideally batch up map writes.
+     */
+    public void startWriting() {
         oneTransactionsData = new IntObjectHashMap<>();
     }
 
+    /**
+     * Put a key/value during the current writing session. The value will not be retrievable until it is committed in
+     * the endWriting() call.
+     *
+     * @param key the key to store the value for
+     * @param value the value to store for given key
+     */
+    public void put(K key, long value) {
+        if (key == null) throw new IllegalArgumentException("Can not put a null key");
+        if (oneTransactionsData == null) throw new IllegalStateException("Trying to write to a HalfDiskHashMap when you have not called startWriting().");
+        // store key and value in transaction cache
+        int bucketIndex = computeBucketIndex(hash(key));
+        ObjectLongHashMap<K> bucketMap = oneTransactionsData.getIfAbsentPut(bucketIndex, ObjectLongHashMap::new);
+        bucketMap.put(key,value);
+    }
+
+    /**
+     * End current writing session, committing all puts to data store.
+     *
+     * @throws IOException If there was a problem committing data to store
+     */
     public void endWriting() throws IOException {
         // iterate over transaction cache and save it all to file
         if (oneTransactionsData != null && !oneTransactionsData.isEmpty()) {
             //  write to files
             fileCollection.startWriting();
             // for each changed bucket
-            oneTransactionsData.forEachKeyValue((bucketIndex, bucketMap) -> {
-                try {
-                    long currentBucketLocation = bucketIndexToBucketLocation.get(bucketIndex, NON_EXISTENT_BUCKET);
-                    Bucket<K> bucket = this.bucket.get().clear();
-                    if (currentBucketLocation == NON_EXISTENT_BUCKET) {
-                        // create a new bucket
-                        bucket.setBucketIndex(bucketIndex);
-                    } else {
-                        // load bucket
-                        fileCollection.readData(currentBucketLocation, bucket.bucketBuffer, DataFileReaderAsynchronous.DataToRead.VALUE);
+            try {
+                oneTransactionsData.forEachKeyValue((bucketIndex, bucketMap) -> {
+                    try {
+                        long currentBucketLocation = bucketIndexToBucketLocation.get(bucketIndex, NON_EXISTENT_BUCKET);
+                        Bucket<K> bucket = this.bucket.get().clear();
+                        if (currentBucketLocation == NON_EXISTENT_BUCKET) {
+                            // create a new bucket
+                            bucket.setBucketIndex(bucketIndex);
+                        } else {
+                            // load bucket
+                            fileCollection.readData(currentBucketLocation, bucket.bucketBuffer, DataFileReaderAsynchronous.DataToRead.VALUE);
+                        }
+                        // for each changed key in bucket, update bucket
+                        bucketMap.forEachKeyValue((k,v) -> bucket.putValue(hash(k),k,v));
+                        // save bucket
+                        long bucketLocation;
+                        bucket.bucketBuffer.rewind();
+                        bucketLocation = fileCollection.storeData(bucketIndex, bucket.bucketBuffer);
+                        // update bucketIndexToBucketLocation
+                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                    } catch (IOException e) { // wrap IOExceptions
+                        throw new RuntimeException(e);
                     }
-                    // for each changed key in bucket, update bucket
-                    bucketMap.forEachKeyValue((k,v) -> bucket.putValue(hash(k),k,v));
-                    // save bucket
-                    long bucketLocation;
-                    bucket.bucketBuffer.rewind();
-                    bucketLocation = fileCollection.storeData(bucketIndex, bucket.bucketBuffer);
-                    // update bucketIndexToBucketLocation
-                    bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
-                } catch (Exception e) {
-                    System.err.println("bucketIndex="+bucketIndex);
-                    throw new RuntimeException(e);
-                }
-            });
+                });
+            } catch (RuntimeException e) { // unwrap IOExceptions
+                if (e.getCause() instanceof IOException) throw (IOException) e.getCause();
+                throw e;
+            }
             // close files session
             fileCollection.endWriting(0,numOfBuckets);
         }
@@ -133,16 +179,17 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         oneTransactionsData = null;
     }
 
-    public void put(K key, long value) throws IOException {
-        if (key == null) throw new IllegalArgumentException("Can not put a null key");
-        if (oneTransactionsData == null) throw new IllegalStateException("Trying to write to a HalfDiskHashMap when you have not called startWriting().");
-        // store key and value in transaction cache
-        int bucketIndex = computeBucketIndex(hash(key));
-//        System.out.print(bucketIndex+",");
-        ObjectLongHashMap<K> bucketMap = oneTransactionsData.getIfAbsentPut(bucketIndex, ObjectLongHashMap::new);
-        bucketMap.put(key,value);
-    }
+    // =================================================================================================================
+    // Reading API - Multi thead safe
 
+    /**
+     * Get a value from this map
+     *
+     * @param key The key to get value for
+     * @param notFoundValue the value to return if the key was not found
+     * @return the value retrieved from the map or {notFoundValue} if no value was stored for the given key
+     * @throws IOException If there was a problem reading from the map
+     */
     public long get(K key, long notFoundValue) throws IOException {
         if (key == null) throw new IllegalArgumentException("Can not get a null key");
         int keyHash = hash(key);
@@ -157,6 +204,43 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         }
         return notFoundValue;
     }
+
+    // =================================================================================================================
+    // Debugging Print API
+
+    /** Debug dump stats for this map */
+    public void printStats() {
+        System.out.println("HalfDiskHashMap Stats {");
+        System.out.println("    mapSize = " + mapSize);
+        System.out.println("    minimumBuckets = " + minimumBuckets);
+        System.out.println("    numOfBuckets = " + numOfBuckets);
+        System.out.println("    entriesPerBucket = " + entriesPerBucket);
+        System.out.println("    entrySize = " + entrySize);
+        System.out.println("    valueOffsetInEntry = " + valueOffsetInEntry);
+        System.out.println("}");
+    }
+
+    /** Useful debug method to print the current state of the transaction cache */
+    @SuppressWarnings("unused")
+    public void debugDumpTransactionCache() {
+        System.out.println("=========== TRANSACTION CACHE ==========================");
+        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
+            ObjectLongHashMap<K> bucketMap = oneTransactionsData.get(bucketIndex);
+            if (bucketMap != null) {
+                String tooBig = (bucketMap.size() > entriesPerBucket) ? " TOO MANY! > "+entriesPerBucket : "";
+                System.out.println("bucketIndex ["+bucketIndex+"] , count="+bucketMap.size()+tooBig);
+//            bucketMap.forEachKeyValue((k, l) -> {
+//                System.out.println("        keyHash ["+k.hashCode()+"] bucket ["+(k.hashCode()% numOfBuckets)+"]  key ["+k+"] value ["+l+"]");
+//            });
+            } else {
+                System.out.println("bucketIndex ["+bucketIndex+"] , EMPTY!");
+            }
+        }
+        System.out.println("========================================================");
+    }
+
+    // =================================================================================================================
+    // Private API
 
     /**
      * Computes which bucket a key with the given hash falls. Depends on the fact the numOfBuckets is a power of two.
@@ -192,37 +276,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
-    /** Debug dump stats for this map */
-    public void printStats() {
-        System.out.println("HalfDiskHashMap Stats {");
-        System.out.println("    mapSize = " + mapSize);
-        System.out.println("    minimumBuckets = " + minimumBuckets);
-        System.out.println("    numOfBuckets = " + numOfBuckets);
-        System.out.println("    entriesPerBucket = " + entriesPerBucket);
-        System.out.println("    entrySize = " + entrySize);
-        System.out.println("    valueOffsetInEntry = " + valueOffsetInEntry);
-        System.out.println("}");
-    }
-
-    /** Useful debug method to print the current state of the transaction cache */
-    @SuppressWarnings("unused")
-    public void debugDumpTransactionCache() {
-        System.out.println("=========== TRANSACTION CACHE ==========================");
-        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
-            ObjectLongHashMap<K> bucketMap = oneTransactionsData.get(bucketIndex);
-            if (bucketMap != null) {
-                String tooBig = (bucketMap.size() > entriesPerBucket) ? " TOO MANY! > "+entriesPerBucket : "";
-                System.out.println("bucketIndex ["+bucketIndex+"] , count="+bucketMap.size()+tooBig);
-//            bucketMap.forEachKeyValue((k, l) -> {
-//                System.out.println("        keyHash ["+k.hashCode()+"] bucket ["+(k.hashCode()% numOfBuckets)+"]  key ["+k+"] value ["+l+"]");
-//            });
-            } else {
-                System.out.println("bucketIndex ["+bucketIndex+"] , EMPTY!");
-            }
-        }
-        System.out.println("========================================================");
-    }
-
     /**
      * Class for accessing the data in a bucket. This is designed to be used from a single thread.
      *
@@ -231,7 +284,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
      *  - Count of keys stored
      *  - Long pointer to next bucket if this one is full. TODO implement this
      */
-    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     private static final class Bucket<K extends VirtualKey> {
         private static final int BUCKET_ENTRY_COUNT_OFFSET = Integer.BYTES;
         private static final int NEXT_BUCKET_OFFSET = BUCKET_ENTRY_COUNT_OFFSET + Integer.BYTES;
@@ -358,6 +410,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         }
 
         /** toString for debugging */
+        @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
         @Override
         public String toString() {
             final int entryCount =  getBucketEntryCount();
@@ -378,17 +431,14 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                 e.printStackTrace();
             }
             bucketBuffer.clear();
-            sb.append("} RAW DATA = "+toIntsString(bucketBuffer));
+            bucketBuffer.rewind();
+            IntBuffer intBuf = bucketBuffer.asIntBuffer();
+            int[] array = new int[intBuf.remaining()];
+            intBuf.get(array);
+            bucketBuffer.rewind();
+            sb.append("} RAW DATA = "+ Arrays.toString(array));
             return sb.toString();
         }
 
-        public String toIntsString(ByteBuffer buf) {
-            buf.rewind();
-            IntBuffer intBuf = buf.asIntBuffer();
-            int[] array = new int[intBuf.remaining()];
-            intBuf.get(array);
-            buf.rewind();
-            return Arrays.toString(array);
-        }
     }
 }
