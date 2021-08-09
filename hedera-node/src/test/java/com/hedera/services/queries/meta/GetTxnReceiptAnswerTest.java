@@ -85,7 +85,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void requiresNothing() {
+	void requiresNothing() {
 		// setup:
 		TransactionGetReceiptQuery costAnswerOp = TransactionGetReceiptQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
@@ -104,7 +104,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void rejectsQueryForMissingReceipt() {
+	void rejectsQueryForMissingReceipt() {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId);
 
@@ -119,7 +119,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void returnsDuplicatesIfRequested() {
+	void returnsDuplicatesIfRequested() {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, true);
 		var duplicateReceipts = List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
@@ -140,7 +140,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void shortCircuitsToAnswerOnly() {
+	void shortCircuitsToAnswerOnly() {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId, ResponseType.COST_ANSWER);
 
@@ -160,7 +160,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder().setTransactionGetReceipt(
 				TransactionGetReceiptResponse.newBuilder()
@@ -171,7 +171,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void respectsMetaValidity() {
+	void respectsMetaValidity() {
 		// given:
 		Query sensibleQuery = queryWith(validTxnId);
 
@@ -186,7 +186,7 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void expectsNonDefaultTransactionId() {
+	void expectsNonDefaultTransactionId() {
 		// setup:
 		Query nonsenseQuery = queryWith(TransactionID.getDefaultInstance());
 		Query sensibleQuery = queryWith(validTxnId);
@@ -197,13 +197,13 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.TransactionGetReceipt, subject.canonicalFunction());
 	}
 
 	@Test
-	public void hasNoPayment() {
+	void hasNoPayment() {
 		// expect:
 		assertFalse(subject.extractPaymentFrom(mock(Query.class)).isPresent());
 	}

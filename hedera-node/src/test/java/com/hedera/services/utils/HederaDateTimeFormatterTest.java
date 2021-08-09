@@ -20,16 +20,16 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HederaDateTimeFormatterTest {
+class HederaDateTimeFormatterTest {
 	@Test
-	public void shouldFormatInstantCorrectly() {
+	void shouldFormatInstantCorrectly() {
 		Instant instant = Instant.EPOCH
 				.plus(18500, ChronoUnit.DAYS)
 				.plus(12, ChronoUnit.HOURS)

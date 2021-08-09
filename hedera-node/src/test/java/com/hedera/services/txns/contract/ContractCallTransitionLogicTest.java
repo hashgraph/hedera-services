@@ -48,7 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -56,7 +56,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class ContractCallTransitionLogicTest {
+class ContractCallTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	private long gas = 1_234L;
@@ -88,7 +88,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -97,7 +97,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesBadCall() {
+	void capturesBadCall() {
 		// setup:
 		TransactionRecord callRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -119,7 +119,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
+	void followsHappyPathWithOverrides() {
 		// setup:
 		TransactionRecord callRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -141,7 +141,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -149,7 +149,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeSend() {
+	void rejectsNegativeSend() {
 		// setup:
 		sent = -1;
 
@@ -160,7 +160,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeGas() {
+	void rejectsNegativeGas() {
 		// setup:
 		gas = -1;
 
@@ -171,7 +171,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() {
+	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
@@ -181,7 +181,7 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 
 		given(delegate.perform(any(), any(), any())).willThrow(IllegalStateException.class);

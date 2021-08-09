@@ -26,7 +26,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -45,17 +44,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class FreezeTransitionLogicTest {
+class FreezeTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 
 	private Instant consensusTime;
 	private FreezeTransitionLogic.LegacyFreezer delegate;
@@ -78,112 +76,122 @@ public class FreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenTxnCtx();
 
-		// expect:
 		assertTrue(subject.applicability().test(freezeTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
-	public void capturesBadFreeze() {
-		// setup:
+	void capturesBadFreeze() {
 		TransactionRecord freezeRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
 						.setStatus(INVALID_FREEZE_TRANSACTION_BODY)
 						.build())
 				.build();
-
 		givenTxnCtx();
-		// and:
 		given(delegate.perform(freezeTxn, consensusTime)).willReturn(freezeRec);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(INVALID_FREEZE_TRANSACTION_BODY);
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
-		// setup:
+	void followsHappyPathWithOverrides() {
 		TransactionRecord freezeRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
 						.setStatus(SUCCESS)
 						.build())
 				.build();
-
 		givenTxnCtx();
-		// and:
 		given(delegate.perform(freezeTxn, consensusTime)).willReturn(freezeRec);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenTxnCtx();
 
-		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	public void rejectsInvalidTime() {
-		givenTxnCtx(false, Optional.empty(), Optional.empty());
+	void rejectsInvalidTime() {
+		givenTxnCtx(false, Optional.empty(), Optional.empty(), false);
 
-		// expect:
 		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	public void rejectsInvalidUpdateTarget() {
-		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.feeSchedules())), Optional.empty());
+	void acceptValidFreezeStartTimeStamp() {
+		givenTxnCtx(true, Optional.empty(), Optional.empty(), true);
 
-		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
+	}
+
+
+	@Test
+	void rejectsInvalidFreezeStartTimeStamp() {
+		givenTxnCtx(false, Optional.empty(), Optional.empty(), true);
+
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
+	}
+
+	@Test
+	void rejectsInvalidUpdateTarget() {
+		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.feeSchedules())), Optional.empty(), false);
+
 		assertEquals(INVALID_FILE_ID, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	public void rejectsMissingFileHash() {
-		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty());
+	void rejectsMissingFileHash() {
+		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty(), false);
 
-		// expect:
 		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenTxnCtx();
-
 		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	private void givenTxnCtx() {
-		givenTxnCtx(true, Optional.empty(), Optional.empty());
+		givenTxnCtx(true, Optional.empty(), Optional.empty(), false);
 	}
 
-	private void givenTxnCtx(boolean validTime, Optional<FileID> updateTarget, Optional<ByteString> fileHash) {
-		var txn = TransactionBody.newBuilder()
+	private void givenTxnCtx(
+			final boolean validTime,
+			final Optional<FileID> updateTarget,
+			final Optional<ByteString> fileHash,
+			final boolean useTimeStamp
+	) {
+		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId());
 
-		var op = FreezeTransactionBody.newBuilder();
-		if (validTime) {
-			plusValidTime(op);
+		final var op = FreezeTransactionBody.newBuilder();
+		if (!useTimeStamp) {
+			if (validTime) {
+				plusValidTime(op);
+			} else {
+				plusInvalidTime(op);
+			}
 		} else {
-			plusInvalidTime(op);
+			if (validTime) {
+				setValidFreezeStartTimeStamp(op);
+			} else {
+				setInvalidFreezeStartTimeStamp(op);
+			}
 		}
 		updateTarget.ifPresent(op::setUpdateFile);
 		fileHash.ifPresent(op::setFileHash);
@@ -194,12 +202,26 @@ public class FreezeTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
-	private void plusValidTime(FreezeTransactionBody.Builder op) {
+	private void plusValidTime(final FreezeTransactionBody.Builder op) {
 		op.setStartHour(15).setStartMin(15).setEndHour(15).setEndMin(20);
 	}
 
-	private void plusInvalidTime(FreezeTransactionBody.Builder op) {
+	private void plusInvalidTime(final FreezeTransactionBody.Builder op) {
 		op.setStartHour(24).setStartMin(15).setEndHour(15).setEndMin(20);
+	}
+
+	private void setValidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
+		final var validFreezeStartTime = Instant.now().plusSeconds(120);
+		op.setStartTime(Timestamp.newBuilder()
+				.setSeconds(validFreezeStartTime.getEpochSecond())
+				.setNanos(validFreezeStartTime.getNano()));
+	}
+
+	private void setInvalidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
+		final var inValidFreezeStartTime = Instant.now().minusSeconds(60);
+		op.setStartTime(Timestamp.newBuilder()
+				.setSeconds(inValidFreezeStartTime.getEpochSecond())
+				.setNanos(inValidFreezeStartTime.getNano()));
 	}
 
 	private TransactionID ourTxnId() {

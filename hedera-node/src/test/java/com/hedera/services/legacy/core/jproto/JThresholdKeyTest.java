@@ -32,7 +32,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JThresholdKeyTest {
+class JThresholdKeyTest {
   @Test
   public void isEmpty() {
     final var cut = new JThresholdKey(new JKeyList(), 0);

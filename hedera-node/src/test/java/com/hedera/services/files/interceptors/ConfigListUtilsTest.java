@@ -39,7 +39,7 @@ class ConfigListUtilsTest {
 					.build();
 
 	@Test
-	public void recognizesParseable() {
+	void recognizesParseable() {
 		// given:
 		var nonsense = "NONSENSE".getBytes();
 		var truth = example.toByteArray();
@@ -54,7 +54,7 @@ class ConfigListUtilsTest {
 	}
 
 	@Test
-	public void parsesToDefaultIfInvalid() {
+	void parsesToDefaultIfInvalid() {
 		// expect:
 		Assertions.assertEquals(
 				ServicesConfigurationList.getDefaultInstance(),
@@ -62,13 +62,13 @@ class ConfigListUtilsTest {
 	}
 
 	@Test
-	public void parses() {
+	void parses() {
 		// expect:
 		Assertions.assertEquals(example, uncheckedParse(example.toByteArray()));
 	}
 
 	@Test
-	public void cannotBeConstructed() {
+	void cannotBeConstructed() {
 		// expect:
 		assertThrows(IllegalStateException.class, ConfigListUtils::new);
 	}

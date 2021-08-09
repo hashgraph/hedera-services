@@ -539,28 +539,6 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void deserializeWorksForPre0130() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
-		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, seqNo);
-
-		given(serdes.readNullableInstant(in).toJava()).willReturn(consensusTimeOfLastHandledTxn);
-
-		// when:
-		subject.deserialize(in, MerkleNetworkContext.PRE_RELEASE_0130_VERSION);
-
-		// then:
-		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertSame(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
-		// and:
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-	}
-
-	@Test
 	void deserializeWorksFor0130() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
@@ -710,7 +688,7 @@ class MerkleNetworkContextTest {
 		given(serdes.readNullableInstant(in)).willReturn(null);
 
 		// when:
-		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
+		subject.deserialize(in, MerkleNetworkContext.RELEASE_0150_VERSION);
 
 		// then:
 		assertNull(subject.getConsensusTimeOfLastHandledTxn());

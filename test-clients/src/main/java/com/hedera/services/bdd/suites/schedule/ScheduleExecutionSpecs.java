@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Map;
@@ -1426,7 +1426,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						getTxnRecord(failedTxn).scheduled()
 								.hasPriority(recordWith().status(INVALID_CHUNK_TRANSACTION_ID))
 								.revealingDebitsTo(failureFeesObs::set),
-						assertionsHold((spec, opLog) -> Assert.assertEquals(successFeesObs.get(), failureFeesObs.get()))
+						assertionsHold(
+								(spec, opLog) -> Assertions.assertEquals(successFeesObs.get(), failureFeesObs.get()))
 				);
 	}
 
@@ -1477,7 +1478,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 						getTxnRecord(failedTxn).scheduled()
 								.hasPriority(recordWith().status(INVALID_CHUNK_NUMBER))
 								.revealingDebitsTo(failureFeesObs::set),
-						assertionsHold((spec, opLog) -> Assert.assertEquals(successFeesObs.get(), failureFeesObs.get()))
+						assertionsHold(
+								(spec, opLog) -> Assertions.assertEquals(successFeesObs.get(), failureFeesObs.get()))
 				);
 	}
 
@@ -1522,11 +1524,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 			Map<AccountID, Long> bFees,
 			double allowedPercentDeviation
 	) {
-		Assert.assertEquals(aFees.keySet(), bFees.keySet());
+		Assertions.assertEquals(aFees.keySet(), bFees.keySet());
 		for (var id : aFees.keySet()) {
 			long a = aFees.get(id);
 			long b = bFees.get(id);
-			Assert.assertEquals(100.0, (1.0 * a) / b * 100.0, allowedPercentDeviation);
+			Assertions.assertEquals(100.0, (1.0 * a) / b * 100.0, allowedPercentDeviation);
 		}
 	}
 
@@ -1666,28 +1668,34 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							var triggeredTx = getTxnRecord("createTx").scheduled();
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
-							Assert.assertEquals("Wrong consensus timestamp!",
+							Assertions.assertEquals(
 									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
-									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
 
-							Assert.assertEquals("Wrong transaction valid start!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
 
-							Assert.assertEquals("Wrong record account ID!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getAccountID(),
-									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
 
-							Assert.assertTrue("Transaction not scheduled!",
-									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
 
-							Assert.assertEquals("Wrong schedule ID!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getReceipt().getScheduleID(),
-									triggeredTx.getResponseRecord().getScheduleRef());
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
 
-							Assert.assertTrue("Wrong transfer list!",
+							Assertions.assertTrue(
 									transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec),
-											asId("payingAccount", spec), transferAmount));
+											asId("payingAccount", spec), transferAmount),
+									"Wrong transfer list!");
 						})
 				);
 	}
@@ -1732,9 +1740,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							allRunFor(spec, triggeredTx);
 
-							Assert.assertEquals("Scheduled transaction should not be successful!",
+							Assertions.assertEquals(
 									INSUFFICIENT_PAYER_BALANCE,
-									triggeredTx.getResponseRecord().getReceipt().getStatus());
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction should not be successful!");
 						})
 				);
 	}
@@ -1766,9 +1775,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							allRunFor(spec, triggeredTx);
 
-							Assert.assertEquals("Scheduled transaction should not be successful!",
+							Assertions.assertEquals(
 									INSUFFICIENT_PAYER_BALANCE,
-									triggeredTx.getResponseRecord().getReceipt().getStatus());
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction should not be successful!");
 						})
 				);
 	}
@@ -1804,9 +1814,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							allRunFor(spec, triggeredTx);
 
-							Assert.assertEquals("Scheduled transaction should not be successful!",
+							Assertions.assertEquals(
 									INSUFFICIENT_ACCOUNT_BALANCE,
-									triggeredTx.getResponseRecord().getReceipt().getStatus());
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction should not be successful!");
 						})
 				);
 	}
@@ -1844,7 +1855,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec executionWithInvalidAccountAmountsFails(){
+	public HapiApiSpec executionWithInvalidAccountAmountsFails() {
 		long transferAmount = 100;
 		long senderBalance = 1000L;
 		long payingAccountBalance = 1_000_000L;
@@ -1877,14 +1888,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							allRunFor(spec, triggeredTx);
 
-							Assert.assertEquals("Scheduled transaction should not be successful!",
+							Assertions.assertEquals(
 									INVALID_ACCOUNT_AMOUNTS,
-									triggeredTx.getResponseRecord().getReceipt().getStatus());
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction should not be successful!");
 						})
 				);
 	}
 
-	public HapiApiSpec executionWithTransferListWrongSizedFails(){
+	public HapiApiSpec executionWithTransferListWrongSizedFails() {
 		long transferAmount = 1L;
 		long senderBalance = 1000L;
 		long payingAccountBalance = 1_000_000L;
@@ -1926,14 +1938,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							allRunFor(spec, triggeredTx);
 
-							Assert.assertEquals("Scheduled transaction should not be successful!",
+							Assertions.assertEquals(
 									TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
-									triggeredTx.getResponseRecord().getReceipt().getStatus());
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction should not be successful!");
 						})
 				);
 	}
 
-	public HapiApiSpec executionWithTokenTransferListSizeExceedFails(){
+	public HapiApiSpec executionWithTokenTransferListSizeExceedFails() {
 		String xToken = "XXX";
 		String invalidSchedule = "withMaxTokenTransfer";
 		String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
@@ -1999,31 +2012,38 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							var triggeredTx = getTxnRecord("createTx").scheduled();
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
-							Assert.assertEquals("Scheduled transaction be successful!", SUCCESS,
-									triggeredTx.getResponseRecord().getReceipt().getStatus());
+							Assertions.assertEquals(SUCCESS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus(),
+									"Scheduled transaction be successful!");
 
-							Assert.assertEquals("Wrong consensus timestamp!",
+							Assertions.assertEquals(
 									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
-									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
+									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
+									"Wrong consensus timestamp!");
 
-							Assert.assertEquals("Wrong transaction valid start!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart());
+									triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+									"Wrong transaction valid start!");
 
-							Assert.assertEquals("Wrong record account ID!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getTransactionID().getAccountID(),
-									triggeredTx.getResponseRecord().getTransactionID().getAccountID());
+									triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+									"Wrong record account ID!");
 
-							Assert.assertTrue("Transaction not scheduled!",
-									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
+							Assertions.assertTrue(
+									triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+									"Transaction not scheduled!");
 
-							Assert.assertEquals("Wrong schedule ID!",
+							Assertions.assertEquals(
 									createTx.getResponseRecord().getReceipt().getScheduleID(),
-									triggeredTx.getResponseRecord().getScheduleRef());
+									triggeredTx.getResponseRecord().getScheduleRef(),
+									"Wrong schedule ID!");
 
-							Assert.assertTrue("Wrong transfer list!",
+							Assertions.assertTrue(
 									transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec),
-											asId("payingAccount", spec), transferAmount));
+											asId("payingAccount", spec), transferAmount),
+									"Wrong transfer list!");
 						})
 				);
 	}

@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 
 public class PrivilegedOpsSuite extends HapiApiSuite {
@@ -157,8 +158,10 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec systemAccountUpdatePrivilegesAsExpected() {
+		final var tmpTreasury = "tmpTreasury";
 		return defaultHapiSpec("SystemAccountUpdatePrivilegesAsExpected")
 				.given(
+						newKeyNamed(tmpTreasury),
 						newKeyNamed("new88"),
 						cryptoCreate("civilian")
 				).when(
@@ -181,6 +184,22 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 								.receiverSigRequired(false)
 								.payingWith(GENESIS)
 								.signedBy(GENESIS),
+						cryptoUpdate("0.0.2")
+								.key(tmpTreasury)
+								.payingWith(GENESIS)
+								.signedBy(GENESIS)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						cryptoUpdate("0.0.2")
+								.key(tmpTreasury)
+								.payingWith(GENESIS)
+								.signedBy(GENESIS, tmpTreasury)
+								.notUpdatingRegistryWithNewKey(),
+						cryptoUpdate("0.0.2")
+								.key(GENESIS)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(GENESIS)
+								.signedBy(GENESIS, tmpTreasury)
+								.notUpdatingRegistryWithNewKey(),
 						cryptoUpdate("0.0.88")
 								.key(GENESIS)
 								.payingWith("civilian")

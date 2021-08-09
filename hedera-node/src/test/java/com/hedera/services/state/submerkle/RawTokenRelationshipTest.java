@@ -49,7 +49,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"RawTokenRelationship{token=0.0.123, balance=234, frozen=true, kycGranted=false}",
@@ -57,7 +57,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var identicalSubject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
 		// and:
@@ -73,7 +73,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void grpcConversionRecognizesInapplicable() {
+	void grpcConversionRecognizesInapplicable() {
 		given(token.decimals()).willReturn(decimals);
 
 		// when:
@@ -88,7 +88,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void grpcConversionRecognizesApplicableFrozen() {
+	void grpcConversionRecognizesApplicableFrozen() {
 		given(token.hasFreezeKey()).willReturn(true);
 
 		// when:
@@ -102,7 +102,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void grpcConversionRecognizesApplicableUnfozen() {
+	void grpcConversionRecognizesApplicableUnfozen() {
 		// setup:
 		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false);
 
@@ -119,7 +119,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void grpcConversionRecognizesApplicableKycRevoked() {
+	void grpcConversionRecognizesApplicableKycRevoked() {
 		given(token.hasKycKey()).willReturn(true);
 
 		// when:
@@ -133,7 +133,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void grpcConversionRecognizesApplicableGranted() {
+	void grpcConversionRecognizesApplicableGranted() {
 		// setup:
 		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, true);
 
@@ -151,7 +151,7 @@ class RawTokenRelationshipTest {
 	}
 
 	@Test
-	public void getsId() {
+	void getsId() {
 		// expect:
 		assertEquals(IdUtils.tokenWith(num), subject.id());
 	}

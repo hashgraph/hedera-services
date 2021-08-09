@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import static com.hedera.services.stream.RecordStreamType.RECORD;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RecordStreamTypeTest {
+class RecordStreamTypeTest {
 	public static final File NULL_FILE = null;
 
 	public static final String RECORD_FILE_NAME = "test.rcd";
@@ -49,7 +49,7 @@ public class RecordStreamTypeTest {
 	private static final String IS_STREAM_SIG_FILE_ERROR_MSG = "isStreamSigFile() returns unexpected result";
 
 	@Test
-	public void isStreamFileTest() {
+	void isStreamFileTest() {
 		assertFalse(RECORD.isStreamFile(NULL_FILE), IS_STREAM_FILE_ERROR_MSG);
 
 		assertTrue(RECORD.isStreamFile(RECORD_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
@@ -69,7 +69,7 @@ public class RecordStreamTypeTest {
 	}
 
 	@Test
-	public void isStreamSigFileTest() {
+	void isStreamSigFileTest() {
 		assertFalse(RECORD.isStreamFile(NULL_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
 		assertTrue(RECORD.isStreamSigFile(RECORD_SIG_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
@@ -89,7 +89,7 @@ public class RecordStreamTypeTest {
 	}
 
 	@Test
-	public void getTest() {
+	void getTest() {
 		assertEquals(RecordStreamType.RECORD_DESCRIPTION, RECORD.getDescription());
 		assertEquals(RecordStreamType.RECORD_EXTENSION, RECORD.getExtension());
 		assertEquals(RecordStreamType.RECORD_SIG_EXTENSION, RECORD.getSigExtension());

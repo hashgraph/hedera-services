@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -49,7 +47,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class TxnIdTest {
 	private AccountID payer = IdUtils.asAccount("0.0.75231");
 	private EntityId fcPayer = EntityId.fromGrpcAccountId(payer);
@@ -91,7 +88,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void preV0120DeserializeWorks() throws IOException {
+	void preV0120DeserializeWorks() throws IOException {
 		// setup:
 		subject = unscheduledSubject();
 		// and:
@@ -117,7 +114,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void v0120DeserializeIgnoresNonce() throws IOException {
+	void v0120DeserializeIgnoresNonce() throws IOException {
 		// setup:
 		subject = scheduledSubject();
 		// and:
@@ -146,7 +143,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void v0130DeserializeForgetsNonce() throws IOException {
+	void v0130DeserializeForgetsNonce() throws IOException {
 		// setup:
 		subject = scheduledSubject();
 		// and:
@@ -173,7 +170,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void equalsWorks() {
+	void equalsWorks() {
 		// given:
 		subject = scheduledSubject();
 
@@ -182,7 +179,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void hashCodeWorks() {
+	void hashCodeWorks() {
 		// given:
 		subject = scheduledSubject();
 
@@ -191,7 +188,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// given:
 		subject = scheduledSubject();
 		// and:
@@ -204,7 +201,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void toGrpcWorks() {
+	void toGrpcWorks() {
 		// given:
 		var subject = scheduledSubject();
 		// and:
@@ -215,7 +212,7 @@ class TxnIdTest {
 	}
 
 	@Test
-	public void merkleWorks() {
+	void merkleWorks() {
 		// given:
 		var subject = new TxnId();
 

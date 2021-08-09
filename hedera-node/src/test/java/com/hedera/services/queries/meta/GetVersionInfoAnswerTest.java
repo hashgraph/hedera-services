@@ -74,7 +74,7 @@ class GetVersionInfoAnswerTest {
 	}
 
 	@Test
-	public void getsInvalidResponse() throws Throwable {
+	void getsInvalidResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
 
@@ -89,7 +89,7 @@ class GetVersionInfoAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee);
 
@@ -105,7 +105,7 @@ class GetVersionInfoAnswerTest {
 	}
 
 	@Test
-	public void complainsWhenVersionInfoAvailable() throws Throwable {
+	void complainsWhenVersionInfoAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
@@ -116,7 +116,7 @@ class GetVersionInfoAnswerTest {
 	}
 
 	@Test
-	public void getsVersionInfoWhenAvailable() throws Throwable {
+	void getsVersionInfoWhenAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
@@ -135,7 +135,7 @@ class GetVersionInfoAnswerTest {
 	}
 
 	@Test
-	public void respectsMetaValidity() throws Throwable {
+	void respectsMetaValidity() throws Throwable {
 		// given:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 

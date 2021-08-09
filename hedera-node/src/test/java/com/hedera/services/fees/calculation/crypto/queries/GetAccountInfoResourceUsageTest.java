@@ -87,7 +87,7 @@ class GetAccountInfoResourceUsageTest {
 	}
 
 	@Test
-	public void usesEstimator() {
+	void usesEstimator() {
 		// setup:
 		ArgumentCaptor<ExtantCryptoContext> captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
 
@@ -123,7 +123,7 @@ class GetAccountInfoResourceUsageTest {
 	}
 
 	@Test
-	public void returnsDefaultIfNoSuchAccount() {
+	void returnsDefaultIfNoSuchAccount() {
 		given(view.infoForAccount(queryTarget)).willReturn(Optional.empty());
 
 		// when:
@@ -134,7 +134,7 @@ class GetAccountInfoResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		Query accountInfoQuery = accountInfoQuery(a, COST_ANSWER);
 		Query nonAccountInfoQuery = nonAccountInfoQuery();

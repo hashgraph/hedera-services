@@ -35,7 +35,7 @@ class PureValidationTest {
 	int impossiblyBigNanos = 1_000_000_000;
 
 	@Test
-	public void mapsSensibleTimestamp() {
+	void mapsSensibleTimestamp() {
 		// given:
 		var proto = TxnUtils.timestampFrom(now.getEpochSecond(), now.getNano());
 
@@ -44,7 +44,7 @@ class PureValidationTest {
 	}
 
 	@Test
-	public void coercesTooSmallTimestamp() {
+	void coercesTooSmallTimestamp() {
 		// given:
 		var proto = TxnUtils.timestampFrom(impossiblySmallSecs, impossiblySmallNanos);
 
@@ -53,7 +53,7 @@ class PureValidationTest {
 	}
 
 	@Test
-	public void coercesTooBigTimestamp() {
+	void coercesTooBigTimestamp() {
 		// given:
 		var proto = TxnUtils.timestampFrom(impossiblyBigSecs, impossiblyBigNanos);
 

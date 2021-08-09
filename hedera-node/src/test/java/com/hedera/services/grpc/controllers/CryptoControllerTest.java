@@ -75,7 +75,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsAccountInfoAsExpected() {
+	void forwardsAccountInfoAsExpected() {
 		// when:
 		subject.getAccountInfo(query, queryObserver);
 
@@ -85,7 +85,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetBalanceAsExpected() {
+	void forwardsGetBalanceAsExpected() {
 		// when:
 		subject.cryptoGetBalance(query, queryObserver);
 
@@ -95,7 +95,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetRecordsAsExpected() {
+	void forwardsGetRecordsAsExpected() {
 		// when:
 		subject.getAccountRecords(query, queryObserver);
 
@@ -105,7 +105,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetStakersAsExpected() {
+	void forwardsGetStakersAsExpected() {
 		// when:
 		subject.getStakersByAccountID(query, queryObserver);
 
@@ -115,7 +115,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetLiveHashAsExpected() {
+	void forwardsGetLiveHashAsExpected() {
 		// when:
 		subject.getLiveHash(query, queryObserver);
 
@@ -125,7 +125,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetReceiptAsExpected() {
+	void forwardsGetReceiptAsExpected() {
 		// when:
 		subject.getTransactionReceipts(query, queryObserver);
 
@@ -135,7 +135,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetRecordAsExpected() {
+	void forwardsGetRecordAsExpected() {
 		// when:
 		subject.getTxRecordByTxID(query, queryObserver);
 
@@ -145,7 +145,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsGetFastRecordAsExpected() {
+	void forwardsGetFastRecordAsExpected() {
 		// when:
 		subject.getFastTransactionRecord(query, queryObserver);
 
@@ -155,7 +155,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsTransferAsExpected() {
+	void forwardsTransferAsExpected() {
 		// when:
 		subject.cryptoTransfer(txn, txnObserver);
 
@@ -164,7 +164,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsCreateAsExpected() {
+	void forwardsCreateAsExpected() {
 		// when:
 		subject.createAccount(txn, txnObserver);
 
@@ -173,7 +173,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsDeleteAsExpected() {
+	void forwardsDeleteAsExpected() {
 		// when:
 		subject.cryptoDelete(txn, txnObserver);
 
@@ -182,7 +182,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsUpdateAsExpected() {
+	void forwardsUpdateAsExpected() {
 		// when:
 		subject.updateAccount(txn, txnObserver);
 
@@ -191,7 +191,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsAddLiveHashAsExpected() {
+	void forwardsAddLiveHashAsExpected() {
 		// when:
 		subject.addLiveHash(txn, txnObserver);
 
@@ -200,7 +200,7 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	public void forwardsDeleteLiveHashAsExpected() {
+	void forwardsDeleteLiveHashAsExpected() {
 		// when:
 		subject.deleteLiveHash(txn, txnObserver);
 

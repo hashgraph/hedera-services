@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -140,10 +140,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			Function<Long, Optional<String>> condition = expectedCondition.get().apply(spec);
 			Optional<String> failure = condition.apply(actual);
 			if (failure.isPresent()) {
-				Assert.fail("Bad balance! :: " + failure.get());
+				Assertions.fail("Bad balance! :: " + failure.get());
 			}
 		} else if (expected.isPresent()) {
-			Assert.assertEquals("Wrong balance!", expected.get().longValue(), actual);
+			Assertions.assertEquals(expected.get().longValue(), actual, "Wrong balance!");
 		}
 
 		Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
@@ -158,16 +158,16 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 				var tokenId = asTokenId(tokenBalance.getKey(), spec);
 				String[] expectedParts = tokenBalance.getValue().split("-");
 				Long expectedBalance = Long.valueOf(expectedParts[0]);
-				Assert.assertEquals(String.format(
-						"Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)),
+				Assertions.assertEquals(
 						expectedBalance,
-						actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft());
+						actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft(),
+						String.format("Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
 				if (!"G".equals(expectedParts[1])) {
 					Integer expectedDecimals = Integer.valueOf(expectedParts[1]);
-					Assert.assertEquals(String.format(
-							"Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)),
+					Assertions.assertEquals(
 							expectedDecimals,
-							actualTokenBalances.getOrDefault(tokenId, defaultTb).getRight());
+							actualTokenBalances.getOrDefault(tokenId, defaultTb).getRight(),
+							String.format("Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
 				}
 			}
 		}

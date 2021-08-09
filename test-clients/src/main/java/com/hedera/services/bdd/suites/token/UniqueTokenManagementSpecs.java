@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -227,7 +227,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							var mintNFT = getTxnRecord("should-not-work");
 							allRunFor(spec, mintNFT);
 							var receipt = mintNFT.getResponseRecord().getReceipt();
-							Assert.assertEquals(0, receipt.getNewTotalSupply());
+							Assertions.assertEquals(0, receipt.getNewTotalSupply());
 						})
 				);
 	}
@@ -252,8 +252,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							var mintNFT = getTxnRecord("should-not-work");
 							allRunFor(spec, mintNFT);
 							var receipt = mintNFT.getResponseRecord().getReceipt();
-							Assert.assertEquals(0, receipt.getNewTotalSupply());
-							Assert.assertEquals(0, receipt.getSerialNumbersCount());
+							Assertions.assertEquals(0, receipt.getNewTotalSupply());
+							Assertions.assertEquals(0, receipt.getSerialNumbersCount());
 						})
 				);
 	}
@@ -284,8 +284,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							var mintNFT = getTxnRecord("should-not-appear");
 							allRunFor(spec, mintNFT);
 							var receipt = mintNFT.getResponseRecord().getReceipt();
-							Assert.assertEquals(0, receipt.getNewTotalSupply());
-							Assert.assertEquals(0, receipt.getSerialNumbersCount());
+							Assertions.assertEquals(0, receipt.getNewTotalSupply());
+							Assertions.assertEquals(0, receipt.getSerialNumbersCount());
 						})
 				);
 	}
@@ -313,7 +313,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						UtilVerbs.withOpContext((spec, opLog) -> {
 							var burnTxn = getTxnRecord("burn-failure");
 							allRunFor(spec, burnTxn);
-							Assert.assertEquals(0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
+							Assertions.assertEquals(0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
 						})
 				);
 	}
@@ -340,7 +340,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						UtilVerbs.withOpContext((spec, opLog) -> {
 							var burnTxn = getTxnRecord("burn-failure");
 							allRunFor(spec, burnTxn);
-							Assert.assertEquals(0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
+							Assertions.assertEquals(0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
 						})
 				);
 	}
@@ -742,10 +742,10 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							allRunFor(spec, mintNFT, mintFungible);
 							var nftFee = mintNFT.getResponseRecord().getTransactionFee();
 							var fungibleFee = mintFungible.getResponseRecord().getTransactionFee();
-							Assert.assertNotEquals(
-									"NFT Fee should NOT equal to the Fungible Fee!",
+							Assertions.assertNotEquals(
 									nftFee,
-									fungibleFee);
+									fungibleFee,
+									"NFT Fee should NOT equal to the Fungible Fee!");
 						})
 				);
 	}
@@ -1224,15 +1224,15 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							var mintNft = getTxnRecord("mintTransferTxn");
 							allRunFor(spec, mintNft);
 							var tokenTransferLists = mintNft.getResponseRecord().getTokenTransferListsList();
-							Assert.assertEquals(1, tokenTransferLists.size());
+							Assertions.assertEquals(1, tokenTransferLists.size());
 							tokenTransferLists.stream().forEach(tokenTransferList -> {
-								Assert.assertEquals(1, tokenTransferList.getNftTransfersList().size());
+								Assertions.assertEquals(1, tokenTransferList.getNftTransfersList().size());
 								tokenTransferList.getNftTransfersList().stream().forEach(nftTransfers -> {
-									Assert.assertEquals(AccountID.getDefaultInstance(),
+									Assertions.assertEquals(AccountID.getDefaultInstance(),
 											nftTransfers.getSenderAccountID());
-									Assert.assertEquals(TxnUtils.asId(TOKEN_TREASURY, spec),
+									Assertions.assertEquals(TxnUtils.asId(TOKEN_TREASURY, spec),
 											nftTransfers.getReceiverAccountID());
-									Assert.assertEquals(1L, nftTransfers.getSerialNumber());
+									Assertions.assertEquals(1L, nftTransfers.getSerialNumber());
 								});
 							});
 						}),

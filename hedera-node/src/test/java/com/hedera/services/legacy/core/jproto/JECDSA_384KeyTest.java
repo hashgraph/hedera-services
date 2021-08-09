@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JECDSA_384KeyTest {
+class JECDSA_384KeyTest {
   @Test
   public void emptyJECDSA_384KeyTest() {
     JECDSA_384Key key1 = new JECDSA_384Key(null);

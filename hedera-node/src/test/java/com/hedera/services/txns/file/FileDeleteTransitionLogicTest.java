@@ -48,7 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -109,7 +109,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx);
 
@@ -126,7 +126,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsDeleted() {
+	void detectsDeleted() {
 		givenTxnCtxDeleting(TargetType.DELETED);
 
 		// when:
@@ -137,7 +137,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsMissing() {
+	void detectsMissing() {
 		givenTxnCtxDeleting(TargetType.MISSING);
 
 		// when:
@@ -148,7 +148,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidOnException() {
+	void setsFailInvalidOnException() {
 		givenTxnCtxDeleting(TargetType.VALID);
 		willThrow(new IllegalStateException("Hmm...")).given(hfs).delete(any());
 
@@ -160,7 +160,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void resultIsRespected() {
+	void resultIsRespected() {
 		givenTxnCtxDeleting(TargetType.VALID);
 		// and:
 		given(hfs.delete(any())).willReturn(noAuth);
@@ -173,7 +173,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsImmutableTarget() {
+	void rejectsImmutableTarget() {
 		givenTxnCtxDeleting(TargetType.IMMUTABLE);
 		// and:
 		given(hfs.delete(any())).willReturn(success);
@@ -186,7 +186,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenTxnCtxDeleting(TargetType.VALID);
 
 		// expect:
@@ -195,7 +195,7 @@ class FileDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckRubberstamps() {
+	void syntaxCheckRubberstamps() {
 		// given:
 		var syntaxCheck = subject.semanticCheck();
 

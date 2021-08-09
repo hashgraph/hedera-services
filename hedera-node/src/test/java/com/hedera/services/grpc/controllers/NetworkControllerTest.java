@@ -59,7 +59,7 @@ class NetworkControllerTest {
 	}
 
 	@Test
-	public void forwardsVersionInfoAsExpected() {
+	void forwardsVersionInfoAsExpected() {
 		// when:
 		subject.getVersionInfo(query, queryObserver);
 
@@ -69,7 +69,7 @@ class NetworkControllerTest {
 	}
 
 	@Test
-	public void forwardsUncheckedSubmitAsExpected() {
+	void forwardsUncheckedSubmitAsExpected() {
 		// when:
 		subject.uncheckedSubmit(txn, txnObserver);
 

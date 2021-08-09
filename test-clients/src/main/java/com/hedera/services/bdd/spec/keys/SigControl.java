@@ -22,7 +22,7 @@ package com.hedera.services.bdd.spec.keys;
 
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -83,12 +83,12 @@ public class SigControl implements Serializable {
 	}
 
 	public static SigControl listSigs(SigControl... childControls) {
-		Assert.assertTrue("A list must have at least one child key!", childControls.length > 0);
+		Assertions.assertTrue(childControls.length > 0, "A list must have at least one child key!");
 		return new SigControl(childControls);
 	}
 
 	public static SigControl threshSigs(int M, SigControl... childControls) {
-		Assert.assertTrue("A threshold must have at least one child key!", childControls.length > 0);
+		Assertions.assertTrue(childControls.length > 0, "A threshold must have at least one child key!");
 		return new SigControl(M, childControls);
 	}
 

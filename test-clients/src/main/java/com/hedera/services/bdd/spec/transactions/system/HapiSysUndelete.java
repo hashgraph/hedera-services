@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -65,7 +65,7 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		if (file.isPresent() && contract.isPresent()) {
-			Assert.fail("Ambiguous SystemUndelete---both file and contract present!");
+			Assertions.fail("Ambiguous SystemUndelete---both file and contract present!");
 		}
 		SystemUndeleteTransactionBody opBody = spec
 				.txns()

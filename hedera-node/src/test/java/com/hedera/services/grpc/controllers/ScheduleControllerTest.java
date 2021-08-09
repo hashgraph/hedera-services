@@ -38,7 +38,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSig
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ScheduleControllerTest {
+class ScheduleControllerTest {
     Query query = Query.getDefaultInstance();
     Transaction txn = Transaction.getDefaultInstance();
 

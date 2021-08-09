@@ -42,6 +42,7 @@ import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
+import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
@@ -61,6 +62,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -247,5 +249,10 @@ public class TxnVerbs {
 	}
 	public static HapiContractUpdate contractUpdate(String contract) {
 		return new HapiContractUpdate(contract);
+	}
+
+	/* SYSTEM */
+	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
+		return new HapiFreeze().startAt(freezeStartTime);
 	}
 }

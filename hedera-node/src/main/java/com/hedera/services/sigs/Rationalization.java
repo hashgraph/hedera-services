@@ -21,11 +21,9 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -39,28 +37,47 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
-import static com.hedera.services.sigs.utils.StatusUtils.successFor;
-import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class Rationalization {
-	public final static SigStatusOrderResultFactory IN_HANDLE_SUMMARY_FACTORY =
-			new SigStatusOrderResultFactory(true);
+	private TxnAccessor txnAccessor;
+	private SyncVerifier syncVerifier;
+	private PubKeyToSigBytes pkToSigFn;
+	private HederaSigningOrder keyOrderer;
+	private TxnScopedPlatformSigFactory sigFactory;
 
-	private final TxnAccessor txnAccessor;
-	private final SyncVerifier syncVerifier;
-	private final PubKeyToSigBytes pkToSigFn;
-	private final HederaSigningOrder keyOrderer;
-	private final TxnScopedPlatformSigFactory sigFactory;
-
-	private JKey reqPayerSig = null;
-	private List<JKey> reqOthersSigs = null;
+	private JKey reqPayerSig;
+	private boolean verifiedSync;
+	private List<JKey> reqOthersSigs;
+	private ResponseCodeEnum finalStatus;
 	private List<TransactionSignature> txnSigs;
-	private SigningOrderResult<SignatureStatus> lastOrderResult;
+	private SigningOrderResult<ResponseCodeEnum> lastOrderResult;
+	private List<TransactionSignature> realPayerSigs = new ArrayList<>();
+	private List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
 
-	public Rationalization(
+	public void performFor(
+			TxnAccessor txnAccessor,
+			SyncVerifier syncVerifier,
+			HederaSigningOrder keyOrderer,
+			PubKeyToSigBytes pkToSigFn,
+			TxnScopedPlatformSigFactory sigFactory
+	) {
+		resetFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		execute();
+	}
+
+	public ResponseCodeEnum finalStatus() {
+		return finalStatus;
+	}
+
+	public boolean usedSyncVerification() {
+		return verifiedSync;
+	}
+
+	void resetFor(
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
@@ -74,22 +91,30 @@ public class Rationalization {
 		this.syncVerifier = syncVerifier;
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
+		realPayerSigs.clear();
+		realOtherPartySigs.clear();
+
+		finalStatus = null;
+		verifiedSync = false;
+
+		reqPayerSig = null;
+		reqOthersSigs = null;
+		lastOrderResult = null;
 	}
 
-	public SignatureStatus execute() {
-		var verifiedSync = false;
-		SignatureStatus otherFailure = null;
-		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
+	private void execute() {
+		ResponseCodeEnum otherFailure = null;
 
 		final var payerStatus = expandIn(realPayerSigs, keyOrderer::keysForPayer);
-		if (!SUCCESS.equals(payerStatus.getStatusCode())) {
+		if (payerStatus != OK) {
 			txnAccessor.setSigMeta(RationalizedSigMeta.noneAvailable());
-			return payerStatus;
+			finalStatus = payerStatus;
+			return;
 		}
 		reqPayerSig = lastOrderResult.getPayerKey();
 
 		final var otherPartiesStatus = expandIn(realOtherPartySigs, keyOrderer::keysForOtherParties);
-		if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
+		if (otherPartiesStatus != OK) {
 			otherFailure = otherPartiesStatus;
 		} else {
 			reqOthersSigs = lastOrderResult.getOrderedKeys();
@@ -106,11 +131,7 @@ public class Rationalization {
 
 		makeRationalizedMetaAccessible();
 
-		if (otherFailure != null) {
-			return otherFailure;
-		} else {
-			return verifiedSync ? syncSuccess() : asyncSuccess();
-		}
+		finalStatus = (otherFailure != null) ? otherFailure : OK;
 	}
 
 	private void makeRationalizedMetaAccessible() {
@@ -126,51 +147,95 @@ public class Rationalization {
 		final var requestedSubListEnd = startingAt + realSigs.size();
 		if (requestedSubListEnd <= maxSubListEnd) {
 			var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
-			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
+			/* If all the key material is unchanged from expandSignatures(), we are done */
+			if (allVaryingMaterialEquals(candidateSigs, realSigs)) {
 				return candidateSigs;
 			}
 		}
+		/* Otherwise we must synchronously verify these signatures for the rationalized keys */
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
 	}
 
-	private boolean allStatusesAreKnown(List<TransactionSignature> sigs) {
-		for (final var sig : sigs) {
-			if (sig.getSignatureStatus() == UNKNOWN) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	private SignatureStatus expandIn(
+	private ResponseCodeEnum expandIn(
 			List<TransactionSignature> target,
-			BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
+			BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
 	) {
-		lastOrderResult = keysFn.apply(txnAccessor.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
+		lastOrderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		if (lastOrderResult.hasErrorReport()) {
 			return lastOrderResult.getErrorReport();
 		}
-		final var creation = createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+		final var creation =
+				createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (creation.hasFailed()) {
-			return creation.asSignatureStatus(true, txnAccessor.getTxnId());
+			return creation.asCode();
 		}
 		target.addAll(creation.getPlatformSigs());
-		return successFor(true, txnAccessor);
+		return OK;
 	}
 
-	private SignatureStatus syncSuccess() {
-		return success(SignatureStatusCode.SUCCESS_VERIFY_SYNC);
+	/* --- Only used by unit tests --- */
+	TxnAccessor getTxnAccessor() {
+		return txnAccessor;
 	}
 
-	private SignatureStatus asyncSuccess() {
-		return success(SignatureStatusCode.SUCCESS_VERIFY_ASYNC);
+	SyncVerifier getSyncVerifier() {
+		return syncVerifier;
 	}
 
-	private SignatureStatus success(SignatureStatusCode code) {
-		return new SignatureStatus(
-				code, ResponseCodeEnum.OK,
-				true, txnAccessor.getTxnId(),
-				null, null, null, null);
+	PubKeyToSigBytes getPkToSigFn() {
+		return pkToSigFn;
+	}
+
+	HederaSigningOrder getKeyOrderer() {
+		return keyOrderer;
+	}
+
+	TxnScopedPlatformSigFactory getSigFactory() {
+		return sigFactory;
+	}
+
+	List<TransactionSignature> getRealPayerSigs() {
+		return realPayerSigs;
+	}
+
+	List<TransactionSignature> getRealOtherPartySigs() {
+		return realOtherPartySigs;
+	}
+
+	List<TransactionSignature> getTxnSigs() {
+		return txnSigs;
+	}
+
+	void setReqOthersSigs(List<JKey> reqOthersSigs) {
+		this.reqOthersSigs = reqOthersSigs;
+	}
+
+	List<JKey> getReqOthersSigs() {
+		return reqOthersSigs;
+	}
+
+	void setLastOrderResult(SigningOrderResult<ResponseCodeEnum> lastOrderResult) {
+		this.lastOrderResult = lastOrderResult;
+	}
+
+	SigningOrderResult<ResponseCodeEnum> getLastOrderResult() {
+		return lastOrderResult;
+	}
+
+	void setReqPayerSig(JKey reqPayerSig) {
+		this.reqPayerSig = reqPayerSig;
+	}
+
+	JKey getReqPayerSig() {
+		return reqPayerSig;
+	}
+
+	void setFinalStatus(ResponseCodeEnum finalStatus) {
+		this.finalStatus = finalStatus;
+	}
+
+	void setVerifiedSync(boolean verifiedSync) {
+		this.verifiedSync = verifiedSync;
 	}
 }

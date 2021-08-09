@@ -51,19 +51,19 @@ class PermissionedAccountsRangeTest {
 	}
 
 	@Test
-	public void nullsOnEmptyDescription() {
+	void nullsOnEmptyDescription() {
 		// expect:
 		assertNull(from(""));
 	}
 
 	@Test
-	public void nullsOnNonsense() {
+	void nullsOnNonsense() {
 		// expect:
 		assertNull(from("-1-*"));
 	}
 
 	@Test
-	public void constructsDegenerate() {
+	void constructsDegenerate() {
 		// given:
 		var range = from("12345");
 
@@ -73,7 +73,7 @@ class PermissionedAccountsRangeTest {
 	}
 
 	@Test
-	public void constructsNonDegenerateExplicit() {
+	void constructsNonDegenerateExplicit() {
 		// given:
 		var range = from("12345-54321");
 
@@ -83,7 +83,7 @@ class PermissionedAccountsRangeTest {
 	}
 
 	@Test
-	public void recognizesWildcard() {
+	void recognizesWildcard() {
 		// given:
 		var range = from("12345-*");
 
@@ -93,7 +93,7 @@ class PermissionedAccountsRangeTest {
 	}
 
 	@Test
-	public void nullsOnEmpty() {
+	void nullsOnEmpty() {
 		// expect:
 		assertNull(from("2-1"));
 	}

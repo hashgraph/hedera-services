@@ -59,7 +59,7 @@ class GetBytecodeResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		var applicable = bytecodeQuery(target, COST_ANSWER);
 		var inapplicable = Query.getDefaultInstance();
@@ -70,7 +70,7 @@ class GetBytecodeResourceUsageTest {
 	}
 
 	@Test
-	public void invokesEstimatorAsExpectedForType() {
+	void invokesEstimatorAsExpectedForType() {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);

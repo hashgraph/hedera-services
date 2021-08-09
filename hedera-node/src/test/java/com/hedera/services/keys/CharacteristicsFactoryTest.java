@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.Function;
@@ -43,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class CharacteristicsFactoryTest {
 	FileID target = IdUtils.asFile("0.0.75231");
 	FileID missing = IdUtils.asFile("1.2.3");
@@ -77,20 +74,20 @@ class CharacteristicsFactoryTest {
 	}
 
 	@Test
-	public void usesDefaultForNonFileDelete() {
+	void usesDefaultForNonFileDelete() {
 		// expect:
 		assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(nonFileDelete()));
 	}
 
 	@Test
-	public void usesDefaultForMalformedFileDelete() {
+	void usesDefaultForMalformedFileDelete() {
 		// expect:
 		assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(meaninglessFileDelete()));
 		assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(missingFileDelete()));
 	}
 
 	@Test
-	public void usesAproposForFileDelete() {
+	void usesAproposForFileDelete() {
 		// expect:
 		assertSame(revocationServiceCharacteristics, subject.inferredFor(fileDelete()));
 	}
@@ -117,7 +114,7 @@ class CharacteristicsFactoryTest {
 	private TransactionBody fileDelete() {
 		return TransactionBody.newBuilder()
 				.setFileDelete(FileDeleteTransactionBody.newBuilder()
-					.setFileID(target))
+						.setFileID(target))
 				.build();
 	}
 }

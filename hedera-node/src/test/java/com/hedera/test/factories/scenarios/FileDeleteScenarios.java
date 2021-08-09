@@ -39,5 +39,12 @@ public enum FileDeleteScenarios implements TxnHandlingScenario {
 					newSignedFileDelete(IMMUTABLE_FILE_ID).get()
 			));
 		}
+	},
+	MISSING_FILE_DELETE_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedFileDelete(MISSING_FILE_ID).get()
+			));
+		}
 	}
 }

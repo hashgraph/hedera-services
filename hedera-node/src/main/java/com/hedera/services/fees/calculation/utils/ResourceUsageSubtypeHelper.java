@@ -27,20 +27,13 @@ import java.util.Optional;
 
 /**
  * A helper class used for determining the subtype of the token, involved in fee calculation.
+ * Defaulted to `TOKEN_FUNGIBLE_COMMON` unless its a `NON_FUNGIBLE_UNIQUE` token
  */
 public class ResourceUsageSubtypeHelper {
 	public SubType determineTokenType(Optional<TokenType> tokenType) {
-		if (tokenType.isPresent()) {
-			switch (tokenType.get()) {
-				case FUNGIBLE_COMMON:
-					return SubType.TOKEN_FUNGIBLE_COMMON;
-				case NON_FUNGIBLE_UNIQUE:
-					return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-				default:
-					return SubType.DEFAULT;
-			}
-		} else {
-			return SubType.DEFAULT;
+		if (tokenType.isPresent() && tokenType.get() == TokenType.NON_FUNGIBLE_UNIQUE) {
+			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 		}
+		return SubType.TOKEN_FUNGIBLE_COMMON;
 	}
 }

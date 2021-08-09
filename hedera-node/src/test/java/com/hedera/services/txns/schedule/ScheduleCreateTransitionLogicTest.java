@@ -61,7 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,7 +71,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class ScheduleCreateTransitionLogicTest {
+class ScheduleCreateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private byte[] bodyBytes = TransactionBody.newBuilder()
@@ -144,7 +144,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -153,7 +153,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		// setup:
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
@@ -179,7 +179,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathEvenIfNoNewValidSignatures() {
+	void followsHappyPathEvenIfNoNewValidSignatures() {
 		// setup:
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
@@ -201,7 +201,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsRecreationOfExistingSchedule() {
+	void rejectsRecreationOfExistingSchedule() {
 		// given:
 		givenValidTxnCtx();
 
@@ -224,7 +224,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
+	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
 		// given:
 		givenValidTxnCtx();
 		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
@@ -243,7 +243,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesFailingCreateProvisionally() {
+	void capturesFailingCreateProvisionally() {
 		// given:
 		givenValidTxnCtx();
 
@@ -261,7 +261,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidIfUnhandledException() {
+	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
 		given(store.lookupSchedule(eq(bodyBytes))).willThrow(IllegalArgumentException.class);
@@ -274,7 +274,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnAdminKeySetAsSentinelKeylist() {
+	void failsOnAdminKeySetAsSentinelKeylist() {
 		// setup:
 		invalidAdminKeyIsSentinelKeyList = true;
 		givenCtx(true, false, false);
@@ -284,7 +284,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxOkWithNoAdminKey() {
+	void syntaxOkWithNoAdminKey() {
 		// setup:
 		adminKeyActuallySkipped = true;
 		givenValidTxnCtx();
@@ -294,7 +294,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidAdminKey() {
+	void failsOnInvalidAdminKey() {
 		givenCtx(true, false, false);
 
 		// expect:
@@ -302,7 +302,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidEntityMemo() {
+	void failsOnInvalidEntityMemo() {
 		givenCtx(false, true, false);
 
 		// expect:
@@ -310,7 +310,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidInnerMemo() {
+	void failsOnInvalidInnerMemo() {
 		givenCtx(false, false, true);
 
 		// expect:
@@ -318,7 +318,7 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));

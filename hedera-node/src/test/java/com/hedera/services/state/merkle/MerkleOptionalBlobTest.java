@@ -98,7 +98,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void modifyWorksWithNonEmpty() {
+	void modifyWorksWithNonEmpty() {
 		// when:
 		subject.modify(newStuff);
 
@@ -109,7 +109,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void modifyWorksWithEmpty() {
+	void modifyWorksWithEmpty() {
 		// given:
 		subject = new MerkleOptionalBlob();
 
@@ -121,19 +121,19 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void getDataWorksWithStuff() {
+	void getDataWorksWithStuff() {
 		// expect:
 		assertArrayEquals(stuff, subject.getData());
 	}
 
 	@Test
-	public void getDataWorksWithNoStuff() {
+	void getDataWorksWithNoStuff() {
 		// expect:
 		assertArrayEquals(MerkleOptionalBlob.NO_DATA, new MerkleOptionalBlob().getData());
 	}
 
 	@Test
-	public void emptyHashAsExpected() {
+	void emptyHashAsExpected() {
 		// given:
 		var defaultSubject = new MerkleOptionalBlob();
 
@@ -142,13 +142,13 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void stuffHashDelegates() {
+	void stuffHashDelegates() {
 		// expect;
 		assertEquals(stuffDelegateHash, subject.getHash());
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleOptionalBlob.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleOptionalBlob.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -158,7 +158,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void deserializeWorksWithEmpty() throws IOException {
+	void deserializeWorksWithEmpty() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -174,7 +174,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void serializeWorksWithEmpty() throws IOException {
+	void serializeWorksWithEmpty() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -188,7 +188,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void serializeWorksWithDelegate() throws IOException {
+	void serializeWorksWithDelegate() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -203,7 +203,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void deserializeAbbrevWorksWithDelegate() {
+	void deserializeAbbrevWorksWithDelegate() {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 
@@ -215,7 +215,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void deserializeAbbrevWorksWithoutDelegate() {
+	void deserializeAbbrevWorksWithoutDelegate() {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 
@@ -228,7 +228,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void deserializeWorksWithDelegate() throws IOException {
+	void deserializeWorksWithDelegate() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -244,7 +244,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleOptionalBlob{delegate=" + readableStuffDelegate + "}",
@@ -255,7 +255,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		given(stuffDelegate.copy()).willReturn(stuffDelegate);
 
 		// when:
@@ -267,7 +267,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void deleteDelegatesIfAppropos() {
+	void deleteDelegatesIfAppropos() {
 		// when:
 		subject.release();
 
@@ -276,7 +276,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void doesntDelegateIfMissing() {
+	void doesntDelegateIfMissing() {
 		// given:
 		subject = new MerkleOptionalBlob();
 
@@ -288,7 +288,7 @@ class MerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleOptionalBlob();
 		var two = new MerkleOptionalBlob(stuff);

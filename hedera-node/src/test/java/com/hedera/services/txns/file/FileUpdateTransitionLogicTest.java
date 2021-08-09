@@ -65,7 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -136,7 +136,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntUpdateWaclIfNoNew() {
+	void doesntUpdateWaclIfNoNew() {
 		// setup:
 		HederaFs.UpdateResult res = mock(HederaFs.UpdateResult.class);
 		ArgumentCaptor<HFileMeta> captor = ArgumentCaptor.forClass(HFileMeta.class);
@@ -157,7 +157,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntOverwriteIfNoContents() {
+	void doesntOverwriteIfNoContents() {
 		HederaFs.UpdateResult res = mock(HederaFs.UpdateResult.class);
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY, UpdateTarget.KEY));
 		// and:
@@ -172,7 +172,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void allowsSysAdminToUpdateImmutableSysFile() {
+	void allowsSysAdminToUpdateImmutableSysFile() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.CONTENTS), sysFileTarget);
 		given(txnCtx.activePayer()).willReturn(sysAdmin);
 		// and:
@@ -195,7 +195,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntAllowSysAdminToUpdateImmutableNonSysFile() {
+	void doesntAllowSysAdminToUpdateImmutableNonSysFile() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.CONTENTS), nonSysFileTarget);
 		given(txnCtx.activePayer()).willReturn(sysAdmin);
 		// and:
@@ -218,7 +218,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsUpdatingImmutableContents() {
+	void rejectsUpdatingImmutableContents() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.CONTENTS));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(immutableAttr);
@@ -233,7 +233,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsUpdatingImmutableKey() {
+	void rejectsUpdatingImmutableKey() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(immutableAttr);
@@ -248,7 +248,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void allowsUpdatingExpirationOnly() {
+	void allowsUpdatingExpirationOnly() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.setattr(any(), any()))
@@ -265,7 +265,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntUpdateExpiryIfRetraction() {
+	void doesntUpdateExpiryIfRetraction() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY, UpdateTarget.KEY));
 		fileUpdateTxn = fileUpdateTxn.toBuilder()
 				.setFileUpdate(fileUpdateTxn.getFileUpdate().toBuilder()
@@ -283,7 +283,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void shortCircuitsOnFailedOverwrite() {
+	void shortCircuitsOnFailedOverwrite() {
 		givenTxnCtxUpdating(EnumSet.allOf(UpdateTarget.class));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
@@ -302,7 +302,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx);
 
@@ -328,7 +328,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void transitionValidatesKeyIfPresent() {
+	void transitionValidatesKeyIfPresent() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
 		// and:
 		given(validator.hasGoodEncoding(newWacl)).willReturn(false);
@@ -342,7 +342,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void recoversFromUnrecognizedDetailMessage() {
+	void recoversFromUnrecognizedDetailMessage() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.exists(nonSysFileTarget)).willReturn(true);
@@ -356,7 +356,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void usesFailInvalidOnUnknownFailure() {
+	void usesFailInvalidOnUnknownFailure() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.exists(nonSysFileTarget)).willReturn(true);
@@ -370,7 +370,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void transitionRejectsDeletedFile() {
+	void transitionRejectsDeletedFile() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.exists(nonSysFileTarget)).willReturn(true);
@@ -384,7 +384,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void transitionRejectsMissingFid() {
+	void transitionRejectsMissingFid() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.exists(nonSysFileTarget)).willReturn(false);
@@ -398,7 +398,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void transitionCatchesInvalidExpiryIfPresent() {
+	void transitionCatchesInvalidExpiryIfPresent() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED.toString()))
@@ -412,7 +412,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void transitionCatchesBadlyEncodedKey() {
+	void transitionCatchesBadlyEncodedKey() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
 		// and:
 		willThrow(new IllegalArgumentException(new DecoderException()))
@@ -426,7 +426,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void transitionCatchesOversizeIfThrown() {
+	void transitionCatchesOversizeIfThrown() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.CONTENTS));
 		// and:
 		willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()))
@@ -440,7 +440,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckTestsMemo() {
+	void syntaxCheckTestsMemo() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.MEMO));
 		given(validator.memoCheck(newMemo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
@@ -453,7 +453,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
+	void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 
@@ -467,7 +467,7 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenTxnCtxUpdating(EnumSet.noneOf(UpdateTarget.class));
 
 		// expect:

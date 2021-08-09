@@ -9,7 +9,7 @@ eventsLogDir,                                  /opt/hgcapp/eventsStreams
 eventsLogPeriod,                               5
 lockLogTimeout,                                4000
 maxEventQueueForCons,                          1000
-maxOutgoingSyncs,                              4
+maxOutgoingSyncs,                              6
 numConnections,                                1000
 reconnect.active,                              0
 reconnect.asyncInputStreamTimeoutMilliseconds, 60000

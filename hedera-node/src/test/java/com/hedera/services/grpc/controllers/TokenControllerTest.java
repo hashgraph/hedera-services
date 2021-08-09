@@ -202,7 +202,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	public void forwardsTokenNftInfoAsExpected() {
+	void forwardsTokenNftInfoAsExpected() {
 		// when:
 		subject.getTokenNftInfo(query, queryObserver);
 

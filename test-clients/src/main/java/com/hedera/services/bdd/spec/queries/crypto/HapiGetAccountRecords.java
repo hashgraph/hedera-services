@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -64,15 +64,18 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 		expectation = Optional.of(provider);
 		return this;
 	}
+
 	public HapiGetAccountRecords withLogging(BiConsumer<Logger, List<TransactionRecord>> customLog) {
 		verboseLoggingOn = true;
 		this.customLog = Optional.of(customLog);
 		return this;
 	}
+
 	public HapiGetAccountRecords savingTo(String dirPath) {
 		snapshotDirPath = Optional.of(dirPath);
 		return this;
 	}
+
 	public HapiGetAccountRecords checkingAgainst(String dirPath) {
 		expectationsDirPath = Optional.of(dirPath);
 		return this;
@@ -95,7 +98,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (expectation.isPresent()) {
-			List<TransactionRecord>	actualRecords = response.getCryptoGetAccountRecords().getRecordsList();
+			List<TransactionRecord> actualRecords = response.getCryptoGetAccountRecords().getRecordsList();
 			List<Throwable> errors = expectation.get().assertsFor(spec).errorsIn(actualRecords);
 			rethrowSummaryError(log, "Bad account records!", errors);
 		}
@@ -128,16 +131,16 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 			File countFile = new File(expectationsDir + "/n.txt");
 			CharSource charSource = Files.asCharSource(countFile, Charset.forName("UTF-8"));
 			int n = Integer.parseInt(charSource.readFirstLine());
-			Assert.assertEquals("Bad number of records!", n, records.size());
+			Assertions.assertEquals(n, records.size(), "Bad number of records!");
 			for (int i = 0; i < n; i++) {
 				File recordFile = new File(expectationsDir + "/record" + i + ".bin");
 				ByteSource byteSource = Files.asByteSource(recordFile);
 				TransactionRecord expected = TransactionRecord.parseFrom(byteSource.read());
-				Assert.assertEquals("Wrong record #" + i, expected, records.get(i));
+				Assertions.assertEquals(expected, records.get(i), "Wrong record #" + i);
 			}
 		} catch (Exception e) {
 			log.error("Something amiss with the expected records...", e);
-			Assert.fail("Impossible to meet expectations (on records)!");
+			Assertions.fail("Impossible to meet expectations (on records)!");
 		}
 	}
 
@@ -199,7 +202,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
-		MoreObjects.ToStringHelper helper =  super.toStringHelper()
+		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("account", account);
 		Optional.ofNullable(response).ifPresent(
 				r -> helper.add("records", r.getCryptoGetAccountRecords().getRecordsList().size()));

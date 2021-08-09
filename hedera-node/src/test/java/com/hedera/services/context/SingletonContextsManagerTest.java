@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class SingletonContextsManagerTest {
+class SingletonContextsManagerTest {
 	private final NodeId id = new NodeId(false, 1L);
 
 	Platform platform;
@@ -52,13 +52,13 @@ public class SingletonContextsManagerTest {
 	}
 
 	@Test
-	public void failsFastOnMissingContext() {
+	void failsFastOnMissingContext() {
 		// expect:
 		assertThrows(ContextNotFoundException.class, () -> CONTEXTS.lookup(1L));
 	}
 
 	@Test
-	public void createsExpectedContext() {
+	void createsExpectedContext() {
 		// given:
 		assertFalse(CONTEXTS.isInitialized(1L));
 

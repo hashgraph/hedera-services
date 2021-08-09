@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -32,6 +33,7 @@ import java.util.Optional;
 
 public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactory> {
     private boolean omitAdmin = false;
+    private boolean scheduleNonsense = false;
     private Optional<AccountID> payer = Optional.empty();
     private Transaction scheduled = Transaction.getDefaultInstance();
 
@@ -39,6 +41,11 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
 
     public static ScheduleCreateFactory newSignedScheduleCreate() {
         return new ScheduleCreateFactory();
+    }
+
+    public ScheduleCreateFactory schedulingNonsense() {
+        scheduleNonsense = true;
+        return this;
     }
 
     public ScheduleCreateFactory missingAdmin() {
@@ -73,12 +80,16 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
             op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
         }
         payer.ifPresent(op::setPayerAccountID);
-        try {
-            var accessor = new SignedTxnAccessor(scheduled);
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
-            op.setScheduledTransactionBody(scheduled);
-        } catch (InvalidProtocolBufferException e) {
-            throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
+        if (scheduleNonsense) {
+            op.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
+        } else {
+            try {
+                var accessor = new SignedTxnAccessor(scheduled);
+                var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+                op.setScheduledTransactionBody(scheduled);
+            } catch (InvalidProtocolBufferException e) {
+                throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
+            }
         }
         txn.setScheduleCreate(op);
     }

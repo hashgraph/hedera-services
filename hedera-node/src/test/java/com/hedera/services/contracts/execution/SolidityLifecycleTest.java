@@ -86,7 +86,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void usesSuggestedErrorIfPresent() {
+	void usesSuggestedErrorIfPresent() {
 		receipt.setError("Oops!");
 		given(executor.getErrorCode()).willReturn(CONTRACT_REVERT_EXECUTED);
 		givenNoCreation();
@@ -99,7 +99,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void usesDefaultErrorIfNoneAvailable() {
+	void usesDefaultErrorIfNoneAvailable() {
 		receipt.setError("Oops!");
 		givenNoCreation();
 
@@ -112,7 +112,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void errorsOutIfResultSizeExceeded() {
+	void errorsOutIfResultSizeExceeded() {
 		givenNoCreation();
 		// and:
 		expected = expected.toBuilder()
@@ -130,7 +130,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void pureHappyPathRuns() {
+	void pureHappyPathRuns() {
 		// setup:
 		InOrder inOrder = inOrder(root, executor);
 
@@ -150,7 +150,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void happyPathRuns() {
+	void happyPathRuns() {
 		// setup:
 		InOrder inOrder = inOrder(root, executor);
 
@@ -173,7 +173,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void errorsOutIfCannotPersist() {
+	void errorsOutIfCannotPersist() {
 		givenNoCreation();
 		given(root.flushStorageCacheIfTotalSizeLessThan(maxStorageKb)).willReturn(false);
 
@@ -188,7 +188,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void usesSuggestedError() {
+	void usesSuggestedError() {
 		receipt.setError("Oops!");
 		given(executor.getErrorCode()).willReturn(CONTRACT_REVERT_EXECUTED);
 		givenNoCreation();
@@ -201,7 +201,7 @@ class SolidityLifecycleTest {
 	}
 
 	@Test
-	public void emptiesCacheOnFailure() {
+	void emptiesCacheOnFailure() {
 		receipt.setError("Oops!");
 		givenNoCreation();
 

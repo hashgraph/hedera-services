@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.RequestBuilder;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -244,7 +244,7 @@ public class LargeFileUploadIT extends FileServiceIT {
 			}
 			CommonUtils.nap(WAIT_IN_SEC);
 		}
-		Assert.assertArrayEquals(bytes, content);
+		Assertions.assertArrayEquals(bytes, content);
 		saveFile(content, filePath);
 	}
 

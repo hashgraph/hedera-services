@@ -50,7 +50,7 @@ class StandardExemptionsTest {
 	}
 
 	@Test
-	public void sysAdminPaysNoFees() {
+	void sysAdminPaysNoFees() {
 		given(accessor.getPayer()).willReturn(account(50));
 
 		// expect:
@@ -58,7 +58,7 @@ class StandardExemptionsTest {
 	}
 
 	@Test
-	public void authorizedOpsAreExempt() {
+	void authorizedOpsAreExempt() {
 		given(accessor.getPayer()).willReturn(account(60));
 		given(policies.check(accessor)).willReturn(AUTHORIZED);
 
@@ -67,7 +67,7 @@ class StandardExemptionsTest {
 	}
 
 	@Test
-	public void unnecessaryOpsAreNotExempt() {
+	void unnecessaryOpsAreNotExempt() {
 		given(accessor.getPayer()).willReturn(account(60));
 		given(policies.check(accessor)).willReturn(UNNECESSARY);
 
@@ -76,7 +76,7 @@ class StandardExemptionsTest {
 	}
 
 	@Test
-	public void treasuryPaysNoFees() {
+	void treasuryPaysNoFees() {
 		given(accessor.getPayer()).willReturn(account(2));
 
 		// expect:

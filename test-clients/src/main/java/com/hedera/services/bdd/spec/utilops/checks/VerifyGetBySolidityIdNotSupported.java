@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -35,7 +35,7 @@ public class VerifyGetBySolidityIdNotSupported extends UtilOp {
 		GetBySolidityIDQuery.Builder op = GetBySolidityIDQuery.newBuilder();
 		Query query = Query.newBuilder().setGetBySolidityID(op).build();
 		Response response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getBySolidityID(query);
-		Assert.assertEquals(
+		Assertions.assertEquals(
 				NOT_SUPPORTED,
 				response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
 		return false;

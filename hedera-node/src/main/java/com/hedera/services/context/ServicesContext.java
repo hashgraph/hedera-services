@@ -147,6 +147,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
@@ -162,6 +163,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
@@ -208,8 +210,12 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -366,6 +372,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -388,6 +395,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -400,7 +408,6 @@ import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedPa
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultAccountRetryingLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
@@ -519,6 +526,7 @@ public class ServicesContext {
 	private ScheduleAnswers scheduleAnswers;
 	private InvariantChecks invariantChecks;
 	private TypedTokenStore typedTokenStore;
+	private SignatureWaivers signatureWaivers;
 	private MiscSpeedometers speedometers;
 	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
@@ -597,6 +605,7 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private final StateChildren workingState = new StateChildren();
 	private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
@@ -784,6 +793,13 @@ public class ServicesContext {
 			feeMultiplierSource = new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
 		}
 		return feeMultiplierSource;
+	}
+
+	public SignatureWaivers signatureWaivers() {
+		if (signatureWaivers == null) {
+			signatureWaivers = new PolicyBasedSigWaivers(entityNums(), systemOpPolicies());
+		}
+		return signatureWaivers;
 	}
 
 	public MiscSpeedometers speedometers() {
@@ -1330,14 +1346,7 @@ public class ServicesContext {
 	}
 
 	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
-		var policies = systemOpPolicies();
-		var properties = globalDynamicProperties();
-		return new HederaSigningOrder(
-				entityNums(),
-				lookups,
-				txn -> policies.check(txn, CryptoUpdate) != AUTHORIZED,
-				(txn, function) -> policies.check(txn, function) != AUTHORIZED,
-				properties);
+		return new HederaSigningOrder(lookups, globalDynamicProperties(), signatureWaivers());
 	}
 
 	public StoragePersistence storagePersistence() {
@@ -1352,6 +1361,13 @@ public class ServicesContext {
 			syncVerifier = platform().getCryptography()::verifySync;
 		}
 		return syncVerifier;
+	}
+
+	public BiPredicate<JKey, TransactionSignature> validityTest() {
+		if (validityTest == null) {
+			validityTest = new OnlyIfSigVerifiableValid(syncVerifier());
+		}
+		return validityTest;
 	}
 
 	public PrecheckVerifier precheckVerifier() {
@@ -1786,7 +1802,9 @@ public class ServicesContext {
 
 	public ProcessLogic logic() {
 		if (logic == null) {
-			logic = new AwareProcessLogic(this);
+			final var rationalization = new Rationalization();
+			final var bodySigningFactory = new ReusableBodySigningFactory();
+			logic = new AwareProcessLogic(this, rationalization, bodySigningFactory, validityTest());
 		}
 		return logic;
 	}
