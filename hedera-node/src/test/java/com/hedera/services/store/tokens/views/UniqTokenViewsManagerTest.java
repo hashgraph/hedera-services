@@ -173,28 +173,6 @@ class UniqTokenViewsManagerTest {
 	}
 
 	@Test
-	void treasuryExitWorksWithExplicitOwnersInTxn() {
-		setupNonTreasuryTrackingSubject();
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.treasuryExitNotice(aOneNftId, firstOwner, secondOwner);
-
-		// then:
-		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner, never()).associate(secondOwner.identityCode(), aOneNftId.identityCode());
-
-		// and when:
-		subject.commit();
-
-		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
-	}
-
-	@Test
 	void treasuryExitWorksWithTreasuryWildcards() {
 		setupTreasuryTrackingSubject();
 
@@ -253,28 +231,6 @@ class UniqTokenViewsManagerTest {
 	}
 
 	@Test
-	void treasuryReturnWorksWithTreasuryWildcardsInTxn() {
-		setupTreasuryTrackingSubject();
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.treasuryReturnNotice(aOneNftId, firstOwner, secondOwner);
-
-		// then:
-		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType, never()).associate(aTokenId.identityCode(), aOneNftId.identityCode());
-
-		// and when:
-		subject.commit();
-
-		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
-	}
-
-	@Test
 	void exchangeWorksWithExplicitOwners() {
 		setupNonTreasuryTrackingSubject();
 
@@ -317,27 +273,6 @@ class UniqTokenViewsManagerTest {
 		// then:
 		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
 		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
-	}
-
-	@Test
-	void exchangeWorksWithTreasuryWildcardsViaTxn() {
-		setupTreasuryTrackingSubject();
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.exchangeNotice(aOneNftId, firstOwner, secondOwner);
-		// then:
-		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner, never()).associate(secondOwner.identityCode(), aOneNftId.identityCode());
-
-		// and when:
-		subject.commit();
-
-		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
 	}
 
 	@Test
