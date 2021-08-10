@@ -28,10 +28,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.List;
 
-import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedFractionalChange;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FractionalFeeAssessor {
@@ -64,7 +64,7 @@ public class FractionalFeeAssessor {
 
 			unitsLeft -= assessedAmount;
 			if (unitsLeft < 0) {
-				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+				return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 			}
 			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
 			try {
@@ -73,7 +73,7 @@ public class FractionalFeeAssessor {
 				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 			}
 
-			adjustedChange(collector, denom, assessedAmount, changeManager);
+			adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
 			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
 			accumulator.add(assessed);
 		}

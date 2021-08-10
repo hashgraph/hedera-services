@@ -62,7 +62,7 @@ class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void followsHappyPath() {
+    void followsHappyPath() {
         // given:
         givenValidTxnCtx();
 
@@ -78,7 +78,7 @@ class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void capturesInvalidSchedule() {
+    void capturesInvalidSchedule() {
         // given:
         givenValidTxnCtx();
 
@@ -94,7 +94,7 @@ class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void setsFailInvalidIfUnhandledException() {
+    void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
         given(store.delete(schedule)).willThrow(IllegalArgumentException.class);
@@ -109,7 +109,7 @@ class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void hasCorrectApplicability() {
+    void hasCorrectApplicability() {
         givenValidTxnCtx();
 
         // expect:
@@ -118,7 +118,7 @@ class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void failsOnInvalidSchedule() {
+    void failsOnInvalidSchedule() {
         givenCtx(true);
 
         // expect:
@@ -126,20 +126,20 @@ class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void acceptsValidTxn() {
+    void acceptsValidTxn() {
         givenValidTxnCtx();
 
         assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
     @Test
-    public void rejectsInvalidScheduleId() {
+    void rejectsInvalidScheduleId() {
         givenCtx(true);
 
         assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
-    public void syntaxCheckWorks() {
+    void syntaxCheckWorks() {
         givenValidTxnCtx();
 
         // expect:

@@ -64,7 +64,7 @@ class ServicesTxnManagerTest {
 	ServicesTxnManager subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		accessor = mock(PlatformTxnAccessor.class);
 
 		processLogic = mock(Runnable.class);

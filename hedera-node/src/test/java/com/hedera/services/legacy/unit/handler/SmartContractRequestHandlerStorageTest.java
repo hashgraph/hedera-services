@@ -44,7 +44,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
@@ -70,9 +69,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -84,8 +83,8 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,10 +112,10 @@ import static org.mockito.Mockito.mock;
  */
 
 class SmartContractRequestHandlerStorageTest {
-  public static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
-  public static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
-  public static final String SIMPLE_STORAGE_WITH_EVENTS_BIN = "/testfiles/SimpleStorageWithEvents.bin";
-  public static final int SIMPLE_STORAGE_VALUE = 12345;
+  private static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
+  private static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
+  private static final String SIMPLE_STORAGE_WITH_EVENTS_BIN = "/testfiles/SimpleStorageWithEvents.bin";
+  private static final int SIMPLE_STORAGE_VALUE = 12345;
   private static final long payerAccount = 787L;
   private static final long nodeAccount = 3L;
   private static final long feeCollAccount = 9876L;
@@ -209,8 +208,7 @@ class SmartContractRequestHandlerStorageTest {
             null,
             new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
-    FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
-    fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
+    fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
       payerKeyBytes = CommonUtils.unhex(key);
@@ -326,7 +324,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("createContract: Success")
-  public void createContractWithAdminKey() {
+  void createContractWithAdminKey() {
     KeyPair adminKeyPair = new KeyPairGenerator().generateKeyPair();
     byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
     Key adminPubKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -353,7 +351,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("createContract: No gas")
-  public void createContractNoGas() {
+  void createContractNoGas() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(0L, 0L, null);
 
@@ -369,7 +367,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("createContract: Insufficient gas")
-  public void createContractInsufficientGas() {
+  void createContractInsufficientGas() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
 
@@ -396,7 +394,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("createContract: Invalid initial balance")
-  public void createContractInitialBalance() {
+  void createContractInitialBalance() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(100L, 250000, null);
 
@@ -435,7 +433,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall: Success")
-  public void contractSetCall() {
+  void contractSetCall() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -465,7 +463,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall: Invalid contract ID")
-  public void contractSetCallInvalidID() {
+  void contractSetCallInvalidID() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -493,7 +491,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall: Value proferred to improper call")
-  public void contractSetCallInvalidValue() {
+  void contractSetCallInvalidValue() {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -521,7 +519,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall: Invalid call data")
-  public void contractSetCallInvalidData() {
+  void contractSetCallInvalidData() {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -550,7 +548,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall: Insufficient gas")
-  public void contractSetCallInsufficientGas() {
+  void contractSetCallInsufficientGas() {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -587,7 +585,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractGetCall: Success")
-  public void contractGetCall() throws Exception {
+  void contractGetCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -646,7 +644,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ChildStorage call")
-  public void childStorageCall() throws Exception {
+  void childStorageCall() throws Exception {
     byte[] contractBytes = createFile(CHILD_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -673,7 +671,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall with event")
-  public void contractSetCallWithEvent() throws Exception {
+  void contractSetCallWithEvent() throws Exception {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_WITH_EVENTS_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -712,7 +710,7 @@ class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCallEmptyByteCode: Failure")
-  public void contractSetCallEmptyByteCode() throws StorageKeyNotFoundException {
+  void contractSetCallEmptyByteCode() throws StorageKeyNotFoundException {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -725,7 +723,7 @@ class SmartContractRequestHandlerStorageTest {
     String byteCodePath = FeeCalcUtilsTest.buildPath(
         ADDRESS_PATH, Long.toString(newContractId.getRealmNum()),
         Long.toString(newContractId.getContractNum()));
-    storageWrapper.delete(byteCodePath, 0, 0);
+    storageWrapper.delete(byteCodePath);
     // Call the contract to set value
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeSet(SIMPLE_STORAGE_VALUE));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
@@ -787,7 +785,7 @@ class SmartContractRequestHandlerStorageTest {
   }
 
   @AfterEach
-  public void tearDown() throws Exception {
+  void tearDown() throws Exception {
     try {
       repository.close();
     } catch (Throwable tx) {

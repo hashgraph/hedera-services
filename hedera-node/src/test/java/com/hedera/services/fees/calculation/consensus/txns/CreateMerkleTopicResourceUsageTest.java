@@ -50,7 +50,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // setup:
         TransactionBody createTopicTx = TransactionBody.newBuilder()
                 .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder().build())
@@ -63,7 +63,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void getFeeThrowsExceptionForBadTxBody() {
+    void getFeeThrowsExceptionForBadTxBody() {
         // setup:
         TransactionBody nonCreateTopicTx = TransactionBody.newBuilder().build();
 
@@ -83,7 +83,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             "12345678, 0000000000000000000000000000000000000000000000000000000000000000, 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 3600, 104, 196", // +24 (auto renew account)
             "12345678, 0000000000000000000000000000000000000000000000000000000000000000, 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 7200, 104, 392" // increase duration => increase rbh
     })
-    public void feeDataAsExpected(
+    void feeDataAsExpected(
             String memo,
             @ConvertWith(Ed25519KeyConverter.class) Key adminJKey,
             @ConvertWith(Ed25519KeyConverter.class) Key submitJKey,

@@ -87,7 +87,7 @@ class TxnReceiptTest {
 	}
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		serdes = mock(DomainSerdes.class);
 		mockRates = mock(ExchangeRates.class);
 

@@ -52,125 +52,109 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetAccountNftInfosResourceUsageTest {
-    ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
-    List<ByteString> metadata = List.of(m1, m2);
-    TokenGetAccountNftInfosUsage estimator;
-    Function<Query, TokenGetAccountNftInfosUsage> factory;
-    FeeData expected;
-    AccountID target = IdUtils.asAccount("0.0.123");
-    int start = 0, end = 1;
+	private ByteString m1 = ByteString.copyFromUtf8("metadata1");
+	private ByteString m2 = ByteString.copyFromUtf8("metadata2");
+	private List<ByteString> metadata = List.of(m1, m2);
+	private TokenGetAccountNftInfosUsage estimator;
+	private Function<Query, TokenGetAccountNftInfosUsage> factory;
+	private FeeData expected;
+	private static final AccountID target = IdUtils.asAccount("0.0.123");
+	private int start = 0;
+	private int end = 1;
 
-    StateView view;
-    List<TokenNftInfo> info = List.of(TokenNftInfo.newBuilder()
-                    .setMetadata(m1)
-                    .build(),
-            TokenNftInfo.newBuilder()
-                    .setMetadata(m2)
-                    .build());
+	private StateView view;
+	private List<TokenNftInfo> info = List.of(
+			TokenNftInfo.newBuilder()
+					.setMetadata(m1)
+					.build(),
+			TokenNftInfo.newBuilder()
+					.setMetadata(m2)
+					.build());
 
-    Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
+	private Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
 
-    GetAccountNftInfosResourceUsage subject;
+	private GetAccountNftInfosResourceUsage subject;
 
-    @BeforeEach
-    private void setup() {
-        expected = mock(FeeData.class);
-        view = mock(StateView.class);
-        estimator = mock(TokenGetAccountNftInfosUsage.class);
-        factory = mock(Function.class);
-        given(factory.apply(any())).willReturn(estimator);
+	@BeforeEach
+	private void setup() {
+		expected = mock(FeeData.class);
+		view = mock(StateView.class);
+		estimator = mock(TokenGetAccountNftInfosUsage.class);
+		factory = mock(Function.class);
+		given(factory.apply(any())).willReturn(estimator);
 
-        GetAccountNftInfosResourceUsage.factory = factory;
+		GetAccountNftInfosResourceUsage.factory = factory;
 
-        given(estimator.givenMetadata(any())).willReturn(estimator);
-        given(estimator.get()).willReturn(expected);
+		given(estimator.givenMetadata(any())).willReturn(estimator);
+		given(estimator.get()).willReturn(expected);
 
-        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
+		given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
-        subject = new GetAccountNftInfosResourceUsage();
-    }
+		subject = new GetAccountNftInfosResourceUsage();
+	}
 
-    @Test
-     void recognizesApplicableQuery() {
-        // given:
-        var applicable = tokenGetAccountNftInfosQuery(target, start, end, COST_ANSWER);
-        var inapplicable = Query.getDefaultInstance();
+	@Test
+	void recognizesApplicableQuery() {
+		final var applicable = tokenGetAccountNftInfosQuery(target, start, end, COST_ANSWER);
+		final var inapplicable = Query.getDefaultInstance();
 
-        // expect:
-        assertTrue(subject.applicableTo(applicable));
-        assertFalse(subject.applicableTo(inapplicable));
-    }
+		assertTrue(subject.applicableTo(applicable));
+		assertFalse(subject.applicableTo(inapplicable));
+	}
 
-    @Test
-     void setsInfoInQueryCxtIfPresent() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
+	@Test
+	void setsInfoInQueryCxtIfPresent() {
+		final var queryCtx = new HashMap<String, Object>();
 
-        // when:
-        var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-        // then:
-        assertSame(info, queryCtx.get(ACCOUNT_NFT_INFO_CTX_KEY));
-        assertSame(expected, usage);
-        // and:
-        verify(estimator).givenMetadata(metadata);
-    }
+		assertSame(info, queryCtx.get(ACCOUNT_NFT_INFO_CTX_KEY));
+		assertSame(expected, usage);
+		verify(estimator).givenMetadata(metadata);
+	}
 
-    @Test
-     void onlySetsTokenInfoInQueryCxtIfFound() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
+	@Test
+	void onlySetsTokenInfoInQueryCxtIfFound() {
+		final var queryCtx = new HashMap<String, Object>();
+		given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.empty());
 
-        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.empty());
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-        // when:
-        var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+		assertSame(FeeData.getDefaultInstance(), usage);
+	}
 
-        // then:
-        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
-        // and:
-        assertSame(FeeData.getDefaultInstance(), usage);
-    }
+	@Test
+	void doesntSetTokenInfoInQueryCxtNotFound() {
+		final var queryCtx = new HashMap<String, Object>();
+		given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
-    @Test
-    void doesntSetTokenInfoInQueryCxtNotFound() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view);
 
-        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
+		assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+		verify(estimator).givenMetadata(metadata);
+		assertNotSame(FeeData.getDefaultInstance(), usage);
+	}
 
-        // when:
-        var usage = subject.usageGiven(satisfiableAnswerOnly, view);
+	@Test
+	void doesntSetTokenInfoForAnswerOnlyType() {
+		final var queryCtx = new HashMap<String, Object>();
+		given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
-        // then:
-        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
-        verify(estimator).givenMetadata(metadata);
-        assertNotSame(FeeData.getDefaultInstance(), usage);
-    }
+		final var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
 
-    @Test
-    void doesntSetTokenInfoForAnswerOnlyType() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
+		assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+		assertNotSame(FeeData.getDefaultInstance(), usage);
+	}
 
-        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
-
-        // when:
-        var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
-
-        // then:
-        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
-        assertNotSame(FeeData.getDefaultInstance(), usage);
-    }
-
-    private Query tokenGetAccountNftInfosQuery(AccountID id, long start, long end, ResponseType type) {
-        TokenGetAccountNftInfosQuery.Builder op = TokenGetAccountNftInfosQuery.newBuilder()
-                .setAccountID(id)
-                .setStart(start)
-                .setEnd(end)
-                .setHeader(QueryHeader.newBuilder().setResponseType(type));
-        return Query.newBuilder()
-                .setTokenGetAccountNftInfos(op)
-                .build();
-    }
+	private Query tokenGetAccountNftInfosQuery(AccountID id, long start, long end, ResponseType type) {
+		final var op = TokenGetAccountNftInfosQuery.newBuilder()
+				.setAccountID(id)
+				.setStart(start)
+				.setEnd(end)
+				.setHeader(QueryHeader.newBuilder().setResponseType(type));
+		return Query.newBuilder()
+				.setTokenGetAccountNftInfos(op)
+				.build();
+	}
 }

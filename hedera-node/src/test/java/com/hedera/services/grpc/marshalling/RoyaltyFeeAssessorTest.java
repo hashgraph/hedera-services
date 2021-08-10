@@ -1,5 +1,25 @@
 package com.hedera.services.grpc.marshalling;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -54,7 +74,8 @@ class RoyaltyFeeAssessorTest {
 				FcCustomFee.royaltyFee(1, 2, null, targetCollector));
 
 		// when:
-		final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+		final var result = subject.assessAllRoyalties(
+				trigger, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(OK, result);
@@ -72,7 +93,8 @@ class RoyaltyFeeAssessorTest {
 				FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
 
 		// when:
-		final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+		final var result =
+				subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(OK, result);
@@ -94,13 +116,15 @@ class RoyaltyFeeAssessorTest {
 				FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
 
 		// when:
-		final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+		final var result = subject.assessAllRoyalties(
+				trigger, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(OK, result);
 		// and:
 		verify(htsFeeAssessor).assess(
 				funding,
+				MISSING_ID,
 				FcCustomFee.fixedFee(33, denom, targetCollector),
 				changeManager,
 				accumulator);
@@ -118,7 +142,8 @@ class RoyaltyFeeAssessorTest {
 		given(changeManager.isRoyaltyPaid(nonFungibleTokenId, payer)).willReturn(true);
 
 		// when:
-		final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+		final var result = subject.assessAllRoyalties(
+				trigger, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(OK, result);
@@ -142,7 +167,8 @@ class RoyaltyFeeAssessorTest {
 		given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
 
 		// when:
-		final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+		final var result = subject.assessAllRoyalties(
+				trigger, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(OK, result);
@@ -151,9 +177,9 @@ class RoyaltyFeeAssessorTest {
 		assertEquals(0, reclaimable.get(1).units());
 		// and:
 		verify(fungibleAdjuster).adjustedChange(
-				targetCollector.asId(), MISSING_ID, originalUnits / 2, changeManager);
+				targetCollector.asId(), MISSING_ID, MISSING_ID, originalUnits / 2, changeManager);
 		verify(fungibleAdjuster).adjustedChange(
-				targetCollector.asId(), firstFungibleTokenId, originalUnits / 2, changeManager);
+				targetCollector.asId(), MISSING_ID, firstFungibleTokenId, originalUnits / 2, changeManager);
 		verify(changeManager).isRoyaltyPaid(nonFungibleTokenId, payer);
 		verify(changeManager).markRoyaltyPaid(nonFungibleTokenId, payer);
 		// and:
@@ -175,7 +201,8 @@ class RoyaltyFeeAssessorTest {
 		given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
 
 		// when:
-		final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+		final var result = subject.assessAllRoyalties(
+				trigger, fees, changeManager, accumulator);
 
 		// then:
 		assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
@@ -189,6 +216,7 @@ class RoyaltyFeeAssessorTest {
 
 	private final long originalUnits = 100;
 	private final Id payer = new Id(0, 1, 2);
+	private final Id chargingToken = new Id(0, 1, 2222);
 	private final EntityId otherCollector = new EntityId(10, 9, 8);
 	private final EntityId targetCollector = new EntityId(9, 8, 7);
 	private final Id funding = new Id(0, 0, 98);

@@ -34,7 +34,7 @@ public final class ConverterUtils {
      * @throws ArgumentConversionException  thrown when the input is not of type {@link String}
      * @return input casted as a string
      * */
-    public static String toStringInstance(final Object input)
+    static String toStringInstance(final Object input)
             throws ArgumentConversionException {
         if (!(input instanceof String)) {
             throw new ArgumentConversionException(input + " is not a string");
@@ -56,7 +56,7 @@ public final class ConverterUtils {
      *             the string defining the type of input
      * @throws ArgumentConversionException thrown when the numberOfParts don't match after the split operation
      * */
-    public static String[] getPartsIfValid(
+    static String[] getPartsIfValid(
             final String inputString,
             final int exactNumberOfParts,
             final String delimiter,

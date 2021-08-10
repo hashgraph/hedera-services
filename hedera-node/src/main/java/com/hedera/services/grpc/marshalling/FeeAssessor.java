@@ -34,6 +34,7 @@ import static com.hedera.services.grpc.marshalling.FixedFeeResult.FRACTIONAL_FEE
 import static com.hedera.services.grpc.marshalling.FixedFeeResult.ROYALTY_FEE_ASSESSMENT_PENDING;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -66,16 +67,19 @@ public class FeeAssessor {
 		if (changeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
-		final var feeMeta = customSchedulesManager.managedSchedulesFor(change.getToken());
+		final var chargingToken = change.getToken();
+
+		final var feeMeta = customSchedulesManager.managedSchedulesFor(chargingToken);
 		final var payer = change.getAccount();
 		final var fees = feeMeta.getCustomFees();
 		/* Token treasuries are exempt from all custom fees */
 		if (fees.isEmpty() || feeMeta.getTreasuryId().equals(payer)) {
 			return OK;
 		}
+
 		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
 		final var fixedFeeResult =
-				assessFixedFees(fees, payer, changeManager, accumulator, maxBalanceChanges);
+				assessFixedFees(chargingToken, fees, payer, changeManager, accumulator, maxBalanceChanges);
 		if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 		}
@@ -102,11 +106,12 @@ public class FeeAssessor {
 	}
 
 	private FixedFeeResult assessFixedFees(
-			final List<FcCustomFee> fees,
-			final Id payer,
-			final BalanceChangeManager balanceChangeManager,
-			final List<FcAssessedCustomFee> accumulator,
-			final int maxBalanceChanges
+			Id chargingToken,
+			List<FcCustomFee> fees,
+			Id payer,
+			BalanceChangeManager balanceChangeManager,
+			List<FcAssessedCustomFee> accumulator,
+			int maxBalanceChanges
 	) {
 		var result = ASSESSMENT_FINISHED;
 		for (var fee : fees) {
@@ -119,7 +124,7 @@ public class FeeAssessor {
 				if (fixedSpec.getTokenDenomination() == null) {
 					hbarFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
 				} else {
-					htsFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
+					htsFeeAssessor.assess(payer, chargingToken, fee, balanceChangeManager, accumulator);
 				}
 				if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
 					return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;

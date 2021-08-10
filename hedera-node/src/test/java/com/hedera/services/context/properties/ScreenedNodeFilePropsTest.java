@@ -49,7 +49,7 @@ class ScreenedNodeFilePropsTest {
 	);
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		log = mock(Logger.class);
 		ScreenedNodeFileProps.log = log;
 		ScreenedNodeFileProps.NODE_PROPS_LOC = STD_NODE_PROPS_LOC;

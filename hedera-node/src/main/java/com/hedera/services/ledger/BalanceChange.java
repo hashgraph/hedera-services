@@ -56,12 +56,13 @@ public class BalanceChange {
 	private Id account;
 	private long units;
 	private long originalUnits;
-	private ResponseCodeEnum codeForInsufficientBalance;
 	private long newBalance;
+	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
+	private ResponseCodeEnum codeForInsufficientBalance;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -221,5 +222,13 @@ public class BalanceChange {
 
 	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
 		this.codeForInsufficientBalance = codeForInsufficientBalance;
+	}
+
+	public void setExemptFromCustomFees(boolean exemptFromCustomFees) {
+		this.exemptFromCustomFees = exemptFromCustomFees;
+	}
+
+	public boolean isExemptFromCustomFees() {
+		return exemptFromCustomFees;
 	}
 }

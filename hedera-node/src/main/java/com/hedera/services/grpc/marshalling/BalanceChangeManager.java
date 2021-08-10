@@ -100,14 +100,14 @@ public class BalanceChangeManager {
 		}
 		while (nextCandidateChange < numChanges) {
 			final var candidate = changesSoFar.get(nextCandidateChange);
-			final var changeIsNftOwnerOrHtsDebit = couldTriggerCustomFees(candidate);
-			if (changeIsNftOwnerOrHtsDebit && nextCandidateChange >= levelEnd) {
+			final var changeIsTrigger = couldTriggerCustomFees(candidate);
+			if (changeIsTrigger && nextCandidateChange >= levelEnd) {
 				levelNo++;
 				levelStart = levelEnd;
 				levelEnd = numChanges;
 			}
 			nextCandidateChange++;
-			if (changeIsNftOwnerOrHtsDebit) {
+			if (changeIsTrigger) {
 				return candidate;
 			}
 		}
@@ -151,10 +151,10 @@ public class BalanceChangeManager {
 	}
 
 	private boolean couldTriggerCustomFees(BalanceChange candidate) {
-		return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
-	}
-
-	private boolean matches(BalanceChange change, Id account, Id denom) {
-		return account.equals(change.getAccount()) && denom.equals(change.getToken());
+		if (candidate.isExemptFromCustomFees()) {
+			return false;
+		} else {
+			return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
+		}
 	}
 }
