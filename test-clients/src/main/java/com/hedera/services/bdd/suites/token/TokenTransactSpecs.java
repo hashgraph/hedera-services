@@ -1509,7 +1509,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var supplyKey = "supplyKey";
 		final var serialNo1Meta = ByteString.copyFromUtf8("PRICELESS");
 
-		return defaultHapiSpec("CanTransactInTokenWithSelfDenominatedFixedFee")
+		return defaultHapiSpec("NftOwnersChangeAtomically")
 				.given(
 						newKeyNamed(supplyKey),
 						cryptoCreate(gabriella),
@@ -1537,6 +1537,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
 				).then(
 						cryptoTransfer(movingUnique(artToken, 1L).between(harry, gabriella))
+								.fee(ONE_HBAR)
 								.via(uncompletableTxn)
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						getTxnRecord(uncompletableTxn)

@@ -690,6 +690,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
+								.signedBy(DEFAULT_PAYER, tokenCollector, htsCollector)
 				).then(
 						getTokenInfo(token)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
