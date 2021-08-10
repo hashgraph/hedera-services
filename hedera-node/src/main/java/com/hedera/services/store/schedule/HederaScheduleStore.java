@@ -44,6 +44,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
@@ -182,7 +183,8 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	private void buildContentAddressableViewOfExtantSchedules() {
-		schedules.get().forEach((key, value) -> extantSchedules.put(value.toContentAddressableView(), key));
+		final var curSchedules = schedules.get();
+		forEach(curSchedules, (key, value) -> extantSchedules.put(value.toContentAddressableView(), key));
 	}
 
 	@Override

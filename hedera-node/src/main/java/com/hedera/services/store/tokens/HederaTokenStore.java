@@ -40,6 +40,7 @@ import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -85,6 +86,7 @@ import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -171,7 +173,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void rebuildViewOfKnownTreasuries() {
-		tokens.get().forEach((key, value) -> {
+		forEach(tokens.get(), (key, value) -> {
 			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
 			if (!value.isDeleted()) {
 				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());

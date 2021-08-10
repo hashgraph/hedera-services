@@ -25,15 +25,19 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.BiConsumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
@@ -44,9 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -54,15 +55,14 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 @ExtendWith(MockitoExtension.class)
 class UniqTokenViewsManagerTest {
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
 	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
 	@Mock
-	private FCOneToManyRelation<Integer, Long> nftsByType;
-	@Mock
-	private FCOneToManyRelation<Integer, Long> nftsByOwner;
-	@Mock
-	private FCOneToManyRelation<Integer, Long> treasuryNftsByType;
+	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
+
+	private FCMap<MerkleEntityId, MerkleToken> realTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> realNfts;
 
 	private UniqTokenViewsManager subject;
 
@@ -116,10 +116,10 @@ class UniqTokenViewsManagerTest {
 		subject.commit();
 
 		// then:
-		verify(nftsByType).associate(1, 2L);
-		verify(nftsByOwner).associate(2, 3L);
-		verify(treasuryNftsByType).associate(3, 4L);
-		verify(treasuryNftsByType).disassociate(4, 5L);
+		verify(nftsByType).associate(asPhi(1), 2L);
+		verify(nftsByOwner).associate(asPhi(2), 3L);
+		verify(treasuryNftsByType).associate(asPhi(3), 4L);
+		verify(treasuryNftsByType).disassociate(asPhi(4), 5L);
 		// and:
 		assertFalse(subject.isInTransaction());
 		assertTrue(subject.getChangesInTxn().isEmpty());
@@ -134,8 +134,8 @@ class UniqTokenViewsManagerTest {
 		subject.doChange(NFTS_BY_TYPE, 2, 3L, false);
 
 		// then:
-		verify(nftsByType).associate(1, 2L);
-		verify(nftsByType).disassociate(2, 3L);
+		verify(nftsByType).associate(asPhi(1), 2L);
+		verify(nftsByType).disassociate(asPhi(2), 3L);
 	}
 
 	@Test
@@ -146,8 +146,8 @@ class UniqTokenViewsManagerTest {
 		subject.treasuryExitNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -161,15 +161,15 @@ class UniqTokenViewsManagerTest {
 		subject.treasuryExitNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner, never()).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 
 		// and when:
 		subject.commit();
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -180,8 +180,8 @@ class UniqTokenViewsManagerTest {
 		subject.treasuryExitNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(treasuryNftsByType).disassociate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(treasuryNftsByType).disassociate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -192,8 +192,8 @@ class UniqTokenViewsManagerTest {
 		subject.treasuryReturnNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -204,8 +204,8 @@ class UniqTokenViewsManagerTest {
 		subject.treasuryReturnNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(treasuryNftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -219,15 +219,15 @@ class UniqTokenViewsManagerTest {
 		subject.treasuryReturnNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType, never()).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(treasuryNftsByType, never()).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
 
 		// and when:
 		subject.commit();
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(treasuryNftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -238,8 +238,8 @@ class UniqTokenViewsManagerTest {
 		subject.exchangeNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -250,8 +250,8 @@ class UniqTokenViewsManagerTest {
 		subject.exchangeNotice(aOneNftId, firstOwner, secondOwner);
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -264,15 +264,15 @@ class UniqTokenViewsManagerTest {
 		// when:
 		subject.exchangeNotice(aOneNftId, firstOwner, secondOwner);
 		// then:
-		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner, never()).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 
 		// and when:
 		subject.commit();
 
 		// then:
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(secondOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -283,8 +283,8 @@ class UniqTokenViewsManagerTest {
 		subject.burnNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).disassociate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -295,8 +295,8 @@ class UniqTokenViewsManagerTest {
 		subject.burnNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType).disassociate(aTokenId.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).disassociate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(treasuryNftsByType).disassociate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -307,8 +307,8 @@ class UniqTokenViewsManagerTest {
 		subject.mintNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -319,8 +319,8 @@ class UniqTokenViewsManagerTest {
 		subject.mintNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(treasuryNftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -331,8 +331,8 @@ class UniqTokenViewsManagerTest {
 		subject.wipeNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).disassociate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
@@ -343,57 +343,57 @@ class UniqTokenViewsManagerTest {
 		subject.wipeNotice(aOneNftId, firstOwner);
 
 		// then:
-		verify(nftsByType).disassociate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).disassociate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).disassociate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
 	}
 
 	@Test
-	void treasuryTrackingSafelyRebuildsAndDifferentiatesTreasuryOwned() {
+	void treasuryTrackingSafelyRebuildsAndDifferentiatesTreasuryOwned() throws ConstructableRegistryException {
 		setupTreasuryTrackingSubject();
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
 		// expect:
 		assertTrue(subject.isUsingTreasuryWildcards());
 
 		// and:
-		givenWellKnownNfts();
-		// and:
-		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
+		givenRealNfts();
 
 		// when:
-		subject.rebuildNotice(tokens, nfts);
+		subject.rebuildNotice(realTokens, realNfts);
 
 		// then:
-		verify(nftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(treasuryNftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(treasuryNftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
 		// and:
-		verify(nftsByType).associate(bTokenId.identityCode(), bOneNftId.identityCode());
-		verify(nftsByOwner).associate(firstOwner.identityCode(), bOneNftId.identityCode());
+		verify(nftsByType).associate(asPhi(bTokenId.identityCode()), bOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(firstOwner.identityCode()), bOneNftId.identityCode());
 		// and:
 		verifyNoMoreInteractions(nftsByType);
 		verifyNoMoreInteractions(treasuryNftsByType);
 	}
 
 	@Test
-	void nonTreasuryTrackingRebuildsEverythingExplicitly() {
+	void nonTreasuryTrackingRebuildsEverythingExplicitly() throws ConstructableRegistryException {
 		setupNonTreasuryTrackingSubject();
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
 		// expect:
 		assertFalse(subject.isUsingTreasuryWildcards());
 
 		// and:
-		givenWellKnownNfts();
-		// and:
-		given(tokens.get(aTokenId.asMerkle())).willReturn(aToken);
+		givenRealNfts();
 
 		// when:
-		subject.rebuildNotice(tokens, nfts);
+		subject.rebuildNotice(realTokens, realNfts);
 
 		// then:
-		verify(nftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
-		verify(nftsByOwner).associate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByType).associate(asPhi(aTokenId.identityCode()), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(firstOwner.identityCode()), aOneNftId.identityCode());
 		// and:
-		verify(nftsByType).associate(bTokenId.identityCode(), bOneNftId.identityCode());
-		verify(nftsByOwner).associate(firstOwner.identityCode(), bOneNftId.identityCode());
+		verify(nftsByType).associate(asPhi(bTokenId.identityCode()), bOneNftId.identityCode());
+		verify(nftsByOwner).associate(asPhi(firstOwner.identityCode()), bOneNftId.identityCode());
 		// and:
 		verifyNoMoreInteractions(nftsByType);
 		verifyNoMoreInteractions(nftsByOwner);
@@ -411,15 +411,15 @@ class UniqTokenViewsManagerTest {
 		assertEquals(desired, c.toString());
 	}
 
+	private void givenRealNfts() {
+		realNfts = new FCMap<>();
+		realNfts.put(aOneNftId, firstOwnedANft);
+		realNfts.put(bOneNftId, firstOwnedBNft);
+		realNfts.put(missingTokenNftId, tokenDeletedNft);
 
-	private void givenWellKnownNfts() {
-		willAnswer(invocationOnMock -> {
-			final BiConsumer<MerkleUniqueTokenId, MerkleUniqueToken> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(aOneNftId, firstOwnedANft);
-			consumer.accept(bOneNftId, firstOwnedBNft);
-			consumer.accept(missingTokenNftId, tokenDeletedNft);
-			return null;
-		}).given(nfts).forEach(any());
+		realTokens = new FCMap<>();
+		realTokens.put(aTokenId.asMerkle(), aToken);
+		realTokens.put(bTokenId.asMerkle(), bToken);
 	}
 
 	private void setupTreasuryTrackingSubject() {
@@ -460,4 +460,8 @@ class UniqTokenViewsManagerTest {
 	private final MerkleUniqueToken firstOwnedANft = new MerkleUniqueToken(MISSING_ENTITY_ID, someMeta, MISSING_INSTANT);
 	private final MerkleUniqueToken firstOwnedBNft = new MerkleUniqueToken(firstOwner, otherMeta, MISSING_INSTANT);
 	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(MISSING_ENTITY_ID, otherMeta, MISSING_INSTANT);
+	
+	private PermHashInteger asPhi(int i) {
+		return new PermHashInteger(i);
+	}
 }

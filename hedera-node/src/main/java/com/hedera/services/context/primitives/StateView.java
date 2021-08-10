@@ -46,6 +46,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -508,15 +509,15 @@ public class StateView {
 		return stateChildren == null ? emptyFcm() : stateChildren.getTokens();
 	}
 
-	FCOneToManyRelation<Integer, Long> nftsByType() {
+	FCOneToManyRelation<PermHashInteger, Long> nftsByType() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueTokenAssociations();
 	}
 
-	FCOneToManyRelation<Integer, Long> nftsByOwner() {
+	FCOneToManyRelation<PermHashInteger, Long> nftsByOwner() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipAssociations();
 	}
 
-	FCOneToManyRelation<Integer, Long> treasuryNftsByType() {
+	FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType() {
 		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipTreasuryAssociations();
 	}
 

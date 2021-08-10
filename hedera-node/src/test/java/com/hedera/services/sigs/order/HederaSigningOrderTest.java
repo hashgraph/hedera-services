@@ -898,20 +898,6 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	void getsFileUpdateNewWacl() throws Throwable {
-		// given:
-		setupFor(FILE_UPDATE_NEW_WACL_SCENARIO);
-
-		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
-				contains(MISC_FILE_WACL_KT.asKey(), SIMPLE_NEW_WACL_KT.asKey()));
-	}
-
-	@Test
 	void getsFileUpdateMissing() throws Throwable {
 		// given:
 		setupFor(FILE_UPDATE_MISSING_SCENARIO);

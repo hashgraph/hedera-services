@@ -47,7 +47,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -104,9 +104,8 @@ class GetAccountBalanceAnswerTest {
 
 	@BeforeEach
 	private void setup() throws ConstructableRegistryException {
-		// setup:
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
 		deleted = mock(MerkleToken.class);
 		given(deleted.isDeleted()).willReturn(true);

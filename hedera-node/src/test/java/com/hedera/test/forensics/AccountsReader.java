@@ -34,10 +34,8 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.merkle.io.MerkleDataInputStream;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMInternalNode;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import com.swirlds.fcmap.internal.FCMTree;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkletree.MerklePair;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,17 +43,13 @@ import java.nio.file.Path;
 public class AccountsReader {
 	public static FCMap<MerkleEntityId, MerkleAccount> from(String loc) throws Exception {
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCQueue.class, FCQueue::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCMap.class, FCMap::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMTree.class, FCMTree::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleEntityId.class, MerkleEntityId::new));
 		ConstructableRegistry.registerConstructable(

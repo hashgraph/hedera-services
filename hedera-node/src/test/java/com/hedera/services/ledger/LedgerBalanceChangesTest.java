@@ -46,6 +46,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -59,7 +60,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,9 +91,9 @@ class LedgerBalanceChangesTest {
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private final FCOneToManyRelation<Integer, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -117,6 +118,9 @@ class LedgerBalanceChangesTest {
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
+
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
@@ -125,8 +129,6 @@ class LedgerBalanceChangesTest {
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
 		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));

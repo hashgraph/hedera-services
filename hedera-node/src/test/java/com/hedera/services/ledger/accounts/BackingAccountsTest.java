@@ -30,7 +30,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -219,7 +219,7 @@ class BackingAccountsTest {
 	void twoPutsChangesG4M() throws ConstructableRegistryException {
 		// setup:
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
 
