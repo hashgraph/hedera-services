@@ -1744,7 +1744,8 @@ public class ServicesContext {
 					validator(),
 					recordsHistorian(),
 					globalDynamicProperties(),
-					accountsLedger);
+					accountsLedger,
+					new TransactionRecordService(txnCtx()));
 			ledger.setTokenViewsManager(uniqTokenViewsManager());
 			scheduleStore().setAccountsLedger(accountsLedger);
 			scheduleStore().setHederaLedger(ledger);
@@ -2120,7 +2121,8 @@ public class ServicesContext {
 					validator(),
 					NOOP_RECORDS_HISTORIAN,
 					globalDynamicProperties(),
-					pureDelegate);
+					pureDelegate,
+					new TransactionRecordService(txnCtx()));
 			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger);
 			newPureRepo = () -> {
 				var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeDb());

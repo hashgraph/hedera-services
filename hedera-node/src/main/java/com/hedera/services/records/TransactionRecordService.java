@@ -21,23 +21,31 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransferList;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+
 public class TransactionRecordService {
 	private final TransactionContext txnCtx;
+
+	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 
 	public TransactionRecordService(TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;
@@ -143,5 +151,60 @@ public class TransactionRecordService {
 					.build());
 		}
 		txnCtx.setTokenTransferLists(transferLists);
+	}
+
+	/**
+	 *
+	 * */
+	public void includeAdjustmentsFrom(List<BalanceChange> changes) {
+		for (var change : changes) {
+			if (change.isForHbar()) {
+				final var accountId = change.accountId();
+				updateXfers(accountId, change.units(), netTransfers);
+			}
+		}
+	}
+
+	public void updateXfers(AccountID account, long amount, TransferList.Builder xfers) {
+		int loc = 0, diff = -1;
+		var soFar = xfers.getAccountAmountsBuilderList();
+		for (; loc < soFar.size(); loc++) {
+			diff = ACCOUNT_ID_COMPARATOR.compare(account, soFar.get(loc).getAccountID());
+			if (diff <= 0) {
+				break;
+			}
+		}
+		if (diff == 0) {
+			var aa = soFar.get(loc);
+			long current = aa.getAmount();
+			aa.setAmount(current + amount);
+		} else {
+			if (loc == soFar.size()) {
+				xfers.addAccountAmounts(aaBuilderWith(account, amount));
+			} else {
+				xfers.addAccountAmounts(loc, aaBuilderWith(account, amount));
+			}
+		}
+	}
+
+	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
+		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
+	}
+
+	public void clearNetTransfers() {
+		netTransfers.clear();
+	}
+
+	public TransferList.Builder getTransferList() {
+		return netTransfers;
+	}
+
+	public void removeAccount(AccountID id) {
+		for (int i = 0; i < netTransfers.getAccountAmountsCount(); i++) {
+			if (netTransfers.getAccountAmounts(i).getAccountID().equals(id)) {
+				netTransfers.removeAccountAmounts(i);
+				return;
+			}
+		}
 	}
 }
