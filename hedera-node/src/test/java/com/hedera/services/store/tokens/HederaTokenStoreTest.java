@@ -976,7 +976,6 @@ class HederaTokenStoreTest {
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(treasury, misc));
 	}
 
-
 	@Test
 	void updateHappyPathIgnoresZeroExpiry() {
 		subject.addKnownTreasury(treasury, misc);
@@ -1039,6 +1038,28 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathWorksWithNewMemo() {
+		subject.addKnownTreasury(treasury, misc);
+		givenUpdateTarget(ALL_KEYS, token);
+		final var op = updateWith(NO_KEYS,
+				misc,
+				false,
+				false,
+				false,
+				false,
+				false,
+				false,
+				true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(OK, outcome);
+		verify(token).setMemo(newMemo);
+	}
+
+	@Test
+	void updateHappyPathWorksWithNewMemoForNonfungible() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
 		final var op = updateWith(NO_KEYS,
