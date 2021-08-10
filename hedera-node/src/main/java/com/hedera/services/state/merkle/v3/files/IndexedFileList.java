@@ -3,8 +3,9 @@ package com.hedera.services.state.merkle.v3.files;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import static com.hedera.services.state.merkle.v3.files.DataFileCommon.MB;
 
 /**
  * Immutable class representing a set of indexed data files. It is basically a copy on write array with one
@@ -13,9 +14,17 @@ import java.util.List;
  * The files list is not expected to be contiguous so might contain nulls.
  */
 class IndexedFileList {
+    /** Index for the first file, this is basically the offset for the first data file in files */
     private final int firstFileIndex;
+    /** Array of data files, index in array is offset by firstFileIndex */
     private final DataFileReader[] files;
 
+    /**
+     * Construct a new IndexedFileList, this is private so use one of the static factory methods.
+     *
+     * @param firstFileIndex Index for the first file, this is basically the offset for the first data file in files
+     * @param files array of data files, index in array is offset by firstFileIndex
+     */
     private IndexedFileList(int firstFileIndex, DataFileReader[] files) {
         this.firstFileIndex = firstFileIndex;
         this.files = files;
@@ -134,11 +143,28 @@ class IndexedFileList {
     }
 
     /**
-     * Get a collection containing all non-null files. The indexes in the list will not be file index.
+     * Get a collection containing all non-null files, smaller than maxSizeMb. The indexes in the list will not be file index.
+     *
+     * @param maxSizeMb all files returned are smaller than this number of MB, Integer.MAX_VALUE means all
      */
-    public List<DataFileReader> getAllFiles() {
+    public List<DataFileReader> getAllFiles(int maxSizeMb) {
         final List<DataFileReader> allReadOnlyFiles = new ArrayList<>(files.length);
-        for (var file : files) if (file != null) allReadOnlyFiles.add(file);
+        if (maxSizeMb == Integer.MAX_VALUE) {
+            for (var file : files) if (file != null) allReadOnlyFiles.add(file);
+        } else {
+            final long maxSizeBytes = maxSizeMb * MB;
+            for (var file : files) {
+                if (file != null) {
+                    long fileSize = 0;
+                    try {
+                        fileSize = Files.size(file.getPath());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (fileSize < maxSizeBytes) allReadOnlyFiles.add(file);
+                }
+            }
+        }
         return allReadOnlyFiles;
     }
 

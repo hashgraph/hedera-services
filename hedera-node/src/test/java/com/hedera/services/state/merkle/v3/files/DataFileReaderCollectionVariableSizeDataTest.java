@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.v3.files;
 
-import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.v3.V3TestUtils.deleteDirectoryAndContents;
-import static com.hedera.services.state.merkle.v3.V3TestUtils.hash;
 import static com.hedera.services.state.merkle.v3.files.DataFileCommon.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -138,7 +136,7 @@ public class DataFileReaderCollectionVariableSizeDataTest {
                 }
             } else if (thread == 1) { // move thread
                 try {
-                    fileCollection.mergeOldFiles(moves -> {
+                    fileCollection.mergeFile(moves -> {
                         assertEquals(1000,moves.size());
                         for(long[] move: moves) {
                             System.out.printf("move from file %d item %d -> file %d item %d\n",
@@ -150,7 +148,7 @@ public class DataFileReaderCollectionVariableSizeDataTest {
                             int index = storedOffsets.indexOf(move[0]);
                             storedOffsets.set(index, move[1]);
                         }
-                    }, fileCollection.getAllFullyWrittenFiles());
+                    }, fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

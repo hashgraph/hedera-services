@@ -10,8 +10,9 @@ import java.time.format.DateTimeFormatter;
 /**
  * Common static content for data files.
  */
-@SuppressWarnings("ShiftOutOfRange")
 public class DataFileCommon {
+    /** Constant for 1 Mb of bytes */
+    public static final long MB = 1024*1024;
     /** Data size constant used when the data size is variable */
     public static final int VARIABLE_DATA_SIZE = -1;
     /**
