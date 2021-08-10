@@ -1582,11 +1582,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "5 21 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1635,11 +1635,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "5 21 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1690,11 +1690,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "0 6 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1713,11 +1713,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "0 22 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1737,11 +1737,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "6 21 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1761,11 +1761,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "30 21 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1786,11 +1786,11 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "30 22 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1809,11 +1809,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "0 22 * * *"
+          cron: "55 6 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1832,11 +1832,11 @@ workflows:
   GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "0 22 * * 2"
+          cron: "0 6 * * 2"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1856,11 +1856,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "15 3 * * *"
+          cron: "35 7 * * *"
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1879,11 +1879,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "15 3 * * *"
+          cron: "40 4 * * *"
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1903,11 +1903,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "30 3 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
-                - 01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1926,11 +1926,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "45 21 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1949,11 +1949,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "45 21 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1972,11 +1972,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "15 22 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1995,11 +1995,11 @@ workflows:
   nightly-simulate-network-outage:
     triggers:
         - schedule:
-            cron: "45 22 * * *"
+            cron: "0 6 * * *"
             filters:
               branches:
                 only:
-                  - X-01886-M-Use0170alpha1Sdk
+                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2060,11 +2060,11 @@ workflows:
   feature-update-regression:
     triggers:
         - schedule:
-            cron: "30 23 * * *"
+            cron: "0 8 * * *"
             filters:
               branches:
                 only:
-                  - X-01886-M-Use0170alpha1Sdk
+                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2132,11 +2132,11 @@ workflows:
   nightly-freeze-restart:
     triggers:
       - schedule:
-          cron: "45 23 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2208,11 +2208,11 @@ workflows:
   nightly-comprehensive-functional-regression:
     triggers:
       - schedule:
-          cron: "0 23 * * *"
+          cron: "15 4 * * *"
           filters:
             branches:
               only:
-                - X-01886-M-Use0170alpha1Sdk
+                - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2250,7 +2250,6 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - perfnet-0170alpha1Sdk
                   - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
@@ -2943,7 +2942,7 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
         default: "hedera-regression-summary"
