@@ -36,8 +36,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -66,8 +64,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 
-public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
+public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	long thisSecond = 1_234_567L;
+
 	@BeforeEach
 	void setup() {
 		commonSetup();

@@ -1,26 +1,31 @@
 # Characterization of HIP-18 fee charging
 
-In this document we present five case studies of `CryptoTransfer`s
-that involve a HTS token with a custom fee schedule. We use the
-`TransactionRecord`s of these transfers to characterize how 
-Services charges custom fees as defined in HIP-18.
+In this document we present several case studies of `CryptoTransfer`s
+that involve a HTS token with a custom fee schedule. We use the 
+`TransactionRecord`s of these transfers to characterize how Services 
+charges custom fees as defined in HIP-18.
 
-# Five case studies
+# Case studies
 
 Our case studies are as follows:
-1. Alice transfers an NFT of type `fixedHbarFeeToken` to Bob, 
+1. Zephyr sends Amelie an NFT of type `westWindArt` (with no
+other transfers), where the `westWindsArt` token has a royalty 
+fee of 1/100th exchange value and a fallback fee of 1USDC.
+2. Amelie now sends Alice the `westWindArt` NFT, but this time in 
+exchange for 1000ℏ and 200USDC.
+3. Alice transfers an NFT of type `fixedHbarFeeToken` to Bob, 
 where the `fixedHbarFeeToken` has a fixed 1ℏ custom fee.
-2. Bob transfers 1000 units of the `fractionalFeeToken` to
+4. Bob transfers 1000 units of the `fractionalFeeToken` to
 Alice, where the `fractionalFeeToken` has a custom fee of
 1/100th of its units transferred, up to a maximum of 5 units
 and a minimum of 1 unit.
-3. Claire transfers 100 units of the `simpleHtsFeeToken` to
+5. Claire transfers 100 units of the `simpleHtsFeeToken` to
 Debbie, where the `simpleHtsFeeToken` requires 2 units of 
 a `commissionPaymentToken`.
-4. Debbie transfers 1 unit of the `nestedHbarFeeToken` to Edgar,
+6. Debbie transfers 1 unit of the `nestedHbarFeeToken` to Edgar,
 where the `nestedHbarFeeToken` has a custom fee of 1 unit of the 
 `fixedHbarFeeToken`.
-5. Edgar transfers 10 units of the `nestedFractionalFeeToken` to
+7. Edgar transfers 10 units of the `nestedFractionalFeeToken` to
 Fern, where the `nestedFractionalFeeToken` has a custom fee of 
 50 units of the `fractionalFeeToken`.
 
@@ -28,11 +33,150 @@ Fern, where the `nestedFractionalFeeToken` has a custom fee of
 treasury accounts are never charged custom fees. Second, a fee collector
 account is not charged any fractional fees for which it is the collector.
 
+# Royalty fees
+
+A _royalty fee_ defines the fraction of the fungible value exchanged for 
+an NFT that the ledger should collect as a royalty. 
+ - Only allowed for non-fungible token types.
+ - Fungible exchange value includes both ℏ _and_ units of fungible HTS tokens. 
+ - A royalty fee can have a "fallback" fixed fee to be assessed when 
+an NFT is transferred without the exchange of fungible value.
+
+:warning:&nbsp;The ledger interprets **ALL** fungible value received by 
+an account when it sends an NFT to be "in exchange" for the NFT! 
+
+## Fallback royalty fees 
+First we see that the fallback fee for an NFT is charged to the 
+receiver of the NFT, not the sender.
+
+In the record excerpt below, we see Zephyr (`0.0.1001`) paying to
+send NFT `0.0.1006.1` to Amelie (`0.0.1002`) with no other transfers; 
+and Amelie being charged a "fallback fee" of 1USDC (token `0.0.1005`) 
+that goes to to the West Wind Art fee collector (`0.0.1004`). 
+
+Please note the following:
+- Amelie still had to sign this `CryptoTransfer`, even though there 
+was no explicit transfer from account `0.0.1002`; otherwise it would
+have resolved to `INVALID_SIGNATURE`.
+- If Amelie had not been associated to the USDC token `0.0.1005`, the
+result would have been `TOKEN_NOT_ASSOCIATED_TO_ACCOUNT`.
+- If Amelie had zero balance of USDC, the result would have been to 
+`INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE`.
+```
+transferList {
+  accountAmounts {
+    accountID { accountNum: 3 }
+    amount: 76388
+  }
+  accountAmounts {
+    accountID { accountNum: 98 }
+    amount: 1907727
+  }
+  accountAmounts {
+    accountID { accountNum: 1001 }
+    amount: -1984115
+  }
+}
+tokenTransferLists {
+  token { tokenNum: 1005 }
+  transfers {
+    accountID { accountNum: 1002 } 
+    amount: -1
+  }
+  transfers {
+    accountID { accountNum: 1004 } <<-- The "fallback fee" of 1USDC
+    amount: 1
+  }
+}
+tokenTransferLists {
+  token { tokenNum: 1006 }
+  nftTransfers {
+    senderAccountID { accountNum: 1001 }
+    receiverAccountID { accountNum: 1002 } <<-- Now Amelie owns the NFT
+    serialNumber: 1
+  }
+}
+assessed_custom_fees {
+  amount: 1
+  token_id { tokenNum: 1005 }
+  fee_collector_account_id { accountNum: 1004 }
+}
+```
+
+## Fractional royalty fees
+Next we see that when fungible value **is** exchanged for an NFT with 
+a royalty fee, the royalty applies to _all_ fungible value exchanged, 
+whether denominated in ℏ or a fungible HTS token.
+
+In the record excerpt below, we see Amelie (`0.0.1032`) paying to
+sell `westWindArt` NFT `0.0.1036.1` to Alice (`0.0.1031`) in exchange 
+for 1000ℏ and 200USDC (token `0.0.1035`). Because of the 1/100th 
+royalty on the `westWindArt` token, Amelie only receives 990ℏ and 
+198USDC; the other 10ℏ and 2USDC go to the West Wind Art fee collector 
+(`0.0.1034`). 
+
+```
+transferList {
+  accountAmounts {
+    accountID { accountNum: 3 }
+    amount: 280229
+  }
+  accountAmounts {
+    accountID { accountNum: 98 }
+    amount: 5984684
+  }
+  accountAmounts {
+    accountID { accountNum: 1031 } <<-- The 1000ℏ Alice exchanged for the NFT
+    amount: -100000000000 
+  }
+  accountAmounts {
+    accountID { accountNum: 1032 } <<-- Only 990ℏ go to Amelie
+    amount: 98993735087 
+  }
+  accountAmounts {
+    accountID { accountNum: 1034 } <<-- A 10ℏ royalty goes to West Wind Art
+    amount: 1000000000 
+  }
+}
+tokenTransferLists {
+  token { tokenNum: 1035 }
+  transfers {
+    accountID { accountNum: 1031 } <<-- The 200USDC Alice exchanged for the NFT
+    amount: -200 
+  }
+  transfers {
+    accountID { accountNum: 1032 } <<-- Only 198USDC go to Amelie
+    amount: 198
+  }
+  transfers {
+    accountID { accountNum: 1034 } <<-- A 2USDC royalty goes to West Wind Art
+    amount: 2
+  }
+}
+tokenTransferLists {
+  token { tokenNum: 1036 }
+  nftTransfers {
+    senderAccountID { accountNum: 1032 }
+    receiverAccountID { accountNum: 1031 } <<-- Now Alice owns the NFT
+    serialNumber: 1
+  }
+}
+assessed_custom_fees {
+  amount: 1000000000
+  fee_collector_account_id { accountNum: 1034 }
+}
+assessed_custom_fees {
+  amount: 2
+  token_id { tokenNum: 1035 }
+  fee_collector_account_id { accountNum: 1034 }
+}
+```
+
 # Fixed fees
 
 ## Fees denominated in ℏ
-The first case study shows how fixed ℏ fees are assessed 
-and charged. This is the simplest pattern; for each `AccountAmount` 
+This case study shows how fixed ℏ fees are assessed and charged. 
+This is the simplest pattern; for each `AccountAmount` 
 in the `CryptoTransfer` that debits units of the token with the
 fixed fee, the ledger charges the fixed ℏ fee to the account 
 sending those units. Hence Alice is charged 1ℏ, which goes to

@@ -164,7 +164,7 @@ class FractionalFeeAssessorTest {
 		final var expected = reasonable * n / d;
 
 		// expect:
-		assertEquals(expected, subject.safeFractionMultiply(n, d, reasonable));
+		assertEquals(expected, AdjustmentUtils.safeFractionMultiply(n, d, reasonable));
 	}
 
 	@Test
@@ -180,7 +180,7 @@ class FractionalFeeAssessorTest {
 				.longValueExact();
 
 		// expect:
-		assertEquals(expected, subject.safeFractionMultiply(n, d, huge));
+		assertEquals(expected, AdjustmentUtils.safeFractionMultiply(n, d, huge));
 	}
 
 	@Test
@@ -191,7 +191,7 @@ class FractionalFeeAssessorTest {
 		long d = 9;
 
 		// expect:
-		assertThrows(ArithmeticException.class, () -> subject.safeFractionMultiply(n, d, huge));
+		assertThrows(ArithmeticException.class, () -> AdjustmentUtils.safeFractionMultiply(n, d, huge));
 	}
 
 	@Test

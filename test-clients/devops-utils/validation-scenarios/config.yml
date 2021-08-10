@@ -65,7 +65,7 @@ networks:
     - {account: 4, ipv4Addr: 35.199.15.177}
     - {account: 5, ipv4Addr: 35.225.201.195}
     - {account: 6, ipv4Addr: 35.247.109.135}
-    scenarioPayer: 16111
+    scenarioPayer: 3454059
     scenarios:
       feeSnapshots:
         appendToSnapshotCsv: true
@@ -75,7 +75,10 @@ networks:
         tinyBarsToOffer: 10000000000
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [122]
+        numsToFetch: [121]
+      sysFilesUp:
+        updates:
+        - {num: 121, payer: 2}
   stabletestnet:
     bootstrap: 50
     defaultNode: 3

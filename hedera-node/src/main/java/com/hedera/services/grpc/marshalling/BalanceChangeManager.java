@@ -26,8 +26,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class BalanceChangeManager {
 	private final List<BalanceChange> changesSoFar;
@@ -37,6 +39,7 @@ public class BalanceChangeManager {
 	private int levelNo = 0;
 	private int levelStart = 0;
 	private int levelEnd;
+	private Set<Pair<Id, Id>> royaltiesPaid = null;
 
 	public interface ChangeManagerFactory {
 		BalanceChangeManager from(List<BalanceChange> changesSoFar, int numHbar);
@@ -49,6 +52,17 @@ public class BalanceChangeManager {
 		levelEnd = changesSoFar.size();
 	}
 
+	public void markRoyaltyPaid(Id uniqueToken, Id account) {
+		if (royaltiesPaid == null) {
+			royaltiesPaid = new HashSet<>();
+		}
+		royaltiesPaid.add(Pair.of(uniqueToken, account));
+	}
+
+	public boolean isRoyaltyPaid(Id uniqueToken, Id account) {
+		return royaltiesPaid != null && royaltiesPaid.contains(Pair.of(uniqueToken, account));
+	}
+
 	public void includeChange(BalanceChange change) {
 		changesSoFar.add(change);
 		index(change);
@@ -59,6 +73,20 @@ public class BalanceChangeManager {
 		for (int i = levelStart; i < levelEnd; i++) {
 			final var change = changesSoFar.get(i);
 			if (change.units() > 0L && denom.equals(change.getToken())) {
+				ans.add(change);
+			}
+		}
+		return ans;
+	}
+
+	public List<BalanceChange> fungibleCreditsInCurrentLevel(Id beneficiary) {
+		final List<BalanceChange> ans = new ArrayList<>();
+		for (int i = levelStart; i < levelEnd; i++) {
+			final var change = changesSoFar.get(i);
+			if (change.isForNft()) {
+				continue;
+			}
+			if (beneficiary.equals(change.getAccount()) && change.originalUnits() > 0) {
 				ans.add(change);
 			}
 		}

@@ -85,12 +85,13 @@ public class ImpliedTransfersMarshal {
 		final var changeManager = changeManagerFactory.from(changes, hbarOnly);
 		final var schedulesManager = schedulesManagerFactory.apply(customFeeSchedules);
 
-		/* And for each "assessable change" that debits a fungible token balance or changes ownership of
-		an NFT, delegate to our fee assessor to update the balance changes with the custom fee (if any). */
+		/* And for each "assessable change" that can be charged a custom fee, delegate to our
+		fee assessor to update the balance changes with the custom fee. */
 		final List<FcAssessedCustomFee> fees = new ArrayList<>();
 		var change = changeManager.nextAssessableChange();
 		while (change != null) {
-			final var status = feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
+			final var status =
+					feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
 			if (status != OK) {
 				return ImpliedTransfers.invalid(props, schedulesManager.metaUsed(), status);
 			}

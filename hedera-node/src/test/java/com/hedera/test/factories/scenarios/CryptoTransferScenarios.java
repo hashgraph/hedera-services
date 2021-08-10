@@ -182,6 +182,69 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(ROYALTY_TOKEN_NFT, MISC_ACCOUNT, NO_RECEIVER_SIG)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
+							.adjustingHbars(FIRST_TOKEN_SENDER, +1_000)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
+							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, +1_000)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(MISSING_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
+							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, +1_000)
+							.get()
+			));
+		}
+	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {

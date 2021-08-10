@@ -110,6 +110,8 @@ class LedgerBalanceChangesTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private AccountRecordsHistorian historian;
+	@Mock
+	private UniqTokenViewsManager tokenViewsManager;
 
 	private HederaLedger subject;
 
@@ -145,6 +147,7 @@ class LedgerBalanceChangesTest {
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
+		subject.setTokenViewsManager(tokenViewsManager);
 	}
 
 	@Test
@@ -243,6 +246,7 @@ class LedgerBalanceChangesTest {
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
+		subject.setTokenViewsManager(viewManager);
 
 		givenInitialBalancesAndOwnership();
 

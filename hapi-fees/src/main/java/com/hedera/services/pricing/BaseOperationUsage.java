@@ -79,14 +79,6 @@ class BaseOperationUsage {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
 					.setEd25519(CANONICAL_SIG))
 			.build();
-	private static final SignatureMap TWO_PAIR_SIG_MAP = SignatureMap.newBuilder()
-			.addSigPair(SignaturePair.newBuilder()
-					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-					.setEd25519(CANONICAL_SIG))
-			.addSigPair(SignaturePair.newBuilder()
-					.setPubKeyPrefix(ByteString.copyFromUtf8("b"))
-					.setEd25519(CANONICAL_SIG))
-			.build();
 	private static final SignatureMap FOUR_PAIR_SIG_MAP = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
 					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
