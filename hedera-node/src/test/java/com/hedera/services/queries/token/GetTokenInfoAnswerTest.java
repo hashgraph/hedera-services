@@ -74,7 +74,7 @@ class GetTokenInfoAnswerTest {
 	GetTokenInfoAnswer subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		info = TokenInfo.newBuilder()
 				.setTokenId(tokenId)
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
@@ -87,7 +87,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void getsTheInfo() throws Throwable {
+	void getsTheInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, tokenId);
 
@@ -108,7 +108,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void getsInfoFromCtxWhenAvailable() throws Throwable {
+	void getsInfoFromCtxWhenAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 		Map<String, Object> ctx = new HashMap<>();
@@ -129,7 +129,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
+	void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 
@@ -145,7 +145,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void recognizesMissingInfoWhenCtxGiven() throws Throwable {
+	void recognizesMissingInfoWhenCtxGiven() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 
@@ -160,7 +160,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
@@ -175,7 +175,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void getsInvalidResponse() throws Throwable {
+	void getsInvalidResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
@@ -192,27 +192,27 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.TokenGetInfo, subject.canonicalFunction());
 	}
 
 	@Test
-	public void requiresAnswerOnlyPayment() throws Throwable {
+	void requiresAnswerOnlyPayment() throws Throwable {
 		// expect:
 		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, tokenId)));
 		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, tokenId)));
 	}
 
 	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+	void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		// expect:
 		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, tokenId)));
 		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, tokenId)));
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder().setTokenGetInfo(
 				TokenGetInfoResponse.newBuilder()
@@ -223,7 +223,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void usesViewToValidate() throws Throwable {
+	void usesViewToValidate() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
@@ -237,7 +237,7 @@ class GetTokenInfoAnswerTest {
 	}
 
 	@Test
-	public void getsExpectedPayment() throws Throwable {
+	void getsExpectedPayment() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee, tokenId);
 

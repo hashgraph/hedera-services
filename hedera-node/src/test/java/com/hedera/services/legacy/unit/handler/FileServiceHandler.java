@@ -25,13 +25,9 @@ import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.legacy.unit.GlobalFlag;
-import com.hedera.services.legacy.unit.InvalidFileIDException;
 import com.hedera.services.legacy.unit.InvalidFileWACLException;
-import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -46,54 +42,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.time.Instant;
-
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class FileServiceHandler {
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
-
-  private GlobalFlag globalFlag;
   private FCStorageWrapper storageWrapper;
 
-  public FileServiceHandler(
-          FCStorageWrapper storageWrapper,
-          FeeScheduleInterceptor feeScheduleInterceptor,
-          ExchangeRates exchangeRates
-  ) {
-    this.globalFlag = GlobalFlag.getInstance();
+  FileServiceHandler(final FCStorageWrapper storageWrapper) {
     this.storageWrapper = storageWrapper;
   }
 
-  /**
-     * Converts a string to a byte array with UTF-8 encoding.
-     *
-     * @param str
-     * 		string to be converted
-     * @return converted byte array, or an empty array if there is an UnsupportedEncodingException.
-     */
-    public static byte[] string2bytesUTF8(String str) {
-        byte[] rv = new byte[0];
-        try {
-            rv = str.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-        }
-        return rv;
-    }
-
-	public static FileInfo lookupInfo(FileID fid, FCStorageWrapper fcfs) throws Exception {
-		String metaPath = FeeCalcUtilsTest.pathOfMeta(fid);
-		if (fcfs.fileExists(metaPath)) {
-			long size = fcfs.getSize(FeeCalcUtilsTest.pathOf(fid));
-			HFileMeta jInfo = HFileMeta.deserialize(fcfs.fileRead(metaPath));
-			return HFileMetaSerdeTest.toGrpc(jInfo, fid, size);
-		} else {
-			throw new InvalidFileIDException(String.format("No such file '%s'!", readableId(fid)), fid);
-		}
-	}
-
-  public static JKey convertWacl(KeyList waclAsKeyList) throws InvalidFileWACLException {
+  private static JKey convertWacl(final KeyList waclAsKeyList) throws InvalidFileWACLException {
         try {
             return JKey.mapKey(Key.newBuilder().setKeyList(waclAsKeyList).build());
         } catch (DecoderException e) {
@@ -104,11 +63,9 @@ public class FileServiceHandler {
   /**
    * Creates a file on the ledger.
    */
-  public TransactionRecord createFile(TransactionBody gtx, Instant timestamp, FileID fid,
-      final long selfId) {
+  TransactionRecord createFile(final TransactionBody gtx, final Instant timestamp, final FileID fid, final long selfId) {
     TransactionRecord txRecord;
     TransactionID txId = gtx.getTransactionID();
-    Instant startTime = RequestBuilder.convertProtoTimeStamp(txId.getTransactionValidStart());
     FileCreateTransactionBody tx = gtx.getFileCreate();
 
     // get wacl and handle exception
@@ -136,15 +93,13 @@ public class FileServiceHandler {
         log.debug("Creating file at path :: " + fileDataPath + " :: nodeId = " + selfId);
       }
       storageWrapper
-          .fileCreate(fileDataPath, fileData, startTime.getEpochSecond(), startTime.getNano(),
-              expireTimeSec, string2bytesUTF8(fileDataPath));
+          .fileCreate(fileDataPath, fileData);
 
       // create virtual file for the meta data
       HFileMeta fi = new HFileMeta(false, jkey, expireTimeSec);
 
       String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
-      storageWrapper.fileCreate(fileMetaDataPath, fi.serialize(), startTime.getEpochSecond(),
-          startTime.getNano(), expireTimeSec, null);
+      storageWrapper.fileCreate(fileMetaDataPath, fi.serialize());
 
     } catch (InvalidFileWACLException e) {
       if (log.isDebugEnabled()) {
@@ -161,8 +116,7 @@ public class FileServiceHandler {
       log.debug("Maximum File Size Exceeded {}", ()->e);
 	}
 
-    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(fid, status,
-        globalFlag.getExchangeRateSet());
+    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(fid, status, ExchangeRateSet.getDefaultInstance());
     TransactionRecord.Builder txRecordBuilder = TransactionRecord.newBuilder().setReceipt(receipt)
         .setConsensusTimestamp(RequestBuilder.getTimestamp(timestamp)).setTransactionID(txId)
         .setMemo(gtx.getMemo()).setTransactionFee(gtx.getTransactionFee());
@@ -173,13 +127,5 @@ public class FileServiceHandler {
           + TextFormat.shortDebugString(txRecord) + "; tx=" + TextFormat.shortDebugString(tx));
     }
     return txRecord;
-  }
-
-  public FileInfo getFileInfo(FileID fid) throws Exception {
-  	return lookupInfo(fid, storageWrapper);
-  }
-
-  public FCStorageWrapper getStorageWrapper() {
-    return storageWrapper;
   }
 }

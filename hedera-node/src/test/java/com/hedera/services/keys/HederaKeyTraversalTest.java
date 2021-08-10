@@ -39,7 +39,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class HederaKeyTraversalTest {
+class HederaKeyTraversalTest {
 	static KeyTree kt;
 
 	@BeforeAll
@@ -55,7 +55,7 @@ public class HederaKeyTraversalTest {
 	}
 
 	@Test
-	public void visitsAllSimpleKeys() throws Exception {
+	void visitsAllSimpleKeys() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
 		List<ByteString> expectedEd25519 = ed25519KeysFromKt(kt);
@@ -70,7 +70,7 @@ public class HederaKeyTraversalTest {
 	}
 
 	@Test
-	public void countsSimpleKeys() throws Exception {
+	void countsSimpleKeys() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
 
@@ -79,7 +79,7 @@ public class HederaKeyTraversalTest {
 	}
 
 	@Test
-	public void countsSimpleKeysForValidAccount() throws Exception {
+	void countsSimpleKeysForValidAccount() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
 		MerkleAccount account = MerkleAccountFactory.newAccount().accountKeys(jKey).get();
@@ -89,7 +89,7 @@ public class HederaKeyTraversalTest {
 	}
 
 	@Test
-	public void countsZeroSimpleKeysForWeirdAccount() throws Exception {
+	void countsZeroSimpleKeysForWeirdAccount() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
 		MerkleAccount account = MerkleAccountFactory.newAccount().get();

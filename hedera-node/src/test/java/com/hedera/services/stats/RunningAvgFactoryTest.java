@@ -35,7 +35,7 @@ class RunningAvgFactoryTest {
 	RunningAvgFactory subject = new RunningAvgFactory() { };
 
 	@Test
-	public void constructsExpectedEntry() {
+	void constructsExpectedEntry() {
 		// setup:
 		var name = "MyOp";
 		var desc = "Happy thoughts";

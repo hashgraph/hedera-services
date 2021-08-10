@@ -101,7 +101,7 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
-	public void returnsEmptyOptionalWhenProblematic() {
+	void returnsEmptyOptionalWhenProblematic() {
 		// setup:
 		Query validQuery = getRecordQuery(absentTxnId);
 
@@ -115,7 +115,7 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
-	public void findsInPayerAccountIfPresentThere() {
+	void findsInPayerAccountIfPresentThere() {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
@@ -129,7 +129,7 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
-	public void usesCacheIfPresentThere() {
+	void usesCacheIfPresentThere() {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 

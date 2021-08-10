@@ -48,7 +48,7 @@ class RichInstantTest {
 	SerializableDataInputStream in;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		in = mock(SerializableDataInputStream.class);
 		din = mock(DataInputStream.class);
 
@@ -56,7 +56,7 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -69,7 +69,7 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void factoryWorks() throws IOException {
+	void factoryWorks() throws IOException {
 		given(in.readLong()).willReturn(seconds);
 		given(in.readInt()).willReturn(nanos);
 
@@ -81,12 +81,12 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void beanWorks() {
+	void beanWorks() {
 		assertEquals(subject, new RichInstant(subject.getSeconds(), subject.getNanos()));
 	}
 
 	@Test
-	public void viewWorks() {
+	void viewWorks() {
 		// given:
 		var grpc = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
@@ -95,14 +95,14 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void knowsIfMissing() {
+	void knowsIfMissing() {
 		// expect:
 		assertFalse(subject.isMissing());
 		assertTrue(RichInstant.MISSING_INSTANT.isMissing());
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"RichInstant{seconds=" + seconds + ", nanos=" + nanos + "}",
@@ -110,14 +110,14 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void factoryWorksForMissing() {
+	void factoryWorksForMissing() {
 		// expect:
 		assertTrue(RichInstant.MISSING_INSTANT == RichInstant.fromGrpc(Timestamp.getDefaultInstance()));
 		assertEquals(subject, RichInstant.fromGrpc(subject.toGrpc()));
 	}
 
 	@Test
-	public void objectContractWorks() {
+	void objectContractWorks() {
 		// given:
 		var one = subject;
 		var two = new RichInstant(seconds - 1, nanos - 1);
@@ -136,20 +136,20 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void orderingWorks() {
+	void orderingWorks() {
 		assertTrue(subject.isAfter(new RichInstant(seconds - 1, nanos)));
 		assertTrue(subject.isAfter(new RichInstant(seconds, nanos - 1)));
 		assertFalse(subject.isAfter(new RichInstant(seconds, nanos + 1)));
 	}
 
 	@Test
-	public void javaFactoryWorks() {
+	void javaFactoryWorks() {
 		// expect:
 		assertEquals(subject, RichInstant.fromJava(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos())));
 	}
 
 	@Test
-	public void javaViewWorks() {
+	void javaViewWorks() {
 		// expect:
 		assertEquals(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos()), subject.toJava());
 	}

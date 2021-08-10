@@ -111,7 +111,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void destroysIfNewExpiryIsPast() {
+	void destroysIfNewExpiryIsPast() {
 		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
 
 		// when:
@@ -123,7 +123,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void leavesUnspecifiedExpiryUntouched() {
+	void leavesUnspecifiedExpiryUntouched() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
@@ -143,7 +143,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidOnException() {
+	void setsFailInvalidOnException() {
 		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
 		willThrow(new IllegalStateException("Hmm...")).given(hfs).rm(any());
 
@@ -155,7 +155,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
@@ -175,7 +175,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsDeleted() {
+	void detectsDeleted() {
 		givenTxnCtxSysDeleting(TargetType.DELETED, NewExpiryType.FUTURE);
 
 		// when:
@@ -186,7 +186,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsMissing() {
+	void detectsMissing() {
 		givenTxnCtxSysDeleting(TargetType.MISSING, NewExpiryType.FUTURE);
 
 		// when:
@@ -197,7 +197,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		// setup:
 		SystemDeleteTransactionBody.Builder op = SystemDeleteTransactionBody.newBuilder()
 				.setContractID(IdUtils.asContract("0.0.1001"));
@@ -214,7 +214,7 @@ class FileSysDelTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckRubberstamps() {
+	void syntaxCheckRubberstamps() {
 		// given:
 		var syntaxCheck = subject.semanticCheck();
 

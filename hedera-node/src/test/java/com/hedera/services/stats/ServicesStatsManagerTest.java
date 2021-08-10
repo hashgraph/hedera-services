@@ -53,7 +53,7 @@ class ServicesStatsManagerTest {
 	ServicesStatsManager subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		pause = mock(Pause.class);
 		threads = mock(Function.class);
 
@@ -84,7 +84,7 @@ class ServicesStatsManagerTest {
 	}
 
 	@Test
-	public void initsAsExpected() {
+	void initsAsExpected() {
 		// setup:
 		Thread thread = mock(Thread.class);
 		ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);

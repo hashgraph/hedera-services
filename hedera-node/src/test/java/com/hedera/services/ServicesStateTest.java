@@ -321,9 +321,9 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0160() {
+	void minimumVersionIsRelease0130() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0160_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0130_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
@@ -333,10 +333,11 @@ class ServicesStateTest {
 				LegacyStateChildIndices.NUM_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0160_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_0170_CHILDREN,
+				StateChildIndices.NUM_POST_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0160_VERSION - 1));
+		assertEquals(
+				StateChildIndices.NUM_PRE_0160_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0130_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION + 1));
 	}
@@ -434,7 +435,7 @@ class ServicesStateTest {
 		nfts.put(nftKey, new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT));
 		tokenRels.put(tokenRelsKey, new MerkleTokenRelStatus(1_234L, true, false));
 		// and:
-		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels);
+		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, true);
 
 		// given:
 		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0160_VERSION);
@@ -454,6 +455,47 @@ class ServicesStateTest {
 				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
 		assertEquals(nfts.get(nftKey), subject.uniqueTokens().get(nftKey));
+		assertEquals(
+				tokenRels.get(tokenRelsKey),
+				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+						StateChildIndices.TOKEN_ASSOCIATIONS))
+						.get(tokenRelsKey));
+		assertEquals(tokenRels.get(tokenRelsKey), subject.tokenAssociations().get(tokenRelsKey));
+	}
+
+	@Test
+	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
+		// setup:
+		final var addressBook = new AddressBook();
+		final var networkContext = new MerkleNetworkContext();
+		networkContext.setSeqNo(new SequenceNumber(1234L));
+		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
+		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
+		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
+		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		// and:
+		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
+		registerConstructable(new ClassConstructorPair(FCMTree.class, FCMTree::new));
+		registerConstructable(new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+		registerConstructable(new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
+		// and:
+		tokenRels.put(tokenRelsKey, new MerkleTokenRelStatus(1_234L, true, false));
+		// and:
+		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, false);
+
+		// given:
+		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0130_VERSION);
+
+		// when:
+		subject.initialize();
+
+		// then:
+		assertEquals(addressBook, subject.getChild(StateChildIndices.ADDRESS_BOOK));
+		assertEquals(addressBook, subject.addressBook());
+		assertEquals(
+				networkContext.midnightRates(),
+				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
+		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				tokenRels.get(tokenRelsKey),
 				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
@@ -538,7 +580,8 @@ class ServicesStateTest {
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts,
-			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels
+			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels,
+			boolean withNfts
 	) {
 		final List<MerkleNode> legacyChildren = new ArrayList<>();
 		legacyChildren.add(addressBook);
@@ -551,7 +594,9 @@ class ServicesStateTest {
 		legacyChildren.add(null);
 		legacyChildren.add(null);
 		legacyChildren.add(null);
-		legacyChildren.add(nfts);
+		if (withNfts) {
+			legacyChildren.add(nfts);
+		}
 		return legacyChildren;
 	}
 

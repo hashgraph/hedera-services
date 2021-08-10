@@ -179,7 +179,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(tokenOwner)
-								.hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE)
+								.hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
 				);
 	}
 

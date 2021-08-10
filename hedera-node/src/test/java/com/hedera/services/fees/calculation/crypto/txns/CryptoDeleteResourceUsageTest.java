@@ -55,14 +55,14 @@ class CryptoDeleteResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(cryptoDeleteTxn));
 		assertFalse(subject.applicableTo(nonCryptoDeleteTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		subject.usageGiven(cryptoDeleteTxn, sigUsage, null);
 

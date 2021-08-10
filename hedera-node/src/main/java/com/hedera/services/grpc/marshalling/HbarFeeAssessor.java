@@ -27,12 +27,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.List;
 
-import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustForAssessed;
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustForAssessedHbar;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HbarFeeAssessor {
 	public ResponseCodeEnum assess(
-			Id account,
+			Id payer,
 			FcCustomFee hbarFee,
 			BalanceChangeManager changeManager,
 			List<FcAssessedCustomFee> accumulator
@@ -40,7 +40,7 @@ public class HbarFeeAssessor {
 		final var collector = hbarFee.getFeeCollectorAsId();
 		final var fixedSpec = hbarFee.getFixedFeeSpec();
 		final var amount = fixedSpec.getUnitsToCollect();
-		adjustForAssessed(account, collector, Id.MISSING_ID, amount, changeManager);
+		adjustForAssessedHbar(payer, collector, amount, changeManager);
 		final var assessed = new FcAssessedCustomFee(collector.asEntityId(), amount);
 		accumulator.add(assessed);
 		return OK;

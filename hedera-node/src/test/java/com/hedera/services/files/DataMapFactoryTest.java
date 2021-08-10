@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataMapFactoryTest {
 	@Test
-	public void toFidConversionWorks() {
+	void toFidConversionWorks() {
 		// given:
 		var key = "/666/f888";
 		// and:
@@ -53,7 +53,7 @@ class DataMapFactoryTest {
 	}
 
 	@Test
-	public void toKeyConversionWorks() {
+	void toKeyConversionWorks() {
 		// given:
 		var fid = IdUtils.asFile("0.2.3");
 		// and:
@@ -71,7 +71,7 @@ class DataMapFactoryTest {
 	}
 
 	@Test
-	public void productHasMapSemantics() {
+	void productHasMapSemantics() {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(asLegacyPath("0.2.7"), "APRIORI".getBytes());
@@ -115,7 +115,7 @@ class DataMapFactoryTest {
 	}
 
 	@Test
-	public void cannotBeConstructed() {
+	void cannotBeConstructed() {
 		// expect:
 		assertThrows(IllegalStateException.class, DataMapFactory::new);
 	}

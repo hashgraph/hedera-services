@@ -76,14 +76,14 @@ class TokenGrantKycResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenGrantKycTxn));
 		assertFalse(subject.applicableTo(nonTokenGrantKycTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
 				expected,

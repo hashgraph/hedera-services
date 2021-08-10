@@ -121,4 +121,14 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_CREATE_WITH_MISSING_TREASURY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.treasury(MISSING_ACCOUNT)
+							.get()
+			));
+		}
+	},
 }

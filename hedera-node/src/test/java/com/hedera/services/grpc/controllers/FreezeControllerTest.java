@@ -46,7 +46,7 @@ class FreezeControllerTest {
 	}
 
 	@Test
-	public void forwardsTransferAsExpected() {
+	void forwardsTransferAsExpected() {
 		// when:
 		subject.freeze(txn, txnObserver);
 

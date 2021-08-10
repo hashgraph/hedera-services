@@ -83,7 +83,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
 
-public class ServicesMainTest {
+class ServicesMainTest {
 	private final long NODE_ID = 1L;
 	private final String PATH = "/this/was/mr/bleaneys/room";
 

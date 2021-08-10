@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityExpiryMapFactoryTest {
 	@Test
-	public void toFidConversionWorks() {
+	void toFidConversionWorks() {
 		// given:
 		var key = "/666/e888";
 		// and:
@@ -53,7 +53,7 @@ class EntityExpiryMapFactoryTest {
 	}
 
 	@Test
-	public void toKeyConversionWorks() {
+	void toKeyConversionWorks() {
 		// given:
 		var expected = "/2/e3";
 
@@ -69,7 +69,7 @@ class EntityExpiryMapFactoryTest {
 	}
 
 	@Test
-	public void productHasMapSemantics() {
+	void productHasMapSemantics() {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(asLegacyPath("0.2.7"), Longs.toByteArray(111));
@@ -118,19 +118,19 @@ class EntityExpiryMapFactoryTest {
 	}
 
 	@Test
-	public void toLongPropagatesNull() {
+	void toLongPropagatesNull() {
 		// expect:
 		assertNull(EntityExpiryMapFactory.toLong(null));
 	}
 
 	@Test
-	public void throwsIaeOnNonsense() {
+	void throwsIaeOnNonsense() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> EntityExpiryMapFactory.toLong("wtf".getBytes()));
 	}
 
 	@Test
-	public void cannotBeConstructed() {
+	void cannotBeConstructed() {
 		// expect:
 		assertThrows(IllegalStateException.class, EntityExpiryMapFactory::new);
 	}

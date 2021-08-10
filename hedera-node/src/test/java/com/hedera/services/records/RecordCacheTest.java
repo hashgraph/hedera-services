@@ -127,7 +127,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void resetsHistoriesIfRequested() {
+	void resetsHistoriesIfRequested() {
 		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
 
 		// when:
@@ -138,7 +138,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void expiresOtherForgottenHistory() {
+	void expiresOtherForgottenHistory() {
 		// setup:
 		subject = new RecordCache(ctx, receiptCache, new HashMap<>());
 
@@ -155,7 +155,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void tracksExpiringTxnIds() {
+	void tracksExpiringTxnIds() {
 		// setup:
 		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
 		// and:
@@ -169,7 +169,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsReceiptWithKnownStatusPostConsensus() {
+	void getsReceiptWithKnownStatusPostConsensus() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
@@ -181,7 +181,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsDuplicateRecordsAsExpected() {
+	void getsDuplicateRecordsAsExpected() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 		var duplicateRecords = List.of(aRecord);
@@ -197,13 +197,13 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsEmptyDuplicateListForMissing() {
+	void getsEmptyDuplicateListForMissing() {
 		// expect:
 		assertTrue(subject.getDuplicateReceipts(txnIdA).isEmpty());
 	}
 
 	@Test
-	public void getsDuplicateReceiptsAsExpected() {
+	void getsDuplicateReceiptsAsExpected() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 		var duplicateRecords = List.of(aRecord);
@@ -219,13 +219,13 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsNullReceiptWhenMissing() {
+	void getsNullReceiptWhenMissing() {
 		// expect:
 		assertNull(subject.getPriorityReceipt(txnIdA));
 	}
 
 	@Test
-	public void getsReceiptWithUnknownStatusPreconsensus() {
+	void getsReceiptWithUnknownStatusPreconsensus() {
 		given(histories.get(txnIdA)).willReturn(null);
 		given(receiptCache.getIfPresent(txnIdA)).willReturn(Boolean.TRUE);
 
@@ -234,7 +234,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsReceiptWithUnknownStatusWhenNoPriorityRecordExists() {
+	void getsReceiptWithUnknownStatusWhenNoPriorityRecordExists() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
@@ -246,13 +246,13 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsNullRecordWhenMissing() {
+	void getsNullRecordWhenMissing() {
 		// expect:
 		assertNull(subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test
-	public void getsNullRecordWhenPreconsensus() {
+	void getsNullRecordWhenPreconsensus() {
 		given(histories.get(txnIdA)).willReturn(null);
 
 		// expect:
@@ -260,7 +260,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsNullRecordWhenNoPriorityExists() {
+	void getsNullRecordWhenNoPriorityExists() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
@@ -272,7 +272,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void getsRecordWhenPresent() {
+	void getsRecordWhenPresent() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
@@ -284,7 +284,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void addsMarkerForPreconsensusReceipt() {
+	void addsMarkerForPreconsensusReceipt() {
 		// when:
 		subject.addPreConsensus(txnIdB);
 
@@ -293,7 +293,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void delegatesToPutPostConsensus() {
+	void delegatesToPutPostConsensus() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
@@ -309,7 +309,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void managesFailInvalidRecordsAsExpected() {
+	void managesFailInvalidRecordsAsExpected() {
 		// setup:
 		Instant consensusTime = Instant.now();
 		TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
@@ -360,7 +360,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void managesTriggeredFailInvalidRecordAsExpected() throws InvalidProtocolBufferException {
+	void managesTriggeredFailInvalidRecordAsExpected() throws InvalidProtocolBufferException {
 		// setup:
 		Instant consensusTime = Instant.now();
 		TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
@@ -408,7 +408,7 @@ class RecordCacheTest {
 
 
 	@Test
-	public void usesHistoryThenCacheToTestReceiptPresence() {
+	void usesHistoryThenCacheToTestReceiptPresence() {
 		given(histories.containsKey(txnIdA)).willReturn(true);
 		given(receiptCache.getIfPresent(txnIdA)).willReturn(null);
 		// and:

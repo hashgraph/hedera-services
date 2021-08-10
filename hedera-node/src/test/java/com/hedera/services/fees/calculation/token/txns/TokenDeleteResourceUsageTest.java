@@ -76,14 +76,14 @@ class TokenDeleteResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenDeleteTxn));
 		assertFalse(subject.applicableTo(nonTokenDeleteTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
 				expected,

@@ -103,7 +103,7 @@ public class HFileMetaSerdeTest {
 	}
 
 	@Test
-	public void deserializesNewVersionAsExpected() throws IOException {
+	void deserializesNewVersionAsExpected() throws IOException {
 		// setup:
 		doStaticMocking();
 		// and:
@@ -169,7 +169,7 @@ public class HFileMetaSerdeTest {
 	}
 
 	@Test
-	public void legacySerdeTest() throws Exception {
+	void legacySerdeTest() throws Exception {
 		// setup:
 		var fid = IdUtils.asFile("0.0.1001");
 

@@ -65,7 +65,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void recognizesRightFloat() throws NegativeAccountBalanceException {
+	void recognizesRightFloat() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(new MerkleEntityId(shard, realm, 1L), expectedWith(50L));
 		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(50L));
@@ -75,7 +75,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void recognizesWrongFloat() throws NegativeAccountBalanceException {
+	void recognizesWrongFloat() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(new MerkleEntityId(shard, realm, 1L), expectedWith(50L));
 		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(51L));
@@ -85,7 +85,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void doesntThrowWithValidIds() throws NegativeAccountBalanceException {
+	void doesntThrowWithValidIds() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(new MerkleEntityId(shard, realm, 3L), expectedWith(100L));
 
@@ -94,7 +94,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void throwsOnIdWithInvalidShard() throws NegativeAccountBalanceException {
+	void throwsOnIdWithInvalidShard() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(
 				new MerkleEntityId(shard - 1, realm, 3L),
@@ -105,7 +105,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
+	void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(new MerkleEntityId(shard, realm, 0L), expectedWith(100L));
 
@@ -114,7 +114,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void throwsOnIdWithNumTooLarge() throws NegativeAccountBalanceException {
+	void throwsOnIdWithNumTooLarge() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(
 				new MerkleEntityId(shard, realm, dynamicProperties.maxAccountNum() + 1),
@@ -125,7 +125,7 @@ class BasedLedgerValidatorTest {
 	}
 
 	@Test
-	public void throwsOnIdWithInvalidRealm() throws NegativeAccountBalanceException {
+	void throwsOnIdWithInvalidRealm() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(new MerkleEntityId(shard, realm - 1, 3L), expectedWith(100L));
 

@@ -57,7 +57,7 @@ class HapiOpCountersTest {
 	HapiOpCounters subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo,
@@ -80,7 +80,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void beginsRationally() {
+	void beginsRationally() {
 		// expect:
 		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
 		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
@@ -99,7 +99,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void registersExpectedStatEntries() {
+	void registersExpectedStatEntries() {
 		// setup:
 		StatEntry transferRcv = mock(StatEntry.class);
 		StatEntry transferSub = mock(StatEntry.class);
@@ -155,7 +155,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void updatesAvgSubmitMessageHdlSizeForHandled() {
+	void updatesAvgSubmitMessageHdlSizeForHandled() {
 		// setup:
 		int expectedSize = 12345;
 		TransactionBody txn = mock(TransactionBody.class);
@@ -173,7 +173,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
+	void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
 		// setup:
 		int expectedSize = 12345;
 		TransactionBody txn = mock(TransactionBody.class);
@@ -192,7 +192,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void updatesExpectedEntries() {
+	void updatesExpectedEntries() {
 		// when:
 		subject.countReceived(CryptoTransfer);
 		subject.countReceived(CryptoTransfer);
@@ -217,7 +217,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void ignoredOpsAreNoops() {
+	void ignoredOpsAreNoops() {
 		// expect:
 		assertDoesNotThrow(() -> subject.countReceived(NONE));
 		assertDoesNotThrow(() -> subject.countSubmitted(NONE));

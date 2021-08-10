@@ -122,14 +122,14 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsEmptyTransfers() {
+	void rejectsEmptyTransfers() {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(null));
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(Collections.emptyList()));
 	}
 
 	@Test
-	public void acceptsSufficientFee() {
+	void acceptsSufficientFee() {
 		// expect:
 		assertEquals(
 				OK,
@@ -141,7 +141,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsWrongRecipient() {
+	void rejectsWrongRecipient() {
 		// expect:
 		assertEquals(
 				INVALID_RECEIVING_NODE_ACCOUNT,
@@ -153,7 +153,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsWhenNodeIsMissing() {
+	void rejectsWhenNodeIsMissing() {
 		// expect:
 		assertEquals(
 				INVALID_RECEIVING_NODE_ACCOUNT,
@@ -166,7 +166,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void allowsMultipleRecipients() {
+	void allowsMultipleRecipients() {
 		// expect:
 		assertEquals(
 				OK,
@@ -179,7 +179,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsInsufficientNodePayment() {
+	void rejectsInsufficientNodePayment() {
 		// expect:
 		assertEquals(
 				INSUFFICIENT_TX_FEE,
@@ -192,7 +192,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsInsufficientFee() {
+	void rejectsInsufficientFee() {
 		// expect:
 		assertEquals(
 				INSUFFICIENT_TX_FEE,
@@ -204,7 +204,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void filtersOnBasicImplausibility() {
+	void filtersOnBasicImplausibility() {
 		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_AMOUNTS,
@@ -215,7 +215,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsOverflowingTransfer() {
+	void rejectsOverflowingTransfer() {
 		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_AMOUNTS,
@@ -226,7 +226,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsNonNetTransfer() {
+	void rejectsNonNetTransfer() {
 		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_AMOUNTS,
@@ -237,7 +237,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void catchesBadEntry() {
+	void catchesBadEntry() {
 		// expect:
 		assertEquals(
 				ACCOUNT_ID_DOES_NOT_EXIST,
@@ -249,7 +249,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsMinValue() {
+	void rejectsMinValue() {
 		// given:
 		var adjustment = adjustmentWith(aRich, Long.MIN_VALUE);
 
@@ -261,7 +261,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void nonexistentSenderHasNoBalance() {
+	void nonexistentSenderHasNoBalance() {
 		// given:
 		var adjustment = adjustmentWith(aMissing, -aLittle);
 
@@ -273,7 +273,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void brokePayerRejected() {
+	void brokePayerRejected() {
 		// setup:
 		var adjustment = adjustmentWith(aBroke, -aLot);
 
@@ -285,7 +285,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void detachedPayerRejectedWithRefinement() {
+	void detachedPayerRejectedWithRefinement() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 
 		// given:
@@ -299,7 +299,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void cannotBeDetachedIfNoAutoRenew() {
+	void cannotBeDetachedIfNoAutoRenew() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		dynamicProps.disableAutoRenew();
 
@@ -314,7 +314,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void noLongerDetachedWithNonzeroBalance() {
+	void noLongerDetachedWithNonzeroBalance() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		given(detached.getBalance()).willReturn(1L);
 
@@ -329,7 +329,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void missingReceiverRejected() {
+	void missingReceiverRejected() {
 		// given:
 		var adjustment = adjustmentWith(aMissing, aLot);
 
@@ -341,7 +341,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void validateQueryPaymentSucceeds() {
+	void validateQueryPaymentSucceeds() {
 		// setup:
 		long amount = 8;
 		// given :
@@ -354,7 +354,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void paymentFailsWithQueryPayerBalance() {
+	void paymentFailsWithQueryPayerBalance() {
 		// setup:
 		long amount = 5000L;
 		// given :
@@ -375,7 +375,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void paymentFailsWithBrokenPayer() {
+	void paymentFailsWithBrokenPayer() {
 		// setup:
 		long amount = 5000L;
 		// given :
@@ -396,7 +396,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void queryPaymentMultiPayerMultiNodeSucceeds() {
+	void queryPaymentMultiPayerMultiNodeSucceeds() {
 		// setup:
 		long amount = 200L;
 
@@ -419,7 +419,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void queryPaymentMultiTransferFails() {
+	void queryPaymentMultiTransferFails() {
 		// setup:
 		long amount = 200L;
 

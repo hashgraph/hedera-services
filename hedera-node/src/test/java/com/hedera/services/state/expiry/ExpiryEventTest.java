@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ExpiryEventTest {
+class ExpiryEventTest {
 	ExpiryEvent expiryEvent = new ExpiryEvent("something", 1_234_567L);
 
 	@Test

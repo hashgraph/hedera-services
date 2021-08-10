@@ -70,7 +70,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesClear() {
+	void delegatesClear() {
 		// when:
 		subject.clear();
 
@@ -79,7 +79,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesRemoveOfMissing() {
+	void delegatesRemoveOfMissing() {
 		given(pathedBlobs.remove(pathA)).willReturn(null);
 
 		// when:
@@ -90,7 +90,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesRemoveAndReturnsNull() {
+	void delegatesRemoveAndReturnsNull() {
 		given(pathedBlobs.remove(pathA)).willReturn(blobA);
 
 		// when:
@@ -101,7 +101,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesPutUsingGetForModifyIfExtantBlob() {
+	void delegatesPutUsingGetForModifyIfExtantBlob() {
 		// setup:
 		ArgumentCaptor<MerkleBlobMeta> keyCaptor = ArgumentCaptor.forClass(MerkleBlobMeta.class);
 		ArgumentCaptor<MerkleOptionalBlob> valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
@@ -121,7 +121,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesPutUsingGetAndFactoryIfNewBlob() {
+	void delegatesPutUsingGetAndFactoryIfNewBlob() {
 		// setup:
 		ArgumentCaptor<MerkleBlobMeta> keyCaptor = ArgumentCaptor.forClass(MerkleBlobMeta.class);
 		ArgumentCaptor<MerkleOptionalBlob> valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
@@ -141,7 +141,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void propagatesNullFromGet() {
+	void propagatesNullFromGet() {
 		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath())))).willReturn(null);
 
 		// when:
@@ -152,7 +152,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesGet() {
+	void delegatesGet() {
 		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath())))).willReturn(blobA);
 
 		// when:
@@ -163,7 +163,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesContainsKey() {
+	void delegatesContainsKey() {
 		given(pathedBlobs.containsKey(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath()))))
 				.willReturn(true);
 
@@ -175,7 +175,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesIsEmpty() {
+	void delegatesIsEmpty() {
 		given(pathedBlobs.isEmpty()).willReturn(true);
 
 		// when:
@@ -188,7 +188,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesSize() {
+	void delegatesSize() {
 		given(pathedBlobs.size()).willReturn(123);
 
 		// expect:
@@ -196,7 +196,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesEntrySet() {
+	void delegatesEntrySet() {
 		// setup:
 		Set<Entry<MerkleBlobMeta, MerkleOptionalBlob>> blobEntries = Set.of(
 				new AbstractMap.SimpleEntry<>(pathA, blobA),
@@ -227,7 +227,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void putDeletesReplacedValueIfNoCopyIsHeld() {
+	void putDeletesReplacedValueIfNoCopyIsHeld() {
 		// setup:
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>();
 
@@ -242,7 +242,7 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
+	void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
 		// setup:
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>();
 

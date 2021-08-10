@@ -36,7 +36,7 @@ class TokenRelPropertyTest {
 	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted);
 
 	@Test
-	public void gettersWork() {
+	void gettersWork() {
 		// expect:
 		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(frozen, IS_FROZEN.getter().apply(target));
@@ -44,7 +44,7 @@ class TokenRelPropertyTest {
 	}
 
 	@Test
-	public void settersWork() {
+	void settersWork() {
 		// when:
 		TOKEN_BALANCE.setter().accept(target, newBalance);
 		IS_FROZEN.setter().accept(target, !frozen);

@@ -42,7 +42,7 @@ class MiscRunningAvgsTest {
 	MiscRunningAvgs subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		factory = mock(RunningAvgFactory.class);
 		platform = mock(Platform.class);
 
@@ -53,7 +53,7 @@ class MiscRunningAvgsTest {
 	}
 
 	@Test
-	public void registersExpectedStatEntries() {
+	void registersExpectedStatEntries() {
 		// setup:
 		StatEntry retries = mock(StatEntry.class);
 		StatEntry waitMs = mock(StatEntry.class);
@@ -88,7 +88,7 @@ class MiscRunningAvgsTest {
 	}
 
 	@Test
-	public void recordsToExpectedAvgs() {
+	void recordsToExpectedAvgs() {
 		// setup:
 		StatsRunningAverage retries = mock(StatsRunningAverage.class);
 		StatsRunningAverage waitMs = mock(StatsRunningAverage.class);

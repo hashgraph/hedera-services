@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HtsFeeAssessor {
 	public ResponseCodeEnum assess(
 			Id account,
+			Id chargingToken,
 			FcCustomFee htsFee,
 			BalanceChangeManager changeManager,
 			List<FcAssessedCustomFee> accumulator
@@ -41,7 +42,7 @@ public class HtsFeeAssessor {
 		final var fixedSpec = htsFee.getFixedFeeSpec();
 		final var amount = fixedSpec.getUnitsToCollect();
 		final var denominatingToken = fixedSpec.getTokenDenomination().asId();
-		adjustForAssessed(account, collector, denominatingToken, amount, changeManager);
+		adjustForAssessed(account, chargingToken, collector, denominatingToken, amount, changeManager);
 
 		final var assessed = new FcAssessedCustomFee(
 				htsFee.getFeeCollector(),

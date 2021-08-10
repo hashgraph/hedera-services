@@ -178,7 +178,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void throwsIseIfUnreadable() {
+	void throwsIseIfUnreadable() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = UNREADABLE_PROPS_RESOURCE;
 
@@ -187,7 +187,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void throwsIseIfIoExceptionOccurs() {
+	void throwsIseIfIoExceptionOccurs() {
 		// setup:
 		var bkup = BootstrapProperties.resourceStreamProvider;
 		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
@@ -204,7 +204,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void throwsIseIfInvalid() {
+	void throwsIseIfInvalid() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = INVALID_PROPS_RESOURCE;
 
@@ -213,7 +213,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void ensuresFilePropsFromExtant() {
+	void ensuresFilePropsFromExtant() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
 
@@ -229,7 +229,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void includesOverrides() {
+	void includesOverrides() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
 		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = OVERRIDE_PROPS_LOC;
@@ -242,7 +242,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void doesntThrowOnMissingOverridesFile() {
+	void doesntThrowOnMissingOverridesFile() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
 		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = "im-not-here";
@@ -252,7 +252,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void throwsIaeOnMissingPropRequest() {
+	void throwsIaeOnMissingPropRequest() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
 		// and:
@@ -263,7 +263,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void throwsIseIfMissingProps() {
+	void throwsIseIfMissingProps() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = INCOMPLETE_STD_PROPS_RESOURCE;
 
@@ -272,7 +272,7 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
-	public void logsLoadedPropsOnInit() {
+	void logsLoadedPropsOnInit() {
 		// setup:
 		BootstrapProperties.log = mock(Logger.class);
 
