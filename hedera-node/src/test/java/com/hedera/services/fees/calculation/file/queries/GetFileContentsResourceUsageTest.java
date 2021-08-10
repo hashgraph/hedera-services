@@ -66,7 +66,7 @@ class GetFileContentsResourceUsageTest {
 	}
 
 	@Test
-	public void returnsDefaultSchedulesOnMissing() {
+	void returnsDefaultSchedulesOnMissing() {
 		Query answerOnlyQuery = fileContentsQuery(target, ANSWER_ONLY);
 
 		given(view.infoForFile(any())).willReturn(Optional.empty());
@@ -76,7 +76,7 @@ class GetFileContentsResourceUsageTest {
 	}
 
 	@Test
-	public void invokesEstimatorAsExpectedForType() {
+	void invokesEstimatorAsExpectedForType() {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
@@ -102,7 +102,7 @@ class GetFileContentsResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		Query fileContentsQuery = fileContentsQuery(target, COST_ANSWER);
 		Query nonFileContentsQuery = nonFileContentsQuery();

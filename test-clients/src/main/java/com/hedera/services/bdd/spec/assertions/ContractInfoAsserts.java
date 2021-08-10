@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.assertions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 
@@ -30,55 +30,61 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 	public static ContractInfoAsserts infoKnownFor(String contract) {
 		return contractWith().knownInfoFor(contract);
 	}
-	public static ContractInfoAsserts contractWith() { return new ContractInfoAsserts(); }
+
+	public static ContractInfoAsserts contractWith() {
+		return new ContractInfoAsserts();
+	}
 
 	public ContractInfoAsserts knownInfoFor(String contract) {
 		registerProvider((spec, o) -> {
-			ContractInfo actual = (ContractInfo)o;
-			Assert.assertEquals("Bad contract id!",
-					spec.registry().getContractId(contract), actual.getContractID());
-			Assert.assertEquals("Bad account id!",
-					TxnUtils.equivAccount(spec.registry().getContractId(contract)), actual.getAccountID());
-			Assert.assertEquals("Bad admin key!",
-					spec.registry().getKey(contract), actual.getAdminKey());
+			ContractInfo actual = (ContractInfo) o;
+			Assertions.assertEquals(spec.registry().getContractId(contract), actual.getContractID(),
+					"Bad contract id!");
+			Assertions.assertEquals(TxnUtils.equivAccount(spec.registry().getContractId(contract)),
+					actual.getAccountID(),
+					"Bad account id!");
+			Assertions.assertEquals(spec.registry().getKey(contract), actual.getAdminKey(),
+					"Bad admin key!");
 			ContractInfo otherExpectedInfo = spec.registry().getContractInfo(contract);
-			Assert.assertEquals("Bad Solidity id!",
-					otherExpectedInfo.getContractAccountID(), actual.getContractAccountID());
-			Assert.assertEquals("Bad auto renew period!",
-					otherExpectedInfo.getAutoRenewPeriod(), actual.getAutoRenewPeriod());
-			Assert.assertEquals("Bad memo!",
-					otherExpectedInfo.getMemo(), actual.getMemo());
+			Assertions.assertEquals(
+					otherExpectedInfo.getContractAccountID(), actual.getContractAccountID(),
+					"Bad Solidity id!");
+			Assertions.assertEquals(otherExpectedInfo.getAutoRenewPeriod(), actual.getAutoRenewPeriod(),
+					"Bad auto renew period!");
+			Assertions.assertEquals(otherExpectedInfo.getMemo(), actual.getMemo(),
+					"Bad memo!");
 		});
 		return this;
 	}
 
 	public ContractInfoAsserts nonNullContractId() {
 		registerProvider((spec, o) -> {
-			Assert.assertTrue("Null contractId!", object2ContractInfo(o).hasContractID());
+			Assertions.assertTrue(object2ContractInfo(o).hasContractID(), "Null contractId!");
 		});
 		return this;
 	}
 
 	public ContractInfoAsserts solidityAddress(String contract) {
 		registerProvider((spec, o) -> {
-			Assert.assertEquals(
-					"Bad Solidity address!",
+			Assertions.assertEquals(
 					TxnUtils.solidityIdFrom(spec.registry().getContractId(contract)),
-					TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()));
+					TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()),
+					"Bad Solidity address!");
 		});
 		return this;
 	}
 
 	public ContractInfoAsserts memo(String expectedMemo) {
 		registerProvider((spec, o) -> {
-			Assert.assertEquals("Bad memo!", expectedMemo, object2ContractInfo(o).getMemo());
+			Assertions.assertEquals(expectedMemo, object2ContractInfo(o).getMemo(), "Bad memo!");
 		});
 		return this;
 	}
 
 	public ContractInfoAsserts expiry(long expectedExpiry) {
 		registerProvider((spec, o) -> {
-			Assert.assertEquals("Bad expiry time!", expectedExpiry, object2ContractInfo(o).getExpirationTime().getSeconds());
+			Assertions.assertEquals(expectedExpiry, object2ContractInfo(o).getExpirationTime().getSeconds(),
+					"Bad expiry time!");
 		});
 		return this;
 	}
@@ -87,18 +93,21 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		registerProvider((spec, o) -> {
 			ContractInfo expected = spec.registry().getContractInfo(contract);
 			ContractInfo actual = object2ContractInfo(o);
-			Assert.assertEquals("Bad expiry time!",
+			Assertions.assertEquals(
 					expected.getExpirationTime(),
-					actual.getExpirationTime());
-			Assert.assertEquals("Bad auto renew period!",
+					actual.getExpirationTime(),
+					"Bad expiry time!");
+			Assertions.assertEquals(
 					expected.getAutoRenewPeriod(),
-					actual.getAutoRenewPeriod());
-			Assert.assertEquals("Bad admin key!",
-					expected.getAdminKey(),
-					actual.getAdminKey());
-			Assert.assertEquals("Bad memo!",
+					actual.getAutoRenewPeriod(),
+					"Bad auto renew period!");
+			Assertions.assertEquals(expected.getAdminKey(),
+					actual.getAdminKey(),
+					"Bad admin key!");
+			Assertions.assertEquals(
 					expected.getMemo(),
-					actual.getMemo());
+					actual.getMemo(),
+					"Bad memo!");
 		});
 		return this;
 	}
@@ -106,21 +115,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 	public ContractInfoAsserts adminKey(String expectedKeyName) {
 		registerProvider((spec, o) -> {
 			Key expectedKey = spec.registry().getKey(expectedKeyName);
-			Assert.assertEquals("Bad admin key!", expectedKey, object2ContractInfo(o).getAdminKey());
-		});
-		return this;
-	}
-
-	public ContractInfoAsserts nonNullAccountId() {
-		registerProvider((spec, o) -> {
-			Assert.assertTrue("Null accountId!", object2ContractInfo(o).hasAccountID());
-		});
-		return this;
-	}
-
-	public ContractInfoAsserts nonNullExpiration() {
-		registerProvider((spec, o) -> {
-			Assert.assertTrue("Null expiration time!", object2ContractInfo(o).hasExpirationTime());
+			Assertions.assertEquals(expectedKey, object2ContractInfo(o).getAdminKey(), "Bad admin key!");
 		});
 		return this;
 	}

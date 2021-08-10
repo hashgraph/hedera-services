@@ -72,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class GetAccountBalanceAnswerTest {
+class GetAccountBalanceAnswerTest {
 	private FCMap accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
@@ -159,7 +159,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void requiresNothing() {
+	void requiresNothing() {
 		// setup:
 		CryptoGetAccountBalanceQuery costAnswerOp = CryptoGetAccountBalanceQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
@@ -178,13 +178,13 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void hasNoPayment() {
+	void hasNoPayment() {
 		// expect:
 		assertFalse(subject.extractPaymentFrom(mock(Query.class)).isPresent());
 	}
 
 	@Test
-	public void syntaxCheckRequiresId() {
+	void syntaxCheckRequiresId() {
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder().build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
@@ -197,7 +197,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckValidatesCidIfPresent() {
+	void syntaxCheckValidatesCidIfPresent() {
 		// setup:
 		ContractID cid = asContract(contractIdLit);
 
@@ -217,7 +217,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder().setCryptogetAccountBalance(
 				CryptoGetAccountBalanceResponse.newBuilder()
@@ -228,7 +228,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void requiresOkMetaValidity() {
+	void requiresOkMetaValidity() {
 		// setup:
 		AccountID id = asAccount(accountIdLit);
 
@@ -250,7 +250,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckValidatesIdIfPresent() {
+	void syntaxCheckValidatesIdIfPresent() {
 		// setup:
 		AccountID id = asAccount(accountIdLit);
 
@@ -271,7 +271,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void answersWithAccountBalance() {
+	void answersWithAccountBalance() {
 		// setup:
 		AccountID id = asAccount(accountIdLit);
 
@@ -303,7 +303,7 @@ public class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(CryptoGetAccountBalance, subject.canonicalFunction());
 	}

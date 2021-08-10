@@ -41,7 +41,6 @@ import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsF
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
 
 public class Rationalization {
 	private TxnAccessor txnAccessor;
@@ -148,21 +147,14 @@ public class Rationalization {
 		final var requestedSubListEnd = startingAt + realSigs.size();
 		if (requestedSubListEnd <= maxSubListEnd) {
 			var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
-			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
+			/* If all the key material is unchanged from expandSignatures(), we are done */
+			if (allVaryingMaterialEquals(candidateSigs, realSigs)) {
 				return candidateSigs;
 			}
 		}
+		/* Otherwise we must synchronously verify these signatures for the rationalized keys */
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
-	}
-
-	private boolean allStatusesAreKnown(List<TransactionSignature> sigs) {
-		for (final var sig : sigs) {
-			if (sig.getSignatureStatus() == UNKNOWN) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	private ResponseCodeEnum expandIn(
@@ -173,7 +165,8 @@ public class Rationalization {
 		if (lastOrderResult.hasErrorReport()) {
 			return lastOrderResult.getErrorReport();
 		}
-		final var creation = createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+		final var creation =
+				createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (creation.hasFailed()) {
 			return creation.asCode();
 		}

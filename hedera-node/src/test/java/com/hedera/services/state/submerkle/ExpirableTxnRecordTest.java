@@ -44,6 +44,7 @@ import java.util.List;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,7 +101,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	private ExpirableTxnRecord subjectRecord() {
-		var s = ExpirableTxnRecord.fromGprc(
+		var s = fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
@@ -111,7 +112,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	private ExpirableTxnRecord subjectRecordWithTokenTransfers() {
-		var s = ExpirableTxnRecord.fromGprc(
+		var s = ExpirableTxnRecordTestHelper.fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
@@ -123,7 +124,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	private ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
-		var s = ExpirableTxnRecord.fromGprc(
+		var s = fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
@@ -282,7 +283,7 @@ class ExpirableTxnRecordTest {
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
 
 		// expect:
-		assertEquals(subject, ExpirableTxnRecord.fromGprc(subject.asGrpc()));
+		assertEquals(subject, fromGprc(subject.asGrpc()));
 	}
 
 	@Test

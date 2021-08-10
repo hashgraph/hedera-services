@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -159,6 +160,11 @@ public interface TxnHandlingScenario {
 								.receiverSigRequired(true)
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(DILIGENT_SIGNING_PAYER_KT).get()
+				).withContract(
+						IMMUTABLE_CONTRACT_ID,
+						newContract()
+								.balance(DEFAULT_BALANCE)
+								.get()
 				).withContract(
 						MISC_CONTRACT_ID,
 						newContract()
@@ -404,10 +410,14 @@ public interface TxnHandlingScenario {
 
 	KeyTree SIMPLE_NEW_WACL_KT = withRoot(list(ed25519()));
 
-	String MISSING_CONTRACT_ID = "1.2.3";
+	String MISSING_CONTRACT_ID = "3.6.9";
+	ContractID MISSING_CONTRACT = asContract(MISSING_CONTRACT_ID);
 
 	String MISC_RECIEVER_SIG_CONTRACT_ID = "0.0.7337";
 	ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
+
+	String IMMUTABLE_CONTRACT_ID = "0.0.9339";
+	ContractID IMMUTABLE_CONTRACT = asContract(IMMUTABLE_CONTRACT_ID);
 
 	String MISC_CONTRACT_ID = "0.0.3337";
 	ContractID MISC_CONTRACT = asContract(MISC_CONTRACT_ID);
@@ -449,6 +459,11 @@ public interface TxnHandlingScenario {
 	AccountID SECOND_TOKEN_SENDER = asAccount(SECOND_TOKEN_SENDER_ID);
 	String TOKEN_RECEIVER_ID = "0.0.1111";
 	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
+
+	NftID KNOWN_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(KNOWN_TOKEN_WITH_WIPE)
+			.setSerialNumber(1L)
+			.build();
 
 	String UNKNOWN_TOKEN_ID = "0.0.666";
 	TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);

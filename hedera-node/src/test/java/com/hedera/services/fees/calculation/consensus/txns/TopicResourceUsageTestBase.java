@@ -33,7 +33,7 @@ import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.fcmap.FCMap;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 class TopicResourceUsageTestBase {

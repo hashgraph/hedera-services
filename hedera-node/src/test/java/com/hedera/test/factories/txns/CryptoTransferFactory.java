@@ -9,9 +9,9 @@ package com.hedera.test.factories.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,8 @@ package com.hedera.test.factories.txns;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -46,11 +48,13 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 	boolean adjustmentsAreSet = false;
 	List<AccountAmount> hbarAdjustments = new ArrayList<>();
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
+	Map<NftID, List<AccountID>> ownershipChanges = new HashMap<>();
 	CryptoTransferTransactionBody.Builder xfers = CryptoTransferTransactionBody.newBuilder();
 
 	private List<TinyBarsFromTo> transfers = DEFAULT_TRANSFERS;
 
-	private CryptoTransferFactory() { }
+	private CryptoTransferFactory() {
+	}
 
 	public static CryptoTransferFactory newSignedCryptoTransfer() {
 		return new CryptoTransferFactory();
@@ -63,7 +67,13 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 
 	public CryptoTransferFactory adjustingHbars(AccountID aId, long amount) {
 		usesTokenBuilders = true;
-		hbarAdjustments.add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount) .build());
+		hbarAdjustments.add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount).build());
+		return this;
+	}
+
+	public CryptoTransferFactory changingOwner(NftID nft, AccountID sender, AccountID receiver) {
+		usesTokenBuilders = true;
+		ownershipChanges.put(nft, List.of(sender, receiver));
 		return this;
 	}
 
@@ -100,12 +110,20 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 								.setToken(entry.getKey())
 								.addAllTransfers(entry.getValue())
 								.build()));
+				ownershipChanges.entrySet().stream()
+						.forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
+								.setToken(entry.getKey().getTokenID())
+								.addNftTransfers(NftTransfer.newBuilder()
+										.setSenderAccountID(entry.getValue().get(0))
+										.setReceiverAccountID(entry.getValue().get(1))
+										.setSerialNumber(entry.getKey().getSerialNumber()))));
 				xfers.setTransfers(TransferList.newBuilder().addAllAccountAmounts(hbarAdjustments));
 				adjustmentsAreSet = true;
 			}
 			txn.setCryptoTransfer(xfers);
 		}
 	}
+
 	private List<AccountAmount> transfersAsAccountAmounts() {
 		return transfers
 				.stream()

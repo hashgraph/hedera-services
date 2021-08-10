@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 
 class AnswerServiceTest {
 	@Test
-	public void delegatesToNonQueryCtxAsExpected() {
+	void delegatesToNonQueryCtxAsExpected() {
 		// setup:
 		AnswerService subject = mock(AnswerService.class);
 

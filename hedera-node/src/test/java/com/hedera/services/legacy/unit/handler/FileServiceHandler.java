@@ -42,35 +42,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 
 public class FileServiceHandler {
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
-
   private FCStorageWrapper storageWrapper;
 
-  public FileServiceHandler(FCStorageWrapper storageWrapper) {
+  FileServiceHandler(final FCStorageWrapper storageWrapper) {
     this.storageWrapper = storageWrapper;
   }
 
-  /**
-     * Converts a string to a byte array with UTF-8 encoding.
-     *
-     * @param str
-     * 		string to be converted
-     * @return converted byte array, or an empty array if there is an UnsupportedEncodingException.
-     */
-    public static byte[] string2bytesUTF8(String str) {
-        byte[] rv = new byte[0];
-        try {
-            rv = str.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-        }
-        return rv;
-    }
-
-  public static JKey convertWacl(KeyList waclAsKeyList) throws InvalidFileWACLException {
+  private static JKey convertWacl(final KeyList waclAsKeyList) throws InvalidFileWACLException {
         try {
             return JKey.mapKey(Key.newBuilder().setKeyList(waclAsKeyList).build());
         } catch (DecoderException e) {
@@ -81,11 +63,9 @@ public class FileServiceHandler {
   /**
    * Creates a file on the ledger.
    */
-  public TransactionRecord createFile(TransactionBody gtx, Instant timestamp, FileID fid,
-      final long selfId) {
+  TransactionRecord createFile(final TransactionBody gtx, final Instant timestamp, final FileID fid, final long selfId) {
     TransactionRecord txRecord;
     TransactionID txId = gtx.getTransactionID();
-    Instant startTime = RequestBuilder.convertProtoTimeStamp(txId.getTransactionValidStart());
     FileCreateTransactionBody tx = gtx.getFileCreate();
 
     // get wacl and handle exception
@@ -113,15 +93,13 @@ public class FileServiceHandler {
         log.debug("Creating file at path :: " + fileDataPath + " :: nodeId = " + selfId);
       }
       storageWrapper
-          .fileCreate(fileDataPath, fileData, startTime.getEpochSecond(), startTime.getNano(),
-              expireTimeSec, string2bytesUTF8(fileDataPath));
+          .fileCreate(fileDataPath, fileData);
 
       // create virtual file for the meta data
       HFileMeta fi = new HFileMeta(false, jkey, expireTimeSec);
 
       String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
-      storageWrapper.fileCreate(fileMetaDataPath, fi.serialize(), startTime.getEpochSecond(),
-          startTime.getNano(), expireTimeSec, null);
+      storageWrapper.fileCreate(fileMetaDataPath, fi.serialize());
 
     } catch (InvalidFileWACLException e) {
       if (log.isDebugEnabled()) {
@@ -138,8 +116,7 @@ public class FileServiceHandler {
       log.debug("Maximum File Size Exceeded {}", ()->e);
 	}
 
-    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(
-    		fid, status, ExchangeRateSet.getDefaultInstance());
+    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(fid, status, ExchangeRateSet.getDefaultInstance());
     TransactionRecord.Builder txRecordBuilder = TransactionRecord.newBuilder().setReceipt(receipt)
         .setConsensusTimestamp(RequestBuilder.getTimestamp(timestamp)).setTransactionID(txId)
         .setMemo(gtx.getMemo()).setTransactionFee(gtx.getTransactionFee());

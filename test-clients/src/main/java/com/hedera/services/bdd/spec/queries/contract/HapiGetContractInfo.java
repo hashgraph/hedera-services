@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -196,13 +196,13 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 			if (verboseLoggingOn) {
 				log.info("Info: " + contractInfo);
 			}
-			Assert.assertEquals(contractInfo.getAccountID().getAccountNum(),
+			Assertions.assertEquals(contractInfo.getAccountID().getAccountNum(),
 					savedContractInfo.getAccountID().getAccountNum());
-			Assert.assertEquals(contractInfo.getStorage(), savedContractInfo.getStorage());
-			Assert.assertEquals(contractInfo.getBalance(), savedContractInfo.getBalance());
+			Assertions.assertEquals(contractInfo.getStorage(), savedContractInfo.getStorage());
+			Assertions.assertEquals(contractInfo.getBalance(), savedContractInfo.getBalance());
 		} catch (Exception e) {
 			log.error("Something amiss with the expected records...", e);
-			Assert.fail("Impossible to meet expectations (on records)!");
+			Assertions.fail("Impossible to meet expectations (on records)!");
 		}
 	}
 

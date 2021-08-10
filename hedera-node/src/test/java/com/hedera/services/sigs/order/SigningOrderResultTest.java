@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SigningOrderResultTest {
+class SigningOrderResultTest {
 	@Test
-	public void representsErrorsAccurately() {
+	void representsErrorsAccurately() {
 		// given:
 		SigningOrderResult<String> subject = new SigningOrderResult<>("NOPE!");
 
@@ -38,7 +38,7 @@ public class SigningOrderResultTest {
 	}
 
 	@Test
-	public void representsSuccessAccurately() {
+	void representsSuccessAccurately() {
 		// given:
 		SigningOrderResult<String> subject = new SigningOrderResult<>(EMPTY_LIST);
 

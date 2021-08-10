@@ -118,14 +118,14 @@ class TokenUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenUpdateTxn));
 		assertFalse(subject.applicableTo(nonTokenUpdateTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
 				expected,
@@ -136,7 +136,7 @@ class TokenUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void returnsDefaultIfInfoMissing() throws Exception {
+	void returnsDefaultIfInfoMissing() throws Exception {
 		given(view.infoForToken(any())).willReturn(Optional.empty());
 
 		// expect:

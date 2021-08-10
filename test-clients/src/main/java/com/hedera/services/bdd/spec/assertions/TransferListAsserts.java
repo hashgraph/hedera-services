@@ -21,12 +21,11 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.TinyBarTransfers;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -82,9 +81,10 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
 
 	protected void assertInclusion(TransferList of, TransferList in) {
 		if (!new TinyBarTransfers(of).test(in)) {
-			Assert.assertEquals("Transfers missing from list!",
+			Assertions.assertEquals(
 					TxnUtils.printable(of),
-					TxnUtils.printable(in));
+					TxnUtils.printable(in),
+					"Transfers missing from list!");
 		}
 	}
 }
@@ -101,7 +101,7 @@ class MissingPaymentAsserts extends TransferListAsserts {
 					nonAbsent.add(sig);
 				}
 			});
-			Assert.assertTrue("Payments not absent from list! " + nonAbsent, nonAbsent.isEmpty());
+			Assertions.assertTrue(nonAbsent.isEmpty(), "Payments not absent from list! " + nonAbsent);
 		});
 	}
 
@@ -120,11 +120,12 @@ class ExactParticipantsAssert extends TransferListAsserts {
 		registerProvider((spec, o) -> {
 			List<AccountID> expectedParticipants = provider.apply(spec);
 			TransferList actual = (TransferList) o;
-			Assert.assertEquals("Wrong number of participants!",
+			Assertions.assertEquals(
 					expectedParticipants.size(),
-					actual.getAccountAmountsCount());
+					actual.getAccountAmountsCount(),
+					"Wrong number of participants!");
 			for (int i = 0, n = expectedParticipants.size(); i < n; i++) {
-				Assert.assertEquals(expectedParticipants.get(i), actual.getAccountAmounts(i).getAccountID());
+				Assertions.assertEquals(expectedParticipants.get(i), actual.getAccountAmounts(i).getAccountID());
 			}
 		});
 	}
@@ -147,7 +148,7 @@ class QualifyingDeductionAssert extends TransferListAsserts {
 			var transfers = (TransferList) o;
 			var hasQualifying = getDeduction(transfers, asId(payer, spec)).isPresent();
 			if (!hasQualifying) {
-				Assert.fail("No qualifying " + desc + " from " + payer + " in " + readableTransferList(transfers));
+				Assertions.fail("No qualifying " + desc + " from " + payer + " in " + readableTransferList(transfers));
 			}
 		});
 	}
@@ -157,7 +158,7 @@ class NonEmptyTransferAsserts extends TransferListAsserts {
 	public NonEmptyTransferAsserts() {
 		registerProvider((spec, o) -> {
 			TransferList transfers = (TransferList) o;
-			Assert.assertTrue("Transfer list cannot be empty!", !transfers.getAccountAmountsList().isEmpty());
+			Assertions.assertTrue(!transfers.getAccountAmountsList().isEmpty(), "Transfer list cannot be empty!");
 		});
 	}
 }
@@ -167,11 +168,11 @@ class DeductionAsserts extends TransferListAsserts {
 		registerProvider((spec, o) -> {
 			TransferList transfers = (TransferList) o;
 			long num = from.getAsLong();
-			Assert.assertTrue(
-					String.format("No deduction of -%d tinyBars from 0.0.%d detected!", amount, num),
+			Assertions.assertTrue(
 					transfers.getAccountAmountsList()
 							.stream()
-							.anyMatch(aa -> aa.getAmount() == -amount && aa.getAccountID().getAccountNum() == num));
+							.anyMatch(aa -> aa.getAmount() == -amount && aa.getAccountID().getAccountNum() == num),
+					String.format("No deduction of -%d tinyBars from 0.0.%d detected!", amount, num));
 		});
 	}
 }
@@ -181,11 +182,11 @@ class SpecificDeductionAsserts extends TransferListAsserts {
 		registerProvider((spec, o) -> {
 			TransferList transfers = (TransferList) o;
 			AccountID payer = asId(account, spec);
-			Assert.assertTrue(
-					String.format("No deduction of -%d tinyBars from %s detected!", amount, account),
+			Assertions.assertTrue(
 					transfers.getAccountAmountsList()
 							.stream()
-							.anyMatch(aa -> aa.getAmount() == -amount && aa.getAccountID().equals(payer)));
+							.anyMatch(aa -> aa.getAmount() == -amount && aa.getAccountID().equals(payer)),
+					String.format("No deduction of -%d tinyBars from %s detected!", amount, account));
 		});
 	}
 }

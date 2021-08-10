@@ -60,6 +60,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
@@ -362,7 +363,7 @@ class SigOpsRegressionTest {
 		final var impliedKey = impliedOrdering.getPayerKey();
 		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
 
-		return payerSigIsActive(platformTxn);
+		return payerSigIsActive(platformTxn, ONLY_IF_SIG_IS_VALID);
 	}
 
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
@@ -425,7 +426,7 @@ class SigOpsRegressionTest {
 				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
-		SigningOrderResult<ResponseCodeEnum> payerKeys =
+		final var payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		expectedSigs = new ArrayList<>();
 		if (payerKeys.hasErrorReport()) {

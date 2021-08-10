@@ -9,9 +9,9 @@ package com.hedera.services.txns.network;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
@@ -85,10 +86,19 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody freezeTxn) {
-		var op = freezeTxn.getFreeze();
-		if (!isValidTime(op.getStartHour(), op.getStartMin()) || !isValidTime(op.getEndHour(), op.getEndMin())) {
-			return INVALID_FREEZE_TRANSACTION_BODY;
+		final var op = freezeTxn.getFreeze();
+
+		if (op.hasStartTime()) {
+			final var txnStartTime = freezeTxn.getTransactionID().getTransactionValidStart();
+			if (!isValidTimestamp(op.getStartTime(), txnStartTime)) {
+				return INVALID_FREEZE_TRANSACTION_BODY;
+			}
+		} else {
+			if (!isValidTime(op.getStartHour(), op.getStartMin()) || !isValidTime(op.getEndHour(), op.getEndMin())) {
+				return INVALID_FREEZE_TRANSACTION_BODY;
+			}
 		}
+
 		if (op.hasUpdateFile()) {
 			if (!op.getUpdateFile().equals(softwareUpdateZipFid)) {
 				return INVALID_FILE_ID;
@@ -100,7 +110,12 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private boolean isValidTime(int hr, int min) {
+	private boolean isValidTime(final int hr, final int min) {
 		return hr >= 0 && hr <= 23 && min >= 0 && min <= 59;
+	}
+
+	private boolean isValidTimestamp(final Timestamp freezeStartTime, final Timestamp txnStartTime) {
+		return Instant.ofEpochSecond(freezeStartTime.getSeconds(), freezeStartTime.getNanos())
+				.isAfter(Instant.ofEpochSecond(txnStartTime.getSeconds(), txnStartTime.getNanos()));
 	}
 }

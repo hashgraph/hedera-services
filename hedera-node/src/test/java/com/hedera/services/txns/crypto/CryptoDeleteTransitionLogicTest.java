@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +66,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(LogCaptureExtension.class)
-public class CryptoDeleteTransitionLogicTest {
+class CryptoDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private boolean withKnownTreasury = true;

@@ -89,7 +89,7 @@ public class FcmToJsonUtil {
 	}
 
 	@Test
-	public void convertAccountsToJson() throws Exception {
+	void convertAccountsToJson() throws Exception {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 		ConstructableRegistry.registerConstructable(

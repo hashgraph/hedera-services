@@ -33,7 +33,7 @@ class LegacyEd25519KeyReaderTest {
 	LegacyEd25519KeyReader subject = new LegacyEd25519KeyReader();
 
 	@Test
-	public void getsExpectedABytes() {
+	void getsExpectedABytes() {
 		// expect:
 		assertEquals(
 				expectedABytes,
@@ -41,7 +41,7 @@ class LegacyEd25519KeyReaderTest {
 	}
 
 	@Test
-	public void throwsIaeOnProblem() {
+	void throwsIaeOnProblem() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.hexedABytesFrom(invalidB64Loc, "NOPE"));
 	}

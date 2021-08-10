@@ -86,7 +86,7 @@ class StandardSyncActivationCheckTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		given(result.hasFailed()).willReturn(false);
 		given(result.getPlatformSigs()).willReturn(sigs);
 		given(isActive.test(any(), any())).willReturn(true);
@@ -109,7 +109,7 @@ class StandardSyncActivationCheckTest {
 	}
 
 	@Test
-	public void failsOnInActive() {
+	void failsOnInActive() {
 		given(result.hasFailed()).willReturn(false);
 		given(result.getPlatformSigs()).willReturn(sigs);
 		given(isActive.test(any(), any())).willReturn(false);
@@ -132,7 +132,7 @@ class StandardSyncActivationCheckTest {
 	}
 
 	@Test
-	public void shortCircuitsOnCreationFailure() {
+	void shortCircuitsOnCreationFailure() {
 		given(result.hasFailed()).willReturn(true);
 
 		// when:

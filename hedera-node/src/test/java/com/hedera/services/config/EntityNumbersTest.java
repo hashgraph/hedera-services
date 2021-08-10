@@ -35,7 +35,7 @@ class EntityNumbersTest {
 	EntityNumbers subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		fileNumbers = new MockFileNumbers();
 		hederaNumbers = new MockHederaNumbers();
 		accountNumbers = new MockAccountNumbers();
@@ -44,7 +44,7 @@ class EntityNumbersTest {
 	}
 
 	@Test
-	public void hasExpectedMembers() {
+	void hasExpectedMembers() {
 		// expect:
 		assertSame(fileNumbers, subject.files());
 		assertSame(accountNumbers, subject.accounts());
@@ -52,7 +52,7 @@ class EntityNumbersTest {
 	}
 
 	@Test
-	public void recognizesSystemEntities() {
+	void recognizesSystemEntities() {
 		// given:
 		var sysFile = IdUtils.asFile("0.0.1000");
 		var civFile = IdUtils.asFile("0.0.1001");

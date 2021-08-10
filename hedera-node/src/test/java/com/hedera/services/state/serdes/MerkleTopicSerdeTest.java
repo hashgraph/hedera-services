@@ -55,7 +55,7 @@ class MerkleTopicSerdeTest {
 	TopicSerde subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		adminKey = mock(JKey.class);
 		submitKey = mock(JKey.class);
 		serdes = mock(DomainSerdes.class);
@@ -74,7 +74,7 @@ class MerkleTopicSerdeTest {
 	}
 
 	@Test
-	public void serializesFullCurrentAsExpected() throws IOException {
+	void serializesFullCurrentAsExpected() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		var topic = mock(MerkleTopic.class);
@@ -119,7 +119,7 @@ class MerkleTopicSerdeTest {
 	}
 
 	@Test
-	public void serializesCurrentBasicsAsExpected() throws IOException {
+	void serializesCurrentBasicsAsExpected() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		var topic = mock(MerkleTopic.class);
@@ -146,7 +146,7 @@ class MerkleTopicSerdeTest {
 	}
 
 	@Test
-	public void deserializesMinimalV1() throws IOException {
+	void deserializesMinimalV1() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -172,7 +172,7 @@ class MerkleTopicSerdeTest {
 	}
 
 	@Test
-	public void deserializesFullV1() throws IOException {
+	void deserializesFullV1() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:

@@ -48,7 +48,7 @@ class BalanceChangeManagerTest {
 		// expect:
 		assertEquals(0, subject.getLevelNo());
 		assertEquals(0, subject.getLevelStart());
-		assertEquals(7, subject.getLevelEnd());
+		assertEquals(8, subject.getLevelEnd());
 	}
 
 	@Test
@@ -63,7 +63,7 @@ class BalanceChangeManagerTest {
 	@Test
 	void changesSoFarAreSized() {
 		// expect:
-		assertEquals(7, subject.numChangesSoFar());
+		assertEquals(8, subject.numChangesSoFar());
 	}
 
 	@Test
@@ -74,8 +74,8 @@ class BalanceChangeManagerTest {
 		final var newChanges = subject.getChangesSoFar();
 
 		// then:
-		assertEquals(8, newChanges.size());
-		assertSame(miscHbarAdjust, newChanges.get(7));
+		assertEquals(9, newChanges.size());
+		assertSame(miscHbarAdjust, newChanges.get(8));
 		assertSame(miscHbarAdjust, subject.changeFor(misc, Id.MISSING_ID));
 	}
 
@@ -189,6 +189,11 @@ class BalanceChangeManagerTest {
 			.build();
 	private final BalanceChange firstFungibleTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+	private final BalanceChange exemptFungibleTrigger = BalanceChange.changingFtUnits(
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+	{
+		exemptFungibleTrigger.setExemptFromCustomFees(true);
+	}
 	private final BalanceChange firstFungibleNonTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleCredit);
 	private final BalanceChange secondFungibleTrigger = BalanceChange.changingFtUnits(
@@ -215,6 +220,7 @@ class BalanceChangeManagerTest {
 	{
 		startingList.add(payerHbarAdjust);
 		startingList.add(fundingHbarAdjust);
+		startingList.add(exemptFungibleTrigger);
 		startingList.add(firstFungibleTrigger);
 		startingList.add(firstFungibleNonTrigger);
 		startingList.add(secondFungibleTrigger);

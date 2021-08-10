@@ -86,7 +86,8 @@ import static org.mockito.BDDMockito.given;
 class LedgerBalanceChangesTest {
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
-	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
+	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
+			new HashMapBackingTokenRels();
 
 	private TokenStore tokenStore;
 	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();

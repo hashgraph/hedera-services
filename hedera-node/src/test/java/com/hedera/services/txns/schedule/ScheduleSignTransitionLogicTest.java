@@ -51,7 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,7 +62,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-public class ScheduleSignTransitionLogicTest {
+class ScheduleSignTransitionLogicTest {
     private ScheduleStore store;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
@@ -109,7 +109,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void hasCorrectApplicability() {
+    void hasCorrectApplicability() {
         givenValidTxnCtx();
         // expect:
         assertTrue(subject.applicability().test(scheduleSignTxn));
@@ -117,7 +117,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void setsFailInvalidIfUnhandledException() {
+    void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
         given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
@@ -131,14 +131,14 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void failsOnInvalidScheduleId() {
+    void failsOnInvalidScheduleId() {
         givenCtx(true);
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
     }
 
     @Test
-    public void acceptsValidTxn() {
+    void acceptsValidTxn() {
         givenValidTxnCtx();
 
         // expect:
@@ -146,7 +146,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void abortsImmediatelyIfScheduleIsExecuted() throws InvalidProtocolBufferException {
+    void abortsImmediatelyIfScheduleIsExecuted() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.isExecuted()).willReturn(true);
@@ -162,7 +162,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void abortsImmediatelyIfScheduleIsDeleted() throws InvalidProtocolBufferException {
+    void abortsImmediatelyIfScheduleIsDeleted() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.isDeleted()).willReturn(true);
@@ -178,7 +178,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void followsHappyPath() throws InvalidProtocolBufferException {
+    void followsHappyPath() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
@@ -193,7 +193,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void execsOnlyIfReady() throws InvalidProtocolBufferException {
+    void execsOnlyIfReady() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
@@ -210,7 +210,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
+    void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
@@ -226,7 +226,7 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void rejectsInvalidScheduleId() {
+    void rejectsInvalidScheduleId() {
         givenCtx(true);
         assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleSignTxn));
     }

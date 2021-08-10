@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -127,7 +127,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
 
 		var actualOwnedNfts = actualInfo.getOwnedNfts();
-		ownedNfts.ifPresent(nftsOwned -> Assert.assertEquals((long) nftsOwned, actualOwnedNfts));
+		ownedNfts.ifPresent(nftsOwned -> Assertions.assertEquals((long) nftsOwned, actualOwnedNfts));
 	}
 
 	@Override

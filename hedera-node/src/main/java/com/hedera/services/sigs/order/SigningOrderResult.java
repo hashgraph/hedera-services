@@ -61,10 +61,6 @@ public class SigningOrderResult<T> {
 		this.errorReport = errorReport;
 	}
 
-	public boolean hasKnownOrder() {
-		return errorReport == null;
-	}
-
 	public boolean hasErrorReport() {
 		return errorReport !=  null;
 	}

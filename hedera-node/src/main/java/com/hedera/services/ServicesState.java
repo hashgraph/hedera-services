@@ -135,10 +135,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version == StateVersions.RELEASE_0160_VERSION) {
-			return LegacyStateChildIndices.NUM_0160_CHILDREN;
-		} else if (version == StateVersions.RELEASE_0170_VERSION ) {
-			return StateChildIndices.NUM_0170_CHILDREN;
+		if (version < StateVersions.RELEASE_0160_VERSION) {
+			return StateChildIndices.NUM_PRE_0160_CHILDREN;
+		} else if (version <= StateVersions.RELEASE_0170_VERSION) {
+			return StateChildIndices.NUM_POST_0160_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -151,7 +151,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion == StateVersions.RELEASE_0160_VERSION) {
+		if (deserializedVersion <= StateVersions.RELEASE_0160_VERSION) {
+			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
+				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new FCMap<>());
+			}
 			moveLargeFcmsToBinaryRoutePositions(this);
 		}
 	}
@@ -240,6 +243,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- Archivable --- */
 	@Override
 	public void archive() {
+		/* NOTE: in the near future, likely SDK 0.19.0, it will be necessary
+		* to also propagate this .archive() call to the FCMs as well. */
 		if (metadata != null) {
 			metadata.archive();
 		}
@@ -322,8 +327,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
-		setImmutable(false);
-
 		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 		diskFs().checkHashesAgainstDiskContents();
 

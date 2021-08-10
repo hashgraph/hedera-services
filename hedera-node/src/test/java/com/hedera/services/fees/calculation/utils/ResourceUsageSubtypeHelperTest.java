@@ -33,7 +33,7 @@ class ResourceUsageSubtypeHelperTest {
 	private ResourceUsageSubtypeHelper subject = new ResourceUsageSubtypeHelper();
 
 	@Test
-	void emptyOptionalIsDefault() {
+	void emptyOptionalIsFungibleCommon() {
 		// expect:
 		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.determineTokenType(Optional.empty()));
 	}

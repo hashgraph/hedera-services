@@ -61,7 +61,7 @@ class GetContractRecordsResourceUsageTest {
 	}
 
 	@Test
-	public void invokesEstimatorAsExpectedForType() {
+	void invokesEstimatorAsExpectedForType() {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
@@ -87,7 +87,7 @@ class GetContractRecordsResourceUsageTest {
 
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		Query accountRecordsQuery = accountRecordsQuery(a, COST_ANSWER);
 		Query nonContractRecordsQuery = nonContractRecordsQuery();

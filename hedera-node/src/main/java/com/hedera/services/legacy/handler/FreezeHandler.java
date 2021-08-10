@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,12 +42,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.function.Supplier;
 
@@ -104,7 +105,13 @@ public class FreezeHandler {
 			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
 			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
 		}
-		final var naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
+		Instant naturalFreezeStart;
+		if (op.hasStartTime()) {
+			final var ts = op.getStartTime();
+			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+		} else {
+			naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
+		}
 		try {
 			final var dual = dualState.get();
 			dual.setFreezeTime(naturalFreezeStart);
@@ -182,7 +189,11 @@ public class FreezeHandler {
 			if (directory.exists()) {
 				log.info("{} clean directory {}", LOG_PREFIX, directory);
 				// delete everything in it recursively
-				FileUtils.cleanDirectory(directory);
+				try (final var walk = Files.walk(directory.toPath())) {
+					walk.sorted(Comparator.reverseOrder())
+							.map(Path::toFile)
+							.forEach(File::delete);
+				}
 			} else {
 				log.info("{} create directory {}", LOG_PREFIX, directory);
 				directory.mkdir();

@@ -36,7 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -66,7 +66,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesInvalidDelete() {
+	void capturesInvalidDelete() {
 		givenValidTxnCtx();
 		// and:
 		given(tokenStore.delete(tokenId)).willReturn(INVALID_TOKEN_ID);
@@ -79,7 +79,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesInvalidDeletionDueToAlreadyDeleted() {
+	void capturesInvalidDeletionDueToAlreadyDeleted() {
 		givenValidTxnCtx();
 		// and:
 		given(tokenStore.delete(tokenId)).willReturn(TOKEN_WAS_DELETED);
@@ -92,7 +92,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
 		given(tokenStore.delete(tokenId)).willReturn(OK);
@@ -106,7 +106,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -115,7 +115,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidIfUnhandledException() {
+	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
 		given(tokenStore.delete(any())).willThrow(IllegalArgumentException.class);
@@ -128,7 +128,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -136,7 +136,7 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingToken() {
+	void rejectsMissingToken() {
 		givenMissingToken();
 
 		// expect:

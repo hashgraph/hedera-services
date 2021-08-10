@@ -52,7 +52,7 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 	private List<Long> serialNumbers;
 	private SubType subType;
 
-	@Override
+    @Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.TokenBurn;
 	}
@@ -68,6 +68,13 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 		this.token = token;
 		this.serialNumbers = serialNumbers;
 		this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+	}
+
+	public HapiTokenBurn(String token, List<Long> serialNumbers, long amount) {
+		this.token = token;
+		this.amount = amount;
+		this.serialNumbers = serialNumbers;
+		this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
 	}
 
 	@Override

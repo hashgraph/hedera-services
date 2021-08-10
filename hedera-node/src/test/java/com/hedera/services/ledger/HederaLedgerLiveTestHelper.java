@@ -108,7 +108,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void throwsOnCommittingInconsistentAdjustments() {
+	void throwsOnCommittingInconsistentAdjustments() {
 		// when:
 		subject.begin();
 		subject.adjustBalance(genesis, -1L);
@@ -118,7 +118,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void resetsNetTransfersAfterCommit() {
+	void resetsNetTransfersAfterCommit() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -132,7 +132,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void doesntIncludeZeroAdjustsInNetTransfers() {
+	void doesntIncludeZeroAdjustsInNetTransfers() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -143,7 +143,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void doesntAllowDestructionOfRealCurrency() {
+	void doesntAllowDestructionOfRealCurrency() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -154,7 +154,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void allowsDestructionOfEphemeralCurrency() {
+	void allowsDestructionOfEphemeralCurrency() {
 		// when:
 		subject.begin();
 		AccountID a = asAccount("1.2.3");
@@ -168,7 +168,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void recordsCreationOfAccountDeletedInSameTxn() {
+	void recordsCreationOfAccountDeletedInSameTxn() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -183,7 +183,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void addsRecordsAndEntitiesBeforeCommitting() {
+	void addsRecordsAndEntitiesBeforeCommitting() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -195,7 +195,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void resetsNetTransfersAfterRollback() {
+	void resetsNetTransfersAfterRollback() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -209,7 +209,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void returnsNetTransfersInBalancedTxn() {
+	void returnsNetTransfersInBalancedTxn() {
 		setup();
 		// and:
 		TokenID tA, tB;
@@ -270,7 +270,7 @@ public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	public void recognizesPendingCreates() {
+	void recognizesPendingCreates() {
 		setup();
 
 		// when:

@@ -47,7 +47,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -71,9 +71,9 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
@@ -277,8 +277,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void assertTransactionHash(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
-		assertArrayEquals("Bad transaction hash!", CommonUtils.sha384HashOf(transaction).toByteArray(),
-				actualRecord.getTransactionHash().toByteArray());
+		assertArrayEquals(CommonUtils.sha384HashOf(transaction).toByteArray(),
+				actualRecord.getTransactionHash().toByteArray(),
+				"Bad transaction hash!");
 	}
 
 	private void assertTopicRunningHash(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
@@ -304,8 +305,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					out.flush();
 					var expectedRunningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
 					var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
-					assertArrayEquals("Bad running hash!", expectedRunningHash,
-							actualRunningHash.toByteArray());
+					assertArrayEquals(expectedRunningHash,
+							actualRunningHash.toByteArray(),
+							"Bad running hash!");
 					spec.registry().saveBytes(topicToValidate.get(), actualRunningHash);
 				}
 			} else {
@@ -333,9 +335,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		if (shouldBeTransferFree) {
 			assertEquals(
-					"Unexpected transfer list!",
 					0,
-					actualRecord.getTokenTransferListsCount());
+					actualRecord.getTokenTransferListsCount(),
+					"Unexpected transfer list!");
 		}
 		if (!accountAmountsToValidate.isEmpty()) {
 			final var accountAmounts = actualRecord.getTransferList().getAccountAmountsList();
@@ -362,8 +364,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
 		if (assessedCustomFeesSize.isPresent()) {
-			assertEquals("Unexpected size of assessed_custom_fees:\n" + actualAssessedCustomFees,
-					assessedCustomFeesSize.getAsInt(), actualAssessedCustomFees.size());
+			assertEquals(assessedCustomFeesSize.getAsInt(), actualAssessedCustomFees.size(),
+					"Unexpected size of assessed_custom_fees:\n" + actualAssessedCustomFees);
 		}
 		if (!assessedCustomFeesToValidate.isEmpty()) {
 			assessedCustomFeesToValidate.forEach(triple ->
@@ -389,7 +391,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			}
 		}
 
-		Assert.fail(cannotFind(tokenID, accountID, amount) + " in the assessed_custom_fees of the txnRecord");
+		Assertions.fail(cannotFind(tokenID, accountID, amount) + " in the assessed_custom_fees of the txnRecord");
 	}
 
 	private void validateTokenAmount(final TokenID tokenID,
@@ -406,7 +408,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			}
 		}
 
-		Assert.fail(cannotFind(tokenID, accountID, amount) + " in the tokenTransferLists of the txnRecord");
+		Assertions.fail(cannotFind(tokenID, accountID, amount) + " in the tokenTransferLists of the txnRecord");
 	}
 
 	private String cannotFind(final TokenID tokenID, final AccountID accountID, final long amount) {
@@ -430,7 +432,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			}
 		}
 
-		Assert.fail(cannotFind(tokenID, sender, receiver, serial) + " in the tokenTransferLists of the txnRecord");
+		Assertions.fail(cannotFind(tokenID, sender, receiver, serial) + " in the tokenTransferLists of the txnRecord");
 	}
 
 	private String cannotFind(final TokenID tokenID,
@@ -465,8 +467,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			final List<AccountAmount> accountAmountsList
 	) {
 		final var found = foundInAccountAmountsList(accountID, amount, accountAmountsList);
-		assertTrue("Cannot find AccountID: " + accountID
-				+ " and amount: " + amount + " in the transferList of the txnRecord", found);
+		assertTrue(found, "Cannot find AccountID: " + accountID
+				+ " and amount: " + amount + " in the transferList of the txnRecord");
 	}
 
 	private boolean foundInAccountAmountsList(final AccountID accountID,

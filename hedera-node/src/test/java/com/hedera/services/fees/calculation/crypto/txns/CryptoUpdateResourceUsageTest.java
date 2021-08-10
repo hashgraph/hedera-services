@@ -95,14 +95,14 @@ class CryptoUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(cryptoUpdateTxn));
 		assertFalse(subject.applicableTo(nonCryptoUpdateTxn));
 	}
 
 	@Test
-	public void returnsAsExpectedWhenAvail() throws Exception {
+	void returnsAsExpectedWhenAvail() throws Exception {
 		// setup:
 		expected = mock(FeeData.class);
 		// and:
@@ -136,7 +136,7 @@ class CryptoUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void delegatesToCorrectEstimateWhenUnknown() throws Exception {
+	void delegatesToCorrectEstimateWhenUnknown() throws Exception {
 		// setup:
 		long now = 1_234_567L;
 		expected = mock(FeeData.class);
@@ -162,7 +162,7 @@ class CryptoUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void missingCtxScans() {
+	void missingCtxScans() {
 		// setup:
 		long now = 1_234_567L;
 

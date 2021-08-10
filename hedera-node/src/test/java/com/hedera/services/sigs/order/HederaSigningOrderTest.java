@@ -98,6 +98,9 @@ import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_NO_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_WITH_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_IMMUTABLE_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_CONTRACT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO;
@@ -110,6 +113,8 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_TARGET;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -119,6 +124,10 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_MISSING_SENDERS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
@@ -136,7 +145,9 @@ import static com.hedera.test.factories.scenarios.FileAppendScenarios.TREASURY_S
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.VANILLA_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.VANILLA_FILE_CREATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.IMMUTABLE_FILE_DELETE_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileDeleteScenarios.MISSING_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.VANILLA_FILE_DELETE_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_MISSING_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_NEW_WACL_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.IMMUTABLE_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.MASTER_SYS_FILE_UPDATE_SCENARIO;
@@ -144,6 +155,8 @@ import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_S
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.VANILLA_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_INVALID_XFER;
+import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_NONSENSE;
+import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_NOT_IN_WHITELIST;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_NO_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER;
@@ -169,6 +182,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_COLLECTOR;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_TREASURY;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
@@ -185,6 +199,7 @@ import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY;
@@ -208,8 +223,15 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -259,7 +281,6 @@ class HederaSigningOrderTest {
 		}
 	}
 
-	private static final boolean IN_HANDLE_TXN_DYNAMIC_CTX = false;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
 			new DelegatingSigMetadataLookup(
 					FileAdapter.throwingUoe(),
@@ -277,6 +298,9 @@ class HederaSigningOrderTest {
 	private static final SigMetadataLookup IMMUTABLE_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
 	);
+	private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE))
+	);
 
 	private HederaFs hfs;
 	private TokenStore tokenStore;
@@ -285,11 +309,11 @@ class HederaSigningOrderTest {
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
+	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
-	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
-	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
 
 	@Test
 	void reportsInvalidPayerId() throws Throwable {
@@ -367,6 +391,60 @@ class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChange() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeMissingSender() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsNftOwnerChangeMissingReceiver() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsNftOwnerChangeWithReceiverSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
 	}
 
 	@Test
@@ -520,6 +598,32 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoDeleteMissingReceiverAccount() throws Throwable {
+		// given:
+		setupFor(CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoDeleteMissingTarget() throws Throwable {
+		// given:
+		setupFor(CRYPTO_DELETE_MISSING_TARGET);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
 	}
 
 	@Test
@@ -700,17 +804,16 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	void getsFileUpdateNewWacl() throws Throwable {
+	void getsFileUpdateMissing() throws Throwable {
 		// given:
-		setupFor(FILE_UPDATE_NEW_WACL_SCENARIO);
+		setupFor(FILE_UPDATE_MISSING_SCENARIO);
 
 		// when:
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
-				contains(MISC_FILE_WACL_KT.asKey(), SIMPLE_NEW_WACL_KT.asKey()));
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_FILE_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -750,6 +853,18 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
+	void getsFileDeleteMissing() throws Throwable {
+		// given:
+		setupFor(MISSING_FILE_DELETE_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
 	void getsContractCreateNoAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_CREATE_NO_ADMIN_KEY);
@@ -759,6 +874,32 @@ class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void getsContractDeleteImmutable() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(MODIFYING_IMMUTABLE_CONTRACT, summary.getErrorReport());
+	}
+
+	@Test
+	void getsContractDeleteNonsense() throws Throwable {
+		// given:
+		setupForNonStdLookup(CONTRACT_DELETE_IMMUTABLE_SCENARIO, NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_SIGNATURE, summary.getErrorReport());
 	}
 
 	@Test
@@ -932,6 +1073,32 @@ class HederaSigningOrderTest {
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()),
 				contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsContractDeleteMissingAccountBeneficiary() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsContractDeleteMissingContractBeneficiary() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_CONTRACT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1221,6 +1388,32 @@ class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateMissingTreasury() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_MISSING_TREASURY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsTokenUpdateMissingAutoRenew() throws Throwable {
+		// given:
+		setupFor(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
 	}
 
 	@Test
@@ -1896,6 +2089,32 @@ class HederaSigningOrderTest {
 		// then:
 		assertTrue(summary.hasErrorReport());
 		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsScheduleCreateWithNonwhitelistFunction() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_NOT_IN_WHITELIST);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, summary.getErrorReport());
+	}
+
+	@Test
+	void getsScheduleCreateWithNonsense() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_NONSENSE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, summary.getErrorReport());
 	}
 
 	@Test

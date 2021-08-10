@@ -33,7 +33,7 @@ class MetaAnswersTest {
 	MetaAnswers subject;
 
 	@Test
-	public void hasExpectedAnswers() {
+	void hasExpectedAnswers() {
 		// setup:
 		txnRecord = mock(GetTxnRecordAnswer.class);
 		txnReceipt = mock(GetTxnReceiptAnswer.class);

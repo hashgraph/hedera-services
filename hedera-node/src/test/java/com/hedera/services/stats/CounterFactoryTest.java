@@ -33,7 +33,7 @@ class CounterFactoryTest {
 	CounterFactory subject = new CounterFactory() { };
 
 	@Test
-	public void constructsExpectedEntry() {
+	void constructsExpectedEntry() {
 		// setup:
 		var name = "MyOp";
 		var desc = "Happy thoughts";

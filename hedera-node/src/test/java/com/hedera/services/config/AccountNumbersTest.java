@@ -50,7 +50,7 @@ class AccountNumbersTest {
 	}
 
 	@Test
-	public void hasExpectedNumbers() {
+	void hasExpectedNumbers() {
 		// expect:
 		assertEquals(2, subject.treasury());
 		assertEquals(50, subject.systemAdmin());
@@ -63,7 +63,7 @@ class AccountNumbersTest {
 	}
 
 	@Test
-	public void recognizesAdmins() {
+	void recognizesAdmins() {
 		// expect:
 		assertTrue(subject.isSuperuser(2));
 		assertTrue(subject.isSuperuser(50));

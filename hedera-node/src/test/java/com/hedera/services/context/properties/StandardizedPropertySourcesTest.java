@@ -107,7 +107,7 @@ class StandardizedPropertySourcesTest {
 	}
 
 	@Test
-	public void usesBootstrapSourceAsApropos() {
+	void usesBootstrapSourceAsApropos() {
 		givenImpliedSubject();
 		// and:
 		subject.getNodeProps().getFromFile().clear();

@@ -27,6 +27,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
@@ -57,6 +58,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +67,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -94,6 +97,7 @@ class AwareProcessLogicTest {
 	private HederaSigningOrder keyOrder;
 	private MiscSpeedometers speedometers;
 	private ReusableBodySigningFactory bodySigningFactory;
+	private BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private AwareProcessLogic subject;
 
@@ -121,6 +125,7 @@ class AwareProcessLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		txnAccessor = mock(PlatformTxnAccessor.class);
 		rationalization = mock(Rationalization.class);
+		validityTest = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
 		TransactionBody txnBody = mock(TransactionBody.class);
 
@@ -168,7 +173,7 @@ class AwareProcessLogicTest {
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
 
-		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory);
+		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
 	}
 
 	@Test

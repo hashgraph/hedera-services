@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 
@@ -75,7 +75,7 @@ public class Issue1648Suite extends HapiApiSuite {
 							long feeForTwo = spec.registry().getAmount("feeForTwo");
 							assertLog.info("[Record storage] fee for one transfer : " + feeForOne);
 							assertLog.info("[Record storage] fee for two transfers: " + feeForTwo);
-							Assert.assertEquals(-1, Long.compare(feeForOne, feeForTwo));
+							Assertions.assertEquals(-1, Long.compare(feeForOne, feeForTwo));
 						})
 				);
 	}

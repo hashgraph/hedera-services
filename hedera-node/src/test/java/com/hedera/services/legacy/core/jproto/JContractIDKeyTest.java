@@ -26,23 +26,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JContractIDKeyTest {
+class JContractIDKeyTest {
 	@Test
-	public void zeroContractIDKeyTest() {
+	void zeroContractIDKeyTest() {
 		JContractIDKey key = new JContractIDKey(ContractID.newBuilder().build());
 		assertTrue(key.isEmpty());
 		assertFalse(key.isValid());
 	}
 
 	@Test
-	public void nonZeroContractIDKeyTest() {
+	void nonZeroContractIDKeyTest() {
 		JContractIDKey key = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
 		assertFalse(key.isEmpty());
 		assertTrue(key.isValid());
 	}
 
 	@Test
-	public void scheduleOpsAsExpected() {
+	void scheduleOpsAsExpected() {
 		var subject = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
 		assertFalse(subject.isForScheduledTxn());
 		subject.setForScheduledTxn(true);

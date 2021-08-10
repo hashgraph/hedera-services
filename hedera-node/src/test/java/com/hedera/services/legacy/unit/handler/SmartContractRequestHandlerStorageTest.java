@@ -83,8 +83,8 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,11 +111,11 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
-public class SmartContractRequestHandlerStorageTest {
-  public static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
-  public static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
-  public static final String SIMPLE_STORAGE_WITH_EVENTS_BIN = "/testfiles/SimpleStorageWithEvents.bin";
-  public static final int SIMPLE_STORAGE_VALUE = 12345;
+class SmartContractRequestHandlerStorageTest {
+  private static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
+  private static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
+  private static final String SIMPLE_STORAGE_WITH_EVENTS_BIN = "/testfiles/SimpleStorageWithEvents.bin";
+  private static final int SIMPLE_STORAGE_VALUE = 12345;
   private static final long payerAccount = 787L;
   private static final long nodeAccount = 3L;
   private static final long feeCollAccount = 9876L;
@@ -213,7 +213,7 @@ public class SmartContractRequestHandlerStorageTest {
     try {
       payerKeyBytes = CommonUtils.unhex(key);
     } catch (IllegalArgumentException e) {
-      Assert.fail("Failure building solidity key for payer account");
+      Assertions.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
     payerMerkleEntityId.setNum(payerAccount);
@@ -237,7 +237,7 @@ public class SmartContractRequestHandlerStorageTest {
     try {
       fileBytes = fis.readAllBytes();
     } catch (IOException e) {
-      Assert.fail("Error creating file: reading contract file " + filePath);
+      Assertions.fail("Error creating file: reading contract file " + filePath);
     }
     ByteString fileData = ByteString.copyFrom(fileBytes);
 
@@ -257,17 +257,17 @@ public class SmartContractRequestHandlerStorageTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error creating file: parsing transaction body");
+      Assertions.fail("Error creating file: parsing transaction body");
     }
 
     Instant consensusTime = new Date().toInstant();
     TransactionRecord record = fsHandler.createFile(body, consensusTime, fileId, selfID);
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(fileId.getFileNum(), record.getReceipt().getFileID().getFileNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(fileId.getFileNum(), record.getReceipt().getFileID().getFileNum());
     return fileBytes;
   }
 
@@ -293,7 +293,7 @@ public class SmartContractRequestHandlerStorageTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error creating contract: parsing transaction body");
+      Assertions.fail("Error creating contract: parsing transaction body");
     }
     return body;
   }
@@ -304,27 +304,27 @@ public class SmartContractRequestHandlerStorageTest {
     mk.setRealm(contractId.getRealmNum());
     mk.setShard(contractId.getShardNum());
     MerkleAccount mv = contracts.get(mk);
-    Assert.assertNotNull(mv);
-    Assert.assertNotNull(mv.getKey());
-    Assert.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv);
+    Assertions.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv.getKey());
 
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertTrue(storageWrapper.fileExists(bytesPath));
+    Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
 
     String sCMetaDataPath = String.format("/%d/m%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertFalse(storageWrapper.fileExists(sCMetaDataPath));
+    Assertions.assertFalse(storageWrapper.fileExists(sCMetaDataPath));
     String sCAdminKeyPath = String.format("/%d/a%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertFalse(storageWrapper.fileExists(sCAdminKeyPath));
+    Assertions.assertFalse(storageWrapper.fileExists(sCAdminKeyPath));
   }
 
   private void checkContractDataArtifactExists(ContractID contractId) {
     String bytesPath = String.format("/%d/d%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertTrue(storageWrapper.fileExists(bytesPath));
+    Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
   }
 
   @Test
   @DisplayName("createContract: Success")
-  public void createContractWithAdminKey() {
+  void createContractWithAdminKey() {
     KeyPair adminKeyPair = new KeyPairGenerator().generateKeyPair();
     byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
     Key adminPubKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -338,12 +338,12 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-    Assert.assertTrue(record.hasContractCreateResult());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertTrue(record.hasContractCreateResult());
 
     ContractID newContractId = record.getReceipt().getContractID();
     checkContractArtifactsExist(newContractId);
@@ -351,7 +351,7 @@ public class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("createContract: No gas")
-  public void createContractNoGas() {
+  void createContractNoGas() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(0L, 0L, null);
 
@@ -361,13 +361,13 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
   }
 
   @Test
   @DisplayName("createContract: Insufficient gas")
-  public void createContractInsufficientGas() {
+  void createContractInsufficientGas() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
 
@@ -378,8 +378,8 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertTrue(record.hasContractCreateResult());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertTrue(record.hasContractCreateResult());
     long gasUsed = record.getContractCreateResult().getGasUsed();
     // Attempt to create a contract with a little less gas
     body = getCreateTransactionBody(0L, (long) Math.floor((double)gasUsed *0.9) , null);
@@ -388,13 +388,13 @@ public class SmartContractRequestHandlerStorageTest {
     ledger.begin();
     record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
   }
 
   @Test
   @DisplayName("createContract: Invalid initial balance")
-  public void createContractInitialBalance() {
+  void createContractInitialBalance() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(100L, 250000, null);
 
@@ -404,10 +404,10 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
   }
 
   private TransactionBody getCallTransactionBody(ContractID newContractId,
@@ -426,14 +426,14 @@ public class SmartContractRequestHandlerStorageTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error calling contract: parsing transaction body");
+      Assertions.fail("Error calling contract: parsing transaction body");
     }
     return body;
   }
 
   @Test
   @DisplayName("ContractSetCall: Success")
-  public void contractSetCall() {
+  void contractSetCall() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -452,18 +452,18 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     checkContractDataArtifactExists(newContractId);
   }
 
   @Test
   @DisplayName("ContractSetCall: Invalid contract ID")
-  public void contractSetCallInvalidID() {
+  void contractSetCallInvalidID() {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -484,14 +484,14 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.INVALID_CONTRACT_ID, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.INVALID_CONTRACT_ID, record.getReceipt().getStatus());
   }
 
   @Test
   @DisplayName("ContractSetCall: Value proferred to improper call")
-  public void contractSetCallInvalidValue() {
+  void contractSetCallInvalidValue() {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -512,14 +512,14 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
   }
 
   @Test
   @DisplayName("ContractSetCall: Invalid call data")
-  public void contractSetCallInvalidData() {
+  void contractSetCallInvalidData() {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -540,15 +540,15 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
   }
 
   @Test
   @DisplayName("ContractSetCall: Insufficient gas")
-  public void contractSetCallInsufficientGas() {
+  void contractSetCallInsufficientGas() {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -569,10 +569,10 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
   }
 
   private Query getCallLocalQuery(ContractID newContractId, ByteString functionData, long gas) {
@@ -585,7 +585,7 @@ public class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractGetCall: Success")
-  public void contractGetCall() throws Exception {
+  void contractGetCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -611,14 +611,14 @@ public class SmartContractRequestHandlerStorageTest {
         .getContractCallLocal();
     seqNumber.getAndIncrement();
     ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-    Assert.assertNotNull(response);
-    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+    Assertions.assertNotNull(response);
+    Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
     byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-    Assert.assertNotNull(callResults);
-    Assert.assertTrue(callResults.length > 0);
+    Assertions.assertNotNull(callResults);
+    Assertions.assertTrue(callResults.length > 0);
     int retVal = SCEncoding.decodeGetValueResult(callResults);
-    Assert.assertEquals(SIMPLE_STORAGE_VALUE, retVal);
+    Assertions.assertEquals(SIMPLE_STORAGE_VALUE, retVal);
   }
 
   private TransactionBody getUpdateTransactionBody(ContractID contractId, String contractMemo,
@@ -637,14 +637,14 @@ public class SmartContractRequestHandlerStorageTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error updating contract: parsing transaction body");
+      Assertions.fail("Error updating contract: parsing transaction body");
     }
     return body;
   }
 
   @Test
   @DisplayName("ChildStorage call")
-  public void childStorageCall() throws Exception {
+  void childStorageCall() throws Exception {
     byte[] contractBytes = createFile(CHILD_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -671,7 +671,7 @@ public class SmartContractRequestHandlerStorageTest {
 
   @Test
   @DisplayName("ContractSetCall with event")
-  public void contractSetCallWithEvent() throws Exception {
+  void contractSetCallWithEvent() throws Exception {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_WITH_EVENTS_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
     Instant consensusTime = new Date().toInstant();
@@ -690,7 +690,7 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertTrue(validateSetRecord(newContractId, SIMPLE_STORAGE_VALUE, record));
+    Assertions.assertTrue(validateSetRecord(newContractId, SIMPLE_STORAGE_VALUE, record));
 
     // Call the contract to get the value back
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeGetValue());
@@ -698,19 +698,19 @@ public class SmartContractRequestHandlerStorageTest {
         .getContractCallLocal();
     seqNumber.getAndIncrement();
     ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-    Assert.assertNotNull(response);
-    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+    Assertions.assertNotNull(response);
+    Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
     byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-    Assert.assertNotNull(callResults);
-    Assert.assertTrue(callResults.length > 0);
+    Assertions.assertNotNull(callResults);
+    Assertions.assertTrue(callResults.length > 0);
     int retVal = SCEncoding.decodeGetValueResult(callResults);
-    Assert.assertEquals(SIMPLE_STORAGE_VALUE, retVal);
+    Assertions.assertEquals(SIMPLE_STORAGE_VALUE, retVal);
   }
 
   @Test
   @DisplayName("ContractSetCallEmptyByteCode: Failure")
-  public void contractSetCallEmptyByteCode() throws StorageKeyNotFoundException {
+  void contractSetCallEmptyByteCode() throws StorageKeyNotFoundException {
     // Create the contract
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -723,7 +723,7 @@ public class SmartContractRequestHandlerStorageTest {
     String byteCodePath = FeeCalcUtilsTest.buildPath(
         ADDRESS_PATH, Long.toString(newContractId.getRealmNum()),
         Long.toString(newContractId.getContractNum()));
-    storageWrapper.delete(byteCodePath, 0, 0);
+    storageWrapper.delete(byteCodePath);
     // Call the contract to set value
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeSet(SIMPLE_STORAGE_VALUE));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
@@ -733,11 +733,11 @@ public class SmartContractRequestHandlerStorageTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   private boolean validateSetRecord(ContractID contractCalled, int valuePassed,
@@ -785,7 +785,7 @@ public class SmartContractRequestHandlerStorageTest {
   }
 
   @AfterEach
-  public void tearDown() throws Exception {
+  void tearDown() throws Exception {
     try {
       repository.close();
     } catch (Throwable tx) {

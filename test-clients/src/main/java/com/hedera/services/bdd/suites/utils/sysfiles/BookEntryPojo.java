@@ -27,7 +27,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -66,7 +66,7 @@ public class BookEntryPojo {
 			var pojo = new EndpointPojo();
 			pojo.setIpAddressV4(asReadableIp(proto.getIpAddressV4()));
 			pojo.setPort(proto.getPort());
-			Assert.assertNotEquals("A port is a positive integer!", 0, pojo.getPort().intValue());
+			Assertions.assertNotEquals(0, pojo.getPort().intValue(), "A port is a positive integer!");
 			return pojo;
 		}
 
@@ -270,7 +270,7 @@ public class BookEntryPojo {
 
 	private static String asReadableIp(ByteString octets) {
 		byte[] raw = octets.toByteArray();
-		Assert.assertEquals("An IP4v4 address should have four octets!", 4, raw.length);
+		Assertions.assertEquals(4, raw.length, "An IP4v4 address should have four octets!");
 		var sb = new StringBuilder();
 		for (int i = 0; i < 4; i++) {
 			sb.append("" + (0xff & raw[i]));

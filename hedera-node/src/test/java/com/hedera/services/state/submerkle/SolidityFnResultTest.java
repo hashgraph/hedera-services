@@ -68,7 +68,7 @@ class SolidityFnResultTest {
 	SolidityFnResult subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		din = mock(DataInputStream.class);
 		in = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
@@ -91,7 +91,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void objectContractWorks() {
+	void objectContractWorks() {
 		// given:
 		var one = subject;
 		var two = new SolidityFnResult(
@@ -122,7 +122,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void beanWorks() {
+	void beanWorks() {
 		// expect:
 		assertEquals(
 				new SolidityFnResult(
@@ -138,7 +138,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"SolidityFnResult{" +
@@ -153,7 +153,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void factoryWorks() {
+	void factoryWorks() {
 		// given:
 		var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -170,7 +170,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void viewWorks() {
+	void viewWorks() {
 		// setup:
 		var expected = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -190,7 +190,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -220,7 +220,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -241,7 +241,7 @@ class SolidityFnResultTest {
 	}
 
 	@Test
-	public void serializableDetWorks() {
+	void serializableDetWorks() {
 		// expect;
 		assertEquals(SolidityFnResult.MERKLE_VERSION, subject.getVersion());
 		assertEquals(SolidityFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());

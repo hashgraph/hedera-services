@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -67,8 +67,8 @@ public class OCTokenSpec extends HapiApiSuite {
 		});
 	}
 
-	private  <T>  T getValueFromRegistry(HapiApiSpec spec, String from, CallTransaction.Function function) {
-		byte[] 	value = spec.registry().getBytes(from);
+	private <T> T getValueFromRegistry(HapiApiSpec spec, String from, CallTransaction.Function function) {
+		byte[] value = spec.registry().getBytes(from);
 
 		T decodedReturnedValue = null;
 		Object[] retResults = function.decodeResult(value);
@@ -82,10 +82,10 @@ public class OCTokenSpec extends HapiApiSuite {
 		return defaultHapiSpec("ocToken")
 				.given(
 						cryptoCreate("tokenIssuer").balance(1_000_000_000_000L),
-						cryptoCreate("Alice").balance( 10_000_000_000L).payingWith("tokenIssuer"),
-						cryptoCreate("Bob").balance( 10_000_000_000L).payingWith("tokenIssuer"),
-						cryptoCreate("Carol").balance( 10_000_000_000L).payingWith("tokenIssuer"),
-						cryptoCreate("Dave").balance( 10_000_000_000L).payingWith("tokenIssuer"),
+						cryptoCreate("Alice").balance(10_000_000_000L).payingWith("tokenIssuer"),
+						cryptoCreate("Bob").balance(10_000_000_000L).payingWith("tokenIssuer"),
+						cryptoCreate("Carol").balance(10_000_000_000L).payingWith("tokenIssuer"),
+						cryptoCreate("Dave").balance(10_000_000_000L).payingWith("tokenIssuer"),
 
 						getAccountInfo("tokenIssuer").saveToRegistry("tokenIssuerAcctInfo"),
 						getAccountInfo("Alice").saveToRegistry("AliceAcctInfo"),
@@ -129,42 +129,46 @@ public class OCTokenSpec extends HapiApiSuite {
 									.payingWith("tokenIssuer")
 									.hasAnswerOnlyPrecheckFrom(OK, INSUFFICIENT_TX_FEE);
 
-							var subop5 = contractCallLocal("tokenContract",BALANCE_OF_ABI, issuerEthAddress)
+							var subop5 = contractCallLocal("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop1, subop3,   subop4, subop5);
+							CustomSpecAssert.allRunFor(spec, subop1, subop3, subop4, subop5);
 
-							CallTransaction.Function funcSymbol = CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
+							CallTransaction.Function funcSymbol =
+									CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
 
-							String symbol = (String)getValueFromRegistry(spec, "token_symbol", funcSymbol);
+							String symbol = (String) getValueFromRegistry(spec, "token_symbol", funcSymbol);
 
 							ctxLog.info("symbol: [{}]", symbol);
-							Assert.assertEquals(
-									"TokenIssuer's symbol should be fixed value",
-									"", symbol); // should be "OCT" as expected
+							Assertions.assertEquals(
+									"", symbol,
+									"TokenIssuer's symbol should be fixed value"); // should be "OCT" as expected
 
-							CallTransaction.Function funcDecimals = CallTransaction.Function.fromJsonInterface(DECIMALS_ABI);
+							CallTransaction.Function funcDecimals = CallTransaction.Function.fromJsonInterface(
+									DECIMALS_ABI);
 
 							//long decimals = getLongValueFromRegistry(spec, "decimals", function);
 							BigInteger val = getValueFromRegistry(spec, "decimals", funcDecimals);
 							long decimals = val.longValue();
 
 							ctxLog.info("decimals {}", decimals);
-							Assert.assertEquals(
-									"TokenIssuer's decimals should be fixed value",
-									3, decimals);
+							Assertions.assertEquals(
+									3, decimals,
+									"TokenIssuer's decimals should be fixed value");
 
 							long tokenMultiplier = (long) Math.pow(10, decimals);
 
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(BALANCE_OF_ABI);
+							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
+									BALANCE_OF_ABI);
 
-							long issuerBalance = ((BigInteger)getValueFromRegistry(spec, "issuerTokenBalance", function)).longValue();
+							long issuerBalance = ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance",
+									function)).longValue();
 
 							ctxLog.info("initial balance of Issuer {}", issuerBalance / tokenMultiplier);
-							Assert.assertEquals(
-									"TokenIssuer's initial token balance should be 1_000_000",
-									1_000_000, issuerBalance / tokenMultiplier);
+							Assertions.assertEquals(
+									1_000_000, issuerBalance / tokenMultiplier,
+									"TokenIssuer's initial token balance should be 1_000_000");
 
 							//  Do token transfers
 							var subop6 = contractCall("tokenContract", TRANSFER_ABI,
@@ -182,69 +186,78 @@ public class OCTokenSpec extends HapiApiSuite {
 									.gas(250_000L)
 									.payingWith("Bob");
 
-							var subop9 = contractCallLocal("tokenContract",BALANCE_OF_ABI, aliceEthAddress)
+							var subop9 = contractCallLocal("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
 									.gas(250_000L)
 									.saveResultTo("aliceTokenBalance");
 
-							var subop10 = contractCallLocal("tokenContract",BALANCE_OF_ABI, carolEthAddress)
+							var subop10 = contractCallLocal("tokenContract", BALANCE_OF_ABI, carolEthAddress)
 									.gas(250_000L)
 									.saveResultTo("carolTokenBalance");
 
-							var subop11 = contractCallLocal("tokenContract",BALANCE_OF_ABI, bobEthAddress)
+							var subop11 = contractCallLocal("tokenContract", BALANCE_OF_ABI, bobEthAddress)
 									.gas(250_000L)
 									.saveResultTo("bobTokenBalance");
 
 							CustomSpecAssert.allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
 
-							long aliceBalance = ((BigInteger)getValueFromRegistry(spec,"aliceTokenBalance", function)).longValue();
-							long bobBalance = ((BigInteger)getValueFromRegistry(spec,"bobTokenBalance", function)).longValue();
-							long carolBalance = ((BigInteger)getValueFromRegistry(spec,"carolTokenBalance", function)).longValue();
+							long aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
+									function)).longValue();
+							long bobBalance = ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance",
+									function)).longValue();
+							long carolBalance = ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance",
+									function)).longValue();
 
 							ctxLog.info("aliceBalance  {}", aliceBalance / tokenMultiplier);
 							ctxLog.info("bobBalance  {}", bobBalance / tokenMultiplier);
 							ctxLog.info("carolBalance  {}", carolBalance / tokenMultiplier);
 
-							Assert.assertEquals(
-									"Alice's token balance should be 1_000",
-									1000, aliceBalance / tokenMultiplier);
+							Assertions.assertEquals(
+									1000, aliceBalance / tokenMultiplier,
+									"Alice's token balance should be 1_000");
 
 							var subop12 = contractCall("tokenContract", APPROVE_ABI,
 									daveEthAddress, 200 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("Alice");
 
-							var subop13 = contractCall("tokenContract",TRANSFER_FROM_ABI,
+							var subop13 = contractCall("tokenContract", TRANSFER_FROM_ABI,
 									aliceEthAddress, bobEthAddress, 100 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("Dave");
 
-							var subop14 = contractCallLocal("tokenContract",BALANCE_OF_ABI, aliceEthAddress)
+							var subop14 = contractCallLocal("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
 									.gas(250_000L)
 									.saveResultTo("aliceTokenBalance");
 
-							var subop15 = contractCallLocal("tokenContract",BALANCE_OF_ABI, bobEthAddress)
+							var subop15 = contractCallLocal("tokenContract", BALANCE_OF_ABI, bobEthAddress)
 									.gas(250_000L)
 									.saveResultTo("bobTokenBalance");
 
-							var subop16 = contractCallLocal("tokenContract",BALANCE_OF_ABI, carolEthAddress)
+							var subop16 = contractCallLocal("tokenContract", BALANCE_OF_ABI, carolEthAddress)
 									.gas(250_000L)
 									.saveResultTo("carolTokenBalance");
 
-							var subop17 = contractCallLocal("tokenContract",BALANCE_OF_ABI, daveEthAddress)
+							var subop17 = contractCallLocal("tokenContract", BALANCE_OF_ABI, daveEthAddress)
 									.gas(250_000L)
 									.saveResultTo("daveTokenBalance");
 
-							var subop18 = contractCallLocal("tokenContract",BALANCE_OF_ABI, issuerEthAddress)
+							var subop18 = contractCallLocal("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17, subop18);
+							CustomSpecAssert.allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
+									subop18);
 
-							long daveBalance = ((BigInteger)getValueFromRegistry(spec,"daveTokenBalance", function)).longValue();
-							aliceBalance = ((BigInteger)getValueFromRegistry(spec,"aliceTokenBalance", function)).longValue();
-							bobBalance = ((BigInteger)getValueFromRegistry(spec,"bobTokenBalance", function)).longValue();
-							carolBalance = ((BigInteger)getValueFromRegistry(spec,"carolTokenBalance", function)).longValue();
-							issuerBalance = ((BigInteger)getValueFromRegistry(spec,"issuerTokenBalance", function)).longValue();
+							long daveBalance = ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance",
+									function)).longValue();
+							aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
+									function)).longValue();
+							bobBalance = ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance",
+									function)).longValue();
+							carolBalance = ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance",
+									function)).longValue();
+							issuerBalance = ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance",
+									function)).longValue();
 
 							ctxLog.info("aliceBalance at end {}", aliceBalance / tokenMultiplier);
 							ctxLog.info("bobBalance at end {}", bobBalance / tokenMultiplier);
@@ -252,22 +265,22 @@ public class OCTokenSpec extends HapiApiSuite {
 							ctxLog.info("daveBalance at end {}", daveBalance / tokenMultiplier);
 							ctxLog.info("issuerBalance at end {}", issuerBalance / tokenMultiplier);
 
-							Assert.assertEquals(
-									"TokenIssuer's final balance should be 997000",
-									997000, issuerBalance / tokenMultiplier);
+							Assertions.assertEquals(
+									997000, issuerBalance / tokenMultiplier,
+									"TokenIssuer's final balance should be 997000");
 
-							Assert.assertEquals(
-									"Alice's final balance should be 900",
-									900, aliceBalance / tokenMultiplier);
-							Assert.assertEquals(
-									"Bob's final balance should be 1600",
-									1600, bobBalance / tokenMultiplier);
-							Assert.assertEquals(
-									"Carol's final balance should be 500",
-									500, carolBalance / tokenMultiplier);
-							Assert.assertEquals(
-									"Dave's final balance should be 0",
-									0, daveBalance / tokenMultiplier);
+							Assertions.assertEquals(
+									900, aliceBalance / tokenMultiplier,
+									"Alice's final balance should be 900");
+							Assertions.assertEquals(
+									1600, bobBalance / tokenMultiplier,
+									"Bob's final balance should be 1600");
+							Assertions.assertEquals(
+									500, carolBalance / tokenMultiplier,
+									"Carol's final balance should be 500");
+							Assertions.assertEquals(
+									0, daveBalance / tokenMultiplier,
+									"Dave's final balance should be 0");
 						})
 				).then(
 						assertionsHold((spec, ctxLog) -> {
@@ -280,10 +293,10 @@ public class OCTokenSpec extends HapiApiSuite {
 							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
 							ctxLog.info("Finished {}", totalRecordNum);
 
-							Assert.assertEquals(
-									"Contracts should no longer receive records!",
+							Assertions.assertEquals(
 									0,
-									totalRecordNum);
+									totalRecordNum,
+									"Contracts should no longer receive records!");
 						})
 				);
 	}

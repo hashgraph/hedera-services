@@ -27,8 +27,8 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 
 /**
- * Contains the part of the Hedera Services world state that <i>does</i> influence
- * handling of consensus transactions, but is <i>not</i> hashed or serialized.
+ * Contains the part of the Hedera Services world state that does influence
+ * handling of consensus transactions, but is not hashed or serialized.
  */
 public class StateMetadata implements FastCopyable, Archivable {
 	private final ServicesContext ctx;

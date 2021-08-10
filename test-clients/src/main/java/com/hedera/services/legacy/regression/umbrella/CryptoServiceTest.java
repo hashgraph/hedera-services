@@ -62,7 +62,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.IOException;
@@ -331,11 +331,11 @@ public class CryptoServiceTest extends TestHelperComplex {
 				.getTxRecordByAccountIdComplex(accountID, payerAccount, nodeAccountID, fee,
 						ResponseType.ANSWER_ONLY);
 		Response transactionRecord = retryLoopQuery(query, "getAccountRecords");
-		Assert.assertEquals(ResponseCodeEnum.OK,
+		Assertions.assertEquals(ResponseCodeEnum.OK,
 				transactionRecord.getCryptoGetAccountRecords().getHeader()
 						.getNodeTransactionPrecheckCode());
-		Assert.assertNotNull(transactionRecord.getCryptoGetAccountRecords());
-		Assert.assertEquals(accountID, transactionRecord.getCryptoGetAccountRecords().getAccountID());
+		Assertions.assertNotNull(transactionRecord.getCryptoGetAccountRecords());
+		Assertions.assertEquals(accountID, transactionRecord.getCryptoGetAccountRecords().getAccountID());
 		List<TransactionRecord> recordList = transactionRecord.getCryptoGetAccountRecords()
 				.getRecordsList();
 		log.info(
@@ -377,8 +377,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 		log.info("\n-----------------------------------\nupdateAccount: request = " + signUpdate);
 		TransactionResponse response = retryLoopTransaction(signUpdate, "updateAccount");
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 		log.info(
 				"Pre Check Response account update :: " + response.getNodeTransactionPrecheckCode().name());
 		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(signUpdate);
@@ -388,12 +388,12 @@ public class CryptoServiceTest extends TestHelperComplex {
 		AccountInfo accInfo = null;
 		if (getReceipt) {
 			TransactionReceipt fastRecord = getTxFastRecord(transactionID);
-			Assert.assertNotNull(fastRecord);
+			Assertions.assertNotNull(fastRecord);
 
 			accInfo = getAccountInfo(accountID, payerAccountID, nodeAccountID);
-			Assert.assertNotNull(accInfo);
+			Assertions.assertNotNull(accInfo);
 			log.info(accInfo);
-			Assert.assertEquals(autoRenew, accInfo.getAutoRenewPeriod());
+			Assertions.assertEquals(autoRenew, accInfo.getAutoRenewPeriod());
 			log.info("updating successful" + "\n");
 		}
 
@@ -424,7 +424,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 		log.info("createAccount: request = " + createAccountRequest);
 		TransactionResponse response = retryLoopTransaction(createAccountRequest, "createAccount");
 		log.info("createAccount Response :: " + response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 	}
 
 	/**
@@ -540,7 +540,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 			CommonUtils.nap(WAIT_IN_SEC);
 			AccountInfo accInfo = getAccountInfo(accountID);
 			log.info("Created account info = " + accInfo);
-			Assert.assertEquals(body.getCryptoCreateAccount().getInitialBalance(),
+			Assertions.assertEquals(body.getCryptoCreateAccount().getInitialBalance(),
 					accInfo.getBalance());
 		}
 
@@ -711,8 +711,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 		Response getInfoResponse = retryLoopQuery(cryptoGetInfoQuery, "getAccountInfo");
 		log.info("Pre Check Response of getAccountInfo:: "
 				+ getInfoResponse.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode().name());
-		Assert.assertNotNull(getInfoResponse);
-		Assert.assertNotNull(getInfoResponse.getCryptoGetInfo());
+		Assertions.assertNotNull(getInfoResponse);
+		Assertions.assertNotNull(getInfoResponse.getCryptoGetInfo());
 		log.info("getInfoResponse :: " + getInfoResponse.getCryptoGetInfo());
 
 		AccountInfo accInfo = getInfoResponse.getCryptoGetInfo().getAccountInfo();
@@ -1184,7 +1184,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 				+ com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(transferTxSigned));
 		TransactionResponse response = retryLoopTransaction(transferTxSigned, "transfer");
 		log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
+		Assertions.assertNotNull(response);
 		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
 				.extractTransactionBody(transferTxSigned);
 		TransactionID txId = body.getTransactionID();
@@ -1295,9 +1295,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 				.name());
 		log.info("Get Balance Fee: " + getBalanceResponse.getCryptogetAccountBalance().getHeader()
 				.getCost());
-		Assert.assertNotNull(getBalanceResponse);
-		Assert.assertNotNull(getBalanceResponse.getCryptoGetInfo());
-		Assert.assertEquals(ResponseCodeEnum.OK,
+		Assertions.assertNotNull(getBalanceResponse);
+		Assertions.assertNotNull(getBalanceResponse.getCryptoGetInfo());
+		Assertions.assertEquals(ResponseCodeEnum.OK,
 				getBalanceResponse.getCryptogetAccountBalance().getHeader()
 						.getNodeTransactionPrecheckCode());
 

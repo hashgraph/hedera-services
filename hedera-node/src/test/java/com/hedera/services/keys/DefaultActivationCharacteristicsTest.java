@@ -42,13 +42,13 @@ class DefaultActivationCharacteristicsTest {
 	}
 
 	@Test
-	public void defaultsToListLength() {
+	void defaultsToListLength() {
 		// expect:
 		assertEquals(l.getKeysList().size(), subject.sigsNeededForList(l));
 	}
 
 	@Test
-	public void defaultsToThresholdReq() {
+	void defaultsToThresholdReq() {
 		// expect:
 		assertEquals(t.getThresholdKey().getThreshold(), subject.sigsNeededForThreshold(t));
 	}

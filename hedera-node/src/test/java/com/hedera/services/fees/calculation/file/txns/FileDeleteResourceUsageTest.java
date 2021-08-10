@@ -55,14 +55,14 @@ class FileDeleteResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(fileDeleteTxn));
 		assertFalse(subject.applicableTo(nonFileDeleteTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		subject.usageGiven(fileDeleteTxn, sigUsage, null);
 

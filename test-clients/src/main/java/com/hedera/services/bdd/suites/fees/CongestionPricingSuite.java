@@ -28,7 +28,7 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Map;
@@ -123,11 +123,11 @@ public class CongestionPricingSuite extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.providingFeeTo(sevenXPrice::set),
 						withOpContext((spec, opLog) -> {
-							Assert.assertEquals(
-									"~7x multiplier should be in affect!",
+							Assertions.assertEquals(
 									7.0,
 									(1.0 * sevenXPrice.get()) / normalPrice.get(),
-									0.1);
+									0.1,
+									"~7x multiplier should be in affect!");
 						}),
 						fileUpdate(THROTTLE_DEFS)
 								.fee(ONE_HUNDRED_HBARS)

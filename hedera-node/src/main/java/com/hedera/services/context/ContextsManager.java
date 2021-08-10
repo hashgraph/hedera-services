@@ -24,7 +24,7 @@ package com.hedera.services.context;
  * Defines a type that manages references to multiple node contexts per
  * classloader by using the {@link com.swirlds.common.Platform#getSelfId()} in the context.
  *
- * Logically, the {@link ServicesContext} is a singleton but for testing  it is
+ * Logically, the {@link ServicesContext} is a singleton but for testing it is
  * convenient to run multiple nodes in the same JVM.
  *
  * @author Michael Tinker

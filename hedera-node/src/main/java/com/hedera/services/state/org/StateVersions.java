@@ -35,8 +35,10 @@ public class StateVersions {
 	     - Release 0.14.0 was state version 8
 	     - Release 0.15.0 was state version 9 */
 
+	public static final int RELEASE_0130_VERSION = 7;
 	public static final int RELEASE_0160_VERSION = 10;
 	public static final int RELEASE_0170_VERSION = 11;
-	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0160_VERSION;
+
+	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0130_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0170_VERSION;
 }

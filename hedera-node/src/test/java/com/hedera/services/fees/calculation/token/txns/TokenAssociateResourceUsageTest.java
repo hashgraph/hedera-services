@@ -105,14 +105,14 @@ class TokenAssociateResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenAssociateTxn));
 		assertFalse(subject.applicableTo(nonTokenAssociateTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
 				expected,
@@ -122,7 +122,7 @@ class TokenAssociateResourceUsageTest {
 	}
 
 	@Test
-	public void returnsDefaultIfInfoMissing() throws Exception {
+	void returnsDefaultIfInfoMissing() throws Exception {
 		given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(null);
 
 		// expect:

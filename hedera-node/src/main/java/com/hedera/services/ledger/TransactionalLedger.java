@@ -208,7 +208,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		perishedKeys.add(id);
 	}
 
-	public ResponseCodeEnum validate(K id, LedgerCheck<A, P> ledgerCheck) {
+	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
 		if(!exists(id)) {
 			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 		}
@@ -216,8 +216,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		var getterTarget = toGetterTarget(id);
 		return ledgerCheck.checkUsing(getterTarget, changeSet);
 	}
-
-
 
 	boolean isInTransaction() {
 		return isInTransaction;

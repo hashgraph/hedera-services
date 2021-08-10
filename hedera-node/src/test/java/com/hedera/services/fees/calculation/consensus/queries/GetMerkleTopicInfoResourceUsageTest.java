@@ -56,17 +56,17 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetMerkleTopicInfoResourceUsageTest {
-	StateView view;
-	FCMap<MerkleEntityId, MerkleTopic> topics;
-	TopicID topicId = asTopic("0.0.1234");
-	GetTopicInfoResourceUsage subject;
-	NodeLocalProperties nodeProps;
+	private StateView view;
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private static final TopicID topicId = asTopic("0.0.1234");
+	private GetTopicInfoResourceUsage subject;
+	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	void setup() throws Throwable {
 		topics = mock(FCMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
+		final var children = new StateChildren();
 		children.setTopics(topics);
 		view = new StateView(
 				null,
@@ -79,22 +79,18 @@ class GetMerkleTopicInfoResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
-		// given:
-		Query topicInfoQuery = topicInfoQuery(topicId, COST_ANSWER);
-		Query nonTopicInfoQuery = nonTopicInfoQuery();
+	void recognizesApplicableQuery() {
+		final var topicInfoQuery = topicInfoQuery(topicId, COST_ANSWER);
+		final var nonTopicInfoQuery = nonTopicInfoQuery();
 
-		// expect:
 		assertTrue(subject.applicableTo(topicInfoQuery));
 		assertFalse(subject.applicableTo(nonTopicInfoQuery));
 	}
 
 	@Test
-	public void throwsIaeWhenTopicDoesNotExist() {
-		// given:
-		Query query = topicInfoQuery(topicId, ANSWER_ONLY);
+	void throwsIaeWhenTopicDoesNotExist() {
+		final var query = topicInfoQuery(topicId, ANSWER_ONLY);
 
-		// expect:
 		assertSame(FeeData.getDefaultInstance(), subject.usageGiven(query, view));
 	}
 
@@ -102,11 +98,16 @@ class GetMerkleTopicInfoResourceUsageTest {
 	@CsvSource({
 			", , , , 236, 112",
 			"abcdefgh, , , , 236, 120", // bpr += memo size(8)
-			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, , , 236, 152", // bpr += 32 for admin key
-			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, 1111111111111111111111111111111111111111111111111111111111111111, , 236, 184", // bpr += 32 for submit key
-			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 236, 208" // bpr += 24 for auto renew account
+			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, , , 236, 152", // bpr += 32
+			// for admin key
+			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, " +
+					"1111111111111111111111111111111111111111111111111111111111111111, , 236, 184", // bpr += 32 for
+			// submit key
+			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, " +
+					"1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 236, 208" // bpr += 24
+			// for auto renew account
 	})
-	public void feeDataAsExpected(
+	void feeDataAsExpected(
 			String memo,
 			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
 			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
@@ -114,28 +115,24 @@ class GetMerkleTopicInfoResourceUsageTest {
 			int expectedBpt,  // query header + topic id size
 			int expectedBpr  // query response header + topic id size + topic info size
 	) {
-	    // setup:
-		MerkleTopic merkleTopic = new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId, new RichInstant(1, 0));
-		FeeData expectedFeeData = FeeData.newBuilder()
+		final var merkleTopic = new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId,
+				new RichInstant(1, 0));
+		final var expectedFeeData = FeeData.newBuilder()
 				.setNodedata(FeeComponents.newBuilder().setConstant(1).setBpt(expectedBpt).setBpr(expectedBpr).build())
 				.setNetworkdata(FeeComponents.getDefaultInstance())
 				.setServicedata(FeeComponents.getDefaultInstance())
 				.build();
-
-		// given:
 		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
 
-		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);
-		FeeData answerOnlyEstimate = subject.usageGiven(topicInfoQuery(topicId, ANSWER_ONLY), view);
+		final var costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);
+		final var answerOnlyEstimate = subject.usageGiven(topicInfoQuery(topicId, ANSWER_ONLY), view);
 
-		// expect:
 		assertEquals(expectedFeeData, costAnswerEstimate);
 		assertEquals(expectedFeeData, answerOnlyEstimate);
 	}
 
-	private Query topicInfoQuery(TopicID topicId, ResponseType type) {
-		ConsensusGetTopicInfoQuery.Builder op = ConsensusGetTopicInfoQuery.newBuilder()
+	private Query topicInfoQuery(final TopicID topicId, final ResponseType type) {
+		final var op = ConsensusGetTopicInfoQuery.newBuilder()
 				.setTopicID(topicId)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()

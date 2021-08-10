@@ -59,7 +59,7 @@ class TxnResponseHelperTest {
 	}
 
 	@Test
-	public void helpsWithSubmitHappyPath() {
+	void helpsWithSubmitHappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(submissionFlow, opCounters, observer);
 
@@ -77,7 +77,7 @@ class TxnResponseHelperTest {
 	}
 
 	@Test
-	public void helpsWithSubmitUnhappyPath() {
+	void helpsWithSubmitUnhappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(submissionFlow, opCounters, observer);
 

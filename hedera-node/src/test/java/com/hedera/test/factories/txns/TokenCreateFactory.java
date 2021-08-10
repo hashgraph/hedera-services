@@ -35,6 +35,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	private boolean frozen = false;
 	private boolean omitAdmin = false;
 	private boolean omitTreasury = false;
+	private AccountID treasury = null;
 	private Optional<AccountID> autoRenew = Optional.empty();
 	private List<FcCustomFee> customFees = new ArrayList<>();
 
@@ -46,6 +47,11 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 
 	public TokenCreateFactory frozen() {
 		frozen = true;
+		return this;
+	}
+
+	public TokenCreateFactory treasury(AccountID treasury) {
+		this.treasury = treasury;
 		return this;
 	}
 
@@ -81,7 +87,11 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 			op.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey());
 		}
 		if (!omitTreasury) {
-			op.setTreasury(TxnHandlingScenario.TOKEN_TREASURY);
+			if (treasury != null) {
+				op.setTreasury(treasury);
+			} else {
+				op.setTreasury(TxnHandlingScenario.TOKEN_TREASURY);
+			}
 		}
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());

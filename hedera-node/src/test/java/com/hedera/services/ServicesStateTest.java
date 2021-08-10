@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -255,7 +255,9 @@ class ServicesStateTest {
 		// then:
 		assertThat(
 				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));;
+
+		cleanupMockExpandHelper();
 	}
 
 	@Test
@@ -275,6 +277,8 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
+
+		cleanupMockExpandHelper();
 	}
 
 	@Test
@@ -322,9 +326,9 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0160() {
+	void minimumVersionIsRelease0130() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0160_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0130_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
@@ -334,10 +338,11 @@ class ServicesStateTest {
 				LegacyStateChildIndices.NUM_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0160_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_0170_CHILDREN,
+				StateChildIndices.NUM_POST_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0160_VERSION - 1));
+		assertEquals(
+				StateChildIndices.NUM_PRE_0160_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0130_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION + 1));
 	}
@@ -418,6 +423,11 @@ class ServicesStateTest {
 	@Test
 	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
 		// setup:
+		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
+		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
+		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
@@ -429,15 +439,10 @@ class ServicesStateTest {
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-		// and:
 		nfts.put(nftKey, nftVal);
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:
-		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels);
+		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, true);
 
 		// given:
 		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0160_VERSION);
@@ -457,6 +462,48 @@ class ServicesStateTest {
 				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
 		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
+		assertEquals(
+				tokenRelsVal,
+				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+						StateChildIndices.TOKEN_ASSOCIATIONS))
+						.get(tokenRelsKey));
+		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
+	}
+
+	@Test
+	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
+		// setup:
+		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
+		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
+		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		// and:
+		final var addressBook = new AddressBook();
+		final var networkContext = new MerkleNetworkContext();
+		networkContext.setSeqNo(new SequenceNumber(1234L));
+		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
+		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
+		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
+		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		// and:
+		tokenRels.put(tokenRelsKey, tokenRelsVal);
+		// and:
+		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, false);
+
+		// given:
+		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0160_VERSION);
+
+		// when:
+		subject.initialize();
+
+		// then:
+		assertEquals(addressBook, subject.getChild(StateChildIndices.ADDRESS_BOOK));
+		assertEquals(addressBook, subject.addressBook());
+		assertEquals(
+				networkContext.midnightRates(),
+				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
+		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				tokenRelsVal,
 				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
@@ -541,7 +588,8 @@ class ServicesStateTest {
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts,
-			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels
+			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels,
+			boolean withNfts
 	) {
 		final List<MerkleNode> legacyChildren = new ArrayList<>();
 		legacyChildren.add(addressBook);
@@ -554,7 +602,9 @@ class ServicesStateTest {
 		legacyChildren.add(null);
 		legacyChildren.add(null);
 		legacyChildren.add(null);
-		legacyChildren.add(nfts);
+		if (withNfts) {
+			legacyChildren.add(nfts);
+		}
 		return legacyChildren;
 	}
 
