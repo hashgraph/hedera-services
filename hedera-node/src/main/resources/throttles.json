@@ -5,7 +5,7 @@
             "burstPeriod": 3,
             "throttleGroups": [
                 {
-                    "opsPerSec": 12000,
+                    "opsPerSec": 10000,
                     "operations": [
                         "ScheduleCreate",
                         "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords",

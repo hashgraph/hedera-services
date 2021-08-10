@@ -673,6 +673,11 @@ public class MiscUtils {
 	 * This means that for a random number x, flipping bit i of x has about
 	 * a 50% chance of flipping bit j in perm64(x). And this is close to 50%
 	 * for every choice of (i,j).
+	 *
+	 * @param x
+	 * 		the value to permute
+	 * @return
+	 * 		the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
 		x += x << 10;

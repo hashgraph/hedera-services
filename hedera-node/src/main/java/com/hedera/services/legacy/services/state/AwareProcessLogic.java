@@ -42,7 +42,6 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.function.BiPredicate;
 
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;

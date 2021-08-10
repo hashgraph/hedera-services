@@ -56,7 +56,9 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +73,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -331,7 +332,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rebuildsAsExpected() {
-		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
+		ArgumentCaptor<Consumer<MerkleNode>> captor = forClass(Consumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
 		final var deletedToken = new MerkleToken();
 		deletedToken.setDeleted(true);
@@ -339,11 +340,11 @@ class HederaTokenStoreTest {
 
 		subject.rebuildViews();
 
-		verify(tokens, times(2)).forEach(captor.capture());
+		verify(tokens, times(2)).forEachNode(captor.capture());
 
-		BiConsumer<MerkleEntityId, MerkleToken> visitor = captor.getAllValues().get(1);
-		visitor.accept(fromTokenId(misc), token);
-		visitor.accept(fromTokenId(anotherMisc), deletedToken);
+		Consumer<MerkleNode> visitor = captor.getAllValues().get(1);
+		visitor.accept(new MerklePair<>(fromTokenId(misc), token));
+		visitor.accept(new MerklePair<>(fromTokenId(anotherMisc), deletedToken));
 
 		final var extant = subject.getKnownTreasuries();
 		assertEquals(1, extant.size());
