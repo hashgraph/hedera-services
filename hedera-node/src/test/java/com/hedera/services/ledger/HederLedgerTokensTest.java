@@ -231,6 +231,8 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void onlyRollsbackIfTokenRelsLedgerInTxn() {
 		given(tokenRelsLedger.isInTransaction()).willReturn(false);
+		// and:
+		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
 
 		// when:
 		subject.dropPendingTokenChanges();
