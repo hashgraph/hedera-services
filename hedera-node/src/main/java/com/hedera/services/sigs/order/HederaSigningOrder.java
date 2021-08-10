@@ -950,8 +950,10 @@ public class HederaSigningOrder {
 			if (!tokenResult.succeeded()) {
 				return tokenResult.failureIfAny();
 			} else {
-				if (tokenResult.metadata().hasRoyaltyWithFallback()) {
-					final var fallbackApplies = !receivesFungibleValue(counterparty, op);
+				final var tokenMeta = tokenResult.metadata();
+				if (tokenMeta.hasRoyaltyWithFallback()) {
+					final var fallbackApplies = !receivesFungibleValue(counterparty, op) &&
+							counterparty.getAccountNum() != tokenMeta.treasury().num();
 					if (fallbackApplies) {
 						required.add(meta.getKey());
 					}

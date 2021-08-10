@@ -251,7 +251,7 @@ public interface TxnHandlingScenario {
 		var royaltyFeeWithFallbackToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"ZPHYR", "West Wind Art", false, true,
-				new EntityId(1, 2, 4));
+				EntityId.fromGrpcAccountId(MISC_ACCOUNT));
 		royaltyFeeWithFallbackToken.setFeeScheduleKey(optionalFeeScheduleKey);
 		royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
 		royaltyFeeWithFallbackToken.setFeeSchedule(List.of(
@@ -261,7 +261,8 @@ public interface TxnHandlingScenario {
 						new EntityId(1, 2, 5))));
 		given(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
 				.willReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
-		given(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)).willReturn(royaltyFeeWithFallbackToken);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+				.willReturn(royaltyFeeWithFallbackToken);
 
 		var supplyToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,

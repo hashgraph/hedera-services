@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,9 +37,16 @@ import java.util.function.BiConsumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_TYPE;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -60,11 +66,91 @@ class UniqTokenViewsManagerTest {
 	private UniqTokenViewsManager subject;
 
 	@Test
+	void beginWorks() {
+		setupTreasuryTrackingSubject();
+
+		// when:
+		subject.begin();
+
+		// then:
+		assertTrue(subject.isInTransaction());
+		// and expect:
+		assertThrows(IllegalStateException.class, subject::begin);
+	}
+
+	@Test
+	void rollbackWorks() {
+		setupTreasuryTrackingSubject();
+		// and:
+		subject.getChangesInTxn().add(change(NFTS_BY_OWNER, 1, 2L, true));
+
+		// expect:
+		assertThrows(IllegalStateException.class, subject::rollback);
+
+		// when:
+		subject.begin();
+		// and:
+		subject.rollback();
+
+		// then:
+		assertFalse(subject.isInTransaction());
+		assertTrue(subject.getChangesInTxn().isEmpty());
+	}
+
+	@Test
+	void commitWorksWithTreasuryTracking() {
+		setupTreasuryTrackingSubject();
+
+		// expect:
+		assertThrows(IllegalStateException.class, subject::commit);
+
+		// when:
+		subject.begin();
+		// and:
+		subject.getChangesInTxn().add(change(NFTS_BY_TYPE, 1, 2L, true));
+		subject.getChangesInTxn().add(change(NFTS_BY_OWNER, 2, 3L, true));
+		subject.getChangesInTxn().add(change(TREASURY_NFTS_BY_TYPE, 3, 4L, true));
+		subject.getChangesInTxn().add(change(TREASURY_NFTS_BY_TYPE, 4, 5L, false));
+		// and:
+		subject.commit();
+
+		// then:
+		verify(nftsByType).associate(1, 2L);
+		verify(nftsByOwner).associate(2, 3L);
+		verify(treasuryNftsByType).associate(3, 4L);
+		verify(treasuryNftsByType).disassociate(4, 5L);
+		// and:
+		assertFalse(subject.isInTransaction());
+	}
+
+	@Test
 	void treasuryExitWorksWithExplicitOwners() {
 		setupNonTreasuryTrackingSubject();
 
 		// when:
 		subject.treasuryExitNotice(aOneNftId, firstOwner, secondOwner);
+
+		// then:
+		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+	}
+
+	@Test
+	void treasuryExitWorksWithExplicitOwnersInTxn() {
+		setupNonTreasuryTrackingSubject();
+
+		// given:
+		subject.begin();
+
+		// when:
+		subject.treasuryExitNotice(aOneNftId, firstOwner, secondOwner);
+
+		// then:
+		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+
+		// and when:
+		subject.commit();
 
 		// then:
 		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
@@ -108,6 +194,28 @@ class UniqTokenViewsManagerTest {
 	}
 
 	@Test
+	void treasuryReturnWorksWithTreasuryWildcardsInTxn() {
+		setupTreasuryTrackingSubject();
+
+		// given:
+		subject.begin();
+
+		// when:
+		subject.treasuryReturnNotice(aOneNftId, firstOwner, secondOwner);
+
+		// then:
+		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(treasuryNftsByType, never()).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+
+		// and when:
+		subject.commit();
+
+		// then:
+		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(treasuryNftsByType).associate(aTokenId.identityCode(), aOneNftId.identityCode());
+	}
+
+	@Test
 	void exchangeWorksWithExplicitOwners() {
 		setupNonTreasuryTrackingSubject();
 
@@ -125,6 +233,27 @@ class UniqTokenViewsManagerTest {
 
 		// when:
 		subject.exchangeNotice(aOneNftId, firstOwner, secondOwner);
+
+		// then:
+		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+	}
+
+	@Test
+	void exchangeWorksWithTreasuryWildcardsViaTxn() {
+		setupTreasuryTrackingSubject();
+
+		// given:
+		subject.begin();
+
+		// when:
+		subject.exchangeNotice(aOneNftId, firstOwner, secondOwner);
+		// then:
+		verify(nftsByOwner, never()).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
+		verify(nftsByOwner, never()).associate(secondOwner.identityCode(), aOneNftId.identityCode());
+
+		// and when:
+		subject.commit();
 
 		// then:
 		verify(nftsByOwner).disassociate(firstOwner.identityCode(), aOneNftId.identityCode());
@@ -208,7 +337,7 @@ class UniqTokenViewsManagerTest {
 		setupTreasuryTrackingSubject();
 
 		// expect:
-		Assertions.assertTrue(subject.isUsingTreasuryWildcards());
+		assertTrue(subject.isUsingTreasuryWildcards());
 
 		// and:
 		givenWellKnownNfts();
@@ -234,7 +363,7 @@ class UniqTokenViewsManagerTest {
 		setupNonTreasuryTrackingSubject();
 
 		// expect:
-		Assertions.assertFalse(subject.isUsingTreasuryWildcards());
+		assertFalse(subject.isUsingTreasuryWildcards());
 
 		// and:
 		givenWellKnownNfts();
@@ -271,6 +400,15 @@ class UniqTokenViewsManagerTest {
 
 	private void setupNonTreasuryTrackingSubject() {
 		subject = new UniqTokenViewsManager(() -> nftsByType, () -> nftsByOwner);
+	}
+
+	private UniqTokenViewsManager.PendingChange change(
+			UniqTokenViewsManager.TargetFcotmr target,
+			int keyCode,
+			long valueCode,
+			boolean associate
+	) {
+		return new UniqTokenViewsManager.PendingChange(target, keyCode, valueCode, associate);
 	}
 
 	private final EntityId firstOwner = new EntityId(0, 0, 3);

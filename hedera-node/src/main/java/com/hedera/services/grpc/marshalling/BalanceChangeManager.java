@@ -79,6 +79,20 @@ public class BalanceChangeManager {
 		return ans;
 	}
 
+	public List<BalanceChange> fungibleCreditsInCurrentLevel(Id beneficiary) {
+		final List<BalanceChange> ans = new ArrayList<>();
+		for (int i = levelStart; i < levelEnd; i++) {
+			final var change = changesSoFar.get(i);
+			if (change.isForNft()) {
+				continue;
+			}
+			if (beneficiary.equals(change.getAccount()) && change.originalUnits() > 0) {
+				ans.add(change);
+			}
+		}
+		return ans;
+	}
+
 	public BalanceChange nextAssessableChange() {
 		final var numChanges = changesSoFar.size();
 		if (nextCandidateChange == numChanges) {

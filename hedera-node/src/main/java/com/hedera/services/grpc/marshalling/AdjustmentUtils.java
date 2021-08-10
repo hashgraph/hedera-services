@@ -23,6 +23,8 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 
+import java.math.BigInteger;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 
 public class AdjustmentUtils {
@@ -32,7 +34,7 @@ public class AdjustmentUtils {
 		adjustedChange(collector, denom, +amount, manager);
 	}
 
-	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager) {
+	public static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager) {
 		/* Always append a new change for an HTS debit since it could trigger another assessed fee */
 		if (denom != Id.MISSING_ID && amount < 0) {
 			return includedHtsChange(account, denom, amount, manager);
@@ -51,6 +53,14 @@ public class AdjustmentUtils {
 		} else {
 			extantChange.adjustUnits(amount);
 			return extantChange;
+		}
+	}
+
+	public static long safeFractionMultiply(long n, long d, long v) {
+		if (v != 0 && n > Long.MAX_VALUE / v) {
+			return BigInteger.valueOf(v).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(d)).longValueExact();
+		} else {
+			return n * v / d;
 		}
 	}
 

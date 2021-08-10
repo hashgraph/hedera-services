@@ -136,6 +136,28 @@ class BalanceChangeManagerTest {
 		bothCreditsInCurrentLevel();
 	}
 
+	@Test
+	void canFindFungibleCredits() {
+		// setup:
+		final List<BalanceChange> nftExchangeList = new ArrayList<>();
+		nftExchangeList.add(hbarPayerPlusChange);
+		nftExchangeList.add(firstNonFungibleTrigger);
+		nftExchangeList.add(firstCredit);
+		nftExchangeList.add(secondCredit);
+		nftExchangeList.add(htsPayerPlusChange);
+
+		// given:
+		subject = new BalanceChangeManager(nftExchangeList, 1);
+
+		// when:
+		final var fungibleCredits = subject.fungibleCreditsInCurrentLevel(payer);
+
+		// then:
+		assertEquals(2, fungibleCredits.size());
+		assertSame(hbarPayerPlusChange, fungibleCredits.get(0));
+		assertSame(htsPayerPlusChange, fungibleCredits.get(1));
+	}
+
 	private void bothCreditsInCurrentLevel() {
 		final var inLevel = subject.creditsInCurrentLevel(repeatedCreditsFungibleTokenId);
 		assertSame(firstCredit, inLevel.get(0));
@@ -185,6 +207,10 @@ class BalanceChangeManagerTest {
 	private final Id nonFungibleTokenId = new Id(7, 4, 7);
 	private final Id secondFungibleTokenId = new Id(3, 2, 1);
 	private final Id repeatedCreditsFungibleTokenId = new Id(4, 3, 2);
+	private final AccountAmount payerCredit = AccountAmount.newBuilder()
+			.setAccountID(payer.asGrpcAccount())
+			.setAmount(100)
+			.build();
 	private final AccountAmount firstFungibleDebit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(-amountOfFirstFungibleDebit)
@@ -201,6 +227,9 @@ class BalanceChangeManagerTest {
 			.setAccountID(funding.asGrpcAccount())
 			.setAmount(+amountOfSecondFungibleDebit)
 			.build();
+	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit);
+	private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit);
 	private final BalanceChange firstFungibleTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
 	private final BalanceChange firstFungibleNonTrigger = BalanceChange.changingFtUnits(

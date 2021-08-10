@@ -15,10 +15,11 @@ class TokenSigningMetadataTest {
 	@Test
 	void classifiesRoyaltyWithFallback() {
 		// setup:
+		final var treasury = new EntityId(1, 2, 4);
 		var royaltyFeeWithFallbackToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"ZPHYR", "West Wind Art", false, true,
-				new EntityId(1, 2, 4));
+				treasury);
 		royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
 		royaltyFeeWithFallbackToken.setFeeSchedule(List.of(
 				FcCustomFee.royaltyFee(
@@ -31,15 +32,17 @@ class TokenSigningMetadataTest {
 
 		// expect:
 		assertTrue(meta.hasRoyaltyWithFallback());
+		assertSame(treasury, meta.treasury());
 	}
 
 	@Test
 	void classifiesRoyaltyWithNoFallback() {
 		// setup:
+		final var treasury = new EntityId(1, 2, 4);
 		var royaltyFeeNoFallbackToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"ZPHYR", "West Wind Art", false, true,
-				new EntityId(1, 2, 4));
+				treasury);
 		royaltyFeeNoFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
 		royaltyFeeNoFallbackToken.setFeeSchedule(List.of(
 				FcCustomFee.royaltyFee(
@@ -52,5 +55,6 @@ class TokenSigningMetadataTest {
 
 		// expect:
 		assertFalse(meta.hasRoyaltyWithFallback());
+		assertSame(treasury, meta.treasury());
 	}
 }

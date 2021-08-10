@@ -137,6 +137,7 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
 import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
@@ -831,7 +832,8 @@ public class ServicesContext {
 		if (impliedTransfersMarshal == null) {
 			final var htsAssessor = new HtsFeeAssessor();
 			final var hbarAssessor = new HbarFeeAssessor();
-			final var royaltyAssessor = new RoyaltyFeeAssessor(htsAssessor, hbarAssessor);
+			final var royaltyAssessor = new RoyaltyFeeAssessor(
+					htsAssessor, hbarAssessor, AdjustmentUtils::adjustedChange);
 			final var fractionalAssessor = new FractionalFeeAssessor();
 			final var feeAssessor = new FeeAssessor(htsAssessor, hbarAssessor, royaltyAssessor, fractionalAssessor);
 			impliedTransfersMarshal = new ImpliedTransfersMarshal(
@@ -1746,6 +1748,7 @@ public class ServicesContext {
 					recordsHistorian(),
 					globalDynamicProperties(),
 					accountsLedger);
+			ledger.setTokenViewsManager(uniqTokenViewsManager());
 			scheduleStore().setAccountsLedger(accountsLedger);
 			scheduleStore().setHederaLedger(ledger);
 		}

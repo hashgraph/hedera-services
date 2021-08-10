@@ -342,11 +342,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		});
 	}
 
-	private void updateLedgers(final NftId nftId,
+	private void updateLedgers(
+			final NftId nftId,
 			final AccountID from,
 			final AccountID to,
 			final TokenID tId,
-			final EntityId owner) {
+			final EntityId owner
+	) {
 		final var nftType = nftId.tokenId();
 		final var fromRel = asTokenRel(from, nftType);
 		final var toRel = asTokenRel(to, nftType);
@@ -525,7 +527,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			AccountID feeCollector
 	) {
 		final var typeValidity = validateTypeConstraints(
-				isUpdate, NON_FUNGIBLE_UNIQUE,  targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+				isUpdate, NON_FUNGIBLE_UNIQUE, targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
 		if (typeValidity != OK) {
 			return typeValidity;
 		}
@@ -557,7 +559,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			AccountID feeCollector
 	) {
 		final var typeValidity = validateTypeConstraints(
-				isUpdate, FUNGIBLE_COMMON,  targetToken, CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+				isUpdate, FUNGIBLE_COMMON, targetToken, CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 		if (typeValidity != OK) {
 			return typeValidity;
 		}

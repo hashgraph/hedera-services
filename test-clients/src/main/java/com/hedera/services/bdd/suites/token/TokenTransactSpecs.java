@@ -56,7 +56,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -68,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -130,6 +133,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						nestedHtsCaseStudy(),
 						treasuriesAreExemptFromAllCustomFees(),
 						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+						royaltyFallbackCaseStudy(),
+						royaltyFractionalCaseStudy(),
 				}
 		);
 	}
@@ -1214,6 +1219,139 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(tokenWithFractionalFee, 49L),
 						getAccountBalance(treasuryForNestedCollection)
 								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L)
+				);
+	}
+
+	public HapiApiSpec royaltyFallbackCaseStudy() {
+		final var zephyr = "zephyr";
+		final var amelie = "amelie";
+		final var usdcTreasury = "bank";
+		final var westWindTreasury = "collection";
+		final var westWindArt = "westWindArt";
+		final var usdc = "USDC";
+		final var supplyKey = "supply";
+
+		final var txnFromTreasury = "txnFromTreasury";
+		final var txnFromZephyr = "txnFromZephyr";
+
+		return defaultHapiSpec("RoyaltyFallbackCaseStudy")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(zephyr),
+						cryptoCreate(amelie),
+						cryptoCreate(usdcTreasury),
+						cryptoCreate(westWindTreasury),
+						tokenCreate(usdc)
+								.treasury(usdcTreasury),
+						tokenAssociate(westWindTreasury, usdc),
+						tokenCreate(westWindArt)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.treasury(westWindTreasury)
+								.withCustom(royaltyFeeWithFallback(
+										1, 100,
+										fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
+										westWindTreasury)),
+						tokenAssociate(amelie, List.of(westWindArt, usdc)),
+						tokenAssociate(zephyr, List.of(westWindArt, usdc)),
+						mintToken(westWindArt, List.of(ByteString.copyFromUtf8("Fugues and fantastics")))
+				).when(
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(westWindTreasury, zephyr)
+						)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(zephyr, amelie)
+						)
+								.payingWith(zephyr)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(zephyr, amelie)
+						)
+								.signedBy(amelie, zephyr)
+								.payingWith(zephyr)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE),
+						cryptoTransfer(moving(1, usdc).between(usdcTreasury, amelie)),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(zephyr, amelie)
+						)
+								.signedBy(amelie, zephyr)
+								.payingWith(zephyr)
+								.fee(ONE_HBAR)
+								.via(txnFromZephyr)
+				).then(
+						getTxnRecord(txnFromTreasury).logged(),
+						getTxnRecord(txnFromZephyr).logged()
+				);
+	}
+
+	public HapiApiSpec royaltyFractionalCaseStudy() {
+		final var alice = "alice";
+		final var amelie = "amelie";
+		final var usdcTreasury = "bank";
+		final var westWindTreasury = "collection";
+		final var westWindArt = "westWindArt";
+		final var usdc = "USDC";
+		final var supplyKey = "supply";
+
+		final var txnFromTreasury = "txnFromTreasury";
+		final var txnFromAmelie = "txnFromAmelie";
+
+		return defaultHapiSpec("RoyaltyFractionalCaseStudy")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(alice).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(amelie),
+						cryptoCreate(usdcTreasury),
+						cryptoCreate(westWindTreasury),
+						tokenCreate(usdc)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(usdcTreasury),
+						tokenAssociate(westWindTreasury, usdc),
+						tokenCreate(westWindArt)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.treasury(westWindTreasury)
+								.withCustom(royaltyFeeWithFallback(
+										1, 100,
+										fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
+										westWindTreasury)),
+						tokenAssociate(amelie, List.of(westWindArt, usdc)),
+						tokenAssociate(alice, List.of(westWindArt, usdc)),
+						mintToken(westWindArt, List.of(ByteString.copyFromUtf8("Fugues and fantastics"))),
+						cryptoTransfer(
+								moving(200, usdc)
+										.between(usdcTreasury, alice)
+						)
+								.fee(ONE_HBAR),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(westWindTreasury, amelie)
+						)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury)
+				).when(
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(amelie, alice),
+								moving(200, usdc).between(alice, amelie),
+								movingHbar(10 * ONE_HUNDRED_HBARS).between(alice, amelie)
+						)
+								.signedBy(amelie, alice)
+								.payingWith(amelie)
+								.via(txnFromAmelie)
+								.fee(ONE_HBAR)
+				).then(
+						getTxnRecord(txnFromAmelie).logged()
 				);
 	}
 

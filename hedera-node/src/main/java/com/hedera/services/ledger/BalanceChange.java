@@ -55,6 +55,7 @@ public class BalanceChange {
 
 	private Id account;
 	private long units;
+	private long originalUnits;
 	private ResponseCodeEnum codeForInsufficientBalance;
 	private long newBalance;
 	private NftId nftId = null;
@@ -96,32 +97,33 @@ public class BalanceChange {
 		return tokenChange;
 	}
 
-	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
-		this.token = token;
-
-		this.accountId = aa.getAccountID();
-		this.account = Id.fromGrpcAccount(accountId);
-		this.units = aa.getAmount();
-
-		this.codeForInsufficientBalance = code;
-	}
-
-	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
-		this.token = token;
-
-		this.accountId = sender;
-		this.counterPartyAccountId = receiver;
-		this.account = Id.fromGrpcAccount(accountId);
-		this.units = serialNo;
-
-		this.codeForInsufficientBalance = code;
-	}
-
+	/* ℏ constructor */
 	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
 		this.units = amount;
+		this.originalUnits = amount;
+		this.codeForInsufficientBalance = code;
+	}
+
+	/* HTS constructor */
+	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
+		this.token = token;
+		this.accountId = aa.getAccountID();
+		this.account = Id.fromGrpcAccount(accountId);
+		this.units = aa.getAmount();
+		this.originalUnits = units;
+		this.codeForInsufficientBalance = code;
+	}
+
+	/* NFT constructor */
+	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
+		this.token = token;
+		this.accountId = sender;
+		this.counterPartyAccountId = receiver;
+		this.account = Id.fromGrpcAccount(accountId);
+		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
 	}
 
@@ -143,6 +145,10 @@ public class BalanceChange {
 
 	public long units() {
 		return units;
+	}
+
+	public long originalUnits() {
+		return originalUnits;
 	}
 
 	public long serialNo() {

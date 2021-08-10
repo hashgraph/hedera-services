@@ -22,6 +22,7 @@ package com.hedera.services.sigs.metadata;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 
 import java.util.Optional;
@@ -37,6 +38,7 @@ public class TokenSigningMetadata {
 	private final Optional<JKey> supplyKey;
 	private final Optional<JKey> feeScheduleKey;
 	private final boolean hasRoyaltyWithFallback;
+	private final EntityId treasury;
 
 	private TokenSigningMetadata(
 			Optional<JKey> adminKey,
@@ -45,13 +47,15 @@ public class TokenSigningMetadata {
 			Optional<JKey> freezeKey,
 			Optional<JKey> supplyKey,
 			Optional<JKey> feeScheduleKey,
-			boolean hasRoyaltyWithFallback
+			boolean hasRoyaltyWithFallback,
+			EntityId treasury
 	) {
 		this.adminKey = adminKey;
 		this.kycKey = kycKey;
 		this.wipeKey = wipeKey;
 		this.freezeKey = freezeKey;
 		this.supplyKey = supplyKey;
+		this.treasury = treasury;
 		this.feeScheduleKey = feeScheduleKey;
 		this.hasRoyaltyWithFallback = hasRoyaltyWithFallback;
 	}
@@ -77,7 +81,8 @@ public class TokenSigningMetadata {
 				token.freezeKey(),
 				token.supplyKey(),
 				token.feeScheduleKey(),
-				hasRoyaltyWithFallback);
+				hasRoyaltyWithFallback,
+				token.treasury());
 	}
 
 	public Optional<JKey> adminKey() {
@@ -106,5 +111,9 @@ public class TokenSigningMetadata {
 
 	public boolean hasRoyaltyWithFallback() {
 		return hasRoyaltyWithFallback;
+	}
+
+	public EntityId treasury() {
+		return treasury;
 	}
 }
