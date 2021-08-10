@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
@@ -40,7 +40,7 @@ class ExpiringEntityTest {
     ExpiringEntity subject, other;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         consumer = mock(Consumer.class);
         otherConsumer = mock(Consumer.class);
 
@@ -51,14 +51,14 @@ class ExpiringEntityTest {
     }
 
     @Test
-    public void validGetters() {
+    void validGetters() {
         assertEquals(id, subject.id());
         assertEquals(consumer, subject.consumer());
         assertEquals(expiry, subject.expiry());
     }
 
     @Test
-    public void validEqualityChecks() {
+    void validEqualityChecks() {
         // expect:
         Assertions.assertEquals(subject, subject);
         // and:
@@ -68,7 +68,7 @@ class ExpiringEntityTest {
     }
 
     @Test
-    public void failDifferentExpiry() {
+    void failDifferentExpiry() {
         // given:
         other = new ExpiringEntity(id, consumer, otherExpiry);
 
@@ -79,7 +79,7 @@ class ExpiringEntityTest {
     }
 
     @Test
-    public void failDifferentConsumer() {
+    void failDifferentConsumer() {
         // given:
         other = new ExpiringEntity(id, otherConsumer, expiry);
 
@@ -90,7 +90,7 @@ class ExpiringEntityTest {
     }
 
     @Test
-    public void failDifferentId() {
+    void failDifferentId() {
         // given:
         other = new ExpiringEntity(otherId, consumer, expiry);
 

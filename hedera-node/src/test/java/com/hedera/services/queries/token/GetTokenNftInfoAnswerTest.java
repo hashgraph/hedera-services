@@ -81,7 +81,7 @@ class GetTokenNftInfoAnswerTest {
 	GetTokenNftInfoAnswer subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		info = TokenNftInfo.newBuilder()
 				.setNftID(nftId)
 				.setCreationTime(Timestamp.newBuilder().setSeconds(1).setNanos(2))

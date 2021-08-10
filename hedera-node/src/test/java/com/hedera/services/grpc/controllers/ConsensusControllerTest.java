@@ -63,7 +63,7 @@ class ConsensusControllerTest {
 	}
 
 	@Test
-	public void forwardsTopicInfoAsExpected() {
+	void forwardsTopicInfoAsExpected() {
 		// when:
 		subject.getTopicInfo(query, queryObserver);
 
@@ -73,7 +73,7 @@ class ConsensusControllerTest {
 	}
 
 	@Test
-	public void forwardsCreateAsExpected() {
+	void forwardsCreateAsExpected() {
 		// when:
 		subject.createTopic(txn, txnObserver);
 
@@ -82,7 +82,7 @@ class ConsensusControllerTest {
 	}
 
 	@Test
-	public void forwardsDeleteAsExpected() {
+	void forwardsDeleteAsExpected() {
 		// when:
 		subject.deleteTopic(txn, txnObserver);
 
@@ -91,7 +91,7 @@ class ConsensusControllerTest {
 	}
 
 	@Test
-	public void forwardsUpdateAsExpected() {
+	void forwardsUpdateAsExpected() {
 		// when:
 		subject.updateTopic(txn, txnObserver);
 
@@ -100,7 +100,7 @@ class ConsensusControllerTest {
 	}
 
 	@Test
-	public void forwardsSubmitAsExpected() {
+	void forwardsSubmitAsExpected() {
 		// when:
 		subject.submitMessage(txn, txnObserver);
 

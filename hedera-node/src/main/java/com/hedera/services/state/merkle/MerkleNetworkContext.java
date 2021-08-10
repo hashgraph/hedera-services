@@ -45,7 +45,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	static final int UNRECORDED_STATE_VERSION = -1;
 
-	static final int PRE_RELEASE_0130_VERSION = 1;
 	static final int RELEASE_0130_VERSION = 2;
 	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
@@ -213,36 +212,49 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
 		if (version >= RELEASE_0130_VERSION) {
-			int numUsageSnapshots = in.readInt();
-			if (numUsageSnapshots > 0) {
-				usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
-				for (int i = 0; i < numUsageSnapshots; i++) {
-					var used = in.readLong();
-					var lastUsed = serdes.readNullableInstant(in);
-					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
-							used, (lastUsed == null) ? null : lastUsed.toJava());
-				}
-			}
-
-			int numCongestionStarts = in.readInt();
-			if (numCongestionStarts > 0) {
-				congestionLevelStarts = new Instant[numCongestionStarts];
-				for (int i = 0; i < numCongestionStarts; i++) {
-					final var levelStart = serdes.readNullableInstant(in);
-					congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
-				}
-			}
+			readCongestionControlData(in);
 		}
+
 		if (version >= RELEASE_0140_VERSION) {
-			lastScannedEntity = in.readLong();
-			entitiesScannedThisSecond = in.readLong();
-			entitiesTouchedThisSecond = in.readLong();
-			stateVersion = in.readInt();
+			whenVersionHigherOrEqualTo0140(in);
 		}
 		if (version >= RELEASE_0150_VERSION) {
-			final var lastBoundaryCheck = serdes.readNullableInstant(in);
-			lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
+			whenVersionHigherOrEqualTo0150(in);
 		}
+	}
+
+	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
+		int numUsageSnapshots = in.readInt();
+		if (numUsageSnapshots > 0) {
+			usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
+			for (int i = 0; i < numUsageSnapshots; i++) {
+				var used = in.readLong();
+				var lastUsed = serdes.readNullableInstant(in);
+				usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
+						used, (lastUsed == null) ? null : lastUsed.toJava());
+			}
+		}
+
+		int numCongestionStarts = in.readInt();
+		if (numCongestionStarts > 0) {
+			congestionLevelStarts = new Instant[numCongestionStarts];
+			for (int i = 0; i < numCongestionStarts; i++) {
+				final var levelStart = serdes.readNullableInstant(in);
+				congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
+			}
+		}
+	}
+
+	private void whenVersionHigherOrEqualTo0140(final SerializableDataInputStream in) throws IOException {
+		lastScannedEntity = in.readLong();
+		entitiesScannedThisSecond = in.readLong();
+		entitiesTouchedThisSecond = in.readLong();
+		stateVersion = in.readInt();
+	}
+
+	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
+		final var lastBoundaryCheck = serdes.readNullableInstant(in);
+		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
 	}
 
 	@Override
@@ -425,6 +437,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
 		return usageSnapshots;
 	}
+
+	public void setMidnightRates(ExchangeRates midnightRates) {
+		this.midnightRates = midnightRates;
+	}
+
+	public void setSeqNo(SequenceNumber seqNo) {
+		this.seqNo = seqNo;
+        }
 
 	FeeMultiplierSource getMultiplierSource() {
 		return multiplierSource;

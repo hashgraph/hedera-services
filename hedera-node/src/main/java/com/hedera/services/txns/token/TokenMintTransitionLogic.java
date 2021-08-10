@@ -150,19 +150,24 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		}
 
 		if (onlyMetadataIsPresent) {
-			var validity = validator.maxBatchSizeMintCheck(op.getMetadataCount());
+			return validateNfts(op);
+		}
+
+		return OK;
+	}
+
+	private ResponseCodeEnum validateNfts(final TokenMintTransactionBody op) {
+		var validity = validator.maxBatchSizeMintCheck(op.getMetadataCount());
+		if (validity != OK) {
+			return validity;
+		}
+
+		for (ByteString bytes : op.getMetadataList()) {
+			validity = validator.nftMetadataCheck(bytes.toByteArray());
 			if (validity != OK) {
 				return validity;
 			}
-
-			for (ByteString bytes : op.getMetadataList()) {
-				validity = validator.nftMetadataCheck(bytes.toByteArray());
-				if (validity != OK) {
-					return validity;
-				}
-			}
 		}
-
 		return OK;
 	}
 }

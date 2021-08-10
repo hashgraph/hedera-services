@@ -85,7 +85,7 @@ class GetAccountRecordsResourceUsageTest {
 	}
 
 	@Test
-	public void returnsEmptyFeeDataWhenAccountMissing() {
+	void returnsEmptyFeeDataWhenAccountMissing() {
 		// given:
 		Query query = accountRecordsQuery(a, ANSWER_ONLY);
 
@@ -94,7 +94,7 @@ class GetAccountRecordsResourceUsageTest {
 	}
 
 	@Test
-	public void invokesEstimatorAsExpectedForType() {
+	void invokesEstimatorAsExpectedForType() {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
@@ -121,7 +121,7 @@ class GetAccountRecordsResourceUsageTest {
 
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		Query accountRecordsQuery = accountRecordsQuery(a, COST_ANSWER);
 		Query nonAccountRecordsQuery = nonAccountRecordsQuery();

@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Optional;
@@ -138,38 +138,39 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) {
 		var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
-		expectedScheduledTxnId.ifPresent(n -> Assert.assertEquals(
-				"Wrong scheduled transaction id!",
+		expectedScheduledTxnId.ifPresent(n -> Assertions.assertEquals(
 				spec.registry().getTxnId(correspondingScheduledTxnId(n)),
-				actualInfo.getScheduledTransactionID()));
+				actualInfo.getScheduledTransactionID(),
+				"Wrong scheduled transaction id!"));
 
-		expectedCreatorAccountID.ifPresent(s -> Assert.assertEquals(
-				"Wrong schedule creator account ID!",
+		expectedCreatorAccountID.ifPresent(s -> Assertions.assertEquals(
 				TxnUtils.asId(s, spec),
-				actualInfo.getCreatorAccountID()));
+				actualInfo.getCreatorAccountID(),
+				"Wrong schedule creator account ID!"));
 
-		expectedPayerAccountID.ifPresent(s -> Assert.assertEquals(
-				"Wrong schedule payer account ID!",
+		expectedPayerAccountID.ifPresent(s -> Assertions.assertEquals(
 				TxnUtils.asId(s, spec),
-				actualInfo.getPayerAccountID()));
+				actualInfo.getPayerAccountID(),
+				"Wrong schedule payer account ID!"));
 
-		expectedEntityMemo.ifPresent(s -> Assert.assertEquals(
-				"Wrong memo!",
+		expectedEntityMemo.ifPresent(s -> Assertions.assertEquals(
 				s,
-				actualInfo.getMemo()));
+				actualInfo.getMemo(),
+				"Wrong memo!"));
 
 		if (checkForRecordedScheduledTxn) {
-			Assert.assertEquals("Wrong scheduled txn!",
+			Assertions.assertEquals(
 					spec.registry().getScheduledTxn(schedule),
-					actualInfo.getScheduledTransactionBody());
+					actualInfo.getScheduledTransactionBody(),
+					"Wrong scheduled txn!");
 		}
 
 		if (shouldBeExecuted) {
-			Assert.assertTrue("Wasn't already executed!", actualInfo.hasExecutionTime());
+			Assertions.assertTrue(actualInfo.hasExecutionTime(), "Wasn't already executed!");
 		}
 
 		if (shouldNotBeExecuted) {
-			Assert.assertFalse("Was already executed!", actualInfo.hasExecutionTime());
+			Assertions.assertFalse(actualInfo.hasExecutionTime(), "Was already executed!");
 		}
 
 		if (deletionTxn.isPresent()) {
@@ -204,9 +205,10 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				var key = registry.getKey(signatory);
 				expect.addKeys(key);
 			}
-			Assert.assertArrayEquals("Wrong signatories!",
+			Assertions.assertArrayEquals(
 					expect.build().getKeysList().toArray(),
-					actualInfo.getSigners().getKeysList().toArray());
+					actualInfo.getSigners().getKeysList().toArray(),
+					"Wrong signatories!");
 		});
 
 		assertFor(
@@ -237,7 +239,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				.setSeconds(actual.getSeconds())
 				.setNanos(consensusTime.getNanos() + nanoOffset)
 				.build();
-		Assert.assertEquals(errMsg, expected, actual);
+		Assertions.assertEquals(expected, actual, errMsg);
 	}
 
 	private <T, R> void assertFor(
@@ -249,7 +251,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	) {
 		if (possible.isPresent()) {
 			var expected = expectedFn.apply(possible.get(), registry);
-			Assert.assertEquals(error, expected, actual);
+			Assertions.assertEquals(expected, actual, error);
 		}
 	}
 

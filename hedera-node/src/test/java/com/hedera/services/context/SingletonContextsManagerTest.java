@@ -21,7 +21,6 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.context.properties.PropertySources;
-import com.hedera.services.exceptions.ContextNotFoundException;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class SingletonContextsManagerTest {
+class SingletonContextsManagerTest {
 	private final NodeId id = new NodeId(false, 1L);
 
 	Platform platform;
@@ -52,13 +51,13 @@ public class SingletonContextsManagerTest {
 	}
 
 	@Test
-	public void failsFastOnMissingContext() {
+	void failsFastOnMissingContext() {
 		// expect:
-		assertThrows(ContextNotFoundException.class, () -> CONTEXTS.lookup(1L));
+		assertThrows(IllegalArgumentException.class, () -> CONTEXTS.lookup(1L));
 	}
 
 	@Test
-	public void createsExpectedContext() {
+	void createsExpectedContext() {
 		// given:
 		assertFalse(CONTEXTS.isInitialized(1L));
 

@@ -38,14 +38,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultFCMapContractLookupTest {
+class DefaultFCMapContractLookupTest {
 	private final String id = "0.0.1337";
 	private final ContractID contract = IdUtils.asContract(id);
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private DefaultFCMapContractLookup subject;
 
 	@Test
-	public void failsSafelyOnMissingAccount() {
+	void failsSafelyOnMissingAccount() {
 		// given:
 		accounts = newAccounts().get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
@@ -59,7 +59,7 @@ public class DefaultFCMapContractLookupTest {
 	}
 
 	@Test
-	public void failsOnDeletedAccount() {
+	void failsOnDeletedAccount() {
 		// given:
 		accounts = newAccounts().withAccount(id, newContract().deleted(true).get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
@@ -73,7 +73,7 @@ public class DefaultFCMapContractLookupTest {
 	}
 
 	@Test
-	public void failsNormalAccountInsteadOfSmartContract() {
+	void failsNormalAccountInsteadOfSmartContract() {
 		// given:
 		accounts = newAccounts().withAccount(id, newAccount().get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
@@ -87,7 +87,7 @@ public class DefaultFCMapContractLookupTest {
 	}
 
 	@Test
-	public void failsOnNullAccountKeys() {
+	void failsOnNullAccountKeys() {
 		// given:
 		accounts = newAccounts().withAccount(id, newContract().get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
@@ -101,7 +101,7 @@ public class DefaultFCMapContractLookupTest {
 	}
 
 	@Test
-	public void failsOnContractIdKey() {
+	void failsOnContractIdKey() {
 		// given:
 		accounts = newAccounts().withAccount(id, newContract().accountKeys(new JContractIDKey(contract)).get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
@@ -115,7 +115,7 @@ public class DefaultFCMapContractLookupTest {
 	}
 
 	@Test
-	public void returnsLegalKey() throws Exception {
+	void returnsLegalKey() throws Exception {
 		// given:
 		JKey desiredKey = new JKeyList();
 		accounts = newAccounts().withAccount(id, newContract().accountKeys(desiredKey).get()).get();

@@ -45,7 +45,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ScheduleDeleteResourceUsageTest {
+class ScheduleDeleteResourceUsageTest {
     TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setScheduled(true)
             .setAccountID(IdUtils.asAccount("0.0.2"))
@@ -94,20 +94,20 @@ public class ScheduleDeleteResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // expect:
         assertTrue(subject.applicableTo(scheduleDeleteTxn));
         assertFalse(subject.applicableTo(nonScheduleDeleteTxn));
     }
 
     @Test
-    public void delegatesToCorrectEstimate() throws Exception {
+    void delegatesToCorrectEstimate() throws Exception {
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleDeleteTxn, obj, view));
     }
 
     @Test
-    public void returnsDefaultIfInfoMissing() throws Exception {
+    void returnsDefaultIfInfoMissing() throws Exception {
         // setup:
         long start = 1_234_567L;
         TransactionID txnId = TransactionID.newBuilder()

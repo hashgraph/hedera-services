@@ -53,12 +53,12 @@ import io.grpc.ManagedChannelBuilder;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -77,11 +77,9 @@ import java.util.Properties;
  * @author Peter
  */
 public class SmartContractTestBitcarbon extends LegacySmartContractTest {
-
 	private static final String ARBITRARY_ADDRESS = "1234567890123456789012345678901234567890";
 	private static long DAY_SEC = 24 * 60 * 60; // secs in a day
 	private final Logger log = LogManager.getLogger(SmartContractTestBitcarbon.class);
-
 
 	private static final int MAX_RECEIPT_RETRIES = 60;
 	public static final String ADDRESS_BOOK_BIN = ContractResources.ADDRESS_BOOK_BYTECODE_PATH;
@@ -148,8 +146,8 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 				.createAccountWithSigMap(payerAccount, nodeAccount, keyPair, initialBalance,
 						accountKeyPairs.get(payerAccount));
 		TransactionResponse response = stub.createAccount(transaction);
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 		System.out.println(
 				"Pre Check Response of Create  account :: " + response.getNodeTransactionPrecheckCode()
 						.name());
@@ -223,9 +221,9 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		}
 		TransactionRecord trRecord = getTransactionRecord(payerAccount,
 				createContractBody.getTransactionID());
-		Assert.assertNotNull(trRecord);
-		Assert.assertTrue(trRecord.hasContractCreateResult());
-		Assert.assertEquals(trRecord.getContractCreateResult().getContractID(),
+		Assertions.assertNotNull(trRecord);
+		Assertions.assertTrue(trRecord.hasContractCreateResult());
+		Assertions.assertEquals(trRecord.getContractCreateResult().getContractID(),
 				contractCreateReceipt.getReceipt().getContractID());
 
 		channel.shutdown();
@@ -398,11 +396,11 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		TransactionBody callContractBody = TransactionBody.parseFrom(callContractRequest.getBodyBytes());
 		TransactionGetReceiptResponse contractCallReceipt = getReceipt(
 				callContractBody.getTransactionID());
-		Assert.assertEquals(expectedStatus, contractCallReceipt.getReceipt().getStatus());
+		Assertions.assertEquals(expectedStatus, contractCallReceipt.getReceipt().getStatus());
 
 		TransactionRecord txRecord = getTransactionRecord(payerAccount,
 				callContractBody.getTransactionID());
-		Assert.assertTrue(txRecord.hasContractCallResult());
+		Assertions.assertTrue(txRecord.hasContractCallResult());
 
 		String errMsg = txRecord.getContractCallResult().getErrorMessage();
 		if (!StringUtils.isEmpty(errMsg)) {
@@ -558,8 +556,8 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
 		KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
 		AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, TestHelper.getCryptoMaxFee() * 10);
-		Assert.assertNotNull(crAccount);
-		Assert.assertNotEquals(0, crAccount.getAccountNum());
+		Assertions.assertNotNull(crAccount);
+		Assertions.assertNotEquals(0, crAccount.getAccountNum());
 		log.info("Account created successfully: " + crAccount);
 
     /*
@@ -570,23 +568,23 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		FileID addressBookFileId = LargeFileUploadIT
 				.uploadFile(crAccount, ADDRESS_BOOK_BIN, new ArrayList<>(
 						List.of(crAccountKeyPair.getPrivate())), host, nodeAccount);
-		Assert.assertNotNull(addressBookFileId);
-		Assert.assertNotEquals(0, addressBookFileId.getFileNum());
+		Assertions.assertNotNull(addressBookFileId);
+		Assertions.assertNotEquals(0, addressBookFileId.getFileNum());
 		log.info("AddressBook file uploaded successfully");
 
 		// Create AddressBook contract
 		ContractID addressBookContractId = createContract(crAccount, addressBookFileId,
 				null);
-		Assert.assertNotNull(addressBookContractId);
-		Assert.assertNotEquals(0, addressBookContractId.getContractNum());
+		Assertions.assertNotNull(addressBookContractId);
+		Assertions.assertNotEquals(0, addressBookContractId.getContractNum());
 		log.info("AddressBook Contract created successfully: " + addressBookContractId);
 
 		// Upload Jurisdictions file
 		FileID jurisdictionsFileId = LargeFileUploadIT
 				.uploadFile(crAccount, JURISDICTIONS_BIN, new ArrayList<>(
 						List.of(crAccountKeyPair.getPrivate())), host, nodeAccount);
-		Assert.assertNotNull(jurisdictionsFileId);
-		Assert.assertNotEquals(0, jurisdictionsFileId.getFileNum());
+		Assertions.assertNotNull(jurisdictionsFileId);
+		Assertions.assertNotEquals(0, jurisdictionsFileId.getFileNum());
 		log.info("Jurisdictions file uploaded successfully");
 
 		// To be "linked" into Minters contract binary
@@ -600,8 +598,8 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		Thread.sleep(1000);
 		ContractID jurisdictionsContractId = createContract(crAccount, jurisdictionsFileId,
 				constructorArgs);
-		Assert.assertNotNull(jurisdictionsContractId);
-		Assert.assertNotEquals(0, jurisdictionsContractId.getContractNum());
+		Assertions.assertNotNull(jurisdictionsContractId);
+		Assertions.assertNotEquals(0, jurisdictionsContractId.getContractNum());
 		log.info("Jurisdictions Contract created successfully: " + jurisdictionsContractId);
 
 		// To be passed to Minters constructor
@@ -614,8 +612,8 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 				crAccount, MINTERS_BIN, new ArrayList<>(
 						List.of(crAccountKeyPair.getPrivate())),
 				"_+AddressBook.sol:AddressBook_+", addressBookSolidityAddress, host, nodeAccount);
-		Assert.assertNotNull(MintersFileId);
-		Assert.assertNotEquals(0, MintersFileId.getFileNum());
+		Assertions.assertNotNull(MintersFileId);
+		Assertions.assertNotEquals(0, MintersFileId.getFileNum());
 		log.info("Minters file uploaded successfully");
 
 		// Create Minters contract.
@@ -624,8 +622,8 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		Thread.sleep(1000);
 		ContractID mintersContractId = createContract(crAccount, MintersFileId, minterConstructorArgs);
 
-		Assert.assertNotNull(mintersContractId);
-		Assert.assertNotEquals(0, mintersContractId.getContractNum());
+		Assertions.assertNotNull(mintersContractId);
+		Assertions.assertNotEquals(0, mintersContractId.getContractNum());
 		log.info("Minters Contract created successfully: " + mintersContractId);
 
 		TransactionRecord txRec;
@@ -645,7 +643,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
 		// Try  to get a constant 7 from the Minters contract
 		int result = getMintersSeven(crAccount, mintersContractId);
-		Assert.assertEquals(7, result);
+		Assertions.assertEquals(7, result);
 		log.info("Minters get constant call worked");
 
 		// Get the owner from the Minters contract

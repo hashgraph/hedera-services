@@ -29,20 +29,25 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   NOOP_RECORDS_HISTORIAN;
 
   @Override
-  public void setCreator(EntityCreator creator) { }
+  public void setCreator(EntityCreator creator) {
+    // Do nothing because this mainly serves as placeholder for now
+  }
 
   @Override
-  public void finalizeExpirableTransactionRecord() { }
+  public void finalizeExpirableTransactionRecord() {
+    // Do nothing because this mainly serves as placeholder for now
+  }
 
   @Override
-  public void saveExpirableTransactionRecord() { }
-
-  @Override
-  public void reviewExistingRecords() { }
+  public void saveExpirableTransactionRecord() {
+    // Do nothing because this mainly serves as placeholder for now
+  }
 
   @Override
   public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
 
   @Override
-  public void noteNewExpirationEvents() { }
+  public void noteNewExpirationEvents() {
+    // Do nothing because this mainly serves as placeholder for now
+  }
 }

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
@@ -319,7 +320,7 @@ class TxnIdRecentHistoryTest {
 				.setMemo(memoIdentifying(submittingMember, consensusOffsetSecs, status))
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
 				.build();
-		var expirableRecord = ExpirableTxnRecord.fromGprc(payerRecord);
+		var expirableRecord = fromGprc(payerRecord);
 		expirableRecord.setExpiry(expiryAtOffset(consensusOffsetSecs));
 		expirableRecord.setSubmittingMember(submittingMember);
 		return expirableRecord;

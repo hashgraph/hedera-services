@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 
@@ -75,21 +75,21 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 		SemanticVersion actualProto = response.getNetworkGetVersionInfo().getHapiProtoVersion();
 		SemanticVersion actualServices = response.getNetworkGetVersionInfo().getHederaServicesVersion();
 		if (expectedProto.isPresent()) {
-			Assert.assertEquals(
-					"Wrong HAPI proto version",
+			Assertions.assertEquals(
 					expectedProto.get(),
-					actualProto);
+					actualProto,
+					"Wrong HAPI proto version");
 		}
 		if (expectedServices.isPresent()) {
-			Assert.assertEquals(
-					"Wrong Hedera Services version",
+			Assertions.assertEquals(
 					expectedServices.get(),
-					actualServices);
+					actualServices,
+					"Wrong Hedera Services version");
 		}
 		if (assertNoDegenSemvers) {
 			var degenSemver = SemanticVersion.getDefaultInstance();
-			Assert.assertNotEquals(degenSemver, actualProto);
-			Assert.assertNotEquals(degenSemver, actualServices);
+			Assertions.assertNotEquals(degenSemver, actualProto);
+			Assertions.assertNotEquals(degenSemver, actualServices);
 		}
 	}
 
@@ -100,9 +100,9 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 		var info = response.getNetworkGetVersionInfo();
 		if (verboseLoggingOn) {
 			log.info("Versions :: HAPI protobufs @ "
-							+ asReadable(info.getHapiProtoVersion())
-							+ ", Hedera Services @ "
-							+ asReadable(info.getHederaServicesVersion()));
+					+ asReadable(info.getHapiProtoVersion())
+					+ ", Hedera Services @ "
+					+ asReadable(info.getHederaServicesVersion()));
 		}
 	}
 

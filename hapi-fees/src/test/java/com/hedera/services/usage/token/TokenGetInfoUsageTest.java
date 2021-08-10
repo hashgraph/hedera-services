@@ -35,7 +35,7 @@ import java.util.Optional;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenGetInfoUsageTest {
 	private Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);

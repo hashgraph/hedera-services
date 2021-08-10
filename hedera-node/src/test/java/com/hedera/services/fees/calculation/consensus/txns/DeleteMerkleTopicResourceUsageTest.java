@@ -28,8 +28,8 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
@@ -43,7 +43,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // setup:
         TransactionBody deleteTopicTx = TransactionBody.newBuilder()
                 .setConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId).build())
@@ -56,7 +56,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void getFeeThrowsExceptionForBadTxBody() {
+    void getFeeThrowsExceptionForBadTxBody() {
         // setup:
         TransactionBody nonDeleteTopicTx = TransactionBody.newBuilder().build();
 
@@ -67,7 +67,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
 
     @Test
-    public void feeDataAsExpected() throws Exception {
+    void feeDataAsExpected() throws Exception {
         // setup:
         TransactionBody txBody = makeTransactionBody(topicId);
 

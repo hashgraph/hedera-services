@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class ScheduleDelegatingSigMetadataLookupTest {
+class ScheduleDelegatingSigMetadataLookupTest {
     final int TX_BYTES_LENGTH = 64;
 
     byte[] transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES_LENGTH);
@@ -56,7 +56,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
     Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> subject;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         schedule = MerkleSchedule.from(MerkleScheduleTest.scheduleCreateTxnWith(
                 TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
                 memo,
@@ -71,7 +71,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
     }
 
     @Test
-    public void returnsExpectedFailIfExplicitlyMissing() {
+    void returnsExpectedFailIfExplicitlyMissing() {
         given(scheduleStore.resolve(id)).willReturn(ScheduleID.newBuilder()
                 .setShardNum(0L)
                 .setRealmNum(0L)
@@ -86,7 +86,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
     }
 
     @Test
-    public void returnsExpectedFailIfMissing() {
+    void returnsExpectedFailIfMissing() {
         given(scheduleStore.resolve(id)).willReturn(ScheduleStore.MISSING_SCHEDULE);
 
         // when:
@@ -97,7 +97,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
     }
 
     @Test
-    public void returnsExpectedMetaIfPresent() {
+    void returnsExpectedMetaIfPresent() {
         // setup:
         var expected = ScheduleSigningMetadata.from(schedule);
 

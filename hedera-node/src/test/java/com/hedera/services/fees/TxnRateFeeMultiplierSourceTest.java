@@ -44,20 +44,22 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static java.time.Instant.ofEpochSecond;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class TxnRateFeeMultiplierSourceTest {
-	Instant[] congestionStarts = new Instant[] { ofEpochSecond(1L), ofEpochSecond(2L), ofEpochSecond(3L), };
-	Instant consensusNow = congestionStarts[2].plusSeconds(1L);
+	private Instant[] congestionStarts = new Instant[] { ofEpochSecond(1L), ofEpochSecond(2L), ofEpochSecond(3L), };
+	private Instant consensusNow = congestionStarts[2].plusSeconds(1L);
 
 	@Mock
-	FunctionalityThrottling throttling;
+	private FunctionalityThrottling throttling;
 
-	MockGlobalDynamicProps mockProps;
+	private MockGlobalDynamicProps mockProps;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -72,29 +74,22 @@ class TxnRateFeeMultiplierSourceTest {
 
 	@Test
 	void makesDefensiveCopyOfCongestionStarts() {
-		// setup:
 		final var someInstants = new Instant[] {
 				Instant.ofEpochSecond(1_234_567L),
 				Instant.ofEpochSecond(2_234_567L),
 		};
-
-		// given:
 		subject.resetCongestionLevelStarts(someInstants);
 
-		// when:
 		final var equalNotSameInstants = subject.congestionLevelStarts();
 
-		// then:
 		assertEquals(List.of(someInstants), List.of(equalNotSameInstants));
 		assertNotSame(someInstants, equalNotSameInstants);
 	}
 
 	@Test
 	void updatesCongestionStarts() {
-		// when:
 		subject.resetCongestionLevelStarts(congestionStarts);
 
-		// then:
 		Assertions.assertEquals(List.of(congestionStarts), List.of(subject.congestionLevelStarts()));
 	}
 
@@ -114,7 +109,7 @@ class TxnRateFeeMultiplierSourceTest {
 			"5, 3, -1, -1, 100, 100, 1000, 1000, 10, 3, 5, 5",
 			"5, 1, 3, 4, 100, 100, 1000, 1000, 25, 1, 3, 4",
 	})
-	public void usesExpectedMultiplier(
+	void usesExpectedMultiplier(
 			long consensusSec,
 			long old10XLevelStart,
 			long old25XLevelStart,
@@ -128,127 +123,104 @@ class TxnRateFeeMultiplierSourceTest {
 			long new25XLevelStart,
 			long new100XLevelStart
 	) {
-		var aThrottle = DeterministicThrottle.withTps(firstTps);
-		var bThrottle = DeterministicThrottle.withTps(secondTps);
+		final var aThrottle = DeterministicThrottle.withTps(firstTps);
+		final var bThrottle = DeterministicThrottle.withTps(secondTps);
 		aThrottle.allow(firstUsed);
 		bThrottle.allow(secondUsed);
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
-		// when:
 		subject.resetExpectations();
 		subject.resetCongestionLevelStarts(instants(old10XLevelStart, old25XLevelStart, old100XLevelStart));
 		subject.updateMultiplier(Instant.ofEpochSecond(consensusSec));
-		// and:
-		long actualMultiplier = subject.currentMultiplier();
+		final long actualMultiplier = subject.currentMultiplier();
+		final var starts = subject.congestionLevelStarts();
 
-		// then:
 		assertEquals(expectedMultiplier, actualMultiplier);
-		// and:
-		var starts = subject.congestionLevelStarts();
-		if (new10XLevelStart == -1) {
-			assertNull(starts[0]);
+		assertNullOrEquals(starts[0], new10XLevelStart);
+		assertNullOrEquals(starts[1], new25XLevelStart);
+		assertNullOrEquals(starts[2], new100XLevelStart);
+	}
+
+	private void assertNullOrEquals(final Instant instant, final long expected) {
+		if (expected == -1) {
+			assertNull(instant);
 		} else {
-			assertEquals(new10XLevelStart, starts[0].getEpochSecond());
-		}
-		if (new25XLevelStart == -1) {
-			assertNull(starts[1]);
-		} else {
-			assertEquals(new25XLevelStart, starts[1].getEpochSecond());
-		}
-		if (new100XLevelStart == -1) {
-			assertNull(starts[2]);
-		} else {
-			assertEquals(new100XLevelStart, starts[2].getEpochSecond());
+			assertEquals(expected, instant.getEpochSecond());
 		}
 	}
 
 	@Test
 	void adaptsToChangedProperties() {
-		var aThrottle = DeterministicThrottle.withTps(100);
+		final var aThrottle = DeterministicThrottle.withTps(100);
 		aThrottle.allow(96);
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle));
 
-		// when:
 		subject.resetExpectations();
 		subject.resetCongestionLevelStarts(instants(1L, 1L, 1L));
 		subject.updateMultiplier(consensusNow);
-		// then:
-		Assertions.assertEquals(25, subject.currentMultiplier());
-		// and when:
+
+		assertEquals(25, subject.currentMultiplier());
+
 		mockProps.useDifferentMultipliers();
 		subject.updateMultiplier(consensusNow);
-		// then:
-		Assertions.assertEquals(26, subject.currentMultiplier());
+
+		assertEquals(26, subject.currentMultiplier());
 	}
 
 	@Test
 	void doesntThrowOnMissingThrottles() {
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(Collections.emptyList());
 
-		// expect:
-		Assertions.assertDoesNotThrow(subject::resetExpectations);
+		assertDoesNotThrow(subject::resetExpectations);
 		assertEquals(1L, subject.currentMultiplier());
 	}
 
 	@Test
 	void logsCongestionPricingStart() {
-		// setup:
-		var desired = "Congestion pricing beginning w/ 10x multiplier";
+		final var desired = "Congestion pricing beginning w/ 10x multiplier";
 
-		// when:
 		subject.logMultiplierChange(1L, 10L);
 
-		// then:
 		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void logsCongestionPricingIncrease() {
-		// given:
-		var desired = "Congestion pricing continuing, reached 100x multiplier";
+		final var desired = "Congestion pricing continuing, reached 100x multiplier";
 
-		// when:
 		subject.logMultiplierChange(10L, 100L);
 
-		// then:
 		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void logsCongestionPricingEnd() {
-		// setup:
-		var desired = "Congestion pricing ended";
+		final var desired = "Congestion pricing ended";
 
-		// when:
 		subject.logMultiplierChange(10L, 1L);
 
-		// then:
 		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void silentOnCongestionPricingDrop() {
-		// when:
 		subject.logMultiplierChange(100L, 10L);
 
-		// then:
-		Assertions.assertTrue(logCaptor.infoLogs().isEmpty());
+		assertTrue(logCaptor.infoLogs().isEmpty());
 	}
 
 	@Test
 	void toStringIndicatesUnavailableConfig() {
-		var desired = "The new cutoffs for congestion pricing are: <N/A>";
+		final var desired = "The new cutoffs for congestion pricing are: <N/A>";
 
-		// when:
 		subject.logReadableCutoffs();
 
-		// then:
 		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void toStringHasExpectedCutoffsMsg() {
-		var desired = "The new cutoffs for congestion pricing are:\n" +
+		final var desired = "The new cutoffs for congestion pricing are:\n" +
 				"  (A) When logical TPS exceeds:\n" +
 				"    900.00 TPS, multiplier is 10x\n" +
 				"    950.00 TPS, multiplier is 25x\n" +
@@ -257,20 +229,17 @@ class TxnRateFeeMultiplierSourceTest {
 				"    9.00 TPS, multiplier is 10x\n" +
 				"    9.50 TPS, multiplier is 25x\n" +
 				"    9.90 TPS, multiplier is 100x";
-
-		var aThrottle = DeterministicThrottle.withTpsNamed(1000, "A");
-		var bThrottle = DeterministicThrottle.withTpsNamed(10, "B");
+		final var aThrottle = DeterministicThrottle.withTpsNamed(1000, "A");
+		final var bThrottle = DeterministicThrottle.withTpsNamed(10, "B");
 		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
-		// when:
 		subject.resetExpectations();
 
-		// then:
 		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
-	private Instant[] instants(long a, long b, long c) {
-		var ans = new Instant[3];
+	private Instant[] instants(final long a, final long b, final long c) {
+		final var ans = new Instant[3];
 		ans[0] = (a == -1) ? null : Instant.ofEpochSecond(a);
 		ans[1] = (b == -1) ? null : Instant.ofEpochSecond(b);
 		ans[2] = (c == -1) ? null : Instant.ofEpochSecond(c);

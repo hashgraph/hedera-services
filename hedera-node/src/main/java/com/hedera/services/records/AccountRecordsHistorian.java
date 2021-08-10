@@ -64,12 +64,6 @@ public interface AccountRecordsHistorian {
 	void saveExpirableTransactionRecord();
 
 	/**
-	 * Invites the historian to build any auxiliary data structures
-	 * needed to purge expired records.
-	 */
-	void reviewExistingRecords();
-
-	/**
 	 * Returns the last record created, if it exists.
 	 *
 	 * @return an optional record.

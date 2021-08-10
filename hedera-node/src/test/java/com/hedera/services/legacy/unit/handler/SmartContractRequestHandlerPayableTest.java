@@ -42,7 +42,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
@@ -66,9 +65,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -77,8 +76,8 @@ import org.ethereum.core.AccountState;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -101,14 +100,14 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
  */
 
-public class SmartContractRequestHandlerPayableTest {
+class SmartContractRequestHandlerPayableTest {
 
-  public static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
-  public static final int DEPOSIT_AMOUNT = 12345;
-  public static final long INITIAL_BALANCE = 10_000_000_000L;
-  public static final long EXCESSIVE_AMOUNT = INITIAL_BALANCE * 2L; // Too much to deposit or transfer
+  private static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
+  private static final int DEPOSIT_AMOUNT = 12345;
+  private static final long INITIAL_BALANCE = 10_000_000_000L;
+  private static final long EXCESSIVE_AMOUNT = INITIAL_BALANCE * 2L; // Too much to deposit or transfer
   // Unused account number 170
-  public static final String INVALID_SOLIDITY_ADDRESS = "00000000000000000000000000000000000000aa";
+  private static final String INVALID_SOLIDITY_ADDRESS = "00000000000000000000000000000000000000aa";
   // Arbitrary account numbers.
   private static final long payerAccount = 787L;
   private static final long nodeAccount = 3L;
@@ -158,7 +157,7 @@ public class SmartContractRequestHandlerPayableTest {
   }
 
   @BeforeEach
-  public void setUp() throws Exception {
+  void setUp() throws Exception {
     // setup:
     ConstructableRegistry.registerConstructable(
             new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
@@ -205,16 +204,12 @@ public class SmartContractRequestHandlerPayableTest {
             null,
             new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
-    FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
-    fsHandler = new FileServiceHandler(
-            storageWrapper,
-            feeScheduleInterceptor,
-            new ExchangeRates());
+    fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
       payerKeyBytes = CommonUtils.unhex(key);
     } catch (IllegalArgumentException e) {
-      Assert.fail("Failure building solidity key for payer account");
+      Assertions.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
     payerMerkleEntityId.setNum(payerAccount);
@@ -224,7 +219,7 @@ public class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("01 createContract: Success")
-  public void createContractWithAdminKey() {
+  void createContractWithAdminKey() {
     KeyPair adminKeyPair = new KeyPairGenerator().generateKeyPair();
     byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
     Key adminPubKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -237,12 +232,12 @@ public class SmartContractRequestHandlerPayableTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-    Assert.assertTrue(record.hasContractCreateResult());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertTrue(record.hasContractCreateResult());
 
     ContractID newContractId = record.getReceipt().getContractID();
     checkContractArtifactsExist(newContractId);
@@ -264,14 +259,14 @@ public class SmartContractRequestHandlerPayableTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error calling contract: parsing transaction body");
+      Assertions.fail("Error calling contract: parsing transaction body");
     }
     return body;
   }
 
   @Test
   @DisplayName("02 ContractDepositCall: Success")
-  public void contractDepositCall() {
+  void contractDepositCall() {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -291,11 +286,11 @@ public class SmartContractRequestHandlerPayableTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   private Query getCallLocalQuery(ContractID newContractId, ByteString functionData, long gas) {
@@ -309,7 +304,7 @@ public class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("03 ContractDepositCall: Mismatched values")
-  public void contractDepositCallMismatch() {
+  void contractDepositCallMismatch() {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -331,16 +326,16 @@ public class SmartContractRequestHandlerPayableTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
   @DisplayName("05 ContractDepositCall: value more than payer has")
-  public void contractDepositCallTooMuch() {
+  void contractDepositCallTooMuch() {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -361,16 +356,16 @@ public class SmartContractRequestHandlerPayableTest {
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
   @DisplayName("08 ContractGetBalanceCall: Success")
-  public void contractGetBalanceCall() throws Exception {
+  void contractGetBalanceCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -396,19 +391,19 @@ public class SmartContractRequestHandlerPayableTest {
         .getContractCallLocal();
     seqNumber.getAndIncrement();
     ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-    Assert.assertNotNull(response);
-    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+    Assertions.assertNotNull(response);
+    Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
     byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-    Assert.assertNotNull(callResults);
-    Assert.assertTrue(callResults.length > 0);
+    Assertions.assertNotNull(callResults);
+    Assertions.assertTrue(callResults.length > 0);
     int retVal = SCEncoding.decodeGetBalanceResult(callResults);
-    Assert.assertEquals(DEPOSIT_AMOUNT, retVal);
+    Assertions.assertEquals(DEPOSIT_AMOUNT, retVal);
   }
 
   @Test
   @DisplayName("10 ContractSendFundsCall: Success")
-  public void contractSendFundsCall() throws Exception {
+  void contractSendFundsCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -447,25 +442,25 @@ public class SmartContractRequestHandlerPayableTest {
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     long receiverAfter = getBalance(receiverAccountId);
     long contractAfter = getBalance(newContractId);
     long totalAfter = getTotalBalance();
 
     // Do the after balances match expected values?
-    Assert.assertEquals(receiverBefore + transferAmount, receiverAfter);
-    Assert.assertEquals(contractBefore - transferAmount, contractAfter);
-    Assert.assertEquals(totalBefore, totalAfter);
+    Assertions.assertEquals(receiverBefore + transferAmount, receiverAfter);
+    Assertions.assertEquals(contractBefore - transferAmount, contractAfter);
+    Assertions.assertEquals(totalBefore, totalAfter);
   }
 
   @Test
   @DisplayName("11 ContractSendFundsCall: Invalid receiver address")
-  public void contractSendFundsCallInvalidReceiver() throws Exception {
+  void contractSendFundsCallInvalidReceiver() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -498,24 +493,24 @@ public class SmartContractRequestHandlerPayableTest {
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
     //invalid address should cause an exception
-    Assert.assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     long contractAfter = getBalance(newContractId);
     long totalAfter = getTotalBalance();
 
     // Do the after balances match expected values?
-    Assert.assertEquals(contractBefore, contractAfter);
-    Assert.assertEquals(totalBefore, totalAfter);
+    Assertions.assertEquals(contractBefore, contractAfter);
+    Assertions.assertEquals(totalBefore, totalAfter);
   }
 
   @Test
   @DisplayName("12 ContractSendFundsCall: Value more than contract has")
-  public void contractSendFundsCallTooMuch() throws Exception {
+  void contractSendFundsCallTooMuch() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -554,25 +549,25 @@ public class SmartContractRequestHandlerPayableTest {
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     long receiverAfter = getBalance(receiverAccountId);
     long contractAfter = getBalance(newContractId);
     long totalAfter = getTotalBalance();
 
     // Do the after balances match expected values?
-    Assert.assertEquals(receiverBefore, receiverAfter);
-    Assert.assertEquals(contractBefore, contractAfter);
-    Assert.assertEquals(totalBefore, totalAfter);
+    Assertions.assertEquals(receiverBefore, receiverAfter);
+    Assertions.assertEquals(contractBefore, contractAfter);
+    Assertions.assertEquals(totalBefore, totalAfter);
   }
 
   @Test
   @DisplayName("15 ContractGetBalanceOfCall: Success")
-  public void contractGetBalanceOfCall() throws Exception {
+  void contractGetBalanceOfCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -593,19 +588,19 @@ public class SmartContractRequestHandlerPayableTest {
     ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
     seqNumber.getAndIncrement();
     ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-    Assert.assertNotNull(response);
-    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+    Assertions.assertNotNull(response);
+    Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
     byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-    Assert.assertNotNull(callResults);
-    Assert.assertTrue(callResults.length > 0);
+    Assertions.assertNotNull(callResults);
+    Assertions.assertTrue(callResults.length > 0);
     long retVal = SCEncoding.decodeGetBalanceOfResult(callResults);
-    Assert.assertEquals(INITIAL_BALANCE, retVal);
+    Assertions.assertEquals(INITIAL_BALANCE, retVal);
   }
 
   @Test
   @DisplayName("16 ContractGetBalanceOfCall: Invalid account address")
-  public void contractGetBalanceOfCallInvalidAccount() throws Exception {
+  void contractGetBalanceOfCallInvalidAccount() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -622,14 +617,14 @@ public class SmartContractRequestHandlerPayableTest {
     ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
     seqNumber.getAndIncrement();
     ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-    Assert.assertNotNull(response);
-    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+    Assertions.assertNotNull(response);
+    Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
     byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-    Assert.assertNotNull(callResults);
-    Assert.assertTrue(callResults.length > 0);
+    Assertions.assertNotNull(callResults);
+    Assertions.assertTrue(callResults.length > 0);
     long retVal = SCEncoding.decodeGetBalanceOfResult(callResults);
-    Assert.assertEquals(0, retVal);
+    Assertions.assertEquals(0, retVal);
   }
 
   private long getBalance(AccountID accountId) {
@@ -668,9 +663,8 @@ public class SmartContractRequestHandlerPayableTest {
     return total;
   }
 
-
   @AfterEach
-  public void tearDown() throws Exception {
+  void tearDown() throws Exception {
     try {
 
       repository.close();
@@ -702,7 +696,7 @@ public class SmartContractRequestHandlerPayableTest {
     try {
       fileBytes = fis.readAllBytes();
     } catch (IOException e) {
-      Assert.fail("Error creating file: reading contract file " + filePath);
+      Assertions.fail("Error creating file: reading contract file " + filePath);
     }
     ByteString fileData = ByteString.copyFrom(fileBytes);
 
@@ -723,20 +717,19 @@ public class SmartContractRequestHandlerPayableTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error creating file: parsing transaction body");
+      Assertions.fail("Error creating file: parsing transaction body");
     }
 
     Instant consensusTime = new Date().toInstant();
     TransactionRecord record = fsHandler.createFile(body, consensusTime, fileId, selfID);
 
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assert.assertEquals(fileId.getFileNum(), record.getReceipt().getFileID().getFileNum());
+    Assertions.assertNotNull(record);
+    Assertions.assertNotNull(record.getTransactionID());
+    Assertions.assertNotNull(record.getReceipt());
+    Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(fileId.getFileNum(), record.getReceipt().getFileID().getFileNum());
     return fileBytes;
   }
-
 
   private TransactionBody getCreateTransactionBody() {
     return getCreateTransactionBody(0L, 250000L, null);
@@ -761,7 +754,7 @@ public class SmartContractRequestHandlerPayableTest {
     try {
       body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
     } catch (InvalidProtocolBufferException e) {
-      Assert.fail("Error creating contract: parsing transaction body");
+      Assertions.fail("Error creating contract: parsing transaction body");
     }
     return body;
   }
@@ -772,18 +765,17 @@ public class SmartContractRequestHandlerPayableTest {
     mk.setRealm(contractId.getRealmNum());
     mk.setShard(contractId.getShardNum());
     MerkleAccount mv = fcMap.get(mk);
-    Assert.assertNotNull(mv);
-    Assert.assertNotNull(mv.getKey());
-    Assert.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv);
+    Assertions.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv.getKey());
     long mapValueExpiration = mv.getExpiry();
-    Assert.assertNotEquals(0, mapValueExpiration);
+    Assertions.assertNotEquals(0, mapValueExpiration);
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertTrue(storageWrapper.fileExists(bytesPath));
+    Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
     String sCMetaDataPath = String
             .format("/%d/m%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertFalse(storageWrapper.fileExists(sCMetaDataPath));
+    Assertions.assertFalse(storageWrapper.fileExists(sCMetaDataPath));
     String sCAdminKeyPath = String.format("/%d/a%d", contractId.getRealmNum(), contractId.getContractNum());
-    Assert.assertFalse(storageWrapper.fileExists(sCAdminKeyPath));
+    Assertions.assertFalse(storageWrapper.fileExists(sCAdminKeyPath));
   }
-
 }

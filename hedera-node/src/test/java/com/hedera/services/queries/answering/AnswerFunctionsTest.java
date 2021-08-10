@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -100,7 +101,7 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
-	public void returnsEmptyOptionalWhenProblematic() {
+	void returnsEmptyOptionalWhenProblematic() {
 		// setup:
 		Query validQuery = getRecordQuery(absentTxnId);
 
@@ -114,7 +115,7 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
-	public void findsInPayerAccountIfPresentThere() {
+	void findsInPayerAccountIfPresentThere() {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
@@ -128,7 +129,7 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
-	public void usesCacheIfPresentThere() {
+	void usesCacheIfPresentThere() {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
@@ -156,7 +157,7 @@ class AnswerFunctionsTest {
 						asAccount("0.0.1001"), 2L,
 						asAccount("0.0.1002"), 2L))
 				.build();
-		return ExpirableTxnRecord.fromGprc(record);
+		return fromGprc(record);
 	}
 
 	Query getRecordQuery(TransactionID txnId) {

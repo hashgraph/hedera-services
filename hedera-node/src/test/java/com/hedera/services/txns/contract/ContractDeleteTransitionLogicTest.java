@@ -46,7 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -55,7 +55,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-public class ContractDeleteTransitionLogicTest {
+class ContractDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	final private AccountID transfer = AccountID.newBuilder().setAccountNum(4_321L).build();
@@ -86,7 +86,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -95,7 +95,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsDetached() {
+	void rejectsDetached() {
 		givenValidTxnCtx();
 		given(ledger.exists(transfer)).willReturn(true);
 		given(ledger.isDetached(transfer)).willReturn(true);
@@ -109,7 +109,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesBadDelete() {
+	void capturesBadDelete() {
 		// setup:
 		TransactionRecord deleteRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -129,7 +129,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
+	void followsHappyPathWithOverrides() {
 		// setup:
 		TransactionRecord updateRec = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -149,7 +149,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -157,7 +157,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() {
+	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
@@ -167,7 +167,7 @@ public class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 
 		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);

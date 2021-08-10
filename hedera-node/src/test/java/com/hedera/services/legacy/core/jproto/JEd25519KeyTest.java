@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JEd25519KeyTest {
+class JEd25519KeyTest {
   @Test
-  public void emptyJEd25519KeyTest() {
+  void emptyJEd25519KeyTest() {
     JEd25519Key key1 = new JEd25519Key(null);
     assertTrue(key1.isEmpty());
     assertFalse(key1.isValid());
@@ -38,18 +38,18 @@ public class JEd25519KeyTest {
   }
 
   @Test
-  public void nonEmptyJEd25519KeyTest() {
+  void nonEmptyJEd25519KeyTest() {
     JEd25519Key key = new JEd25519Key(new byte[1]);
     assertFalse(key.isEmpty());
   }
 
   @Test
-  public void invalidJEd25519KeyTest() {
+  void invalidJEd25519KeyTest() {
     JEd25519Key key = new JEd25519Key(new byte[JEd25519Key.ED25519_BYTE_LENGTH - 1]);
     assertFalse(key.isValid());
   }
   @Test
-  public void validJEd25519KeyTest() {
+  void validJEd25519KeyTest() {
     JEd25519Key key = new JEd25519Key(new byte[JEd25519Key.ED25519_BYTE_LENGTH]);
     assertTrue(key.isValid());
   }

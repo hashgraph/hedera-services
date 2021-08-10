@@ -87,7 +87,7 @@ class BackedSystemAccountsCreatorTest {
 	private BackedSystemAccountsCreator subject;
 
 	@BeforeEach
-	public void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
+	void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
 		genesisKey = JKey.mapKey(Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
 						.addKeys(Key.newBuilder()
@@ -138,7 +138,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void throwsOnNegativeBalance() {
+	void throwsOnNegativeBalance() {
 		givenMissingTreasury();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
@@ -151,7 +151,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void throwsOnUndecodableGenesisKeyIfCreating() {
+	void throwsOnUndecodableGenesisKeyIfCreating() {
 		givenMissingTreasury();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn("This isn't hex!");
@@ -161,7 +161,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void throwsOnUnavailableGenesisKeyIfCreating() {
+	void throwsOnUnavailableGenesisKeyIfCreating() {
 		givenMissingTreasury();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willThrow(IllegalStateException.class);
@@ -171,7 +171,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void createsMissingNode() throws NegativeAccountBalanceException {
+	void createsMissingNode() throws NegativeAccountBalanceException {
 		givenMissingNode();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
@@ -184,7 +184,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void createsMissingSystemAccount() throws NegativeAccountBalanceException {
+	void createsMissingSystemAccount() throws NegativeAccountBalanceException {
 		givenMissingSystemAccount();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
@@ -197,7 +197,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void createsMissingTreasury() throws NegativeAccountBalanceException {
+	void createsMissingTreasury() throws NegativeAccountBalanceException {
 		givenMissingTreasury();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
@@ -210,7 +210,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void createsMissingSpecialAccounts() throws NegativeAccountBalanceException{
+	void createsMissingSpecialAccounts() throws NegativeAccountBalanceException{
 		givenMissingSpecialAccounts();
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 
@@ -221,7 +221,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void createsNothingIfAllPresent() {
+	void createsNothingIfAllPresent() {
 		given(backingAccounts.contains(any())).willReturn(true);
 		var desiredInfo = String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
 

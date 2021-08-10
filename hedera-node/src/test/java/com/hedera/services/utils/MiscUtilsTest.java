@@ -134,7 +134,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.fromGprc;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
@@ -236,7 +236,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class MiscUtilsTest {
+class MiscUtilsTest {
 	@Test
 	void retrievesExpectedStatNames() {
 		// expect:

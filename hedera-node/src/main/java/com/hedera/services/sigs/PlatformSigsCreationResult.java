@@ -20,17 +20,16 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Encapsulates a (mutable) result of an attempt to create {@link Signature}
@@ -58,29 +57,17 @@ public class PlatformSigsCreationResult {
 	}
 
 	/**
-	 * Represent this result as a {@link SignatureStatus}.
+	 * Represent this result as a {@link ResponseCodeEnum}.
 	 *
-	 * @param inHandleDynamicContext a flag giving whether this result occurred in the dynamic context of
-	 * {@code ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, Address)}
-	 * @param txnId the id of the related gRPC txn.
-	 * @return the desired representation.
+	 * @return the appropriate response code
 	 */
-	public SignatureStatus asSignatureStatus(boolean inHandleDynamicContext, TransactionID txnId) {
-		SignatureStatusCode sigStatus;
-		ResponseCodeEnum responseCode;
-
+	public ResponseCodeEnum asCode() {
 		if (!hasFailed()) {
-			sigStatus = SignatureStatusCode.SUCCESS;
-			responseCode = ResponseCodeEnum.OK;
+			return OK;
 		} else if (terminatingEx.isPresent() && terminatingEx.get() instanceof KeyPrefixMismatchException) {
-			sigStatus = SignatureStatusCode.KEY_PREFIX_MISMATCH;
-			responseCode = ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+			return ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 		} else {
-			sigStatus = SignatureStatusCode.GENERAL_ERROR;
-			responseCode = ResponseCodeEnum.INVALID_SIGNATURE;
+			return ResponseCodeEnum.INVALID_SIGNATURE;
 		}
-		return new SignatureStatus(
-				sigStatus, responseCode,
-				inHandleDynamicContext, txnId, null, null, null, null);
 	}
 }

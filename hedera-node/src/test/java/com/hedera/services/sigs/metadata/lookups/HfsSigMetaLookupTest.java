@@ -57,7 +57,7 @@ class HfsSigMetaLookupTest {
 	}
 
 	@Test
-	public void getsExpectedSigMeta() throws Exception {
+	void getsExpectedSigMeta() throws Exception {
 		given(hfs.exists(target)).willReturn(true);
 		given(hfs.getattr(target)).willReturn(info);
 
@@ -70,7 +70,7 @@ class HfsSigMetaLookupTest {
 	}
 
 	@Test
-	public void omitsKeysForImmutableFile() {
+	void omitsKeysForImmutableFile() {
 		given(hfs.exists(target)).willReturn(true);
 		given(hfs.getattr(target)).willReturn(immutableInfo);
 
@@ -83,7 +83,7 @@ class HfsSigMetaLookupTest {
 	}
 
 	@Test
-	public void throwsExpectedType() {
+	void throwsExpectedType() {
 		given(hfs.getattr(target)).willReturn(null);
 
 		// when:

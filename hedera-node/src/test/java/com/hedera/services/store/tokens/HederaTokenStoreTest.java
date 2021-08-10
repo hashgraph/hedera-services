@@ -1203,7 +1203,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void freezingRejectsDeletedToken() {
+	void freezingRejectsDeletedToken() {
 		givenTokenWithFreezeKey(true);
 		given(token.isDeleted()).willReturn(true);
 

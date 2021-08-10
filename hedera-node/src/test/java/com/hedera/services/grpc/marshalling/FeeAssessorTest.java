@@ -44,6 +44,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class FeeAssessorTest {
@@ -122,6 +123,42 @@ class FeeAssessorTest {
 	}
 
 	@Test
+	void processMultiFeesCorrectly() {
+		givenFees(fungibleTokenId.asEntityId(), List.of(htsFee, hbarFee, htsFee));
+
+		// when:
+		final var result =
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+
+		// then:
+		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor, times(2))
+				.assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+		assertEquals(OK, result);
+	}
+
+
+	@Test
+	void shouldProcessAllFixedFees() {
+		// setup:
+		final var fees = List.of(hbarFee, htsFee, fractionalFee, htsFee);
+		givenFees(fungibleTokenId.asEntityId(), fees);
+		given(fractionalFeeAssessor.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator))
+				.willReturn(OK);
+
+		// when:
+		final var result =
+				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+
+		// then:
+		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor, times(2))
+				.assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+		assertEquals(OK, result);
+	}
+
+	@Test
 	void useHbarAccessorAppropriately() {
 		givenFees(fungibleTokenId.asEntityId(), List.of(hbarFee));
 
@@ -177,7 +214,7 @@ class FeeAssessorTest {
 				subject.assess(fungibleTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
 
 		// then:
-		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor).assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
 		assertEquals(OK, result);
 	}
 
@@ -196,7 +233,7 @@ class FeeAssessorTest {
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
-		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor).assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
 		verify(fractionalFeeAssessor, never())
 				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
 		assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
@@ -216,7 +253,7 @@ class FeeAssessorTest {
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
-		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor).assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
 		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
 		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
 	}
@@ -239,7 +276,7 @@ class FeeAssessorTest {
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager, accumulator);
-		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager, accumulator);
+		verify(htsFeeAssessor).assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
 		verify(fractionalFeeAssessor)
 				.assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
 		assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);

@@ -47,7 +47,7 @@ class ConsensusStatusCountsTest {
 	}
 
 	@Test
-	public void incrementsCounts() {
+	void incrementsCounts() {
 		// when:
 		subject.increment(CryptoDelete, FEE_SCHEDULE_FILE_PART_UPLOADED);
 		subject.increment(CryptoDelete, FEE_SCHEDULE_FILE_PART_UPLOADED);
@@ -63,7 +63,7 @@ class ConsensusStatusCountsTest {
 	}
 
 	@Test
-	public void serializesWell() {
+	void serializesWell() {
 		// given:
 		subject.increment(CryptoDelete, FEE_SCHEDULE_FILE_PART_UPLOADED);
 		subject.increment(CryptoDelete, FEE_SCHEDULE_FILE_PART_UPLOADED);
@@ -86,7 +86,7 @@ class ConsensusStatusCountsTest {
 	}
 
 	@Test
-	public void serializesBadly() throws Exception {
+	void serializesBadly() throws Exception {
 		// setup:
 		ObjectWriter bomb = mock(ObjectWriter.class);
 		ObjectMapper bad = mock(ObjectMapper.class);

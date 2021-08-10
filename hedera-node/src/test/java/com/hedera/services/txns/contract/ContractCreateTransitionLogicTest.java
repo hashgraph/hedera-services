@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -62,7 +62,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-public class ContractCreateTransitionLogicTest {
+class ContractCreateTransitionLogicTest {
 	private long gas = 33_333L;
 	private long customAutoRenewPeriod = 100_001L;
 	private Long balance = 1_234L;
@@ -99,7 +99,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -108,7 +108,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -116,7 +116,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAutoRenew() {
+	void rejectsInvalidAutoRenew() {
 		givenValidTxnCtx(false);
 
 		// expect:
@@ -124,7 +124,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeBalance() {
+	void rejectsNegativeBalance() {
 		// setup:
 		balance = -1L;
 
@@ -135,7 +135,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeGas() {
+	void rejectsNegativeGas() {
 		// setup:
 		gas = -1L;
 
@@ -146,7 +146,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeAutoRenew() {
+	void rejectsNegativeAutoRenew() {
 		// setup:
 		customAutoRenewPeriod = -1L;
 
@@ -157,7 +157,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsOutOfRangeAutoRenew() {
+	void rejectsOutOfRangeAutoRenew() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
@@ -167,7 +167,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesUnsuccessfulCreate() {
+	void capturesUnsuccessfulCreate() {
 		// setup:
 		TransactionRecord creation = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -192,7 +192,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() {
+	void followsHappyPathWithOverrides() {
 		// setup:
 		TransactionRecord creation = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()
@@ -218,7 +218,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidMemoInSyntaxCheck() {
+	void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
@@ -228,7 +228,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingBytecodeFile() {
+	void rejectsMissingBytecodeFile() {
 		givenValidTxnCtx();
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
 
@@ -240,7 +240,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsEmptyBytecodeFile() {
+	void rejectsEmptyBytecodeFile() {
 		givenValidTxnCtx();
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
@@ -253,7 +253,7 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);

@@ -58,7 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -118,7 +118,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		// given:
 		givenValidTransactionWithAllOptions();
 
@@ -128,7 +128,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckWithAdminKey() {
+	void syntaxCheckWithAdminKey() {
 		// given:
 		givenValidTransactionWithAllOptions();
 		given(validator.hasGoodEncoding(key)).willReturn(true);
@@ -138,7 +138,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckWithInvalidAdminKey() {
+	void syntaxCheckWithInvalidAdminKey() {
 		// given:
 		givenValidTransactionWithAllOptions();
 		given(validator.hasGoodEncoding(key)).willReturn(false);
@@ -148,7 +148,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() throws Throwable {
+	void followsHappyPath() throws Throwable {
 		// given:
 		expirationTimestamp = consensusTimestamp.plusSeconds(VALID_AUTORENEW_PERIOD_SECONDS);
 		givenValidTransactionWithAllOptions();
@@ -169,7 +169,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void memoTooLong() throws Throwable {
+	void memoTooLong() throws Throwable {
 		// given:
 		givenTransactionWithTooLongMemo();
 
@@ -182,7 +182,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void badSubmitKey() throws Throwable {
+	void badSubmitKey() throws Throwable {
 		// given:
 		givenTransactionWithInvalidSubmitKey();
 
@@ -195,7 +195,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void missingAutoRenewPeriod() throws Throwable {
+	void missingAutoRenewPeriod() throws Throwable {
 		// given:
 		givenTransactionWithMissingAutoRenewPeriod();
 
@@ -208,7 +208,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void badAutoRenewPeriod() throws Throwable {
+	void badAutoRenewPeriod() throws Throwable {
 		// given:
 		givenTransactionWithInvalidAutoRenewPeriod();
 
@@ -221,7 +221,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void invalidAutoRenewAccountId() throws Throwable {
+	void invalidAutoRenewAccountId() throws Throwable {
 		// given:
 		givenTransactionWithInvalidAutoRenewAccountId();
 
@@ -234,7 +234,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void detachedAutoRenewAccountId() throws Throwable {
+	void detachedAutoRenewAccountId() throws Throwable {
 		// given:
 		givenTransactionWithDetachedAutoRenewAccountId();
 
@@ -247,7 +247,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void autoRenewAccountNotAllowed() throws Throwable {
+	void autoRenewAccountNotAllowed() throws Throwable {
 		// given:
 		givenTransactionWithAutoRenewAccountWithoutAdminKey();
 

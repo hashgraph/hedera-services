@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,8 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.blob.BinaryObjectNotFoundException;
 import com.swirlds.blob.internal.db.BlobStoragePipeline;
 import com.swirlds.blob.internal.db.DbManager;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.util.Random;
@@ -33,11 +34,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class LegacyMerkleOptionalBlobTest {
+@Disabled
+class LegacyMerkleOptionalBlobTest {
 	Random random = new Random();
 
 	@Test
-	public void testCreates() throws SQLException {
+	void testCreates() throws SQLException {
 		try (BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
 			final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
 			byte[] fileContents = new byte[1024];
@@ -52,7 +54,7 @@ public class LegacyMerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void testReleases() throws SQLException {
+	void testReleases() throws SQLException {
 		try (final BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
 			final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
 
@@ -73,7 +75,7 @@ public class LegacyMerkleOptionalBlobTest {
 
 			final long binaryObjectCountAfterDelete = pipeline.retrieveNumberOfBlobs();
 
-			assertEquals(binaryObjectCountAfterCreate-1, binaryObjectCountAfterDelete);
+			assertEquals(binaryObjectCountAfterCreate - 1, binaryObjectCountAfterDelete);
 			assertThrows(BinaryObjectNotFoundException.class, () -> pipeline.get(svId));
 			assertDoesNotThrow(() -> sv2.getData());
 		}

@@ -35,14 +35,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ScheduleDeleteTransitionLogicTest {
+class ScheduleDeleteTransitionLogicTest {
     private ScheduleStore store;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
@@ -62,7 +62,7 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void followsHappyPath() {
+    void followsHappyPath() {
         // given:
         givenValidTxnCtx();
 
@@ -78,7 +78,7 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void capturesInvalidSchedule() {
+    void capturesInvalidSchedule() {
         // given:
         givenValidTxnCtx();
 
@@ -94,7 +94,7 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void setsFailInvalidIfUnhandledException() {
+    void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
         given(store.delete(schedule)).willThrow(IllegalArgumentException.class);
@@ -109,7 +109,7 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void hasCorrectApplicability() {
+    void hasCorrectApplicability() {
         givenValidTxnCtx();
 
         // expect:
@@ -118,7 +118,7 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void failsOnInvalidSchedule() {
+    void failsOnInvalidSchedule() {
         givenCtx(true);
 
         // expect:
@@ -126,20 +126,20 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void acceptsValidTxn() {
+    void acceptsValidTxn() {
         givenValidTxnCtx();
 
         assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
     @Test
-    public void rejectsInvalidScheduleId() {
+    void rejectsInvalidScheduleId() {
         givenCtx(true);
 
         assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
-    public void syntaxCheckWorks() {
+    void syntaxCheckWorks() {
         givenValidTxnCtx();
 
         // expect:

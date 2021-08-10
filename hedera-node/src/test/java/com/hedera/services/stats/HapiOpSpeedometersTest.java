@@ -54,7 +54,7 @@ class HapiOpSpeedometersTest {
 	HapiOpSpeedometers subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo
@@ -76,7 +76,7 @@ class HapiOpSpeedometersTest {
 	}
 
 	@Test
-	public void beginsRationally() {
+	void beginsRationally() {
 		// expect:
 		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
 		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
@@ -100,7 +100,7 @@ class HapiOpSpeedometersTest {
 	}
 
 	@Test
-	public void registersExpectedStatEntries() {
+	void registersExpectedStatEntries() {
 		// setup:
 		StatEntry transferRcv = mock(StatEntry.class);
 		StatEntry transferSub = mock(StatEntry.class);

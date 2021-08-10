@@ -52,7 +52,7 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleTokenRelStatus();
 		var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
@@ -73,7 +73,7 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleTokenRelStatus.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleTokenRelStatus.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -81,7 +81,7 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -96,7 +96,7 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -113,7 +113,7 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleTokenRelStatus{balance=" + balance
@@ -124,7 +124,7 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = subject.copy();
 
@@ -134,13 +134,13 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void deleteIsNoop() {
+	void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 
 	@Test
-	public void throwsOnNegativeBalance() {
+	void throwsOnNegativeBalance() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.setBalance(-1));
 	}

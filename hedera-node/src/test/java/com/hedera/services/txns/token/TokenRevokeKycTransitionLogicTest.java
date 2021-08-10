@@ -44,8 +44,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
@@ -88,7 +88,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesInvalidRevokeKyc() {
+	void capturesInvalidRevokeKyc() {
 		givenValidTxnCtx();
 		// and:
 		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_KYC_KEY))
@@ -100,7 +100,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
 		given(token.hasKycKey()).willReturn(true);
@@ -114,7 +114,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -123,7 +123,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -131,7 +131,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingToken() {
+	void rejectsMissingToken() {
 		givenMissingToken();
 
 		// expect:
@@ -139,7 +139,7 @@ class TokenRevokeKycTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingAccount() {
+	void rejectsMissingAccount() {
 		givenMissingAccount();
 
 		// expect:

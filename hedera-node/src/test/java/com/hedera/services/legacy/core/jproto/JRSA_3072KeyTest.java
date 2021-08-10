@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class JRSA_3072KeyTest {
+class JRSA_3072KeyTest {
   @Test
-  public void emptyJRSA_3072KeyTest() {
+  void emptyJRSA_3072KeyTest() {
     JRSA_3072Key key1 = new JRSA_3072Key(null);
     assertTrue(key1.isEmpty());
     assertFalse(key1.isValid());
@@ -38,7 +38,7 @@ public class JRSA_3072KeyTest {
   }
 
   @Test
-  public void nonEmptyJRSA_3072KeyTest() {
+  void nonEmptyJRSA_3072KeyTest() {
     JRSA_3072Key key = new JRSA_3072Key(new byte[1]);
     assertFalse(key.isEmpty());
     assertTrue(key.isValid());

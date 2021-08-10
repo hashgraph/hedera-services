@@ -32,7 +32,7 @@ import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenGetNftInfoUsageTest {
 	private String memo = "Hope";

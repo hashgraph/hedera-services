@@ -39,29 +39,32 @@ import java.util.Optional;
 import static java.lang.System.arraycopy;
 
 public class EntityIdUtils {
+	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
+	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
+
 	public static String readableId(Object o) {
 		if (o instanceof Id) {
 			Id id = (Id) o;
 			return String.format("%d.%d.%d", id.getShard(), id.getRealm(), id.getNum());
 		} else if (o instanceof AccountID) {
 			AccountID id = (AccountID) o;
-			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 		} else if (o instanceof FileID) {
 			FileID id = (FileID) o;
-			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getFileNum());
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
 		} else if (o instanceof TopicID) {
 			TopicID id = (TopicID) o;
-			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTopicNum());
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 		} else if (o instanceof TokenID) {
 			TokenID id = (TokenID) o;
-			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 		} else if (o instanceof ScheduleID) {
 			ScheduleID id = (ScheduleID) o;
-			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
 		} else if (o instanceof NftID) {
 			NftID id = (NftID) o;
 			TokenID tokenID = id.getTokenID();
-			return String.format("%d.%d.%d-%d", tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), id.getSerialNumber());
+			return String.format(ENTITY_ID_FORMAT, tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), id.getSerialNumber());
 		} else {
 			return String.valueOf(o);
 		}
@@ -96,16 +99,16 @@ public class EntityIdUtils {
 				triple[i++] = v;
 				v = 0;
 			} else if (c < '0' || c > '9') {
-				throw new NumberFormatException("Cannot parse '" + dotDelimited + "' due to character '" + c + "'");
+				throw new NumberFormatException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to character '" + c + "'");
 			} else {
 				v = 10 * v + (c - '0');
 				if (v < 0) {
-					throw new IllegalArgumentException("Cannot parse '" + dotDelimited + "' due to overflow");
+					throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to overflow");
 				}
 			}
 		}
 		if (i < 2) {
-			throw new IllegalArgumentException("Cannot parse '" + dotDelimited + "' due to only " + i + " dots");
+			throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to only " + i + " dots");
 		}
 		triple[i] = v;
 		return triple;
@@ -183,7 +186,7 @@ public class EntityIdUtils {
 
 	public static String asLiteralString(AccountID id) {
 		return String.format(
-				"%d.%d.%d",
+				ENTITY_ID_FORMAT,
 				id.getShardNum(),
 				id.getRealmNum(),
 				id.getAccountNum());
@@ -191,7 +194,7 @@ public class EntityIdUtils {
 
 	public static String asLiteralString(FileID id) {
 		return String.format(
-				"%d.%d.%d",
+				ENTITY_ID_FORMAT,
 				id.getShardNum(),
 				id.getRealmNum(),
 				id.getFileNum());

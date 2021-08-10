@@ -63,7 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -74,7 +74,7 @@ import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class CryptoCreateTransitionLogicTest {
+class CryptoCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long customAutoRenewPeriod = 100_001L;
 	final private long customSendThreshold = 49_000L;
@@ -109,7 +109,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -118,7 +118,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void returnsMemoTooLongWhenValidatorSays() {
+	void returnsMemoTooLongWhenValidatorSays() {
 		givenValidTxnCtx();
 		given(validator.memoCheck(memo)).willReturn(MEMO_TOO_LONG);
 
@@ -127,7 +127,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void returnsKeyRequiredOnEmptyKey() {
+	void returnsKeyRequiredOnEmptyKey() {
 		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
 
 		// expect:
@@ -135,7 +135,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void requiresKey() {
+	void requiresKey() {
 		givenMissingKey();
 
 		// expect:
@@ -143,7 +143,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingAutoRenewPeriod() {
+	void rejectsMissingAutoRenewPeriod() {
 		givenMissingAutoRenewPeriod();
 
 		// expect:
@@ -151,7 +151,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeBalance() {
+	void rejectsNegativeBalance() {
 		givenAbsurdInitialBalance();
 
 		// expect:
@@ -159,7 +159,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeSendThreshold() {
+	void rejectsNegativeSendThreshold() {
 		givenAbsurdSendThreshold();
 
 		// expect:
@@ -167,7 +167,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsNegativeReceiveThreshold() {
+	void rejectsNegativeReceiveThreshold() {
 		givenAbsurdReceiveThreshold();
 
 		// expect:
@@ -175,7 +175,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsKeyWithBadEncoding() {
+	void rejectsKeyWithBadEncoding() {
 		givenValidTxnCtx();
 		given(validator.hasGoodEncoding(any())).willReturn(false);
 
@@ -184,7 +184,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAutoRenewPeriod() {
+	void rejectsInvalidAutoRenewPeriod() {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
@@ -193,7 +193,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -201,7 +201,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithOverrides() throws Throwable {
+	void followsHappyPathWithOverrides() throws Throwable {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		expiry = consensusTime.getEpochSecond() + customAutoRenewPeriod;
@@ -229,7 +229,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesInsufficientPayerBalance() {
+	void translatesInsufficientPayerBalance() {
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
 
@@ -241,7 +241,7 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx();
 		cryptoCreateTxn = cryptoCreateTxn.toBuilder()
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))

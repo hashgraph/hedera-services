@@ -22,11 +22,13 @@ package com.hedera.services.txns.file;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -92,15 +94,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(FILE_DELETED);
 				return;
 			}
-			if (attr.getWacl().isEmpty() && (op.hasKeys() || !op.getContents().isEmpty())) {
-				/* The transaction is trying to update an immutable file; in general, not a legal operation,
-				but the semantics change for a superuser (i.e., sysadmin or treasury) updating a system file. */
-				var isSysFile = entityNums.isSystemFile(target);
-				var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
-				if (!(isSysAdmin && isSysFile)) {
-					txnCtx.setStatus(UNAUTHORIZED);
-					return;
-				}
+
+			if(!isAuthorizedToProcessFile(op, attr, target)) {
+				return;
 			}
 
 			Optional<HederaFs.UpdateResult> replaceResult = Optional.empty();
@@ -111,12 +107,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
 			Optional<HederaFs.UpdateResult> changeResult = Optional.empty();
 			if (replaceResult.map(HederaFs.UpdateResult::fileReplaced).orElse(TRUE)) {
-				if (op.hasKeys()) {
-					attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
-				}
-				if (op.hasMemo()) {
-					attr.setMemo(op.getMemo().getValue());
-				}
+				updateAttrBased(attr, op);
 				changeResult = Optional.of(hfs.setattr(target, attr));
 			}
 
@@ -131,6 +122,31 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
+	}
+
+	private void updateAttrBased(final HFileMeta attr, final FileUpdateTransactionBody op ) {
+		if (op.hasKeys()) {
+			attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
+		}
+		if (op.hasMemo()) {
+			attr.setMemo(op.getMemo().getValue());
+		}
+	}
+
+	private boolean isAuthorizedToProcessFile(final FileUpdateTransactionBody op,
+			final HFileMeta attr,
+			final FileID target) {
+		if (attr.getWacl().isEmpty() && (op.hasKeys() || !op.getContents().isEmpty())) {
+				/* The transaction is trying to update an immutable file; in general, not a legal operation,
+				but the semantics change for a superuser (i.e., sysadmin or treasury) updating a system file. */
+			var isSysFile = entityNums.isSystemFile(target);
+			var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
+			if (!(isSysAdmin && isSysFile)) {
+				txnCtx.setStatus(UNAUTHORIZED);
+				return false;
+			}
+		}
+		return true;
 	}
 
 	static void mapToStatus(IllegalArgumentException iae, TransactionContext txnCtx) {

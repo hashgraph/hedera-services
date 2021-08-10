@@ -42,7 +42,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import javax.inject.Inject;
@@ -54,7 +53,9 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Stream;
 
+import static com.hedera.services.legacy.unit.FreezeTestHelper.createFreezeTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static java.lang.Thread.sleep;
 import static java.util.Calendar.HOUR_OF_DAY;
@@ -100,9 +101,21 @@ class FreezeHandlerTest {
 	}
 
 	@Test
+	void useTimeStampAsFreezeStartTime() throws Exception {
+		final var expectedStart = Instant.now().plusSeconds(100);
+		final var transaction = createFreezeTransaction(true, true, null, expectedStart);
+		final var txBody = CommonUtils.extractTransactionBody(transaction);
+
+		final var record = subject.freeze(txBody, consensusTime);
+
+		assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+		verify(dualState).setFreezeTime(expectedStart);
+	}
+
+	@Test
 	void setsInstantInSameDayWhenNatural() throws Exception {
 		// setup:
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
+		Transaction transaction = createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		// and:
 		final var nominalStartHour = txBody.getFreeze().getStartHour();
@@ -120,13 +133,14 @@ class FreezeHandlerTest {
 	@Test
 	void setsInstantInNextDayWhenNatural() throws Exception {
 		// setup:
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(
+		Transaction transaction = createFreezeTransaction(
 				true,
 				true,
 				null,
 				null,
 				new int[] { 10, 0 },
-				new int[] { 10, 1 });
+				new int[] { 10, 1 },
+				null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		// and:
 		final var nominalStartHour = txBody.getFreeze().getStartHour();
@@ -170,7 +184,7 @@ class FreezeHandlerTest {
 	@Test
 	void freeze_InvalidFreezeTxBody_Test() throws Exception {
 		willThrow(IllegalArgumentException.class).given(dualState).setFreezeTime(any());
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
+		Transaction transaction = createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
@@ -183,7 +197,7 @@ class FreezeHandlerTest {
 		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
+		Transaction transaction = createFreezeTransaction(true, true, fileID, hash);
 
 		given(hfs.exists(fileID)).willReturn(true);
 		given(hfs.cat(fileID)).willReturn(data);
@@ -205,7 +219,7 @@ class FreezeHandlerTest {
 
 	@Test
 	void freezeOnlyNoUpdateFeature() throws Exception {
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
+		Transaction transaction = createFreezeTransaction(true, true, null);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
@@ -224,25 +238,22 @@ class FreezeHandlerTest {
 
 	@Test
 	void freezeUpdateWarnsWhenFileNotDeleted() throws Exception {
-		// setup:
-		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
-		byte[] data = Files.readAllBytes(Paths.get(zipFile));
-		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
-		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
-
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
-
+		final var zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
+		final var data = Files.readAllBytes(Paths.get(zipFile));
+		final var hash = CommonUtils.noThrowSha384HashOf(data);
+		final var fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
+		final var transaction = createFreezeTransaction(true, true, fileID, hash);
 		given(hfs.exists(fileID)).willReturn(true);
 		given(hfs.cat(fileID)).willReturn(data);
 
-		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = subject.freeze(txBody, consensusTime);
+		final var txBody = CommonUtils.extractTransactionBody(transaction);
+		final var record = subject.freeze(txBody, consensusTime);
 		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
-			// mockito set up
+		try (final var utilities = Mockito.mockStatic(Files.class)) {
+			utilities.when(() -> Files.walk(any())).thenReturn(Stream.empty());
 			utilities.when(() -> Files.delete(any())).thenThrow(new IOException());
-			// when:
+
 			subject.handleUpdateFeature();
 		}
 
@@ -257,7 +268,7 @@ class FreezeHandlerTest {
 		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
+		Transaction transaction = createFreezeTransaction(true, true, fileID, hash);
 
 		given(hfs.exists(fileID)).willReturn(true);
 		given(hfs.cat(fileID)).willReturn(data);
@@ -281,7 +292,7 @@ class FreezeHandlerTest {
 	void freeze_updateFileHash_MisMatch() throws Exception {
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, new byte[48]);
+		Transaction transaction = createFreezeTransaction(true, true, fileID, new byte[48]);
 
 		given(hfs.exists(fileID)).willReturn(true);
 		given(hfs.cat(fileID)).willReturn(new byte[100]);
@@ -307,7 +318,7 @@ class FreezeHandlerTest {
 	@Test
 	void freeze_updateFileID_NonExist() throws Exception {
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, new byte[48]);
+		Transaction transaction = createFreezeTransaction(true, true, fileID, new byte[48]);
 		given(hfs.exists(fileID)).willReturn(false);
 		given(hfs.cat(fileID)).willReturn(new byte[100]);
 

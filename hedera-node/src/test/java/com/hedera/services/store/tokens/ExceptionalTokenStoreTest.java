@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExceptionalTokenStoreTest {
 	@Test
-	public void allButSetAreUse() {
+	void allButSetAreUse() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.freeze(null, null));

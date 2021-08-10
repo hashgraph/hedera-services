@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -141,7 +141,7 @@ class FractionalFeeAssessorTest {
 				subject.assessAllFractional(wildlyInsufficientChange, fees, changeManager, accumulator);
 
 		// then:
-		assertEquals(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE, result);
+		assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
 	}
 
 	@Test

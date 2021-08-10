@@ -157,7 +157,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void fakeBlockTimedPrecisely() {
+	void fakeBlockTimedPrecisely() {
 		// setup:
 		var now = Instant.now();
 
@@ -169,7 +169,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void mapsLogInfoAsExpected() {
+	void mapsLogInfoAsExpected() {
 		// given:
 		var bloom = logInfo.getBloom();
 
@@ -186,7 +186,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void includesAnyLogInfo() {
+	void includesAnyLogInfo() {
 		// when:
 		var result = asHapiResult(receipt, created);
 
@@ -195,7 +195,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void mapsExecutionResult() {
+	void mapsExecutionResult() {
 		// when:
 		var result = asHapiResult(receipt, created);
 
@@ -204,7 +204,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void ignoresNullExecutionResult() {
+	void ignoresNullExecutionResult() {
 		// given:
 		receipt.setExecutionResult(null);
 
@@ -216,7 +216,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void mapsPrimaryCreation() {
+	void mapsPrimaryCreation() {
 		givenContractCreate();
 
 		// when:
@@ -227,7 +227,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void mapsGasUsed() {
+	void mapsGasUsed() {
 		givenError();
 
 		// when:
@@ -238,7 +238,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void mapsErrorMessage() {
+	void mapsErrorMessage() {
 		givenError();
 
 		// when:
@@ -249,7 +249,7 @@ class DomainUtilsTest {
 	}
 
 	@Test
-	public void addsCreatedIfPresent() {
+	void addsCreatedIfPresent() {
 		givenCreations();
 
 		// when:

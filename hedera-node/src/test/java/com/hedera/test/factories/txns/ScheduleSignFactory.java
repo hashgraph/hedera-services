@@ -26,33 +26,34 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class ScheduleSignFactory extends SignedTxnFactory<ScheduleSignFactory> {
-    private ScheduleSignFactory() {}
+	private ScheduleSignFactory() {
+	}
 
-    private ScheduleID id;
+	private ScheduleID id;
 
-    public static ScheduleSignFactory newSignedScheduleSign() {
-        return new ScheduleSignFactory();
-    }
+	public static ScheduleSignFactory newSignedScheduleSign() {
+		return new ScheduleSignFactory();
+	}
 
-    public ScheduleSignFactory signing(ScheduleID id) {
-        this.id = id;
-        return this;
-    }
+	public ScheduleSignFactory signing(ScheduleID id) {
+		this.id = id;
+		return this;
+	}
 
-    @Override
-    protected ScheduleSignFactory self() {
-        return this;
-    }
+	@Override
+	protected ScheduleSignFactory self() {
+		return this;
+	}
 
-    @Override
-    protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-        return 0;
-    }
+	@Override
+	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+		return 0;
+	}
 
-    @Override
-    protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = ScheduleSignTransactionBody.newBuilder()
-                .setScheduleID(id);
-        txn.setScheduleSign(op);
-    }
+	@Override
+	protected void customizeTxn(TransactionBody.Builder txn) {
+		var op = ScheduleSignTransactionBody.newBuilder()
+				.setScheduleID(id);
+		txn.setScheduleSign(op);
+	}
 }
