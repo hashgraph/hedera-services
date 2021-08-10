@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -43,13 +43,11 @@ class HtsFeeAssessorTest {
 	private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
 
 	@Mock
-	private BalanceChange payerChange;
-	@Mock
 	private BalanceChange collectorChange;
 	@Mock
 	private BalanceChangeManager balanceChangeManager;
 
-	private HtsFeeAssessor subject = new HtsFeeAssessor();
+	private final HtsFeeAssessor subject = new HtsFeeAssessor();
 
 	@Test
 	void updatesExistingChangesIfPresent() {
@@ -57,12 +55,12 @@ class HtsFeeAssessorTest {
 		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
 		// and:
 		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
-		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
 		given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
 
 		// when:
-		subject.assess(payer, htsFee, balanceChangeManager, accumulator);
+		subject.assess(payer, nonSelfDenominatedChargingToken, htsFee, balanceChangeManager, accumulator);
 
 		// then:
 		verify(collectorChange).adjustUnits(+amountOfHtsFee);
@@ -79,10 +77,31 @@ class HtsFeeAssessorTest {
 
 		// given:
 		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
-		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
 		// when:
-		subject.assess(payer, htsFee, balanceChangeManager, accumulator);
+		subject.assess(payer, nonSelfDenominatedChargingToken, htsFee, balanceChangeManager, accumulator);
+
+		// then:
+		verify(balanceChangeManager).includeChange(expectedPayerChange);
+		verify(balanceChangeManager).includeChange(BalanceChange.tokenAdjust(feeCollector, denom, +amountOfHtsFee));
+		// and:
+		assertEquals(1, accumulator.size());
+		assertEquals(expectedAssess, accumulator.get(0));
+	}
+
+	@Test
+	void addsExemptNewChangesForSelfDenominatedFee() {
+		// setup:
+		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+
+		// given:
+		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
+		expectedPayerChange.setExemptFromCustomFees(true);
+		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+
+		// when:
+		subject.assess(payer, denom, htsFee, balanceChangeManager, accumulator);
 
 		// then:
 		verify(balanceChangeManager).includeChange(expectedPayerChange);
@@ -95,6 +114,7 @@ class HtsFeeAssessorTest {
 	private final long amountOfHtsFee = 100_000L;
 	private final Id payer = new Id(0, 1, 2);
 	private final Id denom = new Id(6, 6, 6);
+	private final Id nonSelfDenominatedChargingToken = new Id(7, 7, 7);
 	private final Id feeCollector = new Id(1, 2, 3);
 	private final EntityId feeDenom = new EntityId(6, 6, 6);
 	private final EntityId htsFeeCollector = feeCollector.asEntityId();

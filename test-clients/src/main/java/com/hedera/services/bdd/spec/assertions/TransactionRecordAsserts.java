@@ -131,6 +131,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts tokenTransfers(ErroringAssertsProvider<List<TokenTransferList>> provider) {
+		registerTypedProvider("tokenTransferListsList", provider);
+		return this;
+	}
+
 	private <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
 		try {
 			Method m = TransactionRecord.class.getMethod(QueryUtils.asGetter(forField));
