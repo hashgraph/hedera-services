@@ -53,7 +53,7 @@ class ServicesStatsManagerTest {
 	ServicesStatsManager subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		pause = mock(Pause.class);
 		threads = mock(Function.class);
 

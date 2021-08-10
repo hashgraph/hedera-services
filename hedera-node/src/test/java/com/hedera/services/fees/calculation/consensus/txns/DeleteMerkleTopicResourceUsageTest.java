@@ -43,7 +43,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // setup:
         TransactionBody deleteTopicTx = TransactionBody.newBuilder()
                 .setConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId).build())
@@ -56,7 +56,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void getFeeThrowsExceptionForBadTxBody() {
+    void getFeeThrowsExceptionForBadTxBody() {
         // setup:
         TransactionBody nonDeleteTopicTx = TransactionBody.newBuilder().build();
 
@@ -67,7 +67,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
 
     @Test
-    public void feeDataAsExpected() throws Exception {
+    void feeDataAsExpected() throws Exception {
         // setup:
         TransactionBody txBody = makeTransactionBody(topicId);
 

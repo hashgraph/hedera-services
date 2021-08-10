@@ -79,7 +79,7 @@ class GetAccountNftInfosAnswerTest {
 	OptionValidator optionValidator;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		view = mock(StateView.class);
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetAccountNftInfosAnswer(optionValidator);

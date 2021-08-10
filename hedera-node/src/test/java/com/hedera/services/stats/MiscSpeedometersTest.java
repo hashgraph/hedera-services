@@ -43,7 +43,7 @@ class MiscSpeedometersTest {
 	MiscSpeedometers subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		factory = mock(SpeedometerFactory.class);
 		platform = mock(Platform.class);
 

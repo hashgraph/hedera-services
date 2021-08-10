@@ -80,7 +80,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	private TokenFeeScheduleUpdateTransitionLogic subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		store = mock(TokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);

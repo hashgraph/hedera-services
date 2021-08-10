@@ -112,7 +112,7 @@ class HederaScheduleStoreTest {
 	HederaScheduleStore subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		transactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
 		entityMemo = "Some memo here";
 		transactionBodyHashCode = Arrays.hashCode(transactionBody);

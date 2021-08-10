@@ -508,9 +508,7 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {
-				}, op -> {
-				});
+				op -> {}, op -> {});
 	}
 
 	public static HapiSpecOperation updateLargeFile(

@@ -56,7 +56,7 @@ class SolidityLogTest {
 	SolidityLog subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		din = mock(DataInputStream.class);
 		in = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
