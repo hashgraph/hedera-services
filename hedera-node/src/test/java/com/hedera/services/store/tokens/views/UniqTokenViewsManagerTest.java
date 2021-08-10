@@ -126,6 +126,19 @@ class UniqTokenViewsManagerTest {
 	}
 
 	@Test
+	void doChangeAlsoWorksForNftsByTypeForCompleteness() {
+		setupTreasuryTrackingSubject();
+
+		// when:
+		subject.doChange(NFTS_BY_TYPE, 1, 2L, true);
+		subject.doChange(NFTS_BY_TYPE, 2, 3L, false);
+
+		// then:
+		verify(nftsByType).associate(1, 2L);
+		verify(nftsByType).disassociate(2, 3L);
+	}
+
+	@Test
 	void treasuryExitWorksWithExplicitOwners() {
 		setupNonTreasuryTrackingSubject();
 

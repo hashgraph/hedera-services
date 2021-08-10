@@ -271,7 +271,7 @@ public class UniqTokenViewsManager {
 		}
 	}
 
-	private void doChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
+	void doChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
 		switch (targetFcotmr) {
 			case NFTS_BY_TYPE:
 				if (associate) {
