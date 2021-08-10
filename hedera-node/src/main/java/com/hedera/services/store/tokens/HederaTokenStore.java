@@ -778,6 +778,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	) {
 		if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
 			if (changes.hasTreasury()) {
+				/* This relationship is verified to exist in the TokenUpdateTransitionLogic */
 				final var newTreasuryRel = asTokenRel(changes.getTreasury(), tId);
 				long balance = (long) tokenRelsLedger.get(newTreasuryRel, TOKEN_BALANCE);
 				if (balance != 0) {
