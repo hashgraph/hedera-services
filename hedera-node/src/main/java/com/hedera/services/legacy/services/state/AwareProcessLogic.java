@@ -165,7 +165,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
 
-		final var sigStatus = rationalizeWithPreConsensusSigs(accessor);
+		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
 			ctx.networkCtxManager().prepareForIncorporating(accessor);

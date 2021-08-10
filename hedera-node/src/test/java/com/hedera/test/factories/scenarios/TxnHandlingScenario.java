@@ -23,14 +23,14 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -52,7 +52,9 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
+import java.util.List;
 
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
 import static com.hedera.test.factories.accounts.MockFCMapFactory.newAccounts;
@@ -184,14 +186,6 @@ public interface TxnHandlingScenario {
 		return hfs;
 	}
 
-	default FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		@SuppressWarnings("unchecked")
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>) mock(
-				FCMap.class);
-
-		return storage;
-	}
-
 	default FCMap<MerkleEntityId, MerkleTopic> topics() {
 		var topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
 		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
@@ -253,6 +247,22 @@ public interface TxnHandlingScenario {
 		given(tokenStore.resolve(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY))
 				.willReturn(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).willReturn(feeScheduleToken);
+
+		var royaltyFeeWithFallbackToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"ZPHYR", "West Wind Art", false, true,
+				EntityId.fromGrpcAccountId(MISC_ACCOUNT));
+		royaltyFeeWithFallbackToken.setFeeScheduleKey(optionalFeeScheduleKey);
+		royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
+		royaltyFeeWithFallbackToken.setFeeSchedule(List.of(
+				FcCustomFee.royaltyFee(
+						1, 2,
+						new FixedFeeSpec(1, null),
+						new EntityId(1, 2, 5))));
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+				.willReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+				.willReturn(royaltyFeeWithFallbackToken);
 
 		var supplyToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
@@ -452,6 +462,8 @@ public interface TxnHandlingScenario {
 	TokenID KNOWN_TOKEN_WITH_WIPE = asToken(KNOWN_TOKEN_WITH_WIPE_ID);
 	String KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID = "0.0.779";
 	TokenID KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY = asToken(KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID);
+	String KNOWN_TOKEN_WITH_ROYALTY_FEE_ID = "0.0.77977";
+	TokenID KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK = asToken(KNOWN_TOKEN_WITH_ROYALTY_FEE_ID);
 
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
@@ -464,9 +476,17 @@ public interface TxnHandlingScenario {
 			.setTokenID(KNOWN_TOKEN_WITH_WIPE)
 			.setSerialNumber(1L)
 			.build();
+	NftID ROYALTY_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)
+			.setSerialNumber(1L)
+			.build();
 
 	String UNKNOWN_TOKEN_ID = "0.0.666";
 	TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);
+	NftID MISSING_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(MISSING_TOKEN)
+			.setSerialNumber(1L)
+			.build();
 
 	KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
 	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());

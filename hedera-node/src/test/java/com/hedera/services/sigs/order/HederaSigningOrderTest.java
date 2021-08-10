@@ -127,6 +127,12 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
@@ -179,10 +185,15 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_COLLECTOR;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_TREASURY;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
@@ -445,6 +456,89 @@ class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeWithNoReceiverSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeWithNoReceiverSigReqButFallbackFeeTriggered() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButSenderIsTreasury() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToHbar() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToFt() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	void getsNftOwnerChangeWithNoReceiverSigReqAndMissingToken() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1445,6 +1539,20 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
+	void getsTokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
 	void getsTokenCreateCustomFixedFeeAndCollectorSigReq() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
@@ -1456,6 +1564,62 @@ class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateCustomRoyaltyFeeNoFallbackButSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	void getsTokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
 	}
 
 	@Test

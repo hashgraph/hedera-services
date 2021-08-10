@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -38,12 +39,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
-class HederLedgerTokenXfersTestHelper extends BaseHederaLedgerTestHelper {
+class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
+		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
 	}
 
 	@Test

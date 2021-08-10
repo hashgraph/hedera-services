@@ -34,6 +34,7 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -51,6 +52,8 @@ import java.util.Optional;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyNoFallback;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyWithFallback;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
@@ -296,14 +299,17 @@ class TokenCreateTransitionLogicTest {
 		given(store.associate(feeCollector, createdList)).willReturn(OK);
 		given(store.associate(fixedFeeCollector, createdList)).willReturn(OK);
 		given(store.associate(fractionalFeeCollector, createdList)).willReturn(OK);
+		given(store.associate(royaltyFeeCollector, createdList)).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
 		given(ledger.unfreeze(fixedFeeCollector, created)).willReturn(OK);
 		given(ledger.unfreeze(fractionalFeeCollector, created)).willReturn(OK);
+		given(ledger.unfreeze(royaltyFeeCollector, created)).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
 		given(ledger.grantKyc(fixedFeeCollector, created)).willReturn(OK);
 		given(ledger.grantKyc(fractionalFeeCollector, created)).willReturn(OK);
+		given(ledger.grantKyc(royaltyFeeCollector, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
 
@@ -321,6 +327,9 @@ class TokenCreateTransitionLogicTest {
 		verify(store, times(1)).associate(fractionalFeeCollector, createdList);
 		verify(ledger, times(1)).unfreeze(fractionalFeeCollector, created);
 		verify(ledger, times(1)).grantKyc(fractionalFeeCollector, created);
+		verify(store, times(1)).associate(royaltyFeeCollector, createdList);
+		verify(ledger, times(1)).unfreeze(royaltyFeeCollector, created);
+		verify(ledger, times(1)).grantKyc(royaltyFeeCollector, created);
 
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
@@ -824,6 +833,7 @@ class TokenCreateTransitionLogicTest {
 	private AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
 	private AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
 	private AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
+	private AccountID royaltyFeeCollector = IdUtils.asAccount("10.10.10");
 	private AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
 	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
 	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).withFixedFee(fixedHbar(100L));
@@ -839,12 +849,27 @@ class TokenCreateTransitionLogicTest {
 			fractional(15L, 100L)
 					.setMinimumAmount(5L)
 					.setMaximumAmount(15L));
+	private CustomFee customRoyaltyNoFallback = new CustomFeeBuilder(royaltyFeeCollector).withRoyaltyFee(
+			royaltyNoFallback(15L, 100L));
+	private CustomFee customRoyaltyHbar = new CustomFeeBuilder(royaltyFeeCollector).withRoyaltyFee(
+			royaltyWithFallback(15L, 100L,
+					FixedFee.newBuilder().setAmount(123)));
+	private CustomFee customRoyaltyOtherHts = new CustomFeeBuilder(royaltyFeeCollector).withRoyaltyFee(
+			royaltyWithFallback(15L, 100L,
+					FixedFee.newBuilder().setDenominatingTokenId(misc).setAmount(123)));
+	private CustomFee customRoyaltyThisHts = new CustomFeeBuilder(royaltyFeeCollector).withRoyaltyFee(
+			royaltyWithFallback(15L, 100L,
+					FixedFee.newBuilder().setDenominatingTokenId(IdUtils.asToken("0.0.0")).setAmount(123)));
 	private List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
 			customFixedFeeA,
 			customFixedFeeB,
 			customFractionalFeeA,
-			customFractionalFeeB
+			customFractionalFeeB,
+			customRoyaltyNoFallback,
+			customRoyaltyHbar,
+			customRoyaltyOtherHts,
+			customRoyaltyThisHts
 	);
 }

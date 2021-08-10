@@ -137,6 +137,7 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
 import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
@@ -144,6 +145,7 @@ import com.hedera.services.grpc.marshalling.FractionalFeeAssessor;
 import com.hedera.services.grpc.marshalling.HbarFeeAssessor;
 import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.RoyaltyFeeAssessor;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -822,8 +824,12 @@ public class ServicesContext {
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			final var feeAssessor =
-					new FeeAssessor(new HtsFeeAssessor(), new HbarFeeAssessor(), new FractionalFeeAssessor());
+			final var htsAssessor = new HtsFeeAssessor();
+			final var hbarAssessor = new HbarFeeAssessor();
+			final var royaltyAssessor = new RoyaltyFeeAssessor(
+					htsAssessor, hbarAssessor, AdjustmentUtils::adjustedChange);
+			final var fractionalAssessor = new FractionalFeeAssessor();
+			final var feeAssessor = new FeeAssessor(htsAssessor, hbarAssessor, royaltyAssessor, fractionalAssessor);
 			impliedTransfersMarshal = new ImpliedTransfersMarshal(
 					feeAssessor,
 					customFeeSchedules(),
@@ -1736,6 +1742,7 @@ public class ServicesContext {
 					recordsHistorian(),
 					globalDynamicProperties(),
 					accountsLedger);
+			ledger.setTokenViewsManager(uniqTokenViewsManager());
 			scheduleStore().setAccountsLedger(accountsLedger);
 			scheduleStore().setHederaLedger(ledger);
 		}

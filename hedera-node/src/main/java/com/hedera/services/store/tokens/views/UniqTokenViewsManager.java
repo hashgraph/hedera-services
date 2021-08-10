@@ -31,6 +31,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -39,6 +41,9 @@ import static com.hedera.services.store.tokens.views.internals.PermHashInteger.a
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_TYPE;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
+import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
 
 /**
  * Keeps the {@link FCOneToManyRelation} views of the unique tokens in the world state
@@ -59,6 +64,13 @@ public class UniqTokenViewsManager {
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
+
+	enum TargetFcotmr {
+		NFTS_BY_TYPE, NFTS_BY_OWNER, TREASURY_NFTS_BY_TYPE
+	}
+
+	private boolean inTxn = false;
+	private List<PendingChange> changesInTxn = new ArrayList<>();
 
 	public UniqTokenViewsManager(
 			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
@@ -167,9 +179,8 @@ public class UniqTokenViewsManager {
 	 * 		the new owner
 	 */
 	public void exchangeNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId newOwner) {
-		final var curNftsByOwner = nftsByOwner.get();
-		curNftsByOwner.disassociate(asPhi(prevOwner.identityCode()), nftId.identityCode());
-		curNftsByOwner.associate(asPhi(newOwner.identityCode()), nftId.identityCode());
+		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.identityCode(), false);
+		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.identityCode(), true);
 	}
 
 	/**
@@ -185,14 +196,12 @@ public class UniqTokenViewsManager {
 	 * 		the new owner
 	 */
 	public void treasuryExitNotice(MerkleUniqueTokenId nftId, EntityId treasury, EntityId newOwner) {
-		final var curNftsByOwner = nftsByOwner.get();
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().disassociate(asPhi(nftId.tokenId().identityCode()),
-					nftId.identityCode());
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.tokenId().identityCode(), nftId.identityCode(), false);
 		} else {
-			curNftsByOwner.disassociate(asPhi(treasury.identityCode()), nftId.identityCode());
+			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.identityCode(), false);
 		}
-		curNftsByOwner.associate(asPhi(newOwner.identityCode()), nftId.identityCode());
+		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.identityCode(), true);
 	}
 
 	/**
@@ -208,13 +217,11 @@ public class UniqTokenViewsManager {
 	 * 		the relevant treasury
 	 */
 	public void treasuryReturnNotice(MerkleUniqueTokenId nftId, EntityId prevOwner, EntityId treasury) {
-		final var curNftsByOwner = nftsByOwner.get();
-		curNftsByOwner.disassociate(asPhi(prevOwner.identityCode()), nftId.identityCode());
+		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.identityCode(), false);
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().associate(asPhi(nftId.tokenId().identityCode()),
-					nftId.identityCode());
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.tokenId().identityCode(), nftId.identityCode(), true);
 		} else {
-			curNftsByOwner.associate(asPhi(treasury.identityCode()), nftId.identityCode());
+			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.identityCode(), true);
 		}
 	}
 
@@ -228,6 +235,74 @@ public class UniqTokenViewsManager {
 	 */
 	public boolean isUsingTreasuryWildcards() {
 		return treasuryNftsByType != null;
+	}
+
+	/* --- Transactional semantics --- */
+	public boolean isInTransaction() {
+		return inTxn;
+	}
+
+	public void begin() {
+		if (inTxn) {
+			throw new IllegalStateException("Manager already in transaction");
+		}
+		inTxn = true;
+	}
+
+	public void rollback() {
+		if (!inTxn) {
+			throw new IllegalStateException("Manager not in transaction");
+		}
+		inTxn = false;
+		changesInTxn.clear();
+	}
+
+	public void commit() {
+		if (!inTxn) {
+			throw new IllegalStateException("Manager not in transaction");
+		}
+		if (!changesInTxn.isEmpty()) {
+			for (var change : changesInTxn) {
+				doChange(change.targetFcotmr(), change.keyCode(), change.valueCode(), change.isAssociate());
+			}
+			changesInTxn.clear();
+		}
+		inTxn = false;
+	}
+
+	private void changeOrStage(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
+		if (inTxn) {
+			final var change = new PendingChange(targetFcotmr, keyCode, valueCode, associate);
+			changesInTxn.add(change);
+		} else {
+			doChange(targetFcotmr, keyCode, valueCode, associate);
+		}
+	}
+
+	void doChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
+		switch (targetFcotmr) {
+			case NFTS_BY_TYPE:
+				if (associate) {
+					nftsByType.get().associate(asPhi(keyCode), valueCode);
+				} else {
+					nftsByType.get().disassociate(asPhi(keyCode), valueCode);
+				}
+				break;
+			case NFTS_BY_OWNER:
+				if (associate) {
+					nftsByOwner.get().associate(asPhi(keyCode), valueCode);
+				} else {
+					nftsByOwner.get().disassociate(asPhi(keyCode), valueCode);
+				}
+				break;
+			case TREASURY_NFTS_BY_TYPE:
+				if (associate) {
+					curTreasuryNftsByType().associate(asPhi(keyCode), valueCode);
+				} else {
+					curTreasuryNftsByType().disassociate(asPhi(keyCode), valueCode);
+				}
+				break;
+		}
 	}
 
 	private FCOneToManyRelation<PermHashInteger, Long> curTreasuryNftsByType() {
@@ -333,5 +408,50 @@ public class UniqTokenViewsManager {
 			}
 			curNftsByType.associate(asPhi(tokenId.identityCode()), nftId.identityCode());
 		});
+	}
+
+	static class PendingChange {
+		private final TargetFcotmr targetFcotmr;
+		private final int keyCode;
+		private final long valueCode;
+		private final boolean associate;
+
+		public PendingChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
+			this.targetFcotmr = targetFcotmr;
+			this.keyCode = keyCode;
+			this.valueCode = valueCode;
+			this.associate = associate;
+		}
+
+		public TargetFcotmr targetFcotmr() {
+			return targetFcotmr;
+		}
+
+		public int keyCode() {
+			return keyCode;
+		}
+
+		public long valueCode() {
+			return valueCode;
+		}
+
+		public boolean isAssociate() {
+			return associate;
+		}
+
+		@Override
+		public String toString() {
+			return "PendingChange{" +
+					"targetFcotmr=" + targetFcotmr +
+					", keyCode=" + keyCode +
+					", valueCode=" + valueCode +
+					", associate=" + associate +
+					'}';
+		}
+	}
+
+	/* --- Only used by unit tests --- */
+	List<PendingChange> getChangesInTxn() {
+		return changesInTxn;
 	}
 }

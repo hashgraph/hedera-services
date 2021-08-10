@@ -103,6 +103,20 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		isInTransaction = true;
 	}
 
+	void undoChangesOfType(P property) {
+		if (!isInTransaction) {
+			throw new IllegalStateException("Cannot undo changes, no transaction is active");
+		}
+		if (!changedKeys.isEmpty()) {
+			for (var key : changedKeys) {
+				final var delta = changes.get(key);
+				if (delta != null) {
+					delta.remove(property);
+				}
+			}
+		}
+	}
+
 	void rollback() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");

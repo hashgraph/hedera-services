@@ -65,8 +65,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 
-public class HederaLedgerLiveTestHelper extends BaseHederaLedgerTestHelper {
+public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	long thisSecond = 1_234_567L;
+
 	@BeforeEach
 	void setup() {
 		commonSetup();
