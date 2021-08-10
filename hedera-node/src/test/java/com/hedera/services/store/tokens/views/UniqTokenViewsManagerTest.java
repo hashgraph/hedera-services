@@ -40,6 +40,7 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_TYPE;
 import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -121,6 +122,7 @@ class UniqTokenViewsManagerTest {
 		verify(treasuryNftsByType).disassociate(4, 5L);
 		// and:
 		assertFalse(subject.isInTransaction());
+		assertTrue(subject.getChangesInTxn().isEmpty());
 	}
 
 	@Test
@@ -383,6 +385,19 @@ class UniqTokenViewsManagerTest {
 		verifyNoMoreInteractions(nftsByType);
 		verifyNoMoreInteractions(nftsByOwner);
 	}
+
+	@Test
+	void toStringAsExpected() {
+		// setup:
+		final var desired = "PendingChange{targetFcotmr=NFTS_BY_TYPE, keyCode=1, valueCode=2, associate=true}";
+
+		// given:
+		final var c = change(NFTS_BY_TYPE, 1, 2L, true);
+
+		// expect:
+		assertEquals(desired, c.toString());
+	}
+
 
 	private void givenWellKnownNfts() {
 		willAnswer(invocationOnMock -> {

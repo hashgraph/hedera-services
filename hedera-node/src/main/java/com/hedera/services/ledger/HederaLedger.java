@@ -70,6 +70,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -382,6 +383,10 @@ public class HederaLedger {
 		if (nftsLedger.isInTransaction()) {
 			nftsLedger.rollback();
 		}
+		if (tokenViewsManager.isInTransaction()) {
+			tokenViewsManager.rollback();
+		}
+		accountsLedger.undoChangesOfType(NUM_NFTS_OWNED);
 		clearNetTokenTransfers();
 	}
 

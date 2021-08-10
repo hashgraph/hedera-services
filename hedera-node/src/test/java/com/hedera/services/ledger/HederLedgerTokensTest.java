@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -186,6 +187,10 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void delegatesTokenChangeDrop() {
+		// setup:
+		final var manager = mock(UniqTokenViewsManager.class);
+		subject.setTokenViewsManager(manager);
+
 		subject.numTouches = 2;
 		subject.tokensTouched[0] = tokenWith(111);
 		subject.tokensTouched[1] = tokenWith(222);
@@ -207,6 +212,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(nftsLedger.isInTransaction()).willReturn(true);
+		given(manager.isInTransaction()).willReturn(true);
 
 		// when:
 		subject.dropPendingTokenChanges();
@@ -214,6 +220,8 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		// then:
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
+		verify(manager).rollback();
+		verify(accountsLedger).undoChangesOfType(NUM_NFTS_OWNED);
 		// and;
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());

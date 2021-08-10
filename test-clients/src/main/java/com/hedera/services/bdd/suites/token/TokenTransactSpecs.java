@@ -1486,7 +1486,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	/* ⛔️ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1919 ⛔️
+	/* ✅️ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1919
 	 *
 	 * SCENARIO:
 	 * ---------
@@ -1496,10 +1496,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	 *   4. Create account "harry" associated ONLY to artToken.
 	 *   5. Mint serial no 1 for art token, transfer to harry (no custom fee since gabriella is treasury and exempt).
 	 *   6. Transfer serial no 1 back to gabriella from harry.
-	 *     - Transfer fails (correctly) with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, as harry
-	 *       isn't associated to protocolToken and can't pay the custom fee
-	 *     - But...a following getTokenNftInfo query shows that harry is no longer the owner of serial no 1!
-	 *     - This is because nftsLedger.rollback() wasn't actually called, even thought the transfer failed.
+	 *   7. Transfer fails (correctly) with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, as harry isn't associated to protocolToken
+	 *   8. And following getTokenNftInfo query shows that harry is still the owner of serial no 1
+	 *   9. And following getAccountNftInfos query knows that harry still has serial no 1
 	 * */
 	public HapiApiSpec nftOwnersChangeAtomically() {
 		final var artToken = "artToken";
@@ -1533,7 +1532,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						mintToken(artToken, List.of(serialNo1Meta)),
 						tokenAssociate(harry, artToken),
-						cryptoTransfer(movingUnique(artToken, 1L).between(gabriella, harry))
+						cryptoTransfer(movingUnique(artToken, 1L).between(gabriella, harry)),
+						getAccountNftInfos(harry, 0, 1)
+								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
 				).then(
 						cryptoTransfer(movingUnique(artToken, 1L).between(harry, gabriella))
 								.via(uncompletableTxn)
@@ -1541,11 +1542,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getTxnRecord(uncompletableTxn)
 								.hasPriority(recordWith().tokenTransfers(changingNoNftOwners())),
 						getTokenNftInfo(artToken, 1L)
-								.hasAccountID(harry)
-						/* ⛔️ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1918 ⛔️ */
-//						getAccountNftInfos(harry, 0, 1)
-//								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
-
+								.hasAccountID(harry),
+						/* ✅ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1918 */
+						getAccountNftInfos(harry, 0, 1)
+								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
 				);
 	}
 

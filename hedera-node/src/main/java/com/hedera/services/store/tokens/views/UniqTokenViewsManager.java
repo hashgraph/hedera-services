@@ -257,13 +257,15 @@ public class UniqTokenViewsManager {
 			for (var change : changesInTxn) {
 				doChange(change.targetFcotmr(), change.keyCode(), change.valueCode(), change.isAssociate());
 			}
+			changesInTxn.clear();
 		}
 		inTxn = false;
 	}
 
 	private void changeOrStage(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
 		if (inTxn) {
-			changesInTxn.add(new PendingChange(targetFcotmr, keyCode, valueCode, associate));
+			final var change = new PendingChange(targetFcotmr, keyCode, valueCode, associate);
+			changesInTxn.add(change);
 		} else {
 			doChange(targetFcotmr, keyCode, valueCode, associate);
 		}
@@ -367,6 +369,16 @@ public class UniqTokenViewsManager {
 
 		public boolean isAssociate() {
 			return associate;
+		}
+
+		@Override
+		public String toString() {
+			return "PendingChange{" +
+					"targetFcotmr=" + targetFcotmr +
+					", keyCode=" + keyCode +
+					", valueCode=" + valueCode +
+					", associate=" + associate +
+					'}';
 		}
 	}
 
