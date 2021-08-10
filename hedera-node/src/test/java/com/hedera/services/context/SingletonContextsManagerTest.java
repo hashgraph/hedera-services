@@ -21,7 +21,6 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.context.properties.PropertySources;
-import com.hedera.services.exceptions.ContextNotFoundException;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +53,7 @@ class SingletonContextsManagerTest {
 	@Test
 	void failsFastOnMissingContext() {
 		// expect:
-		assertThrows(ContextNotFoundException.class, () -> CONTEXTS.lookup(1L));
+		assertThrows(IllegalArgumentException.class, () -> CONTEXTS.lookup(1L));
 	}
 
 	@Test
