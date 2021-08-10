@@ -161,17 +161,6 @@ class TxnAwareRecordsHistorianTest {
 		verify(expiries, never()).trackExpirationEvent(any(), eq(nows));
 	}
 
-	@Test
-	void managesReviewRecordsCorrectly() {
-		setupForReview();
-
-		// when:
-		subject.reviewExistingRecords();
-
-		// then:
-		verify(expiries).reviewExistingPayerRecords();
-	}
-
 	private void setupForReview() {
 		setupForAdd();
 	}
