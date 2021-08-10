@@ -771,15 +771,18 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 	}
 
-	private ResponseCodeEnum checkNftBalances(//AtomicReference appliedValidity,
+	private ResponseCodeEnum checkNftBalances(
 			final MerkleToken token,
-			TokenID tId,
-			final TokenUpdateTransactionBody changes) {
+			final TokenID tId,
+			final TokenUpdateTransactionBody changes
+	) {
 		if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-			var relationship = asTokenRel(changes.getTreasury(), tId);
-			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-			if (balance != 0) {
-				return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+			if (changes.hasTreasury()) {
+				final var newTreasuryRel = asTokenRel(changes.getTreasury(), tId);
+				long balance = (long) tokenRelsLedger.get(newTreasuryRel, TOKEN_BALANCE);
+				if (balance != 0) {
+					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+				}
 			}
 		}
 		return  OK;
