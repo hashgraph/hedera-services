@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -31,55 +32,66 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 
 public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactory> {
-    private boolean omitAdmin = false;
-    private Optional<AccountID> payer = Optional.empty();
-    private Transaction scheduled = Transaction.getDefaultInstance();
+	private boolean omitAdmin = false;
+	private boolean scheduleNonsense = false;
+	private Optional<AccountID> payer = Optional.empty();
+	private Transaction scheduled = Transaction.getDefaultInstance();
 
-    private ScheduleCreateFactory() {}
+	private ScheduleCreateFactory() {
+	}
 
-    public static ScheduleCreateFactory newSignedScheduleCreate() {
-        return new ScheduleCreateFactory();
-    }
+	public static ScheduleCreateFactory newSignedScheduleCreate() {
+		return new ScheduleCreateFactory();
+	}
 
-    public ScheduleCreateFactory missingAdmin() {
-        omitAdmin = true;
-        return this;
-    }
+	public ScheduleCreateFactory schedulingNonsense() {
+		scheduleNonsense = true;
+		return this;
+	}
 
-    public ScheduleCreateFactory designatingPayer(AccountID id) {
-        payer = Optional.of(id);
-        return this;
-    }
+	public ScheduleCreateFactory missingAdmin() {
+		omitAdmin = true;
+		return this;
+	}
 
-    public ScheduleCreateFactory creating(Transaction scheduled) {
-    	this.scheduled = scheduled;
-        return this;
-    }
+	public ScheduleCreateFactory designatingPayer(AccountID id) {
+		payer = Optional.of(id);
+		return this;
+	}
 
-    @Override
-    protected ScheduleCreateFactory self() {
-        return this;
-    }
+	public ScheduleCreateFactory creating(Transaction scheduled) {
+		this.scheduled = scheduled;
+		return this;
+	}
 
-    @Override
-    protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-        return 0;
-    }
+	@Override
+	protected ScheduleCreateFactory self() {
+		return this;
+	}
 
-    @Override
-    protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = ScheduleCreateTransactionBody.newBuilder();
-        if (!omitAdmin) {
-            op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
-        }
-        payer.ifPresent(op::setPayerAccountID);
-        try {
-            var accessor = new SignedTxnAccessor(scheduled);
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
-            op.setScheduledTransactionBody(scheduled);
-        } catch (InvalidProtocolBufferException e) {
-            throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
-        }
-        txn.setScheduleCreate(op);
-    }
+	@Override
+	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+		return 0;
+	}
+
+	@Override
+	protected void customizeTxn(TransactionBody.Builder txn) {
+		var op = ScheduleCreateTransactionBody.newBuilder();
+		if (!omitAdmin) {
+			op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
+		}
+		payer.ifPresent(op::setPayerAccountID);
+		if (scheduleNonsense) {
+			op.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
+		} else {
+			try {
+				var accessor = new SignedTxnAccessor(scheduled);
+				var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+				op.setScheduledTransactionBody(scheduled);
+			} catch (InvalidProtocolBufferException e) {
+				throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
+			}
+		}
+		txn.setScheduleCreate(op);
+	}
 }

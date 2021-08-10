@@ -55,12 +55,13 @@ public class BalanceChange {
 
 	private Id account;
 	private long units;
-	private ResponseCodeEnum codeForInsufficientBalance;
 	private long newBalance;
+	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
+	private ResponseCodeEnum codeForInsufficientBalance;
 
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
@@ -215,5 +216,13 @@ public class BalanceChange {
 
 	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
 		this.codeForInsufficientBalance = codeForInsufficientBalance;
+	}
+
+	public void setExemptFromCustomFees(boolean exemptFromCustomFees) {
+		this.exemptFromCustomFees = exemptFromCustomFees;
+	}
+
+	public boolean isExemptFromCustomFees() {
+		return exemptFromCustomFees;
 	}
 }

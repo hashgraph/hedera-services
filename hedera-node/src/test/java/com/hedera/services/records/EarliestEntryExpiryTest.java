@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EarliestEntryExpiryTest {
+class EarliestEntryExpiryTest {
 	@Test
-	public void equalityWorks() {
+	void equalityWorks() {
 		// given:
 		EarliestRecordExpiry ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
 
@@ -41,7 +41,7 @@ public class EarliestEntryExpiryTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// given:
 		EarliestRecordExpiry ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
 
@@ -50,7 +50,7 @@ public class EarliestEntryExpiryTest {
 	}
 
 	@Test
-	public void hashCodeWorks() {
+	void hashCodeWorks() {
 		// given:
 		EarliestRecordExpiry ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
 

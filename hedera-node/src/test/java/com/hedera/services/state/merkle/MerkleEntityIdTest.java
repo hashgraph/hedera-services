@@ -50,19 +50,19 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void toAbbrevStringWorks() {
+	void toAbbrevStringWorks() {
 		// expect:
 		assertEquals("13.25.7", subject.toAbbrevString());
 	}
 
 	@Test
-	public void toAccountIdWorks() {
+	void toAccountIdWorks() {
 		// expect:
 		assertEquals(IdUtils.asAccount("13.25.7"), subject.toAccountId());
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleEntityId();
 		var two = new MerkleEntityId(1, 2, 3);
@@ -83,7 +83,7 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleEntityId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleEntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -91,7 +91,7 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -107,7 +107,7 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -123,7 +123,7 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleEntityId{shard=" + shard + ", realm=" + realm + ", entity=" + num + "}",
@@ -131,7 +131,7 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = subject.copy();
 
@@ -141,7 +141,7 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void deleteIsNoop() {
+	void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}

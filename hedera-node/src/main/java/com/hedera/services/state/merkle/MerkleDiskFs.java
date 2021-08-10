@@ -35,7 +35,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -68,8 +67,6 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	private static final Logger log = LogManager.getLogger(MerkleDiskFs.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
-
-	static final byte[] MISSING_CONTENT = new byte[0];
 
 	static final int HASH_BYTES = 48;
 	static final int MAX_FILE_BYTES = 1_024 * 1_024 * 1_024;
@@ -111,28 +108,6 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 						hex(expectedHash),
 						hex(actualHash));
 			}
-		}
-	}
-
-	public void migrateLegacyDiskFsFromV13LocFor(String fsBaseDir, String fsNodeScopedDir) {
-		for (var fid : fileHashes.keySet()) {
-			try {
-				var legacyPath = pre0130PathToContentsOf(fid, fsBaseDir, fsNodeScopedDir);
-				byte[] contents = bytesHelper.allBytesFrom(legacyPath);
-				writeHelper.allBytesTo(pathToContentsOf(fid), contents);
-				Files.delete(legacyPath);
-			} catch (IOException e) {
-				//TODO : Mark this log as an error in 0.15.0 if MerkleDiskFs is used for Update
-				log.warn("Failed to migrate from legacy disk-based file system!", e);
-				throw new UncheckedIOException(e);
-			}
-		}
-		
-		var nowEmptyLegacyDir = fsBaseDir + File.separator + fsNodeScopedDir;
-		try {
-			Files.delete(Paths.get(nowEmptyLegacyDir));
-		} catch (IOException e) {
-			log.warn("Empty legacy directory for File 150 could not be deleted!", e);
 		}
 	}
 
@@ -302,14 +277,6 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	Path pathToContentsOf(FileID fid) {
 		return Paths.get(String.format("%sFile%s", separatorSuffixed(DISK_FS_ROOT_DIR), asLiteralString(fid)));
-	}
-
-	Path pre0130PathToContentsOf(FileID fid, String fsBaseDir, String fsNodeScopedDir) {
-		return Paths.get(String.format(
-				"%s%sFile%s",
-				separatorSuffixed(fsBaseDir),
-				separatorSuffixed(fsNodeScopedDir),
-				asLiteralString(fid)));
 	}
 
 	private String separatorSuffixed(String dir) {

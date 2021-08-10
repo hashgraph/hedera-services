@@ -75,7 +75,7 @@ class ValidatingCallbackInterceptorTest {
 	}
 
 	@Test
-	public void hasExpectedRelevanceAndPriority() {
+	void hasExpectedRelevanceAndPriority() {
 		// expect:
 		assertTrue(subject.priorityForCandidate(notTarget).isEmpty());
 		// and:
@@ -83,28 +83,28 @@ class ValidatingCallbackInterceptorTest {
 	}
 
 	@Test
-	public void rubberstampsPreDelete() {
+	void rubberstampsPreDelete() {
 		// expect:
 		assertEquals(FeeSchedulesManager.YES_VERDICT, subject.preDelete(notTarget));
 		assertEquals(FeeSchedulesManager.YES_VERDICT, subject.preDelete(target));
 	}
 
 	@Test
-	public void rubberstampsPreUpdate() {
+	void rubberstampsPreUpdate() {
 		// expect:
 		assertEquals(FeeSchedulesManager.YES_VERDICT, subject.preUpdate(notTarget, BYTES));
 		assertEquals(FeeSchedulesManager.YES_VERDICT, subject.preUpdate(target, BYTES));
 	}
 
 	@Test
-	public void rubberstampsAttrChange() {
+	void rubberstampsAttrChange() {
 		// expect:
 		assertEquals(FeeSchedulesManager.YES_VERDICT, subject.preAttrChange(notTarget, attr));
 		assertEquals(FeeSchedulesManager.YES_VERDICT, subject.preAttrChange(target, attr));
 	}
 
 	@Test
-	public void postUpdateInvokesCbForTarget() {
+	void postUpdateInvokesCbForTarget() {
 		given(validator.test(any())).willReturn(true);
 
 		// when:
@@ -116,7 +116,7 @@ class ValidatingCallbackInterceptorTest {
 	}
 
 	@Test
-	public void postUpdateInvokesCbForTargetOnlyIfValid() {
+	void postUpdateInvokesCbForTargetOnlyIfValid() {
 		given(validator.test(any())).willReturn(false);
 
 		// when:
@@ -128,7 +128,7 @@ class ValidatingCallbackInterceptorTest {
 	}
 
 	@Test
-	public void postUpdateDoesntInvokesCbForNonTarget() {
+	void postUpdateDoesntInvokesCbForNonTarget() {
 		// when:
 		subject.postUpdate(notTarget, BYTES);
 

@@ -57,7 +57,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
-public class TxnAwareRecordsHistorianTest {
+class TxnAwareRecordsHistorianTest {
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
 	final private EntityId aEntity = EntityId.fromGrpcAccountId(a);
@@ -101,7 +101,7 @@ public class TxnAwareRecordsHistorianTest {
 	private TxnAwareRecordsHistorian subject;
 
 	@Test
-	public void lastAddedIsEmptyAtFirst() {
+	void lastAddedIsEmptyAtFirst() {
 		setupForAdd();
 
 		// expect:
@@ -109,7 +109,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void addsRecordToAllQualifyingAccounts() {
+	void addsRecordToAllQualifyingAccounts() {
 		setupForAdd();
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
@@ -129,7 +129,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void managesAddNewEntities() {
+	void managesAddNewEntities() {
 		setupForAdd();
 
 		// when:
@@ -145,7 +145,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void doesNotTrackExpiringEntity() {
+	void doesNotTrackExpiringEntity() {
 		setupForAdd();
 		given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
 
@@ -159,17 +159,6 @@ public class TxnAwareRecordsHistorianTest {
 		verify(expiringEntity, never()).expiry();
 		// and:
 		verify(expiries, never()).trackExpirationEvent(any(), eq(nows));
-	}
-
-	@Test
-	public void managesReviewRecordsCorrectly() {
-		setupForReview();
-
-		// when:
-		subject.reviewExistingRecords();
-
-		// then:
-		verify(expiries).reviewExistingPayerRecords();
 	}
 
 	private void setupForReview() {

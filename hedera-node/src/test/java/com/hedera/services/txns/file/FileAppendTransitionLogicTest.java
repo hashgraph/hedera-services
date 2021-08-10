@@ -115,7 +115,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void resultIsRespected() {
+	void resultIsRespected() {
 		givenTxnCtxAppending(TargetType.VALID);
 		// and:
 		given(hfs.append(any(), any())).willReturn(okWithCaveat);
@@ -128,7 +128,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidOnException() {
+	void setsFailInvalidOnException() {
 		givenTxnCtxAppending(TargetType.VALID);
 		willThrow(new IllegalStateException("Hmm...")).given(hfs).append(any(), any());
 
@@ -140,7 +140,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void catchesOversize() {
+	void catchesOversize() {
 		givenTxnCtxAppending(TargetType.VALID);
 		given(hfs.append(any(), any()))
 				.willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
@@ -153,7 +153,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsDeleted() {
+	void detectsDeleted() {
 		givenTxnCtxAppending(TargetType.DELETED);
 
 		// when:
@@ -164,7 +164,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsImmutable() {
+	void detectsImmutable() {
 		givenTxnCtxAppending(TargetType.IMMUTABLE);
 
 		// when:
@@ -175,7 +175,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void detectsMissing() {
+	void detectsMissing() {
 		givenTxnCtxAppending(TargetType.MISSING);
 
 		// when:
@@ -186,7 +186,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void happyPathFlows() {
+	void happyPathFlows() {
 		// setup:
 		InOrder inOrder = inOrder(hfs, txnCtx);
 
@@ -203,7 +203,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckRubberstamps() {
+	void syntaxCheckRubberstamps() {
 		// given:
 		var syntaxCheck = subject.semanticCheck();
 
@@ -212,7 +212,7 @@ class FileAppendTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenTxnCtxAppending(TargetType.VALID);
 
 		// expect:

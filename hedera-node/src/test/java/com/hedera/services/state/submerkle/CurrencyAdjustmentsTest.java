@@ -61,7 +61,7 @@ class CurrencyAdjustmentsTest {
 	CurrencyAdjustments subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		din = mock(DataInputStream.class);
 
 		subject = new CurrencyAdjustments();
@@ -70,7 +70,7 @@ class CurrencyAdjustmentsTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"CurrencyAdjustments{readable=" + "[0.0.13257 <- +1, 0.0.13258 <- +2, 0.0.13259 -> -3]" + "}",
@@ -78,7 +78,7 @@ class CurrencyAdjustmentsTest {
 	}
 
 	@Test
-	public void objectContractWorks() {
+	void objectContractWorks() {
 		// given:
 		var one = subject;
 		var two = CurrencyAdjustments.fromGrpc(otherGrpcAdjustments);
@@ -95,26 +95,26 @@ class CurrencyAdjustmentsTest {
 	}
 
 	@Test
-	public void viewWorks() {
+	void viewWorks() {
 		// expect:
 		assertEquals(grpcAdjustments, subject.toGrpc());
 	}
 
 	@Test
-	public void factoryWorks() {
+	void factoryWorks() {
 		// expect:
 		assertEquals(subject, CurrencyAdjustments.fromGrpc(grpcAdjustments));
 	}
 
 	@Test
-	public void serializableDetWorks() {
+	void serializableDetWorks() {
 		// expect;
 		assertEquals(CurrencyAdjustments.MERKLE_VERSION, subject.getVersion());
 		assertEquals(CurrencyAdjustments.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 
@@ -134,7 +134,7 @@ class CurrencyAdjustmentsTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		ArgumentCaptor idsCaptor = ArgumentCaptor.forClass(List.class);
 		ArgumentCaptor amountsCaptor = ArgumentCaptor.forClass(long[].class);

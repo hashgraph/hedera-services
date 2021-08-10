@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -65,7 +65,7 @@ class HbarFeeAssessorTest {
 
 		// then:
 		verify(payerChange).adjustUnits(-amountOfHbarFee);
-		verify(payerChange).setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+		verify(payerChange).setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 		// and:
 		verify(collectorChange).adjustUnits(+amountOfHbarFee);
 		// and:
@@ -77,7 +77,7 @@ class HbarFeeAssessorTest {
 	void addsNewChangesIfNotPresent() {
 		// given:
 		final var expectedPayerChange = BalanceChange.hbarAdjust(payer, -amountOfHbarFee);
-		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
 		// when:
 		subject.assess(payer, hbarFee, balanceChangeManager, accumulator);

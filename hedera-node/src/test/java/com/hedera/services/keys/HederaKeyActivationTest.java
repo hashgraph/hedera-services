@@ -164,7 +164,8 @@ class HederaKeyActivationTest {
 		final var accessor = mock(TxnAccessor.class);
 
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> HederaKeyActivation.payerSigIsActive(accessor));
+		assertThrows(IllegalArgumentException.class,
+				() -> HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
 	}
 
 	@Test
@@ -175,7 +176,7 @@ class HederaKeyActivationTest {
 		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
 
 		// expect:
-		assertFalse(HederaKeyActivation.payerSigIsActive(accessor));
+		assertFalse(HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
 	}
 
 	@Test

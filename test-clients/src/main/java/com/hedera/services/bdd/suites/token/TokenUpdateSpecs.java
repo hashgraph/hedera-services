@@ -70,7 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -727,8 +726,9 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getAccountInfo("newTreasury").logged(),
 						tokenAssociate("newTreasury", "tbu"),
 						tokenUpdate("tbu")
-								.treasury("newTreasury")
-								.hasKnownStatus(SUCCESS),
+								.memo("newMemo"),
+						tokenUpdate("tbu")
+								.treasury("newTreasury"),
 						burnToken("tbu", List.of(1L)),
 						getTokenInfo("tbu").hasTreasury("newTreasury"),
 						tokenUpdate("tbu")

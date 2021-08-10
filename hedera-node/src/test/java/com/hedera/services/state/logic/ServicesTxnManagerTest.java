@@ -64,7 +64,7 @@ class ServicesTxnManagerTest {
 	ServicesTxnManager subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		accessor = mock(PlatformTxnAccessor.class);
 
 		processLogic = mock(Runnable.class);
@@ -85,7 +85,7 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	public void managesHappyPath() {
+	void managesHappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming);
 
@@ -101,7 +101,7 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	public void warnsOnFailedRecordStreaming() {
+	void warnsOnFailedRecordStreaming() {
 		willThrow(IllegalStateException.class).given(recordStreaming).run();
 
 		// when:
@@ -112,7 +112,7 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	public void setsFailInvalidAndWarnsOnProcessFailure() {
+	void setsFailInvalidAndWarnsOnProcessFailure() {
 		// setup:
 		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning);
 
@@ -130,7 +130,7 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	public void retriesRecordCreationOnCommitFailureThenRollbacks() {
+	void retriesRecordCreationOnCommitFailureThenRollbacks() {
 		// setup:
 		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning, recordCache);
 
@@ -151,7 +151,7 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	public void warnsOnFailedRecordRecreate() {
+	void warnsOnFailedRecordRecreate() {
 		// setup:
 		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning, recordCache);
 
@@ -174,7 +174,7 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	public void warnsOnFailedRollback() {
+	void warnsOnFailedRollback() {
 		// setup:
 		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning, recordCache);
 

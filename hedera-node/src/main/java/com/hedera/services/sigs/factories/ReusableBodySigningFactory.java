@@ -1,4 +1,4 @@
-package com.hedera.services.state.migration;
+package com.hedera.services.sigs.factories;
 
 /*-
  * ‌
@@ -20,8 +20,23 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.utils.TxnAccessor;
+import com.swirlds.common.crypto.TransactionSignature;
 
-public interface StateMigrations {
-	void runAllFor(ServicesContext ctx);
+public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
+	private TxnAccessor accessor;
+
+	public void resetFor(TxnAccessor accessor) {
+		this.accessor = accessor;
+	}
+
+	@Override
+	public TransactionSignature create(byte[] publicKey, byte[] sigBytes) {
+		return PlatformSigFactory.createEd25519(publicKey, sigBytes, accessor.getTxnBytes());
+	}
+
+	/* --- Only used by unit tests --- */
+	TxnAccessor getAccessor() {
+		return accessor;
+	}
 }

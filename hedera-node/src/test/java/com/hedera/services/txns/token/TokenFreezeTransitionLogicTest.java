@@ -88,7 +88,7 @@ class TokenFreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesInvalidFreeze() {
+	void capturesInvalidFreeze() {
 		givenValidTxnCtx();
 		// and:
 		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_FREEZE_KEY))
@@ -100,7 +100,7 @@ class TokenFreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
 		given(token.hasFreezeKey()).willReturn(true);
@@ -114,7 +114,7 @@ class TokenFreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -123,7 +123,7 @@ class TokenFreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -131,7 +131,7 @@ class TokenFreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingToken() {
+	void rejectsMissingToken() {
 		givenMissingToken();
 
 		// expect:
@@ -139,7 +139,7 @@ class TokenFreezeTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingAccount() {
+	void rejectsMissingAccount() {
 		givenMissingAccount();
 
 		// expect:

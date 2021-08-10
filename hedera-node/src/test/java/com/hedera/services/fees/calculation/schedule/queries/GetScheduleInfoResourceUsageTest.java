@@ -52,7 +52,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class GetScheduleInfoResourceUsageTest {
+class GetScheduleInfoResourceUsageTest {
     TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setScheduled(true)
             .setAccountID(IdUtils.asAccount("0.0.2"))
@@ -90,7 +90,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // given:
         var applicable = scheduleInfoQuery(target);
         var inapplicable = Query.getDefaultInstance();
@@ -101,7 +101,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeData() {
+    void calculatesFeeData() {
         ArgumentCaptor<ExtantScheduleContext> captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
 
         // setup:
@@ -125,7 +125,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeDataAsResolvedIfExecuted() {
+    void calculatesFeeDataAsResolvedIfExecuted() {
         // setup:
         info = info.toBuilder()
                 .clearDeletionTime()
@@ -155,7 +155,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeDataScheduleNotPresent() {
+    void calculatesFeeDataScheduleNotPresent() {
         // given:
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
         // when:
@@ -167,7 +167,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void calculatesFeeDataWithContext() {
+    void calculatesFeeDataWithContext() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -183,7 +183,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
-    public void onlySetsScheduleInfoInQueryCxtIfFound() {
+    void onlySetsScheduleInfoInQueryCxtIfFound() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 

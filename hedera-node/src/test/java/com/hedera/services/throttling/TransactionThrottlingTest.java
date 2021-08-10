@@ -46,7 +46,7 @@ class TransactionThrottlingTest {
 	}
 
 	@Test
-	public void delegatesExpectedFunction() {
+	void delegatesExpectedFunction() {
 		// setup:
 		TransactionBody createTxn = TransactionBody.newBuilder()
 				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder().setMemo("Hi!"))

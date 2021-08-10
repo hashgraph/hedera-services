@@ -33,10 +33,8 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -58,20 +56,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * JKeyList Key , sez & desez 3) Create a JEd25519Key, sez & desez 4) Create a JECDSA_383Key, sez &
  * desez 5) Create a Key Proto, sez & desez
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("JKeySerializer Test Suite")
-public class JkeySerializerTest {
+class JkeySerializerTest {
 
-
-  @BeforeAll
-  public void setUp() {
-
-  }
 
   /**
    * Tester Util Class
    */
-  public JKey getSpecificJKeysMade(String action, int numKeys, int depth) {
+  private JKey getSpecificJKeysMade(final String action, final int numKeys, final int depth) {
     JKey jkey = null;
     List<JKey> keyList = new ArrayList<>();
     List<PrivateKey> privKeyList = new ArrayList<>();
@@ -103,7 +95,7 @@ public class JkeySerializerTest {
    * @param keyList
    * @return
    */
-  public JKey genThresholdKeyRecursive(int numKeys, int threshold, List<JKey> keyList) {
+  private JKey genThresholdKeyRecursive(final int numKeys, final int threshold, final List<JKey> keyList) {
     // if bottom level
     if (keyList.size() == 1) {
       return keyList.get(0);
@@ -132,7 +124,7 @@ public class JkeySerializerTest {
    * @param keyList
    * @return
    */
-  public JKey genKeyListRecursive(int numKeys, List<JKey> keyList) {
+  private JKey genKeyListRecursive(final int numKeys, final List<JKey> keyList) {
     // if bottom level
     if (keyList.size() == 1) {
       return keyList.get(0);
@@ -153,7 +145,8 @@ public class JkeySerializerTest {
 
     return genKeyListRecursive(numKeys, combinedList);
   }
-  public static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
+
+  private static Key genSingleEd25519Key(final Map<String, PrivateKey> pubKey2privKeyMap) {
     KeyPair pair = new KeyPairGenerator().generateKeyPair();
     byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
     Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -169,7 +162,7 @@ public class JkeySerializerTest {
    * @param depth of the generated key
    * @return generated key
    */
-  public static Key genSampleComplexKey(int depth, Map<String, PrivateKey> pubKey2privKeyMap)
+  private static Key genSampleComplexKey(final int depth, final Map<String, PrivateKey> pubKey2privKeyMap)
           throws Exception {
     Key rv = null;
     int numKeys = 3;
@@ -207,7 +200,7 @@ public class JkeySerializerTest {
    * @return number of expanded keys
    */
 
-  public static int computeNumOfExpandedKeys(Key key, int depth, AtomicCounter counter) {
+  private static int computeNumOfExpandedKeys(final Key key, int depth, final AtomicCounter counter) {
     if (!(key.hasThresholdKey() || key.hasKeyList())) {
       counter.increment();
       return counter.value();
@@ -229,9 +222,6 @@ public class JkeySerializerTest {
 
     return counter.value();
   }
-
-
-
 
   /**
    * Generates a key list instance.
@@ -267,7 +257,7 @@ public class JkeySerializerTest {
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
    * @return a list of generated Ed25519 keys
    */
-  public static List<Key> genEd25519Keys(int numKeys, Map<String, PrivateKey> pubKey2privKeyMap) {
+  private static List<Key> genEd25519Keys(final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
     List<Key> rv = new ArrayList<>();
     for (int i = 0; i < numKeys; i++) {
       KeyPair pair = new KeyPairGenerator().generateKeyPair();
@@ -285,7 +275,7 @@ public class JkeySerializerTest {
    *
    * @return generated threshold key
    */
-  public static Key genThresholdKey(List<Key> keys, int threshold) {
+  private static Key genThresholdKey(final List<Key> keys, final int threshold) {
     ThresholdKey tkey = ThresholdKey.newBuilder()
             .setKeys(KeyList.newBuilder().addAllKeys(keys).build())
             .setThreshold(threshold).build();
@@ -297,7 +287,7 @@ public class JkeySerializerTest {
    *
    * @return generated KeyList key
    */
-  public static Key genKeyList(List<Key> keys) {
+  private static Key genKeyList(final List<Key> keys) {
     KeyList tkey = KeyList.newBuilder().addAllKeys(keys).build();
     Key rv = Key.newBuilder().setKeyList(tkey).build();
     return rv;
@@ -305,7 +295,7 @@ public class JkeySerializerTest {
 
   @Test
   @DisplayName("01.Generate JThreshold & Test")
-  public void aa_buildJThresholdKeys() {
+  void aa_buildJThresholdKeys() {
     JKey threshold = getSpecificJKeysMade("JThresholdKey", 3, 3);
     JKeyList beforeKeyList = threshold.getThresholdKey().getKeys();
     int beforeJKeyListSize = beforeKeyList.getKeysList().size();
@@ -357,7 +347,7 @@ public class JkeySerializerTest {
 
   @Test
   @DisplayName("02.Test JKeyList Keys Sez-Desez")
-  public void bb_buildTestKeyList() {
+  void bb_buildTestKeyList() {
 
     JKey jkeyList = getSpecificJKeysMade("JKeyList", 3, 3);
     int beforeJKeyListSize = jkeyList.getKeyList().getKeysList().size();
@@ -411,7 +401,7 @@ public class JkeySerializerTest {
 
   @Test
   @DisplayName("03.Test JKey Proto Sez-Desez")
-  public void cc_buildTestJKeyComplex() {
+  void cc_buildTestJKeyComplex() {
 
     Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
     Key protoKey;

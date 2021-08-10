@@ -36,14 +36,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -56,7 +53,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -102,7 +98,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void helpersSanityCheck() throws IOException {
+	void helpersSanityCheck() throws IOException {
 		// given:
 		String tmpBase = MOCK_DISKFS_DIR + File.separator + "a" + File.separator + "b" + File.separator;
 		Path tmpLoc = Paths.get(tmpBase + "c.txt");
@@ -125,71 +121,6 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	void migratesPre0130DiskFs() throws IOException {
-		// setup:
-		String legacyBase = MOCK_DISKFS_DIR;
-		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
-		Files.createDirectories(Paths.get(scopedLegacyBase));
-		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
-		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
-
-		given(getter.allBytesFrom(subject.pre0130PathToContentsOf(file150, legacyBase, fsNodeScopedDir)))
-				.willReturn(origContents);
-
-		// when:
-		subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
-
-		// then:
-		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
-
-		// and:
-		var f = new File(legacyFile150Loc);
-		assertFalse(f.exists());
-		var d = new File(scopedLegacyBase);
-		assertFalse(d.exists());
-	}
-
-	@Test
-	void logsErrorsAndPropagatesOnFailedMigration() throws IOException {
-		// setup:
-		String legacyBase = MOCK_DISKFS_DIR;
-		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
-
-		given(getter.allBytesFrom(subject.pre0130PathToContentsOf(file150, legacyBase, fsNodeScopedDir)))
-				.willThrow(IOException.class);
-
-		// expect:
-		assertThrows(UncheckedIOException.class,
-				() -> subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir));
-		// and:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Failed to migrate from legacy disk-based file system!")));
-	}
-
-	@Test
-	void logsWarnWhenLegacyFileNotDeleted() throws IOException {
-		// setup:
-		String legacyBase = MOCK_DISKFS_DIR;
-		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
-		Files.createDirectories(Paths.get(scopedLegacyBase));
-		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
-		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
-
-
-		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
-			utilities.when(() -> Files.delete(Paths.get(scopedLegacyBase))).thenThrow(new IOException());
-			// when:
-			subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
-		}
-
-		// expect:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Empty legacy directory for File 150 could not be deleted!")));
-	}
-
-	@Test
 	public void toStringWorks() {
 		// expect:
 		assertEquals(
@@ -198,7 +129,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void checkLogsErrorOnMismatch() throws Exception {
+	void checkLogsErrorOnMismatch() throws Exception {
 		// setup:
 		subject.put(file150, origContents);
 		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
@@ -215,7 +146,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void saveFileHashCorrect() throws Exception {
+	void saveFileHashCorrect() throws Exception {
 		// setup:
 		subject.put(file150, origContents);
 		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
@@ -229,7 +160,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void putChangesHash() throws IOException {
+	void putChangesHash() throws IOException {
 		// when:
 		subject.put(file150, newContents);
 
@@ -240,7 +171,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void fileNotExistNoDebug() throws IOException {
+	void fileNotExistNoDebug() throws IOException {
 		// setup:
 		subject = new MerkleDiskFs();
 		// and:
@@ -271,7 +202,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		byte[] expectedBytes = "ABCDEFGH".getBytes();
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
@@ -292,7 +223,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void serializePropagatesException() throws IOException {
+	void serializePropagatesException() throws IOException {
 		// setup:
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
 		subject.setBytesHelper(getter);
@@ -305,7 +236,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copySubject = subject.copy();
 
@@ -315,7 +246,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void deserializeAbbreviatedWorks() throws IOException {
+	void deserializeAbbreviatedWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
@@ -340,7 +271,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
@@ -369,13 +300,13 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void hasExpectedHash() {
+	void hasExpectedHash() {
 		// expect:
 		assertArrayEquals(hashWithOrigContents(), subject.getHash().getValue());
 	}
 
 	@Test
-	public void emptyContentsHaveExpectedHash() {
+	void emptyContentsHaveExpectedHash() {
 		// expect:
 		assertEquals(new Hash(noThrowSha384HashOf(new byte[0])), new MerkleDiskFs().getHash());
 	}

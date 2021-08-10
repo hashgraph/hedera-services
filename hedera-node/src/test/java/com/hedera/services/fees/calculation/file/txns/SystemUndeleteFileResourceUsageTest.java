@@ -55,14 +55,14 @@ class SystemUndeleteFileResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(systemUndeleteFileTxn));
 		assertFalse(subject.applicableTo(nonSystemUndeleteFileTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		subject.usageGiven(systemUndeleteFileTxn, sigUsage, null);
 

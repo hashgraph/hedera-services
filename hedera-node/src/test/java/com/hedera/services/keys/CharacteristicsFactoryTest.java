@@ -74,20 +74,20 @@ class CharacteristicsFactoryTest {
 	}
 
 	@Test
-	public void usesDefaultForNonFileDelete() {
+	void usesDefaultForNonFileDelete() {
 		// expect:
 		assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(nonFileDelete()));
 	}
 
 	@Test
-	public void usesDefaultForMalformedFileDelete() {
+	void usesDefaultForMalformedFileDelete() {
 		// expect:
 		assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(meaninglessFileDelete()));
 		assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(missingFileDelete()));
 	}
 
 	@Test
-	public void usesAproposForFileDelete() {
+	void usesAproposForFileDelete() {
 		// expect:
 		assertSame(revocationServiceCharacteristics, subject.inferredFor(fileDelete()));
 	}

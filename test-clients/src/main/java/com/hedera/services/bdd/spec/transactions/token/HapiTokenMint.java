@@ -57,7 +57,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	private List<ByteString> metadata;
 	private SubType subType;
 
-	@Override
+    @Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.TokenMint;
 	}
@@ -79,6 +79,13 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 		this.token = token;
 		this.metadata = metadata;
 		this.amount = 0;
+	}
+
+	public HapiTokenMint(String token, List<ByteString> metadata, long amount) {
+		this.token = token;
+		this.metadata = metadata;
+		this.amount = amount;
+		this.subType = figureSubType();
 	}
 
 	public HapiTokenMint rememberingNothing() {

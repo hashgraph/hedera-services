@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RecordStreamObjectTest {
+class RecordStreamObjectTest {
 	private static final TransactionRecord record = mock(TransactionRecord.class);
 	private static final TransactionID transactionID = mock(TransactionID.class);
 	private static final Transaction transaction = mock(Transaction.class);
@@ -71,12 +71,12 @@ public class RecordStreamObjectTest {
 	}
 
 	@Test
-	public void initTest() {
+	void initTest() {
 		assertEquals(recordStreamObject.getTimestamp(), consensusTimestamp);
 	}
 
 	@Test
-	public void setHashTest() {
+	void setHashTest() {
 		// the Hash in its runningHash should not be set after initialization;
 		assertNull(recordStreamObject.getRunningHash().getHash());
 		// set Hash
@@ -85,27 +85,27 @@ public class RecordStreamObjectTest {
 	}
 
 	@Test
-	public void toStringTest() {
+	void toStringTest() {
 		final String expectedString = "RecordStreamObject[TransactionRecord=mock record,Transaction=mock transaction," +
 				"ConsensusTimestamp=mock consensusTimestamp]";
 		assertEquals(expectedString, recordStreamObject.toString());
 	}
 
 	@Test
-	public void toShortStringTest() {
+	void toShortStringTest() {
 		final String expectedString = "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID]," +
 				"ConsensusTimestamp=mock consensusTimestamp]";
 		assertEquals(expectedString, recordStreamObject.toShortString());
 	}
 
 	@Test
-	public void toShortStringRecordTest() {
+	void toShortStringRecordTest() {
 		final String expectedString = "[TransactionID=mock transactionID]";
 		assertEquals(expectedString, RecordStreamObject.toShortStringRecord(record));
 	}
 
 	@Test
-	public void equalsTest() {
+	void equalsTest() {
 		assertEquals(recordStreamObject, new RecordStreamObject(record, transaction, consensusTimestamp));
 
 		assertNotEquals(recordStreamObject, realObject);
@@ -117,7 +117,7 @@ public class RecordStreamObjectTest {
 	}
 
 	@Test
-	public void serializationDeserializationTest() throws IOException {
+	void serializationDeserializationTest() throws IOException {
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			 SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			realObject.serialize(out);

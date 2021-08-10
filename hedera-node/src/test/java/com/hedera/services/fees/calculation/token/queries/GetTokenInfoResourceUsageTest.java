@@ -104,7 +104,7 @@ class GetTokenInfoResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		var applicable = tokenInfoQuery(target, COST_ANSWER);
 		var inapplicable = Query.getDefaultInstance();
@@ -115,7 +115,7 @@ class GetTokenInfoResourceUsageTest {
 	}
 
 	@Test
-	public void setsInfoInQueryCxtIfPresent() {
+	void setsInfoInQueryCxtIfPresent() {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 
@@ -138,7 +138,7 @@ class GetTokenInfoResourceUsageTest {
 	}
 
 	@Test
-	public void onlySetsTokenInfoInQueryCxtIfFound() {
+	void onlySetsTokenInfoInQueryCxtIfFound() {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 

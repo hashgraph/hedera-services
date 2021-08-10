@@ -35,7 +35,7 @@ class SpeedometerFactoryTest {
 	SpeedometerFactory subject = new SpeedometerFactory() { };
 
 	@Test
-	public void constructsExpectedEntry() {
+	void constructsExpectedEntry() {
 		// setup:
 		var name = "MyOp";
 		var desc = "Happy thoughts";

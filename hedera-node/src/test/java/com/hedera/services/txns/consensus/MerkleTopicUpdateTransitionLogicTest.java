@@ -126,7 +126,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		// given:
 		givenValidTransactionWithAllOptions();
 
@@ -136,7 +136,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckWithAdminKey() {
+	void syntaxCheckWithAdminKey() {
 		// given:
 		givenValidTransactionWithAllOptions();
 
@@ -145,7 +145,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void syntaxCheckWithInvalidAdminKey() {
+	void syntaxCheckWithInvalidAdminKey() {
 		// given:
 		givenValidTransactionWithAllOptions();
 		given(validator.hasGoodEncoding(updatedAdminKey)).willReturn(false);
@@ -155,7 +155,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() throws Throwable {
+	void followsHappyPath() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenValidTransactionWithAllOptions();
@@ -176,7 +176,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void clearsKeysIfRequested() throws Throwable {
+	void clearsKeysIfRequested() throws Throwable {
 		// given:
 		givenExistingTopicWithBothKeys();
 		givenTransactionClearingKeys();
@@ -197,7 +197,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidMemo() throws Throwable {
+	void failsOnInvalidMemo() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidMemo();
@@ -214,7 +214,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidAdminKey() throws Throwable {
+	void failsOnInvalidAdminKey() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAdminKey();
@@ -231,7 +231,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidSubmitKey() throws Throwable {
+	void failsOnInvalidSubmitKey() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidSubmitKey();
@@ -248,7 +248,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidAutoRenewPeriod() throws Throwable {
+	void failsOnInvalidAutoRenewPeriod() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAutoRenewPeriod();
@@ -265,7 +265,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidExpirationTime() throws Throwable {
+	void failsOnInvalidExpirationTime() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidExpirationTime();
@@ -282,7 +282,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnExpirationTimeReduction() throws Throwable {
+	void failsOnExpirationTimeReduction() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithReducedExpirationTime();
@@ -299,7 +299,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsUnauthorizedOnMemoChange() throws Throwable {
+	void failsUnauthorizedOnMemoChange() throws Throwable {
 		// given:
 		givenExistingTopicWithoutAdminKey();
 		givenTransactionWithMemo();
@@ -316,7 +316,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidTopic() throws Throwable {
+	void failsOnInvalidTopic() throws Throwable {
 		// given:
 		givenValidTransactionInvalidTopic();
 
@@ -328,7 +328,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnInvalidAutoRenewAccount() throws Throwable {
+	void failsOnInvalidAutoRenewAccount() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAutoRenewAccount();
@@ -341,7 +341,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnDetachedExistingAutoRenewAccount() throws Throwable {
+	void failsOnDetachedExistingAutoRenewAccount() throws Throwable {
 		// given:
 		givenExistingTopicWithAutoRenewAccount();
 		givenValidTransactionWithAllOptions();
@@ -355,7 +355,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnDetachedNewAutoRenewAccount() throws Throwable {
+	void failsOnDetachedNewAutoRenewAccount() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithAutoRenewAccountNotClearingAdminKey();
@@ -369,7 +369,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void failsOnAutoRenewAccountNotAllowed() throws Throwable {
+	void failsOnAutoRenewAccountNotAllowed() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithAutoRenewAccountClearingAdminKey();
@@ -382,7 +382,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void clearsAutoRenewAccount() throws Throwable {
+	void clearsAutoRenewAccount() throws Throwable {
 		// given:
 		givenExistingTopicWithAutoRenewAccount();
 		givenTransactionClearingAutoRenewAccount();

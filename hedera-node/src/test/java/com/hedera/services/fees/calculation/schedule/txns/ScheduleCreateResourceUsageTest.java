@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class ScheduleCreateResourceUsageTest {
+class ScheduleCreateResourceUsageTest {
 
     ScheduleCreateResourceUsage subject;
 
@@ -72,14 +72,14 @@ public class ScheduleCreateResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // expect:
         assertTrue(subject.applicableTo(scheduleCreateTxn));
         assertFalse(subject.applicableTo(nonScheduleCreateTxn));
     }
 
     @Test
-    public void delegatesToCorrectEstimate() throws Exception {
+    void delegatesToCorrectEstimate() throws Exception {
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }

@@ -90,7 +90,7 @@ class AbstractAnswerTest {
 	}
 
 	@Test
-	public void usesValidator() throws Throwable {
+	void usesValidator() throws Throwable {
 		given(validityCheck.apply(query, view)).willReturn(FILE_DELETED);
 
 		// when:
@@ -101,7 +101,7 @@ class AbstractAnswerTest {
 	}
 
 	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+	void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		given(responseTypeExtractor.apply(query)).willReturn(COST_ANSWER);
 
 		// expect:
@@ -115,7 +115,7 @@ class AbstractAnswerTest {
 	}
 
 	@Test
-	public void requiresAnswerOnlyPayment() throws Throwable {
+	void requiresAnswerOnlyPayment() throws Throwable {
 		// given:
 		given(responseTypeExtractor.apply(query)).willReturn(COST_ANSWER);
 
@@ -129,13 +129,13 @@ class AbstractAnswerTest {
 	}
 
 	@Test
-	public void recognizesFunction() {
+	void recognizesFunction() {
 		// expect:
 		assertEquals(HederaFunctionality.GetVersionInfo, subject.canonicalFunction());
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		given(statusExtractor.apply(response)).willReturn(RESULT_SIZE_LIMIT_EXCEEDED);
 
 		// when:
@@ -146,7 +146,7 @@ class AbstractAnswerTest {
 	}
 
 	@Test
-	public void getsExpectedPayment() {
+	void getsExpectedPayment() {
 		given(paymentExtractor.apply(query)).willReturn(payment);
 
 		// expect:

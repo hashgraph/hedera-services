@@ -237,7 +237,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	public void alwaysRejectsIfNoThrottle() {
+	void alwaysRejectsIfNoThrottle() {
 		givenFunction(ContractCall);
 
 		// expect:
@@ -250,7 +250,7 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	public void shouldAllowWithEnoughCapacity() {
+	void shouldAllowWithEnoughCapacity() {
 		// setup:
 		subject.setFunctionReqs(reqsManager());
 
