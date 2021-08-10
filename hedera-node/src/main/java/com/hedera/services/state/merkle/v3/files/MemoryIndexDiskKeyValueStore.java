@@ -52,17 +52,19 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     /**
      * Merge all read only files
      *
-     * @throws IOException if there was a problem mergeing
+     * @param maxSizeMb all files returned are smaller than this number of MB
+     * @throws IOException if there was a problem merging
      */
-    public void mergeAll() throws IOException {
-        List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles();
-        System.out.println("Starting to merge " + filesToMerge.size()+" files in collection "+storeName);
-        fileCollection.mergeOldFiles(moves -> {
-            // update index with all moved data
-            moves.forEachKeyValue((key, move) -> {
-                index.put(key, move[1]);
-            });
-        }, filesToMerge);
+    public void mergeAll(int maxSizeMb) throws IOException {
+        final List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles(maxSizeMb);
+        final int size = filesToMerge == null ? 0 : filesToMerge.size();
+        if (size > 1) {
+            System.out.println("Merging " + size+" files in collection "+storeName);
+            fileCollection.mergeFile(
+                    // update index with all moved data
+                    moves -> moves.forEachKeyValue((key, move) -> index.putIfEqual(key, move[0], move[1])),
+                    filesToMerge);
+        }
     }
 
     public void close() throws IOException {

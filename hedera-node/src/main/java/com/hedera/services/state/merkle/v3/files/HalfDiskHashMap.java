@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.v3.files;
 
-import com.hedera.services.state.merkle.v3.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
 import com.swirlds.virtualmap.VirtualKey;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -84,15 +83,20 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /**
      * Merge all read only files
      *
+     * @param maxSizeMb all files returned are smaller than this number of MB
      * @throws IOException if there was a problem merging
      */
-    public void mergeAll() throws IOException {
-        List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles();
-        System.out.println("Starting to merge " + filesToMerge.size()+" files in collection "+storeName);
-        fileCollection.mergeOldFiles(moves -> {
-            // update index with all moved data
-            moves.forEachKeyValue((key, move) -> bucketIndexToBucketLocation.put(key, move[1]));
-        }, filesToMerge);
+    public void mergeAll(int maxSizeMb) throws IOException {
+        List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles(maxSizeMb);
+        final int size = filesToMerge == null ? 0 : filesToMerge.size();
+        if (size > 1) {
+            System.out.println("Merging " + size+" files in collection "+storeName);
+            fileCollection.mergeFile(
+                    moves -> {
+                        // update index with all moved data
+                        moves.forEachKeyValue((key, move) -> bucketIndexToBucketLocation.putIfEqual(key, move[0], move[1]));
+                    }, filesToMerge);
+        }
     }
 
     /**

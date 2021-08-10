@@ -19,11 +19,6 @@ public final class OffHeapHashList {
     private final List<ByteBuffer> data = new CopyOnWriteArrayList<>();
     private final AtomicLong maxIndexThatCanBeStored = new AtomicLong(-1);
 
-    public void printStats() {
-        System.out.println("data.size() = " + data.size());
-        System.out.println("maxIndexThatCanBeStored = " + maxIndexThatCanBeStored.get());
-    }
-
     /**
      * Get hash for a node with given index
      *
@@ -74,4 +69,14 @@ public final class OffHeapHashList {
         return buffer;
     }
 
+    /**
+     * toString for debugging
+     */
+    @Override
+    public String toString() {
+        return "OffHeapHashList{" +
+                "num of chunks=" + data.size() +
+                ", maxIndexThatCanBeStored=" + maxIndexThatCanBeStored +
+                '}';
+    }
 }

@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -59,7 +58,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     /** Thread local reusable buffer for reading key, hash and value sets */
     private final ThreadLocal<ByteBuffer> keyHashValue;
     /** ScheduledThreadPool for executing merges */
-    private final ScheduledThreadPoolExecutor mergingSeScheduledThreadPoolExecutor;
+    private final ScheduledThreadPoolExecutor mergingExecutor;
 
     /**
      * Create new VFCDataSourceImplV3 with merging enabled
@@ -115,32 +114,35 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
         final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes;
         pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSize,loadedDataCallback);
         // If merging is enabled then merge all data files every 30 seconds, TODO this is just a initial implementation
+        System.out.println("mergingEnabled = " + mergingEnabled);
         if (mergingEnabled) {
             ThreadGroup mergingThreadGroup = new ThreadGroup("Merging Threads");
-            mergingSeScheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1,r -> new Thread(mergingThreadGroup,r));
-            mergingSeScheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-                final long START = System.currentTimeMillis();
-                if (objectKeyToPath != null) {
-                    try {
-                        objectKeyToPath.mergeAll();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                try {
-                    pathToKeyHashValue.mergeAll();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                final long mergeTook = System.currentTimeMillis() - START;
-                double timeSeconds = (double)mergeTook/1000d;
-                System.out.printf("Merged in %,.2f seconds\n",timeSeconds);
-            },10,10, TimeUnit.SECONDS);
+            mergingExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(mergingThreadGroup,r));
+            mergingExecutor.scheduleWithFixedDelay(() -> doMerge(250),1,1, TimeUnit.MINUTES);
+            mergingExecutor.scheduleWithFixedDelay(() -> doMerge(2500),15,15, TimeUnit.MINUTES);
+            mergingExecutor.scheduleWithFixedDelay(() -> doMerge(Integer.MAX_VALUE),60,60, TimeUnit.MINUTES);  // all files
         } else {
-            mergingSeScheduledThreadPoolExecutor = null;
+            mergingExecutor = null;
         }
     }
 
+    /**
+     * Merge all files smaller than maxSizeMb
+     *
+     * @param maxSizeMb max size in mb for files to merge
+     */
+    private void doMerge(int maxSizeMb) {
+        System.out.println("Starting merge of files < "+maxSizeMb+" MB...");
+        try {
+            final long START = System.currentTimeMillis();
+            if (objectKeyToPath != null) objectKeyToPath.mergeAll(maxSizeMb);
+            pathToKeyHashValue.mergeAll(maxSizeMb);
+            System.out.printf("Merged in %,.2f seconds\n", (double) (System.currentTimeMillis() - START) / 1000d);
+        } catch (Throwable t) {
+            System.err.println("Exception while merging!");
+            t.printStackTrace();
+        }
+    }
 
     //==================================================================================================================
     // Public NEW API methods
@@ -193,19 +195,20 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
      * @param internalRecords list of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
      * @param leafRecords list of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
      */
-    public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords, List<VirtualLeafRecord<K, V>> leafRecords) {
+    public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords,
+                            List<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
         // TODO work out how to delete things using firstLeafPath & lastLeafPath
         // might as well write to the 3 data stores in parallel
-        IntStream.range(0,3).parallel().forEach(action -> {
-            if (action == 0) {// write internal node hashes
+//        IntStream.range(0,3).parallel().forEach(action -> {
+//            if (action == 0) {// write internal node hashes
                 if (internalRecords != null && !internalRecords.isEmpty()) {
                     for (VirtualInternalRecord rec : internalRecords) {
                         hashStore.put(rec.getPath(), rec.getHash());
                     }
                 }
-            } else if (action == 1) { // write leaves to pathToKeyHashValue
+//            } else if (action == 1) { // write leaves to pathToKeyHashValue
                 if (leafRecords != null && !leafRecords.isEmpty()) {
-                    try {
+//                    try {
                         pathToKeyHashValue.startWriting();
                         // get reusable buffer
                         ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
@@ -229,30 +232,30 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
                             pathToKeyHashValue.put(path, keyHashValueBuffer);
                         }
                         pathToKeyHashValue.endWriting(firstLeafPath,lastLeafPath);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-                    }
+//                    } catch (IOException e) {
+//                        throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+//                    }
                 }
-            } else if (action == 2) { // write leaves to objectKeyToPath
+//            } else if (action == 2) { // write leaves to objectKeyToPath
                 if (leafRecords != null && !leafRecords.isEmpty()) {
                     if (isLongKeyMode) {
                         for (var rec : leafRecords) {
                             longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
                         }
                     } else {
-                        try {
+//                        try {
                             objectKeyToPath.startWriting();
                             for (var rec : leafRecords) {
                                 objectKeyToPath.put(rec.getKey(), rec.getPath());
                             }
                             objectKeyToPath.endWriting();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-                        }
+//                        } catch (IOException e) {
+//                            throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+//                        }
                     }
                 }
-            }
-        });
+//            }
+//        });
     }
 
     /**
@@ -294,8 +297,8 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
     @Override
     public void close() throws IOException {
         try {
-            mergingSeScheduledThreadPoolExecutor.shutdown();
-            boolean finishedWithoutTimeout = mergingSeScheduledThreadPoolExecutor.awaitTermination(5,TimeUnit.MINUTES);
+            mergingExecutor.shutdown();
+            boolean finishedWithoutTimeout = mergingExecutor.awaitTermination(5,TimeUnit.MINUTES);
             if (!finishedWithoutTimeout)
                 throw new IOException("Timeout while waiting for merge to finish.");
         } catch (InterruptedException e) {

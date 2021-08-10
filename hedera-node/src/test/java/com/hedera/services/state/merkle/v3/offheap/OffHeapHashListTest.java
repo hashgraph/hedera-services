@@ -30,7 +30,7 @@ public class OffHeapHashListTest {
             hashStore.put(3_000_123, bigHash);
             assertEquals(bigHash,hashStore.get(3_000_123),"Failed to save and get 3_000_123");
 
-            hashStore.printStats();
+            System.out.println("hashStore = " + hashStore);
         } catch (Exception e) {
             e.printStackTrace();
         }

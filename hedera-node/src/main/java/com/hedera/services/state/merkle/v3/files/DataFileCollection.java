@@ -34,7 +34,7 @@ public class DataFileCollection {
     private final AtomicInteger nextFileIndex = new AtomicInteger();
     private final AtomicReference<IndexedFileList> indexedFileList = new AtomicReference<>();
     private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
-    private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.now());
+    private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.ofEpochSecond(0));
 
     /**
      * Construct a new DataFileCollection with the default DataFileReaderFactory
@@ -91,6 +91,7 @@ public class DataFileCollection {
                         .sorted()
                         .toArray(DataFileReader[]::new);
             if (dataFileReaders.length > 0) {
+                System.out.println("Loading existing set of ["+dataFileReaders.length+"] data files for DataFileCollection ["+storeName+"] ...");
                 indexedFileList.set(IndexedFileList.withExistingFiles(dataFileReaders));
                 // work out what the next index would be, the highest current index plus one
                 nextFileIndex.set(dataFileReaders[dataFileReaders.length-1].getMetadata().getIndex() + 1);
@@ -110,6 +111,7 @@ public class DataFileCollection {
                         }
                     }
                 }
+                System.out.println("Finished existing data files for DataFileCollection ["+storeName+"]");
             } else {
                 // next file will have index zero as we did not find any files even though the directory existed
                 nextFileIndex.set(0);
@@ -135,26 +137,30 @@ public class DataFileCollection {
 
     /**
      * Get a list of all files in this collection that have been fully finished writing and are read only
+     *
+     * @param maxSizeMb all files returned are smaller than this number of MB
      */
-    public List<DataFileReader> getAllFullyWrittenFiles() {
-        return this.indexedFileList.get().getAllFiles();
+    public List<DataFileReader> getAllFullyWrittenFiles(int maxSizeMb) {
+        final IndexedFileList indexedFileList = this.indexedFileList.get();
+        return indexedFileList == null ? null : indexedFileList.getAllFiles(maxSizeMb);
     }
 
     /**
-     * Merges all the old data files
+     * Merges all files in filesToMerge
      *
      * @param locationChangeHandler takes a map of moves from old location to new location. Once it is finished and
      *                              returns it is assumed all readers will no longer be looking in old location, so old
      *                              files can be safely deleted.
      * @param filesToMerge list of files to merge
      */
-    public synchronized void mergeOldFiles(Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
-                              List<DataFileReader> filesToMerge) throws IOException {
+    public synchronized void mergeFile(Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
+                                       List<DataFileReader> filesToMerge) throws IOException {
         final IndexedFileList indexedFileList = this.indexedFileList.get();
         // check if anything new has been written since we last merged
         if (filesToMerge.size() == 1 || indexedFileList.getLastFile().getMetadata().getCreationDate().isBefore(lastMerge.get())) {
             // nothing to do we have merged since the last data update
             System.out.println("Merge not needed as no data changed since last merge in DataFileCollection ["+storeName+"]");
+            System.out.println(" last file creation ="+indexedFileList.getLastFile().getMetadata().getCreationDate()+" , lastMerge="+lastMerge.get());
             return;
         }
         // update last merge time

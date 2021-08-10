@@ -281,6 +281,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
 
         @Override
         public void serialize(ByteBuffer byteBuffer) throws IOException {
+            final int initialPosition = byteBuffer.position();
             byteBuffer.put(key);
             byteBuffer.putLong(expiry);
             byteBuffer.putLong(hbarBalance);
@@ -297,6 +298,8 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                 byteBuffer.put(bytes, 0, Math.min(bytes.length, MAX_STRING_BYTES));
                 byteBuffer.position(byteBuffer.position() + extra);
             }
+            assert (byteBuffer.position()-initialPosition) == (7*Long.BYTES) + 1 + MAX_STRING_BYTES :
+                "byteBuffer.position() ["+(byteBuffer.position()-initialPosition)+"] != (7*Long.BYTES) + 1 + MAX_STRING_BYTES ["+((7*Long.BYTES) + 1 + MAX_STRING_BYTES)+"]";
 
             // byte pack the three booleans
             byte packed = 0;
@@ -309,7 +312,11 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
             // Write the proxy
             if (proxy != null) {
                 proxy.serialize(byteBuffer);
+            } else {
+                byteBuffer.putLong(0);
             }
+            assert (byteBuffer.position()-initialPosition) == SERIALIZED_SIZE :
+                    "byteBuffer.position() ["+(byteBuffer.position()-initialPosition)+"] != SERIALIZED_SIZE ["+SERIALIZED_SIZE+"]";
         }
 
         @Override

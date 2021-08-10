@@ -26,14 +26,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SuppressWarnings("SameParameterValue")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DataFileReaderCollectionFixedSizeDataTest {
-    private static final Instant TEST_START = Instant.now();
-    private static final int HASH_SIZE = 48+4;
-    private static final int DATA_ITEM_VALUE_SIZE = HASH_SIZE + Integer.BYTES;
-    private static Path tempFileDir;
-    private static DataFileCollection fileCollection;
-    private static final List<Long> storedOffsets = new CopyOnWriteArrayList<>();
-    private static final AtomicBoolean mergeComplete = new AtomicBoolean(false);
-    private static final DataFileReaderFactory dataFileReaderFactory = new DataFileReaderFactory() {
+    protected static final Instant TEST_START = Instant.now();
+    protected static final int HASH_SIZE = 48+4;
+    protected static final int DATA_ITEM_VALUE_SIZE = HASH_SIZE + Integer.BYTES;
+    protected static Path tempFileDir;
+    protected static DataFileCollection fileCollection;
+    protected static final List<Long> storedOffsets = new CopyOnWriteArrayList<>();
+    protected static final AtomicBoolean mergeComplete = new AtomicBoolean(false);
+    protected static final DataFileReaderFactory dataFileReaderFactory = new DataFileReaderFactory() {
         @Override
         public DataFileReader newDataFileReader(Path path) throws IOException {
             return new DataFileReaderThreadLocal(path);
@@ -142,7 +142,9 @@ public class DataFileReaderCollectionFixedSizeDataTest {
                 }
             } else if (thread == 1) { // move thread
                 try {
-                    fileCollection.mergeOldFiles(moves -> {
+                    var filesToMerge = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
+                    System.out.println("filesToMerge = " + filesToMerge.size());
+                    fileCollection.mergeFile(moves -> {
                         assertEquals(1000,moves.size());
                         for(long[] move: moves) {
                             System.out.printf("move from file %d item %d -> file %d item %d\n",
@@ -154,7 +156,7 @@ public class DataFileReaderCollectionFixedSizeDataTest {
                             int index = storedOffsets.indexOf(move[0]);
                             storedOffsets.set(index, move[1]);
                         }
-                    }, fileCollection.getAllFullyWrittenFiles());
+                    }, filesToMerge);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -179,13 +181,13 @@ public class DataFileReaderCollectionFixedSizeDataTest {
         deleteDirectoryAndContents(tempFileDir);
     }
 
-    private static long calcFileSize(int numOfItems) {
+    protected static long calcFileSize(int numOfItems) {
         long dataWritten = (KEY_SIZE + DATA_ITEM_VALUE_SIZE) * (long)numOfItems;
         int paddingBytesNeeded = (int)(DataFileCommon.PAGE_SIZE - (dataWritten % DataFileCommon.PAGE_SIZE));
         return dataWritten + paddingBytesNeeded + FOOTER_SIZE;
     }
 
-    private static void check1000Impl() throws Exception {
+    protected static void check1000Impl() throws Exception {
         // now read back all the data and check all data
         ByteBuffer tempResult = ByteBuffer.allocate(KEY_SIZE + DATA_ITEM_VALUE_SIZE);
         for (int i = 0; i < 1000; i++) {
