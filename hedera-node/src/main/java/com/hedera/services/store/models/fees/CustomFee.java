@@ -79,6 +79,9 @@ public class CustomFee {
 					fractionGrpc.getDenominator()
 			);
 			return new CustomFee(collector, fractionalFee);
+		} else if (fee.hasRoyaltyFee()) {
+			// TODO validate royalty fee
+			return null;
 		} else {
 			throw new InvalidTransactionException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 		}
@@ -135,3 +138,37 @@ public class CustomFee {
 		return positive;
 	}
 }
+
+/*
+* private ResponseCodeEnum validateRoyalty(
+			CustomFee customFee,
+			boolean isUpdate,
+			MerkleToken targetToken,
+			TokenID targetTokenId,
+			AccountID feeCollector
+	) {
+		final var typeValidity = validateTypeConstraints(
+				isUpdate, NON_FUNGIBLE_UNIQUE, targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+		if (typeValidity != OK) {
+			return typeValidity;
+		}
+
+		final var royaltyFee = customFee.getRoyaltyFee();
+
+		final var fraction = royaltyFee.getExchangeValueFraction();
+		final var fractionalValidity = validateFeeFraction(fraction);
+		if (fractionalValidity != OK) {
+			return fractionalValidity;
+		}
+		if (fraction.getNumerator() > fraction.getDenominator()) {
+			return ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
+		}
+
+		if (royaltyFee.hasFallbackFee()) {
+			final var fallback = royaltyFee.getFallbackFee();
+			return validateFixed(fallback, feeCollector, targetTokenId);
+		}
+
+		return OK;
+	}
+*/
