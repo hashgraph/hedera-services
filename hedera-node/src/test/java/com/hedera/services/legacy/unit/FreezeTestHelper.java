@@ -124,7 +124,8 @@ class FreezeTestHelper {
 		return FreezeTransactionBody.newBuilder()
 				.setStartTime(Timestamp.newBuilder()
 						.setSeconds(freezeStartTime.getEpochSecond())
-						.setNanos(freezeStartTime.getNano()));
+						.setNanos(freezeStartTime.getNano()))
+				;
 	}
 
 	private static int[] getUTCHourMinFromMillis(final long utcMillis) {

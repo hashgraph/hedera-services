@@ -109,7 +109,8 @@ public class FreezeHandler {
 		if (op.hasStartTime()) {
 			final var ts = op.getStartTime();
 			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
-		} else {
+		} else
+			{
 			naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
 		}
 		try {

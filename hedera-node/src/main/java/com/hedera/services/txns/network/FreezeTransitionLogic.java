@@ -93,7 +93,8 @@ public class FreezeTransitionLogic implements TransitionLogic {
 			if (!isValidTimestamp(op.getStartTime(), txnStartTime)) {
 				return INVALID_FREEZE_TRANSACTION_BODY;
 			}
-		} else {
+		} else
+			{
 			if (!isValidTime(op.getStartHour(), op.getStartMin()) || !isValidTime(op.getEndHour(), op.getEndMin())) {
 				return INVALID_FREEZE_TRANSACTION_BODY;
 			}

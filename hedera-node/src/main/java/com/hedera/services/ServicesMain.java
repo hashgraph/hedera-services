@@ -24,6 +24,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.state.forensics.FcmDump;
 import com.hedera.services.state.forensics.IssListener;
+import com.hedera.services.statecreation.StateCreationManager;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.NodeId;
@@ -40,6 +41,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -99,6 +102,11 @@ public class ServicesMain implements SwirldMain {
 		} catch (IllegalStateException ise) {
 			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
 			systemExits.fail(1);
+		}
+		// TODO: add a property to control the creation
+		if(Files.exists(Path.of("data/config/entity-layout.properties"))) {
+			StateCreationManager stateCreationManager = new StateCreationManager(ctx);
+			stateCreationManager.create();
 		}
 	}
 

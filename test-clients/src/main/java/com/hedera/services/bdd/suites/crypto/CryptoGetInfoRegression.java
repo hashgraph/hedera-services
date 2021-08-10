@@ -59,16 +59,28 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-					failsForDeletedAccount(),
-					failsForMissingAccount(),
-					failsForMissingPayment(),
-					failsForInsufficientPayment(),
-					failsForMalformedPayment(),
-					failsForUnfundablePayment(),
-					succeedsNormally(),
+//					failsForDeletedAccount(),
+//					failsForMissingAccount(),
+//					failsForMissingPayment(),
+//					failsForInsufficientPayment(),
+//					failsForMalformedPayment(),
+//					failsForUnfundablePayment(),
+//					succeedsNormally(),
+						getAccoutInfoByAccountID()
 				}
 		);
 	}
+
+	private HapiApiSpec getAccoutInfoByAccountID() {
+		return defaultHapiSpec("FailsForMissingAccount")
+				.given().when().then(
+						getAccountInfo("0.0.1010")
+								.logged()
+								//.hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
+				);
+	}
+
+
 
 	private HapiApiSpec succeedsNormally() {
 		long balance = 1_234_567L;
