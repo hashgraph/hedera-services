@@ -31,6 +31,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -78,7 +79,8 @@ class RepoNewCacheTest {
 				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate);
+				delegate,
+				mock(TransactionRecordService.class));
 		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
 		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
@@ -175,7 +177,8 @@ class RepoNewCacheTest {
 				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate);
+				delegate,
+				mock(TransactionRecordService.class));
 		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 

@@ -39,6 +39,7 @@ import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -51,23 +52,7 @@ import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestUsagePricesProvider;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
-import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -83,11 +68,7 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,9 +80,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static com.hedera.services.legacy.util.SCEncoding.GET_MY_VALUE_ABI;
-import static com.hedera.services.legacy.util.SCEncoding.GROW_CHILD_ABI;
-import static com.hedera.services.legacy.util.SCEncoding.encodeVia;
+import static com.hedera.services.legacy.util.SCEncoding.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -156,7 +135,8 @@ class SmartContractRequestHandlerStorageTest {
             TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),
             new MockGlobalDynamicProps(),
-            delegate);
+            delegate,
+            mock(TransactionRecordService.class));
     ledgerSource = new LedgerAccountsSource(ledger);
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);

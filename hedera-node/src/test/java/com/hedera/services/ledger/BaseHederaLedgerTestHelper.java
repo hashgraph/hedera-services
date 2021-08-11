@@ -29,6 +29,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -81,6 +82,7 @@ public class BaseHederaLedgerTestHelper {
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
+	protected TransactionRecordService transactionRecordService;
 	protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -103,6 +105,7 @@ public class BaseHederaLedgerTestHelper {
 	protected void commonSetup() {
 		creator = mock(ExpiringCreations.class);
 		historian = mock(AccountRecordsHistorian.class);
+		transactionRecordService = mock(TransactionRecordService.class);
 
 		ids = new EntityIdSource() {
 			long nextId = NEXT_ID;
@@ -184,6 +187,8 @@ public class BaseHederaLedgerTestHelper {
 		token = mock(MerkleToken.class);
 		given(token.freezeKey()).willReturn(Optional.empty());
 
+		transactionRecordService = mock(TransactionRecordService.class);
+
 		nftsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		tokenRelsLedger = mock(TransactionalLedger.class);
@@ -211,7 +216,8 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian,
+				dynamicProps, accountsLedger, transactionRecordService);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}

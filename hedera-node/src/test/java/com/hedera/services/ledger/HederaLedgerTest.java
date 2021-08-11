@@ -173,7 +173,8 @@ public class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		// and:
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian,
+				dynamicProps, accountsLedger, transactionRecordService);
 
 		// when:
 		var result = subject.isDetached(genesis);
@@ -190,7 +191,8 @@ public class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		// and:
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian,
+				dynamicProps, accountsLedger, transactionRecordService);
 
 		// when:
 		var result = subject.isDetached(genesis);
@@ -206,7 +208,8 @@ public class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		// and:
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian,
+				dynamicProps, accountsLedger, transactionRecordService);
 		// and:
 		dynamicProps.disableAutoRenew();
 

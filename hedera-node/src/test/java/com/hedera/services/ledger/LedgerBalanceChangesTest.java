@@ -33,6 +33,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -113,6 +114,8 @@ class LedgerBalanceChangesTest {
 	private AccountRecordsHistorian historian;
 	@Mock
 	private UniqTokenViewsManager tokenViewsManager;
+	@Mock
+	private TransactionRecordService transactionRecordService;
 
 	private HederaLedger subject;
 
@@ -147,7 +150,8 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian,
+				dynamicProperties, accountsLedger, transactionRecordService);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
 	}
@@ -246,7 +250,8 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian,
+				dynamicProperties, accountsLedger, transactionRecordService);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
 
