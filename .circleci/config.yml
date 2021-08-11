@@ -1642,9 +1642,6 @@ workflows:
                 - master
     jobs:
       - build-platform-and-services
-      - update-start-up-key:
-          requires:
-            - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
@@ -1652,7 +1649,7 @@ workflows:
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Migration-7N-1C"
           requires:
-            - update-start-up-key
+            - build-platform-and-services
           pre-steps:
             - install-tools
             - attach_workspace:
@@ -2447,26 +2444,6 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-
-  update-start-up-key:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-    steps:
-      - attach_workspace:
-          at: /
-      - run:
-          name: Modify Payer account for Public testnet start from saved state test
-          command: |
-            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
-      - persist_to_workspace:
-          root: /
-          paths:
-            - repo/
-            - swirlds-platform/
 
   update-start-up-key-for-mainnet:
     parameters:
