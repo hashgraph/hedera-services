@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.org.StateVersions;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.fcmap.FCMap;
@@ -80,7 +81,7 @@ class Release0170MigrationTest {
 		given(state.getChild(LegacyStateChildIndices.TOKEN_ASSOCIATIONS)).willReturn(tokenRels);
 
 		// when:
-		moveLargeFcmsToBinaryRoutePositions(state);
+		moveLargeFcmsToBinaryRoutePositions(state, StateVersions.RELEASE_0160_VERSION);
 
 		// then:
 		verify(addressBook).copy();
