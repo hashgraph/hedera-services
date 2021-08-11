@@ -23,9 +23,9 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedFractionalChange;
@@ -91,7 +91,7 @@ public class FractionalFeeAssessor {
 
 		var amountReclaimed = 0L;
 		for (var credit : credits) {
-			var toReclaimHere = safeFractionMultiply(credit.units(), availableToReclaim, amount);
+			var toReclaimHere = AdjustmentUtils.safeFractionMultiply(credit.units(), availableToReclaim, amount);
 			credit.adjustUnits(-toReclaimHere);
 			amountReclaimed += toReclaimHere;
 		}
@@ -109,8 +109,8 @@ public class FractionalFeeAssessor {
 		}
 	}
 
-	long amountOwedGiven(long initialUnits, FcCustomFee.FractionalFeeSpec spec) {
-		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
+	long amountOwedGiven(long initialUnits, FractionalFeeSpec spec) {
+		final var nominalFee = AdjustmentUtils.safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
 		long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
 		if (spec.getMaximumUnitsToCollect() > 0) {
 			effectiveFee = Math.min(effectiveFee, spec.getMaximumUnitsToCollect());
@@ -118,11 +118,4 @@ public class FractionalFeeAssessor {
 		return effectiveFee;
 	}
 
-	long safeFractionMultiply(long n, long d, long v) {
-		if (v != 0 && n > Long.MAX_VALUE / v) {
-			return BigInteger.valueOf(v).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(d)).longValueExact();
-		} else {
-			return n * v / d;
-		}
-	}
 }

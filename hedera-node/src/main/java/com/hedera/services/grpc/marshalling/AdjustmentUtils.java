@@ -23,37 +23,12 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 
+import java.math.BigInteger;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 
 public class AdjustmentUtils {
-	static void adjustForAssessedHbar(Id payer, Id collector, long amount, BalanceChangeManager manager) {
-		adjustForAssessed(payer, MISSING_ID, collector, MISSING_ID, amount, manager);
-	}
-
-	static void adjustForAssessed(
-			Id payer,
-			Id chargingToken,
-			Id collector,
-			Id denom,
-			long amount,
-			BalanceChangeManager manager
-	) {
-		final var payerChange = adjustedChange(payer, chargingToken, denom, -amount, manager);
-		payerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-		adjustedChange(collector, chargingToken, denom, +amount, manager);
-	}
-
-	static BalanceChange adjustedFractionalChange(
-			Id account,
-			Id denom,
-			long amount,
-			BalanceChangeManager manager
-	) {
-		return adjustedChange(account, MISSING_ID, denom, amount, manager);
-	}
-
-	static BalanceChange adjustedChange(
+	public static BalanceChange adjustedChange(
 			Id account,
 			Id chargingToken,
 			Id denom,
@@ -86,6 +61,41 @@ public class AdjustmentUtils {
 			return extantChange;
 		}
 	}
+
+	public static long safeFractionMultiply(long n, long d, long v) {
+		if (v != 0 && n > Long.MAX_VALUE / v) {
+			return BigInteger.valueOf(v).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(d)).longValueExact();
+		} else {
+			return n * v / d;
+		}
+	}
+
+	static void adjustForAssessedHbar(Id payer, Id collector, long amount, BalanceChangeManager manager) {
+		adjustForAssessed(payer, MISSING_ID, collector, MISSING_ID, amount, manager);
+	}
+
+	static void adjustForAssessed(
+			Id payer,
+			Id chargingToken,
+			Id collector,
+			Id denom,
+			long amount,
+			BalanceChangeManager manager
+	) {
+		final var payerChange = adjustedChange(payer, chargingToken, denom, -amount, manager);
+		payerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+		adjustedChange(collector, chargingToken, denom, +amount, manager);
+	}
+
+	static BalanceChange adjustedFractionalChange(
+			Id account,
+			Id denom,
+			long amount,
+			BalanceChangeManager manager
+	) {
+		return adjustedChange(account, MISSING_ID, denom, amount, manager);
+	}
+
 
 	private static BalanceChange includedHtsChange(Id account, Id denom, long amount, BalanceChangeManager manager) {
 		final var newHtsChange = BalanceChange.tokenAdjust(account, denom, amount);

@@ -40,6 +40,7 @@ import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -58,9 +59,9 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMInternalNode;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import com.swirlds.fcmap.internal.FCMTree;
+import com.swirlds.merkletree.MerkleBinaryTree;
+import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkletree.MerkleTreeInternalNode;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -254,7 +255,9 @@ class ServicesStateTest {
 		// then:
 		assertThat(
 				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));;
+
+		cleanupMockExpandHelper();
 	}
 
 	@Test
@@ -274,6 +277,8 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
+
+		cleanupMockExpandHelper();
 	}
 
 	@Test
@@ -323,7 +328,7 @@ class ServicesStateTest {
 	@Test
 	void minimumVersionIsRelease0130() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0130_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0120_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
@@ -337,7 +342,7 @@ class ServicesStateTest {
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_PRE_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0130_VERSION));
+				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION + 1));
 	}
@@ -418,6 +423,11 @@ class ServicesStateTest {
 	@Test
 	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
 		// setup:
+		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
+		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
+		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
@@ -425,15 +435,12 @@ class ServicesStateTest {
 		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
 		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 		final var nftKey = new MerkleUniqueTokenId(MISSING_ENTITY_ID, 1L);
+		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(FCMTree.class, FCMTree::new));
-		registerConstructable(new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-		registerConstructable(new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
-		// and:
-		nfts.put(nftKey, new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT));
-		tokenRels.put(tokenRelsKey, new MerkleTokenRelStatus(1_234L, true, false));
+		nfts.put(nftKey, nftVal);
+		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:
 		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, true);
 
@@ -451,21 +458,26 @@ class ServicesStateTest {
 				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
-				nfts.get(nftKey),
+				nftVal,
 				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
-		assertEquals(nfts.get(nftKey), subject.uniqueTokens().get(nftKey));
+		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
 		assertEquals(
-				tokenRels.get(tokenRelsKey),
+				tokenRelsVal,
 				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
-		assertEquals(tokenRels.get(tokenRelsKey), subject.tokenAssociations().get(tokenRelsKey));
+		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
 	}
 
 	@Test
 	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
 		// setup:
+		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
+		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
+		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
@@ -473,18 +485,14 @@ class ServicesStateTest {
 		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
 		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(FCMTree.class, FCMTree::new));
-		registerConstructable(new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-		registerConstructable(new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
-		// and:
-		tokenRels.put(tokenRelsKey, new MerkleTokenRelStatus(1_234L, true, false));
+		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:
 		final List<MerkleNode> legacyChildren = legacyChildrenWith(addressBook, networkContext, nfts, tokenRels, false);
 
 		// given:
-		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0130_VERSION);
+		subject.addDeserializedChildren(legacyChildren, StateVersions.RELEASE_0160_VERSION);
 
 		// when:
 		subject.initialize();
@@ -497,19 +505,19 @@ class ServicesStateTest {
 				((MerkleNetworkContext) subject.getChild(StateChildIndices.NETWORK_CTX)).midnightRates());
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
-				tokenRels.get(tokenRelsKey),
+				tokenRelsVal,
 				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
-		assertEquals(tokenRels.get(tokenRelsKey), subject.tokenAssociations().get(tokenRelsKey));
+		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
 	}
 
 	@Test
 	void forwardsFcomtrAsExpected() {
 		// setup:
-		final FCOneToManyRelation<Integer, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<Integer, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<Integer, Long> c = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<PermHashInteger, Long> a = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<PermHashInteger, Long> b = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<PermHashInteger, Long> c = new FCOneToManyRelation<>();
 		// and:
 		subject.setMetadata(metadata);
 

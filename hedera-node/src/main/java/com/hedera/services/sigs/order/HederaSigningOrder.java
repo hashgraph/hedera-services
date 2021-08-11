@@ -66,6 +66,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
@@ -471,24 +472,25 @@ public class HederaSigningOrder {
 
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
-			// fungible tokens
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
+				if ((failure = includeIfNecessary(adjust, required)) != NONE) {
 					return accountFailure(failure, factory);
 				}
 			}
-			// non fungible tokens
+			final var token = xfers.getToken();
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
-				if ((failure = includeIfPresentAndNecessary(adjust.getSenderAccountID(), true, required)) != NONE) {
+				final var sender = adjust.getSenderAccountID();
+				if ((failure = nftIncludeIfNecessary(sender, null, required, token, op)) != NONE) {
 					return accountFailure(failure, factory);
 				}
-				if ((failure = includeIfPresentAndNecessary(adjust.getReceiverAccountID(), false, required)) != NONE) {
-					return accountFailure(failure, factory);
+				final var receiver = adjust.getReceiverAccountID();
+				if ((failure = nftIncludeIfNecessary(receiver, sender, required, token, op)) != NONE) {
+					return (failure == MISSING_TOKEN) ? factory.forMissingToken() : accountFailure(failure, factory);
 				}
 			}
 		}
 		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-			if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
+			if ((failure = includeIfNecessary(adjust, required)) != NONE) {
 				return accountFailure(failure, factory);
 			}
 		}
@@ -595,11 +597,26 @@ public class HederaSigningOrder {
 				required);
 		for (var customFee : op.getCustomFeesList()) {
 			final var collector = customFee.getFeeCollectorAccountId();
-			/* A fractional fee collector must always sign a TokenCreate, since it is
-			automatically associated to the newly created token. */
-			final var couldAddCollector = customFee.hasFixedFee()
-					? addAccountIfReceiverSigRequired(collector, required)
-					: addAccount(collector, required, true);
+			/* A fractional fee collector and a collector for a fixed fee denominated
+			in the units of the newly created token both must always sign a TokenCreate,
+			since these are automatically associated to the newly created token. */
+			boolean couldAddCollector;
+			if (customFee.hasFixedFee()) {
+				final var fixedFee = customFee.getFixedFee();
+				final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+						&& fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+				couldAddCollector = addAccount(collector, required, alwaysAdd);
+			} else if (customFee.hasFractionalFee()) {
+				couldAddCollector = addAccount(collector, required, true);
+			} else {
+				final var royaltyFee = customFee.getRoyaltyFee();
+				var alwaysAdd = false;
+				if (royaltyFee.hasFallbackFee()) {
+					final var fFee = royaltyFee.getFallbackFee();
+					alwaysAdd = fFee.hasDenominatingTokenId() && fFee.getDenominatingTokenId().getTokenNum() == 0;
+				}
+				couldAddCollector = addAccount(collector, required, alwaysAdd);
+			}
 			if (!couldAddCollector) {
 				return factory.forMissingFeeCollector();
 			}
@@ -901,7 +918,7 @@ public class HederaSigningOrder {
 		return factory.forValidOrder(required);
 	}
 
-	private KeyOrderingFailure includeIfPresentAndNecessary(AccountAmount adjust, List<JKey> required) {
+	private KeyOrderingFailure includeIfNecessary(AccountAmount adjust, List<JKey> required) {
 		var account = adjust.getAccountID();
 		var result = sigMetaLookup.accountSigningMetaFor(account);
 		if (result.succeeded()) {
@@ -913,20 +930,53 @@ public class HederaSigningOrder {
 		return result.failureIfAny();
 	}
 
-	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender,
-			List<JKey> required) {
-		var result = sigMetaLookup.accountSigningMetaFor(accountID);
-		if (result.succeeded()) {
-			var meta = result.metadata();
-			if (Boolean.TRUE.equals(isSender)) {
-				required.add(meta.getKey());
+	private KeyOrderingFailure nftIncludeIfNecessary(
+			AccountID party,
+			AccountID counterparty,
+			List<JKey> required,
+			TokenID token,
+			CryptoTransferTransactionBody op
+	) {
+		var result = sigMetaLookup.accountSigningMetaFor(party);
+		if (!result.succeeded()) {
+			return result.failureIfAny();
+		}
+		var meta = result.metadata();
+		final var isSender = counterparty == null;
+		if (isSender || meta.isReceiverSigRequired()) {
+			required.add(meta.getKey());
+		} else {
+			final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token);
+			if (!tokenResult.succeeded()) {
+				return tokenResult.failureIfAny();
 			} else {
-				if (meta.isReceiverSigRequired()) {
-					required.add(meta.getKey());
+				final var tokenMeta = tokenResult.metadata();
+				if (tokenMeta.hasRoyaltyWithFallback()) {
+					final var fallbackApplies = !receivesFungibleValue(counterparty, op) &&
+							counterparty.getAccountNum() != tokenMeta.treasury().num();
+					if (fallbackApplies) {
+						required.add(meta.getKey());
+					}
 				}
 			}
 		}
 		return result.failureIfAny();
+	}
+
+	private boolean receivesFungibleValue(AccountID target, CryptoTransferTransactionBody op) {
+		for (var adjust : op.getTransfers().getAccountAmountsList()) {
+			if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+				return true;
+			}
+		}
+		for (var transfers : op.getTokenTransfersList()) {
+			for (var adjust : transfers.getTransfersList())	 {
+				if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private <T> void addToMutableReqIfPresent(

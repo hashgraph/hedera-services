@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -69,6 +70,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -126,12 +128,14 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+	private UniqTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
-	private MerkleAccountScopedCheck scopedCheck;
+
+	private final MerkleAccountScopedCheck scopedCheck;
 
 	int numTouches = 0;
 	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
@@ -157,7 +161,12 @@ public class HederaLedger {
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
+
 		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
+	}
+
+	public void setTokenViewsManager(UniqTokenViewsManager tokenViewsManager) {
+		this.tokenViewsManager = tokenViewsManager;
 	}
 
 	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
@@ -170,7 +179,6 @@ public class HederaLedger {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
 
-
 	/* -- TRANSACTIONAL SEMANTICS -- */
 	public void begin() {
 		accountsLedger.begin();
@@ -179,6 +187,9 @@ public class HederaLedger {
 		}
 		if (nftsLedger != null) {
 			nftsLedger.begin();
+		}
+		if (tokenViewsManager != null) {
+			tokenViewsManager.begin();
 		}
 	}
 
@@ -189,6 +200,9 @@ public class HederaLedger {
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.rollback();
+		}
+		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
+			tokenViewsManager.rollback();
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
@@ -205,6 +219,9 @@ public class HederaLedger {
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.commit();
+		}
+		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
+			tokenViewsManager.commit();
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
@@ -363,6 +380,13 @@ public class HederaLedger {
 		if (tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
+		if (nftsLedger.isInTransaction()) {
+			nftsLedger.rollback();
+		}
+		if (tokenViewsManager.isInTransaction()) {
+			tokenViewsManager.rollback();
+		}
+		accountsLedger.undoChangesOfType(NUM_NFTS_OWNED);
 		clearNetTokenTransfers();
 	}
 

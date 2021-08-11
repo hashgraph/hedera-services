@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.unit;
+package com.hedera.services.grpc.marshalling;
 
 /*-
  * ‌
@@ -20,14 +20,14 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.store.models.Id;
 
-public class InvalidFileIDException extends Exception {
-	private static final long serialVersionUID = 1L;
-	private FileID fileId;
-
-	public InvalidFileIDException(String message, FileID fileId) {
-		super(message);
-		this.fileId = fileId;
-	}
+public interface FungibleAdjuster {
+	BalanceChange adjustedChange(
+			Id account,
+			Id chargingToken,
+			Id denom,
+			long amount,
+			BalanceChangeManager manager);
 }
