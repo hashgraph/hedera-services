@@ -216,7 +216,6 @@ class RoyaltyFeeAssessorTest {
 
 	private final long originalUnits = 100;
 	private final Id payer = new Id(0, 1, 2);
-	private final Id chargingToken = new Id(0, 1, 2222);
 	private final EntityId otherCollector = new EntityId(10, 9, 8);
 	private final EntityId targetCollector = new EntityId(9, 8, 7);
 	private final Id funding = new Id(0, 0, 98);
@@ -224,10 +223,6 @@ class RoyaltyFeeAssessorTest {
 	private final AccountAmount payerCredit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(originalUnits)
-			.build();
-	private final AccountAmount fundingCredit = AccountAmount.newBuilder()
-			.setAccountID(funding.asGrpcAccount())
-			.setAmount(originalUnits / 2)
 			.build();
 	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit);
 	private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(

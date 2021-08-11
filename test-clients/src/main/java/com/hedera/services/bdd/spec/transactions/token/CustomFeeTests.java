@@ -58,10 +58,12 @@ public class CustomFeeTests {
 			long denominator,
 			long min,
 			OptionalLong max,
+			boolean netOfTransfers,
 			String collector
 	) {
 		return (spec, actual) -> {
-			final var expected = builtFractional(numerator, denominator, min, max, collector, spec);
+			final var expected = builtFractional(
+					numerator, denominator, min, max, netOfTransfers, collector, spec);
 			failUnlessPresent("fractional", actual, expected);
 		};
 	}

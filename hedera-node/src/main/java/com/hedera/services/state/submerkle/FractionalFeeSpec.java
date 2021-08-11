@@ -28,12 +28,14 @@ public class FractionalFeeSpec {
 	private final long denominator;
 	private final long minimumUnitsToCollect;
 	private final long maximumUnitsToCollect;
+	private final boolean netOfTransfers;
 
 	public FractionalFeeSpec(
 			long numerator,
 			long denominator,
 			long minimumUnitsToCollect,
-			long maximumUnitsToCollect
+			long maximumUnitsToCollect,
+			boolean netOfTransfers
 	) {
 		if (denominator == 0) {
 			throw new IllegalArgumentException("Division by zero is not allowed");
@@ -48,6 +50,7 @@ public class FractionalFeeSpec {
 		this.denominator = denominator;
 		this.minimumUnitsToCollect = minimumUnitsToCollect;
 		this.maximumUnitsToCollect = maximumUnitsToCollect;
+		this.netOfTransfers = netOfTransfers;
 	}
 
 	public long getNumerator() {
@@ -66,6 +69,10 @@ public class FractionalFeeSpec {
 		return maximumUnitsToCollect;
 	}
 
+	public boolean isNetOfTransfers() {
+		return netOfTransfers;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -79,7 +86,8 @@ public class FractionalFeeSpec {
 		return this.numerator == that.numerator &&
 				this.denominator == that.denominator &&
 				this.minimumUnitsToCollect == that.minimumUnitsToCollect &&
-				this.maximumUnitsToCollect == that.maximumUnitsToCollect;
+				this.maximumUnitsToCollect == that.maximumUnitsToCollect &&
+				this.netOfTransfers == that.netOfTransfers;
 	}
 
 	@Override
@@ -94,6 +102,7 @@ public class FractionalFeeSpec {
 				.add("denominator", denominator)
 				.add("minimumUnitsToCollect", minimumUnitsToCollect)
 				.add("maximumUnitsToCollect", maximumUnitsToCollect)
+				.add("netOfTransfers", netOfTransfers)
 				.toString();
 	}
 }

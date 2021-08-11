@@ -382,6 +382,7 @@ class FeeAssessorTest {
 			denominator,
 			minAmountOfFractionalFee,
 			maxAmountOfFractionalFee,
+			false,
 			fractionalFeeCollector);
 	private final FcCustomFee royaltyFee = FcCustomFee.royaltyFee(
 			1, 2,

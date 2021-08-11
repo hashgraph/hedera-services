@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
@@ -105,42 +106,43 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						balancesChangeOnTokenTransfer(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreValid(),
-						balancesAreChecked(),
-						duplicateAccountsInTokenTransferRejected(),
-						tokenOnlyTxnsAreAtomic(),
-						tokenPlusHbarTxnsAreAtomic(),
-						nonZeroTransfersRejected(),
-						prechecksWork(),
-						missingEntitiesRejected(),
-						allRequiredSigsAreChecked(),
-						uniqueTokenTxnAccountBalance(),
-						uniqueTokenTxnAccountBalancesForTreasury(),
-						uniqueTokenTxnWithNoAssociation(),
-						uniqueTokenTxnWithFrozenAccount(),
-						uniqueTokenTxnWithSenderNotSigned(),
-						uniqueTokenTxnWithReceiverNotSigned(),
-						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn(),
-						cannotSendFungibleToDissociatedContractsOrAccounts(),
-						cannotGiveNftsToDissociatedContractsOrAccounts(),
-						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-						transferListsEnforceTokenTypeRestrictions(),
-						/* HIP-18 charging case studies */
-						fixedHbarCaseStudy(),
-						fractionalCaseStudy(),
-						simpleHtsFeeCaseStudy(),
-						nestedHbarCaseStudy(),
-						nestedFractionalCaseStudy(),
-						nestedHtsCaseStudy(),
-						treasuriesAreExemptFromAllCustomFees(),
-						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-						royaltyFallbackCaseStudy(),
-						royaltyFractionalCaseStudy(),
-						canTransactInTokenWithSelfDenominatedFixedFee(),
-						nftOwnersChangeAtomically(),
+//						balancesChangeOnTokenTransfer(),
+//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+//						senderSigsAreValid(),
+//						balancesAreChecked(),
+//						duplicateAccountsInTokenTransferRejected(),
+//						tokenOnlyTxnsAreAtomic(),
+//						tokenPlusHbarTxnsAreAtomic(),
+//						nonZeroTransfersRejected(),
+//						prechecksWork(),
+//						missingEntitiesRejected(),
+//						allRequiredSigsAreChecked(),
+//						uniqueTokenTxnAccountBalance(),
+//						uniqueTokenTxnAccountBalancesForTreasury(),
+//						uniqueTokenTxnWithNoAssociation(),
+//						uniqueTokenTxnWithFrozenAccount(),
+//						uniqueTokenTxnWithSenderNotSigned(),
+//						uniqueTokenTxnWithReceiverNotSigned(),
+//						uniqueTokenTxnsAreAtomic(),
+//						uniqueTokenDeletedTxn(),
+//						cannotSendFungibleToDissociatedContractsOrAccounts(),
+//						cannotGiveNftsToDissociatedContractsOrAccounts(),
+//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+//						transferListsEnforceTokenTypeRestrictions(),
+//						/* HIP-18 charging case studies */
+//						fixedHbarCaseStudy(),
+//						fractionalCaseStudy(),
+//						simpleHtsFeeCaseStudy(),
+//						nestedHbarCaseStudy(),
+//						nestedFractionalCaseStudy(),
+//						nestedHtsCaseStudy(),
+//						treasuriesAreExemptFromAllCustomFees(),
+//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+//						royaltyFallbackCaseStudy(),
+//						royaltyFractionalCaseStudy(),
+//						canTransactInTokenWithSelfDenominatedFixedFee(),
+//						nftOwnersChangeAtomically(),
+						fractionalNetOfTransfersCaseStudy(),
 				}
 		);
 	}
@@ -1018,6 +1020,58 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L),
 						getAccountBalance(treasuryForToken)
 								.hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L)
+				);
+	}
+
+	public HapiApiSpec fractionalNetOfTransfersCaseStudy() {
+		final var gerry = "gerry";
+		final var horace = "horace";
+		final var useCaseToken = "TokenWithFractionalFee";
+		final var treasuryForToken = "TokenTreasury";
+
+		final var txnFromTreasury = "txnFromTreasury";
+		final var txnFromHorace = "txnFromHorace";
+
+		return defaultHapiSpec("FractionalNetOfTransfersCaseStudy")
+				.given(
+						cryptoCreate(gerry),
+						cryptoCreate(horace),
+						cryptoCreate(treasuryForToken),
+						tokenCreate(useCaseToken)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasuryForToken)
+								.withCustom(fractionalFeeNetOfTransfers(
+										1L, 100L, 1L, OptionalLong.of(5L), treasuryForToken)),
+						tokenAssociate(gerry, useCaseToken),
+						tokenAssociate(horace, useCaseToken),
+						cryptoTransfer(moving(1_000_000L, useCaseToken)
+								.between(treasuryForToken, horace)
+						)
+								.payingWith(treasuryForToken)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury)
+				).when(
+						cryptoTransfer(
+								moving(1_000L, useCaseToken).between(horace, gerry)
+						)
+								.payingWith(horace)
+								.fee(ONE_HBAR)
+								.via(txnFromHorace)
+				).then(
+						getTxnRecord(txnFromTreasury)
+								.hasTokenAmount(useCaseToken, horace, 1_000_000L)
+								.hasTokenAmount(useCaseToken, treasuryForToken, -1_000_000L),
+						getTxnRecord(txnFromHorace)
+								.hasTokenAmount(useCaseToken, horace, -1_005L)
+								.hasTokenAmount(useCaseToken, gerry, 1000L)
+								.hasAssessedCustomFee(useCaseToken, treasuryForToken, 5L)
+								.hasTokenAmount(useCaseToken, treasuryForToken, 5L),
+						getAccountBalance(gerry)
+								.hasTokenBalance(useCaseToken, 1000L),
+						getAccountBalance(horace)
+								.hasTokenBalance(useCaseToken, 1_000_000L - 1_005L),
+						getAccountBalance(treasuryForToken)
+								.hasTokenBalance(useCaseToken, Long.MAX_VALUE - 1_000_000L + 5L)
 				);
 	}
 

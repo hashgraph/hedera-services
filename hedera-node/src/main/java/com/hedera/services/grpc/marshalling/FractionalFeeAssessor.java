@@ -30,11 +30,18 @@ import java.util.List;
 
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedFractionalChange;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FractionalFeeAssessor {
+	private final FixedFeeAssessor fixedFeeAssessor;
+
+	public FractionalFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
+		this.fixedFeeAssessor = fixedFeeAssessor;
+	}
+
 	public ResponseCodeEnum assessAllFractional(
 			BalanceChange change,
 			List<FcCustomFee> feesWithFractional,
@@ -55,27 +62,32 @@ public class FractionalFeeAssessor {
 				continue;
 			}
 
+			final var spec = fee.getFractionalFeeSpec();
 			var assessedAmount = 0L;
 			try {
-				assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
+				assessedAmount = amountOwedGiven(initialUnits, spec);
 			} catch (ArithmeticException ignore) {
 				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 			}
 
-			unitsLeft -= assessedAmount;
-			if (unitsLeft < 0) {
-				return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+			if (spec.isNetOfTransfers()) {
+				final var addedFee = fixedFee(assessedAmount, denom.asEntityId(), fee.getFeeCollector());
+				fixedFeeAssessor.assess(payer, denom, addedFee, changeManager, accumulator);
+			} else {
+				unitsLeft -= assessedAmount;
+				if (unitsLeft < 0) {
+					return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+				}
+				final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
+				try {
+					reclaim(assessedAmount, creditsToReclaimFrom);
+				} catch (ArithmeticException ignore) {
+					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				}
+				adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
+				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+				accumulator.add(assessed);
 			}
-			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
-			try {
-				reclaim(assessedAmount, creditsToReclaimFrom);
-			} catch (ArithmeticException ignore) {
-				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-			}
-
-			adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
-			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
-			accumulator.add(assessed);
 		}
 		return OK;
 	}
