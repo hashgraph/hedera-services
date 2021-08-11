@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public class CustomFeeBuilder {
@@ -47,6 +48,10 @@ public class CustomFeeBuilder {
 		return builder().build();
 	}
 
+	public CustomFee withRoyaltyFee(RoyaltyFee.Builder fee) {
+		return  builder().setRoyaltyFee(fee).build();
+	}
+
 	public CustomFee withFixedFee(final FixedFee.Builder fee) {
 		return builder().setFixedFee(fee).build();
 	}
@@ -62,6 +67,21 @@ public class CustomFeeBuilder {
 
 	public static FixedFee.Builder fixedHts(final TokenID denom, final long units) {
 		return fixedHbar(units).setDenominatingTokenId(denom);
+	}
+
+	public static RoyaltyFee.Builder royaltyNoFallback(long numerator, long denominator) {
+		return RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+						.setNumerator(numerator)
+						.setDenominator(denominator));
+	}
+
+	public static RoyaltyFee.Builder royaltyWithFallback(long numerator, long denominator, FixedFee.Builder fallback) {
+		return RoyaltyFee.newBuilder()
+				.setExchangeValueFraction(Fraction.newBuilder()
+								.setNumerator(numerator)
+								.setDenominator(denominator))
+				.setFallbackFee(fallback);
 	}
 
 	public static FixedFee.Builder fixedHts(final long units) {

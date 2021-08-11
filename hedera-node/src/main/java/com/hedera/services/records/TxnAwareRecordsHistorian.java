@@ -85,11 +85,6 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void reviewExistingRecords() {
-		expiries.reviewExistingPayerRecords();
-	}
-
-	@Override
 	public void noteNewExpirationEvents() {
 		for (var expiringEntity : txnCtx.expiringEntities()) {
 			expiries.trackExpirationEvent(

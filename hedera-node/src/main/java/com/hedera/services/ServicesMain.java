@@ -161,8 +161,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("System files rationalized.");
 		createSystemAccountsIfNeeded();
 		log.info("System accounts initialized.");
-		migrateStateIfNeeded();
-		log.info("Migrations complete.");
 		validateLedgerState();
 		log.info("Ledger state ok.");
 		configurePlatform();
@@ -251,15 +249,11 @@ public class ServicesMain implements SwirldMain {
 		ctx.platform().setSleepAfterSync(0L);
 	}
 
-	private void migrateStateIfNeeded() {
-		ctx.stateMigrations().runAllFor(ctx);
-	}
-
 	private void validateLedgerState() {
 		ctx.ledgerValidator().assertIdsAreValid(ctx.accounts());
 		if (!ctx.ledgerValidator().hasExpectedTotalBalance(ctx.accounts())) {
 			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
-			throw new IllegalStateException("Invalid total tinyBar float!");
+			throw new IllegalStateException("Invalid total ℏ float!");
 		}
 		if (!ctx.nodeInfo().isSelfZeroStake() && !ctx.nodeInfo().hasSelfAccount()) {
 			throw new IllegalStateException("Node is not zero-stake, but has no known account!");

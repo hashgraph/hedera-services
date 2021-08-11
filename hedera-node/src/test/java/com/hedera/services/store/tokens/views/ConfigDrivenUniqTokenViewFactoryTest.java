@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
@@ -44,11 +45,11 @@ class ConfigDrivenUniqTokenViewFactoryTest {
 	@Mock
 	private Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	@Mock
-	private Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
+	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
 	@Mock
-	private Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner;
+	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
 	@Mock
-	private Supplier<FCOneToManyRelation<Integer, Long>> treasuryNftsByType;
+	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
 
 	@Test
 	void constructsExplicitIfNotUsingWildcards() {

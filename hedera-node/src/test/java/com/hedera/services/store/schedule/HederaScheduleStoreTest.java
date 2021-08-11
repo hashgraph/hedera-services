@@ -38,7 +38,9 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +50,6 @@ import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -112,7 +113,7 @@ class HederaScheduleStoreTest {
 	HederaScheduleStore subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		transactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
 		entityMemo = "Some memo here";
 		transactionBodyHashCode = Arrays.hashCode(transactionBody);
@@ -166,7 +167,7 @@ class HederaScheduleStoreTest {
 				entitySchedulingAccount.toGrpcAccountId(),
 				schedulingTXValidStart.toGrpc());
 		var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
-		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleSchedule>> captor = forClass(BiConsumer.class);
+		ArgumentCaptor<Consumer<MerkleNode>> captor = forClass(Consumer.class);
 		// and:
 		var expectedKey = expected.toContentAddressableView();
 
@@ -174,12 +175,12 @@ class HederaScheduleStoreTest {
 		subject.rebuildViews();
 
 		// then:
-		verify(schedules, times(2)).forEach(captor.capture());
+		verify(schedules, times(2)).forEachNode(captor.capture());
 		// and:
-		BiConsumer<MerkleEntityId, MerkleSchedule> visitor = captor.getAllValues().get(1);
+		Consumer<MerkleNode> visitor = captor.getAllValues().get(1);
 
 		// and when:
-		visitor.accept(fromScheduleId(created), expected);
+		visitor.accept(new MerklePair<>(fromScheduleId(created), expected));
 
 		// then:
 		var extant = subject.getExtantSchedules();

@@ -74,7 +74,7 @@ class GetTokenInfoAnswerTest {
 	GetTokenInfoAnswer subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		info = TokenInfo.newBuilder()
 				.setTokenId(tokenId)
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())

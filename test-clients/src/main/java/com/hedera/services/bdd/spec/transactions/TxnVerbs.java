@@ -174,11 +174,17 @@ public class TxnVerbs {
 	public static HapiTokenMint mintToken(String token, List<ByteString> metadata){
 		return new HapiTokenMint(token,  metadata);
 	}
+	public static HapiTokenMint invalidMintToken(String token, List<ByteString> metadata, long amount){
+		return new HapiTokenMint(token,  metadata, amount);
+	}
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
 	}
 	public static HapiTokenBurn burnToken(String token, List<Long> serialNumbers){
 		return new HapiTokenBurn(token, serialNumbers);
+	}
+	public static HapiTokenBurn invalidBurnToken(String token, List<Long> serialNumbers, long amount){
+		return new HapiTokenBurn(token, serialNumbers, amount);
 	}
 
 	/* SCHEDULE */

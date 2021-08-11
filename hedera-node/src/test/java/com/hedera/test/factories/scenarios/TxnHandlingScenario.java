@@ -23,14 +23,14 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -51,7 +52,9 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
+import java.util.List;
 
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
 import static com.hedera.test.factories.accounts.MockFCMapFactory.newAccounts;
@@ -160,6 +163,11 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(DILIGENT_SIGNING_PAYER_KT).get()
 				).withContract(
+						IMMUTABLE_CONTRACT_ID,
+						newContract()
+								.balance(DEFAULT_BALANCE)
+								.get()
+				).withContract(
 						MISC_CONTRACT_ID,
 						newContract()
 								.balance(DEFAULT_BALANCE)
@@ -176,14 +184,6 @@ public interface TxnHandlingScenario {
 		given(hfs.exists(IMMUTABLE_FILE)).willReturn(true);
 		given(hfs.getattr(IMMUTABLE_FILE)).willReturn(HFileMetaSerdeTest.convert(IMMUTABLE_FILE_INFO));
 		return hfs;
-	}
-
-	default FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		@SuppressWarnings("unchecked")
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>) mock(
-				FCMap.class);
-
-		return storage;
 	}
 
 	default FCMap<MerkleEntityId, MerkleTopic> topics() {
@@ -247,6 +247,22 @@ public interface TxnHandlingScenario {
 		given(tokenStore.resolve(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY))
 				.willReturn(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).willReturn(feeScheduleToken);
+
+		var royaltyFeeWithFallbackToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"ZPHYR", "West Wind Art", false, true,
+				EntityId.fromGrpcAccountId(MISC_ACCOUNT));
+		royaltyFeeWithFallbackToken.setFeeScheduleKey(optionalFeeScheduleKey);
+		royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
+		royaltyFeeWithFallbackToken.setFeeSchedule(List.of(
+				FcCustomFee.royaltyFee(
+						1, 2,
+						new FixedFeeSpec(1, null),
+						new EntityId(1, 2, 5))));
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+				.willReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+				.willReturn(royaltyFeeWithFallbackToken);
 
 		var supplyToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
@@ -404,10 +420,14 @@ public interface TxnHandlingScenario {
 
 	KeyTree SIMPLE_NEW_WACL_KT = withRoot(list(ed25519()));
 
-	String MISSING_CONTRACT_ID = "1.2.3";
+	String MISSING_CONTRACT_ID = "3.6.9";
+	ContractID MISSING_CONTRACT = asContract(MISSING_CONTRACT_ID);
 
 	String MISC_RECIEVER_SIG_CONTRACT_ID = "0.0.7337";
 	ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
+
+	String IMMUTABLE_CONTRACT_ID = "0.0.9339";
+	ContractID IMMUTABLE_CONTRACT = asContract(IMMUTABLE_CONTRACT_ID);
 
 	String MISC_CONTRACT_ID = "0.0.3337";
 	ContractID MISC_CONTRACT = asContract(MISC_CONTRACT_ID);
@@ -442,6 +462,8 @@ public interface TxnHandlingScenario {
 	TokenID KNOWN_TOKEN_WITH_WIPE = asToken(KNOWN_TOKEN_WITH_WIPE_ID);
 	String KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID = "0.0.779";
 	TokenID KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY = asToken(KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID);
+	String KNOWN_TOKEN_WITH_ROYALTY_FEE_ID = "0.0.77977";
+	TokenID KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK = asToken(KNOWN_TOKEN_WITH_ROYALTY_FEE_ID);
 
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
@@ -450,8 +472,21 @@ public interface TxnHandlingScenario {
 	String TOKEN_RECEIVER_ID = "0.0.1111";
 	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
 
+	NftID KNOWN_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(KNOWN_TOKEN_WITH_WIPE)
+			.setSerialNumber(1L)
+			.build();
+	NftID ROYALTY_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)
+			.setSerialNumber(1L)
+			.build();
+
 	String UNKNOWN_TOKEN_ID = "0.0.666";
 	TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);
+	NftID MISSING_TOKEN_NFT = NftID.newBuilder()
+			.setTokenID(MISSING_TOKEN)
+			.setSerialNumber(1L)
+			.build();
 
 	KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
 	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());

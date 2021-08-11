@@ -17,5 +17,6 @@ hedera-node/output/
 test-clients/target/
 test-clients/devops-utils/
 test-clients/system-files/
+test-clients/sysfiles-update/
 
 .java-version

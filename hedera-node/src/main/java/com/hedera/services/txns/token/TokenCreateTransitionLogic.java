@@ -156,6 +156,11 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			boolean collectorEnablementNeeded = fee.hasFractionalFee();
 			if (fee.hasFixedFee() && fee.getFixedFee().hasDenominatingTokenId()) {
 				collectorEnablementNeeded |= (0 == fee.getFixedFee().getDenominatingTokenId().getTokenNum());
+			} else if (fee.hasRoyaltyFee() && fee.getRoyaltyFee().hasFallbackFee()) {
+				final var fallback = fee.getRoyaltyFee().getFallbackFee();
+				if (fallback.hasDenominatingTokenId()) {
+					collectorEnablementNeeded |= (0 == fallback.getDenominatingTokenId().getTokenNum());
+				}
 			}
 			final var collector = fee.getFeeCollectorAccountId();
 			if (collectorEnablementNeeded && !customCollectorsEnabled.contains(collector)) {

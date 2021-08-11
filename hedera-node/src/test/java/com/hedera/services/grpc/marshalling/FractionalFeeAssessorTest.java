@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -141,7 +141,7 @@ class FractionalFeeAssessorTest {
 				subject.assessAllFractional(wildlyInsufficientChange, fees, changeManager, accumulator);
 
 		// then:
-		assertEquals(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE, result);
+		assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
 	}
 
 	@Test
@@ -164,7 +164,7 @@ class FractionalFeeAssessorTest {
 		final var expected = reasonable * n / d;
 
 		// expect:
-		assertEquals(expected, subject.safeFractionMultiply(n, d, reasonable));
+		assertEquals(expected, AdjustmentUtils.safeFractionMultiply(n, d, reasonable));
 	}
 
 	@Test
@@ -180,7 +180,7 @@ class FractionalFeeAssessorTest {
 				.longValueExact();
 
 		// expect:
-		assertEquals(expected, subject.safeFractionMultiply(n, d, huge));
+		assertEquals(expected, AdjustmentUtils.safeFractionMultiply(n, d, huge));
 	}
 
 	@Test
@@ -191,7 +191,7 @@ class FractionalFeeAssessorTest {
 		long d = 9;
 
 		// expect:
-		assertThrows(ArithmeticException.class, () -> subject.safeFractionMultiply(n, d, huge));
+		assertThrows(ArithmeticException.class, () -> AdjustmentUtils.safeFractionMultiply(n, d, huge));
 	}
 
 	@Test

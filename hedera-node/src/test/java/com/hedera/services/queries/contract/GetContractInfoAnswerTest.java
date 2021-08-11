@@ -79,7 +79,7 @@ class GetContractInfoAnswerTest {
 	GetContractInfoAnswer subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setContractID(IdUtils.asContract(target))
 				.setContractAccountID(EntityIdUtils.asSolidityAddressHex(IdUtils.asAccount(target)))

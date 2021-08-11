@@ -137,6 +137,7 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
 import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
@@ -144,9 +145,11 @@ import com.hedera.services.grpc.marshalling.FractionalFeeAssessor;
 import com.hedera.services.grpc.marshalling.HbarFeeAssessor;
 import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.RoyaltyFeeAssessor;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
@@ -162,6 +165,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
@@ -208,6 +212,8 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
@@ -245,8 +251,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.migration.StateMigrations;
-import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -270,6 +274,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -368,6 +373,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -390,6 +396,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -599,20 +606,19 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private final StateChildren workingState = new StateChildren();
 	private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
 
 	/* Context-free infrastructure. */
 	private static final Pause pause;
-	private static final StateMigrations stateMigrations;
 	private static final AccountsExporter accountsExporter;
 	private static final LegacyEd25519KeyReader b64KeyReader;
 
 	static {
 		pause = SleepingPause.SLEEPING_PAUSE;
 		b64KeyReader = new LegacyEd25519KeyReader();
-		stateMigrations = new StdStateMigrations(SleepingPause.SLEEPING_PAUSE);
 		accountsExporter = new ToStringAccountsExporter();
 	}
 
@@ -626,9 +632,6 @@ public class ServicesContext {
 		this.platform = platform;
 		this.state = state;
 		this.propertySources = propertySources;
-
-		updateWorkingState(state);
-		updateQueryableState(state);
 	}
 
 	/**
@@ -821,8 +824,12 @@ public class ServicesContext {
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			final var feeAssessor =
-					new FeeAssessor(new HtsFeeAssessor(), new HbarFeeAssessor(), new FractionalFeeAssessor());
+			final var htsAssessor = new HtsFeeAssessor();
+			final var hbarAssessor = new HbarFeeAssessor();
+			final var royaltyAssessor = new RoyaltyFeeAssessor(
+					htsAssessor, hbarAssessor, AdjustmentUtils::adjustedChange);
+			final var fractionalAssessor = new FractionalFeeAssessor();
+			final var feeAssessor = new FeeAssessor(htsAssessor, hbarAssessor, royaltyAssessor, fractionalAssessor);
 			impliedTransfersMarshal = new ImpliedTransfersMarshal(
 					feeAssessor,
 					customFeeSchedules(),
@@ -1356,6 +1363,13 @@ public class ServicesContext {
 		return syncVerifier;
 	}
 
+	public BiPredicate<JKey, TransactionSignature> validityTest() {
+		if (validityTest == null) {
+			validityTest = new OnlyIfSigVerifiableValid(syncVerifier());
+		}
+		return validityTest;
+	}
+
 	public PrecheckVerifier precheckVerifier() {
 		if (precheckVerifier == null) {
 			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
@@ -1728,6 +1742,7 @@ public class ServicesContext {
 					recordsHistorian(),
 					globalDynamicProperties(),
 					accountsLedger);
+			ledger.setTokenViewsManager(uniqTokenViewsManager());
 			scheduleStore().setAccountsLedger(accountsLedger);
 			scheduleStore().setHederaLedger(ledger);
 		}
@@ -1788,7 +1803,9 @@ public class ServicesContext {
 
 	public ProcessLogic logic() {
 		if (logic == null) {
-			logic = new AwareProcessLogic(this);
+			final var rationalization = new Rationalization();
+			final var bodySigningFactory = new ReusableBodySigningFactory();
+			logic = new AwareProcessLogic(this, rationalization, bodySigningFactory, validityTest());
 		}
 		return logic;
 	}
@@ -2195,10 +2212,6 @@ public class ServicesContext {
 		return pause;
 	}
 
-	public StateMigrations stateMigrations() {
-		return stateMigrations;
-	}
-
 	public AccountsExporter accountsExporter() {
 		return accountsExporter;
 	}
@@ -2327,15 +2340,15 @@ public class ServicesContext {
 		return state.uniqueTokens();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueTokenAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
 		return state.uniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
 		return state.uniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations() {
 		return state.uniqueTreasuryOwnershipAssociations();
 	}
 

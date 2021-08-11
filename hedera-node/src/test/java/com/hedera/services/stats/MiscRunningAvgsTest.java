@@ -42,7 +42,7 @@ class MiscRunningAvgsTest {
 	MiscRunningAvgs subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		factory = mock(RunningAvgFactory.class);
 		platform = mock(Platform.class);
 

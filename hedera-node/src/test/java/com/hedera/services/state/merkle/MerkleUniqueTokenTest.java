@@ -63,7 +63,7 @@ class MerkleUniqueTokenTest {
 	private static long timestampL = 1_234_567L;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		owner = new EntityId(0, 0, 3);
 		otherOwner = new EntityId(0, 0, 4);
 		metadata = "Test NFT".getBytes();

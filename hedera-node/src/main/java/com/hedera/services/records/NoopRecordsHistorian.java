@@ -44,11 +44,6 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   }
 
   @Override
-  public void reviewExistingRecords() {
-    // Do nothing because this mainly serves as placeholder for now
-  }
-
-  @Override
   public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
 
   @Override

@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.util.Comparator.comparing;
 
 /**
@@ -130,7 +131,7 @@ public class ExpiryManager {
 
 		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		final var currentAccounts = accounts.get();
-		currentAccounts.forEach((id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
+		forEach(currentAccounts, (id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
 		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
 		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 
@@ -149,7 +150,8 @@ public class ExpiryManager {
 		shortLivedEntityExpiries.reset();
 
 		final var _shortLivedEntityExpiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
-		schedules.get().forEach((id, schedule) -> {
+		final var currentSchedules = schedules.get();
+		forEach(currentSchedules, (id, schedule) -> {
 			Consumer<EntityId> consumer = scheduleStore::expire;
 			var pair = Pair.of(id.getNum(), consumer);
 			_shortLivedEntityExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));

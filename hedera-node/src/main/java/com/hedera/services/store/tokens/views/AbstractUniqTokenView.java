@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -39,6 +40,8 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
+
 /**
  * Provides implementation support for a {@link UniqTokenView} via a method able to
  * list all the unique tokens that can be retrieved from a {@link FCOneToManyRelation}
@@ -51,12 +54,12 @@ import java.util.function.Supplier;
 public abstract class AbstractUniqTokenView implements UniqTokenView {
 	protected final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	protected final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
-	protected final Supplier<FCOneToManyRelation<Integer, Long>> nftsByType;
+	protected final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
 
 	protected AbstractUniqTokenView(
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType
+			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType
 	) {
 		this.tokens = tokens;
 		this.nfts = nfts;
@@ -93,7 +96,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	 * @return the requested list
 	 */
 	protected List<TokenNftInfo> accumulatedInfo(
-			FCOneToManyRelation<Integer, Long> relation,
+			FCOneToManyRelation<PermHashInteger, Long> relation,
 			EntityId key,
 			int start,
 			int end,
@@ -102,7 +105,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	) {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
-		relation.get(key.identityCode(), start, end).forEachRemaining(nftIdCode -> {
+		relation.get(asPhi(key.identityCode()), start, end).forEachRemaining(nftIdCode -> {
 			final var nftId = MerkleUniqueTokenId.fromIdentityCode(nftIdCode);
 			final var nft = curNfts.get(nftId);
 			if (nft == null) {

@@ -115,10 +115,13 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -132,6 +135,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -235,8 +239,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class MiscUtilsTest {
+	@Test
+	void forEachDropInWorksAsExpected() {
+		// setup:
+		final FCMap<MerkleLong, MerkleLong> testFcm = new FCMap<>();
+		@SuppressWarnings("unchecked")
+		final BiConsumer<MerkleLong, MerkleLong> mockConsumer = BDDMockito.mock(BiConsumer.class);
+
+		// given:
+		testFcm.put(new MerkleLong(1L), new MerkleLong(1L));
+		testFcm.put(new MerkleLong(2L), new MerkleLong(2L));
+
+		// when:
+		MiscUtils.forEach(testFcm, mockConsumer);
+
+		// then:
+		verify(mockConsumer).accept(new MerkleLong(1L), new MerkleLong(1L));
+		verify(mockConsumer).accept(new MerkleLong(2L), new MerkleLong(2L));
+	}
+
 	@Test
 	void retrievesExpectedStatNames() {
 		// expect:

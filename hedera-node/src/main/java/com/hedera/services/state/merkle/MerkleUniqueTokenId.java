@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -95,8 +96,9 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 
 	@Override
 	public int hashCode() {
-		return Long.hashCode(nftCode);
+		return (int) MiscUtils.perm64(nftCode);
 	}
+
 
 	/* --- Bean --- */
 	@Override
@@ -146,7 +148,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 		this.nftCode = nftCode;
 	}
 
-	private static long nftCodeFrom(long num, long serialNo) {
+	static long nftCodeFrom(long num, long serialNo) {
 		assertValid(num);
 		assertValid(serialNo);
 		return (num << 32) | serialNo;

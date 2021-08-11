@@ -63,7 +63,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    public void forwardScheduleCreateAsExpected() {
+    void forwardScheduleCreateAsExpected() {
         // when:
         subject.createSchedule(txn, txnObserver);
 
@@ -72,7 +72,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    public void forwardScheduleDeleteAsExpected() {
+    void forwardScheduleDeleteAsExpected() {
         // when:
         subject.deleteSchedule(txn, txnObserver);
 
@@ -81,7 +81,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    public void forwardScheduleSignAsExpected() {
+    void forwardScheduleSignAsExpected() {
         // when:
         subject.signSchedule(txn, txnObserver);
 
@@ -90,7 +90,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    public void forwardsScheduleInfoAsExpected() {
+    void forwardsScheduleInfoAsExpected() {
         // when:
         subject.getScheduleInfo(query, queryObserver);
 

@@ -29,7 +29,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,9 +74,11 @@ class BackingNftsTest {
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
 		delegate = new FCMap<>();
+
 		delegate.put(aKey, theToken);
 		delegate.put(bKey, notTheToken);
 

@@ -23,14 +23,10 @@ package com.hedera.services.sigs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.test.factories.keys.KeyTree;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +38,9 @@ import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsF
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -172,52 +171,40 @@ class PlatformSigOpsTest {
 	@Test
 	void returnsSuccessSigStatusByDefault() {
 		// given:
-		TransactionID txnId = TransactionID.getDefaultInstance();
 		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();
-		SignatureStatus expectedStatus = new SignatureStatus(
-				SignatureStatusCode.SUCCESS, ResponseCodeEnum.OK,
-				true, txnId, null, null, null, null);
 
 		// when:
-		SignatureStatus status = subject.asSignatureStatus(true, txnId);
+		final var status = subject.asCode();
 
 		// then:
-		assertEquals(expectedStatus.toLogMessage(), status.toLogMessage());
+		assertEquals(OK, status);
 	}
 
 	@Test
 	void reportsInvalidSigMap() {
 		// given:
-		TransactionID txnId = TransactionID.getDefaultInstance();
 		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();
-		subject.setTerminatingEx(new KeyPrefixMismatchException("No!"));
 		// and:
-		SignatureStatus expectedStatus = new SignatureStatus(
-				SignatureStatusCode.KEY_PREFIX_MISMATCH, ResponseCodeEnum.KEY_PREFIX_MISMATCH,
-				true, txnId, null, null, null, null);
+		subject.setTerminatingEx(new KeyPrefixMismatchException("No!"));
 
 		// when:
-		SignatureStatus status = subject.asSignatureStatus(true, txnId);
+		final var status = subject.asCode();
 
 		// then:
-		assertEquals(expectedStatus.toLogMessage(), status.toLogMessage());
+		assertEquals(KEY_PREFIX_MISMATCH, status);
 	}
 
 	@Test
 	void reportsNonspecificInvalidSig() {
 		// given:
-		TransactionID txnId = TransactionID.getDefaultInstance();
 		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();
-		subject.setTerminatingEx(new Exception());
 		// and:
-		SignatureStatus expectedStatus = new SignatureStatus(
-				SignatureStatusCode.GENERAL_ERROR, ResponseCodeEnum.INVALID_SIGNATURE,
-				true, txnId, null, null, null, null);
+		subject.setTerminatingEx(new Exception());
 
 		// when:
-		SignatureStatus status = subject.asSignatureStatus(true, txnId);
+		final var status = subject.asCode();
 
 		// then:
-		assertEquals(expectedStatus.toLogMessage(), status.toLogMessage());
+		assertEquals(INVALID_SIGNATURE, status);
 	}
 }
