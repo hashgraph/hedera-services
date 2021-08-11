@@ -51,9 +51,7 @@ class RoyaltyFeeAssessorTest {
 	private List<FcAssessedCustomFee> accumulator = new ArrayList<>();
 
 	@Mock
-	private HtsFeeAssessor htsFeeAssessor;
-	@Mock
-	private HbarFeeAssessor hbarFeeAssessor;
+	private FixedFeeAssessor fixedFeeAssessor;
 	@Mock
 	private FungibleAdjuster fungibleAdjuster;
 	@Mock
@@ -63,7 +61,7 @@ class RoyaltyFeeAssessorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RoyaltyFeeAssessor(htsFeeAssessor, hbarFeeAssessor, fungibleAdjuster);
+		subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster);
 	}
 
 	@Test
@@ -99,8 +97,9 @@ class RoyaltyFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		verify(hbarFeeAssessor).assess(
+		verify(fixedFeeAssessor).assess(
 				funding,
+				MISSING_ID,
 				FcCustomFee.fixedFee(33, null, targetCollector),
 				changeManager,
 				accumulator);
@@ -122,7 +121,7 @@ class RoyaltyFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		verify(htsFeeAssessor).assess(
+		verify(fixedFeeAssessor).assess(
 				funding,
 				MISSING_ID,
 				FcCustomFee.fixedFee(33, denom, targetCollector),

@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,17 +36,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class RoyaltyFeeAssessor {
-	private final HtsFeeAssessor htsFeeAssessor;
-	private final HbarFeeAssessor hbarFeeAssessor;
+	private final FixedFeeAssessor fixedFeeAssessor;
 	private final FungibleAdjuster fungibleAdjuster;
 
-	public RoyaltyFeeAssessor(
-			HtsFeeAssessor htsFeeAssessor,
-			HbarFeeAssessor hbarFeeAssessor,
-			FungibleAdjuster fungibleAdjuster
-	) {
-		this.htsFeeAssessor = htsFeeAssessor;
-		this.hbarFeeAssessor = hbarFeeAssessor;
+	public RoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor, FungibleAdjuster fungibleAdjuster) {
+		this.fixedFeeAssessor = fixedFeeAssessor;
 		this.fungibleAdjuster = fungibleAdjuster;
 	}
 
@@ -77,14 +71,10 @@ public class RoyaltyFeeAssessor {
 							fallback.getUnitsToCollect(),
 							fallback.getTokenDenomination(),
 							collector.asEntityId());
-					if (fallback.getTokenDenomination() == null) {
-						hbarFeeAssessor.assess(receiver, fallbackFee, changeManager, accumulator);
-					} else {
-						/* Since a fallback fee for a charging non-fungible token can never be
-						denominated in the units of its charging token (by definition), just
-						use MISSING_ID for the charging token here. */
-						htsFeeAssessor.assess(receiver, MISSING_ID, fallbackFee, changeManager, accumulator);
-					}
+					/* Since a fallback fee for a charging non-fungible token can never be
+					denominated in the units of its charging token (by definition), just
+					use MISSING_ID for the charging token here. */
+					fixedFeeAssessor.assess(receiver, MISSING_ID, fallbackFee, changeManager, accumulator);
 				}
 			} else {
 				final var fractionalValidity = chargeRoyalty(

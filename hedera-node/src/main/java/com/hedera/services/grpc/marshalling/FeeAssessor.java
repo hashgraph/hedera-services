@@ -39,21 +39,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FeeAssessor {
-	private final HtsFeeAssessor htsFeeAssessor;
-	private final HbarFeeAssessor hbarFeeAssessor;
 	private final FixedFeeAssessor fixedFeeAssessor;
 	private final RoyaltyFeeAssessor royaltyFeeAssessor;
 	private final FractionalFeeAssessor fractionalFeeAssessor;
 
 	public FeeAssessor(
-			HtsFeeAssessor htsFeeAssessor,
-			HbarFeeAssessor hbarFeeAssessor,
 			FixedFeeAssessor fixedFeeAssessor,
 			RoyaltyFeeAssessor royaltyFeeAssessor,
 			FractionalFeeAssessor fractionalFeeAssessor
 	) {
-		this.htsFeeAssessor = htsFeeAssessor;
-		this.hbarFeeAssessor = hbarFeeAssessor;
 		this.fixedFeeAssessor = fixedFeeAssessor;
 		this.royaltyFeeAssessor = royaltyFeeAssessor;
 		this.fractionalFeeAssessor = fractionalFeeAssessor;

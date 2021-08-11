@@ -829,10 +829,9 @@ public class ServicesContext {
 			final var htsAssessor = new HtsFeeAssessor();
 			final var hbarAssessor = new HbarFeeAssessor();
 			final var fixedFeeAssessor = new FixedFeeAssessor(htsAssessor, hbarAssessor);
-			final var royaltyAssessor = new RoyaltyFeeAssessor(
-					htsAssessor, hbarAssessor, AdjustmentUtils::adjustedChange);
+			final var royaltyAssessor = new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange);
 			final var fractionalAssessor = new FractionalFeeAssessor(fixedFeeAssessor);
-			final var feeAssessor = new FeeAssessor(htsAssessor, hbarAssessor, fixedFeeAssessor, royaltyAssessor, fractionalAssessor);
+			final var feeAssessor = new FeeAssessor(fixedFeeAssessor, royaltyAssessor, fractionalAssessor);
 			impliedTransfersMarshal = new ImpliedTransfersMarshal(
 					feeAssessor,
 					customFeeSchedules(),
