@@ -432,7 +432,7 @@ class FcCustomFeeTest {
 		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(feeCollector);
 
 		final var subject = new FcCustomFee();
-		subject.deserialize(din, FcCustomFee.RELEASE_016x_VERSION);
+		subject.deserialize(din, FcCustomFee.RELEASE_016X_VERSION);
 
 		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
 		assertEquals(expectedFractionalSpec, subject.getFractionalFeeSpec());
