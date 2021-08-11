@@ -68,7 +68,9 @@ public class FcCustomFee implements SelfSerializable {
 	static final byte FRACTIONAL_CODE = (byte) (1 << 1);
 	static final byte ROYALTY_CODE = (byte) (1 << 2);
 
-	static final int MERKLE_VERSION = 1;
+	static final int RELEASE_016x_VERSION = 1;
+	static final int RELEASE_017x_VERSION = 2;
+	static final int CURRENT_VERSION = RELEASE_017x_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa433940f137L;
 
 	private FeeType feeType;
@@ -274,7 +276,7 @@ public class FcCustomFee implements SelfSerializable {
 			var denominator = din.readLong();
 			var minimumUnitsToCollect = din.readLong();
 			var maximumUnitsToCollect = din.readLong();
-			var netOfTransfers = din.readBoolean();
+			var netOfTransfers = (version >= RELEASE_017x_VERSION) ? din.readBoolean() : false;
 			fractionalFeeSpec = new FractionalFeeSpec(
 					numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
 		} else {
@@ -328,7 +330,7 @@ public class FcCustomFee implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos) throws IOException {
