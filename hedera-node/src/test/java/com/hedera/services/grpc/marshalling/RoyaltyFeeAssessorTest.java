@@ -51,9 +51,7 @@ class RoyaltyFeeAssessorTest {
 	private List<FcAssessedCustomFee> accumulator = new ArrayList<>();
 
 	@Mock
-	private HtsFeeAssessor htsFeeAssessor;
-	@Mock
-	private HbarFeeAssessor hbarFeeAssessor;
+	private FixedFeeAssessor fixedFeeAssessor;
 	@Mock
 	private FungibleAdjuster fungibleAdjuster;
 	@Mock
@@ -63,7 +61,7 @@ class RoyaltyFeeAssessorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RoyaltyFeeAssessor(htsFeeAssessor, hbarFeeAssessor, fungibleAdjuster);
+		subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster);
 	}
 
 	@Test
@@ -99,8 +97,9 @@ class RoyaltyFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		verify(hbarFeeAssessor).assess(
+		verify(fixedFeeAssessor).assess(
 				funding,
+				MISSING_ID,
 				FcCustomFee.fixedFee(33, null, targetCollector),
 				changeManager,
 				accumulator);
@@ -122,7 +121,7 @@ class RoyaltyFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		verify(htsFeeAssessor).assess(
+		verify(fixedFeeAssessor).assess(
 				funding,
 				MISSING_ID,
 				FcCustomFee.fixedFee(33, denom, targetCollector),
@@ -216,7 +215,6 @@ class RoyaltyFeeAssessorTest {
 
 	private final long originalUnits = 100;
 	private final Id payer = new Id(0, 1, 2);
-	private final Id chargingToken = new Id(0, 1, 2222);
 	private final EntityId otherCollector = new EntityId(10, 9, 8);
 	private final EntityId targetCollector = new EntityId(9, 8, 7);
 	private final Id funding = new Id(0, 0, 98);
@@ -224,10 +222,6 @@ class RoyaltyFeeAssessorTest {
 	private final AccountAmount payerCredit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(originalUnits)
-			.build();
-	private final AccountAmount fundingCredit = AccountAmount.newBuilder()
-			.setAccountID(funding.asGrpcAccount())
-			.setAmount(originalUnits / 2)
 			.build();
 	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit);
 	private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(

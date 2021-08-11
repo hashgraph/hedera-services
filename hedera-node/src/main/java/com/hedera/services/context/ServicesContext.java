@@ -141,6 +141,7 @@ import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
 import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
+import com.hedera.services.grpc.marshalling.FixedFeeAssessor;
 import com.hedera.services.grpc.marshalling.FractionalFeeAssessor;
 import com.hedera.services.grpc.marshalling.HbarFeeAssessor;
 import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
@@ -253,6 +254,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
@@ -826,10 +828,10 @@ public class ServicesContext {
 		if (impliedTransfersMarshal == null) {
 			final var htsAssessor = new HtsFeeAssessor();
 			final var hbarAssessor = new HbarFeeAssessor();
-			final var royaltyAssessor = new RoyaltyFeeAssessor(
-					htsAssessor, hbarAssessor, AdjustmentUtils::adjustedChange);
-			final var fractionalAssessor = new FractionalFeeAssessor();
-			final var feeAssessor = new FeeAssessor(htsAssessor, hbarAssessor, royaltyAssessor, fractionalAssessor);
+			final var fixedFeeAssessor = new FixedFeeAssessor(htsAssessor, hbarAssessor);
+			final var royaltyAssessor = new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange);
+			final var fractionalAssessor = new FractionalFeeAssessor(fixedFeeAssessor);
+			final var feeAssessor = new FeeAssessor(fixedFeeAssessor, royaltyAssessor, fractionalAssessor);
 			impliedTransfersMarshal = new ImpliedTransfersMarshal(
 					feeAssessor,
 					customFeeSchedules(),
