@@ -328,7 +328,7 @@ class ServicesStateTest {
 	@Test
 	void minimumVersionIsRelease0130() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0130_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0120_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
@@ -342,7 +342,7 @@ class ServicesStateTest {
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_PRE_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0130_VERSION));
+				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION + 1));
 	}
