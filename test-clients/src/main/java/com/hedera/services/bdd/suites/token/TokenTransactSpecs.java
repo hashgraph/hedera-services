@@ -139,10 +139,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						treasuriesAreExemptFromAllCustomFees(),
 						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
 						royaltyFallbackCaseStudy(),
-						royaltyFractionalCaseStudy(),
+						normalRoyaltyCaseStudy(),
 						canTransactInTokenWithSelfDenominatedFixedFee(),
 						nftOwnersChangeAtomically(),
 						fractionalNetOfTransfersCaseStudy(),
+						royaltyAndFractionalTogetherCaseStudy(),
 				}
 		);
 	}
@@ -1353,7 +1354,74 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec royaltyFractionalCaseStudy() {
+	public HapiApiSpec royaltyAndFractionalTogetherCaseStudy() {
+		final var alice = "alice";
+		final var amelie = "amelie";
+		final var usdcTreasury = "bank";
+		final var usdcCollector = "usdcFees";
+		final var westWindTreasury = "collection";
+		final var westWindArt = "westWindArt";
+		final var usdc = "USDC";
+		final var supplyKey = "supply";
+
+		final var txnFromTreasury = "txnFromTreasury";
+		final var txnFromAmelie = "txnFromAmelie";
+
+		return defaultHapiSpec("RoyaltyAndFractionalTogetherCaseStudy")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(alice).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(amelie),
+						cryptoCreate(usdcTreasury),
+						cryptoCreate(usdcCollector),
+						cryptoCreate(westWindTreasury),
+						tokenCreate(usdc)
+								.signedBy(DEFAULT_PAYER, usdcTreasury, usdcCollector)
+								.initialSupply(Long.MAX_VALUE)
+								.withCustom(fractionalFee(
+										1, 2, 0, OptionalLong.empty(), usdcCollector))
+								.treasury(usdcTreasury),
+						tokenAssociate(westWindTreasury, usdc),
+						tokenCreate(westWindArt)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.treasury(westWindTreasury)
+								.withCustom(royaltyFeeWithFallback(
+										1, 100,
+										fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
+										westWindTreasury)),
+						tokenAssociate(amelie, List.of(westWindArt, usdc)),
+						tokenAssociate(alice, List.of(westWindArt, usdc)),
+						mintToken(westWindArt, List.of(ByteString.copyFromUtf8("Fugues and fantastics"))),
+						cryptoTransfer(
+								moving(200, usdc)
+										.between(usdcTreasury, alice)
+						)
+								.fee(ONE_HBAR),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(westWindTreasury, amelie)
+						)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury)
+				).when(
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(amelie, alice),
+								moving(200, usdc).between(alice, amelie),
+								movingHbar(10 * ONE_HUNDRED_HBARS).between(alice, amelie)
+						)
+								.signedBy(amelie, alice)
+								.payingWith(amelie)
+								.via(txnFromAmelie)
+								.fee(ONE_HBAR)
+				).then(
+						getTxnRecord(txnFromAmelie).logged()
+				);
+	}
+
+	public HapiApiSpec normalRoyaltyCaseStudy() {
 		final var alice = "alice";
 		final var amelie = "amelie";
 		final var usdcTreasury = "bank";
@@ -1365,7 +1433,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		final var txnFromTreasury = "txnFromTreasury";
 		final var txnFromAmelie = "txnFromAmelie";
 
-		return defaultHapiSpec("RoyaltyFractionalCaseStudy")
+		return defaultHapiSpec("NormalRoyaltyCaseStudy")
 				.given(
 						newKeyNamed(supplyKey),
 						cryptoCreate(alice).balance(10 * ONE_HUNDRED_HBARS),

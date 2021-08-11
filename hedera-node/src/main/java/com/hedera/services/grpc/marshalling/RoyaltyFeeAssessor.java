@@ -51,6 +51,7 @@ public class RoyaltyFeeAssessor {
 			List<FcAssessedCustomFee> accumulator
 	) {
 		final var payer = change.getAccount();
+		final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
 		for (var fee : feesWithRoyalties) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != ROYALTY_FEE) {
@@ -62,7 +63,6 @@ public class RoyaltyFeeAssessor {
 				continue;
 			}
 
-			final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
 			if (exchangedValue.isEmpty()) {
 				final var fallback = spec.getFallbackFee();
 				if (fallback != null) {

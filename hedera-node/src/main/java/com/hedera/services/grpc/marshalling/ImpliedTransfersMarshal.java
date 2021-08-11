@@ -102,6 +102,10 @@ public class ImpliedTransfersMarshal {
 	}
 
 	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes) {
+		/* First add all fungible changes, then NFT ownership changes. This ensures
+		fractional fees are applied to the fungible value exchanges before royalty
+		fees are assessed. */
+		List<BalanceChange> ownershipChanges = null;
 		for (var xfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = xfers.getToken();
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
@@ -109,8 +113,14 @@ public class ImpliedTransfersMarshal {
 				changes.add(changingFtUnits(tokenId, grpcTokenId, aa));
 			}
 			for (var oc : xfers.getNftTransfersList()) {
-				changes.add(changingNftOwnership(tokenId, grpcTokenId, oc));
+				if (ownershipChanges == null) {
+					ownershipChanges = new ArrayList<>();
+				}
+				ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc));
 			}
+		}
+		if (ownershipChanges != null) {
+			changes.addAll(ownershipChanges);
 		}
 	}
 

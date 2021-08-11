@@ -56,6 +56,7 @@ public class FractionalFeeAssessor {
 		var unitsLeft = initialUnits;
 		final var payer = change.getAccount();
 		final var denom = change.getToken();
+		final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
 		for (var fee : feesWithFractional) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
@@ -78,7 +79,6 @@ public class FractionalFeeAssessor {
 				if (unitsLeft < 0) {
 					return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 				}
-				final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
 				try {
 					reclaim(assessedAmount, creditsToReclaimFrom);
 				} catch (ArithmeticException ignore) {
