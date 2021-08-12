@@ -154,7 +154,11 @@ public class TransactionRecordService {
 	}
 
 	/**
+	 * Given a list of {@link BalanceChange}, constructs a transfer list for the records
+	 * of the active crypto transaction.
 	 *
+	 * @param changes
+	 * 		A list of {@link BalanceChange}
 	 * */
 	public void includeAdjustmentsFrom(List<BalanceChange> changes) {
 		for (var change : changes) {
