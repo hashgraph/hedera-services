@@ -2286,22 +2286,6 @@ workflows:
               - install-tools
               - attach_workspace:
                   at: /
-        - jrs-regression:
-            context: Slack
-            regression_path: /swirlds-platform/regression
-            result_path: results/4N_1C/CI
-            config_type: "ci"
-            workflow-name: "GCP-Commit-Services-Restart-Comp-Basic-4N-1C"
-            name: "run-continuous-integration-gcp-restart"
-            continuous_integration: true
-            slack_results_channel: "hedera-cicd"
-            slack_summary_channel: "hedera-cicd"
-            requires:
-              - javadoc-generation
-            pre-steps:
-              - install-tools
-              - attach_workspace:
-                  at: /
 
 jobs:
   start-singlejob-testnet:
