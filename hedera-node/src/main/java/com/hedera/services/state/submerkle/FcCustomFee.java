@@ -52,7 +52,11 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL
  * A <i>fractional fee</i> always has the same units as the token type
  * defining the custom fee. It specifies the fraction of the units
  * moved that should go to the fee collection account, along with an
- * optional minimum and maximum number of units to be charged.
+ * optional minimum and maximum number of units to be charged. (Unless
+ * the "net-of-transfers" flag is set, this fee is deducted from the
+ * receiving account(s); when the flag is set, an <b>additional</b> fee
+ * is levied to the sending account---the receiving account(s) get
+ * the amounts in the original transfer list.)
  *
  * A <i>royalty fee</i> is used with a non-fungible unique token type and
  * sets a fraction of the fungible value received for a NFT that should
@@ -64,7 +68,9 @@ public class FcCustomFee implements SelfSerializable {
 	static final byte FRACTIONAL_CODE = (byte) (1 << 1);
 	static final byte ROYALTY_CODE = (byte) (1 << 2);
 
-	static final int MERKLE_VERSION = 1;
+	static final int RELEASE_016X_VERSION = 1;
+	static final int RELEASE_017X_VERSION = 2;
+	static final int CURRENT_VERSION = RELEASE_017X_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa433940f137L;
 
 	private FeeType feeType;
@@ -111,10 +117,12 @@ public class FcCustomFee implements SelfSerializable {
 			long denominator,
 			long minimumUnitsToCollect,
 			long maximumUnitsToCollect,
+			boolean netOfTransfers,
 			EntityId feeCollector
 	) {
 		Objects.requireNonNull(feeCollector);
-		final var spec = new FractionalFeeSpec(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
+		final var spec = new FractionalFeeSpec(
+				numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
 		return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec, null);
 	}
 
@@ -150,6 +158,7 @@ public class FcCustomFee implements SelfSerializable {
 					fraction.getDenominator(),
 					fractionalSource.getMinimumAmount(),
 					effectiveMax,
+					fractionalSource.getNetOfTransfers(),
 					feeCollector);
 		} else {
 			final var royaltySource = source.getRoyaltyFee();
@@ -178,6 +187,7 @@ public class FcCustomFee implements SelfSerializable {
 			if (spec.getMaximumUnitsToCollect() != Long.MAX_VALUE) {
 				fracBuilder.setMaximumAmount(spec.getMaximumUnitsToCollect());
 			}
+			fracBuilder.setNetOfTransfers(spec.isNetOfTransfers());
 			builder.setFractionalFee(fracBuilder);
 		} else {
 			final var spec = royaltyFeeSpec;
@@ -266,8 +276,9 @@ public class FcCustomFee implements SelfSerializable {
 			var denominator = din.readLong();
 			var minimumUnitsToCollect = din.readLong();
 			var maximumUnitsToCollect = din.readLong();
+			var netOfTransfers = version >= RELEASE_017X_VERSION && din.readBoolean();
 			fractionalFeeSpec = new FractionalFeeSpec(
-					numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
+					numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
 		} else {
 			feeType = FeeType.ROYALTY_FEE;
 			var numerator = din.readLong();
@@ -297,6 +308,7 @@ public class FcCustomFee implements SelfSerializable {
 			dos.writeLong(fractionalFeeSpec.getDenominator());
 			dos.writeLong(fractionalFeeSpec.getMinimumAmount());
 			dos.writeLong(fractionalFeeSpec.getMaximumUnitsToCollect());
+			dos.writeBoolean(fractionalFeeSpec.isNetOfTransfers());
 		} else {
 			dos.writeByte(ROYALTY_CODE);
 			dos.writeLong(royaltyFeeSpec.getNumerator());
@@ -318,7 +330,7 @@ public class FcCustomFee implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos) throws IOException {

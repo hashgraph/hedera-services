@@ -34,25 +34,21 @@ import static com.hedera.services.grpc.marshalling.FixedFeeResult.FRACTIONAL_FEE
 import static com.hedera.services.grpc.marshalling.FixedFeeResult.ROYALTY_FEE_ASSESSMENT_PENDING;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FeeAssessor {
-	private final HtsFeeAssessor htsFeeAssessor;
-	private final HbarFeeAssessor hbarFeeAssessor;
+	private final FixedFeeAssessor fixedFeeAssessor;
 	private final RoyaltyFeeAssessor royaltyFeeAssessor;
 	private final FractionalFeeAssessor fractionalFeeAssessor;
 
 	public FeeAssessor(
-			HtsFeeAssessor htsFeeAssessor,
-			HbarFeeAssessor hbarFeeAssessor,
+			FixedFeeAssessor fixedFeeAssessor,
 			RoyaltyFeeAssessor royaltyFeeAssessor,
 			FractionalFeeAssessor fractionalFeeAssessor
 	) {
-		this.htsFeeAssessor = htsFeeAssessor;
-		this.hbarFeeAssessor = hbarFeeAssessor;
+		this.fixedFeeAssessor = fixedFeeAssessor;
 		this.royaltyFeeAssessor = royaltyFeeAssessor;
 		this.fractionalFeeAssessor = fractionalFeeAssessor;
 	}
@@ -120,12 +116,7 @@ public class FeeAssessor {
 				continue;
 			}
 			if (fee.getFeeType() == FIXED_FEE) {
-				final var fixedSpec = fee.getFixedFeeSpec();
-				if (fixedSpec.getTokenDenomination() == null) {
-					hbarFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
-				} else {
-					htsFeeAssessor.assess(payer, chargingToken, fee, balanceChangeManager, accumulator);
-				}
+				fixedFeeAssessor.assess(payer, chargingToken, fee, balanceChangeManager, accumulator);
 				if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
 					return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
 				}

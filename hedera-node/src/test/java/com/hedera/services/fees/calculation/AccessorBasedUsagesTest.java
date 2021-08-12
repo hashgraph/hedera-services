@@ -204,9 +204,12 @@ class AccessorBasedUsagesTest {
 				fixedFee(1, null, collector),
 				fixedFee(2, aDenom, collector),
 				fixedFee(2, bDenom, collector),
-				fractionalFee(1, 2, 1, 2, collector),
-				fractionalFee(1, 3, 1, 2, collector),
-				fractionalFee(1, 4, 1, 2, collector)
+				fractionalFee(
+						1, 2, 1, 2, false, collector),
+				fractionalFee(
+						1, 3, 1, 2, false, collector),
+				fractionalFee(
+						1, 4, 1, 2, false, collector)
 		).stream().map(FcCustomFee::asGrpc).collect(toList());
 	}
 }

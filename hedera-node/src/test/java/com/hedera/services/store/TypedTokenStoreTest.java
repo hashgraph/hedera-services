@@ -88,6 +88,8 @@ class TypedTokenStoreTest {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private BackingTokenRels backingTokenRels;
+	@Mock
+	private TokenStore legacyStore;
 
 	@Mock
 	private TokenStore tokenStore;
@@ -107,7 +109,8 @@ class TypedTokenStoreTest {
 				() -> tokenRels,
 				backingTokenRels,
 				uniqTokenViewsManager,
-				tokenStore::addKnownTreasury);
+				tokenStore::addKnownTreasury,
+				legacyStore::removeKnownTreasuryForToken);
 	}
 
 	/* --- Token relationship loading --- */
@@ -170,7 +173,7 @@ class TypedTokenStoreTest {
 
 	@Test
 	void persistTrackers() {
-		var ot = new OwnershipTracker();
+		final var ot = new OwnershipTracker();
 		subject.persistTrackers(ot);
 		verify(transactionRecordService).includeOwnershipChanges(ot);
 	}
@@ -245,7 +248,7 @@ class TypedTokenStoreTest {
 		givenToken(merkleTokenId, merkleToken);
 		merkleToken.setDeleted(true);
 
-		var deletedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
+		final var deletedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 
 		assertEquals(token.getId(), deletedToken.getId());
 	}
@@ -272,6 +275,20 @@ class TypedTokenStoreTest {
 
 		given(uniqueTokens.get(any())).willReturn(null);
 		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
+	}
+
+	@Test
+	void persistsDeletedTokenAsExpected() {
+		setupToken();
+		given(tokens.getForModify(any())).willReturn(merkleToken);
+
+		token.setIsDeleted(true);
+		token.setAutoRenewAccount(null);
+
+		subject.persistToken(token);
+
+		assertTrue(merkleToken.isDeleted());
+		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
 	}
 
 
@@ -417,34 +434,34 @@ class TypedTokenStoreTest {
 		assertEquals(status, ex.getResponseCode());
 	}
 
-	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
+	private void givenRelationship(final MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.get(anAssoc)).willReturn(aRelationship);
 	}
 
-	private void givenModifiableRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
+	private void givenModifiableRelationship(final MerkleEntityAssociation anAssoc, final MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.getForModify(anAssoc)).willReturn(aRelationship);
 	}
 
-	private void givenToken(MerkleEntityId anId, MerkleToken aToken) {
+	private void givenToken(final MerkleEntityId anId, final MerkleToken aToken) {
 		given(tokens.get(anId)).willReturn(aToken);
 	}
 
-	private void givenModifiableToken(MerkleEntityId anId, MerkleToken aToken) {
+	private void givenModifiableToken(final MerkleEntityId anId, final MerkleToken aToken) {
 		given(tokens.getForModify(anId)).willReturn(aToken);
 	}
 
-	private void assertTokenLoadFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
+	private void assertTokenLoadFailsWith(final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
 		assertEquals(status, ex.getResponseCode());
 	}
 
-	private void assertloadPossiblyDeletedTokenFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
+	private void assertLoadPossiblyDeletedTokenFailsWith(final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
 		assertEquals(status, ex.getResponseCode());
 	}
 
-	private void assertMiscRelLoadFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class,
+	private void assertMiscRelLoadFailsWith(final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class,
 				() -> subject.loadTokenRelationship(token, miscAccount));
 		assertEquals(status, ex.getResponseCode());
 	}

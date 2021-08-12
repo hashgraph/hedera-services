@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,6 +90,18 @@ class TokenTest {
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
+	}
+
+	@Test
+	void deleteAsExpected() {
+		subject.setAdminKey(someKey);
+		assertDoesNotThrow(() -> subject.delete());
+	}
+
+	@Test
+	void deleteFailsAsExpected() {
+		subject.setAdminKey(null);
+		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);
 	}
 
 	@Test
@@ -296,7 +309,7 @@ class TokenTest {
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
 		subject.setSupplyKey(someKey);
 
-		var ownershipTracker = mock(OwnershipTracker.class);
+		final var ownershipTracker = mock(OwnershipTracker.class);
 		subject.mint(ownershipTracker, treasuryRel, List.of(ByteString.copyFromUtf8("memo")),
 				RichInstant.fromJava(Instant.now()));
 		assertEquals(initialSupply + 1, subject.getTotalSupply());
@@ -373,16 +386,16 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 		subject.setWipeKey(someKey);
 
-		var loadedUniqueTokensMap = (HashMap<Long, UniqueToken>) mock(HashMap.class);
-		var uniqueToken = mock(UniqueToken.class);
-		var owner = nonTreasuryAccount.getId();
+		final var loadedUniqueTokensMap = (HashMap<Long, UniqueToken>) mock(HashMap.class);
+		final var uniqueToken = mock(UniqueToken.class);
+		final var owner = nonTreasuryAccount.getId();
 		given(uniqueToken.getOwner()).willReturn(owner);
 		given(loadedUniqueTokensMap.get(any())).willReturn(uniqueToken);
 		subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
 
 		nonTreasuryRel.setBalance(100);
 
-		var ownershipTracker = mock(OwnershipTracker.class);
+		final var ownershipTracker = mock(OwnershipTracker.class);
 		subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
 		assertEquals(initialSupply - 1, subject.getTotalSupply());
 		assertEquals(99, nonTreasuryRel.getBalanceChange());
@@ -515,18 +528,18 @@ class TokenTest {
 		subject.setFrozenByDefault(false);
 		assertFalse(subject.isFrozenByDefault());
 
-		var wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
+		final var wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 		subject.setWipeKey(wipeKey);
 		assertEquals(wipeKey, subject.getWipeKey());
 
-		var account = new Account(Id.DEFAULT);
+		final var account = new Account(Id.DEFAULT);
 		subject.setTreasury(account);
 		assertEquals(account, subject.getTreasury());
 
 		subject.setAutoRenewAccount(account);
 		assertEquals(account, subject.getAutoRenewAccount());
 
-		var hmap = new HashMap<Long, UniqueToken>();
+		final var hmap = new HashMap<Long, UniqueToken>();
 		hmap.put(1L, new UniqueToken(new Id(1, 2, 3), 4));
 		subject.setLoadedUniqueTokens(hmap);
 		assertEquals(hmap, subject.getLoadedUniqueTokens());
@@ -550,8 +563,8 @@ class TokenTest {
 		assertEquals(desired, subject.toString());
 	}
 
-	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
+	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
 	}
 }

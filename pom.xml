@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>${release.version}</version>
+  <version>0.17.1-SNAPSHOT</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>
@@ -154,9 +154,6 @@
     <maven-versions.version>2.8.1</maven-versions.version>
     <maven-javadoc.version>3.3.0</maven-javadoc.version>
 
-    <!-- Release version to be used in all pom files -->
-    <release.version>0.17.0-SNAPSHOT</release.version>
-
     <!-- Dependency properties in alphabetical order -->
     <commons-codec.version>1.15</commons-codec.version>
     <commons-io.version>2.11.0</commons-io.version>
@@ -190,7 +187,7 @@
     <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S125</sonar.issue.ignore.multicriteria.e1.ruleKey>
 
-    <project.build.outputTimestamp>2021-06-11T23:15:26Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-08-11T17:16:31Z</project.build.outputTimestamp>
   </properties>
 
   <modules>

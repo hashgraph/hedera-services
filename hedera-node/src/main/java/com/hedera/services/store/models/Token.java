@@ -58,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 
@@ -308,6 +309,20 @@ public class Token {
 		accountRel.setBalance(newAccountBalance);
 		setTotalSupply(newTotalSupply);
 	}
+	/**
+	 * Performs a check if the target token has an admin key.
+	 * If the admin key is not present throws an exception and does not mutate the token.
+	 * If the admin key is present, marks it as deleted.
+	 */
+    public void delete() {
+        validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
+
+        setIsDeleted(true);
+    }
+
+    public boolean hasAdminKey() {
+        return adminKey != null;
+    }
 
 	public TokenRelationship newRelationshipWith(final Account account) {
 		final var newRel = new TokenRelationship(this, account);

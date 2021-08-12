@@ -89,6 +89,7 @@ public class TypedTokenStore {
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
 	private final LegacyStore delegate;
+	private final LegacyStoreAddKnownTreasury addKnownTreasury;
 
 	public TypedTokenStore(
 			AccountStore accountStore,
@@ -98,7 +99,8 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
-			LegacyStore legacyStoreDelegate
+			LegacyStoreAddKnownTreasury legacyStoreDelegate,
+            LegacyStore delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -106,9 +108,11 @@ public class TypedTokenStore {
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
-		this.delegate = legacyStoreDelegate;
+		this.delegate = delegate;
 		this.backingTokenRels = backingTokenRels;
-	}
+
+        this.addKnownTreasury = legacyStoreDelegate;
+    }
 
 	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
 		final var tokenId = rel.getToken().getId();
@@ -329,6 +333,14 @@ public class TypedTokenStore {
 		if (token.hasRemovedUniqueTokens()) {
 			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
+
+		/* Only needed during HTS refactor.
+		Will be removed once all operations that refer to the knownTreasuries in-memory structure are refactored */
+		if (token.isDeleted()) {
+			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
+			final TokenID mutatedToken = token.getId().asGrpcToken();
+			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
+		}
 		transactionRecordService.includeChangesToToken(token);
 	}
 
@@ -453,8 +465,8 @@ public class TypedTokenStore {
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setWipeKey(immutableToken.getWipeKey());
-		token.setAdminKey(immutableToken.getAdminKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+        token.setAdminKey(immutableToken.getAdminKey());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
@@ -474,7 +486,12 @@ public class TypedTokenStore {
 	}
 
 	@FunctionalInterface
-	public interface LegacyStore {
+	public interface LegacyStoreAddKnownTreasury {
 		void addKnownTreasury(AccountID aId, TokenID tId);
 	}
+
+    @FunctionalInterface
+    public interface LegacyStore {
+        void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
+    }
 }

@@ -388,14 +388,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void deletesAsExpected() {
-		final var outcome = subject.delete(misc);
-
-		assertEquals(OK, outcome);
-		assertTrue(subject.knownTreasuries.isEmpty());
-	}
-
-	@Test
 	void rejectsDeletionMissingAdminKey() {
 		given(token.adminKey()).willReturn(Optional.empty());
 

@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
@@ -55,7 +56,8 @@ public class TransitionRunner {
 			TokenAssociateToAccount, TokenDissociateFromAccount,
 			TokenAccountWipe,
 			TokenCreate,
-			CryptoTransfer
+			CryptoTransfer,
+			TokenDelete
 	);
 
 	private final TransactionContext txnCtx;

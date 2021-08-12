@@ -512,9 +512,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec creationValidatesMaxSupply() {
 		return defaultHapiSpec("CreationValidatesMaxSupply")
-				.given()
-				.when()
-				.then(
+				.given( ).when( ).then(
 						tokenCreate("primary")
 								.maxSupply(-1)
 								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
@@ -698,7 +696,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, token, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										numerator, denominator,
-										minimumToCollect, OptionalLong.of(maximumToCollect),
+										minimumToCollect,
+										OptionalLong.of(maximumToCollect),
+										false,
 										tokenCollector))
 				);
 	}
@@ -746,7 +746,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										numerator, denominator,
-										minimumToCollect, OptionalLong.of(maximumToCollect),
+										minimumToCollect, OptionalLong.of(maximumToCollect), false,
 										tokenCollector)),
 						getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
 						getAccountInfo(hbarCollector).hasNoTokenRelationship(token),

@@ -256,7 +256,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, token, newTokenCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										newNumerator, newDenominator,
-										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
+										newMinimumToCollect, OptionalLong.of(newMaximumToCollect), false,
 										newTokenCollector))
 				);
 	}
