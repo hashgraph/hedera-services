@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -73,8 +75,14 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 
 	private HapiApiSpec getAccoutInfoByAccountID() {
 		return defaultHapiSpec("FailsForMissingAccount")
-				.given().when().then(
-						getAccountInfo("0.0.1010")
+				.given(
+						cryptoTransfer(tinyBarsFromTo("0.0.1100", "0.0.1101", 1))
+								//.via("pureCrypto")
+								.fee(ONE_HUNDRED_HBARS)
+//								.payingWith("0.0.1100")
+				).when().then(
+						getAccountInfo("0.0.2")
+								//.payingWith(ADDRESS_BOOK_CONTROL)
 								.logged()
 								//.hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
 				);

@@ -64,23 +64,37 @@ public class SigFactory {
 			List<KeyTree> signers,
 			KeyFactory factory
 	) throws Throwable {
-		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), signers, factory);
+		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), signers, null, factory);
 		List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
+		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
+		return txn.build();
+	}
+
+	public Transaction signWithSimpleKey(
+			Transaction.Builder txn,
+			List<Key> keys,
+			KeyFactory factory
+	) throws Throwable {
+		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), null, keys, factory);
+		List<Map.Entry<byte[], byte[]>> sigs = signing.simplySigned();
 		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
 		return txn.build();
 	}
 
 	private static class SimpleSigning {
 		private final byte[] data;
-		private final KeyFactory factory;
+		private final KeyFactory factory ;
 		private final List<KeyTree> signers;
 		private final Set<String> used = new HashSet<>();
 		private final List<SignatureType> sigTypes = new ArrayList<>();
 		private final List<Map.Entry<byte[], byte[]>> keySigs = new ArrayList<>();
 
-		public SimpleSigning(byte[] data, List<KeyTree> signers, KeyFactory factory) {
+		private List<Key> keys ;
+
+		public SimpleSigning(byte[] data, List<KeyTree> signers, List<Key> keys, KeyFactory factory) {
 			this.data = data;
 			this.signers = signers;
+			this.keys = keys;
 			this.factory = factory;
 		}
 
@@ -94,6 +108,14 @@ public class SigFactory {
 				}
 			};
 		}
+
+		public List<Map.Entry<byte[], byte[]>> simplySigned() throws Throwable {
+			for (Key key : keys) {
+				signIfNecessary(key);
+			}
+			return keySigs;
+		}
+
 
 		public List<Map.Entry<byte[], byte[]>> completed() throws Throwable {
 			for (KeyTree signer : signers) {

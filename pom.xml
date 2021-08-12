@@ -485,6 +485,12 @@ ${git.signoff}
       <version>${protobuf-java.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+
+    <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hedera-protobuf-java-api</artifactId>
       <version>${hapi-proto.version}</version>

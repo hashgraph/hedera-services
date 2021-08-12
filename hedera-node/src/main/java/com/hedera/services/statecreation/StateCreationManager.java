@@ -1,6 +1,7 @@
 package com.hedera.services.statecreation;
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.statecreation.creationtxns.FreezeTxnFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -65,22 +67,28 @@ public class StateCreationManager {
 	}
 
 	private void startCreation() {
+
 		processOrders.forEach(this::createEntitiesFor);
 
 		executorService.shutdown();
 
-		// wait a little bit, then gzip and upload the generated saved files
+
+		System.out.println("Done create the state file and let's shutdown the server.");
+
+		FreezeTxnFactory.newFreezeTxn().freezeStartAt(Instant.now().plusSeconds(10));
+
+		// wait a little bit or check swirlds.log to find the "MAINTENANCE" flag,
+		// then gzip and upload the generated saved files
 	}
 
 	private void createEntitiesFor(Integer posi, String entityType) {
 		final String valStr = properties.getProperty(processOrders.get(posi) + ".total");
 		final AtomicInteger totalToCreate = new AtomicInteger(Integer.parseInt(valStr));
 
+		BuiltinClient client = new BuiltinClient(totalToCreate, entityType, ctx);
 		if(totalToCreate.get() > 0) {
 			System.out.println("Start to build " + valStr + " " + entityType);
-			BuiltinClient client = new BuiltinClient(totalToCreate, entityType, ctx);
 			executorService.execute(client);
 		}
 	}
-
 }

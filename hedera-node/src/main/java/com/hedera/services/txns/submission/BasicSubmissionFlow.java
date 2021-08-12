@@ -66,7 +66,7 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		}
 
 		final var accessor = precheckResult.getRight().get();
-		System.out.println("Now submit to platform: ");
+		//System.out.println("Now submit to platform: ");
 		return responseWith(submissionManager.trySubmission(accessor));
 	}
 

@@ -21,12 +21,14 @@ package com.hedera.services.statecreation.creationtxns;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
 import com.hedera.services.statecreation.creationtxns.utils.KeyTree;
 import com.hedera.services.statecreation.creationtxns.utils.SigFactory;
 import com.hedera.services.statecreation.creationtxns.utils.SigMapGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -34,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -51,7 +54,6 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	public static final AccountID DEFAULT_NODE = asAccount(DEFAULT_NODE_ID);
 	public static final String DEFAULT_PAYER_ID = "0.0.2";
 	public static final String MASTER_PAYER_ID = "0.0.50";
-	public static final String TREASURY_PAYER_ID = "0.0.2";
 	public static final AccountID DEFAULT_PAYER = asAccount(DEFAULT_PAYER_ID);
 	public static final KeyTree DEFAULT_PAYER_KT = KeyTree.withRoot(list(ed25519()));
 	public static final Instant DEFAULT_VALID_START = Instant.now();
@@ -96,8 +98,12 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	}
 
 	private Transaction signed(Transaction.Builder txnWithSigs) throws Throwable {
-		List<KeyTree> signers = allKts();
-		return sigFactory.signWithSigMap(txnWithSigs, signers, keyFactory);
+		// List<KeyTree> signers = allKts(); // Change to use Key directly
+		KeyPairObj keyPairObj = KeyFactory.genesisKeyPair;
+		Key genKey = KeyFactory.asPublicKey(keyPairObj.getPublicKeyAbyteStr());
+		final List<Key> keys = Collections.singletonList(genKey);
+
+		return sigFactory.signWithSimpleKey(txnWithSigs, keys, keyFactory);
 	}
 
 	private List<KeyTree> allKts() {
@@ -125,9 +131,10 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	}
 
 	private Timestamp validStart() {
+		Instant now = Instant.now();
 		return Timestamp.newBuilder()
-				.setSeconds(start.getEpochSecond())
-				.setNanos(start.getNano())
+				.setSeconds(now.getEpochSecond())
+				.setNanos(now.getNano())
 				.build();
 	}
 

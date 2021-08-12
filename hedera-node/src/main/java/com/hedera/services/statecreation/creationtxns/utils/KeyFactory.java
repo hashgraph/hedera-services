@@ -21,6 +21,7 @@ package com.hedera.services.statecreation.creationtxns.utils;
  */
 
 import com.google.common.io.Files;
+
 import com.google.protobuf.ByteString;
 //import com.hedera.services.bdd.spec.HapiSpecSetup;
 //import com.hedera.services.bdd.spec.persistence.SpecKey;
@@ -40,7 +41,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+//import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
+import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,8 +58,10 @@ public class KeyFactory {
 
 	public static KeyPairObj genesisKeyPair;
 
-	// src/main/resources/StartUpAccount.txt
+//	private static String startupAccountLoc = "src/main/resources/StartUpAccount.txt";
 	private static String startupAccountLoc = "src/main/resources/StartUpAccount.txt";
+	private static String pemFile = "data/onboard/devGenesisKeypair.pem";
+//	private static String pemFile = "data/onboard/topicSubmitKey.pem";
 	private static String kpKey = "START_ACCOUNT";
 
 	private static final KeyFactory DEFAULT_INSTANCE = new KeyFactory();
@@ -65,13 +71,26 @@ public class KeyFactory {
 	}
 
 	private final KeyGenerator keyGen;
-	private final Map<String, Key> labelToEd25519 = new HashMap<>();
-	private final Map<String, PrivateKey> publicToPrivateKey = new HashMap<>();
+	private static final Map<String, Key> labelToEd25519 = new HashMap<>();
+	private static Map<String, PrivateKey> publicToPrivateKey ; // = new HashMap<>();
 
 	public KeyFactory() {
 		this(KeyFactory::genSingleEd25519Key);
-		firstStartupKp();
+	//	firstStartupKp();
+		readKeyFromPemFile();
 	}
+
+	public static Key getKey() {
+		Key genKey = null;
+		try {
+			KeyPairObj genKeyObj = genesisKeyPair;
+			genKey = asPublicKey(genKeyObj.getPublicKeyAbyteStr());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return genKey;
+	}
+
 	public KeyFactory(KeyGenerator keyGen) {
 		this.keyGen = keyGen;
 	}
@@ -89,6 +108,10 @@ public class KeyFactory {
 		ThresholdKey.Builder thresholdKey =
 				ThresholdKey.newBuilder().setKeys(KeyList.newBuilder().addAllKeys(children).build()).setThreshold(M);
 		return Key.newBuilder().setThresholdKey(thresholdKey).build();
+	}
+
+	public KeyPairObj getGenesisKeyPair() {
+		return genesisKeyPair;
 	}
 
 	public PrivateKey lookupPrivateKey(Key key) {
@@ -131,7 +154,15 @@ public class KeyFactory {
 			e.printStackTrace();
 			System.out.println("Can't get genesis account keys");
 		}
-		System.out.println("Loaded the genesis key successfully.");
+		try {
+			if(publicToPrivateKey == null) {
+				publicToPrivateKey = new HashMap<>();
+			}
+			publicToPrivateKey.put(genesisKeyPair.getPublicKeyAbyteStr(), genesisKeyPair.getPrivateKey());
+			System.out.println("Loaded the genesis key successfully.");
+		} catch (Exception e) {
+
+		}
 	}
 
 	public static KeyPairObj firstListedKp(String accountInfoPath, String kpKey) throws Exception {
@@ -149,13 +180,12 @@ public class KeyFactory {
 	}
 
 	private static byte[] asBase64Bytes(String path) throws Exception {
-
-
+		//String text = "nonsense";
 		String text = new String(Files.toByteArray(new File(path)));
 		return com.hedera.services.statecreation.creationtxns.utils.CommonUtils.base64decode(text);
 	}
 
-	public static Key asPublicKey(String pubKeyHex) throws Exception {
+	public static Key asPublicKey(String pubKeyHex)  {
 		return Key.newBuilder()
 				.setEd25519(ByteString.copyFrom(CommonUtils.unhex(pubKeyHex)))
 				.build();
@@ -170,4 +200,42 @@ public class KeyFactory {
 		}
 		return null;
 	}
+
+
+	// Try to read from pem file to see if it's an ed25519
+
+	public static void readKeyFromPemFile()  {
+		try {
+			File fin = new File(pemFile);
+			//Ed25519KeyStore keyStore = Ed25519KeyStore.read("swirlds".toCharArray(), fin);
+			genesisKeyPair  = asOcKeystore(fin, "passphrase");
+			//genesisKeyPair = firstKpFrom(keyStore, "STARTUP_ACCOUNT");
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Can't get pem file at {}" + pemFile);
+		}
+		try {
+			String pubKeyStr = genesisKeyPair.getPublicKeyAbyteStr();
+			PrivateKey privateKey = genesisKeyPair.getPrivateKey();
+			if(publicToPrivateKey == null) {
+				publicToPrivateKey = new HashMap<>();
+			}
+			publicToPrivateKey.put(pubKeyStr, privateKey);
+			System.out.println("Loaded the genesis key successfully.");
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Can't get the key from pemfile");
+		}
+	}
+
+
+	public static KeyPairObj asOcKeystore(File aes256EncryptedPkcs8Pem, String passphrase) throws KeyStoreException {
+		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
+		var keyPair = keyStore.get(0);
+		return new KeyPairObj(
+				com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded()),
+				com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded()));
+	}
+
+
 }

@@ -22,6 +22,7 @@ package com.hedera.services.statecreation.creationtxns;
 
 //import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.services.legacy.core.KeyPairObj;
+
 import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
 import com.hedera.services.statecreation.creationtxns.utils.KeyTree;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -30,7 +31,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import java.security.spec.InvalidKeySpecException;
 import java.util.OptionalLong;
 import java.util.Optional;
 
@@ -48,7 +48,12 @@ public class CryptoCreateTxnFactory extends CreateTxnFactory<CryptoCreateTxnFact
 	private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 	private OptionalLong balance = OptionalLong.empty();
-	private Optional<String> memo = Optional.empty();
+	private Optional<String> memo = Optional.of("Default memo");
+
+	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
+
+	private static Key newAccountKey = KeyFactory.getKey();
+
 	private CryptoCreateTxnFactory() {}
 	public static CryptoCreateTxnFactory newSignedCryptoCreate() {
 		return new CryptoCreateTxnFactory();
@@ -66,19 +71,12 @@ public class CryptoCreateTxnFactory extends CreateTxnFactory<CryptoCreateTxnFact
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		Key genKey = null;
-		try {
-			KeyPairObj genKeyObj = KeyFactory.genesisKeyPair;
-			genKey = KeyFactory.asPublicKey(genKeyObj.getPublicKeyAbyteStr());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 
 		CryptoCreateTransactionBody.Builder op = CryptoCreateTransactionBody.newBuilder()
 				//.setKey(accountKt.asKey(keyFactory))
-				.setKey(genKey)
+				.setKey(newAccountKey)
 				.setAutoRenewPeriod(autoRenewPeriod)
-				//.setMemo(memo.get())
+				.setMemo(memo.get())
 				.setReceiverSigRequired(receiverSigRequired.get());
 
 		balance.ifPresent(op::setInitialBalance);

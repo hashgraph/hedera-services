@@ -93,6 +93,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 				op.setTreasury(TxnHandlingScenario.TOKEN_TREASURY);
 			}
 		}
+
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}

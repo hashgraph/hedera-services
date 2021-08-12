@@ -21,9 +21,12 @@ package com.hedera.services.statecreation.creationtxns;
  */
 
 //import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
 import com.hedera.services.statecreation.creationtxns.utils.KeyTree;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -36,15 +39,29 @@ public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactor
 	public static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(30 * 86_400L).build();
 
 	private String memo = null;
-	private KeyTree adminKey = null;
-	private KeyTree submitKey = null;
+//	private KeyTree adminKey = null;
+//	private KeyTree submitKey = null;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 	private String autoRenewAccountId = null;
+
+	private static Key adminKey = KeyFactory.getKey();
+	private static Key submitKey = KeyFactory.getKey();
 
 	private TopicCreateTxnFactory() {}
 	public static TopicCreateTxnFactory newSignedConsensusCreateTopic() {
 		return new TopicCreateTxnFactory();
 	}
+
+//	private static Key getKey() {
+//		Key genKey = null;
+//		try {
+//			KeyPairObj genKeyObj = KeyFactory.genesisKeyPair;
+//			genKey = KeyFactory.asPublicKey(genKeyObj.getPublicKeyAbyteStr());
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		return genKey;
+//	}
 
 	@Override
 	protected TopicCreateTxnFactory self() {
@@ -63,10 +80,10 @@ public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactor
 			op.setMemo(memo);
 		}
 		if (null != adminKey) {
-			op.setAdminKey(adminKey.asKey(keyFactory));
+			op.setAdminKey(adminKey);
 		}
 		if (null != submitKey) {
-			op.setSubmitKey(submitKey.asKey(keyFactory));
+			op.setSubmitKey(submitKey);
 		}
 		if (null != autoRenewPeriod) {
 			op.setAutoRenewPeriod(autoRenewPeriod);
@@ -82,12 +99,12 @@ public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactor
 		return this;
 	}
 
-	public TopicCreateTxnFactory adminKey(KeyTree adminKey) {
+	public TopicCreateTxnFactory adminKey(Key adminKey) {
 		this.adminKey = adminKey;
 		return this;
 	}
 
-	public TopicCreateTxnFactory submitKey(KeyTree submitKey) {
+	public TopicCreateTxnFactory submitKey(Key submitKey) {
 		this.submitKey = submitKey;
 		return this;
 	}

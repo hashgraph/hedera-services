@@ -29,9 +29,13 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
 public class TopicGetInfoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicGetInfoSuite.class);
@@ -44,9 +48,34 @@ public class TopicGetInfoSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						postCreateTopicCase()
+						queryTopic(),
+						submitMsg()
 				}
 		);
+	}
+
+	private HapiApiSpec submitMsg() {
+		return defaultHapiSpec("topicIdIsValidated")
+				.given(
+				)
+				.when()
+				.then(
+						submitMessageTo("0.0.1001110")
+								.message("Howdy!")
+								.hasRetryPrecheckFrom(BUSY)
+				);
+	}
+
+	private HapiApiSpec queryTopic() {
+		// sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
+		return defaultHapiSpec("AllFieldsSetHappyCase")
+				.given(
+				)
+				.when()
+				.then(
+						getTopicInfo("0.0.1001110")
+						.logged()
+				);
 	}
 
 	private HapiApiSpec postCreateTopicCase() {
