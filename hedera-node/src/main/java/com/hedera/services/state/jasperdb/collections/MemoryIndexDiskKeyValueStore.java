@@ -140,11 +140,6 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
             e.printStackTrace();
             System.err.println("MemoryIndexDiskKeyValueStore.get key="+key);
             printDataLinkValidation(index, fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE));
-            try {
-                Thread.sleep(20000);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
             throw e;
         }
     }

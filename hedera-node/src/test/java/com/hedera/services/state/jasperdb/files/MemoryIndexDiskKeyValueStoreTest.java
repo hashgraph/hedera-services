@@ -34,34 +34,12 @@ public class MemoryIndexDiskKeyValueStoreTest {
     }
 
     public void checkRange(MemoryIndexDiskKeyValueStore store,int start, int count) throws IOException {
-        { // check key only
-            ByteBuffer buf = ByteBuffer.allocate(Long.BYTES);
-            for (int i = start; i < (start + count); i++) {
-                // read value only
-                buf.clear();
-                store.get(i, buf);
-                // check read key
-                assertEquals(i,buf.getLong());
-            }
-        }
         { // check hash data value only
             ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE);
             for (int i = start; i < (start + count); i++) {
                 // read value only
                 buf.clear();
                 store.get(i, buf);
-                // check read hash
-                assertEquals(hash(i), Hash.fromByteBuffer(buf));
-            }
-        }
-        { // check key and value
-            ByteBuffer buf = ByteBuffer.allocate(Long.BYTES+HASH_SIZE);
-            for (int i = start; i < (start + count); i++) {
-                // read value only
-                buf.clear();
-                store.get(i, buf);
-                // check read key
-                assertEquals(i,buf.getLong(),"Failed to read key for i="+i);
                 // check read hash
                 assertEquals(hash(i), Hash.fromByteBuffer(buf));
             }

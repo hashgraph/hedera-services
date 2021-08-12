@@ -31,9 +31,9 @@ public class DataFileReaderCollectionFixedSizeDataTest {
     protected static final int DATA_ITEM_VALUE_SIZE = HASH_SIZE + Integer.BYTES;
     protected static Path tempFileDir;
     protected static DataFileCollection fileCollection;
-    protected static final List<Long> storedOffsets = new CopyOnWriteArrayList<>();
-    protected static final AtomicBoolean mergeComplete = new AtomicBoolean(false);
-    protected static final DataFileReaderFactory dataFileReaderFactory = new DataFileReaderFactory() {
+    protected static List<Long> storedOffsets;
+    protected static AtomicBoolean mergeComplete;
+    protected final static DataFileReaderFactory dataFileReaderFactory = new DataFileReaderFactory() {
         @Override
         public DataFileReader newDataFileReader(Path path) throws IOException {
             return new DataFileReaderThreadLocal(path);
@@ -48,6 +48,8 @@ public class DataFileReaderCollectionFixedSizeDataTest {
     @Test
     @Order(1)
     public void createDataFileCollection() throws Exception {
+        storedOffsets = new CopyOnWriteArrayList<>();
+        mergeComplete = new AtomicBoolean(false);
         // get non-existent temp file
         tempFileDir = Files.createTempDirectory("DataTest");
         System.out.println("tempFileDir.toAbsolutePath() = " + tempFileDir.toAbsolutePath());
