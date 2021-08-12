@@ -175,5 +175,5 @@ class ImpliedTransfersTest {
 			someTreasuryId,
 			List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector)));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
-			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, null));
 }

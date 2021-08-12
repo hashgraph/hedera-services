@@ -55,7 +55,7 @@ class HbarFeeAssessorTest {
 	@Test
 	void updatesExistingChangesIfPresent() {
 		// setup:
-		final var expectedFee = new FcAssessedCustomFee(hbarFeeCollector, amountOfHbarFee);
+		final var expectedFee = new FcAssessedCustomFee(hbarFeeCollector, amountOfHbarFee, null);
 
 		given(balanceChangeManager.changeFor(payer, Id.MISSING_ID)).willReturn(payerChange);
 		given(balanceChangeManager.changeFor(feeCollector, Id.MISSING_ID)).willReturn(collectorChange);

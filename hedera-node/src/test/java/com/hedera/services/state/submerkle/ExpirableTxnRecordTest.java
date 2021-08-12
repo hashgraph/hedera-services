@@ -85,7 +85,7 @@ class ExpirableTxnRecordTest {
 					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
 			.build();
 	ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
-	FcAssessedCustomFee balanceChange = new FcAssessedCustomFee(feeCollector, token, units);
+	FcAssessedCustomFee balanceChange = new FcAssessedCustomFee(feeCollector, token, units, null);
 
 	ExpirableTxnRecord subject;
 

@@ -47,7 +47,8 @@ public class HtsFeeAssessor {
 		final var assessed = new FcAssessedCustomFee(
 				htsFee.getFeeCollector(),
 				fixedSpec.getTokenDenomination(),
-				amount);
+				amount,
+				null);
 		accumulator.add(assessed);
 
 		return OK;

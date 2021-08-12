@@ -41,7 +41,7 @@ public class HbarFeeAssessor {
 		final var fixedSpec = hbarFee.getFixedFeeSpec();
 		final var amount = fixedSpec.getUnitsToCollect();
 		adjustForAssessedHbar(payer, collector, amount, changeManager);
-		final var assessed = new FcAssessedCustomFee(collector.asEntityId(), amount);
+		final var assessed = new FcAssessedCustomFee(collector.asEntityId(), amount, null);
 		accumulator.add(assessed);
 		return OK;
 	}

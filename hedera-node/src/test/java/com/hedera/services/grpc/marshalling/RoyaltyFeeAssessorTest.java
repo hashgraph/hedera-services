@@ -234,7 +234,11 @@ class RoyaltyFeeAssessorTest {
 	private final BalanceChange trigger = BalanceChange.changingNftOwnership(
 			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), ownershipChange);
 	private final FcAssessedCustomFee hbarAssessed =
-			new FcAssessedCustomFee(targetCollector, originalUnits / 2);
+			new FcAssessedCustomFee(targetCollector, originalUnits / 2, null);
 	private final FcAssessedCustomFee htsAssessed =
-			new FcAssessedCustomFee(targetCollector, firstFungibleTokenId.asEntityId(), originalUnits / 2);
+			new FcAssessedCustomFee(
+					targetCollector,
+					firstFungibleTokenId.asEntityId(),
+					originalUnits / 2,
+					null);
 }

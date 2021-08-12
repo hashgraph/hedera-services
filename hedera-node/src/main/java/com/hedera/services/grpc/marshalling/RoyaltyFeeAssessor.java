@@ -110,8 +110,8 @@ public class RoyaltyFeeAssessor {
 			fungibleAdjuster.adjustedChange(collector, MISSING_ID, denom, royaltyFee, changeManager);
 			final var assessed =
 					exchange.isForHbar()
-							? new FcAssessedCustomFee(collector.asEntityId(), royaltyFee)
-							: new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), royaltyFee);
+							? new FcAssessedCustomFee(collector.asEntityId(), royaltyFee, null)
+							: new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), royaltyFee, null);
 			accumulator.add(assessed);
 		}
 		return OK;

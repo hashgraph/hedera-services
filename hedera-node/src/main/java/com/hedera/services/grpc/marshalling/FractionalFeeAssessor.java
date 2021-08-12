@@ -85,7 +85,11 @@ public class FractionalFeeAssessor {
 					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 				}
 				adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
-				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+				final var assessed = new FcAssessedCustomFee(
+						collector.asEntityId(),
+						denom.asEntityId(),
+						assessedAmount,
+						null);
 				accumulator.add(assessed);
 			}
 		}

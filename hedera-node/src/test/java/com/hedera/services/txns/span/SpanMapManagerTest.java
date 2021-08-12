@@ -81,8 +81,8 @@ class SpanMapManagerTest {
 					customFeeToken, treasury, List.of(FcCustomFee.fixedFee(
 							10L, customFeeToken.asEntityId(), customFeeCollector.asEntityId()))));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
-			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
-			new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L)
+			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L, null),
+			new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L, null)
 	);
 
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(

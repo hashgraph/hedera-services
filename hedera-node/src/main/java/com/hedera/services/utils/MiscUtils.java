@@ -668,30 +668,24 @@ public class MiscUtils {
 	}
 
 	/**
-	 * A permutation (invertible function) on 64 bits.
-	 * The constants were found by automated search, to optimize avalanche.
-	 * This means that for a random number x, flipping bit i of x has about
-	 * a 50% chance of flipping bit j in perm64(x). And this is close to 50%
-	 * for every choice of (i,j).
-	 *
-	 * @param x
-	 * 		the value to permute
-	 * @return
-	 * 		the avalanche-optimized permutation
-	 */
+	 A permutation (invertible function) on 64 bits. The constants were found
+	 by automated search, to optimize avalanche. Avalanche means that for a
+	 random number x, flipping bit i of x has about a 50 percent chance of
+	 flipping bit j of perm64(x). For each possible pair (i,j), this function
+	 achieves a probability between 49.8 and 50.2 percent. */
 	public static long perm64(long x) {
-		x += x << 10;
-		x ^= x >> 15;
-		x += x << 22;
-		x ^= x >> 2;
-		x += x << 3;
-		x ^= x >> 38;
-		x += x << 7;
-		x ^= x >> 11;
-		x += x << 22;
+		// Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
+		x += x <<  30;
+		x ^= x >>> 27;
+		x += x <<  16;
+		x ^= x >>> 20;
+		x += x <<   5;
+		x ^= x >>> 18;
+		x += x <<  10;
+		x ^= x >>> 24;
+		x += x <<  30;
 		return x;
 	}
-
 	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
 			FCMap<K, V> map,
 			BiConsumer<? super K, ? super V> action

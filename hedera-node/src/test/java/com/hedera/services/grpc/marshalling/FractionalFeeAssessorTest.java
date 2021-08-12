@@ -85,11 +85,13 @@ class FractionalFeeAssessorTest {
 		final var expFirstAssess = new FcAssessedCustomFee(
 				firstFractionalFeeCollector,
 				tokenWithFractionalFee.asEntityId(),
-				firstExpectedFee);
+				firstExpectedFee,
+				null);
 		final var expSecondAssess = new FcAssessedCustomFee(
 				secondFractionalFeeCollector,
 				tokenWithFractionalFee.asEntityId(),
-				secondExpectedFee);
+				secondExpectedFee,
+				null);
 
 		given(changeManager.changeFor(firstFractionalFeeCollector.asId(), tokenWithFractionalFee))
 				.willReturn(firstCollectorChange);

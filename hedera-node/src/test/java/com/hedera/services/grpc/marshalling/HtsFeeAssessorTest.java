@@ -52,7 +52,7 @@ class HtsFeeAssessorTest {
 	@Test
 	void updatesExistingChangesIfPresent() {
 		// setup:
-		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, null);
 		// and:
 		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
 		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
@@ -73,7 +73,7 @@ class HtsFeeAssessorTest {
 	@Test
 	void addsNewChangesIfNotPresent() {
 		// setup:
-		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, null);
 
 		// given:
 		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
@@ -93,7 +93,7 @@ class HtsFeeAssessorTest {
 	@Test
 	void addsExemptNewChangesForSelfDenominatedFee() {
 		// setup:
-		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, null);
 
 		// given:
 		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);

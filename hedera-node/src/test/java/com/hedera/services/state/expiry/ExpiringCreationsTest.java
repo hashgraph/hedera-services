@@ -123,7 +123,7 @@ class ExpiringCreationsTest {
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
 	private final List<FcAssessedCustomFee> customFeesCharged = List.of(
-			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, null));
 
 
 	@BeforeEach
