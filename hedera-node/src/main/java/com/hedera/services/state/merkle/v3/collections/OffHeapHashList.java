@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle.v3.offheap;
+package com.hedera.services.state.merkle.v3.collections;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

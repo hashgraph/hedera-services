@@ -59,7 +59,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
         deleteDirectoryAndContents(tempFileDir);
         Files.createDirectories(tempFileDir);
         // create data file
-        fileWriter = new DataFileWriter("TestFile", tempFileDir, INDEX, DATA_ITEM_SIZE, false);
+        fileWriter = new DataFileWriter("TestFile", tempFileDir, INDEX, DATA_ITEM_SIZE, Instant.now(),false);
     }
 
     @Test

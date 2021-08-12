@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.collections.ImmutableIndexedObjectListUsingArray;
 import org.eclipse.collections.api.map.primitive.ImmutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
@@ -8,10 +9,13 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -25,6 +29,7 @@ import static com.hedera.services.state.merkle.v3.files.DataFileCommon.*;
  * key/value pair for any matching key. It may look like a map, but it is not. You need an external index outside this
  * class to be able to store key -> data location mappings.
  */
+@SuppressWarnings("unused")
 public class DataFileCollection {
     private final Path storeDir;
     private final String storeName;
@@ -32,9 +37,18 @@ public class DataFileCollection {
     private final boolean loadedFromExistingFiles;
     private final DataFileReaderFactory dataFileReaderFactory;
     private final AtomicInteger nextFileIndex = new AtomicInteger();
-    private final AtomicReference<IndexedFileList> indexedFileList = new AtomicReference<>();
+    private final AtomicLong minimumValidKey = new AtomicLong();
+    private final AtomicLong maximumValidKey = new AtomicLong();
+    private final AtomicReference<ImmutableIndexedObjectListUsingArray<DataFileReader>> indexedFileList = new AtomicReference<>();
     private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
     private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.ofEpochSecond(0));
+    /**
+     * Lock to prevent:
+     *   - two concurrent writers
+     *   - creating of new files by writers while we are getting a new file for merging
+     *   - concurrent index updates by writers and merge call-back
+     */
+    private final ReentrantLock writeLock = new ReentrantLock();
 
     /**
      * Construct a new DataFileCollection with the default DataFileReaderFactory
@@ -92,7 +106,7 @@ public class DataFileCollection {
                         .toArray(DataFileReader[]::new);
             if (dataFileReaders.length > 0) {
                 System.out.println("Loading existing set of ["+dataFileReaders.length+"] data files for DataFileCollection ["+storeName+"] ...");
-                indexedFileList.set(IndexedFileList.withExistingFiles(dataFileReaders));
+                indexedFileList.set(new ImmutableIndexedObjectListUsingArray<>(dataFileReaders));
                 // work out what the next index would be, the highest current index plus one
                 nextFileIndex.set(dataFileReaders[dataFileReaders.length-1].getMetadata().getIndex() + 1);
                 // we loaded an existing set of files
@@ -141,8 +155,18 @@ public class DataFileCollection {
      * @param maxSizeMb all files returned are smaller than this number of MB
      */
     public List<DataFileReader> getAllFullyWrittenFiles(int maxSizeMb) {
-        final IndexedFileList indexedFileList = this.indexedFileList.get();
-        return indexedFileList == null ? null : indexedFileList.getAllFiles(maxSizeMb);
+        final var indexedFileList = this.indexedFileList.get();
+        if (maxSizeMb == Integer.MAX_VALUE) return indexedFileList.stream().collect(Collectors.toList());
+        return indexedFileList == null ? Collections.emptyList() : indexedFileList.stream()
+                .filter(file -> {
+                    try {
+                        return file.getSize() < maxSizeMb;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -155,22 +179,26 @@ public class DataFileCollection {
      */
     public synchronized void mergeFile(Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
                                        List<DataFileReader> filesToMerge) throws IOException {
-        final IndexedFileList indexedFileList = this.indexedFileList.get();
+        final var indexedFileList = this.indexedFileList.get();
         // check if anything new has been written since we last merged
-        if (filesToMerge.size() == 1 || indexedFileList.getLastFile().getMetadata().getCreationDate().isBefore(lastMerge.get())) {
+        if (filesToMerge.size() < 2 || indexedFileList.getLast().getMetadata().getCreationDate().isBefore(lastMerge.get())) {
             // nothing to do we have merged since the last data update
             System.out.println("Merge not needed as no data changed since last merge in DataFileCollection ["+storeName+"]");
-            System.out.println(" last file creation ="+indexedFileList.getLastFile().getMetadata().getCreationDate()+" , lastMerge="+lastMerge.get());
+            System.out.println(" last file creation ="+indexedFileList.getLast().getMetadata().getCreationDate()+" , lastMerge="+lastMerge.get());
             return;
         }
+        // create a merge time stamp, this timestamp has to be after any writer has finished
+        writeLock.lock(); System.out.println("WRITE LOCK - LOCK - MERGE FILE get merge time");
+        final Instant mergeTime = Instant.now();
+        writeLock.unlock(); System.out.println("WRITE LOCK - UNLOCK - MERGE FILE get merge time");
         // update last merge time
-        lastMerge.set(Instant.now());
+        lastMerge.set(mergeTime);
         // create new map for keeping track of moves
         LongObjectHashMap<long[]> movesMap = new LongObjectHashMap<>();
-        // Create a list for new files and open first new file for writing
-        DataFileWriter newFileWriter = newDataFile(true);
+        // Open a new merge file for writing
+        DataFileWriter newFileWriter = newDataFile(mergeTime,true);
         // get the most recent min and max key
-        final DataFileMetadata mostRecentDataFileMetadata = indexedFileList.getLastFile().getMetadata();
+        final DataFileMetadata mostRecentDataFileMetadata = indexedFileList.getLast().getMetadata();
         long minimumValidKey = mostRecentDataFileMetadata.getMinimumValidKey();
         long maximumValidKey = mostRecentDataFileMetadata.getMaximumValidKey();
         // open iterators, first iterator will be on oldest file
@@ -195,11 +223,16 @@ public class DataFileCollection {
         while(!blockIterators.isEmpty()) {
             // find the lowest key any iterator has and the newest iterator that has that key
             long lowestKey = Long.MAX_VALUE;
+            Instant newestIteratorTime = Instant.EPOCH;
             DataFileIterator newestIteratorWithLowestKey = null;
-            for (DataFileIterator blockIterator : blockIterators) {
+            for (DataFileIterator blockIterator : blockIterators) { // find the lowest key any iterator has
+                final long key = blockIterator.getDataItemsKey();
+                if (key < lowestKey) lowestKey = key;
+            }
+            for (DataFileIterator blockIterator : blockIterators) { // find which iterator is the newest that has the lowest key
                 long key = blockIterator.getDataItemsKey();
-                if (key < lowestKey) {
-                    lowestKey = key;
+                if (key == lowestKey && blockIterator.getDataFileCreationDate().isAfter(newestIteratorTime)) {
+                    newestIteratorTime = blockIterator.getDataFileCreationDate();
                     newestIteratorWithLowestKey = blockIterator;
                 }
             }
@@ -211,7 +244,7 @@ public class DataFileCollection {
                 // finish writing current file, add it for reading then open new file for writing
                 final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
                 addNewDataFileReader(newFileWriter.getPath(), metadata);
-                newFileWriter = newDataFile(true);
+                newFileWriter = newDataFile(mergeTime,true);
             }
             // add to movesMap
             movesMap.put(lowestKey, new long[]{newestIteratorWithLowestKey.getDataItemsDataLocation(), newDataLocation});
@@ -236,8 +269,10 @@ public class DataFileCollection {
         final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // add it for reading
         addNewDataFileReader(newFileWriter.getPath(), metadata);
-        // call locationChangeHandler
+        // call locationChangeHandler with the write-lock so no writes are changing the index while we are
+        writeLock.lock(); System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
         locationChangeHandler.accept(movesMap.toImmutable());
+        writeLock.unlock(); System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
         // delete old files
         deleteFiles(filesToMerge);
     }
@@ -251,8 +286,12 @@ public class DataFileCollection {
         if (currentDataFileForWriting != null ) {
             currentDataFileForWriting.finishWriting(Long.MIN_VALUE, Long.MAX_VALUE);
         }
-        final IndexedFileList fileList = this.indexedFileList.getAndSet(null);
-        if (fileList != null) fileList.closeAll();
+        final var fileList = this.indexedFileList.getAndSet(null);
+        if (fileList != null) {
+            for (var file : (Iterable<DataFileReader>) fileList.stream()::iterator) {
+                file.close();
+            }
+        }
     }
 
     /**
@@ -263,7 +302,8 @@ public class DataFileCollection {
     public void startWriting() throws IOException {
         var currentDataFileWriter = this.currentDataFileWriter.get();
         if (currentDataFileWriter != null) throw new IOException("Tried to start writing when we were already writing.");
-        this.currentDataFileWriter.set(newDataFile(false));
+        writeLock.lock(); System.out.println("WRITE LOCK - LOCK - START WRITING");
+        this.currentDataFileWriter.set(newDataFile(Instant.now(), false));
     }
 
     /**
@@ -274,12 +314,15 @@ public class DataFileCollection {
      * @throws IOException If there was a problem closing the data file
      */
     public void endWriting(long minimumValidKey, long maximumValidKey) throws IOException {
+        this.minimumValidKey.set(minimumValidKey);
+        this.maximumValidKey.set(maximumValidKey);
         var currentDataFileWriter = this.currentDataFileWriter.getAndSet(null);
         if (currentDataFileWriter == null) throw new IOException("Tried to end writing when we never started writing.");
         // finish writing the file and write its footer
         DataFileMetadata metadata = currentDataFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // open reader on newly written file and add it to indexedFileList ready to be read.
         addNewDataFileReader(currentDataFileWriter.getPath(), metadata);
+        writeLock.unlock(); System.out.println("WRITE LOCK - UNLOCK - END WRITING");
     }
 
     /**
@@ -316,10 +359,13 @@ public class DataFileCollection {
         int fileIndex = fileIndexFromDataLocation(dataLocation);
         // check if file for fileIndex exists
         DataFileReader file;
-        final IndexedFileList currentIndexedFileList = this.indexedFileList.get();
-        if (fileIndex < 0 || currentIndexedFileList == null || (file  = currentIndexedFileList.getFile(fileIndex)) == null)
-            throw new IOException("Got a data location from index for a file that doesn't exist. dataLocation="+
-                    Long.toHexString(dataLocation)+" fileIndex="+fileIndex);
+        final var currentIndexedFileList = this.indexedFileList.get();
+        if (fileIndex < 0 || currentIndexedFileList == null || (file  = currentIndexedFileList.get(fileIndex)) == null) {
+            throw new IOException("Got a data location from index for a file that doesn't exist. dataLocation=" +
+                   DataFileCommon.dataLocationToString(dataLocation) + " fileIndex=" + fileIndex +
+                    " minimumValidKey=" + minimumValidKey.get() + " maximumValidKey=" + maximumValidKey.get() +
+                    "\ncurrentIndexedFileList=" + currentIndexedFileList);
+        }
         // read data
         file.readData(toReadDataInto,dataLocation,dataToRead);
         return true;
@@ -348,7 +394,8 @@ public class DataFileCollection {
      * @return the data file if one exists at that index
      */
     DataFileReader getDataFile(int index) {
-        return this.indexedFileList.get().getFile(index);
+        final var fileList = this.indexedFileList.get();
+        return fileList == null ? null : fileList.get(index);
     }
 
     /**
@@ -359,12 +406,14 @@ public class DataFileCollection {
      */
     private void addNewDataFileReader(Path filePath, DataFileMetadata metadata) {
         this.indexedFileList.getAndUpdate(
-                currentIndexedFileList -> {
+                currentFileList -> {
                     try {
-                        return IndexedFileList.withAddedFile(currentIndexedFileList,
-                                dataFileReaderFactory.newDataFileReader(filePath,metadata));
+                        DataFileReader newDataFileReader = dataFileReaderFactory.newDataFileReader(filePath,metadata);
+                        return (currentFileList == null) ?
+                            new ImmutableIndexedObjectListUsingArray<>(Collections.singletonList(newDataFileReader)) :
+                            currentFileList.withAddedObject(newDataFileReader);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException(e); // TODO something better?
                     }
                 });
     }
@@ -378,7 +427,7 @@ public class DataFileCollection {
     private void deleteFiles(List<DataFileReader> filesToDelete) throws IOException {
         // remove files from index
         this.indexedFileList.getAndUpdate(
-                currentIndexedFileList -> IndexedFileList.withDeletingFiles(currentIndexedFileList,filesToDelete));
+                currentFileList -> (currentFileList == null) ? null : currentFileList.withDeletingObjects(filesToDelete));
         // now close and delete all the files
         for(DataFileReader fileReader: filesToDelete) {
             fileReader.close();
@@ -392,8 +441,8 @@ public class DataFileCollection {
      * @param isMergeFile if the new file is a merge file or not
      * @return the newly created data file
      */
-    private DataFileWriter newDataFile(boolean isMergeFile) throws IOException {
-        return new DataFileWriter(storeName,storeDir,nextFileIndex.getAndIncrement(),dataItemValueSize,isMergeFile);
+    private DataFileWriter newDataFile(Instant creationTime, boolean isMergeFile) throws IOException {
+        return new DataFileWriter(storeName,storeDir,nextFileIndex.getAndIncrement(),dataItemValueSize,creationTime,isMergeFile);
     }
 
 }

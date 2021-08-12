@@ -1,11 +1,15 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.collections.OffHeapLongList;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * Common static content for data files.
@@ -32,7 +36,7 @@ public class DataFileCommon {
      * Nominal value to indicate a non-existent data location. This was carefully crafted to be 0 so that a new long
      * array of data location pointers will be initialized to be all non-existent.
      */
-    static long NON_EXISTENT_DATA_LOCATION = 0;
+    public static long NON_EXISTENT_DATA_LOCATION = 0;
 
     /** Just a handy constant for one GB */
     static final long GB = 1024*1024*1024;
@@ -67,7 +71,8 @@ public class DataFileCommon {
      * @return path to file
      */
     static Path createDataFilePath(String filePrefix, Path dataFileDir, int index, Instant creationInstant) {
-        return dataFileDir.resolve(filePrefix + "_" + index + "_" + DATE_FORMAT.format(creationInstant) + FILE_EXTENSION);
+        return dataFileDir.resolve(filePrefix + "_" + StringUtils.leftPad(Integer.toString(index),5,'0') +
+                "_" + DATE_FORMAT.format(creationInstant) + FILE_EXTENSION);
     }
 
     /**
@@ -91,13 +96,17 @@ public class DataFileCommon {
         return indexShifted | byteOffsetMasked;
     }
 
+    public static String dataLocationToString(long dataLocation) {
+        return "{"+fileIndexFromDataLocation(dataLocation)+","+byteOffsetFromDataLocation(dataLocation)+"}";
+    }
+
     /**
      * Extract the file index from packed data location, this is the upper 24 bits. So in the range of 0 to 16 million.
      *
      * @param dataLocation packed data location
      * @return file index
      */
-    static int fileIndexFromDataLocation(long dataLocation) {
+   public static int fileIndexFromDataLocation(long dataLocation) {
         // we subtract 1 from file index so that 0 works for NON_EXISTENT_DATA_LOCATION
         return (int)(dataLocation >> DATA_ITEM_OFFSET_BITS) - 1;
     }
@@ -108,7 +117,7 @@ public class DataFileCommon {
      * @param dataLocation packed data location
      * @return data offset in bytes
      */
-    static long byteOffsetFromDataLocation(long dataLocation) {
+    public static long byteOffsetFromDataLocation(long dataLocation) {
         return dataLocation & ITEM_OFFSET_MASK;
     }
 
@@ -126,6 +135,29 @@ public class DataFileCommon {
         return !Files.exists(getLockFilePath(path));
     }
 
+    /**
+     * print debug info showing if all links in index are still valid
+     */
+    public static void printDataLinkValidation(OffHeapLongList index, List<DataFileReader> fileList) {
+        System.out.println("DataFileCommon.printDataLinkValidation");
+        SortedSet<Integer> validFileIds = new TreeSet<>();
+        for(var file:fileList) validFileIds.add(file.getMetadata().getIndex());
+        final Map<Integer,Integer> goodFileCounts = new HashMap<>();
+        final Map<Integer,Integer> missingFileCounts = new HashMap<>();
+        index.stream()
+                .mapToInt(DataFileCommon::fileIndexFromDataLocation)
+                .forEach(fileIndex -> {
+                    Map<Integer,Integer> map = validFileIds.contains(fileIndex) ? goodFileCounts : missingFileCounts;
+                    if (map.containsKey(fileIndex)) {
+                        map.put(fileIndex,map.get(fileIndex) + 1);
+                    } else {
+                        map.put(fileIndex,1);
+                    }
+                });
+
+        goodFileCounts.forEach((id,count)->System.out.println(      "       good    file "+id+" has "+count+" references"));
+        missingFileCounts.forEach((id,count)->System.out.println(   "       missing file "+id+" has "+count+" references"));
+    }
 
     // =================================================================================================================
     // BufferTooSmallException

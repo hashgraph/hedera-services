@@ -66,7 +66,7 @@ public class DataFileVariableSizeDataWithDataFileReaderThreadLocalTest {
         deleteDirectoryAndContents(tempFileDir);
         Files.createDirectories(tempFileDir);
         // create data file
-        fileWriter = new DataFileWriter("TestFile", tempFileDir, INDEX, VARIABLE_DATA_SIZE, false);
+        fileWriter = new DataFileWriter("TestFile", tempFileDir, INDEX, VARIABLE_DATA_SIZE, Instant.now(), false);
     }
 
     @Test

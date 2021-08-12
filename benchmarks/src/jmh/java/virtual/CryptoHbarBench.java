@@ -1,15 +1,7 @@
 package virtual;
 
 import com.swirlds.virtualmap.VirtualMap;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @SuppressWarnings("jol")
 @State(Scope.Thread)
+@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.MINUTES)
+@Measurement(iterations = 500, time = 1, timeUnit = TimeUnit.MINUTES)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapBenchBase.Account> {
@@ -97,6 +91,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     }
 
     private void prepNextRound() {
+//        System.out.println("================>>>> virtualMap.getFastCopyVersion() = " + virtualMap.getFastCopyVersion());
         final var cf = new CompletableFuture<List<Account[]>>();
         accountsFutureRef.set(cf);
         final var accounts = new ArrayList<Account[]>(targetOpsPerSecond);
