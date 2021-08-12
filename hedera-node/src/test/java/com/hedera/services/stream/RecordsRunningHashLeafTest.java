@@ -56,37 +56,37 @@ class RecordsRunningHashLeafTest {
 	@Test
 	void initTest() {
 		assertEquals(runningHash, runningHashLeaf.getRunningHash());
-		assertFalse(runningHashLeaf.isDataExternal());
 		assertTrue(runningHashLeaf.isImmutable());
 	}
 
 	@Test
 	void copyTest() {
-		RecordsRunningHashLeaf copy = runningHashLeaf.copy();
+		final var copy = runningHashLeaf.copy();
+
 		assertEquals(runningHashLeaf, copy);
 		assertTrue(runningHashLeaf.isImmutable());
 		assertFalse(copy.isImmutable());
 		// Hashes of the original and the copy should be the same
 		CryptoFactory.getInstance().digestSync(copy, DigestType.SHA_384);
 		CryptoFactory.getInstance().digestSync(runningHashLeaf, DigestType.SHA_384);
-		final Hash copyHash = copy.getHash();
-		final Hash leafHash = runningHashLeaf.getHash();
-		assertEquals(copyHash, leafHash);
+		assertEquals(runningHashLeaf.getHash(), copy.getHash());
 	}
 
 	@Test
 	void setRunningHashTest() {
 		// initializes a leaf without setting RunningHash
-		RecordsRunningHashLeaf leafForTestingRunningHash = new RecordsRunningHashLeaf();
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf();
 		assertNull(leafForTestingRunningHash.getRunningHash());
+
 		// initializes an empty RunningHash
-		RunningHash runningHash = new RunningHash();
+		final var runningHash = new RunningHash();
 		// sets it for the leaf
 		leafForTestingRunningHash.setRunningHash(runningHash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertNull(leafForTestingRunningHash.getRunningHash().getHash());
+
 		// sets Hash for the RunningHash
-		Hash hash = mock(Hash.class);
+		final var hash = mock(Hash.class);
 		runningHash.setHash(hash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
@@ -94,18 +94,18 @@ class RecordsRunningHashLeafTest {
 
 	@Test
 	void updateRunningHashInvalidateHashTest() {
-		RunningHash runningHash = new RunningHash();
+		final var runningHash = new RunningHash();
 		// sets Hash for the RunningHash
 		runningHash.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
 		// initializes a leaf with a RunningHash
-		RecordsRunningHashLeaf leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash);
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash);
 		// digest this leaf
 		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
-		Hash leafHash = leafForTestingRunningHash.getHash();
-		assertNotNull(leafHash);
+		assertNotNull(leafForTestingRunningHash.getHash());
 
 		// update runningHash object
-		RunningHash newRunningHash = new RunningHash();
+		final var newRunningHash = new RunningHash();
 		newRunningHash.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
 		leafForTestingRunningHash.setRunningHash(newRunningHash);
 		// the Leaf's Hash should be set to be null after updating the runningHash object
@@ -114,20 +114,27 @@ class RecordsRunningHashLeafTest {
 
 	@Test
 	void serializationDeserializationTest() throws IOException, InterruptedException {
-		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			 SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream)) {
+		try (final var byteArrayOutputStream = new ByteArrayOutputStream();
+			 final var out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			runningHashLeaf.serialize(out);
 			byteArrayOutputStream.flush();
-			byte[] bytes = byteArrayOutputStream.toByteArray();
-			try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-				 SerializableDataInputStream input = new SerializableDataInputStream(byteArrayInputStream)) {
-				RecordsRunningHashLeaf deserialized = new RecordsRunningHashLeaf();
+			final var bytes = byteArrayOutputStream.toByteArray();
+			try (final var byteArrayInputStream = new ByteArrayInputStream(bytes);
+				 final var input = new SerializableDataInputStream(byteArrayInputStream)) {
+				final var deserialized = new RecordsRunningHashLeaf();
 				deserialized.deserialize(input, RecordsRunningHashLeaf.CLASS_VERSION);
-				final Hash originalHash = runningHashLeaf.getRunningHash().getFutureHash().get();
-				final Hash deserializedHash = deserialized.getRunningHash().getFutureHash().get();
+				final var originalHash = runningHashLeaf.getRunningHash().getFutureHash().get();
+				final var deserializedHash = deserialized.getRunningHash().getFutureHash().get();
 				assertEquals(originalHash, deserializedHash);
 				assertEquals(hash, originalHash);
 			}
 		}
+	}
+
+	@Test
+	void merkleMethodsWork() {
+		final var subject = new RecordsRunningHashLeaf();
+		assertEquals(RecordsRunningHashLeaf.CLASS_VERSION, subject.getVersion());
+		assertEquals(RecordsRunningHashLeaf.CLASS_ID, subject.getClassId());
 	}
 }

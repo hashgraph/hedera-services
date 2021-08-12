@@ -27,8 +27,6 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,8 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TokenDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenDeleteTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final TransactionContext txnCtx;

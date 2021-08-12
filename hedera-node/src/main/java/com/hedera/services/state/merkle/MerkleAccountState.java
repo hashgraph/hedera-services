@@ -28,8 +28,6 @@ import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -39,14 +37,12 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
-	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
-
-	static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
+	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
 
 	static final int RELEASE_090_VERSION = 4;
 	static final int RELEASE_0160_VERSION = 5;
-	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+	private static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -64,7 +60,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private EntityId proxy;
 	private long nftsOwned;
 
-	public MerkleAccountState() { }
+	public MerkleAccountState() {
+	}
 
 	public MerkleAccountState(
 			JKey key,
@@ -238,7 +235,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return proxy;
 	}
 
-	public long nftsOwned() { return nftsOwned; }
+	public long nftsOwned() {
+		return nftsOwned;
+	}
 
 	public void setKey(JKey key) {
 		assertMutable("key");

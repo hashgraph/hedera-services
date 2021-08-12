@@ -9,9 +9,9 @@ package com.hedera.services.grpc.controllers;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,8 +30,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import io.grpc.stub.StreamObserver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -49,16 +47,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
-	private static final Logger log = LogManager.getLogger(CryptoController.class);
-
 	public static final String GET_ACCOUNT_INFO_METRIC = "getAccountInfo";
 	public static final String GET_ACCOUNT_BALANCE_METRIC = "cryptoGetBalance";
 	public static final String GET_ACCOUNT_RECORDS_METRIC = "getAccountRecords";
-	public static final String GET_STAKERS_METRIC = "getStakersByAccountID";
 	public static final String GET_LIVE_HASH_METRIC = "getClaim";
 	public static final String GET_RECEIPT_METRIC = "getTransactionReceipts";
 	public static final String GET_RECORD_METRIC = "getTxRecordByTxID";
-	public static final String GET_FAST_RECORD_METRIC = "getFastTransactionRecord";
 	public static final String CRYPTO_TRANSFER_METRIC = "cryptoTransfer";
 	public static final String CRYPTO_DELETE_METRIC = "cryptoDelete";
 	public static final String CRYPTO_CREATE_METRIC = "createAccount";

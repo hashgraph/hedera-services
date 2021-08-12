@@ -24,12 +24,10 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,8 +39,6 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class SolidityFnResult implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(SolidityFnResult.class);
-
 	private static final byte[] MISSING_BYTES = new byte[0];
 
 	static final int MERKLE_VERSION = 1;
@@ -63,7 +59,8 @@ public class SolidityFnResult implements SelfSerializable {
 	private List<EntityId> createdContractIds = new ArrayList<>();
 	private List<SolidityLog> logs = new ArrayList<>();
 
-	public SolidityFnResult() { }
+	public SolidityFnResult() {
+	}
 
 	public SolidityFnResult(
 			EntityId contractId,
@@ -127,7 +124,7 @@ public class SolidityFnResult implements SelfSerializable {
 		if (o == null || SolidityFnResult.class != o.getClass()) {
 			return false;
 		}
-		var that = (SolidityFnResult)o;
+		var that = (SolidityFnResult) o;
 		return gasUsed == that.gasUsed &&
 				Objects.equals(contractId, that.contractId) &&
 				Arrays.equals(result, that.result) &&

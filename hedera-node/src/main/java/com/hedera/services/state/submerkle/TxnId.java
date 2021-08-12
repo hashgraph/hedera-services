@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -37,14 +35,12 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
 public class TxnId implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(TxnId.class);
-
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0130_VERSION = 3;
-	public static final int MERKLE_VERSION = RELEASE_0130_VERSION;
+	private static final int MERKLE_VERSION = RELEASE_0130_VERSION;
 
-	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
 	static DomainSerdes serdes = new DomainSerdes();
 

@@ -65,18 +65,15 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
-	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 	private static final String UNKNOWN_EXPORT_DIR = "";
 	private static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '{}'!";
 	private static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '{}'!";
-	static final String BAD_EXPORT_DIR_ERROR_MSG_TPL = "Cannot ensure existence of export dir '{}'!";
-	static final String LOW_NODE_BALANCE_WARN_MSG_TPL = "Node '{}' has unacceptably low balance {}!";
-	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '{}'.";
-	static final String CURRENT_VERSION = "version:2";
+	private static final String BAD_EXPORT_DIR_ERROR_MSG_TPL = "Cannot ensure existence of export dir '{}'!";
+	private static final String LOW_NODE_BALANCE_WARN_MSG_TPL = "Node '{}' has unacceptably low balance {}!";
+	private static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '{}'.";
 
 	private static final String PROTO_FILE_EXTENSION = ".pb";
 
-	private static final Instant NEVER = null;
 	private static final Base64.Encoder encoder = Base64.getEncoder();
 
 	private Instant nextExportTime = null;
@@ -112,7 +109,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		final long epochSeconds = now.getEpochSecond();
 		long elapsedSecs = epochSeconds % exportPeriodInSecs;
 		return elapsedSecs == 0 ? Instant.ofEpochSecond(now.getEpochSecond())
-				:Instant.ofEpochSecond(now.plusSeconds(exportPeriodInSecs - elapsedSecs).getEpochSecond());
+				: Instant.ofEpochSecond(now.plusSeconds(exportPeriodInSecs - elapsedSecs).getEpochSecond());
 	}
 
 	Instant getNextExportTime() {
@@ -121,10 +118,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
-		if(nextExportTime == null) {
+		if (nextExportTime == null) {
 			nextExportTime = getFirstExportTime(now, exportPeriod);
 		}
-		if(!now.isBefore(nextExportTime)) {
+		if (!now.isBefore(nextExportTime)) {
 			nextExportTime = nextExportTime.plusSeconds(exportPeriod);
 			return true;
 		}
@@ -161,7 +158,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			tryToSign(protoLoc);
 		}
 
-		log.info(" -> Took {}ms to export and sign proto balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
+		log.info(" -> Took {}ms to export and sign proto balances file at {}", watch.getTime(TimeUnit.MILLISECONDS),
+				exportTimeStamp);
 	}
 
 	private void tryToSign(String fileLoc) {

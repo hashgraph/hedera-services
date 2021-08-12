@@ -28,16 +28,12 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetAccountInfoResourceUsage.class);
-
 	private final AnswerFunctions answerFunctions;
 	private final CryptoFeeBuilder usageEstimator;
 

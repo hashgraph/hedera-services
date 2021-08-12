@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -41,15 +40,15 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class ExchangeRatesTest {
-	private int expCurrentHbarEquiv = 25;
-	private int expCurrentCentEquiv = 1;
-	private long expCurrentExpiry = Instant.now().getEpochSecond() + 1_234L;
+	private static final int expCurrentHbarEquiv = 25;
+	private static final int expCurrentCentEquiv = 1;
+	private static final long expCurrentExpiry = Instant.now().getEpochSecond() + 1_234L;
 
-	private int expNextHbarEquiv = 45;
-	private int expNextCentEquiv = 2;
-	private long expNextExpiry = Instant.now().getEpochSecond() + 5_678L;
+	private static final int expNextHbarEquiv = 45;
+	private static final int expNextCentEquiv = 2;
+	private static final long expNextExpiry = Instant.now().getEpochSecond() + 5_678L;
 
-	ExchangeRateSet grpc = ExchangeRateSet.newBuilder()
+	private static final ExchangeRateSet grpc = ExchangeRateSet.newBuilder()
 			.setCurrentRate(ExchangeRate.newBuilder()
 					.setHbarEquiv(expCurrentHbarEquiv)
 					.setCentEquiv(expCurrentCentEquiv)
@@ -60,9 +59,8 @@ class ExchangeRatesTest {
 					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expNextExpiry)))
 			.build();
 
-	DataInputStream din;
-
-	ExchangeRates subject;
+	private DataInputStream din;
+	private ExchangeRates subject;
 
 	@BeforeEach
 	private void setup() {
@@ -75,42 +73,35 @@ class ExchangeRatesTest {
 
 	@Test
 	void notAutoInitialized() {
-		// given:
 		subject = new ExchangeRates();
 
-		// expect:
 		assertFalse(subject.isInitialized());
 	}
 
 	@Test
 	void copyWorks() {
-		// given:
-		var subjectCopy = subject.copy();
+		final var subjectCopy = subject.copy();
 
-		// expect:
 		assertEquals(expCurrentHbarEquiv, subjectCopy.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subjectCopy.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subjectCopy.getCurrExpiry());
 		assertEquals(expNextHbarEquiv, subjectCopy.getNextHbarEquiv());
 		assertEquals(expNextCentEquiv, subjectCopy.getNextCentEquiv());
 		assertEquals(expNextExpiry, subjectCopy.getNextExpiry());
+		assertEquals(subject, subjectCopy);
 		assertTrue(subjectCopy.isInitialized());
 	}
 
 	@Test
 	void serializesAsExpected() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		InOrder inOrder = inOrder(out);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeInt(expCurrentHbarEquiv);
 		inOrder.verify(out).writeInt(expCurrentCentEquiv);
 		inOrder.verify(out).writeLong(expCurrentExpiry);
-		// and:
 		inOrder.verify(out).writeInt(expNextHbarEquiv);
 		inOrder.verify(out).writeInt(expNextCentEquiv);
 		inOrder.verify(out).writeLong(expNextExpiry);
@@ -118,10 +109,8 @@ class ExchangeRatesTest {
 
 	@Test
 	void deserializesAsExpected() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
+		final var in = mock(SerializableDataInputStream.class);
 		subject = new ExchangeRates();
-
 		given(in.readLong())
 				.willReturn(expCurrentExpiry)
 				.willReturn(expNextExpiry);
@@ -131,10 +120,8 @@ class ExchangeRatesTest {
 				.willReturn(expNextHbarEquiv)
 				.willReturn(expNextCentEquiv);
 
-		// when:
 		subject.deserialize(in, ExchangeRates.MERKLE_VERSION);
 
-		// then:
 		assertEquals(expCurrentHbarEquiv, subject.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subject.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subject.getCurrExpiry());
@@ -146,7 +133,6 @@ class ExchangeRatesTest {
 
 	@Test
 	void sanityChecks() {
-		// expect:
 		assertEquals(expCurrentHbarEquiv, subject.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subject.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subject.getCurrExpiry());
@@ -158,8 +144,7 @@ class ExchangeRatesTest {
 
 	@Test
 	void replaces() {
-		// setup:
-		var newRates = ExchangeRateSet.newBuilder()
+		final var newRates = ExchangeRateSet.newBuilder()
 				.setCurrentRate(
 						ExchangeRate.newBuilder()
 								.setHbarEquiv(expCurrentHbarEquiv)
@@ -171,14 +156,10 @@ class ExchangeRatesTest {
 								.setCentEquiv(expNextCentEquiv)
 								.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expNextExpiry)))
 				.build();
-
-		// given:
 		subject = new ExchangeRates();
 
-		// when:
 		subject.replaceWith(newRates);
 
-		// expect:
 		assertEquals(expCurrentHbarEquiv, subject.getCurrHbarEquiv());
 		assertEquals(expCurrentCentEquiv, subject.getCurrCentEquiv());
 		assertEquals(expCurrentExpiry, subject.getCurrExpiry());
@@ -190,7 +171,6 @@ class ExchangeRatesTest {
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"ExchangeRates{currHbarEquiv=" + expCurrentHbarEquiv +
 						", currCentEquiv=" + expCurrentCentEquiv +
@@ -198,18 +178,22 @@ class ExchangeRatesTest {
 						", nextHbarEquiv=" + expNextHbarEquiv +
 						", nextCentEquiv=" + expNextCentEquiv +
 						", nextExpiry=" + expNextExpiry + "}",
-			subject.toString());
+				subject.toString());
 	}
 
 	@Test
 	void viewWorks() {
-		// expect:
 		assertEquals(grpc, subject.toGrpc());
 	}
 
 	@Test
 	void factoryWorks() {
-		// expect:
 		assertEquals(subject, ExchangeRates.fromGrpc(grpc));
+	}
+
+	@Test
+	void serializableDetWorks() {
+		assertEquals(ExchangeRates.MERKLE_VERSION, subject.getVersion());
+		assertEquals(ExchangeRates.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }
