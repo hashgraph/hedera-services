@@ -2547,6 +2547,7 @@ jobs:
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
             cd regression;
+            git checkout 01465-D-add-restartTest-CI-services;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
