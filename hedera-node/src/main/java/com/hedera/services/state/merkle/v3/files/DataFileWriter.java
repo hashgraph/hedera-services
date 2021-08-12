@@ -45,14 +45,15 @@ public final class DataFileWriter {
      * @param dataFileDir the path to directory to create the data file in
      * @param index the index number for this file
      * @param dataSize the size of data items, -1 if variable size
+     * @param creationTime the time stamp for the creation time for this file
      * @param isMergeFile true if this is a merge file, false if it is a new data file that has not been merged
      */
-    public DataFileWriter(String filePrefix, Path dataFileDir, int index, int dataSize, boolean isMergeFile) throws IOException {
+    public DataFileWriter(String filePrefix, Path dataFileDir, int index, int dataSize, Instant creationTime, boolean isMergeFile) throws IOException {
         this.index = index;
         this.dataSize = dataSize;
         this.hasVariableDataSize = dataSize == VARIABLE_DATA_SIZE;
         this.isMergeFile = isMergeFile;
-        this.creationInstant = Instant.now();
+        this.creationInstant = creationTime;
         this.path = createDataFilePath(filePrefix,dataFileDir,index, creationInstant);
         this.lockFilePath = getLockFilePath(path);
         if (Files.exists(lockFilePath)) throw new IOException("Tried to start writing to data file ["+path+"] when lock file already existed");

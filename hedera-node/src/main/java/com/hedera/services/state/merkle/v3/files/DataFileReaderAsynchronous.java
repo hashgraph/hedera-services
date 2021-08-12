@@ -47,7 +47,7 @@ public final class DataFileReaderAsynchronous extends DataFileReader {
      * @throws IOException if there was a problem reading
      */
     @Override
-    protected synchronized int readInt(long byteOffsetInFile) throws IOException {
+    protected int readInt(long byteOffsetInFile) throws IOException {
         try {
             ByteBuffer intSizeByteBuffer = this.intSizeByteBuffer.get();
             intSizeByteBuffer.clear();
@@ -67,7 +67,7 @@ public final class DataFileReaderAsynchronous extends DataFileReader {
      * @throws IOException if there was a problem reading
      */
     @Override
-    protected synchronized void read(long byteOffsetInFile, ByteBuffer bufferToFill) throws IOException {
+    protected void read(long byteOffsetInFile, ByteBuffer bufferToFill) throws IOException {
         try {
             asynchronousFileChannel.read(bufferToFill,byteOffsetInFile).get();
         } catch (InterruptedException | ExecutionException e) {

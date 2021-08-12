@@ -1,6 +1,9 @@
-package com.hedera.services.state.merkle.v3.files;
+package com.hedera.services.state.merkle.v3.collections;
 
-import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
+import com.hedera.services.state.merkle.v3.collections.OffHeapLongList;
+import com.hedera.services.state.merkle.v3.files.DataFileCollection;
+import com.hedera.services.state.merkle.v3.files.DataFileReader;
+import com.hedera.services.state.merkle.v3.files.DataFileReaderAsynchronous;
 import com.swirlds.virtualmap.VirtualKey;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;

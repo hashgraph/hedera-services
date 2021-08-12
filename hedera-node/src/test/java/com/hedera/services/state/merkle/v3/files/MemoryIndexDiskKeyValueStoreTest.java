@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.collections.MemoryIndexDiskKeyValueStore;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Test;
 

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 
 import static com.hedera.services.state.merkle.v3.files.DataFileCommon.KEY_SIZE;
 
@@ -122,5 +123,14 @@ public final class DataFileIterator implements AutoCloseable {
      */
     public long getDataItemsKey() {
         return key;
+    }
+
+    /**
+     * Get the creation time and data for the data file we are iterating over
+     *
+     * @return data file creation date
+     */
+    public Instant getDataFileCreationDate() {
+        return metadata.getCreationDate();
     }
 }

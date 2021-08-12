@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.collections.IndexedObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.util.Objects;
 /**
  * Abstract base class for DataFileReaders
  */
-public abstract class DataFileReader implements AutoCloseable, Comparable<DataFileReader> {
+public abstract class DataFileReader implements AutoCloseable, Comparable<DataFileReader>, IndexedObject {
     public enum DataToRead{KEY,VALUE,KEY_VALUE}
     protected final Path path;
     protected final DataFileMetadata metadata;
@@ -47,11 +48,13 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
     }
 
     /**
-     * Compares this Data File to another based on index
+     * Get file index, the index is an ordered integer identifying the file in a set of files
+     *
+     * @return this file's index
      */
     @Override
-    public final int compareTo(@NotNull DataFileReader o) {
-        return Integer.compare(metadata.getIndex(), Objects.requireNonNull(o).getMetadata().getIndex());
+    public int getIndex() {
+        return metadata.getIndex();
     }
 
     /**
@@ -125,7 +128,7 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
      * @return file size in bytes
      * @throws IOException If there was a problem reading file size from filesystem
      */
-    public final long getSize() throws IOException {
+    public long getSize() throws IOException {
         return Files.size(path);
     }
 
@@ -146,6 +149,14 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
     @Override
     public int hashCode() {
         return path.hashCode();
+    }
+
+    /**
+     * Compares this Data File to another based on index
+     */
+    @Override
+    public final int compareTo(@NotNull DataFileReader o) {
+        return Integer.compare(metadata.getIndex(), Objects.requireNonNull(o).getMetadata().getIndex());
     }
 
     // =================================================================================================================

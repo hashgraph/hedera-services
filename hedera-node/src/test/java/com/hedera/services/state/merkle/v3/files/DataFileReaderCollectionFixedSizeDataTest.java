@@ -49,7 +49,7 @@ public class DataFileReaderCollectionFixedSizeDataTest {
     @Order(1)
     public void createDataFileCollection() throws Exception {
         // get non-existent temp file
-        tempFileDir = Files.createTempDirectory("DataFileTest");
+        tempFileDir = Files.createTempDirectory("DataTest");
         System.out.println("tempFileDir.toAbsolutePath() = " + tempFileDir.toAbsolutePath());
         deleteDirectoryAndContents(tempFileDir);
         // create collection

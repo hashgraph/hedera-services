@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.v3.files;
 
+import com.hedera.services.state.merkle.v3.collections.HalfDiskHashMap;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

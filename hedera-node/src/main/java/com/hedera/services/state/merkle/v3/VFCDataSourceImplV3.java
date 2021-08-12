@@ -1,9 +1,10 @@
 package com.hedera.services.state.merkle.v3;
 
-import com.hedera.services.state.merkle.v3.files.*;
+import com.hedera.services.state.merkle.v3.collections.HalfDiskHashMap;
+import com.hedera.services.state.merkle.v3.collections.MemoryIndexDiskKeyValueStore;
 import com.hedera.services.state.merkle.v3.files.DataFileCollection.LoadedDataCallback;
-import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
-import com.hedera.services.state.merkle.v3.offheap.OffHeapLongList;
+import com.hedera.services.state.merkle.v3.collections.OffHeapHashList;
+import com.hedera.services.state.merkle.v3.collections.OffHeapLongList;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
@@ -209,6 +210,7 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
 //            } else if (action == 1) { // write leaves to pathToKeyHashValue
                 if (leafRecords != null && !leafRecords.isEmpty()) {
 //                    try {
+                        long lastPath = Long.MIN_VALUE;  //, lastKey = Long.MIN_VALUE;
                         pathToKeyHashValue.startWriting();
                         // get reusable buffer
                         ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
@@ -217,6 +219,15 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
                             final VirtualKey key = rec.getKey();
                             final Hash hash = rec.getHash();
                             final VirtualValue value = rec.getValue();
+
+//                            assert key > lastKey : "saveRecords keys are not sorted, got key "+key+" after key "+lastKey;
+                            if(path < lastPath) System.err.println("saveRecords paths are not sorted, got path "+path+" after path "+lastPath);
+                            lastPath = path;
+//
+//                            long keyLong = ((VirtualLongKey) rec.getKey()).getKeyAsLong();
+//                            if(keyLong < lastKey) System.err.println("saveRecords paths are not sorted, got key "+keyLong+" after key "+lastKey);
+//                            lastKey = keyLong;
+
                             // clear buffer for reuse
                             keyHashValueBuffer.clear();
                             // put key
@@ -240,7 +251,8 @@ public class VFCDataSourceImplV3<K extends VirtualKey, V extends VirtualValue> i
                 if (leafRecords != null && !leafRecords.isEmpty()) {
                     if (isLongKeyMode) {
                         for (var rec : leafRecords) {
-                            longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
+                            long key = ((VirtualLongKey) rec.getKey()).getKeyAsLong();
+                            longKeyToPath.put(key, rec.getPath());
                         }
                     } else {
 //                        try {
