@@ -19,6 +19,7 @@ package com.hedera.services.store.models.fees;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 
@@ -42,6 +43,7 @@ public class CustomFee {
 	private final Account collector;
 	private FractionalFee fractionalFee;
 	private FixedFee fixedFee;
+	private RoyaltyFee royaltyFee;
 
 	public CustomFee(Account collector, FractionalFee fee) {
 		this.collector = collector;
@@ -51,6 +53,11 @@ public class CustomFee {
 	public CustomFee(Account collector, FixedFee fee) {
 		this.collector = collector;
 		this.fixedFee = fee;
+	}
+
+	public CustomFee(Account collector, RoyaltyFee fee) {
+		this.collector = collector;
+		this.royaltyFee = fee;
 	}
 
 	public static CustomFee fromGrpc(com.hederahashgraph.api.proto.java.CustomFee fee, Account collector) {
@@ -80,11 +87,35 @@ public class CustomFee {
 			);
 			return new CustomFee(collector, fractionalFee);
 		} else if (fee.hasRoyaltyFee()) {
-			// TODO validate royalty fee
-			return null;
+			final var royaltyFeeGrpc = fee.getRoyaltyFee();
+			final var exchangeValueFraction = royaltyFeeGrpc.getExchangeValueFraction();
+
+			validateFalse(exchangeValueFraction.getDenominator() == 0, FRACTION_DIVIDES_BY_ZERO);
+			validateTrue(areAllPositiveNumbers(exchangeValueFraction.getNumerator(), exchangeValueFraction.getDenominator()), CUSTOM_FEE_MUST_BE_POSITIVE);
+			FixedFee fallback = null;
+			if (royaltyFeeGrpc.hasFallbackFee()) {
+				final var fallbackFee = royaltyFeeGrpc.getFallbackFee();
+				final var amount = fallbackFee.getAmount();
+				validateFalse(amount <= 0, CUSTOM_FEE_MUST_BE_POSITIVE);
+				fallback = new FixedFee(amount, Id.fromGrpcToken(fallbackFee.getDenominatingTokenId()));
+			}
+			RoyaltyFee royaltyFee = new RoyaltyFee(fallback, exchangeValueFraction.getNumerator(), exchangeValueFraction.getDenominator());
+			return new CustomFee(collector, royaltyFee);
 		} else {
 			throw new InvalidTransactionException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 		}
+	}
+
+	private static boolean areAllPositiveNumbers(long... numbers) {
+		boolean positive = true;
+		for (long n : numbers) {
+			positive &= n >= 0;
+		}
+		return positive;
+	}
+
+	public RoyaltyFee getRoyaltyFee() {
+		return royaltyFee;
 	}
 
 	public FcCustomFee toMerkle() {
@@ -94,6 +125,20 @@ public class CustomFee {
 					fractionalFee.getFractionalDenominator(),
 					fractionalFee.getMinimumAmount(),
 					fractionalFee.getMaximumAmount(),
+					collector.getId().asEntityId());
+		} else if (royaltyFee != null) {
+			final var fixedFeeGrpcBuilder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
+			if (royaltyFee.hasFallbackFee()) {
+				final var fallback = royaltyFee.getFallbackFee();
+				fixedFeeGrpcBuilder.setAmount(fallback.getAmount());
+				if (fallback.getDenominatingTokenId().isPresent()) {
+					fixedFeeGrpcBuilder.setDenominatingTokenId(fallback.getDenominatingTokenId().get().asGrpcToken());
+				}
+			}
+			return FcCustomFee.royaltyFee(
+					royaltyFee.getNumerator(),
+					royaltyFee.getDenominator(),
+					royaltyFee.hasFallbackFee() ? FixedFeeSpec.fromGrpc(fixedFeeGrpcBuilder.build()) : null,
 					collector.getId().asEntityId());
 		} else {
 			EntityId tokenDenom = fixedFee.getDenominatingTokenId().isEmpty() ? null : fixedFee.getDenominatingTokenId().get().asEntityId();
@@ -106,69 +151,32 @@ public class CustomFee {
 			return true;
 		} else if (fixedFee != null && fixedFee.getDenominatingTokenId().isPresent()) {
 			return fixedFee.getDenominatingTokenId().get().getNum() == 0;
+		} else if (royaltyFee != null && royaltyFee.hasFallbackFee()) {
+			final var fallback = royaltyFee.getFallbackFee();
+			if (fallback.getDenominatingTokenId().isPresent()) {
+				return fallback.getDenominatingTokenId().get().getNum() == 0;
+			}
 		}
 		return false;
-	}
-
-	public void setFractionalFee(final FractionalFee fractionalFee) {
-		this.fractionalFee = fractionalFee;
 	}
 
 	public FractionalFee getFractionalFee() {
 		return this.fractionalFee;
 	}
 
-	public void setFixedFee(final FixedFee fixedFee) {
-		this.fixedFee = fixedFee;
+	public void setFractionalFee(final FractionalFee fractionalFee) {
+		this.fractionalFee = fractionalFee;
 	}
 
 	public FixedFee getFixedFee() {
 		return this.fixedFee;
 	}
 
+	public void setFixedFee(final FixedFee fixedFee) {
+		this.fixedFee = fixedFee;
+	}
+
 	public Account getCollector() {
 		return collector;
 	}
-
-	private static boolean areAllPositiveNumbers(long... numbers) {
-		boolean positive = true;
-		for (long n : numbers) {
-			positive &= n >= 0;
-		}
-		return positive;
-	}
 }
-
-/*
-* private ResponseCodeEnum validateRoyalty(
-			CustomFee customFee,
-			boolean isUpdate,
-			MerkleToken targetToken,
-			TokenID targetTokenId,
-			AccountID feeCollector
-	) {
-		final var typeValidity = validateTypeConstraints(
-				isUpdate, NON_FUNGIBLE_UNIQUE, targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-		if (typeValidity != OK) {
-			return typeValidity;
-		}
-
-		final var royaltyFee = customFee.getRoyaltyFee();
-
-		final var fraction = royaltyFee.getExchangeValueFraction();
-		final var fractionalValidity = validateFeeFraction(fraction);
-		if (fractionalValidity != OK) {
-			return fractionalValidity;
-		}
-		if (fraction.getNumerator() > fraction.getDenominator()) {
-			return ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
-		}
-
-		if (royaltyFee.hasFallbackFee()) {
-			final var fallback = royaltyFee.getFallbackFee();
-			return validateFixed(fallback, feeCollector, targetTokenId);
-		}
-
-		return OK;
-	}
-*/

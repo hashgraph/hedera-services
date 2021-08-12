@@ -17,4 +17,32 @@
 package com.hedera.services.store.models.fees;
 
 public class RoyaltyFee {
+	
+	private FixedFee fallbackFee;
+	/* represents exchangeValueFactor */
+	private long numerator;
+	private long denominator;
+	public RoyaltyFee(FixedFee fallback, long numerator, long denominator) {
+		this.fallbackFee = fallback;
+		this.numerator = numerator;
+		this.denominator = denominator;
+	}
+	
+	public boolean hasFallbackFee() {
+		return fallbackFee != null;
+	}
+	
+	public FixedFee getFallbackFee() {
+		return fallbackFee;
+	}
+
+	public long getNumerator() {
+		return numerator;
+	}
+
+
+	public long getDenominator() {
+		return denominator;
+	}
+
 }

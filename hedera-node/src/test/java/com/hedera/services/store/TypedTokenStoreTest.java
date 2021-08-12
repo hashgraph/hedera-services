@@ -46,7 +46,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -413,7 +413,7 @@ class TypedTokenStoreTest {
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = Assert.assertThrows(InvalidTransactionException.class, something::run);
+		var ex = Assertions.assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
 	}
 

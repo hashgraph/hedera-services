@@ -18,6 +18,7 @@ package com.hedera.services.store.models.fees;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -25,6 +26,7 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,15 +54,15 @@ class CustomFeeTest {
 
 	@Test
 	void invalidCases() {
-		var fixedFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+		var negativeFixed = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setFixedFee(FixedFee.newBuilder().setAmount(-10).build())
 				.build();
 		assertFailsWith(
-				() -> CustomFee.fromGrpc(fixedFeeGrpc, collector),
+				() -> CustomFee.fromGrpc(negativeFixed, collector),
 				CUSTOM_FEE_MUST_BE_POSITIVE
 		);
 
-		var feeGrpc2 = com.hederahashgraph.api.proto.java.CustomFee.newBuilder().setFractionalFee(
+		var zeroDivisibleFractional = com.hederahashgraph.api.proto.java.CustomFee.newBuilder().setFractionalFee(
 						FractionalFee.newBuilder()
 								.setFractionalAmount(Fraction.newBuilder()
 										.setNumerator(10)
@@ -69,11 +71,11 @@ class CustomFeeTest {
 								.build())
 				.build();
 		assertFailsWith(
-				() -> CustomFee.fromGrpc(feeGrpc2, collector),
+				() -> CustomFee.fromGrpc(zeroDivisibleFractional, collector),
 				FRACTION_DIVIDES_BY_ZERO
 		);
 
-		var feeGrpc3 = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+		var negativeFractional = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setFractionalFee(FractionalFee.newBuilder()
 						.setMaximumAmount(-10)
 						.setMinimumAmount(-15)
@@ -83,11 +85,11 @@ class CustomFeeTest {
 								.build()))
 				.build();
 		assertFailsWith(
-				() -> CustomFee.fromGrpc(feeGrpc3, collector),
+				() -> CustomFee.fromGrpc(negativeFractional, collector),
 				CUSTOM_FEE_MUST_BE_POSITIVE
 		);
 
-		var feeGrpc4 = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+		var fractionalWithMaxLessThanMin = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setFractionalFee(FractionalFee.newBuilder()
 						.setMinimumAmount(16)
 						.setMaximumAmount(15)
@@ -97,14 +99,52 @@ class CustomFeeTest {
 								.build()))
 				.build();
 		assertFailsWith(
-				() -> CustomFee.fromGrpc(feeGrpc4, collector),
+				() -> CustomFee.fromGrpc(fractionalWithMaxLessThanMin, collector),
 				FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT
 		);
 
-		var feeGrpc5 = com.hederahashgraph.api.proto.java.CustomFee.newBuilder().build();
+		var nonSpecifiedFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder().build();
 		assertFailsWith(
-				() -> CustomFee.fromGrpc(feeGrpc5, collector),
+				() -> CustomFee.fromGrpc(nonSpecifiedFeeGrpc, collector),
 				CUSTOM_FEE_NOT_FULLY_SPECIFIED
+		);
+		
+		final var royaltyWithNegativeFallbackAmount = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+				.setRoyaltyFee(RoyaltyFee.newBuilder()
+						.setExchangeValueFraction(Fraction.newBuilder().setNumerator(10).setDenominator(9))
+						.setFallbackFee(
+						FixedFee.newBuilder()
+								.setAmount(-10)
+								.build()))
+				.build();
+		assertFailsWith(
+				() -> CustomFee.fromGrpc(royaltyWithNegativeFallbackAmount, collector),
+				CUSTOM_FEE_MUST_BE_POSITIVE
+		);
+		final var royaltyFeeWithNegativeDenominator = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+				.setRoyaltyFee(RoyaltyFee.newBuilder()
+						.setExchangeValueFraction(Fraction.newBuilder().setNumerator(10).setDenominator(9))
+						.setFallbackFee(
+								FixedFee.newBuilder()
+										.setAmount(-10)
+										.build()))
+				.build();
+		assertFailsWith(
+				() -> CustomFee.fromGrpc(royaltyFeeWithNegativeDenominator, collector),
+				CUSTOM_FEE_MUST_BE_POSITIVE
+		);
+		
+		final var zeroDivisibleRoyaltyFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+				.setRoyaltyFee(RoyaltyFee.newBuilder()
+						.setExchangeValueFraction(Fraction.newBuilder().setNumerator(10).setDenominator(0))
+						.setFallbackFee(
+								FixedFee.newBuilder()
+										.setAmount(10)
+										.build()))
+				.build();
+		assertFailsWith(
+				() -> CustomFee.fromGrpc(zeroDivisibleRoyaltyFee, collector),
+				FRACTION_DIVIDES_BY_ZERO
 		);
 	}
 
@@ -135,6 +175,20 @@ class CustomFeeTest {
 		assertNotNull(fractFee);
 		assertNotNull(fractFee.getFractionalFee());
 		assertTrue(fractFee.shouldBeEnabled());
+		
+		final var royaltyFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+				.setRoyaltyFee(RoyaltyFee.newBuilder()
+						.setFallbackFee(FixedFee.newBuilder().setAmount(10).build())
+						.setExchangeValueFraction(Fraction.newBuilder()
+								.setNumerator(10)
+								.setDenominator(20))
+				)
+				.build();
+		final var royaltyFee = CustomFee.fromGrpc(royaltyFeeGrpc, collector);
+		assertNotNull(royaltyFee);
+		assertNotNull(royaltyFee.getRoyaltyFee());
+		assertNotNull(royaltyFee.getRoyaltyFee().getFallbackFee());
+		assertTrue(royaltyFee.shouldBeEnabled());
 	}
 
 	@Test
@@ -148,6 +202,7 @@ class CustomFeeTest {
 				collector
 		);
 		assertEquals(fee.toMerkle(), merkleFixedHbar);
+		assertFalse(fee.shouldBeEnabled());
 
 		final var merkleFractional = FcCustomFee.
 				fractionalFee(10, 1, 1, 10, collectorId.asEntityId());
@@ -163,6 +218,20 @@ class CustomFeeTest {
 				.build();
 		final var fractCustom = CustomFee.fromGrpc(fractGrpc, collector);
 		assertEquals(fractCustom.toMerkle(), merkleFractional);
+
+		final var royaltyFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+				.setRoyaltyFee(RoyaltyFee.newBuilder()
+						.setFallbackFee(FixedFee.newBuilder().setAmount(10)
+								.setDenominatingTokenId(denomId.asGrpcToken()).build())
+						.setExchangeValueFraction(Fraction.newBuilder()
+								.setNumerator(10)
+								.setDenominator(20))
+				)
+				.build();
+		final var royaltyMerkle = FcCustomFee
+				.royaltyFee(10, 20, FixedFeeSpec.fromGrpc(royaltyFeeGrpc.getRoyaltyFee().getFallbackFee()), collectorId.asEntityId());
+		final var royaltyFee = CustomFee.fromGrpc(royaltyFeeGrpc, collector);
+		assertEquals(royaltyFee.toMerkle(), royaltyMerkle);
 	}
 
 	@Test
@@ -176,9 +245,13 @@ class CustomFeeTest {
 		fee.setFixedFee(new com.hedera.services.store.models.fees.FixedFee(15, denomId));
 		assertEquals(fee.getFixedFee().getAmount(), 15);
 
+		fee.getFixedFee().setDenominatingTokenId(null);
+		assertFalse(fee.getFixedFee().getDenominatingTokenId().isPresent());
+		
 		fee.setFixedFee(null);
 		fee.setFractionalFee(new com.hedera.services.store.models.fees.FractionalFee(15, 10, 10, 10));
 		assertEquals(fee.getFractionalFee().getMaximumAmount(), 15);
+		
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

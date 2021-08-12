@@ -56,6 +56,7 @@ import static com.hedera.services.txns.validation.TokenListChecks.supplyTypeChec
 import static com.hedera.services.txns.validation.TokenListChecks.typeCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -64,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -136,9 +138,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	 * Associates the created token with the treasury and all the fee collectors.
 	 * Note: the first returned {@link TokenRelationship} is always the treasury rel.
 	 *
-	 * @param created the token created in the transition
-	 * @param treasury treasury account for the token
-	 * @param customFeeList a list of valid custom fees to be applied
+	 * @param created
+	 * 		the token created in the transition
+	 * @param treasury
+	 * 		treasury account for the token
+	 * @param customFeeList
+	 * 		a list of valid custom fees to be applied
 	 * @return list of formed relationships between the token and the account.
 	 */
 	private List<TokenRelationship> updateAccountRelations(Token created, Account treasury, List<CustomFee> customFeeList) {
@@ -176,8 +181,10 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	 * {@link FractionalFee} or/and {@link FixedFee}.
 	 * Fees are being validated at the moment of their instantiation.
 	 *
-	 * @param op            transaction body which contains the list of fees
-	 * @param provisionalId the token which is being created
+	 * @param op
+	 * 		transaction body which contains the list of fees
+	 * @param provisionalId
+	 * 		the token which is being created
 	 */
 	private List<CustomFee> initCustomFees(TokenCreateTransactionBody op, Id provisionalId) {
 		validateFalse(op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
@@ -190,8 +197,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			CustomFee customFee = CustomFee.fromGrpc(fee, collector);
 			if (fee.hasFixedFee()) {
 				if (hasDenominatingToken(fee)) {
-					final var denomTokenId
-							= fee.getFixedFee().getDenominatingTokenId();
+					final var denomTokenId = fee.getFixedFee().getDenominatingTokenId();
 					if (denomTokenId.getTokenNum() != 0) {
 						/* another hts token */
 						final var denomToken = typedTokenStore.loadTokenOrFailWith(Id.fromGrpcToken(denomTokenId), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
@@ -205,6 +211,29 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 				} else {
 					/* hbar fee */
 					customFee.getFixedFee().setDenominatingTokenId(null);
+				}
+			} else if (fee.hasRoyaltyFee()) {
+				validateTrue(op.getTokenType().equals(NON_FUNGIBLE_UNIQUE), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+
+				final var royaltyFeeGrpc = fee.getRoyaltyFee();
+				final var exchangeValueFraction = royaltyFeeGrpc.getExchangeValueFraction();
+				validateFalse(exchangeValueFraction.getNumerator() > exchangeValueFraction.getDenominator(), ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
+
+				if (royaltyFeeGrpc.hasFallbackFee()) {
+					final var fallbackGrpc = royaltyFeeGrpc.getFallbackFee();
+					Id denominator = provisionalId;
+					if (fallbackGrpc.hasDenominatingTokenId()) {
+						final var denomTokenId = fallbackGrpc.getDenominatingTokenId();
+						if (denomTokenId.getTokenNum() != 0) {
+							/* another hts token */
+							final var denomToken = typedTokenStore.loadTokenOrFailWith(Id.fromGrpcToken(denomTokenId), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+							validateTrue(collector.getAssociatedTokens().contains(denomToken.getId()), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+							denominator = Id.fromGrpcToken(denomTokenId);
+						}
+						customFee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(denominator);
+					} else {
+						customFee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(null);
+					}
 				}
 			}
 			customFees.add(customFee);
