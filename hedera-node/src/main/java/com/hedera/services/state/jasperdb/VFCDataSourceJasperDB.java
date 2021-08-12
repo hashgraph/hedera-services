@@ -316,7 +316,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         } catch (InterruptedException e) {
             throw new IOException("Interrupted while waiting for merge to finish.",e);
         } finally {
-            objectKeyToPath.close();
+            if (objectKeyToPath!= null) objectKeyToPath.close();
             pathToKeyHashValue.close();
         }
     }
