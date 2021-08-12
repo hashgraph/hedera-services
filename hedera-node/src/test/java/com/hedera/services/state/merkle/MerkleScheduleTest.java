@@ -91,7 +91,7 @@ public class MerkleScheduleTest {
 	MerkleSchedule other;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		otherTransactionBody = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(2L))))

@@ -55,7 +55,7 @@ class MerkleTopicSerdeTest {
 	TopicSerde subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		adminKey = mock(JKey.class);
 		submitKey = mock(JKey.class);
 		serdes = mock(DomainSerdes.class);

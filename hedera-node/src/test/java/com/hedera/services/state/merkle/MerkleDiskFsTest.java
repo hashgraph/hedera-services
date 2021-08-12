@@ -36,14 +36,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -56,7 +53,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -125,72 +121,7 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
-	void migratesPre0130DiskFs() throws IOException {
-		// setup:
-		String legacyBase = MOCK_DISKFS_DIR;
-		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
-		Files.createDirectories(Paths.get(scopedLegacyBase));
-		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
-		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
-
-		given(getter.allBytesFrom(subject.pre0130PathToContentsOf(file150, legacyBase, fsNodeScopedDir)))
-				.willReturn(origContents);
-
-		// when:
-		subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
-
-		// then:
-		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
-
-		// and:
-		var f = new File(legacyFile150Loc);
-		assertFalse(f.exists());
-		var d = new File(scopedLegacyBase);
-		assertFalse(d.exists());
-	}
-
-	@Test
-	void logsErrorsAndPropagatesOnFailedMigration() throws IOException {
-		// setup:
-		String legacyBase = MOCK_DISKFS_DIR;
-		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
-
-		given(getter.allBytesFrom(subject.pre0130PathToContentsOf(file150, legacyBase, fsNodeScopedDir)))
-				.willThrow(IOException.class);
-
-		// expect:
-		assertThrows(UncheckedIOException.class,
-				() -> subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir));
-		// and:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Failed to migrate from legacy disk-based file system!")));
-	}
-
-	@Test
-	void logsWarnWhenLegacyFileNotDeleted() throws IOException {
-		// setup:
-		String legacyBase = MOCK_DISKFS_DIR;
-		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
-		Files.createDirectories(Paths.get(scopedLegacyBase));
-		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
-		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
-
-
-		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
-			utilities.when(() -> Files.delete(Paths.get(scopedLegacyBase))).thenThrow(new IOException());
-			// when:
-			subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
-		}
-
-		// expect:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Empty legacy directory for File 150 could not be deleted!")));
-	}
-
-	@Test
-	void toStringWorks() {
+	public void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleDiskFs{fileHashes=[0.0.150 :: " + CommonUtils.hex(origFileHash) + "]}",

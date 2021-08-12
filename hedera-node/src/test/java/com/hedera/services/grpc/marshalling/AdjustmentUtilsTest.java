@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -41,13 +42,14 @@ class AdjustmentUtilsTest {
 		// setup:
 		final var account = new Id(1, 2, 3);
 		final var denom = new Id(2, 3, 4);
+		final var chargingToken = new Id(3, 4, 5);
 		final var amount = 123L;
 
 		// given:
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
 		// when:
-		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager);
+		final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
 		// then:
 		Assertions.assertEquals(expectedChange, change);
@@ -59,12 +61,33 @@ class AdjustmentUtilsTest {
 		// setup:
 		final var account = new Id(1, 2, 3);
 		final var denom = new Id(2, 3, 4);
+		final var chargingToken = new Id(3, 4, 5);
 		final var amount = -123L;
 
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
 		// when:
-		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager);
+		final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
+
+		// then:
+		Assertions.assertEquals(expectedChange, change);
+		verify(changeManager, never()).changeFor(account, denom);
+		verify(changeManager).includeChange(expectedChange);
+	}
+
+	@Test
+	void includesExemptHtsDebitWhenSelfDenominated() {
+		// setup:
+		final var account = new Id(1, 2, 3);
+		final var denom = new Id(2, 3, 4);
+		final var amount = -123L;
+
+		// given:
+		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+		expectedChange.setExemptFromCustomFees(true);
+
+		// when:
+		final var change = adjustedChange(account, denom, denom, amount, changeManager);
 
 		// then:
 		Assertions.assertEquals(expectedChange, change);

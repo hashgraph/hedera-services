@@ -42,7 +42,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
@@ -66,19 +65,19 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.merkletree.MerklePair;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -103,12 +102,12 @@ import static org.mockito.Mockito.mock;
 
 class SmartContractRequestHandlerPayableTest {
 
-  public static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
-  public static final int DEPOSIT_AMOUNT = 12345;
-  public static final long INITIAL_BALANCE = 10_000_000_000L;
-  public static final long EXCESSIVE_AMOUNT = INITIAL_BALANCE * 2L; // Too much to deposit or transfer
+  private static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
+  private static final int DEPOSIT_AMOUNT = 12345;
+  private static final long INITIAL_BALANCE = 10_000_000_000L;
+  private static final long EXCESSIVE_AMOUNT = INITIAL_BALANCE * 2L; // Too much to deposit or transfer
   // Unused account number 170
-  public static final String INVALID_SOLIDITY_ADDRESS = "00000000000000000000000000000000000000aa";
+  private static final String INVALID_SOLIDITY_ADDRESS = "00000000000000000000000000000000000000aa";
   // Arbitrary account numbers.
   private static final long payerAccount = 787L;
   private static final long nodeAccount = 3L;
@@ -158,10 +157,10 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   @BeforeEach
-  public void setUp() throws Exception {
+  void setUp() throws Exception {
     // setup:
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+            new ClassConstructorPair(MerklePair.class, MerklePair::new));
     ConstructableRegistry.registerConstructable(
             new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
@@ -205,11 +204,7 @@ class SmartContractRequestHandlerPayableTest {
             null,
             new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
-    FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
-    fsHandler = new FileServiceHandler(
-            storageWrapper,
-            feeScheduleInterceptor,
-            new ExchangeRates());
+    fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
       payerKeyBytes = CommonUtils.unhex(key);
@@ -224,7 +219,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("01 createContract: Success")
-  public void createContractWithAdminKey() {
+  void createContractWithAdminKey() {
     KeyPair adminKeyPair = new KeyPairGenerator().generateKeyPair();
     byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
     Key adminPubKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -271,7 +266,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("02 ContractDepositCall: Success")
-  public void contractDepositCall() {
+  void contractDepositCall() {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -309,7 +304,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("03 ContractDepositCall: Mismatched values")
-  public void contractDepositCallMismatch() {
+  void contractDepositCallMismatch() {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -340,7 +335,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("05 ContractDepositCall: value more than payer has")
-  public void contractDepositCallTooMuch() {
+  void contractDepositCallTooMuch() {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -370,7 +365,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("08 ContractGetBalanceCall: Success")
-  public void contractGetBalanceCall() throws Exception {
+  void contractGetBalanceCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -408,7 +403,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("10 ContractSendFundsCall: Success")
-  public void contractSendFundsCall() throws Exception {
+  void contractSendFundsCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -465,7 +460,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("11 ContractSendFundsCall: Invalid receiver address")
-  public void contractSendFundsCallInvalidReceiver() throws Exception {
+  void contractSendFundsCallInvalidReceiver() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -515,7 +510,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("12 ContractSendFundsCall: Value more than contract has")
-  public void contractSendFundsCallTooMuch() throws Exception {
+  void contractSendFundsCallTooMuch() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -572,7 +567,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("15 ContractGetBalanceOfCall: Success")
-  public void contractGetBalanceOfCall() throws Exception {
+  void contractGetBalanceOfCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -605,7 +600,7 @@ class SmartContractRequestHandlerPayableTest {
 
   @Test
   @DisplayName("16 ContractGetBalanceOfCall: Invalid account address")
-  public void contractGetBalanceOfCallInvalidAccount() throws Exception {
+  void contractGetBalanceOfCallInvalidAccount() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -668,9 +663,8 @@ class SmartContractRequestHandlerPayableTest {
     return total;
   }
 
-
   @AfterEach
-  public void tearDown() throws Exception {
+  void tearDown() throws Exception {
     try {
 
       repository.close();
@@ -737,7 +731,6 @@ class SmartContractRequestHandlerPayableTest {
     return fileBytes;
   }
 
-
   private TransactionBody getCreateTransactionBody() {
     return getCreateTransactionBody(0L, 250000L, null);
   }
@@ -785,5 +778,4 @@ class SmartContractRequestHandlerPayableTest {
     String sCAdminKeyPath = String.format("/%d/a%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertFalse(storageWrapper.fileExists(sCAdminKeyPath));
   }
-
 }

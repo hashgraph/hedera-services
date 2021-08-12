@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExceptionalScheduleStoreTest {
     @Test
-    public void allButSetAreUse() {
+    void allButSetAreUse() {
         // expect:
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.exists(null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.get(null));

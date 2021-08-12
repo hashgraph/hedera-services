@@ -56,7 +56,9 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +73,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -84,6 +85,8 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyNoFallback;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyWithFallback;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -103,6 +106,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
@@ -116,6 +120,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -210,8 +215,12 @@ class HederaTokenStoreTest {
 			.setMaximumAmount(50)
 			.setMinimumAmount(10);
 	private CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
-	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(anotherFeeCollector).withFixedFee(
-			fixedHts(misc, 100L));
+	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(anotherFeeCollector)
+			.withFixedFee(fixedHts(misc, 100L));
+	private CustomFee customRoyaltyNoFallback = new CustomFeeBuilder(feeCollector)
+			.withRoyaltyFee(royaltyNoFallback(11, 111));
+	private CustomFee customRoyaltyHtsFallback = new CustomFeeBuilder(anotherFeeCollector)
+			.withRoyaltyFee(royaltyWithFallback(11, 111, fixedHts(misc, 123)));
 	private CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
 	private CustomFee customFractionalFee = builder.withFractionalFee(fractionalFee);
 	private List<CustomFee> grpcCustomFees = List.of(
@@ -323,7 +332,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rebuildsAsExpected() {
-		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
+		ArgumentCaptor<Consumer<MerkleNode>> captor = forClass(Consumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
 		final var deletedToken = new MerkleToken();
 		deletedToken.setDeleted(true);
@@ -331,11 +340,11 @@ class HederaTokenStoreTest {
 
 		subject.rebuildViews();
 
-		verify(tokens, times(2)).forEach(captor.capture());
+		verify(tokens, times(2)).forEachNode(captor.capture());
 
-		BiConsumer<MerkleEntityId, MerkleToken> visitor = captor.getAllValues().get(1);
-		visitor.accept(fromTokenId(misc), token);
-		visitor.accept(fromTokenId(anotherMisc), deletedToken);
+		Consumer<MerkleNode> visitor = captor.getAllValues().get(1);
+		visitor.accept(new MerklePair<>(fromTokenId(misc), token));
+		visitor.accept(new MerklePair<>(fromTokenId(anotherMisc), deletedToken));
 
 		final var extant = subject.getKnownTreasuries();
 		assertEquals(1, extant.size());
@@ -960,7 +969,6 @@ class HederaTokenStoreTest {
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(treasury, misc));
 	}
 
-
 	@Test
 	void updateHappyPathIgnoresZeroExpiry() {
 		subject.addKnownTreasury(treasury, misc);
@@ -1023,6 +1031,28 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathWorksWithNewMemo() {
+		subject.addKnownTreasury(treasury, misc);
+		givenUpdateTarget(ALL_KEYS, token);
+		final var op = updateWith(NO_KEYS,
+				misc,
+				false,
+				false,
+				false,
+				false,
+				false,
+				false,
+				true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(OK, outcome);
+		verify(token).setMemo(newMemo);
+	}
+
+	@Test
+	void updateHappyPathWorksWithNewMemoForNonfungible() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
 		final var op = updateWith(NO_KEYS,
@@ -1477,6 +1507,90 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void acceptsValidFractionInRoyaltyFeeNoFallback() {
+		// given:
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
+				.addCustomFees(customRoyaltyNoFallback)
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(OK, result.getStatus());
+	}
+
+	@Test
+	void acceptsValidRoyaltyFeeWithFallback() {
+		// given:
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
+				.addCustomFees(customRoyaltyHtsFallback)
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(OK, result.getStatus());
+	}
+
+	@Test
+	void validatesFallbackForRoyaltyFeeIfPresent() {
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		// and:
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
+				.addCustomFees(customRoyaltyHtsFallback)
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
+	}
+
+	@Test
+	void rejectsInvalidFractionInRoyaltyFee() {
+		// given:
+		final var dbz = builder.withRoyaltyFee(royaltyNoFallback(15, 0));
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
+				.addCustomFees(dbz)
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsOversizedFractionInRoyaltyFeeOnCreation() {
+		final var royalty = builder.withRoyaltyFee(royaltyNoFallback(9, 8));
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
+				.addCustomFees(royalty)
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(ROYALTY_FRACTION_CANNOT_EXCEED_ONE, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
 	void rejectsFractionalFeeMaxAmountLessThanMinAmount() {
 		final var grpcMaxLessThanMinCustomFees = List.of(
 				builder.withFractionalFee(
@@ -1811,6 +1925,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void cannotUseRoyaltyFeeWithFungibleCommonUpdateTarget() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallback();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE, result);
+	}
+
+	@Test
 	void happyPathCustomFeesUpdated() {
 		final var op = updateFeeScheduleWith();
 
@@ -1845,6 +1970,13 @@ class HederaTokenStoreTest {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(List.of(customFractionalFee));
+		return op.build();
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallback() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyHtsFallback));
 		return op.build();
 	}
 

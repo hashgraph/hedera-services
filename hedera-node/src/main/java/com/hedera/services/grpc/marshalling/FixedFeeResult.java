@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.unit;
+package com.hedera.services.grpc.marshalling;
 
 /*-
  * ‌
@@ -20,14 +20,9 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FileID;
-
-public class InvalidFileIDException extends Exception {
-	private static final long serialVersionUID = 1L;
-	private FileID fileId;
-
-	public InvalidFileIDException(String message, FileID fileId) {
-		super(message);
-		this.fileId = fileId;
-	}
+enum FixedFeeResult {
+	ASSESSMENT_FINISHED,
+	FRACTIONAL_FEE_ASSESSMENT_PENDING,
+	ROYALTY_FEE_ASSESSMENT_PENDING,
+	ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED
 }

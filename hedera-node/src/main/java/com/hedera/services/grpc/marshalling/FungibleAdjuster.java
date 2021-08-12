@@ -1,4 +1,4 @@
-package com.hedera.services.state.migration;
+package com.hedera.services.grpc.marshalling;
 
 /*-
  * ‌
@@ -20,8 +20,14 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.store.models.Id;
 
-public interface StateMigrations {
-	void runAllFor(ServicesContext ctx);
+public interface FungibleAdjuster {
+	BalanceChange adjustedChange(
+			Id account,
+			Id chargingToken,
+			Id denom,
+			long amount,
+			BalanceChangeManager manager);
 }

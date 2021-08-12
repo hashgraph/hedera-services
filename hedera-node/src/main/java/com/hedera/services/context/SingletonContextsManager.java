@@ -20,8 +20,6 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.exceptions.ContextNotFoundException;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +36,7 @@ public enum SingletonContextsManager implements ContextsManager {
 	@Override
 	public synchronized ServicesContext lookup(long nodeId) {
 		if (!contexts.containsKey(nodeId)) {
-			throw new ContextNotFoundException(nodeId);
+			throw new IllegalArgumentException("No context available for argument 'nodeId=" + nodeId + "'");
 		}
 		return contexts.get(nodeId);
 	}

@@ -28,6 +28,7 @@ import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.util.List;
@@ -45,8 +46,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -334,6 +337,32 @@ class TransactionalLedgerTest {
 
 		// expect:
 		assertEquals(new TestAccount(account1.value, things[0], account1.flag, 667L), subject.getFinalized(1L));
+	}
+
+	@Test
+	void canUndoSpecificChange() {
+		// setup:
+		ArgumentCaptor<TestAccount> captor = ArgumentCaptor.forClass(TestAccount.class);
+
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.undoChangesOfType(FLAG));
+		// given:
+		subject.begin();
+
+		// when:
+		subject.set(1L, OBJ, things[0]);
+		subject.set(1L, FLAG, true);
+		// and:
+		subject.undoChangesOfType(FLAG);
+		// and:
+		subject.commit();
+
+		// expect:
+		verify(backingAccounts).put(longThat(l -> l == 1L), captor.capture());
+		// and:
+		final var committed = captor.getValue();
+		assertSame(things[0], committed.getThing());
+		assertFalse(committed.isFlag());
 	}
 
 	@Test

@@ -85,12 +85,13 @@ public class ImpliedTransfersMarshal {
 		final var changeManager = changeManagerFactory.from(changes, hbarOnly);
 		final var schedulesManager = schedulesManagerFactory.apply(customFeeSchedules);
 
-		/* And for each "assessable change" that debits a fungible token balance or changes ownership of
-		an NFT, delegate to our fee assessor to update the balance changes with the custom fee (if any). */
+		/* And for each "assessable change" that can be charged a custom fee, delegate to our
+		fee assessor to update the balance changes with the custom fee. */
 		final List<FcAssessedCustomFee> fees = new ArrayList<>();
 		var change = changeManager.nextAssessableChange();
 		while (change != null) {
-			final var status = feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
+			final var status =
+					feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
 			if (status != OK) {
 				return ImpliedTransfers.invalid(props, schedulesManager.metaUsed(), status);
 			}
@@ -101,6 +102,10 @@ public class ImpliedTransfersMarshal {
 	}
 
 	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes) {
+		/* First add all fungible changes, then NFT ownership changes. This ensures
+		fractional fees are applied to the fungible value exchanges before royalty
+		fees are assessed. */
+		List<BalanceChange> ownershipChanges = null;
 		for (var xfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = xfers.getToken();
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
@@ -108,8 +113,14 @@ public class ImpliedTransfersMarshal {
 				changes.add(changingFtUnits(tokenId, grpcTokenId, aa));
 			}
 			for (var oc : xfers.getNftTransfersList()) {
-				changes.add(changingNftOwnership(tokenId, grpcTokenId, oc));
+				if (ownershipChanges == null) {
+					ownershipChanges = new ArrayList<>();
+				}
+				ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc));
 			}
+		}
+		if (ownershipChanges != null) {
+			changes.addAll(ownershipChanges);
 		}
 	}
 

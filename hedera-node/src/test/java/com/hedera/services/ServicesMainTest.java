@@ -41,7 +41,6 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
@@ -105,7 +104,6 @@ class ServicesMainTest {
 	private AccountsExporter accountsExporter;
 	private PropertySources propertySources;
 	private BalancesExporter balancesExporter;
-	private StateMigrations stateMigrations;
 	private MerkleNetworkContext networkCtx;
 	private FeeMultiplierSource feeMultiplierSource;
 	private ServicesStatsManager statsManager;
@@ -136,7 +134,6 @@ class ServicesMainTest {
 		recordStreamManager = mock(RecordStreamManager.class);
 		backingAccounts = (BackingStore<AccountID, MerkleAccount>) mock(BackingStore.class);
 		statsManager = mock(ServicesStatsManager.class);
-		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
 		nodeLocalProps = mock(NodeLocalProperties.class);
 		recordsHistorian = mock(AccountRecordsHistorian.class);
@@ -178,7 +175,6 @@ class ServicesMainTest {
 		given(ctx.propertySources()).willReturn(propertySources);
 		given(ctx.properties()).willReturn(properties);
 		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
-		given(ctx.stateMigrations()).willReturn(stateMigrations);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 		given(ctx.backingAccounts()).willReturn(backingAccounts);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
@@ -255,7 +251,6 @@ class ServicesMainTest {
 				systemFilesManager,
 				networkCtxManager,
 				platform,
-				stateMigrations,
 				ledgerValidator,
 				recordsHistorian,
 				fees,
@@ -271,7 +266,6 @@ class ServicesMainTest {
 
 		// then:
 		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
-		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
 		inOrder.verify(platform).setSleepAfterSync(0L);

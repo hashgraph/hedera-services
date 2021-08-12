@@ -39,7 +39,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.codec.DecoderException;
 
 import java.math.BigInteger;
@@ -51,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -661,5 +665,42 @@ public class MiscUtils {
 			ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
 		}
 		return ordinary.build();
+	}
+
+	/**
+	 * A permutation (invertible function) on 64 bits.
+	 * The constants were found by automated search, to optimize avalanche.
+	 * This means that for a random number x, flipping bit i of x has about
+	 * a 50% chance of flipping bit j in perm64(x). And this is close to 50%
+	 * for every choice of (i,j).
+	 *
+	 * @param x
+	 * 		the value to permute
+	 * @return
+	 * 		the avalanche-optimized permutation
+	 */
+	public static long perm64(long x) {
+		x += x << 10;
+		x ^= x >> 15;
+		x += x << 22;
+		x ^= x >> 2;
+		x += x << 3;
+		x ^= x >> 38;
+		x += x << 7;
+		x ^= x >> 11;
+		x += x << 22;
+		return x;
+	}
+
+	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
+			FCMap<K, V> map,
+			BiConsumer<? super K, ? super V> action
+	) {
+		map.forEachNode((final MerkleNode node) -> {
+			if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
+				final MerklePair<K, V> pair = node.cast();
+				action.accept(pair.getKey(), pair.getValue());
+			}
+		});
 	}
 }

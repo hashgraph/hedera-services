@@ -1,4 +1,4 @@
-package com.hedera.services.state.migration;
+package com.hedera.services.store.tokens.views.internals;
 
 /*-
  * ‌
@@ -20,18 +20,34 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
-import com.hedera.services.utils.Pause;
+import org.junit.jupiter.api.Test;
 
-public class StdStateMigrations implements StateMigrations {
-	private final Pause pause;
+import static org.junit.jupiter.api.Assertions.*;
 
-	public StdStateMigrations(Pause pause) {
-		this.pause = pause;
+class PermHashIntegerTest {
+	@Test
+	void overridesJavaLangImpl() {
+		// setup:
+		final var v = 1_234_567;
+
+		// given:
+		final var subject = new PermHashInteger(v);
+
+		// expect:
+		assertNotEquals(v, subject.hashCode());
 	}
 
-	@Override
-	public void runAllFor(ServicesContext ctx) {
-		/* There are no applicable state migrations at this time. */
+	@Test
+	void equalsWorks() {
+		// setup:
+		final var a = new PermHashInteger(1);
+		final var b = new PermHashInteger(2);
+		final var c = a;
+
+		// then:
+		assertNotEquals(a, b);
+		assertNotEquals(a, null);
+		assertNotEquals(a, new Object());
+		assertEquals(a, c);
 	}
 }

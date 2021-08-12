@@ -31,9 +31,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BalanceChangeManagerTest {
 	private BalanceChangeManager subject;
@@ -44,11 +46,23 @@ class BalanceChangeManagerTest {
 	}
 
 	@Test
+	void markingRoyaltiesWorks() {
+		// expect:
+		assertFalse(subject.isRoyaltyPaid(nonFungibleTokenId, misc));
+
+		// and when:
+		subject.markRoyaltyPaid(nonFungibleTokenId, misc);
+
+		// then:
+		assertTrue(subject.isRoyaltyPaid(nonFungibleTokenId, misc));
+	}
+
+	@Test
 	void initializesLevelData() {
 		// expect:
 		assertEquals(0, subject.getLevelNo());
 		assertEquals(0, subject.getLevelStart());
-		assertEquals(7, subject.getLevelEnd());
+		assertEquals(8, subject.getLevelEnd());
 	}
 
 	@Test
@@ -63,7 +77,7 @@ class BalanceChangeManagerTest {
 	@Test
 	void changesSoFarAreSized() {
 		// expect:
-		assertEquals(7, subject.numChangesSoFar());
+		assertEquals(8, subject.numChangesSoFar());
 	}
 
 	@Test
@@ -74,8 +88,8 @@ class BalanceChangeManagerTest {
 		final var newChanges = subject.getChangesSoFar();
 
 		// then:
-		assertEquals(8, newChanges.size());
-		assertSame(miscHbarAdjust, newChanges.get(7));
+		assertEquals(9, newChanges.size());
+		assertSame(miscHbarAdjust, newChanges.get(8));
 		assertSame(miscHbarAdjust, subject.changeFor(misc, Id.MISSING_ID));
 	}
 
@@ -120,6 +134,28 @@ class BalanceChangeManagerTest {
 
 		// expect:
 		bothCreditsInCurrentLevel();
+	}
+
+	@Test
+	void canFindFungibleCredits() {
+		// setup:
+		final List<BalanceChange> nftExchangeList = new ArrayList<>();
+		nftExchangeList.add(hbarPayerPlusChange);
+		nftExchangeList.add(firstNonFungibleTrigger);
+		nftExchangeList.add(firstCredit);
+		nftExchangeList.add(secondCredit);
+		nftExchangeList.add(htsPayerPlusChange);
+
+		// given:
+		subject = new BalanceChangeManager(nftExchangeList, 1);
+
+		// when:
+		final var fungibleCredits = subject.fungibleCreditsInCurrentLevel(payer);
+
+		// then:
+		assertEquals(2, fungibleCredits.size());
+		assertSame(hbarPayerPlusChange, fungibleCredits.get(0));
+		assertSame(htsPayerPlusChange, fungibleCredits.get(1));
 	}
 
 	private void bothCreditsInCurrentLevel() {
@@ -171,6 +207,10 @@ class BalanceChangeManagerTest {
 	private final Id nonFungibleTokenId = new Id(7, 4, 7);
 	private final Id secondFungibleTokenId = new Id(3, 2, 1);
 	private final Id repeatedCreditsFungibleTokenId = new Id(4, 3, 2);
+	private final AccountAmount payerCredit = AccountAmount.newBuilder()
+			.setAccountID(payer.asGrpcAccount())
+			.setAmount(100)
+			.build();
 	private final AccountAmount firstFungibleDebit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(-amountOfFirstFungibleDebit)
@@ -187,8 +227,16 @@ class BalanceChangeManagerTest {
 			.setAccountID(funding.asGrpcAccount())
 			.setAmount(+amountOfSecondFungibleDebit)
 			.build();
+	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit);
+	private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit);
 	private final BalanceChange firstFungibleTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+	private final BalanceChange exemptFungibleTrigger = BalanceChange.changingFtUnits(
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+	{
+		exemptFungibleTrigger.setExemptFromCustomFees(true);
+	}
 	private final BalanceChange firstFungibleNonTrigger = BalanceChange.changingFtUnits(
 			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleCredit);
 	private final BalanceChange secondFungibleTrigger = BalanceChange.changingFtUnits(
@@ -215,6 +263,7 @@ class BalanceChangeManagerTest {
 	{
 		startingList.add(payerHbarAdjust);
 		startingList.add(fundingHbarAdjust);
+		startingList.add(exemptFungibleTrigger);
 		startingList.add(firstFungibleTrigger);
 		startingList.add(firstFungibleNonTrigger);
 		startingList.add(secondFungibleTrigger);

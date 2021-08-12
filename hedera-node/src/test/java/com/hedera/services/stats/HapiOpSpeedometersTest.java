@@ -54,7 +54,7 @@ class HapiOpSpeedometersTest {
 	HapiOpSpeedometers subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo

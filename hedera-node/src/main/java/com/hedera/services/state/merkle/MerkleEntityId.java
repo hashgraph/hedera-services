@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -40,7 +41,8 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	private long realm;
 	private long num;
 
-	public MerkleEntityId() { }
+	public MerkleEntityId() {
+	}
 
 	public MerkleEntityId(long shard, long realm, long num) {
 		this.shard = shard;
@@ -103,15 +105,14 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 			return false;
 		}
 
-		var that = (MerkleEntityId)o;
+		var that = (MerkleEntityId) o;
 		return this.shard == that.shard && this.realm == that.realm && this.num == that.num;
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Long.hashCode(shard);
-		result = 31 * result + Long.hashCode(realm);
-		return 31 * result + Long.hashCode(num);
+		/* Until realms are implemented, only the entity number distinguishes this key from any other. */
+		return (int) MiscUtils.perm64(num);
 	}
 
 	/* --- FastCopyable --- */

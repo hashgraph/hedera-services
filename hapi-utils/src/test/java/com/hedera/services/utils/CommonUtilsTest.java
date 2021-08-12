@@ -31,9 +31,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CommonUtilsTest {
 	@Test
 	void testNap() throws InterruptedException, IOException {
-		String filePath = "./src/test/resources/test.txt";
+		final String filePath = "./src/test/resources/test.txt";
 		CommonUtils.writeToFile(filePath, "TEST".getBytes());
 		CommonUtils.nap(1);
-		assertTrue(new File(filePath).exists());
+		final var file = new File(filePath);
+		assertTrue(file.exists());
+		file.delete();
 	}
 }

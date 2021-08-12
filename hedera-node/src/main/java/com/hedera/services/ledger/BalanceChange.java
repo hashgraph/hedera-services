@@ -55,33 +55,14 @@ public class BalanceChange {
 
 	private Id account;
 	private long units;
-	private ResponseCodeEnum codeForInsufficientBalance;
+	private long originalUnits;
 	private long newBalance;
+	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
-
-	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
-		this.token = token;
-
-		this.accountId = aa.getAccountID();
-		this.account = Id.fromGrpcAccount(accountId);
-		this.units = aa.getAmount();
-
-		this.codeForInsufficientBalance = code;
-	}
-
-	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
-		this.token = token;
-
-		this.accountId = sender;
-		this.counterPartyAccountId = receiver;
-		this.account = Id.fromGrpcAccount(accountId);
-		this.units = serialNo;
-
-		this.codeForInsufficientBalance = code;
-	}
+	private ResponseCodeEnum codeForInsufficientBalance;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -91,18 +72,6 @@ public class BalanceChange {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
-	}
-
-	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
-		this.token = null;
-		this.account = account;
-		this.accountId = account.asGrpcAccount();
-		this.units = amount;
-		this.codeForInsufficientBalance = code;
-	}
-
-	public void adjustUnits(long units) {
-		this.units += units;
 	}
 
 	public static BalanceChange hbarAdjust(Id id, long amount) {
@@ -129,6 +98,40 @@ public class BalanceChange {
 		return tokenChange;
 	}
 
+	/* ℏ constructor */
+	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
+		this.token = null;
+		this.account = account;
+		this.accountId = account.asGrpcAccount();
+		this.units = amount;
+		this.originalUnits = amount;
+		this.codeForInsufficientBalance = code;
+	}
+
+	/* HTS constructor */
+	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
+		this.token = token;
+		this.accountId = aa.getAccountID();
+		this.account = Id.fromGrpcAccount(accountId);
+		this.units = aa.getAmount();
+		this.originalUnits = units;
+		this.codeForInsufficientBalance = code;
+	}
+
+	/* NFT constructor */
+	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
+		this.token = token;
+		this.accountId = sender;
+		this.counterPartyAccountId = receiver;
+		this.account = Id.fromGrpcAccount(accountId);
+		this.units = serialNo;
+		this.codeForInsufficientBalance = code;
+	}
+
+	public void adjustUnits(long units) {
+		this.units += units;
+	}
+
 	public boolean isForHbar() {
 		return token == null;
 	}
@@ -143,6 +146,10 @@ public class BalanceChange {
 
 	public long units() {
 		return units;
+	}
+
+	public long originalUnits() {
+		return originalUnits;
 	}
 
 	public long serialNo() {
@@ -215,5 +222,13 @@ public class BalanceChange {
 
 	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
 		this.codeForInsufficientBalance = codeForInsufficientBalance;
+	}
+
+	public void setExemptFromCustomFees(boolean exemptFromCustomFees) {
+		this.exemptFromCustomFees = exemptFromCustomFees;
+	}
+
+	public boolean isExemptFromCustomFees() {
+		return exemptFromCustomFees;
 	}
 }

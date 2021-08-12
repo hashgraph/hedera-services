@@ -23,18 +23,25 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.math.BigInteger;
 import java.util.List;
 
-import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedFractionalChange;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FractionalFeeAssessor {
+	private final FixedFeeAssessor fixedFeeAssessor;
+
+	public FractionalFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
+		this.fixedFeeAssessor = fixedFeeAssessor;
+	}
+
 	public ResponseCodeEnum assessAllFractional(
 			BalanceChange change,
 			List<FcCustomFee> feesWithFractional,
@@ -49,33 +56,38 @@ public class FractionalFeeAssessor {
 		var unitsLeft = initialUnits;
 		final var payer = change.getAccount();
 		final var denom = change.getToken();
+		final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
 		for (var fee : feesWithFractional) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
 				continue;
 			}
 
+			final var spec = fee.getFractionalFeeSpec();
 			var assessedAmount = 0L;
 			try {
-				assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
+				assessedAmount = amountOwedGiven(initialUnits, spec);
 			} catch (ArithmeticException ignore) {
 				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 			}
 
-			unitsLeft -= assessedAmount;
-			if (unitsLeft < 0) {
-				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+			if (spec.isNetOfTransfers()) {
+				final var addedFee = fixedFee(assessedAmount, denom.asEntityId(), fee.getFeeCollector());
+				fixedFeeAssessor.assess(payer, denom, addedFee, changeManager, accumulator);
+			} else {
+				unitsLeft -= assessedAmount;
+				if (unitsLeft < 0) {
+					return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+				}
+				try {
+					reclaim(assessedAmount, creditsToReclaimFrom);
+				} catch (ArithmeticException ignore) {
+					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				}
+				adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
+				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+				accumulator.add(assessed);
 			}
-			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
-			try {
-				reclaim(assessedAmount, creditsToReclaimFrom);
-			} catch (ArithmeticException ignore) {
-				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-			}
-
-			adjustedChange(collector, denom, assessedAmount, changeManager);
-			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
-			accumulator.add(assessed);
 		}
 		return OK;
 	}
@@ -91,7 +103,7 @@ public class FractionalFeeAssessor {
 
 		var amountReclaimed = 0L;
 		for (var credit : credits) {
-			var toReclaimHere = safeFractionMultiply(credit.units(), availableToReclaim, amount);
+			var toReclaimHere = AdjustmentUtils.safeFractionMultiply(credit.units(), availableToReclaim, amount);
 			credit.adjustUnits(-toReclaimHere);
 			amountReclaimed += toReclaimHere;
 		}
@@ -109,8 +121,8 @@ public class FractionalFeeAssessor {
 		}
 	}
 
-	long amountOwedGiven(long initialUnits, FcCustomFee.FractionalFeeSpec spec) {
-		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
+	long amountOwedGiven(long initialUnits, FractionalFeeSpec spec) {
+		final var nominalFee = AdjustmentUtils.safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
 		long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
 		if (spec.getMaximumUnitsToCollect() > 0) {
 			effectiveFee = Math.min(effectiveFee, spec.getMaximumUnitsToCollect());
@@ -118,11 +130,4 @@ public class FractionalFeeAssessor {
 		return effectiveFee;
 	}
 
-	long safeFractionMultiply(long n, long d, long v) {
-		if (v != 0 && n > Long.MAX_VALUE / v) {
-			return BigInteger.valueOf(v).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(d)).longValueExact();
-		} else {
-			return n * v / d;
-		}
-	}
 }

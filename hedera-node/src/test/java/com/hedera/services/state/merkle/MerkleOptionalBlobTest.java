@@ -74,7 +74,7 @@ class MerkleOptionalBlobTest {
 	MerkleOptionalBlob subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		newDelegate = mock(BinaryObject.class);
 		stuffDelegate = mock(BinaryObject.class);
 		newStuffDelegate = mock(BinaryObject.class);

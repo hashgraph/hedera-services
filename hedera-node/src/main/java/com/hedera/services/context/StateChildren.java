@@ -33,7 +33,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -52,9 +52,9 @@ public class StateChildren {
 	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations;
 	private MerkleNetworkContext networkCtx;
 	private AddressBook addressBook;
 	private MerkleDiskFs diskFs;
@@ -149,33 +149,33 @@ public class StateChildren {
 		this.uniqueTokens = uniqueTokens;
 	}
 
-	public FCOneToManyRelation<Integer, Long> getUniqueTokenAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> getUniqueTokenAssociations() {
 		Objects.requireNonNull(uniqueTokenAssociations);
 		return uniqueTokenAssociations;
 	}
 
-	public void setUniqueTokenAssociations(FCOneToManyRelation<Integer, Long> uniqueTokenAssociations) {
+	public void setUniqueTokenAssociations(FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<Integer, Long> getUniqueOwnershipAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> getUniqueOwnershipAssociations() {
 		Objects.requireNonNull(uniqueOwnershipAssociations);
 		return uniqueOwnershipAssociations;
 	}
 
 	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations
+			FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations
 	) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
-	public FCOneToManyRelation<Integer, Long> getUniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<PermHashInteger, Long> getUniqueOwnershipTreasuryAssociations() {
 		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations);
 		return uniqueOwnershipTreasuryAssociations;
 	}
 
 	public void setUniqueOwnershipTreasuryAssociations(
-			FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations
+			FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations
 	) {
 		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
 	}

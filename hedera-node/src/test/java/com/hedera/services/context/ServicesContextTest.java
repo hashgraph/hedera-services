@@ -121,7 +121,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
@@ -136,6 +135,7 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -214,9 +214,9 @@ class ServicesContextTest {
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<Integer, Long> uniqueOwnershipTreasuryAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations;
 	private AddressBook addresses;
 	private MerkleDiskFs diskFs;
 
@@ -297,8 +297,10 @@ class ServicesContextTest {
 		given(newState.uniqueTokenAssociations()).willReturn(newUniqueTokenAssociations);
 		given(newState.uniqueOwnershipAssociations()).willReturn(newUniqueOwnershipAssociations);
 		given(newState.uniqueTreasuryOwnershipAssociations()).willReturn(newUniqueOwnershipTreasuryAssociations);
-		// given:
+		// and:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		// and:
+		subject.update(state);
 
 		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
 
@@ -354,26 +356,45 @@ class ServicesContextTest {
 
 	@Test
 	void queryableUniqueTokenAssociationsReturnsProperReference() throws Exception {
+		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+		// and:
+		subject.update(state);
 
-		compareFCOTMR(subject.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
+		// when:
+		final var queryableState = getQueryableState(subject);
+
+		assertExpectedFcotmr(subject.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
 	}
 
 	@Test
 	void queryableUniqueTokenAccountOwnershipsReturnsProperReference() throws Exception {
+		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+		// and:
+		subject.update(state);
 
-		compareFCOTMR(subject.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
+		// when:
+		final var queryableState = getQueryableState(subject);
+
+		assertExpectedFcotmr(
+				subject.uniqueOwnershipAssociations(),
+				queryableState.get().getUniqueOwnershipAssociations());
 	}
 
 	@Test
 	void queryableUniqueTreasuryOwnershipsReturnsProperReference() throws Exception {
+		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+		// and:
+		subject.update(state);
 
-		compareFCOTMR(subject.uniqueOwnershipTreasuryAssociations(), queryableState.get().getUniqueOwnershipTreasuryAssociations());
+		// when:
+		final var queryableState = getQueryableState(subject);
+
+		assertExpectedFcotmr(
+				subject.uniqueOwnershipTreasuryAssociations(),
+				queryableState.get().getUniqueOwnershipTreasuryAssociations());
 	}
 
 	@Test
@@ -384,8 +405,7 @@ class ServicesContextTest {
 		// given:
 		ServicesContext subject = new ServicesContext(nodeId, platform, state, propertySources);
 
-		Field workingStateField = null;
-
+		Field workingStateField;
 		try {
 			workingStateField = subject.getClass().getDeclaredField("workingState");
 			workingStateField.setAccessible(true);
@@ -414,8 +434,12 @@ class ServicesContextTest {
 	}
 
 	@Test
-	void constructorSetsWorkingState() {
+	void updateNeededToSetWorkingState() {
+		// given:
 		ServicesContext subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		// when:
+		subject.update(state);
 
 		assertEquals(state.accounts(), subject.accounts());
 		assertEquals(state.topics(), subject.topics());
@@ -438,6 +462,8 @@ class ServicesContextTest {
 						platform,
 						state,
 						propertySources);
+		// and:
+		ctx.update(state);
 
 		// when:
 		ctx.updateConsensusTimeOfLastHandledTxn(dataDrivenNow);
@@ -472,6 +498,8 @@ class ServicesContextTest {
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+		// and:
+		ctx.update(state);
 
 		// expect:
 		assertEquals(ServicesNodeType.ZERO_STAKE_NODE, ctx.nodeType());
@@ -544,6 +572,8 @@ class ServicesContextTest {
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
+		// and:
+		ctx.update(state);
 
 		AtomicReference<StateChildren> queryableState = getQueryableState(ctx);
 
@@ -639,7 +669,6 @@ class ServicesContextTest {
 		assertThat(ctx.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(ctx.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
 		assertThat(ctx.exchange(), instanceOf(AwareHbarCentExchange.class));
-		assertThat(ctx.stateMigrations(), instanceOf(StdStateMigrations.class));
 		assertThat(ctx.opCounters(), instanceOf(HapiOpCounters.class));
 		assertThat(ctx.runningAvgs(), instanceOf(MiscRunningAvgs.class));
 		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
@@ -711,8 +740,13 @@ class ServicesContextTest {
 		given(diskFs.contentsOf(any())).willReturn(fileContents);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		var subject = ctx.systemFilesManager();
+		// and:
+		ctx.update(state);
 
+		// when:
+		final var subject = ctx.systemFilesManager();
+
+		// expect:
 		assertSame(networkCtx, ctx.networkCtx());
 		assertDoesNotThrow(() -> subject.loadFeeSchedules());
 	}
@@ -731,7 +765,10 @@ class ServicesContextTest {
 		given(book.getAddress(0)).willReturn(address);
 		given(book.getSize()).willReturn(1);
 
-		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+		// given:
+		final var ctx = new ServicesContext(nodeId, platform, state, propertySources);
+		// and:
+		ctx.update(state);
 		assertEquals(expectedDir + "/record0.0.0", ctx.getRecordStreamDirectory(sourceProps));
 	}
 
@@ -776,6 +813,7 @@ class ServicesContextTest {
 						platform,
 						state,
 						propertySources);
+		ctx.update(state);
 
 		assertNull(ctx.recordStreamManager());
 
@@ -835,7 +873,7 @@ class ServicesContextTest {
 		return queryableState;
 	}
 
-	private void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
+	private void assertExpectedFcotmr(FCOneToManyRelation expected, FCOneToManyRelation actual) {
 		assertEquals(expected.getKeySet(), actual.getKeySet());
 		expected.getKeySet().forEach(key -> {
 			assertEquals(expected.getList(key), actual.getList(key));

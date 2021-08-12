@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -39,13 +40,13 @@ import java.util.function.Supplier;
  * using only a {@code nftsByOwner} {@link FCOneToManyRelation}.
  */
 public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
-	private final Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner;
+	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
 
 	public ExplicitOwnersUniqTokenView(
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<Integer, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<Integer, Long>> nftsByOwner
+			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner
 	) {
 		super(tokens, nfts, nftsByType);
 

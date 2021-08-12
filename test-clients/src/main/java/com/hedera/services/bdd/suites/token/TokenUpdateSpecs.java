@@ -57,6 +57,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -70,7 +72,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -668,6 +669,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var newHbarFee = 4_321L;
 
 		final var tokenNoFeeKey = "justSchedule";
+		final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
 		final var tokenWithFeeKey = "bothScheduleAndKey";
 		final var hbarCollector = "hbarFee";
 
@@ -682,6 +684,13 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed(newFeeScheduleKey),
 						cryptoCreate(hbarCollector),
 						tokenCreate(tokenNoFeeKey)
+								.adminKey(adminKey)
+								.withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
+						tokenCreate(uniqueTokenFeeKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(adminKey)
+								.feeScheduleKey(feeScheduleKey)
+								.initialSupply(0)
 								.adminKey(adminKey)
 								.withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
 						tokenCreate(tokenWithFeeKey)
@@ -699,7 +708,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate(tokenWithFeeKey)
 								.feeScheduleKey(newFeeScheduleKey),
 						tokenFeeScheduleUpdate(tokenWithFeeKey)
-								.withCustom(fixedHbarFee(newHbarFee, hbarCollector))
+								.withCustom(fixedHbarFee(newHbarFee, hbarCollector)),
+						tokenFeeScheduleUpdate(uniqueTokenFeeKey)
+								.withCustom(royaltyFeeWithFallback(
+										1, 3,
+										fixedHbarFeeInheritingRoyaltyCollector(1_000),
+										hbarCollector))
 				).then(
 						getTokenInfo(tokenWithFeeKey)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarFee, hbarCollector))
@@ -727,8 +741,9 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getAccountInfo("newTreasury").logged(),
 						tokenAssociate("newTreasury", "tbu"),
 						tokenUpdate("tbu")
-								.treasury("newTreasury")
-								.hasKnownStatus(SUCCESS),
+								.memo("newMemo"),
+						tokenUpdate("tbu")
+								.treasury("newTreasury"),
 						burnToken("tbu", List.of(1L)),
 						getTokenInfo("tbu").hasTreasury("newTreasury"),
 						tokenUpdate("tbu")

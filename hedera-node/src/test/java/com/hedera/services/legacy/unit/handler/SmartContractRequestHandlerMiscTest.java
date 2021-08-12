@@ -44,7 +44,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
@@ -71,20 +70,18 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import com.swirlds.common.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.swirlds.merkletree.MerklePair;
 import org.ethereum.core.AccountState;
 import org.ethereum.crypto.HashUtil;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,11 +108,11 @@ import static org.mockito.Mockito.mock;
 
 class SmartContractRequestHandlerMiscTest {
 
-  public static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
-  public static final String FALLBACK_BIN = "/testfiles/Fallback.bin";
-  public static final String CREATE_TRIVIAL_BIN = "/testfiles/CreateTrivial.bin";
-  public static final String NEW_OPCODES_BIN = "/testfiles/NewOpcodes.bin";
-  public static final String CREATE_IN_CONSTRUCTOR_BIN = "/testfiles/createInConstructor.bin";
+  private static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
+  private static final String FALLBACK_BIN = "/testfiles/Fallback.bin";
+  private static final String CREATE_TRIVIAL_BIN = "/testfiles/CreateTrivial.bin";
+  private static final String NEW_OPCODES_BIN = "/testfiles/NewOpcodes.bin";
+  private static final String CREATE_IN_CONSTRUCTOR_BIN = "/testfiles/createInConstructor.bin";
   private static final int CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
   private static final long INITIAL_BALANCE_OFFERED = 20_000L;
 
@@ -143,8 +140,6 @@ class SmartContractRequestHandlerMiscTest {
   BigInteger gasPrice;
   private long selfID = 9870798L;
   private FCStorageWrapper storageWrapper;
-  private static final Logger log = LogManager.getLogger(SmartContractRequestHandlerMiscTest.class);
-  HbarCentExchange exchange;
   ExchangeRateSet rates;
 
   /**
@@ -181,9 +176,9 @@ class SmartContractRequestHandlerMiscTest {
   void setUp() throws Exception {
     // setup:
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-    ConstructableRegistry.registerConstructable(
             new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
@@ -226,8 +221,7 @@ class SmartContractRequestHandlerMiscTest {
             null,
             new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
-    FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
-    fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
+    fsHandler = new FileServiceHandler(storageWrapper);
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
       payerKeyBytes = CommonUtils.unhex(key);
@@ -1078,7 +1072,7 @@ class SmartContractRequestHandlerMiscTest {
     return total;
   }
 
-  public long getContractCreateGasPriceInTinyBars(Timestamp at) {
+  private long getContractCreateGasPriceInTinyBars(final Timestamp at) {
     FeeData usagePrices = TEST_USAGE_PRICES.pricesGiven(HederaFunctionality.ContractCreate, at).get(SubType.DEFAULT);
     long feeInTinyCents = usagePrices.getServicedata().getGas() / 1000;
     long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(rates.getCurrentRate(), feeInTinyCents);

@@ -57,7 +57,7 @@ class HapiOpCountersTest {
 	HapiOpCounters subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo,

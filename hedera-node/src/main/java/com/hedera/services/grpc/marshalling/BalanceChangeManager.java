@@ -26,8 +26,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class BalanceChangeManager {
 	private final List<BalanceChange> changesSoFar;
@@ -37,6 +39,7 @@ public class BalanceChangeManager {
 	private int levelNo = 0;
 	private int levelStart = 0;
 	private int levelEnd;
+	private Set<Pair<Id, Id>> royaltiesPaid = null;
 
 	public interface ChangeManagerFactory {
 		BalanceChangeManager from(List<BalanceChange> changesSoFar, int numHbar);
@@ -47,6 +50,17 @@ public class BalanceChangeManager {
 		this.changesSoFar = changesSoFar;
 		changesSoFar.forEach(this::index);
 		levelEnd = changesSoFar.size();
+	}
+
+	public void markRoyaltyPaid(Id uniqueToken, Id account) {
+		if (royaltiesPaid == null) {
+			royaltiesPaid = new HashSet<>();
+		}
+		royaltiesPaid.add(Pair.of(uniqueToken, account));
+	}
+
+	public boolean isRoyaltyPaid(Id uniqueToken, Id account) {
+		return royaltiesPaid != null && royaltiesPaid.contains(Pair.of(uniqueToken, account));
 	}
 
 	public void includeChange(BalanceChange change) {
@@ -65,6 +79,20 @@ public class BalanceChangeManager {
 		return ans;
 	}
 
+	public List<BalanceChange> fungibleCreditsInCurrentLevel(Id beneficiary) {
+		final List<BalanceChange> ans = new ArrayList<>();
+		for (int i = levelStart; i < levelEnd; i++) {
+			final var change = changesSoFar.get(i);
+			if (change.isForNft()) {
+				continue;
+			}
+			if (beneficiary.equals(change.getAccount()) && change.originalUnits() > 0) {
+				ans.add(change);
+			}
+		}
+		return ans;
+	}
+
 	public BalanceChange nextAssessableChange() {
 		final var numChanges = changesSoFar.size();
 		if (nextCandidateChange == numChanges) {
@@ -72,14 +100,14 @@ public class BalanceChangeManager {
 		}
 		while (nextCandidateChange < numChanges) {
 			final var candidate = changesSoFar.get(nextCandidateChange);
-			final var changeIsNftOwnerOrHtsDebit = couldTriggerCustomFees(candidate);
-			if (changeIsNftOwnerOrHtsDebit && nextCandidateChange >= levelEnd) {
+			final var changeIsTrigger = couldTriggerCustomFees(candidate);
+			if (changeIsTrigger && nextCandidateChange >= levelEnd) {
 				levelNo++;
 				levelStart = levelEnd;
 				levelEnd = numChanges;
 			}
 			nextCandidateChange++;
-			if (changeIsNftOwnerOrHtsDebit) {
+			if (changeIsTrigger) {
 				return candidate;
 			}
 		}
@@ -123,10 +151,10 @@ public class BalanceChangeManager {
 	}
 
 	private boolean couldTriggerCustomFees(BalanceChange candidate) {
-		return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
-	}
-
-	private boolean matches(BalanceChange change, Id account, Id denom) {
-		return account.equals(change.getAccount()) && denom.equals(change.getToken());
+		if (candidate.isExemptFromCustomFees()) {
+			return false;
+		} else {
+			return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
+		}
 	}
 }
