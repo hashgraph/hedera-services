@@ -1,6 +1,6 @@
 package virtual;
 
-import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
+import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -59,7 +59,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("rocksdb")));
-            case jasperdb -> new VirtualMap<>(new VFCDataSourceImplV3<>(
+            case jasperdb -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
