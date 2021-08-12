@@ -2286,7 +2286,6 @@ workflows:
               - install-tools
               - attach_workspace:
                   at: /
-
 jobs:
   start-singlejob-testnet:
     parameters:
