@@ -55,7 +55,7 @@ class HbarFeeAssessorTest {
 	@Test
 	void updatesExistingChangesIfPresent() {
 		// setup:
-		final var expectedFee = new FcAssessedCustomFee(hbarFeeCollector, amountOfHbarFee, null);
+		final var expectedFee = new FcAssessedCustomFee(hbarFeeCollector, amountOfHbarFee, effPayerNums);
 
 		given(balanceChangeManager.changeFor(payer, Id.MISSING_ID)).willReturn(payerChange);
 		given(balanceChangeManager.changeFor(feeCollector, Id.MISSING_ID)).willReturn(collectorChange);
@@ -89,6 +89,7 @@ class HbarFeeAssessorTest {
 
 	private final long amountOfHbarFee = 100_000L;
 	private final Id payer = new Id(0, 1, 2);
+	private final long[] effPayerNums = new long[] { 2L };
 	private final Id feeCollector = new Id(1, 2, 3);
 	private final EntityId hbarFeeCollector = feeCollector.asEntityId();
 	private final FcCustomFee hbarFee = FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);

@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -39,6 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static com.hedera.services.state.submerkle.FcAssessedCustomFee.assessedHbarFeeFrom;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -67,15 +69,14 @@ class FcAssessedCustomFeeTest {
 		final var tokenChange = FcAssessedCustomFee.assessedHtsFeeFrom(
 				token, IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
 		// and:
-		final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
-		final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, " +
-				"realm=5, num=6}, units=-1234}";
+		final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234, " +
+				"effective payer accounts=[1234, 4321]}";
+		final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, " +
+				"account=EntityId{shard=4, realm=5, num=6}, units=-1234, effective payer accounts=[1234, 4321]}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
 		assertNotEquals(hbarChange.hashCode(), tokenChange.hashCode());
-		assertEquals(47129058, hbarChange.hashCode());
-		assertEquals(48269287, tokenChange.hashCode());
 		// and:
 		assertEquals(hbarRepr, hbarChange.toString());
 		assertEquals(tokenRepr, tokenChange.toString());
@@ -309,6 +310,10 @@ class FcAssessedCustomFeeTest {
 		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertEquals(subject.token().toGrpcTokenId(), grpc.getTokenId());
 		assertEquals(subject.units(), grpc.getAmount());
+		assertArrayEquals(effectivePayers, grpc.getEffectivePayerAccountIdList()
+				.stream()
+				.mapToLong(account -> account.getAccountNum())
+				.toArray());
 	}
 
 	@Test
@@ -322,6 +327,10 @@ class FcAssessedCustomFeeTest {
 		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertFalse(grpc.hasTokenId());
 		assertEquals(subject.units(), grpc.getAmount());
+		assertArrayEquals(effectivePayers, grpc.getEffectivePayerAccountIdList()
+				.stream()
+				.mapToLong(account -> account.getAccountNum())
+				.toArray());
 	}
 
 	@Test
@@ -331,6 +340,8 @@ class FcAssessedCustomFeeTest {
 				.newBuilder()
 				.setTokenId(token.toGrpcTokenId())
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[0]))
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[1]))
 				.setAmount(units)
 				.build();
 
@@ -339,6 +350,7 @@ class FcAssessedCustomFeeTest {
 		assertEquals(account, fcFee.account());
 		assertEquals(token, fcFee.token());
 		assertEquals(units, fcFee.units());
+		assertArrayEquals(effectivePayers, fcFee.effPayerAccountNums());
 	}
 
 	@Test
@@ -347,6 +359,8 @@ class FcAssessedCustomFeeTest {
 		final var grpc = AssessedCustomFee
 				.newBuilder()
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[0]))
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[1]))
 				.setAmount(units)
 				.build();
 
@@ -355,6 +369,7 @@ class FcAssessedCustomFeeTest {
 		assertEquals(account, fcFee.account());
 		assertEquals(null, fcFee.token());
 		assertEquals(units, fcFee.units());
+		assertArrayEquals(effectivePayers, fcFee.effPayerAccountNums());
 	}
 
 	@Test

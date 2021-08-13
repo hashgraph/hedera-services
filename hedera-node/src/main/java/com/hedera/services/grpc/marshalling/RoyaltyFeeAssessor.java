@@ -108,10 +108,12 @@ public class RoyaltyFeeAssessor {
 			 on fees charged in the units of their denominating token; but this is a credit,
 			 hence the id is irrelevant and we can use MISSING_ID. */
 			fungibleAdjuster.adjustedChange(collector, MISSING_ID, denom, royaltyFee, changeManager);
+			final var effPayerAccountNum = new long[] { exchange.getAccount().getNum() };
+			final var collectorId = collector.asEntityId();
 			final var assessed =
 					exchange.isForHbar()
-							? new FcAssessedCustomFee(collector.asEntityId(), royaltyFee, null)
-							: new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), royaltyFee, null);
+							? new FcAssessedCustomFee(collectorId, royaltyFee, effPayerAccountNum)
+							: new FcAssessedCustomFee(collectorId, denom.asEntityId(), royaltyFee, effPayerAccountNum);
 			accumulator.add(assessed);
 		}
 		return OK;

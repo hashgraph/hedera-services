@@ -86,12 +86,12 @@ class FractionalFeeAssessorTest {
 				firstFractionalFeeCollector,
 				tokenWithFractionalFee.asEntityId(),
 				firstExpectedFee,
-				null);
+				effPayerAccountNums);
 		final var expSecondAssess = new FcAssessedCustomFee(
 				secondFractionalFeeCollector,
 				tokenWithFractionalFee.asEntityId(),
 				secondExpectedFee,
-				null);
+				effPayerAccountNums);
 
 		given(changeManager.changeFor(firstFractionalFeeCollector.asId(), tokenWithFractionalFee))
 				.willReturn(firstCollectorChange);
@@ -263,7 +263,6 @@ class FractionalFeeAssessorTest {
 	@Test
 	void reclaimsRemainderAsExpected() {
 		// setup:
-		final long reclaimAmount = 1000L;
 		final List<BalanceChange> credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
 		firstVanillaReclaim.adjustUnits(12_345L);
 		secondVanillaReclaim.adjustUnits(2_345L);
@@ -284,6 +283,7 @@ class FractionalFeeAssessorTest {
 	private final Id payer = new Id(0, 1, 2);
 	private final Id firstReclaimedAcount = new Id(6, 7, 8);
 	private final Id secondReclaimedAcount = new Id(7, 8, 9);
+	private final long[] effPayerAccountNums = new long[] { 8L, 9L };
 	private final long vanillaTriggerAmount = 5000L;
 	private final long firstCreditAmount = 4000L;
 	private final long secondCreditAmount = 1000L;

@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -50,7 +51,7 @@ public class FcAssessedCustomFee implements SelfSerializable {
 	private EntityId token;
 	private EntityId account;
 	private long units;
-	private long[] effPayerAccountNums;
+	private long[] effPayerAccountNums = UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS;
 
 	public FcAssessedCustomFee() {
 		/* For RuntimeConstructable */
@@ -150,6 +151,9 @@ public class FcAssessedCustomFee implements SelfSerializable {
 		var grpc = AssessedCustomFee.newBuilder()
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
 				.setAmount(units);
+		for (int i = 0; i < effPayerAccountNums.length; i++) {
+			grpc.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effPayerAccountNums[i]));
+		}
 		if (isForHbar()) {
 			return grpc.build();
 		}
@@ -161,10 +165,18 @@ public class FcAssessedCustomFee implements SelfSerializable {
 				.setAccountID(assessedFee.getFeeCollectorAccountId())
 				.setAmount(assessedFee.getAmount())
 				.build();
-		if (assessedFee.hasTokenId()) {
-			return assessedHtsFeeFrom(EntityId.fromGrpcTokenId(assessedFee.getTokenId()), aa, null);
+		int n = assessedFee.getEffectivePayerAccountIdCount();
+		long[] effPayerAccountNums = n > 0 ? new long[n] : UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS;
+		for (int i = 0; i < n; i++) {
+			effPayerAccountNums[i] = assessedFee.getEffectivePayerAccountId(i).getAccountNum();
 		}
-		return assessedHbarFeeFrom(aa, null);
+		if (assessedFee.hasTokenId()) {
+			return assessedHtsFeeFrom(
+					EntityId.fromGrpcTokenId(assessedFee.getTokenId()),
+					aa,
+					effPayerAccountNums);
+		}
+		return assessedHbarFeeFrom(aa, effPayerAccountNums);
 	}
 
 	/* ----- SelfSerializable methods ------ */

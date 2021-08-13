@@ -77,7 +77,7 @@ class ImpliedTransfersTest {
 				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[" +
 				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
 				"customFees=[]}], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
-				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
+				"account=EntityId{shard=0, realm=0, num=124}, units=123, effective payer accounts=[123]}]}";
 
 		// expect:
 		assertNotEquals(oneImpliedXfers, twoImpliedXfers);
@@ -175,5 +175,5 @@ class ImpliedTransfersTest {
 			someTreasuryId,
 			List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector)));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
-			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, null));
+			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, new long[] { 123L }));
 }
