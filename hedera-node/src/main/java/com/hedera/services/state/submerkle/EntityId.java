@@ -32,13 +32,15 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class EntityId implements SelfSerializable {
+public class EntityId implements SelfSerializable, ByteBufferSelfSerializable {
 	private static final Logger log = LogManager.getLogger(EntityId.class);
 
 	static final int MERKLE_VERSION = 1;
@@ -220,5 +222,17 @@ public class EntityId implements SelfSerializable {
 
 	public MerkleEntityId asMerkle() {
 		return new MerkleEntityId(shard, realm, num);
+	}
+
+	/* --- ByteBufferSelfSerializable --- */
+
+	public void serialize(ByteBuffer buffer) throws IOException {
+		// Skip the realm + shard for now as they are not used.
+		buffer.putLong(num);
+	}
+
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		// Only the entity number is used for now.
+		num = buffer.getLong();
 	}
 }

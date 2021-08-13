@@ -27,13 +27,18 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public class MerkleAccountTokens extends AbstractMerkleLeaf {
+import static com.hedera.services.state.merkle.SerializationHelper.readInto;
+import static com.hedera.services.state.merkle.SerializationHelper.write;
+
+public class MerkleAccountTokens extends AbstractMerkleLeaf implements VirtualValue {
 	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = Integer.MAX_VALUE;
 
 	static final int NUM_ID_PARTS = 3;
@@ -164,5 +169,25 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	public void dissociate(Set<Id> modelIds) {
 		throwIfImmutable();
 		ids.removeAllIds(modelIds);
+	}
+
+
+	/* --- ByteBufferSelfSerializable --- */
+
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		write(buffer, ids);
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		readInto(buffer, this.ids);
+	}
+
+	@Override
+	public VirtualValue asReadOnly() {
+		MerkleAccountTokens copy = new MerkleAccountTokens(ids.copy());
+		copy.setImmutable(true);
+		return copy;
 	}
 }

@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class DomainSerdes {
 	private static final Logger log = LogManager.getLogger(DomainSerdes.class);
@@ -123,5 +124,23 @@ public class DomainSerdes {
 	public EntityId deserializeId(DataInputStream _in) throws IOException {
 		var in = (SerializableDataInputStream) _in;
 		return in.readSerializable();
+	}
+
+	/* VirtualValue */
+
+	public void serializeKey(JKey key, ByteBuffer buffer) throws IOException {
+		if (key == null) {
+			buffer.put((byte) 0);
+		} else {
+			buffer.put((byte) 1);
+			JKeySerializer.serialize(key, buffer);
+		}
+	}
+
+	public JKey deserializeKey(ByteBuffer buffer) throws IOException {
+		if (buffer.get() == 0)
+			return null;
+
+		return JKeySerializer.deserialize(buffer);
 	}
 }

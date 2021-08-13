@@ -281,6 +281,10 @@
       <artifactId>swirlds-common</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-virtualmap</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <exclusions>

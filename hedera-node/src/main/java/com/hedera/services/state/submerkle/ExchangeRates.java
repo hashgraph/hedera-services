@@ -31,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class ExchangeRates implements SelfSerializable {
 	private static final Logger log = LogManager.getLogger(ExchangeRates.class);
@@ -226,5 +227,25 @@ public class ExchangeRates implements SelfSerializable {
 				grpc.getNextRate().getHbarEquiv(),
 				grpc.getNextRate().getCentEquiv(),
 				grpc.getNextRate().getExpirationTime().getSeconds());
+	}
+
+	public void serialize(ByteBuffer buffer) throws IOException {
+		buffer.putInt(currHbarEquiv);
+		buffer.putInt(currCentEquiv);
+		buffer.putLong(currExpiry);
+		buffer.putInt(nextHbarEquiv);
+		buffer.putInt(nextCentEquiv);
+		buffer.putLong(nextExpiry);
+	}
+
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		currHbarEquiv = buffer.getInt();
+		currCentEquiv = buffer.getInt();
+		currExpiry = buffer.getLong();
+		nextHbarEquiv = buffer.getInt();
+		nextCentEquiv = buffer.getInt();
+		nextExpiry = buffer.getLong();
+
+		initialized = true;
 	}
 }

@@ -26,17 +26,23 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.SerializationHelper.read;
+import static com.hedera.services.state.merkle.SerializationHelper.readByteArray;
+import static com.hedera.services.state.merkle.SerializationHelper.write;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
-public class TxnId implements SelfSerializable {
+public class TxnId implements SelfSerializable, ByteBufferSelfSerializable {
 	private static final Logger log = LogManager.getLogger(TxnId.class);
 
 	static final int PRE_RELEASE_0120_VERSION = 1;
@@ -158,5 +164,30 @@ public class TxnId implements SelfSerializable {
 		grpc.setScheduled(scheduled);
 
 		return grpc.build();
+	}
+
+	/* --- ByteBufferSelfSerializable --- */
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		write(buffer, payerAccount);
+		write(buffer, validStart);
+		buffer.put((byte) (scheduled ? 1 : 0));
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		payerAccount = (EntityId) read(buffer, (Supplier<ByteBufferSelfSerializable>) EntityId::new);
+		validStart = read(buffer, RichInstant::new);
+
+		if (version >= RELEASE_0120_VERSION) {
+			scheduled = buffer.get() != 0;
+		}
+		if (version == RELEASE_0120_VERSION) {
+			var hasNonce = buffer.get() != 0;
+			if (hasNonce) {
+				/* The 0.12.0 release only included a nonce field in the transaction id */
+				readByteArray(buffer, Integer.MAX_VALUE);
+			}
+		}
 	}
 }

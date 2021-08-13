@@ -36,6 +36,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
+import com.hedera.services.state.merkle.v3.files.DataFileCommon;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -53,10 +55,14 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcmap.FCMap;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -197,7 +203,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					new ExchangeRates()));
 			setChild(ChildIndices.TOPICS, new FCMap<>());
 			setChild(ChildIndices.STORAGE, new FCMap<>());
-			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
+
+			setChild(ChildIndices.ACCOUNTS, createAccounts());
+//			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
+
 			setChild(ChildIndices.TOKENS, new FCMap<>());
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
@@ -359,7 +368,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				runningHashLeaf().getRunningHash().getHash()));
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public VirtualMap<MerkleEntityId, MerkleAccount> accounts() {
 		return getChild(ChildIndices.ACCOUNTS);
 	}
 
@@ -397,5 +406,20 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public RecordsRunningHashLeaf runningHashLeaf() {
 		return getChild(ChildIndices.RECORD_STREAM_RUNNING_HASH);
+	}
+
+	MerkleNode createAccounts() {
+		try {
+			return new VirtualMap<MerkleEntityId, MerkleAccount>(new VFCDataSourceImplV3<>(
+					Long.BYTES,
+					MerkleEntityId::new,
+					DataFileCommon.VARIABLE_DATA_SIZE,
+					MerkleAccount::new,
+					Path.of("jasperdb"),
+					100000000
+			));
+		} catch (IOException e) {
+			throw new RuntimeException("error while creating VirtualMap", e);
+		}
 	}
 }

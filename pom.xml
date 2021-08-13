@@ -470,6 +470,11 @@ ${git.signoff}
         <version>${swirlds.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-virtualmap</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport-native-epoll</artifactId>
         <version>${netty.version}</version>

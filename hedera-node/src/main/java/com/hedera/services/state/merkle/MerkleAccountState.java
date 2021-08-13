@@ -28,18 +28,25 @@ import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.virtualmap.VirtualValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.state.merkle.SerializationHelper.readNullableSerializable;
+import static com.hedera.services.state.merkle.SerializationHelper.writeNullableSerializable;
 import static com.hedera.services.utils.MiscUtils.describe;
 
-public class MerkleAccountState extends AbstractMerkleLeaf {
+public class MerkleAccountState extends AbstractMerkleLeaf implements VirtualValue {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
+
+	static final int MAX_STRING_BYTES = 100;
 
 	static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
@@ -278,5 +285,76 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
 		}
+	}
+
+	/* VirtualValue */
+
+	public void serialize(ByteBuffer buffer) throws IOException {
+		writeNullableSerializable(buffer, key, serdes::serializeKey);
+		buffer.putLong(expiry);
+		buffer.putLong(hbarBalance);
+		buffer.putLong(autoRenewSecs);
+
+		// get the string length, write the string (up to 100 chars), and skip anything left.
+		final var bytes = memo == null ? null : memo.getBytes(StandardCharsets.UTF_8);
+		if (bytes == null) {
+			buffer.put((byte) 0);
+			buffer.position(buffer.position() + MAX_STRING_BYTES);
+		} else {
+			final var extra = Math.max(0, MAX_STRING_BYTES - bytes.length);
+			buffer.put((byte) bytes.length);
+			buffer.put(bytes, 0, Math.min(bytes.length, MAX_STRING_BYTES));
+			buffer.position(buffer.position() + extra);
+		}
+
+		// byte pack the three booleans
+		byte packed = 0;
+		packed |= deleted ? 0b001 : 0;
+		packed |= smartContract ? 0b010 : 0;
+		packed |= receiverSigRequired ? 0b100 : 0;
+		buffer.put(packed);
+
+		writeNullableSerializable(buffer, proxy);
+	}
+
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		key = readNullableSerializable(buffer, serdes::deserializeKey);
+		expiry = buffer.getLong();
+		hbarBalance = buffer.getLong();
+		autoRenewSecs = buffer.getLong();
+
+		// Memo will always take up MAX_STRING_BYTES
+		final var b = new byte[buffer.get()];
+		final var pos = buffer.position();
+		buffer.get(b);
+		memo = new String(b, StandardCharsets.UTF_8);
+		buffer.position(pos + MAX_STRING_BYTES);
+
+		byte packed = buffer.get();
+		deleted = (packed & 0b001) == 0b001;
+		smartContract = (packed & 0b010) == 0b010;
+		receiverSigRequired = (packed & 0b100) == 0b100;
+
+		proxy = readNullableSerializable(buffer);
+	}
+
+	public void update(ByteBuffer buffer) throws IOException {
+		serialize(buffer);
+	}
+
+	public VirtualValue asReadOnly() {
+		MerkleAccountState copy = new MerkleAccountState(
+				this.key.duplicate(),
+				this.expiry,
+				this.hbarBalance,
+				this.autoRenewSecs,
+				this.memo,
+				this.deleted,
+				this.smartContract,
+				this.receiverSigRequired,
+				this.proxy.copy()
+		);
+		copy.setImmutable(true);
+		return copy;
 	}
 }

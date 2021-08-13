@@ -24,15 +24,17 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RichInstant {
+public class RichInstant implements ByteBufferSelfSerializable {
 	private static final Logger log = LogManager.getLogger(RichInstant.class);
 
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
@@ -123,5 +125,28 @@ public class RichInstant {
 
 	public boolean isMissing() {
 		return this == MISSING_INSTANT;
+	}
+
+	/* --- ByteBufferSelfSerializable --- */
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		buffer.putLong(seconds);
+		buffer.putInt(nanos);
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		seconds = buffer.getLong();
+		nanos = buffer.getInt();
+	}
+
+	@Override
+	public long getClassId() {
+		return 0;
+	}
+
+	@Override
+	public int getVersion() {
+		return 0;
 	}
 }
