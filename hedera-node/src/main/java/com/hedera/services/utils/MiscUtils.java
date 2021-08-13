@@ -668,11 +668,15 @@ public class MiscUtils {
 	}
 
 	/**
-	 A permutation (invertible function) on 64 bits. The constants were found
-	 by automated search, to optimize avalanche. Avalanche means that for a
-	 random number x, flipping bit i of x has about a 50 percent chance of
-	 flipping bit j of perm64(x). For each possible pair (i,j), this function
-	 achieves a probability between 49.8 and 50.2 percent. */
+	 * A permutation (invertible function) on 64 bits. The constants were found
+	 * by automated search, to optimize avalanche. Avalanche means that for a
+	 * random number x, flipping bit i of x has about a 50 percent chance of
+	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
+	 * achieves a probability between 49.8 and 50.2 percent.
+	 *
+	 * @param x the value to permute
+	 * @return the avalanche-optimized permutation
+	 */
 	public static long perm64(long x) {
 		// Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
 		x += x <<  30;
