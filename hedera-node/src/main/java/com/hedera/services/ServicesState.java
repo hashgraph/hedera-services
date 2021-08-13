@@ -98,8 +98,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				PubKeyToSigBytes pkToSigFn);
 	}
 
-	/* If positive, the version of the saved state loaded to create this instance; if -1, this is the genesis state */
-	private int deserializedVersion = -1;
+	/* Will only be over-written when Platform deserializes a legacy version of the state */
+	private int deserializedVersion = StateVersions.CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
@@ -151,11 +151,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion <= StateVersions.RELEASE_0160_VERSION) {
+		if (deserializedVersion < StateVersions.CURRENT_VERSION) {
 			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
 				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new FCMap<>());
 			}
-			moveLargeFcmsToBinaryRoutePositions(this);
+			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
 		}
 	}
 

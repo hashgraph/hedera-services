@@ -45,9 +45,9 @@ public class Release0170Migration {
 
 	private static TreeCopier treeCopier = MerkleCopy::copyTreeToLocation;
 
-	public static void moveLargeFcmsToBinaryRoutePositions(ServicesState initializingState) {
+	public static void moveLargeFcmsToBinaryRoutePositions(ServicesState initializingState, int deserializedVersion) {
 		log.info("Migrating from 0.16.0 state (version {} to {})",
-				StateVersions.RELEASE_0160_VERSION, StateVersions.RELEASE_0170_VERSION);
+				deserializedVersion, StateVersions.RELEASE_0170_VERSION);
 
 		/* First swap the address book and unique tokens */
 		final var movableBook = initializingState.getChild(LegacyStateChildIndices.ADDRESS_BOOK).copy();

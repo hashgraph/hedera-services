@@ -26,12 +26,8 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class GetBytecodeResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetBytecodeResourceUsage.class);
-
 	private static final byte[] EMPTY_BYTECODE = new byte[0];
 
 	private final SmartContractFeeBuilder usageEstimator;

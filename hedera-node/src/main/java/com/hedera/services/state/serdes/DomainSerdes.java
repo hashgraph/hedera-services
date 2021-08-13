@@ -27,16 +27,12 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class DomainSerdes {
-	private static final Logger log = LogManager.getLogger(DomainSerdes.class);
-
 	public JKey deserializeKey(DataInputStream in) throws IOException {
 		return JKeySerializer.deserialize(in);
 	}

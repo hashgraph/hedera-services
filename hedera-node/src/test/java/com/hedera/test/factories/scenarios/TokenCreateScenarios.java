@@ -119,7 +119,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.plusCustomFee(fractionalFee(
 									1, 2,
 									3, 4,
-									collector))
+									false, collector))
 							.get()
 			));
 		}

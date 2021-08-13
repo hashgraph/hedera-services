@@ -25,8 +25,10 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,15 +47,27 @@ import static org.mockito.BDDMockito.given;
 class FractionalFeeAssessorTest {
 	private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
 
-	private FractionalFeeAssessor subject = new FractionalFeeAssessor();
-
 	@Mock
 	private BalanceChangeManager changeManager;
+	@Mock
+	private FixedFeeAssessor fixedFeeAssessor;
+
+	private FractionalFeeAssessor subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new FractionalFeeAssessor(fixedFeeAssessor);
+	}
 
 	@Test
 	void appliesFeesAsExpected() {
 		// setup:
-		final var fees = List.of(firstFractionalFee, secondFractionalFee, exemptFractionalFee, skippedFixedFee);
+		final var fees = List.of(
+				firstFractionalFee,
+				secondFractionalFee,
+				exemptFractionalFee,
+				skippedFixedFee,
+				fractionalFeeNetOfTransfers);
 		final var firstCollectorChange = BalanceChange.tokenAdjust(
 				firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
 		final var secondCollectorChange = BalanceChange.tokenAdjust(
@@ -64,7 +78,9 @@ class FractionalFeeAssessorTest {
 				subject.amountOwedGiven(vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
 		final var secondExpectedFee =
 				subject.amountOwedGiven(vanillaTriggerAmount, secondFractionalFee.getFractionalFeeSpec());
-		final var totalFees = firstExpectedFee + secondExpectedFee;
+		final var netFee =
+				subject.amountOwedGiven(vanillaTriggerAmount, fractionalFeeNetOfTransfers.getFractionalFeeSpec());
+		final var totalReclaimedFees = firstExpectedFee + secondExpectedFee;
 		// and:
 		final var expFirstAssess = new FcAssessedCustomFee(
 				firstFractionalFeeCollector,
@@ -88,8 +104,8 @@ class FractionalFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		assertEquals(firstCreditAmount - (totalFees * 4 / 5), firstVanillaReclaim.units());
-		assertEquals(secondCreditAmount - (totalFees / 5), secondVanillaReclaim.units());
+		assertEquals(firstCreditAmount - (totalReclaimedFees * 4 / 5), firstVanillaReclaim.units());
+		assertEquals(secondCreditAmount - (totalReclaimedFees / 5), secondVanillaReclaim.units());
 		// and:
 		assertEquals(firstExpectedFee, firstCollectorChange.units());
 		assertEquals(secondExpectedFee, secondCollectorChange.units());
@@ -97,6 +113,13 @@ class FractionalFeeAssessorTest {
 		assertEquals(2, accumulator.size());
 		assertEquals(expFirstAssess, accumulator.get(0));
 		assertEquals(expSecondAssess, accumulator.get(1));
+		// and:
+		BDDMockito.verify(fixedFeeAssessor).assess(
+				payer,
+				tokenWithFractionalFee,
+				FcCustomFee.fixedFee(netFee, tokenWithFractionalFee.asEntityId(), netOfTransfersFeeCollector),
+				changeManager,
+				accumulator);
 	}
 
 	@Test
@@ -268,42 +291,59 @@ class FractionalFeeAssessorTest {
 	private final long firstMaxAmountOfFractionalFee = 100L;
 	private final long firstNumerator = 1L;
 	private final long firstDenominator = 100L;
+	private final long netOfTransfersMinAmountOfFractionalFee = 3L;
+	private final long netOfTransfersMaxAmountOfFractionalFee = 101L;
+	private final long netOfTransfersNumerator = 2L;
+	private final long netOfTransfersDenominator = 101L;
 	private final long secondMinAmountOfFractionalFee = 10L;
 	private final long secondMaxAmountOfFractionalFee = 1000L;
 	private final long secondNumerator = 1L;
 	private final long secondDenominator = 10L;
 	private final long nonsenseNumerator = Long.MAX_VALUE;
 	private final long nonsenseDenominator = 1L;
+	private final boolean notNetOfTransfers = false;
 	private final Id tokenWithFractionalFee = new Id(1, 2, 3);
 	private final EntityId firstFractionalFeeCollector = new EntityId(4, 5, 6);
 	private final EntityId secondFractionalFeeCollector = new EntityId(5, 6, 7);
+	private final EntityId netOfTransfersFeeCollector = new EntityId(6, 7, 8);
 	private final FcCustomFee skippedFixedFee = FcCustomFee.fixedFee(
 			100L,
 			EntityId.MISSING_ENTITY_ID,
 			EntityId.MISSING_ENTITY_ID);
+	private final FcCustomFee fractionalFeeNetOfTransfers = FcCustomFee.fractionalFee(
+			netOfTransfersNumerator,
+			netOfTransfersDenominator,
+			netOfTransfersMinAmountOfFractionalFee,
+			netOfTransfersMaxAmountOfFractionalFee,
+			!notNetOfTransfers,
+			netOfTransfersFeeCollector);
 	private final FcCustomFee firstFractionalFee = FcCustomFee.fractionalFee(
 			firstNumerator,
 			firstDenominator,
 			firstMinAmountOfFractionalFee,
 			firstMaxAmountOfFractionalFee,
+			notNetOfTransfers,
 			firstFractionalFeeCollector);
 	private final FcCustomFee secondFractionalFee = FcCustomFee.fractionalFee(
 			secondNumerator,
 			secondDenominator,
 			secondMinAmountOfFractionalFee,
 			secondMaxAmountOfFractionalFee,
+			notNetOfTransfers,
 			secondFractionalFeeCollector);
 	private final FcCustomFee exemptFractionalFee = FcCustomFee.fractionalFee(
 			firstNumerator,
 			secondDenominator,
 			firstMinAmountOfFractionalFee,
 			secondMaxAmountOfFractionalFee,
+			notNetOfTransfers,
 			payer.asEntityId());
 	private final FcCustomFee nonsenseFee = FcCustomFee.fractionalFee(
 			nonsenseNumerator,
 			nonsenseDenominator,
 			0,
 			0,
+			notNetOfTransfers,
 			secondFractionalFeeCollector);
 	private final BalanceChange vanillaTrigger = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -vanillaTriggerAmount);
