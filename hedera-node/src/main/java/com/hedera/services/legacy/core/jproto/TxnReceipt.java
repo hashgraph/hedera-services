@@ -34,8 +34,6 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -45,8 +43,6 @@ import java.util.stream.Collectors;
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
 
 public class TxnReceipt implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(TxnReceipt.class);
-
 	private static final int MAX_STATUS_BYTES = 128;
 	private static final int MAX_RUNNING_HASH_BYTES = 1024;
 	private static final int MAX_SERIAL_NUMBERS = 1024; // Is this number enough?
@@ -58,7 +54,6 @@ public class TxnReceipt implements SelfSerializable {
 	static final long MISSING_RUNNING_HASH_VERSION = 0L;
 
 	static final int RELEASE_070_VERSION = 1;
-	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
 	static final int RELEASE_0100_VERSION = 4;
 	static final int RELEASE_0110_VERSION = 5;
@@ -84,9 +79,10 @@ public class TxnReceipt implements SelfSerializable {
 	long newTotalSupply = -1L;
 	long[] serialNumbers;
 
-	public TxnReceipt() { }
+	public TxnReceipt() {
+	}
 
-	public TxnReceipt (Builder builder){
+	public TxnReceipt(Builder builder) {
 		this.status = builder.status;
 		this.accountId = builder.accountId;
 		this.fileId = builder.fileId;
@@ -96,13 +92,15 @@ public class TxnReceipt implements SelfSerializable {
 		this.tokenId = builder.tokenId;
 		this.scheduleId = builder.scheduleId;
 		this.topicSequenceNumber = builder.topicSequenceNumber;
-		this.topicRunningHash = ((builder.topicRunningHash != MISSING_RUNNING_HASH) && (builder.topicRunningHash.length > 0))
-				? builder.topicRunningHash
-				: MISSING_RUNNING_HASH;
+		this.topicRunningHash =
+				((builder.topicRunningHash != MISSING_RUNNING_HASH) && (builder.topicRunningHash.length > 0))
+						? builder.topicRunningHash
+						: MISSING_RUNNING_HASH;
 		this.runningHashVersion = builder.runningHashVersion;
 		this.newTotalSupply = builder.newTotalSupply;
 		this.scheduledTxnId = builder.scheduledTxnId;
-		this.serialNumbers = ((builder.serialNumbers != MISSING_SERIAL_NUMBERS) && (builder.serialNumbers.length > 0)) ? builder.serialNumbers : MISSING_SERIAL_NUMBERS;
+		this.serialNumbers = ((builder.serialNumbers != MISSING_SERIAL_NUMBERS) && (builder.serialNumbers.length > 0))
+				? builder.serialNumbers : MISSING_SERIAL_NUMBERS;
 	}
 
 	/* --- SelfSerializable --- */
@@ -328,7 +326,7 @@ public class TxnReceipt implements SelfSerializable {
 	public static TransactionReceipt convert(TxnReceipt txReceipt) {
 		final var builder = TransactionReceipt.newBuilder();
 		if (txReceipt.getStatus() != null) {
-				builder.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
+			builder.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
 		}
 		if (txReceipt.getAccountId() != null) {
 			builder.setAccountID(RequestBuilder.getAccountIdBuild(
@@ -380,12 +378,13 @@ public class TxnReceipt implements SelfSerializable {
 		}
 
 		if (txReceipt.getSerialNumbers() != MISSING_SERIAL_NUMBERS) {
-			builder.addAllSerialNumbers(Arrays.stream(txReceipt.getSerialNumbers()).boxed().collect(Collectors.toList()));
+			builder.addAllSerialNumbers(
+					Arrays.stream(txReceipt.getSerialNumbers()).boxed().collect(Collectors.toList()));
 		}
 		return builder.build();
 	}
 
-	public static TxnReceipt.Builder newBuilder(){
+	public static TxnReceipt.Builder newBuilder() {
 		return new Builder();
 	}
 
@@ -470,12 +469,12 @@ public class TxnReceipt implements SelfSerializable {
 			return this;
 		}
 
-		public Builder setSerialNumbers (long[] serialNumbers) {
+		public Builder setSerialNumbers(long[] serialNumbers) {
 			this.serialNumbers = serialNumbers;
 			return this;
 		}
 
-		public TxnReceipt build(){
+		public TxnReceipt build() {
 			return new TxnReceipt(this);
 		}
 	}

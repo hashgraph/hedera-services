@@ -30,8 +30,6 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
  * @author Michael Tinker
  */
 public class TokenAssociateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenAssociateTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final AccountStore accountStore;

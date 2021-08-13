@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.Map;
@@ -43,8 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public class ContractCallLocalAnswer extends AbstractAnswer {
-	private static final Logger log = LogManager.getLogger(ContractCallLocalAnswer.class);
-
 	public static final String CONTRACT_CALL_LOCAL_CTX_KEY =
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 

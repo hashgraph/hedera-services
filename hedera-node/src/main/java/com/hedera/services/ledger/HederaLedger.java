@@ -52,8 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,8 +99,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @SuppressWarnings("unchecked")
 public class HederaLedger {
-	private static final Logger log = LogManager.getLogger(HederaLedger.class);
-
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
 

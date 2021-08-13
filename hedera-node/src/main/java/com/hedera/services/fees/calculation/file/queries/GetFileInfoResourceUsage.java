@@ -27,12 +27,8 @@ import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetFileInfoResourceUsage.class);
-
 	private final FileOpsUsage fileOpsUsage;
 
 	public GetFileInfoResourceUsage(FileOpsUsage fileOpsUsage) {
@@ -54,9 +50,9 @@ public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
 		var op = query.getFileGetInfo();
 		var info = view.infoForFile(op.getFileID());
 		/* Given the test in {@code GetFileInfoAnswer.checkValidity}, this can only be empty
-		* under the extraordinary circumstance that the desired file expired during the query
-		* answer flow (which will now fail downstream with an appropriate status code); so
-		* just return the default {@code FeeData} here. */
+		 * under the extraordinary circumstance that the desired file expired during the query
+		 * answer flow (which will now fail downstream with an appropriate status code); so
+		 * just return the default {@code FeeData} here. */
 		if (info.isEmpty()) {
 			return FeeData.getDefaultInstance();
 		}

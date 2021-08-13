@@ -38,8 +38,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -55,8 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 public class StakedAnswerFlow implements AnswerFlow {
-	private static final Logger log = LogManager.getLogger(StakedAnswerFlow.class);
-
 	private LongPredicate isThrottleExempt = SystemPrecheck.IS_THROTTLE_EXEMPT;
 	private Supplier<Instant> now = Instant::now;
 

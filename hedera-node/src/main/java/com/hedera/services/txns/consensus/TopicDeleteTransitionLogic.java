@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,8 +38,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 public class TopicDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TopicDeleteTransitionLogic.class);
-
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
