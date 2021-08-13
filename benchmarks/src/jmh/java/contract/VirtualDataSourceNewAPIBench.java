@@ -1,7 +1,7 @@
 package contract;
 
+import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
 import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
-import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
@@ -87,8 +87,8 @@ public class VirtualDataSourceNewAPIBench {
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath);
-                case "v3" ->
-                    new VFCDataSourceImplV3<>(
+                case "jasperdb" ->
+                    new VFCDataSourceJasperDB<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,

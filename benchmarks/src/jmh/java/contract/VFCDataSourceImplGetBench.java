@@ -1,18 +1,17 @@
 package contract;
 
+import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
 import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
-import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import fcmmap.FCVirtualMapTestUtils;
-import lmdb.VFCDataSourceLmdbHashesRam;
-import org.openjdk.jmh.annotations.*;
 import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
+import lmdb.VFCDataSourceLmdbHashesRam;
 import lmdb.VFCDataSourceLmdbTwoIndexes;
-import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.annotations.*;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
@@ -89,8 +88,8 @@ public class VFCDataSourceImplGetBench {
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath);
-                case "v3" ->
-                    new VFCDataSourceImplV3<>(
+                case "jasperdb" ->
+                    new VFCDataSourceJasperDB<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,

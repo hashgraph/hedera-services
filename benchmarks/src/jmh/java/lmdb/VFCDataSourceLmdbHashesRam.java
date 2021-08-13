@@ -1,6 +1,6 @@
 package lmdb;
 
-import com.hedera.services.state.merkle.v3.offheap.OffHeapHashList;
+import com.hedera.services.state.jasperdb.collections.OffHeapHashList;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;

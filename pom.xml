@@ -461,6 +461,11 @@ ${git.signoff}
       </dependency>
       <dependency>
         <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-virtualmap</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
         <artifactId>swirlds-fcqueue</artifactId>
         <version>${swirlds.version}</version>
       </dependency>

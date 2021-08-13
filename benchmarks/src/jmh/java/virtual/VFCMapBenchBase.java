@@ -1,6 +1,6 @@
 package virtual;
 
-import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
+import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -59,7 +59,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("rocksdb")));
-            case jasperdb -> new VirtualMap<>(new VFCDataSourceImplV3<>(
+            case jasperdb -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -281,6 +281,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
 
         @Override
         public void serialize(ByteBuffer byteBuffer) throws IOException {
+            final int initialPosition = byteBuffer.position();
             byteBuffer.put(key);
             byteBuffer.putLong(expiry);
             byteBuffer.putLong(hbarBalance);
@@ -297,6 +298,8 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                 byteBuffer.put(bytes, 0, Math.min(bytes.length, MAX_STRING_BYTES));
                 byteBuffer.position(byteBuffer.position() + extra);
             }
+            assert (byteBuffer.position()-initialPosition) == (7*Long.BYTES) + 1 + MAX_STRING_BYTES :
+                "byteBuffer.position() ["+(byteBuffer.position()-initialPosition)+"] != (7*Long.BYTES) + 1 + MAX_STRING_BYTES ["+((7*Long.BYTES) + 1 + MAX_STRING_BYTES)+"]";
 
             // byte pack the three booleans
             byte packed = 0;
@@ -309,7 +312,11 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
             // Write the proxy
             if (proxy != null) {
                 proxy.serialize(byteBuffer);
+            } else {
+                byteBuffer.putLong(0);
             }
+            assert (byteBuffer.position()-initialPosition) == SERIALIZED_SIZE :
+                    "byteBuffer.position() ["+(byteBuffer.position()-initialPosition)+"] != SERIALIZED_SIZE ["+SERIALIZED_SIZE+"]";
         }
 
         @Override
