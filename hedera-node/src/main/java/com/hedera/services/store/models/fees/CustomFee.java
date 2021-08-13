@@ -78,12 +78,12 @@ public class CustomFee {
 			validateTrue(areAllPositiveNumbers(fractionGrpc.getNumerator(),
 					fractionGrpc.getDenominator(), fractionalFeeGrpc.getMaximumAmount(), fractionalFeeGrpc.getMinimumAmount()), CUSTOM_FEE_MUST_BE_POSITIVE);
 			validateTrue(fractionalFeeGrpc.getMinimumAmount() <= fractionalFeeGrpc.getMaximumAmount(), FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
-
 			final var fractionalFee = new FractionalFee(
 					fractionalFeeGrpc.getMaximumAmount(),
 					fractionalFeeGrpc.getMinimumAmount(),
 					fractionGrpc.getNumerator(),
-					fractionGrpc.getDenominator()
+					fractionGrpc.getDenominator(),
+					fractionalFeeGrpc.getNetOfTransfers()
 			);
 			return new CustomFee(collector, fractionalFee);
 		} else if (fee.hasRoyaltyFee()) {
@@ -125,6 +125,7 @@ public class CustomFee {
 					fractionalFee.getFractionalDenominator(),
 					fractionalFee.getMinimumAmount(),
 					fractionalFee.getMaximumAmount(),
+					fractionalFee.getNetOfTransfers(),
 					collector.getId().asEntityId());
 		} else if (royaltyFee != null) {
 			final var fixedFeeGrpcBuilder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();

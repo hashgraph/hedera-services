@@ -27,12 +27,14 @@ public class FractionalFee {
 	private final long minimumAmount;
 	private final long fractionalNumerator;
 	private final long fractionalDenominator;
+	private final boolean netOfTransfers;
 
-	public FractionalFee(long nominalMax, long min, long num, long denom) {
+	public FractionalFee(long nominalMax, long min, long num, long denom, boolean netOfTransfers) {
 		this.maximumAmount = nominalMax == 0 ? Long.MAX_VALUE : nominalMax;
 		this.minimumAmount = min;
 		this.fractionalNumerator = num;
 		this.fractionalDenominator = denom;
+		this.netOfTransfers = netOfTransfers;
 	}
 
 	public long getMinimumAmount() {
@@ -47,5 +49,9 @@ public class FractionalFee {
 
 	public long getFractionalDenominator() {
 		return fractionalDenominator;
+	}
+
+	public boolean getNetOfTransfers() {
+		return netOfTransfers;
 	}
 }

@@ -88,8 +88,8 @@ public class TypedTokenStore {
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
-	private final LegacyStore delegate;
-	private final LegacyStoreAddKnownTreasury addKnownTreasury;
+	private final RemoveKnownTreasuryDelegate delegate;
+	private final AddKnownTreasuryDelegate addKnownTreasury;
 
 	public TypedTokenStore(
 			AccountStore accountStore,
@@ -99,8 +99,8 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
-			LegacyStoreAddKnownTreasury legacyStoreDelegate,
-            LegacyStore delegate
+			AddKnownTreasuryDelegate legacyStoreDelegate,
+            RemoveKnownTreasuryDelegate delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -339,7 +339,7 @@ public class TypedTokenStore {
 		if (token.isDeleted()) {
 			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
 			final TokenID mutatedToken = token.getId().asGrpcToken();
-			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
+			delegate.perform(affectedTreasury, mutatedToken);
 		}
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -368,7 +368,7 @@ public class TypedTokenStore {
 		mapModelChangesToMutable(token, newMerkleToken);
 
 		tokens.get().put(newMerkleTokenId, newMerkleToken);
-		delegate.addKnownTreasury(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
+		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
 
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -486,12 +486,12 @@ public class TypedTokenStore {
 	}
 
 	@FunctionalInterface
-	public interface LegacyStoreAddKnownTreasury {
-		void addKnownTreasury(AccountID aId, TokenID tId);
+	public interface AddKnownTreasuryDelegate {
+		void perform(final AccountID aId, final TokenID tId);
 	}
 
     @FunctionalInterface
-    public interface LegacyStore {
-        void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
+    public interface RemoveKnownTreasuryDelegate {
+        void perform(final AccountID aId, final TokenID tId);
     }
 }

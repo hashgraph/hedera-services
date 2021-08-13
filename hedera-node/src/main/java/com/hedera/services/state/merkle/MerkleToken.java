@@ -343,10 +343,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return Optional.ofNullable(adminKey);
 	}
 
-	public JKey getAdminKey() {
-		return adminKey;
-	}
-
 	public Optional<JKey> freezeKey() {
 		return Optional.ofNullable(freezeKey);
 	}

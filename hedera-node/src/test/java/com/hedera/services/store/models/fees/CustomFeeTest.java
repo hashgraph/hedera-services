@@ -205,7 +205,7 @@ class CustomFeeTest {
 		assertFalse(fee.shouldBeEnabled());
 
 		final var merkleFractional = FcCustomFee.
-				fractionalFee(10, 1, 1, 10, collectorId.asEntityId());
+				fractionalFee(10, 1, 1, 10, false, collectorId.asEntityId());
 		final var fractGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setFractionalFee(FractionalFee.newBuilder()
 						.setFractionalAmount(Fraction.newBuilder()
@@ -249,7 +249,7 @@ class CustomFeeTest {
 		assertFalse(fee.getFixedFee().getDenominatingTokenId().isPresent());
 		
 		fee.setFixedFee(null);
-		fee.setFractionalFee(new com.hedera.services.store.models.fees.FractionalFee(15, 10, 10, 10));
+		fee.setFractionalFee(new com.hedera.services.store.models.fees.FractionalFee(15, 10, 10, 10, false));
 		assertEquals(fee.getFractionalFee().getMaximumAmount(), 15);
 		
 	}
