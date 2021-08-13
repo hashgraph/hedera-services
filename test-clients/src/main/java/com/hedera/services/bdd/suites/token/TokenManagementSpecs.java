@@ -245,11 +245,14 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	public HapiApiSpec wipeAccountFailureCasesWork() {
 		var unwipeableToken = "without";
 		var wipeableToken = "with";
+		var wipeableUniqueToken = "uniqueWith";
 		var anotherWipeableToken = "anotherWith";
+		var multiKey = "wipeAndSupplyKey";
+		var someMeta = ByteString.copyFromUtf8("HEY");
 
 		return defaultHapiSpec("WipeAccountFailureCasesWork")
 				.given(
-						newKeyNamed("wipeKey"),
+						newKeyNamed(multiKey),
 						cryptoCreate("misc").balance(0L),
 						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
@@ -257,15 +260,24 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(wipeableToken)
 								.treasury(TOKEN_TREASURY)
-								.wipeKey("wipeKey"),
+								.wipeKey(multiKey),
+						tokenCreate(wipeableUniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(multiKey)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY)
+								.wipeKey(multiKey),
+						mintToken(wipeableUniqueToken, List.of(someMeta)),
 						tokenCreate(anotherWipeableToken)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(1_000)
-								.wipeKey("wipeKey"),
+								.wipeKey(multiKey),
 						tokenAssociate("misc", anotherWipeableToken),
 						cryptoTransfer(
 								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
 				).then(
+						wipeTokenAccount(wipeableUniqueToken, TOKEN_TREASURY, List.of(1L))
+								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
 						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
