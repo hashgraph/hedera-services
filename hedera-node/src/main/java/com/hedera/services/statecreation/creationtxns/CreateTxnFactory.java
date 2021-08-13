@@ -23,9 +23,7 @@ package com.hedera.services.statecreation.creationtxns;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
-import com.hedera.services.statecreation.creationtxns.utils.KeyTree;
 import com.hedera.services.statecreation.creationtxns.utils.SigFactory;
-import com.hedera.services.statecreation.creationtxns.utils.SigMapGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -39,14 +37,9 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
-import static com.hedera.services.statecreation.creationtxns.utils.IdUtils.asAccount;
-import static com.hedera.services.statecreation.creationtxns.utils.NodeFactory.ed25519;
-import static com.hedera.services.statecreation.creationtxns.utils.NodeFactory.list;
-import static java.util.Collections.EMPTY_LIST;
-import static java.util.stream.Collectors.toList;
+import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
+
 
 public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	public static final String DEFAULT_MEMO = "default memo.";
@@ -55,12 +48,9 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	public static final String DEFAULT_PAYER_ID = "0.0.2";
 	public static final String MASTER_PAYER_ID = "0.0.50";
 	public static final AccountID DEFAULT_PAYER = asAccount(DEFAULT_PAYER_ID);
-	public static final KeyTree DEFAULT_PAYER_KT = KeyTree.withRoot(list(ed25519()));
 	public static final Instant DEFAULT_VALID_START = Instant.now();
 	public static final Integer DEFAULT_VALID_DURATION = 60;
 	public static final SigFactory DEFAULT_SIG_FACTORY = new SigFactory();
-
-	//public static final KeyPairObj defaultKey;
 
 	protected KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	protected FeeBuilder fees = new FeeBuilder();
@@ -72,10 +62,10 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	boolean skipPayerSig = false;
 	Instant start = DEFAULT_VALID_START;
 	Integer validDuration = DEFAULT_VALID_DURATION;
-	KeyTree payerKt = DEFAULT_PAYER_KT;
 	SigFactory sigFactory = DEFAULT_SIG_FACTORY;
-	List<KeyTree> otherKts = EMPTY_LIST;
 	Optional<Long> customFee = Optional.empty();
+
+	private List<Key> keys;
 
 	protected abstract T self();
 
@@ -87,7 +77,7 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 		Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
 		return customFee.isPresent()
 				? provisional
-				: signed(signableTxn(feeFor(provisional, payerKt.numLeaves())));
+				: signed(signableTxn(feeFor(provisional, keys.size())));
 	}
 
 	private Transaction.Builder signableTxn(long fee) {
@@ -98,18 +88,11 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	}
 
 	private Transaction signed(Transaction.Builder txnWithSigs) throws Throwable {
-		// List<KeyTree> signers = allKts(); // Change to use Key directly
 		KeyPairObj keyPairObj = KeyFactory.genesisKeyPair;
 		Key genKey = KeyFactory.asPublicKey(keyPairObj.getPublicKeyAbyteStr());
-		final List<Key> keys = Collections.singletonList(genKey);
+		keys = Collections.singletonList(genKey);
 
 		return sigFactory.signWithSimpleKey(txnWithSigs, keys, keyFactory);
-	}
-
-	private List<KeyTree> allKts() {
-		return Stream.of(
-				skipPayerSig ? Stream.<KeyTree>empty() : Stream.of(payerKt),
-				otherKts.stream()).flatMap(Function.identity()).collect(toList());
 	}
 
 	private TransactionBody.Builder baseTxn() {
@@ -147,23 +130,8 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 		return self();
 	}
 
-	public T payerKt(KeyTree payerKt) {
-		this.payerKt = payerKt;
-		return self();
-	}
-
-	public T nonPayerKts(KeyTree... otherKts) {
-		this.otherKts = List.of(otherKts);
-		return self();
-	}
-
 	public T fee(long amount) {
 		customFee = Optional.of(amount);
-		return self();
-	}
-
-	public T skipPayerSig() {
-		skipPayerSig = true;
 		return self();
 	}
 
@@ -172,18 +140,8 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 		return self();
 	}
 
-	public T sigMapGen(SigMapGenerator sigMapGen) {
-		this.sigFactory = new SigFactory(sigMapGen);
-		return self();
-	}
-
 	public T txnValidStart(Timestamp at) {
 		start = Instant.ofEpochSecond(at.getSeconds(), at.getNanos());
-		return self();
-	}
-
-	public T sansTxnId() {
-		skipTxnId = true;
 		return self();
 	}
 }

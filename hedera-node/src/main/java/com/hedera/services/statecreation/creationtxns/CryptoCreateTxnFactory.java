@@ -20,11 +20,7 @@ package com.hedera.services.statecreation.creationtxns;
  * ‍
  */
 
-//import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.services.legacy.core.KeyPairObj;
-
 import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
-import com.hedera.services.statecreation.creationtxns.utils.KeyTree;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -34,23 +30,14 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.OptionalLong;
 import java.util.Optional;
 
-import static com.hedera.services.statecreation.creationtxns.utils.NodeFactory.ed25519;
-import static com.hedera.services.statecreation.creationtxns.utils.NodeFactory.list;
-import static com.hedera.services.statecreation.creationtxns.utils.NodeFactory.threshold;
-
 
 public class CryptoCreateTxnFactory extends CreateTxnFactory<CryptoCreateTxnFactory> {
-	public static final KeyTree DEFAULT_ACCOUNT_KT =
-			KeyTree.withRoot(list(ed25519(), threshold(1, ed25519(), ed25519(false))));
 	public static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(90 * 86_400L).build();
 
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
-	private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 	private OptionalLong balance = OptionalLong.empty();
 	private Optional<String> memo = Optional.of("Default memo");
-
-	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 
 	private static Key newAccountKey = KeyFactory.getKey();
 
@@ -73,7 +60,6 @@ public class CryptoCreateTxnFactory extends CreateTxnFactory<CryptoCreateTxnFact
 	protected void customizeTxn(TransactionBody.Builder txn) {
 
 		CryptoCreateTransactionBody.Builder op = CryptoCreateTransactionBody.newBuilder()
-				//.setKey(accountKt.asKey(keyFactory))
 				.setKey(newAccountKey)
 				.setAutoRenewPeriod(autoRenewPeriod)
 				.setMemo(memo.get())
@@ -81,11 +67,6 @@ public class CryptoCreateTxnFactory extends CreateTxnFactory<CryptoCreateTxnFact
 
 		balance.ifPresent(op::setInitialBalance);
 		txn.setCryptoCreateAccount(op);
-	}
-
-	public CryptoCreateTxnFactory accountKt(KeyTree accountKt) {
-		this.accountKt = accountKt;
-		return this;
 	}
 
 	public CryptoCreateTxnFactory balance(long amount) {

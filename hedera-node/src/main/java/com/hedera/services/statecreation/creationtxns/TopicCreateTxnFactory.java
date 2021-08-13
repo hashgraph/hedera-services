@@ -20,27 +20,20 @@ package com.hedera.services.statecreation.creationtxns;
  * ‍
  */
 
-//import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
-import com.hedera.services.statecreation.creationtxns.utils.KeyTree;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.statecreation.creationtxns.utils.IdUtils.asAccount;
-import static com.hedera.services.statecreation.creationtxns.utils.NodeFactory.ed25519;
+import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
 
 
 public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactory> {
-	public static final KeyTree SIMPLE_TOPIC_ADMIN_KEY = KeyTree.withRoot(ed25519());
 	public static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(30 * 86_400L).build();
 
 	private String memo = null;
-//	private KeyTree adminKey = null;
-//	private KeyTree submitKey = null;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 	private String autoRenewAccountId = null;
 
@@ -51,17 +44,6 @@ public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactor
 	public static TopicCreateTxnFactory newSignedConsensusCreateTopic() {
 		return new TopicCreateTxnFactory();
 	}
-
-//	private static Key getKey() {
-//		Key genKey = null;
-//		try {
-//			KeyPairObj genKeyObj = KeyFactory.genesisKeyPair;
-//			genKey = KeyFactory.asPublicKey(genKeyObj.getPublicKeyAbyteStr());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		return genKey;
-//	}
 
 	@Override
 	protected TopicCreateTxnFactory self() {

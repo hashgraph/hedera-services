@@ -97,7 +97,7 @@ public class FreezeHandler {
 	}
 
 	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
-		log.debug("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
+		log.info("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
 		FreezeTransactionBody op = transactionBody.getFreeze();
 		TransactionReceipt receipt;
 		if (transactionBody.getFreeze().hasUpdateFile()) {

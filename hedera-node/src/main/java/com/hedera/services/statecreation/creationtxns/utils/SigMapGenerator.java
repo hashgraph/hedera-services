@@ -48,20 +48,8 @@ public class SigMapGenerator {
 		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, 1));
 	}
 
-	public static SigMapGenerator withAmbiguousPrefixes() {
-		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, Integer.MAX_VALUE));
-	}
-
-	public static SigMapGenerator withRandomPrefixes() {
-		return new SigMapGenerator(trie -> key -> trie.randomPrefix(key.length));
-	}
-
 	public SigMapGenerator(Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn) {
 		this.prefixCalcFn = prefixCalcFn;
-	}
-
-	public void setInvalidEntries(Set<Integer> invalidEntries) {
-		this.invalidEntries = invalidEntries;
 	}
 
 	SignatureMap generate(List<Entry<byte[], byte[]>> keySigs, Supplier<SignatureType> sigTypes) {

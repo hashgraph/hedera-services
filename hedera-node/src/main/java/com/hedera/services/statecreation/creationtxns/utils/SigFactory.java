@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes;
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
 
 public class SigFactory {
 	private final SigMapGenerator sigMapGen;
@@ -51,49 +50,30 @@ public class SigFactory {
 		this.sigMapGen = sigMapGen;
 	}
 
-	public static byte[] signUnchecked(byte[] data, PrivateKey pk) {
-		try {
-			return CommonUtils.unhex(signBytes(data, pk));
-		} catch (Exception e) {
-			throw new IllegalStateException("Impossible signing error!");
-		}
-	}
-
-	public Transaction signWithSigMap(
-			Transaction.Builder txn,
-			List<KeyTree> signers,
-			KeyFactory factory
-	) throws Throwable {
-		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), signers, null, factory);
-		List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
-		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
-		return txn.build();
-	}
-
 	public Transaction signWithSimpleKey(
 			Transaction.Builder txn,
 			List<Key> keys,
 			KeyFactory factory
 	) throws Throwable {
-		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), null, keys, factory);
+		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), keys, factory);
 		List<Map.Entry<byte[], byte[]>> sigs = signing.simplySigned();
 		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
+
 		return txn.build();
 	}
 
 	private static class SimpleSigning {
 		private final byte[] data;
 		private final KeyFactory factory ;
-		private final List<KeyTree> signers;
 		private final Set<String> used = new HashSet<>();
 		private final List<SignatureType> sigTypes = new ArrayList<>();
 		private final List<Map.Entry<byte[], byte[]>> keySigs = new ArrayList<>();
 
 		private List<Key> keys ;
 
-		public SimpleSigning(byte[] data, List<KeyTree> signers, List<Key> keys, KeyFactory factory) {
+		public SimpleSigning(byte[] data,
+				List<Key> keys, KeyFactory factory) {
 			this.data = data;
-			this.signers = signers;
 			this.keys = keys;
 			this.factory = factory;
 		}
@@ -114,26 +94,6 @@ public class SigFactory {
 				signIfNecessary(key);
 			}
 			return keySigs;
-		}
-
-
-		public List<Map.Entry<byte[], byte[]>> completed() throws Throwable {
-			for (KeyTree signer : signers) {
-				signRecursively(signer.getRoot());
-			}
-			return keySigs;
-		}
-
-		private void signRecursively(KeyTreeNode node) throws Throwable {
-			if (node instanceof KeyTreeLeaf) {
-				if (((KeyTreeLeaf)node).isUsedToSign()) {
-					signIfNecessary(node.asKey(factory));
-				}
-			} else if (node instanceof KeyTreeListNode) {
-				for (KeyTreeNode child : ((KeyTreeListNode)node).getChildren()) {
-					signRecursively(child);
-				}
-			}
 		}
 
 		private void signIfNecessary(Key key) throws Throwable {

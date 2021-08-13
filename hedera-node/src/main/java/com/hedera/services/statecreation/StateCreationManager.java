@@ -2,6 +2,7 @@ package com.hedera.services.statecreation;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.statecreation.creationtxns.FreezeTxnFactory;
+import com.hedera.services.statecreation.creationtxns.PostCreateTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,11 +16,12 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class StateCreationManager {
-	static Logger log = LogManager.getLogger(BuiltinClient.class);
+	static Logger log = LogManager.getLogger(StateCreationManager.class);
 
 	private Map<Integer, String> processOrders = new TreeMap<>();
 	private Properties properties;
@@ -35,7 +37,6 @@ public class StateCreationManager {
 	public void create() {
 		loadAndProcessProperties();
 		if(processOrders.size() > 0) {
-			executorService = Executors.newSingleThreadExecutor();
 			startCreation();
 		}
 	}
@@ -67,28 +68,19 @@ public class StateCreationManager {
 	}
 
 	private void startCreation() {
+		AtomicBoolean allCreated = new AtomicBoolean(false);
+		executorService = Executors.newFixedThreadPool(2);
 
-		processOrders.forEach(this::createEntitiesFor);
+		BuiltinClient client = new BuiltinClient(properties, processOrders, ctx, allCreated);
 
-		executorService.shutdown();
+		executorService.execute(client);
 
+		log.info("kicked off builtin client to send creation traffic");
 
-		System.out.println("Done create the state file and let's shutdown the server.");
+		PostCreateTask waiter = new PostCreateTask(allCreated, ctx);
 
-		FreezeTxnFactory.newFreezeTxn().freezeStartAt(Instant.now().plusSeconds(10));
-
-		// wait a little bit or check swirlds.log to find the "MAINTENANCE" flag,
-		// then gzip and upload the generated saved files
+		executorService.execute(waiter);
 	}
 
-	private void createEntitiesFor(Integer posi, String entityType) {
-		final String valStr = properties.getProperty(processOrders.get(posi) + ".total");
-		final AtomicInteger totalToCreate = new AtomicInteger(Integer.parseInt(valStr));
 
-		BuiltinClient client = new BuiltinClient(totalToCreate, entityType, ctx);
-		if(totalToCreate.get() > 0) {
-			System.out.println("Start to build " + valStr + " " + entityType);
-			executorService.execute(client);
-		}
-	}
 }

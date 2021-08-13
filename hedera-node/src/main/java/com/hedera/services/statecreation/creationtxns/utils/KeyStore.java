@@ -2,7 +2,7 @@ package com.hedera.services.statecreation.creationtxns.utils;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services Test Clients
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -20,22 +20,9 @@ package com.hedera.services.statecreation.creationtxns.utils;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
-
+import java.security.KeyPair;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
+public interface KeyStore extends List<KeyPair> {
 
-public class KeyTreeThresholdNode extends KeyTreeListNode {
-	private final int M;
-
-	public KeyTreeThresholdNode(List<KeyTreeNode> children, int M) {
-		super(children);
-		this.M = M;
-	}
-
-	@Override
-	public Key asKey(KeyFactory factory) {
-		return factory.newThreshold(children.stream().map(node -> node.asKey(factory)).collect(toList()), M);
-	}
 }

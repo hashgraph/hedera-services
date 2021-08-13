@@ -76,14 +76,18 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	private HapiApiSpec getAccoutInfoByAccountID() {
 		return defaultHapiSpec("FailsForMissingAccount")
 				.given(
+						getAccountInfo("0.0.1100")
+								//.payingWith(ADDRESS_BOOK_CONTROL)
+								.logged(),
+
+						getAccountInfo("0.0.1101")
+								//.payingWith(ADDRESS_BOOK_CONTROL)
+								.logged()
+				).when().then(
 						cryptoTransfer(tinyBarsFromTo("0.0.1100", "0.0.1101", 1))
 								//.via("pureCrypto")
 								.fee(ONE_HUNDRED_HBARS)
 //								.payingWith("0.0.1100")
-				).when().then(
-						getAccountInfo("0.0.2")
-								//.payingWith(ADDRESS_BOOK_CONTROL)
-								.logged()
 								//.hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
 				);
 	}
