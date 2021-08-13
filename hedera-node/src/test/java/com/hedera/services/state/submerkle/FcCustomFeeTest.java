@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class FcCustomFeeTest {
@@ -283,7 +285,7 @@ class FcCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new FcCustomFee();
-		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(subject.getRoyaltyFeeSpec(), newSubject.getRoyaltyFeeSpec());
 		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
@@ -305,7 +307,7 @@ class FcCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new FcCustomFee();
-		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(subject.getRoyaltyFeeSpec(), newSubject.getRoyaltyFeeSpec());
 		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
@@ -329,7 +331,7 @@ class FcCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new FcCustomFee();
-		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(subject.getFractionalFeeSpec(), newSubject.getFractionalFeeSpec());
 		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
@@ -347,7 +349,7 @@ class FcCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new FcCustomFee();
-		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
 		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
@@ -365,7 +367,7 @@ class FcCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new FcCustomFee();
-		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
 		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
@@ -379,7 +381,7 @@ class FcCustomFeeTest {
 		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(denom).willReturn(feeCollector);
 
 		final var subject = new FcCustomFee();
-		subject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		subject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(FcCustomFee.FeeType.FIXED_FEE, subject.getFeeType());
 		assertEquals(expectedFixedSpec, subject.getFixedFeeSpec());
@@ -405,12 +407,39 @@ class FcCustomFeeTest {
 		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(feeCollector);
 
 		final var subject = new FcCustomFee();
-		subject.deserialize(din, FcCustomFee.MERKLE_VERSION);
+		subject.deserialize(din, FcCustomFee.CURRENT_VERSION);
 
 		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
 		assertEquals(expectedFractionalSpec, subject.getFractionalFeeSpec());
 		assertNull(subject.getFixedFeeSpec());
 		assertEquals(feeCollector, subject.getFeeCollector());
+	}
+
+	@Test
+	void deserializeWorksAsExpectedForFractionalFromRelease016x() throws IOException {
+		final var expectedFractionalSpec = new FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect,
+				!netOfTransfers);
+		given(din.readByte()).willReturn(FcCustomFee.FRACTIONAL_CODE);
+		given(din.readLong())
+				.willReturn(validNumerator)
+				.willReturn(validDenominator)
+				.willReturn(minimumUnitsToCollect)
+				.willReturn(maximumUnitsToCollect);
+		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(feeCollector);
+
+		final var subject = new FcCustomFee();
+		subject.deserialize(din, FcCustomFee.RELEASE_016X_VERSION);
+
+		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
+		assertEquals(expectedFractionalSpec, subject.getFractionalFeeSpec());
+		assertNull(subject.getFixedFeeSpec());
+		assertEquals(feeCollector, subject.getFeeCollector());
+		// and:
+		verify(din, never()).readBoolean();
 	}
 
 	@Test
@@ -452,7 +481,7 @@ class FcCustomFeeTest {
 	void merkleMethodsWork() {
 		final var subject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
-		assertEquals(FcCustomFee.MERKLE_VERSION, subject.getVersion());
+		assertEquals(FcCustomFee.CURRENT_VERSION, subject.getVersion());
 		assertEquals(FcCustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 

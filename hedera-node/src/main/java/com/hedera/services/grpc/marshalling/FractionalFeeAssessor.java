@@ -57,6 +57,9 @@ public class FractionalFeeAssessor {
 		final var payer = change.getAccount();
 		final var denom = change.getToken();
 		final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
+		/* These accounts receiving the reclaimed credits are the
+		effective payers unless the net-of-transfers flag is set. */
+		final var effPayerAccountNums = effPayerAccountNumsOf(creditsToReclaimFrom);
 		for (var fee : feesWithFractional) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
@@ -85,11 +88,24 @@ public class FractionalFeeAssessor {
 					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 				}
 				adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
-				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+				final var assessed = new FcAssessedCustomFee(
+						collector.asEntityId(),
+						denom.asEntityId(),
+						assessedAmount,
+						effPayerAccountNums);
 				accumulator.add(assessed);
 			}
 		}
 		return OK;
+	}
+
+	private long[] effPayerAccountNumsOf(List<BalanceChange> credits) {
+		int n = credits.size();
+		final var nums = new long[n];
+		for (int i = 0; i < n; i++) {
+			nums[i] = credits.get(i).getAccount().getNum();
+		}
+		return nums;
 	}
 
 	void reclaim(long amount, List<BalanceChange> credits) {
@@ -129,5 +145,4 @@ public class FractionalFeeAssessor {
 		}
 		return effectiveFee;
 	}
-
 }

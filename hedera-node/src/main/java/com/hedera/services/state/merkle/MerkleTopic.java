@@ -34,8 +34,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -70,8 +68,6 @@ import static com.swirlds.common.CommonUtils.hex;
  * </ul>
  */
 public final class MerkleTopic extends AbstractMerkleLeaf {
-	private static final Logger log = LogManager.getLogger(MerkleTopic.class);
-
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 
@@ -171,11 +167,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public boolean isLeaf() {
-		return true;
-	}
-
-	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		topicSerde.deserializeV1(in, this);
 	}
@@ -241,11 +232,16 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	 * Increment the sequence number if this is not the initial transaction on the topic (the create), and update the
 	 * running hash of the Transactions on this topic (submitted messages and modifications of the topic).
 	 *
-	 * @param payer the account id to pay for the transaction
-	 * @param message the message submitted to the topic
-	 * @param topicId the topic id to receive the message
-	 * @param consensusTimestamp the consensus timestamp
-	 * @throws IOException when any component fails to write to a temporary stream for computing the running hash
+	 * @param payer
+	 * 		the account id to pay for the transaction
+	 * @param message
+	 * 		the message submitted to the topic
+	 * @param topicId
+	 * 		the topic id to receive the message
+	 * @param consensusTimestamp
+	 * 		the consensus timestamp
+	 * @throws IOException
+	 * 		when any component fails to write to a temporary stream for computing the running hash
 	 */
 	public void updateRunningHashAndSequenceNumber(
 			AccountID payer,

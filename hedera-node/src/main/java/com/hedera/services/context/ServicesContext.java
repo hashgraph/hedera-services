@@ -1086,7 +1086,8 @@ public class ServicesContext {
 					this::uniqueTokens,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels(),
-					uniqTokenViewsManager());
+					uniqTokenViewsManager(),
+					tokenStore()::removeKnownTreasuryForToken);
 		}
 		return typedTokenStore;
 	}
@@ -1555,7 +1556,7 @@ public class ServicesContext {
 				entry(TokenRevokeKycFromAccount,
 						List.of(new TokenRevokeKycTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
 				entry(TokenDelete,
-						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenDeleteTransitionLogic(txnCtx(), typedTokenStore()))),
 				entry(TokenMint,
 						List.of(new TokenMintTransitionLogic(validator(), accountStore(), typedTokenStore(),
 								txnCtx(), globalDynamicProperties()))),

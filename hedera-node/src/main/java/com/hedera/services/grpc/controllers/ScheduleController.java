@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc;
 import io.grpc.stub.StreamObserver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -38,39 +36,37 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 
 public class ScheduleController extends ScheduleServiceGrpc.ScheduleServiceImplBase {
-    private static final Logger log = LogManager.getLogger(ScheduleController.class);
+	private final ScheduleAnswers scheduleAnswers;
+	private final TxnResponseHelper txnHelper;
+	private final QueryResponseHelper queryHelper;
 
-    private final ScheduleAnswers scheduleAnswers;
-    private final TxnResponseHelper txnHelper;
-    private final QueryResponseHelper queryHelper;
+	public ScheduleController(
+			ScheduleAnswers scheduleAnswers,
+			TxnResponseHelper txnHelper,
+			QueryResponseHelper queryHelper
+	) {
+		this.txnHelper = txnHelper;
+		this.queryHelper = queryHelper;
+		this.scheduleAnswers = scheduleAnswers;
+	}
 
-    public ScheduleController(
-            ScheduleAnswers scheduleAnswers,
-            TxnResponseHelper txnHelper,
-            QueryResponseHelper queryHelper
-    ) {
-        this.txnHelper = txnHelper;
-        this.queryHelper = queryHelper;
-        this.scheduleAnswers = scheduleAnswers;
-    }
+	@Override
+	public void createSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, ScheduleCreate);
+	}
 
-    @Override
-    public void createSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-        txnHelper.submit(signedTxn, observer, ScheduleCreate);
-    }
+	@Override
+	public void signSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, ScheduleSign);
+	}
 
-    @Override
-    public void signSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-        txnHelper.submit(signedTxn, observer, ScheduleSign);
-    }
+	@Override
+	public void deleteSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, ScheduleDelete);
+	}
 
-    @Override
-    public void deleteSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-        txnHelper.submit(signedTxn, observer, ScheduleDelete);
-    }
-
-    @Override
-    public void getScheduleInfo(Query query, StreamObserver<Response> observer) {
-        queryHelper.answer(query, observer, scheduleAnswers.getScheduleInfo(), ScheduleGetInfo);
-    }
+	@Override
+	public void getScheduleInfo(Query query, StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, scheduleAnswers.getScheduleInfo(), ScheduleGetInfo);
+	}
 }

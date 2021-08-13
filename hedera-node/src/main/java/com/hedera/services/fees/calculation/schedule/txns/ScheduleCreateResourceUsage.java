@@ -29,13 +29,9 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(ScheduleCreateResourceUsage.class);
-
 	private final ScheduleOpsUsage scheduleOpsUsage;
 	private final GlobalDynamicProperties dynamicProperties;
 

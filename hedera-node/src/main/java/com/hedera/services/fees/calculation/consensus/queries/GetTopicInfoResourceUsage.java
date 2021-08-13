@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -42,8 +40,6 @@ import static com.hederahashgraph.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hederahashgraph.fee.FeeBuilder.getStateProofSize;
 
 public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetTopicInfoResourceUsage.class);
-
 	@Override
 	public boolean applicableTo(Query query) {
 		return query.hasConsensusGetTopicInfo();
