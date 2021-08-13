@@ -31,8 +31,10 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
+import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,10 +42,11 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
+import static com.hedera.services.state.merkle.SerializationHelper.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class ExpirableTxnRecord implements FCQueueElement {
+public class ExpirableTxnRecord implements FCQueueElement, VirtualValue {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
@@ -349,6 +352,64 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public ExpirableTxnRecord copy() {
+		return this;
+	}
+
+	/* --- VirtualValue --- */
+
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		writeNullable(buffer, receipt);
+		writeByteArray(buffer, txnHash);
+
+		writeNullable(buffer, txnId);
+		writeNullable(buffer, consensusTimestamp);
+		writeNullableString(buffer, memo);
+
+		buffer.putLong(fee);
+
+		writeNullable(buffer, hbarAdjustments);
+		writeNullable(buffer, contractCallResult);
+		writeNullable(buffer, contractCreateResult);
+
+		buffer.putLong(expiry);
+		buffer.putLong(submittingMember);
+
+		writeSerializableList(buffer, tokens, true, true);
+		writeSerializableList(buffer, tokenAdjustments, true, true);
+
+		writeNullable(buffer, scheduleRef);
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		receipt = readNullable(buffer, TxnReceipt::new);
+		txnHash = readByteArray(buffer, MAX_TXN_HASH_BYTES);
+
+		txnId = readNullable(buffer, TxnId::new);
+		consensusTimestamp = readNullable(buffer, RichInstant::new);
+		memo = readNullableString(buffer, MAX_MEMO_BYTES);
+
+		fee = buffer.getLong();
+
+		hbarAdjustments = readNullable(buffer, CurrencyAdjustments::new);
+		contractCallResult = readNullable(buffer, SolidityFnResult::new);
+		contractCreateResult = readNullable(buffer, SolidityFnResult::new);
+
+		expiry = buffer.getLong();
+		submittingMember = buffer.getLong();
+
+		if (version > RELEASE_070_VERSION) {
+			tokens = readSerializableList(buffer, MAX_INVOLVED_TOKENS);
+			tokenAdjustments = readSerializableList(buffer, MAX_INVOLVED_TOKENS);
+		}
+		if (version > RELEASE_080_VERSION) {
+			scheduleRef = readNullable(buffer, EntityId::new);
+		}
+	}
+
+	@Override
+	public VirtualValue asReadOnly() {
 		return this;
 	}
 

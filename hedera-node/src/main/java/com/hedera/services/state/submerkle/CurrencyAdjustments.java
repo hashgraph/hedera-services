@@ -27,17 +27,24 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.merkle.SerializationHelper.readLongArray;
+import static com.hedera.services.state.merkle.SerializationHelper.readSerializableList;
+import static com.hedera.services.state.merkle.SerializationHelper.writeLongArray;
+import static com.hedera.services.state.merkle.SerializationHelper.writeSerializableList;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 
-public class CurrencyAdjustments implements SelfSerializable {
+public class CurrencyAdjustments implements SelfSerializable, ByteBufferSelfSerializable {
+
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b06bd46e12a466L;
 
@@ -78,6 +85,20 @@ public class CurrencyAdjustments implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializableList(accountIds, true, true);
 		out.writeLongArray(hbars);
+	}
+
+	/* --- ByteBufferSelfSerializable --- */
+
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		writeSerializableList(buffer, accountIds, true, true);
+		writeLongArray(buffer, hbars);
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		accountIds = readSerializableList(buffer, MAX_NUM_ADJUSTMENTS, true, EntityId::new);
+		hbars = readLongArray(buffer, MAX_NUM_ADJUSTMENTS);
 	}
 
 	/* ---- Object --- */

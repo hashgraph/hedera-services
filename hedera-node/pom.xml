@@ -281,6 +281,10 @@
       <artifactId>ethereumj-core</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-virtualmap</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>

@@ -34,15 +34,27 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.state.merkle.SerializationHelper.readByteArray;
+import static com.hedera.services.state.merkle.SerializationHelper.readNormalisedString;
+import static com.hedera.services.state.merkle.SerializationHelper.readNullableSerializable;
+import static com.hedera.services.state.merkle.SerializationHelper.readSerializable;
+import static com.hedera.services.state.merkle.SerializationHelper.writeByteArray;
+import static com.hedera.services.state.merkle.SerializationHelper.writeNormalisedString;
+import static com.hedera.services.state.merkle.SerializationHelper.writeNullableSerializable;
+import static com.hedera.services.state.merkle.SerializationHelper.writeSerializable;
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
 
-public class TxnReceipt implements SelfSerializable {
+public class TxnReceipt implements SelfSerializable, ByteBufferSelfSerializable {
+	private static final Logger log = LogManager.getLogger(TxnReceipt.class);
+
 	private static final int MAX_STATUS_BYTES = 128;
 	private static final int MAX_RUNNING_HASH_BYTES = 1024;
 	private static final int MAX_SERIAL_NUMBERS = 1024; // Is this number enough?
@@ -284,6 +296,60 @@ public class TxnReceipt implements SelfSerializable {
 	public void setAccountId(EntityId accountId) {
 		this.accountId = accountId;
 	}
+
+	/* ByteBufferSelfSerializable */
+
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		writeNormalisedString(buffer, status);
+		writeSerializable(buffer, exchangeRates, true);
+		writeNullableSerializable(buffer, accountId);
+		writeNullableSerializable(buffer, fileId);
+		writeNullableSerializable(buffer, contractId);
+		writeNullableSerializable(buffer, topicId);
+		writeNullableSerializable(buffer, tokenId);
+		writeNullableSerializable(buffer, scheduleId);
+
+		if (topicRunningHash == MISSING_RUNNING_HASH) {
+			buffer.put((byte) 0);
+		} else {
+			buffer.put((byte) 1);
+			buffer.putLong(topicSequenceNumber);
+			buffer.putLong(runningHashVersion);
+			writeByteArray(buffer, topicRunningHash);
+		}
+		buffer.putLong(newTotalSupply);
+		writeNullableSerializable(buffer, scheduledTxnId);
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		status = readNormalisedString(buffer, MAX_STATUS_BYTES);
+		exchangeRates = readSerializable(buffer, true, ExchangeRates::new);
+		accountId = readNullableSerializable(buffer);
+		fileId = readNullableSerializable(buffer);
+		contractId = readNullableSerializable(buffer);
+		topicId = readNullableSerializable(buffer);
+		if (version > RELEASE_070_VERSION) {
+			tokenId = readNullableSerializable(buffer);
+		}
+		if (version >= RELEASE_0110_VERSION) {
+			scheduleId = readNullableSerializable(buffer);
+		}
+		var isSubmitMessageReceipt = buffer.get() != 0;
+		if (isSubmitMessageReceipt) {
+			topicSequenceNumber = buffer.getLong();
+			runningHashVersion = buffer.getLong();
+			topicRunningHash = readByteArray(buffer, MAX_RUNNING_HASH_BYTES);
+		}
+		if (version > RELEASE_090_VERSION) {
+			newTotalSupply = buffer.getLong();
+		}
+		if (version >= RELEASE_0120_VERSION) {
+			scheduledTxnId = readNullableSerializable(buffer);
+		}
+	}
+
 
 	/* ---  Helpers --- */
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
