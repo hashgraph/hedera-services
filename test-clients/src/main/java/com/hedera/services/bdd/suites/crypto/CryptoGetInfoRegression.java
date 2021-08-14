@@ -36,8 +36,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -61,38 +59,16 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//					failsForDeletedAccount(),
-//					failsForMissingAccount(),
-//					failsForMissingPayment(),
-//					failsForInsufficientPayment(),
-//					failsForMalformedPayment(),
-//					failsForUnfundablePayment(),
-//					succeedsNormally(),
-						getAccoutInfoByAccountID()
+					failsForDeletedAccount(),
+					failsForMissingAccount(),
+					failsForMissingPayment(),
+					failsForInsufficientPayment(),
+					failsForMalformedPayment(),
+					failsForUnfundablePayment(),
+					succeedsNormally(),
 				}
 		);
 	}
-
-	private HapiApiSpec getAccoutInfoByAccountID() {
-		return defaultHapiSpec("FailsForMissingAccount")
-				.given(
-						getAccountInfo("0.0.1100")
-								//.payingWith(ADDRESS_BOOK_CONTROL)
-								.logged(),
-
-						getAccountInfo("0.0.1101")
-								//.payingWith(ADDRESS_BOOK_CONTROL)
-								.logged()
-				).when().then(
-						cryptoTransfer(tinyBarsFromTo("0.0.1100", "0.0.1101", 1))
-								//.via("pureCrypto")
-								.fee(ONE_HUNDRED_HBARS)
-//								.payingWith("0.0.1100")
-								//.hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
-				);
-	}
-
-
 
 	private HapiApiSpec succeedsNormally() {
 		long balance = 1_234_567L;

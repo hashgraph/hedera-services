@@ -24,12 +24,13 @@ import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.OptionalLong;
-
+import java.util.Optional;
 
 public class ContractCreateTxnFactory extends CreateTxnFactory<ContractCreateTxnFactory> {
 	public static final Key DEPRECATED_CID_KEY =
@@ -40,6 +41,8 @@ public class ContractCreateTxnFactory extends CreateTxnFactory<ContractCreateTxn
 	private boolean useDeprecatedAdminKey = false;
 	private OptionalLong gas = OptionalLong.empty();
 	private OptionalLong initialBalance = OptionalLong.empty();
+	private Optional<FileID> contractFileID = Optional.of(FileID.getDefaultInstance());
+
 
 	private ContractCreateTxnFactory() {}
 	public static ContractCreateTxnFactory newSignedContractCreate() {
@@ -62,6 +65,7 @@ public class ContractCreateTxnFactory extends CreateTxnFactory<ContractCreateTxn
 		Duration.Builder duration = Duration.newBuilder()
 				.setSeconds(30000);
 		op.setAutoRenewPeriod(duration);
+		op.setFileID(contractFileID.get());
 
 		if (useDeprecatedAdminKey) {
 			op.setAdminKey(DEPRECATED_CID_KEY);
@@ -87,6 +91,11 @@ public class ContractCreateTxnFactory extends CreateTxnFactory<ContractCreateTxn
 		useDeprecatedAdminKey = shouldUse;
 		return this;
 	}
+	public ContractCreateTxnFactory fileID(FileID fileID) {
+		contractFileID = Optional.of(fileID);
+		return this;
+	}
+
 	public ContractCreateTxnFactory useAdminKey(boolean shouldUse) {
 		useAdminKey = shouldUse;
 		return this;

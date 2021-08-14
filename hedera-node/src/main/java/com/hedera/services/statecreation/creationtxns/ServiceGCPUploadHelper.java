@@ -46,7 +46,7 @@ public class ServiceGCPUploadHelper {
 
 		Path currentDir = FileSystems.getDefault().getPath(".").toAbsolutePath();
 
-		String fileToUpload = currentDir.resolve("hedera-node/9996.gz").toString();
+		String fileToUpload = currentDir.resolve("hedera-node/9382.gz").toString();
 		String absolutePathToFile = Paths.get(System.getProperty("user.home")).resolve(fileToUpload).toString();
 
 		log.info("file to upload: " + absolutePathToFile);

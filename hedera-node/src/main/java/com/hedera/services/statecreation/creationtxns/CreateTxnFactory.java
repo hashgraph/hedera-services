@@ -59,7 +59,6 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	String node = DEFAULT_NODE_ID;
 	String payer = DEFAULT_PAYER_ID;
 	boolean skipTxnId = false;
-	boolean skipPayerSig = false;
 	Instant start = DEFAULT_VALID_START;
 	Integer validDuration = DEFAULT_VALID_DURATION;
 	SigFactory sigFactory = DEFAULT_SIG_FACTORY;

@@ -30,7 +30,7 @@ public class PostCreateTask implements Runnable {
 		while (!allCreated.get()) {
 			try {
 				log.info("Wait for builtin client to finish...");
-				Thread.sleep(1000);
+				Thread.sleep(240000);
 			} catch (InterruptedException e) {
 
 			}
@@ -59,7 +59,7 @@ public class PostCreateTask implements Runnable {
 		// wait a little bit or check swirlds.log to find the "MAINTENANCE" flag,
 		// then gzip and upload the generated saved files
 		try {
-			Thread.sleep(10000);
+			Thread.sleep(75000);
 		} catch (InterruptedException e) {
 
 		}
@@ -67,6 +67,6 @@ public class PostCreateTask implements Runnable {
 		SavedStateHandler.zipState();
 
 		// TODO: fix this: Exception in thread "pool-3-thread-2" com.google.cloud.storage.StorageException: No trusted certificate found
-		// SavedStateHandler.uploadStateFile();
+		//SavedStateHandler.uploadStateFile();
 	}
 }
