@@ -2,7 +2,6 @@ package com.hedera.services.state.jasperdb.collections;
 
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
-import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
 
 import java.io.IOException;
@@ -11,8 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
+import static com.hedera.services.state.jasperdb.files.DataFileCommon.MB;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.printDataLinkValidation;
 
 /**
@@ -32,6 +33,8 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
      * identifying what files are used by what part of the code.
      */
     private final String storeName;
+
+    private final AtomicReference<long[]> lastMinAndMaxValidKey = new AtomicReference<>(null);
 
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
@@ -58,61 +61,41 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     /**
      * Merge all read only files
      *
-     * @param maxSizeMb all files returned are smaller than this number of MB
+     * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @throws IOException if there was a problem merging
      */
-    public void mergeAll(int maxSizeMb) throws IOException {
-        final List<DataFileReader> allFilesBefore = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
-        final List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles(maxSizeMb);
+    public void mergeAll(Function<List<DataFileReader>,List<DataFileReader>> filterForFilesToMerge) throws IOException {
+        final long START = System.currentTimeMillis();
+        final List<DataFileReader> allFilesBefore = fileCollection.getAllFullyWrittenFiles();
+        final List<DataFileReader> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
         final int size = filesToMerge == null ? 0 : filesToMerge.size();
-        if (size > 1) {
-            System.out.println("Merging " + size+" files in collection "+storeName);
-            final int maxMergedFileIndex = filesToMerge.stream().filter(Objects::nonNull).mapToInt(file -> file.getMetadata().getIndex()).summaryStatistics().getMax();
-            fileCollection.mergeFile(
-                    // update index with all moved data
-                    moves -> moves.forEachKeyValue((key, move) -> {
-                        // heck it's a hack
-                        int newValueFileIndex = DataFileCommon.fileIndexFromDataLocation(move[1]);
-                        long currentValue = index.get(key,-1);
-                        int currentFileIndex = DataFileCommon.fileIndexFromDataLocation(currentValue);
-                        if ((currentValue != move[0]) && (newValueFileIndex < maxMergedFileIndex)) {
-                            index.put(key,move[1]);
-                            System.out.println("HIT HACK! for key = " + key+" new value data file "+newValueFileIndex+
-                                    " is older than maxMergedFileIndex "+maxMergedFileIndex+"\n"+"" +
-                                    "       currentValue="+currentValue+" move="+Arrays.toString(move));
-                            return;
-                        }
-
-//                        // heck it's a hack
-//                        int newValueFileIndex = DataFileCommon.fileIndexFromDataLocation(move[1]);
-//                        long currentValue = index.get(key,-1);
-//                        int currentFileIndex = DataFileCommon.fileIndexFromDataLocation(currentValue);
-//                        if ((currentValue != move[0]) && (newValueFileIndex > currentFileIndex)) {
-//                            index.put(key,move[1]);
-//                            System.out.println("HIT HACK! for key = " + key+" new value data file "+newValueFileIndex+
-//                                    " is newer than current data file "+currentFileIndex+"\n"+"" +
-//                                    "       currentValue="+currentValue+" move="+Arrays.toString(move));
-//                            return;
-//                        }
-                        // correct
-                       index.putIfEqual(key, move[0], move[1]);
-//                       if (!index.putIfEqual(key, move[0], move[1])) {
-//                           final List<DataFileReader> currentFiles = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
-//                           System.out.println("PUT FAILED currentValue="+dataLocationToString(currentValue)+
-//                                   " expected="+dataLocationToString(move[0])+
-//                                   " maxMergedFileIndex="+maxMergedFileIndex+
-//                                   " current files = "+ Arrays.toString(currentFiles.stream().map(reader -> reader.getMetadata().getIndex()).toArray()));
-//                       }
-                    }),
-                    filesToMerge);
-            final List<DataFileReader> allFilesAfter = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
-            System.out.println("AFTER MERGE ================================\n"+
-                    "       filesToMerge = " + Arrays.toString(filesToMerge.stream().map(reader -> reader.getMetadata().getIndex()).toArray())+"\n"+
-                    "       allFilesBefore = " + Arrays.toString(allFilesBefore.stream().map(reader -> reader.getMetadata().getIndex()).toArray())+"\n"+
-                    "       allFilesAfter = " + Arrays.toString(allFilesAfter.stream().map(reader -> reader.getMetadata().getIndex()).toArray())+"\n"
-            );
-            printDataLinkValidation(index,allFilesAfter);
+        if (size < 2) {
+            System.out.println("Mo meed to merge as only "+size+" files.");
+            return;
         }
+        double totalSize = filesToMerge.stream().mapToDouble(file -> {
+            try {
+                return file.getSize();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }).sum() / (MB * 1024D);
+        System.out.printf("Starting merging %,d files in collection %s total %,.2f Gb...\n",size,storeName,totalSize);
+        fileCollection.mergeFiles(
+                // update index with all moved data
+                moves -> moves.forEachKeyValue((key, move) -> {
+                   index.putIfEqual(key, move[0], move[1]);
+                }),
+                filesToMerge);
+        System.out.printf("Merged %,.2f Gb files in %,.2f seconds\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
+                totalSize,
+                (double) (System.currentTimeMillis() - START) / 1000d,
+                Arrays.toString(filesToMerge.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
+                Arrays.toString(allFilesBefore.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
+                Arrays.toString(fileCollection.getAllFullyWrittenFiles().stream().map(reader -> reader.getMetadata().getIndex()).toArray())
+        );
+        //printDataLinkValidation(index,allFilesAfter);
     }
 
     public void startWriting() throws IOException {
@@ -127,12 +110,49 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
 
     public void endWriting(long minimumValidKey, long maximumValidKey) throws IOException {
         fileCollection.endWriting(minimumValidKey, maximumValidKey);
+        // we can now clear any indexes out of range
+//        lastMinAndMaxValidKey.getAndUpdate(currentMinMax -> {
+//            if (currentMinMax != null) {
+//                final long lastMin = currentMinMax[0];
+//                final long lastMax = currentMinMax[1];
+//                if (lastMin < minimumValidKey) {
+//                    // start has grown so clear
+//                    index.clear(lastMin,minimumValidKey-lastMin-1);
+//                }
+//                if (maximumValidKey < lastMax) {
+//                    // end has shrunk so clear
+//                    index.clear(maximumValidKey+1,lastMax-maximumValidKey);
+//                }
+//            }
+//            return new long[]{minimumValidKey,maximumValidKey};
+//        });
     }
 
     public boolean get(long key, ByteBuffer toReadDataInto) throws IOException {
+        // check if out of range
+        if (key < fileCollection.getMinimumValidKey() || key > fileCollection.getMaximumValidKey()) {
+            if (key != 0) {
+                System.err.println("get path ["+key+"] that is not in index any more."+
+                        ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
+                        ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
+                );
+                new Exception().printStackTrace();
+            }
+            return false;
+        }
+        // get from index
         long dataLocation = index.get(key, 0);
         // check if found
-        if (dataLocation == 0) return false;
+        if (dataLocation == 0) {
+            if (key != 0) {
+                System.err.println("get path ["+key+"] that is not in index any more."+
+                        ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
+                        ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
+                );
+                new Exception().printStackTrace();
+            }
+            return false;
+        }
         // read data
         try {
             return fileCollection.readData(dataLocation,toReadDataInto, DataFileReader.DataToRead.VALUE);
