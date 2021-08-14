@@ -25,10 +25,7 @@ public class OffHeapLongListTest {
     @Order(2)
     public void check() {
         // check all data
-        for (int i = 0; i < 3_000_000; i++) {
-            long readValue = longList.get(i, 0);
-            assertEquals(i,readValue,"Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
-        }
+        checkRange(0,10_000_000,false);
     }
 
     @Test
@@ -40,20 +37,6 @@ public class OffHeapLongListTest {
 
     @Test
     @Order(4)
-    public void testPutIfEqualSafe() throws Exception {
-        longList.put(13_000_123, 13_000_123);
-        longList.putIfEqualSafe(13_000_123, 0,19);
-        assertNotEquals(19,longList.get(13_000_123, 0),"putIfEqual put when it should have not");
-        longList.putIfEqualSafe(13_000_123, 1,19);
-        assertNotEquals(19,longList.get(13_000_123, 0),"putIfEqual put when it should have not");
-        longList.putIfEqualSafe(13_000_123, 13_000_122,19);
-        assertNotEquals(19,longList.get(13_000_123, 0),"putIfEqual put when it should have not");
-        longList.putIfEqualSafe(13_000_123, 13_000_123,19);
-        assertEquals(19,longList.get(13_000_123, 0),"putIfEqual did not put when it should have");
-    }
-
-    @Test
-    @Order(5)
     public void testPutIfEqual() throws Exception {
         longList.put(13_000_123, 13_000_123);
         longList.putIfEqual(13_000_123, 0,42);
@@ -64,5 +47,37 @@ public class OffHeapLongListTest {
         assertNotEquals(42,longList.get(13_000_123, 0),"putIfEqual put when it should have not");
         longList.putIfEqual(13_000_123, 13_000_123,42);
         assertEquals(42,longList.get(13_000_123, 0),"putIfEqual did not put when it should have");
+    }
+
+    @Test
+    @Order(5)
+    public void testClear() throws Exception {
+        // check the first 10 million are correct
+        checkRange(0,10_000_000,false);
+        printIndexes(999_999,1_000_000,1_000_001,1_000_999,1_001_000,1_001_001);
+        // now clear the 1000 at offset 1 million, should be in a single memory chunk
+        longList.clear(1_000_000,1000);
+        // now check the data
+        printIndexes(999_999,1_000_000,1_000_001,1_000_999,1_001_000,1_001_001);
+        checkRange(0,1_000_000,false);
+        checkRange(1_000_000,1_001_000,true);
+        checkRange(1_001_000,10_000_000,false);
+    }
+
+    private void printIndexes(long ... indexes) {
+        for(long index: indexes) {
+            System.out.printf("%,d = %,d \n", index, longList.get(index,-1));
+        }
+    }
+
+    private void checkRange(int start, int endExclusive, boolean checkZero) {
+        for (int i = start; i < endExclusive; i++) {
+            long readValue = longList.get(i, 0);
+            if (checkZero) {
+                assertEquals(0, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be ZERO");
+            } else {
+                assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
+            }
+        }
     }
 }

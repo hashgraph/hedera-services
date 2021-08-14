@@ -55,7 +55,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         if (preFill) {
             for (int i = 0; i < numEntities; i++) {
                 if (i % 100000 == 0 && i > 0) {
-                    System.out.println("Completed: " + i);
+                    System.out.printf("Completed: %,d\n",i);
 //                    System.out.println(virtualMap.toDebugString());
                     virtualMap = pipeline.endRound(virtualMap);
                 }
@@ -71,7 +71,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
                 }
             }
 
-            System.out.println("Completed: " + numEntities);
+            System.out.printf("Completed: %,d\n",numEntities);
 
             // During setup we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.

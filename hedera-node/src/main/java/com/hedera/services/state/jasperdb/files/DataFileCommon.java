@@ -10,6 +10,8 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Common static content for data files.
@@ -60,6 +62,41 @@ public class DataFileCommon {
 
     /** Size of metadata footer writen at end of file */
     static final int FOOTER_SIZE = PAGE_SIZE;
+
+    /**
+     * Comparator for comparing DataFileReaders by file creation time
+     */
+    static Comparator<DataFileReader> dataFileReaderCreationTimeComparator = Comparator.comparing(o -> o.getMetadata().getCreationDate());
+
+    /**
+     * Create a filter to only return all new files that are smaller than given size
+     *
+     * @param sizeMB max file size to accept in MB
+     * @return filter to filter list of files
+     */
+    public static Function<List<DataFileReader>, List<DataFileReader>> newestFilesSmallerThan(int sizeMB) {
+        long sizeBytes = sizeMB * MB;
+        return dataFileReaders -> {
+            var filesNewestFirst = dataFileReaders.stream()
+                    .sorted(dataFileReaderCreationTimeComparator.reversed())
+                    .collect(Collectors.toList());
+            var smallEnoughFiles = new ArrayList<DataFileReader>(filesNewestFirst.size());
+            for(var file: filesNewestFirst) {
+                long size = Long.MAX_VALUE;
+                try {
+                    size = file.getSize();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if (size < sizeBytes) {
+                    smallEnoughFiles.add(file);
+                } else {
+                    break;
+                }
+            }
+            return smallEnoughFiles;
+        };
+    }
 
     /**
      * Get path for file given prefix, index and parent directory. This standardizes out file naming convention.

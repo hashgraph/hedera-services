@@ -136,7 +136,7 @@ public class DataFileReaderCollectionVariableSizeDataTest {
                 }
             } else if (thread == 1) { // move thread
                 try {
-                    fileCollection.mergeFile(moves -> {
+                    fileCollection.mergeFiles(moves -> {
                         assertEquals(1000,moves.size());
                         for(long[] move: moves) {
                             System.out.printf("move from file %d item %d -> file %d item %d\n",
