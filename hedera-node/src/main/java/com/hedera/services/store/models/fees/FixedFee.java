@@ -25,7 +25,7 @@ import java.util.Optional;
  * Represents a fixed fee - either a custom HTS fee or an HBar fee.
  * Segregation of both types is based on the presence of a denominating token.
  *
- * @author Yoan Sredkov <yoansredkov@gmail.com>
+ * @author Yoan Sredkov (yoansredkov@gmail.com)
  */
 public class FixedFee {
 	private Id denominatingTokenId;

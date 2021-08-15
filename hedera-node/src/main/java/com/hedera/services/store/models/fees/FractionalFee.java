@@ -19,7 +19,7 @@ package com.hedera.services.store.models.fees;
 /**
  * Represents a fractional fee. Useful in validation.
  *
- * @author Yoan Sredkov <yoansredkov@gmail.com>
+ * @author Yoan Sredkov (yoansredkov@gmail.com)
  */
 public class FractionalFee {
 
