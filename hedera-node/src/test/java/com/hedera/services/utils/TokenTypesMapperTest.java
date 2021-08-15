@@ -21,9 +21,9 @@ import com.hedera.services.state.enums.TokenType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TokenTypesMapperTest {
-
 	@Test
 	void grpcTokenTypeToModelType() {
 		assertEquals(TokenType.FUNGIBLE_COMMON,
@@ -43,5 +43,11 @@ class TokenTypesMapperTest {
 		/* ensure default is infinite */
 		assertEquals(TokenSupplyType.INFINITE,
 				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
+	}
+
+	@Test
+	void cannotConstruct() {
+		// expect:
+		assertThrows(IllegalStateException.class, TokenTypesMapper::new);
 	}
 }

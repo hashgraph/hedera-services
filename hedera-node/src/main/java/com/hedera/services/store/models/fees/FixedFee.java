@@ -21,7 +21,6 @@ import com.hedera.services.store.models.Id;
 import javax.annotation.Nullable;
 import java.util.Optional;
 
-
 /**
  * Represents a fixed fee - either a custom HTS fee or an HBar fee.
  * Segregation of both types is based on the presence of a denominating token.
@@ -29,10 +28,11 @@ import java.util.Optional;
  * @author Yoan Sredkov <yoansredkov@gmail.com>
  */
 public class FixedFee {
-	private long amount;
 	private Id denominatingTokenId;
 
-	public FixedFee (long amount, @Nullable Id denominatingTokenId) {
+	private final long amount;
+
+	public FixedFee(long amount, @Nullable Id denominatingTokenId) {
 		this.amount = amount;
 		this.denominatingTokenId = denominatingTokenId;
 	}
@@ -48,5 +48,4 @@ public class FixedFee {
 	public void setDenominatingTokenId(final Id denominatingTokenId) {
 		this.denominatingTokenId = denominatingTokenId;
 	}
-
 }

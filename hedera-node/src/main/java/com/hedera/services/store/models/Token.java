@@ -133,7 +133,6 @@ public class Token {
 				? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
 				: op.getExpiry().getSeconds();
 
-		/* keys */
 		var freezeKey = asUsableFcKey(op.getFreezeKey());
 		var adminKey = asUsableFcKey(op.getAdminKey());
 		var kycKey = asUsableFcKey(op.getKycKey());
@@ -172,7 +171,7 @@ public class Token {
 	public void mint(final TokenRelationship treasuryRel, final long amount, boolean ignoreSupplyKey) {
 		validateTrue(amount > 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
 		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
-				"Fungible mint can be invoked only on Fungible token type");
+				"Fungible mint can be invoked only on fungible token type");
 
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
 	}

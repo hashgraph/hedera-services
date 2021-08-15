@@ -45,7 +45,7 @@ public class EntityIdUtils {
 	public static String readableId(Object o) {
 		if (o instanceof Id) {
 			Id id = (Id) o;
-			return String.format("%d.%d.%d", id.getShard(), id.getRealm(), id.getNum());
+			return String.format(ENTITY_ID_FORMAT, id.getShard(), id.getRealm(), id.getNum());
 		} else if (o instanceof AccountID) {
 			AccountID id = (AccountID) o;
 			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());

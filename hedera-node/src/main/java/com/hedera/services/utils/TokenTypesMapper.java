@@ -28,21 +28,23 @@ import com.hedera.services.state.enums.TokenType;
  * @author Yoan Sredkov <yoansredkov@gmail.com>
  */
 public class TokenTypesMapper {
-	public static TokenType grpcTokenTypeToModelType(com.hederahashgraph.api.proto.java.TokenType grpcType){
-		switch (grpcType) {
-			case NON_FUNGIBLE_UNIQUE:
-				return TokenType.NON_FUNGIBLE_UNIQUE;
-			default:
-				return TokenType.FUNGIBLE_COMMON;
+	public static TokenType grpcTokenTypeToModelType(com.hederahashgraph.api.proto.java.TokenType grpcType) {
+		if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
+			return TokenType.NON_FUNGIBLE_UNIQUE;
 		}
+		return TokenType.FUNGIBLE_COMMON;
 	}
 
-	public static TokenSupplyType grpcTokenSupplyTypeToModelSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType grpcType) {
-		switch (grpcType) {
-			case FINITE:
-				return TokenSupplyType.FINITE;
-			default:
-				return TokenSupplyType.INFINITE;
+	public static TokenSupplyType grpcTokenSupplyTypeToModelSupplyType(
+			com.hederahashgraph.api.proto.java.TokenSupplyType grpcType
+	) {
+		if (grpcType == com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE) {
+			return TokenSupplyType.FINITE;
 		}
+		return TokenSupplyType.INFINITE;
+	}
+
+	TokenTypesMapper() {
+		throw new IllegalStateException("Utility class");
 	}
 }

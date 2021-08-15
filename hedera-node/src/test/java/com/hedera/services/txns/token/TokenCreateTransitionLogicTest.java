@@ -116,27 +116,23 @@ import static org.mockito.Mockito.mockStatic;
 
 class TokenCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	private long thisSecond = 1_234_567L;
-	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private int decimals = 2;
-	private long initialSupply = 1_000_000L;
-	private String memo = "...descending into thin air, where no arms / outstretch to catch her";
-	private AccountID payer = IdUtils.asAccount("1.2.3");
-	private AccountID treasury = IdUtils.asAccount("1.2.4");
-	private AccountID renewAccount = IdUtils.asAccount("1.2.5");
-	private TokenID created = IdUtils.asToken("1.2.666");
-	private List<TokenID> createdList = List.of(created);
+	private final long thisSecond = 1_234_567L;
+	private final Instant now = Instant.ofEpochSecond(thisSecond);
+	private final int decimals = 2;
+	private final long initialSupply = 1_000_000L;
+	private final String memo = "...descending into thin air, where no arms / outstretch to catch her";
+	private final AccountID payer = IdUtils.asAccount("1.2.3");
+	private final AccountID treasury = IdUtils.asAccount("1.2.4");
+	private final AccountID renewAccount = IdUtils.asAccount("1.2.5");
+	private final TokenID created = IdUtils.asToken("1.2.666");
 	private TransactionBody tokenCreateTxn;
 
 	private Token newProvisionalToken;
 	private Token denom;
-	private Id denomId = Id.fromGrpcToken(IdUtils.asToken("17.71.77"));
-	private Id modelTreasuryId = IdUtils.asModelId("1.2.3");
-	;
+	private final Id denomId = Id.fromGrpcToken(IdUtils.asToken("17.71.77"));
+	private final Id modelTreasuryId = IdUtils.asModelId("1.2.3");
 	private Account modelTreasury;
-	private Id modelAccountId = IdUtils.asModelId("4.5.6");
-	private Id autoRenewId = IdUtils.asModelId("12.13.12");
-	private Account modelAutoRenewAccount;
+	private final Id autoRenewId = IdUtils.asModelId("12.13.12");
 	private CopyOnWriteIds treasuryAssociatedTokenIds;
 
 	private OptionValidator validator;
@@ -151,32 +147,32 @@ class TokenCreateTransitionLogicTest {
 
 	private TokenCreateTransitionLogic subject;
 	private MockedStatic<Token> staticTokenHandle;
-	private TokenID misc = IdUtils.asToken("3.2.1");
-	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
-	private Account feeCollectorModel = mock(Account.class);
-	private AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
-	private Account hbarFeeCollectorModel = mock(Account.class);
-	private AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
-	private Account fixedFeeCollectorModel = mock(Account.class);
-	private AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
-	private Account fractionalFeeCollectorModel = mock(Account.class);
-	private AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
-	private Account nonAutoEnabledFeeCollectorModel = mock(Account.class);
-	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
-	private CustomFee customFixedFeeA = builder.withFixedFee(fixedHts(200L));
-	private CustomFee customFractionalFeeA = builder.withFractionalFee(
+	private final TokenID misc = IdUtils.asToken("3.2.1");
+	private final AccountID feeCollector = IdUtils.asAccount("6.6.6");
+	private final Account feeCollectorModel = mock(Account.class);
+	private final AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
+	private final Account hbarFeeCollectorModel = mock(Account.class);
+	private final AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
+	private final Account fixedFeeCollectorModel = mock(Account.class);
+	private final AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
+	private final Account fractionalFeeCollectorModel = mock(Account.class);
+	private final AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
+	private final Account nonAutoEnabledFeeCollectorModel = mock(Account.class);
+	private final CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
+	private final CustomFee customFixedFeeA = builder.withFixedFee(fixedHts(200L));
+	private final CustomFee customFractionalFeeA = builder.withFractionalFee(
 			fractional(15L, 100L)
 					.setMinimumAmount(10L)
 					.setMaximumAmount(50L));
-	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).withFixedFee(fixedHbar(100L));
-	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).withFixedFee(
+	private final CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).withFixedFee(fixedHbar(100L));
+	private final CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).withFixedFee(
 			fixedHts(misc, 100L));
-	private CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).withFixedFee(fixedHts(300L));
-	private CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).withFractionalFee(
+	private final CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).withFixedFee(fixedHts(300L));
+	private final CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).withFractionalFee(
 			fractional(15L, 100L)
 					.setMinimumAmount(5L)
 					.setMaximumAmount(15L));
-	private List<CustomFee> grpcCustomFees = List.of(
+	private final List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
 			customFixedFeeA,
@@ -204,7 +200,6 @@ class TokenCreateTransitionLogicTest {
 
 		newProvisionalToken = mock(Token.class);
 		modelTreasury = mock(Account.class);
-		modelAutoRenewAccount = mock(Account.class);
 		treasuryAssociatedTokenIds = mock(CopyOnWriteIds.class);
 		denom = mock(Token.class);
 
@@ -225,7 +220,8 @@ class TokenCreateTransitionLogicTest {
 		mockProvisionalToken();
 		mockModelTreasury();
 
-		doThrow(new InvalidTransactionException(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)).when(modelTreasury).associateWith(any(), anyInt());
+		doThrow(new InvalidTransactionException(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)).when(modelTreasury).associateWith(
+				any(), anyInt());
 		// when:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
@@ -310,9 +306,11 @@ class TokenCreateTransitionLogicTest {
 		final var fixedFeeCollectorRel = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(fixedFeeCollectorModel)).willReturn(fixedFeeCollectorRel);
 		final var fractionalFeeCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(fractionalFeeCollectorModel)).willReturn(fractionalFeeCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(fractionalFeeCollectorModel)).willReturn(
+				fractionalFeeCollectorRel);
 		final var nonAutoEnabledCollectorRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(nonAutoEnabledFeeCollectorModel)).willReturn(nonAutoEnabledCollectorRel);
+		given(newProvisionalToken.newEnabledRelationship(nonAutoEnabledFeeCollectorModel)).willReturn(
+				nonAutoEnabledCollectorRel);
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(100);
 		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
@@ -417,9 +415,9 @@ class TokenCreateTransitionLogicTest {
 						.setAdminKey(key)
 						.setExpiry(expiry));
 		builder.getTokenCreationBuilder().addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
-						FixedFee.newBuilder()
-								.setAmount(100)
-								.build())
+				FixedFee.newBuilder()
+						.setAmount(100)
+						.build())
 				.setFeeCollectorAccountId(feeCollector)
 				.build()));
 		tokenCreateTxn = builder.build();
@@ -450,10 +448,10 @@ class TokenCreateTransitionLogicTest {
 						.setAdminKey(key)
 						.setExpiry(expiry));
 		builder.getTokenCreationBuilder().addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
-						FixedFee.newBuilder()
-								.setAmount(100)
-								.setDenominatingTokenId(denomId.asGrpcToken())
-								.build())
+				FixedFee.newBuilder()
+						.setAmount(100)
+						.setDenominatingTokenId(denomId.asGrpcToken())
+						.build())
 				.setFeeCollectorAccountId(feeCollector)
 				.build()));
 		tokenCreateTxn = builder.build();
@@ -465,7 +463,8 @@ class TokenCreateTransitionLogicTest {
 		mockModelTreasury();
 		mockProvisionalToken();
 		mockFeeCollectors();
-		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willThrow(new InvalidTransactionException(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
+		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willThrow(
+				new InvalidTransactionException(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
@@ -484,10 +483,10 @@ class TokenCreateTransitionLogicTest {
 						.setAdminKey(key)
 						.setExpiry(expiry));
 		builder.getTokenCreationBuilder().addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
-						FixedFee.newBuilder()
-								.setAmount(100)
-								.setDenominatingTokenId(denomId.asGrpcToken())
-								.build())
+				FixedFee.newBuilder()
+						.setAmount(100)
+						.setDenominatingTokenId(denomId.asGrpcToken())
+						.build())
 				.build()));
 		tokenCreateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
@@ -518,10 +517,10 @@ class TokenCreateTransitionLogicTest {
 						.setAdminKey(key)
 						.setExpiry(expiry));
 		builder.getTokenCreationBuilder().addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
-						FixedFee.newBuilder()
-								.setAmount(100)
-								.setDenominatingTokenId(denomId.asGrpcToken())
-								.build())
+				FixedFee.newBuilder()
+						.setAmount(100)
+						.setDenominatingTokenId(denomId.asGrpcToken())
+						.build())
 				.setFeeCollectorAccountId(feeCollector)
 				.build()));
 		tokenCreateTxn = builder.build();
@@ -561,7 +560,8 @@ class TokenCreateTransitionLogicTest {
 		given(validator.isValidExpiry(expiry)).willReturn(true);
 
 		mockModelTreasury();
-		given(accountStore.loadAccountOrFailWith(eq(autoRenewId), any())).willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
+		given(accountStore.loadAccountOrFailWith(eq(autoRenewId), any())).willThrow(
+				new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_AUTORENEW_ACCOUNT);
 	}
@@ -581,7 +581,8 @@ class TokenCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(validator.isValidExpiry(expiry)).willReturn(true);
 
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(treasury)), any())).willThrow(new InvalidTransactionException(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(treasury)), any())).willThrow(
+				new InvalidTransactionException(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 	}
@@ -649,14 +650,15 @@ class TokenCreateTransitionLogicTest {
 
 		mockModelTreasury();
 		mockProvisionalToken();
-		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willThrow(new InvalidTransactionException(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
+		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willThrow(
+				new InvalidTransactionException(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
 	}
-	
+
 	@Test
 	void rejectRoyaltyFeeWithNonAssociatedDenominator() {
 
@@ -690,19 +692,19 @@ class TokenCreateTransitionLogicTest {
 		mockModelTreasury();
 		mockProvisionalToken();
 		mockFeeCollectors();
-		
+
 		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
 		given(denom.getType()).willReturn(com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE);
 		given(denom.getId()).willReturn(denomId);
 		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(false);
-		
+
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
 
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
 	}
-	
+
 	@Test
 	void rejectsRoyaltyFeeWithInvalidFraction() {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
@@ -739,7 +741,7 @@ class TokenCreateTransitionLogicTest {
 
 		assertFailsWith(() -> subject.doStateTransition(), ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
 	}
-	
+
 	@Test
 	void acceptsValidRoyaltyFee() {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
@@ -772,12 +774,12 @@ class TokenCreateTransitionLogicTest {
 		mockModelTreasury();
 		mockProvisionalToken();
 		mockFeeCollectors();
-		
+
 		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
 		given(denom.getId()).willReturn(denomId);
 		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(true);
 		given(treasuryAssociatedTokenIds.contains(newProvisionalToken.getId())).willReturn(false);
-		
+
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
@@ -1248,7 +1250,8 @@ class TokenCreateTransitionLogicTest {
 	private void mockProvisionalToken() {
 		given(newProvisionalToken.getId()).willReturn(Id.fromGrpcToken(created));
 		given(newProvisionalToken.getType()).willReturn(FUNGIBLE_COMMON);
-		staticTokenHandle.when(() -> Token.fromGrpcTokenCreate(any(), any(), any(), any(), any(), anyLong())).thenReturn(newProvisionalToken);
+		staticTokenHandle.when(() -> Token.fromGrpcTokenCreate(any(), any(), any(), any(), any(), anyLong())).thenReturn(
+				newProvisionalToken);
 	}
 
 	private void mockModelTreasury() {
@@ -1258,17 +1261,24 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private void mockFeeCollectors() {
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(feeCollector)), any())).willReturn(feeCollectorModel);
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(fixedFeeCollector)), any())).willReturn(fixedFeeCollectorModel);
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(fractionalFeeCollector)), any())).willReturn(fractionalFeeCollectorModel);
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(hbarFeeCollector)), any())).willReturn(hbarFeeCollectorModel);
-		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(nonAutoEnabledFeeCollector)), any())).willReturn(nonAutoEnabledFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(feeCollector)), any())).willReturn(
+				feeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(fixedFeeCollector)), any())).willReturn(
+				fixedFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(fractionalFeeCollector)), any())).willReturn(
+				fractionalFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(hbarFeeCollector)), any())).willReturn(
+				hbarFeeCollectorModel);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(nonAutoEnabledFeeCollector)), any())).willReturn(
+				nonAutoEnabledFeeCollectorModel);
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(feeCollector))).willReturn(feeCollectorModel);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(fixedFeeCollector))).willReturn(fixedFeeCollectorModel);
-		given(accountStore.loadAccount(Id.fromGrpcAccount(fractionalFeeCollector))).willReturn(fractionalFeeCollectorModel);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(fractionalFeeCollector))).willReturn(
+				fractionalFeeCollectorModel);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(hbarFeeCollector))).willReturn(hbarFeeCollectorModel);
-		given(accountStore.loadAccount(Id.fromGrpcAccount(nonAutoEnabledFeeCollector))).willReturn(nonAutoEnabledFeeCollectorModel);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(nonAutoEnabledFeeCollector))).willReturn(
+				nonAutoEnabledFeeCollectorModel);
 
 		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
 		given(fixedFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);

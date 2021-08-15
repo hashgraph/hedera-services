@@ -39,8 +39,6 @@ import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -74,8 +72,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
  * Provides the state transition for token creation.
  */
 public class TokenCreateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenCreateTransitionLogic.class);
-
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -108,18 +104,21 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		validateExpiry(op);
 
 		/* --- Load model objects --- */
-		final var treasury = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(treasuryGrpcId), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		final var treasury = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(treasuryGrpcId),
+				INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		Account autoRenewModel = null;
 		if (op.hasAutoRenewAccount()) {
 			final var autoRenewGrpcId = op.getAutoRenewAccount();
-			autoRenewModel = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewGrpcId), INVALID_AUTORENEW_ACCOUNT);
+			autoRenewModel = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewGrpcId),
+					INVALID_AUTORENEW_ACCOUNT);
 		}
 
 		/* --- Create the token --- */
 		final var tokenId = ids.newTokenId(txnCtx.activePayer());
 		final var id = Id.fromGrpcToken(tokenId);
 		final var customFeesList = initCustomFees(op, id);
-		final var created = Token.fromGrpcTokenCreate(id, op, treasury, autoRenewModel, customFeesList, txnCtx.consensusTime().getEpochSecond());
+		final var created = Token.fromGrpcTokenCreate(
+				id, op, treasury, autoRenewModel, customFeesList, txnCtx.consensusTime().getEpochSecond());
 		final var relationsToPersist = updateAccountRelations(created, treasury, customFeesList);
 
 		if (op.getInitialSupply() > 0) {
@@ -142,11 +141,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	 * 		the token created in the transition
 	 * @param treasury
 	 * 		treasury account for the token
-	 * @param customFeeList
+	 * @param customFees
 	 * 		a list of valid custom fees to be applied
 	 * @return list of formed relationships between the token and the account.
 	 */
-	private List<TokenRelationship> updateAccountRelations(Token created, Account treasury, List<CustomFee> customFeeList) {
+	private List<TokenRelationship> updateAccountRelations(Token created, Account treasury,
+			List<CustomFee> customFees) {
 		final var relations = new ArrayList<TokenRelationship>();
 		final var associatedAccounts = new HashSet<Id>();
 
@@ -155,8 +155,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		relations.add(treasuryRel);
 		associatedAccounts.add(treasury.getId());
 
-		for (var fee : customFeeList) {
-			if (fee.shouldBeEnabled()) {
+		for (var fee : customFees) {
+			if (fee.shouldCollectorBeAutoAssociated()) {
 				final var collector = fee.getCollector();
 				if (!associatedAccounts.contains(collector.getId())) {
 					final var collectorRelation = created.newEnabledRelationship(collector);
@@ -178,7 +178,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	/**
 	 * Validates custom fees, extracting them from the transaction body and treating
 	 * each different grpc fee as a separate model - a {@link CustomFee}, which holds a
-	 * {@link FractionalFee} or/and {@link FixedFee}.
+	 * {@link FractionalFee}, {@link FixedFee}, or {@link com.hedera.services.store.models.fees.RoyaltyFee}
 	 * Fees are being validated at the moment of their instantiation.
 	 *
 	 * @param op
@@ -187,62 +187,27 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	 * 		the token which is being created
 	 */
 	private List<CustomFee> initCustomFees(TokenCreateTransactionBody op, Id provisionalId) {
-		validateFalse(op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+		final var tooManyCustomFees = op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed();
+		validateFalse(tooManyCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
 		final var customFees = new ArrayList<CustomFee>();
-		for (final var fee : op.getCustomFeesList()) {
-			final var grpcFeeCollectorId = fee.getFeeCollectorAccountId();
-			final var modelCollectorId = Id.fromGrpcAccount(grpcFeeCollectorId);
-			final var collector = accountStore.loadAccountOrFailWith(modelCollectorId, INVALID_CUSTOM_FEE_COLLECTOR);
-			CustomFee customFee = CustomFee.fromGrpc(fee, collector);
-			if (fee.hasFixedFee()) {
-				if (hasDenominatingToken(fee)) {
-					final var denomTokenId = fee.getFixedFee().getDenominatingTokenId();
-					if (denomTokenId.getTokenNum() != 0) {
-						/* another hts token */
-						final var denomToken = typedTokenStore.loadTokenOrFailWith(Id.fromGrpcToken(denomTokenId), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-						validateFalse(denomToken.getType() == TokenType.NON_FUNGIBLE_UNIQUE, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-						validateTrue(collector.getAssociatedTokens().contains(denomToken.getId()), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
-					} else {
-						/* same token */
-						validateFalse(op.getTokenType().equals(NON_FUNGIBLE_UNIQUE), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-						customFee.getFixedFee().setDenominatingTokenId(provisionalId);
-					}
-				} else {
-					/* hbar fee */
-					customFee.getFixedFee().setDenominatingTokenId(null);
-				}
-			} else if (fee.hasRoyaltyFee()) {
-				validateTrue(op.getTokenType().equals(NON_FUNGIBLE_UNIQUE), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+		for (final var grpcFee : op.getCustomFeesList()) {
+			final var grpcCollectorId = grpcFee.getFeeCollectorAccountId();
+			final var collectorId = Id.fromGrpcAccount(grpcCollectorId);
+			final var collector = accountStore.loadAccountOrFailWith(collectorId, INVALID_CUSTOM_FEE_COLLECTOR);
 
-				final var royaltyFeeGrpc = fee.getRoyaltyFee();
-				final var exchangeValueFraction = royaltyFeeGrpc.getExchangeValueFraction();
-				validateFalse(exchangeValueFraction.getNumerator() > exchangeValueFraction.getDenominator(), ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
-
-				if (royaltyFeeGrpc.hasFallbackFee()) {
-					final var fallbackGrpc = royaltyFeeGrpc.getFallbackFee();
-					Id denominator = provisionalId;
-					if (fallbackGrpc.hasDenominatingTokenId()) {
-						final var denomTokenId = fallbackGrpc.getDenominatingTokenId();
-						if (denomTokenId.getTokenNum() != 0) {
-							/* another hts token */
-							final var denomToken = typedTokenStore.loadTokenOrFailWith(Id.fromGrpcToken(denomTokenId), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-							validateTrue(collector.getAssociatedTokens().contains(denomToken.getId()), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
-							denominator = Id.fromGrpcToken(denomTokenId);
-						}
-						customFee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(denominator);
-					} else {
-						customFee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(null);
-					}
-				}
+			final var fee = CustomFee.fromGrpc(grpcFee, collector);
+			/* The CustomFee factory fully validates a fractional fee; but since fixed
+			and royalty fees may reference tokens other than the pending creation, they
+			need additional validation. */
+			if (representsFixedHtsFee(grpcFee)) {
+				validateAndInitFixedFee(grpcFee, op.getTokenType(), provisionalId, fee, collector);
+			} else if (grpcFee.hasRoyaltyFee()) {
+				validateAndInitRoyaltyFee(grpcFee, op.getTokenType(), provisionalId, fee, collector);
 			}
-			customFees.add(customFee);
+			customFees.add(fee);
 		}
 		return customFees;
-	}
-
-	private boolean hasDenominatingToken(com.hederahashgraph.api.proto.java.CustomFee fee) {
-		return fee.hasFixedFee() && fee.getFixedFee().hasDenominatingTokenId();
 	}
 
 	@Override
@@ -268,7 +233,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
-		if (TokenTypesMapper.grpcTokenTypeToModelType(op.getTokenType()) == TokenType.NON_FUNGIBLE_UNIQUE && !dynamicProperties.areNftsEnabled()) {
+		if (TokenTypesMapper.grpcTokenTypeToModelType(
+				op.getTokenType()) == TokenType.NON_FUNGIBLE_UNIQUE && !dynamicProperties.areNftsEnabled()) {
 			return NOT_SUPPORTED;
 		}
 
@@ -334,5 +300,66 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			}
 		}
 		return validity;
+	}
+
+	private boolean representsFixedHtsFee(com.hederahashgraph.api.proto.java.CustomFee fee) {
+		return fee.hasFixedFee() && fee.getFixedFee().hasDenominatingTokenId();
+	}
+
+	private void validateAndInitRoyaltyFee(
+			com.hederahashgraph.api.proto.java.CustomFee grpcFee,
+			com.hederahashgraph.api.proto.java.TokenType tokenType,
+			Id wildcardDenom,
+			CustomFee fee,
+			Account collector
+	) {
+		final var isUnique = tokenType == NON_FUNGIBLE_UNIQUE;
+		validateTrue(isUnique, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+
+		final var grpcRoyaltyFee = grpcFee.getRoyaltyFee();
+		final var exchangeValueFraction = grpcRoyaltyFee.getExchangeValueFraction();
+		final var isGreaterThanOne = exchangeValueFraction.getNumerator() > exchangeValueFraction.getDenominator();
+		validateFalse(isGreaterThanOne, ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
+
+		final var fallbackGrpc = grpcRoyaltyFee.getFallbackFee();
+		if (fallbackGrpc.hasDenominatingTokenId()) {
+			Id feeDenom;
+			final var denomTokenId = fallbackGrpc.getDenominatingTokenId();
+			if (denomTokenId.getTokenNum() == 0) {
+				feeDenom = wildcardDenom;
+			} else {
+				final var denomToken = typedTokenStore.loadTokenOrFailWith(
+						Id.fromGrpcToken(denomTokenId),
+						INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+				validateTrue(
+						collector.getAssociatedTokens().contains(denomToken.getId()),
+						TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+				feeDenom = Id.fromGrpcToken(denomTokenId);
+			}
+			fee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(feeDenom);
+		} else {
+			fee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(null);
+		}
+	}
+
+	private void validateAndInitFixedFee(
+			com.hederahashgraph.api.proto.java.CustomFee grpcFee,
+			com.hederahashgraph.api.proto.java.TokenType tokenType,
+			Id wildcardDenom,
+			CustomFee fee,
+			Account collector
+	) {
+		final var grpcDenomId = grpcFee.getFixedFee().getDenominatingTokenId();
+		if (grpcDenomId.getTokenNum() != 0) {
+			final var denom = typedTokenStore.loadTokenOrFailWith(
+					Id.fromGrpcToken(grpcDenomId), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+			final var isDenomFungible = denom.getType() == TokenType.FUNGIBLE_COMMON;
+			validateTrue(isDenomFungible, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+			final var isCollectorAssociated = collector.getAssociatedTokens().contains(denom.getId());
+			validateTrue(isCollectorAssociated, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+		} else {
+			validateFalse(tokenType.equals(NON_FUNGIBLE_UNIQUE), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+			fee.getFixedFee().setDenominatingTokenId(wildcardDenom);
+		}
 	}
 }

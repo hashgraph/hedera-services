@@ -160,7 +160,7 @@ class CustomFeeTest {
 		assertNotNull(fee);
 		assertNotNull(fee.getFixedFee());
 		assertNotNull(fee.getCollector());
-		assertFalse(fee.shouldBeEnabled());
+		assertFalse(fee.shouldCollectorBeAutoAssociated());
 
 		var fractionalFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setFractionalFee(FractionalFee.newBuilder()
@@ -174,7 +174,7 @@ class CustomFeeTest {
 		final var fractFee = CustomFee.fromGrpc(fractionalFeeGrpc, collector);
 		assertNotNull(fractFee);
 		assertNotNull(fractFee.getFractionalFee());
-		assertTrue(fractFee.shouldBeEnabled());
+		assertTrue(fractFee.shouldCollectorBeAutoAssociated());
 		
 		final var royaltyFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setRoyaltyFee(RoyaltyFee.newBuilder()
@@ -188,7 +188,7 @@ class CustomFeeTest {
 		assertNotNull(royaltyFee);
 		assertNotNull(royaltyFee.getRoyaltyFee());
 		assertNotNull(royaltyFee.getRoyaltyFee().getFallbackFee());
-		assertTrue(royaltyFee.shouldBeEnabled());
+		assertTrue(royaltyFee.shouldCollectorBeAutoAssociated());
 	}
 
 	@Test
@@ -202,7 +202,7 @@ class CustomFeeTest {
 				collector
 		);
 		assertEquals(fee.toMerkle(), merkleFixedHbar);
-		assertFalse(fee.shouldBeEnabled());
+		assertFalse(fee.shouldCollectorBeAutoAssociated());
 
 		final var merkleFractional = FcCustomFee.
 				fractionalFee(10, 1, 1, 10, false, collectorId.asEntityId());
@@ -243,14 +243,14 @@ class CustomFeeTest {
 				collector
 		);
 		fee.setFixedFee(new com.hedera.services.store.models.fees.FixedFee(15, denomId));
-		assertEquals(fee.getFixedFee().getAmount(), 15);
+		assertEquals(15, fee.getFixedFee().getAmount());
 
 		fee.getFixedFee().setDenominatingTokenId(null);
 		assertFalse(fee.getFixedFee().getDenominatingTokenId().isPresent());
 		
 		fee.setFixedFee(null);
 		fee.setFractionalFee(new com.hedera.services.store.models.fees.FractionalFee(15, 10, 10, 10, false));
-		assertEquals(fee.getFractionalFee().getMaximumAmount(), 15);
+		assertEquals(15, fee.getFractionalFee().getMaximumAmount());
 		
 	}
 
