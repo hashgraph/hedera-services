@@ -34,8 +34,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.function.Function;
@@ -57,8 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TokenMintTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenMintTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final OptionValidator validator;

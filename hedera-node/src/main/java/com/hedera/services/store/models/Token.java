@@ -289,6 +289,7 @@ public class Token {
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
 		validateFalse(serialNumbers.isEmpty(), FAIL_INVALID);
 
+		baseWipeValidations(accountRel);
 		for (var serialNum : serialNumbers) {
 			final var uniqueToken = loadedUniqueTokens.get(serialNum);
 			validateTrue(uniqueToken != null, FAIL_INVALID);
@@ -296,7 +297,6 @@ public class Token {
 			validateTrue(wipeAccountIsOwner, ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
 		}
 
-		baseWipeValidations(accountRel);
 		final var newTotalSupply = totalSupply - serialNumbers.size();
 		final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
 		final var account = accountRel.getAccount();

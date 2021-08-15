@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.file.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,14 +29,10 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
 public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(FileUpdateResourceUsage.class);
-
 	private final FileOpsUsage fileOpsUsage;
 
 	public FileUpdateResourceUsage(FileOpsUsage fileOpsUsage) {

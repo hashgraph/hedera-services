@@ -30,8 +30,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +40,6 @@ import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECO
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 
 public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetTxnRecordResourceUsage.class);
-
 	public static final TransactionRecord MISSING_RECORD_STANDIN = TransactionRecord.getDefaultInstance();
 
 	private final RecordCache recordCache;

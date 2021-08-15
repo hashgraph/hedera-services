@@ -26,8 +26,6 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
@@ -37,8 +35,6 @@ import java.util.Optional;
  * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
-	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
-
 	private ExpirableTxnRecord lastExpirableRecord;
 
 	private EntityCreator creator;

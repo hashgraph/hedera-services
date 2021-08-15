@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -46,8 +44,6 @@ public abstract class JKey implements Serializable {
 	static final int MAX_KEY_DEPTH = 15;
 
 	private static final long serialVersionUID = 1L;
-
-	private static final Logger log = LogManager.getLogger(JKey.class);
 
 	private boolean forScheduledTxn = false;
 

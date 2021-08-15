@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,14 +38,11 @@ import java.util.stream.IntStream;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 
 public class CurrencyAdjustments implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(CurrencyAdjustments.class);
-
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b06bd46e12a466L;
 
-	static final long[] NO_ADJUSTMENTS = new long[0];
-
-	public static final int MAX_NUM_ADJUSTMENTS = 25;
+	private static final long[] NO_ADJUSTMENTS = new long[0];
+	static final int MAX_NUM_ADJUSTMENTS = 25;
 
 	long[] hbars = NO_ADJUSTMENTS;
 	List<EntityId> accountIds = Collections.emptyList();

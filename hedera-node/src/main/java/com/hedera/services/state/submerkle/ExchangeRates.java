@@ -27,16 +27,12 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 
 public class ExchangeRates implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(ExchangeRates.class);
-
-	public static final int MERKLE_VERSION = 1;
-	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x5dfb7b68d7473416L;
+	static final int MERKLE_VERSION = 1;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x5dfb7b68d7473416L;
 
 	private int currHbarEquiv;
 	private int currCentEquiv;
@@ -48,7 +44,8 @@ public class ExchangeRates implements SelfSerializable {
 
 	private boolean initialized = false;
 
-	public ExchangeRates() { }
+	public ExchangeRates() {
+	}
 
 	public ExchangeRates(
 			int currHbarEquiv,
@@ -113,7 +110,7 @@ public class ExchangeRates implements SelfSerializable {
 		if (o == null || ExchangeRates.class != o.getClass()) {
 			return false;
 		}
-		var that = (ExchangeRates)o;
+		var that = (ExchangeRates) o;
 
 		return currHbarEquiv == that.currHbarEquiv &&
 				currCentEquiv == that.currCentEquiv &&

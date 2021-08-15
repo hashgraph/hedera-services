@@ -32,8 +32,6 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Predicate;
 
@@ -50,8 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class CryptoTransferTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(CryptoTransferTransitionLogic.class);
-
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;

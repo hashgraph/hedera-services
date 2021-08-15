@@ -27,12 +27,8 @@ import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetAccountInfoResourceUsage.class);
-
 	private final CryptoOpsUsage cryptoOpsUsage;
 
 	public GetAccountInfoResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
