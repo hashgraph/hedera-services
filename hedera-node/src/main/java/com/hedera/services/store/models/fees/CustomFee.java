@@ -35,7 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVID
  * Holds {@link FractionalFee} and {@link FixedFee}.
  * Can be mapped to {@link FcCustomFee} directly.
  *
- * @author Yoan Sredkov <yoansredkov@gmail.com>
+ * @author Yoan Sredkov (yoansredkov@gmail.com)
  */
 public class CustomFee {
 	private final Account collector;

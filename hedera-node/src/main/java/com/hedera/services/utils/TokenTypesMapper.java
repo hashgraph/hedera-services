@@ -22,10 +22,10 @@ import com.hedera.services.state.enums.TokenType;
 /**
  * A helper class which maps model enums
  * {@link TokenType} and {@link TokenSupplyType} to
- * {@link com.hederahashgraph.api.proto.java.TokenType} & {@link com.hederahashgraph.api.proto.java.TokenSupplyType}
+ * {@link com.hederahashgraph.api.proto.java.TokenType} and {@link com.hederahashgraph.api.proto.java.TokenSupplyType}
  * This helper class can be extended to do reverse mapping if ever needed.
  *
- * @author Yoan Sredkov <yoansredkov@gmail.com>
+ * @author Yoan Sredkov (yoansredkov@gmail.com)
  */
 public class TokenTypesMapper {
 	public static TokenType grpcTokenTypeToModelType(com.hederahashgraph.api.proto.java.TokenType grpcType) {

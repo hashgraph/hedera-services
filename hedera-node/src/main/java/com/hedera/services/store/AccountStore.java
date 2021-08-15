@@ -68,7 +68,7 @@ public class AccountStore {
 	 *
 	 * @param id the account to load
 	 * @return a usable model of the account
-	 * @throws {@link InvalidTransactionException} if the requested account is missing, deleted, or expired and pending removal
+	 * @throws InvalidTransactionException if the requested account is missing, deleted, or expired and pending removal
 	 */
 	public Account loadAccount(Id id) {
 		return this.loadAccountOrFailWith(id, null);
