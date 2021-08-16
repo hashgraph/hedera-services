@@ -79,7 +79,8 @@ class ExpirableTxnRecordTest {
 					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
 			.build();
 	private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
-	private static final FcAssessedCustomFee balanceChange = new FcAssessedCustomFee(feeCollector, token, units);
+	private static final FcAssessedCustomFee balanceChange =
+			new FcAssessedCustomFee(feeCollector, token, units, new long[] { 234L });
 
 	private DomainSerdes serdes;
 	private ExpirableTxnRecord subject;
@@ -278,7 +279,7 @@ class ExpirableTxnRecordTest {
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, " +
-				"units=123})}";
+				"units=123, effective payer accounts=[234]})}";
 
 		assertEquals(desired, subject.toString());
 	}

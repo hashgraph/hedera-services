@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -38,11 +39,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.state.submerkle.FcAssessedCustomFee.assessedHbarFeeFrom;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +54,7 @@ class FcAssessedCustomFeeTest {
 	private final EntityId account = new EntityId(4, 5, 6);
 	private final long units = -1_234L;
 	private final EntityId token = new EntityId(1, 2, 3);
+	private final long[] effectivePayers = new long[] { 1234L, 4321L };
 
 	@Mock
 	private SerializableDataInputStream din;
@@ -59,18 +64,19 @@ class FcAssessedCustomFeeTest {
 	@Test
 	void objectContractSanityChecks() {
 		// given:
-		final var hbarChange = IdUtils.hbarChangeForCustomFees(account.toGrpcAccountId(), units);
-		final var tokenChange = IdUtils.tokenChangeForCustomFees(token, account.toGrpcAccountId(), units);
+		final var hbarChange = assessedHbarFeeFrom(
+				IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
+		final var tokenChange = FcAssessedCustomFee.assessedHtsFeeFrom(
+				token, IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
 		// and:
-		final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
-		final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, " +
-				"realm=5, num=6}, units=-1234}";
+		final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234, " +
+				"effective payer accounts=[1234, 4321]}";
+		final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, " +
+				"account=EntityId{shard=4, realm=5, num=6}, units=-1234, effective payer accounts=[1234, 4321]}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
 		assertNotEquals(hbarChange.hashCode(), tokenChange.hashCode());
-		assertEquals(47129058, hbarChange.hashCode());
-		assertEquals(48269287, tokenChange.hashCode());
 		// and:
 		assertEquals(hbarRepr, hbarChange.toString());
 		assertEquals(tokenRepr, tokenChange.toString());
@@ -81,12 +87,12 @@ class FcAssessedCustomFeeTest {
 	}
 
 	@Test
-	void liveFireSerdeWorksForHtsFee() throws IOException, ConstructableRegistryException {
+	void liveFireSerdeWorksForHtsFeeCurrentVersion() throws IOException, ConstructableRegistryException {
 		// setup:
 		final var account = new EntityId(1, 2, 3);
 		final var token = new EntityId(2, 3, 4);
 		final var amount = 345L;
-		final var subject = new FcAssessedCustomFee(account, token, amount);
+		final var subject = new FcAssessedCustomFee(account, token, amount, effectivePayers);
 		// and:
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -104,18 +110,20 @@ class FcAssessedCustomFeeTest {
 
 		// when:
 		final var newSubject = new FcAssessedCustomFee();
-		newSubject.deserialize(din, FcAssessedCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcAssessedCustomFee.CURRENT_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
 	}
 
 	@Test
-	void liveFireSerdeWorksForHbarFee() throws IOException, ConstructableRegistryException {
+	void liveFireSerdeWorksForHtsFee0170Version() throws IOException, ConstructableRegistryException {
 		// setup:
 		final var account = new EntityId(1, 2, 3);
+		final var token = new EntityId(2, 3, 4);
 		final var amount = 345L;
-		final var subject = new FcAssessedCustomFee(account, amount);
+		final var subject = new FcAssessedCustomFee(
+				account, token, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
 		// and:
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -133,7 +141,66 @@ class FcAssessedCustomFeeTest {
 
 		// when:
 		final var newSubject = new FcAssessedCustomFee();
-		newSubject.deserialize(din, FcAssessedCustomFee.MERKLE_VERSION);
+		newSubject.deserialize(din, FcAssessedCustomFee.RELEASE_0170_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void liveFireSerdeWorksForHbarFeeCurrentVersion() throws IOException, ConstructableRegistryException {
+		// setup:
+		final var account = new EntityId(1, 2, 3);
+		final var amount = 345L;
+		final var subject = new FcAssessedCustomFee(account, amount, effectivePayers);
+		// and:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new FcAssessedCustomFee();
+		newSubject.deserialize(din, FcAssessedCustomFee.CURRENT_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void liveFireSerdeWorksForHbarFee0170Version() throws IOException, ConstructableRegistryException {
+		// setup:
+		final var account = new EntityId(1, 2, 3);
+		final var amount = 345L;
+		final var subject = new FcAssessedCustomFee(
+				account, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
+		// and:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new FcAssessedCustomFee();
+		newSubject.deserialize(din, FcAssessedCustomFee.RELEASE_0170_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
@@ -145,7 +212,7 @@ class FcAssessedCustomFeeTest {
 		InOrder inOrder = Mockito.inOrder(dos);
 
 		// given:
-		final var subject = new FcAssessedCustomFee(account, token, units);
+		final var subject = new FcAssessedCustomFee(account, token, units, effectivePayers);
 
 		// when:
 		subject.serialize(dos);
@@ -154,13 +221,15 @@ class FcAssessedCustomFeeTest {
 		inOrder.verify(dos).writeSerializable(account, true);
 		inOrder.verify(dos).writeSerializable(token, true);
 		inOrder.verify(dos).writeLong(units);
+		inOrder.verify(dos).writeLongArray(effectivePayers);
 	}
 
 
 	@Test
-	void deserializeWorksAsExpected() throws IOException {
+	void deserializeWorksAsExpectedFor0170() throws IOException {
 		// setup:
-		final var expectedBalanceChange = new FcAssessedCustomFee(account, token, units);
+		final var expectedBalanceChange = new FcAssessedCustomFee(
+				account, token, units, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
 
 		given(din.readSerializable())
 				.willReturn(account)
@@ -171,19 +240,46 @@ class FcAssessedCustomFeeTest {
 		final var subject = new FcAssessedCustomFee();
 
 		// when:
-		subject.deserialize(din, FcAssessedCustomFee.MERKLE_VERSION);
+		subject.deserialize(din, FcAssessedCustomFee.RELEASE_0170_VERSION);
 
 		// then:
 		assertNotNull(subject);
 		assertEquals(expectedBalanceChange.account(), subject.account());
 		assertEquals(expectedBalanceChange.token(), subject.token());
 		assertEquals(expectedBalanceChange.units(), subject.units());
+		assertSame(expectedBalanceChange.effPayerAccountNums(), subject.effPayerAccountNums());
+	}
+
+	@Test
+	void deserializeWorksAsExpectedFor0171() throws IOException {
+		// setup:
+		final var expectedBalanceChange = new FcAssessedCustomFee(
+				account, token, units, effectivePayers);
+
+		given(din.readSerializable())
+				.willReturn(account)
+				.willReturn(token);
+		given(din.readLong()).willReturn(units);
+		given(din.readLongArray(Integer.MAX_VALUE)).willReturn(effectivePayers);
+
+		// given:
+		final var subject = new FcAssessedCustomFee();
+
+		// when:
+		subject.deserialize(din, FcAssessedCustomFee.RELEASE_0171_VERSION);
+
+		// then:
+		assertNotNull(subject);
+		assertEquals(expectedBalanceChange.account(), subject.account());
+		assertEquals(expectedBalanceChange.token(), subject.token());
+		assertEquals(expectedBalanceChange.units(), subject.units());
+		assertSame(expectedBalanceChange.effPayerAccountNums(), subject.effPayerAccountNums());
 	}
 
 	@Test
 	void gettersWork() {
 		//given
-		final var subject = new FcAssessedCustomFee(account, token, units);
+		final var subject = new FcAssessedCustomFee(account, token, units, effectivePayers);
 		// expect:
 		assertEquals(account, subject.account());
 		assertEquals(token, subject.token());
@@ -194,8 +290,10 @@ class FcAssessedCustomFeeTest {
 	@Test
 	void recognizesIfForHbar() {
 		// given:
-		final var hbarChange = IdUtils.hbarChangeForCustomFees(account.toGrpcAccountId(), units);
-		final var tokenChange = IdUtils.tokenChangeForCustomFees(token, account.toGrpcAccountId(), units);
+		final var hbarChange = FcAssessedCustomFee.assessedHbarFeeFrom(
+				IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
+		final var tokenChange = FcAssessedCustomFee.assessedHtsFeeFrom(
+				token, IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
 
 		assertTrue(hbarChange.isForHbar());
 		assertFalse(tokenChange.isForHbar());
@@ -204,7 +302,7 @@ class FcAssessedCustomFeeTest {
 	@Test
 	void testToGrpc() {
 		// given:
-		final var subject = new FcAssessedCustomFee(account, token, units);
+		final var subject = new FcAssessedCustomFee(account, token, units, effectivePayers);
 		// then:
 		AssessedCustomFee grpc = subject.toGrpc();
 
@@ -212,12 +310,16 @@ class FcAssessedCustomFeeTest {
 		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertEquals(subject.token().toGrpcTokenId(), grpc.getTokenId());
 		assertEquals(subject.units(), grpc.getAmount());
+		assertArrayEquals(effectivePayers, grpc.getEffectivePayerAccountIdList()
+				.stream()
+				.mapToLong(account -> account.getAccountNum())
+				.toArray());
 	}
 
 	@Test
 	void testToGrpcForHbar() {
 		// given:
-		final var subject = new FcAssessedCustomFee(account, units);
+		final var subject = new FcAssessedCustomFee(account, units, effectivePayers);
 		// then:
 		AssessedCustomFee grpc = subject.toGrpc();
 
@@ -225,6 +327,10 @@ class FcAssessedCustomFeeTest {
 		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertFalse(grpc.hasTokenId());
 		assertEquals(subject.units(), grpc.getAmount());
+		assertArrayEquals(effectivePayers, grpc.getEffectivePayerAccountIdList()
+				.stream()
+				.mapToLong(account -> account.getAccountNum())
+				.toArray());
 	}
 
 	@Test
@@ -234,6 +340,8 @@ class FcAssessedCustomFeeTest {
 				.newBuilder()
 				.setTokenId(token.toGrpcTokenId())
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[0]))
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[1]))
 				.setAmount(units)
 				.build();
 
@@ -242,6 +350,7 @@ class FcAssessedCustomFeeTest {
 		assertEquals(account, fcFee.account());
 		assertEquals(token, fcFee.token());
 		assertEquals(units, fcFee.units());
+		assertArrayEquals(effectivePayers, fcFee.effPayerAccountNums());
 	}
 
 	@Test
@@ -250,6 +359,8 @@ class FcAssessedCustomFeeTest {
 		final var grpc = AssessedCustomFee
 				.newBuilder()
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[0]))
+				.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[1]))
 				.setAmount(units)
 				.build();
 
@@ -258,6 +369,7 @@ class FcAssessedCustomFeeTest {
 		assertEquals(account, fcFee.account());
 		assertEquals(null, fcFee.token());
 		assertEquals(units, fcFee.units());
+		assertArrayEquals(effectivePayers, fcFee.effPayerAccountNums());
 	}
 
 	@Test
@@ -265,7 +377,7 @@ class FcAssessedCustomFeeTest {
 		// given:
 		final var subject = new FcAssessedCustomFee();
 
-		assertEquals(FcAssessedCustomFee.MERKLE_VERSION, subject.getVersion());
+		assertEquals(FcAssessedCustomFee.CURRENT_VERSION, subject.getVersion());
 		assertEquals(FcAssessedCustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }
