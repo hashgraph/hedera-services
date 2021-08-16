@@ -65,7 +65,6 @@ import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
-import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyWithFallback;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -173,8 +172,6 @@ class TokenCreateTransitionLogicTest {
 			fractional(15L, 100L)
 					.setMinimumAmount(5L)
 					.setMaximumAmount(15L));
-	private final CustomFee selfDenominatingRoyaltyFee = new CustomFeeBuilder(fixedFeeCollector).withRoyaltyFee(
-			royaltyWithFallback(9, 10, fixedHts(Id.DEFAULT.asGrpcToken(), 10)));
 	private final List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
@@ -183,7 +180,6 @@ class TokenCreateTransitionLogicTest {
 			customFractionalFeeA,
 			customFractionalFeeB
 	);
-	private final List<CustomFee> grpcCustomFeesWithRoyalty = List.of(selfDenominatingRoyaltyFee);
 
 	@BeforeEach
 	private void setup() {
@@ -291,11 +287,6 @@ class TokenCreateTransitionLogicTest {
 
 		verify(typedTokenStore).persistNew(any());
 		verify(typedTokenStore).persistTokenRelationships(anyList());
-	}
-	
-	@Test
-	void followsHappyPathForRoyalty() {
-		
 	}
 
 	@Test
