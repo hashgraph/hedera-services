@@ -2,6 +2,7 @@ package com.hedera.services.state.jasperdb.collections;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -61,7 +62,7 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> exten
         // create new temp array list for changes
         final ArrayList<T> newDataArray = new ArrayList<>(Arrays.asList(dataArray));
         // remove any existing object with same index
-        newDataArray.removeIf(next -> next.getIndex() == newObject.getIndex());
+        newDataArray.removeIf(next -> next == null || next.getIndex() == newObject.getIndex());
         // add new object
         newDataArray.add(newObject);
         // create new ImmutableIndexedObjectListUsingArray
@@ -81,9 +82,10 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> exten
         // if we are not removing  anything then we are the same
         if (objectsToDelete == null || objectsToDelete.isEmpty()) return this;
         // create new temp array list for changes
-        final ArrayList<T> newDataArray = new ArrayList<>(Arrays.asList(dataArray));
-        // remove any existing object with same index
-        newDataArray.removeAll(objectsToDelete);
+        final List<T> newDataArray = Arrays.stream(dataArray)
+                .filter(Objects::nonNull)
+                .filter( file -> ! objectsToDelete.contains(file))
+                .collect(Collectors.toList());
         // create new ImmutableIndexedObjectListUsingArray
         return new ImmutableIndexedObjectListUsingArray<>(newDataArray);
     }

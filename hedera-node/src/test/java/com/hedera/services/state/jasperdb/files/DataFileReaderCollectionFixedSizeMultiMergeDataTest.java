@@ -63,7 +63,7 @@ public class DataFileReaderCollectionFixedSizeMultiMergeDataTest extends DataFil
                 try {
                     var allFiles = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
                     var filesToMerge = allFiles.subList(0,5);
-                    fileCollection.mergeFile(
+                    fileCollection.mergeFiles(
                             moves -> moves.forEachKeyValue((key, move) -> {
 
                                 System.out.printf("move key %d from file %d item %d -> file %d item %d, updating = %b\n",

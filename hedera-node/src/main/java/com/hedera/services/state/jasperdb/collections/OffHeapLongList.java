@@ -110,48 +110,35 @@ public final class OffHeapLongList {
         final int subIndex = (int)(index % numLongsPerChunk);
         final LongBuffer chunk = data.get((int) (index / numLongsPerChunk));
         // get native memory address
-        long chunkPointer = address(chunk);
-        int subIndexBytes = subIndex * Long.BYTES;
-        boundsCheck0(subIndexBytes, Long.BYTES);
-        boolean result = unsafe.compareAndSwapLong(null, chunkPointer + subIndexBytes, oldValue, newValue);
-        return result;
-    }
-
-    private void boundsCheck0(final int index, final int length) {
-        final long resultingPosition = index + (long)length;
-        if (index < 0 || length < 0 || resultingPosition > memoryChunkSize) {
-            throw new IndexOutOfBoundsException("index=" + index + " length=" + length + " capacity=" + memoryChunkSize);
-        }
+        final long chunkPointer = address(chunk);
+        final int subIndexBytes = subIndex * Long.BYTES;
+        boundsCheck(subIndexBytes, Long.BYTES);
+        return unsafe.compareAndSwapLong(null, chunkPointer + subIndexBytes, oldValue, newValue);
     }
 
     /**
-     * Get the address at which the underlying buffer storage begins.
+     * Clears an area of the long list to zeros
      *
-     * @param buffer that wraps the underlying storage.
-     * @return the memory address at which the buffer storage begins.
+     * @param index the index to start clearing, inclusive
+     * @param length the length to clear
      */
-    public static long address(final Buffer buffer) {
-        if (!buffer.isDirect())
-            throw new IllegalArgumentException("buffer.isDirect() must be true");
-        return unsafe.getLong(buffer, BYTE_BUFFER_ADDRESS_FIELD_OFFSET);
-    }
-
-
-    /**
-     * Put a value at given index, if the old value matches oldValue
-     *
-     * @param index the index of where to put value in list
-     * @param oldValue only update if the current value matches this
-     * @param newValue the value to store at index
-     */
-    public void putIfEqualSafe(long index, long oldValue, long newValue) {
-        expandIfNeeded(index);
-        // get the right buffer
-        final int subIndex = (int)(index % numLongsPerChunk);
-        final LongBuffer chunk = data.get((int) (index / numLongsPerChunk));
-        final long currentValue = chunk.get(subIndex);
-        if (currentValue == oldValue) {
-            chunk.put(subIndex, newValue);
+    public void clear(long index, long length) {
+        long start = index, remaining = length;
+        while(remaining > 0) {
+            // get the right buffer for the start
+            final long subIndex = start % numLongsPerChunk;
+            final LongBuffer chunk = data.get((int) (start / numLongsPerChunk));
+            // now find out how many longs of our length are in this buffer
+            final long lengthInThisBuffer = Math.min(numLongsPerChunk-subIndex-1, remaining);
+            // remove that range from remaining, move on start
+            remaining -= lengthInThisBuffer;
+            start += lengthInThisBuffer;
+            // now clear the area
+            final long chunkPointer = address(chunk);
+            final long subIndexBytes = subIndex * Long.BYTES;
+            final long lengthInThisBufferBytes = lengthInThisBuffer * Long.BYTES;
+            boundsCheck(subIndexBytes,lengthInThisBufferBytes);
+            unsafe.setMemory(chunkPointer+subIndexBytes,lengthInThisBufferBytes,(byte)0);
         }
     }
 
@@ -190,6 +177,38 @@ public final class OffHeapLongList {
     public LongStream stream() {
         return StreamSupport.longStream(new OffHeapLongListSpliterator(this), false);
     }
+
+    // =================================================================================================================
+    // Private unsafe helper methods
+
+    /**
+     * Check if the given range is within the memory bounds of a memory chunk
+     *
+     * @param index the offset index from start of memory chunk
+     * @param length the number of bytes to check
+     */
+    private void boundsCheck(final long index, final long length) {
+        final long resultingPosition = index + length;
+        if (index < 0 || length < 0 || resultingPosition > memoryChunkSize) {
+            throw new IndexOutOfBoundsException("index=" + index + " length=" + length + " capacity=" + memoryChunkSize);
+        }
+    }
+
+    /**
+     * Get the address at which the underlying buffer storage begins.
+     *
+     * @param buffer that wraps the underlying storage.
+     * @return the memory address at which the buffer storage begins.
+     */
+    public static long address(final Buffer buffer) {
+        if (!buffer.isDirect())
+            throw new IllegalArgumentException("buffer.isDirect() must be true");
+        return unsafe.getLong(buffer, BYTE_BUFFER_ADDRESS_FIELD_OFFSET);
+    }
+
+
+    // =================================================================================================================
+    // OffHeapLongListSpliterator Class used for stream() method
 
     /**
      * A Spliterator.OfLong based on long array spliterator.

@@ -2,9 +2,10 @@ package com.hedera.services.state.jasperdb;
 
 import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
 import com.hedera.services.state.jasperdb.collections.MemoryIndexDiskKeyValueStore;
-import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.collections.OffHeapHashList;
 import com.hedera.services.state.jasperdb.collections.OffHeapLongList;
+import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
+import com.hedera.services.state.jasperdb.files.DataFileReader;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
@@ -17,11 +18,16 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
+import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFilesSmallerThan;
 import static java.nio.ByteBuffer.allocateDirect;
 
 /**
@@ -30,6 +36,7 @@ import static java.nio.ByteBuffer.allocateDirect;
  * @param <K> type for keys
  * @param <V> type for values
  */
+@SuppressWarnings("jol")
 public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     private final static int HASH_SIZE = Integer.BYTES+ DigestType.SHA_384.digestLength(); // TODO remove please for something better
     /** The size in bytes for serialized key objects */
@@ -60,6 +67,10 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     private final ThreadLocal<ByteBuffer> keyHashValue;
     /** ScheduledThreadPool for executing merges */
     private final ScheduledThreadPoolExecutor mergingExecutor;
+    /** When was the last medium-sized merge, only touched from single merge thread. */
+    private Instant lastMediumMerge = Instant.now();
+    /** When was the last full merge, only touched from single merge thread. */
+    private Instant lastFullMerge = Instant.now();
 
     /**
      * Create new VFCDataSourceImplV3 with merging enabled
@@ -119,26 +130,30 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         if (mergingEnabled) {
             ThreadGroup mergingThreadGroup = new ThreadGroup("Merging Threads");
             mergingExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(mergingThreadGroup,r));
-            mergingExecutor.scheduleWithFixedDelay(() -> doMerge(250),1,1, TimeUnit.MINUTES);
-            mergingExecutor.scheduleWithFixedDelay(() -> doMerge(2500),15,15, TimeUnit.MINUTES);
-            mergingExecutor.scheduleWithFixedDelay(() -> doMerge(Integer.MAX_VALUE),60,60, TimeUnit.MINUTES);  // all files
+            mergingExecutor.setMaximumPoolSize(1);
+            mergingExecutor.scheduleWithFixedDelay(this::doMerge,1,5, TimeUnit.MINUTES);
         } else {
             mergingExecutor = null;
         }
     }
 
     /**
-     * Merge all files smaller than maxSizeMb
-     *
-     * @param maxSizeMb max size in mb for files to merge
+     * Start a Merge
      */
-    private void doMerge(int maxSizeMb) {
-        System.out.println("Starting merge of files < "+maxSizeMb+" MB...");
+    private void doMerge() {
+        final Instant startMerge = Instant.now();
+        Function<List<DataFileReader>, List<DataFileReader>> filesToMergeFilter;
+        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) {
+            lastFullMerge = startMerge;
+            filesToMergeFilter = dataFileReaders -> dataFileReaders; // everything
+        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) {
+            lastMediumMerge = startMerge;
+            filesToMergeFilter = newestFilesSmallerThan(10*1024);
+        } else {
+            filesToMergeFilter = newestFilesSmallerThan(1024);
+        }
         try {
-            final long START = System.currentTimeMillis();
-            if (objectKeyToPath != null) objectKeyToPath.mergeAll(maxSizeMb);
-            pathToKeyHashValue.mergeAll(maxSizeMb);
-            System.out.printf("Merged in %,.2f seconds\n", (double) (System.currentTimeMillis() - START) / 1000d);
+            pathToKeyHashValue.mergeAll(filesToMergeFilter);
         } catch (Throwable t) {
             System.err.println("Exception while merging!");
             t.printStackTrace();
@@ -200,16 +215,16 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                             List<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
         // TODO work out how to delete things using firstLeafPath & lastLeafPath
         // might as well write to the 3 data stores in parallel
-//        IntStream.range(0,3).parallel().forEach(action -> {
-//            if (action == 0) {// write internal node hashes
+        IntStream.range(0,3).parallel().forEach(action -> {
+            if (action == 0) {// write internal node hashes
                 if (internalRecords != null && !internalRecords.isEmpty()) {
                     for (VirtualInternalRecord rec : internalRecords) {
                         hashStore.put(rec.getPath(), rec.getHash());
                     }
                 }
-//            } else if (action == 1) { // write leaves to pathToKeyHashValue
+            } else if (action == 1) { // write leaves to pathToKeyHashValue
                 if (leafRecords != null && !leafRecords.isEmpty()) {
-//                    try {
+                    try {
                         long lastPath = Long.MIN_VALUE;  //, lastKey = Long.MIN_VALUE;
                         pathToKeyHashValue.startWriting();
                         // get reusable buffer
@@ -243,11 +258,11 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                             pathToKeyHashValue.put(path, keyHashValueBuffer);
                         }
                         pathToKeyHashValue.endWriting(firstLeafPath,lastLeafPath);
-//                    } catch (IOException e) {
-//                        throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-//                    }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                    }
                 }
-//            } else if (action == 2) { // write leaves to objectKeyToPath
+            } else if (action == 2) { // write leaves to objectKeyToPath
                 if (leafRecords != null && !leafRecords.isEmpty()) {
                     if (isLongKeyMode) {
                         for (var rec : leafRecords) {
@@ -255,19 +270,19 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                             longKeyToPath.put(key, rec.getPath());
                         }
                     } else {
-//                        try {
+                        try {
                             objectKeyToPath.startWriting();
                             for (var rec : leafRecords) {
                                 objectKeyToPath.put(rec.getKey(), rec.getPath());
                             }
                             objectKeyToPath.endWriting();
-//                        } catch (IOException e) {
-//                            throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-//                        }
+                        } catch (IOException e) {
+                            throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                        }
                     }
                 }
-//            }
-//        });
+            }
+        });
     }
 
     /**

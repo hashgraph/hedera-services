@@ -93,7 +93,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         final int size = filesToMerge == null ? 0 : filesToMerge.size();
         if (size > 1) {
             System.out.println("Merging " + size+" files in collection "+storeName);
-            fileCollection.mergeFile(
+            fileCollection.mergeFiles(
                     moves -> {
                         // update index with all moved data
                         moves.forEachKeyValue((key, move) -> bucketIndexToBucketLocation.putIfEqual(key, move[0], move[1]));

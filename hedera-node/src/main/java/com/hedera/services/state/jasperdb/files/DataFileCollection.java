@@ -140,6 +140,14 @@ public class DataFileCollection {
         }
     }
 
+    public long getMinimumValidKey() {
+        return minimumValidKey.get();
+    }
+
+    public long getMaximumValidKey() {
+        return maximumValidKey.get();
+    }
+
     /**
      * Get if this data file collection was loaded from an existing set of files or if it was a new empty collection
      *
@@ -157,16 +165,24 @@ public class DataFileCollection {
     public List<DataFileReader> getAllFullyWrittenFiles(int maxSizeMb) {
         final var indexedFileList = this.indexedFileList.get();
         if (maxSizeMb == Integer.MAX_VALUE) return indexedFileList.stream().collect(Collectors.toList());
+        final long maxSizeBytes = maxSizeMb * MB;
         return indexedFileList == null ? Collections.emptyList() : indexedFileList.stream()
                 .filter(file -> {
                     try {
-                        return file.getSize() < maxSizeMb;
+                        return file.getSize() < maxSizeBytes;
                     } catch (IOException e) {
                         e.printStackTrace();
                         return false;
                     }
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get a list of all files in this collection that have been fully finished writing and are read only
+     */
+    public List<DataFileReader> getAllFullyWrittenFiles() {
+        return this.indexedFileList.get().stream().collect(Collectors.toList());
     }
 
     /**
@@ -177,22 +193,25 @@ public class DataFileCollection {
      *                              files can be safely deleted.
      * @param filesToMerge list of files to merge
      */
-    public synchronized void mergeFile(Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
-                                       List<DataFileReader> filesToMerge) throws IOException {
+    public synchronized void mergeFiles(Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
+                                        List<DataFileReader> filesToMerge) throws IOException {
         final var indexedFileList = this.indexedFileList.get();
         // check if anything new has been written since we last merged
-        if (filesToMerge.size() < 2 || indexedFileList.getLast().getMetadata().getCreationDate().isBefore(lastMerge.get())) {
+        final Instant lastMerge = this.lastMerge.get();
+        if (filesToMerge.size() < 2 ||
+                indexedFileList.stream()
+                        .map(file -> file.getMetadata().getCreationDate())
+                        .allMatch(creationDate -> creationDate.compareTo(lastMerge) <= 0)) {
             // nothing to do we have merged since the last data update
             System.out.println("Merge not needed as no data changed since last merge in DataFileCollection ["+storeName+"]");
-            System.out.println(" last file creation ="+indexedFileList.getLast().getMetadata().getCreationDate()+" , lastMerge="+lastMerge.get());
+            System.out.println(" last file creation ="+indexedFileList.getLast().getMetadata().getCreationDate()+" , lastMerge="+lastMerge);
             return;
         }
-        // create a merge time stamp, this timestamp has to be after any writer has finished
-        writeLock.lock(); System.out.println("WRITE LOCK - LOCK - MERGE FILE get merge time");
-        final Instant mergeTime = Instant.now();
-        writeLock.unlock(); System.out.println("WRITE LOCK - UNLOCK - MERGE FILE get merge time");
+        // create a merge time stamp, this timestamp is the newest time of the set of files we are merging
+        @SuppressWarnings("OptionalGetWithoutIsPresent") final Instant mergeTime =
+                filesToMerge.stream().map(file -> file.getMetadata().getCreationDate()).max(Instant::compareTo).get();
         // update last merge time
-        lastMerge.set(mergeTime);
+        this.lastMerge.set(mergeTime);
         // create new map for keeping track of moves
         LongObjectHashMap<long[]> movesMap = new LongObjectHashMap<>();
         // Open a new merge file for writing
@@ -225,29 +244,36 @@ public class DataFileCollection {
             long lowestKey = Long.MAX_VALUE;
             Instant newestIteratorTime = Instant.EPOCH;
             DataFileIterator newestIteratorWithLowestKey = null;
-            for (DataFileIterator blockIterator : blockIterators) { // find the lowest key any iterator has
+            // find the lowest key any iterator has
+            for (DataFileIterator blockIterator : blockIterators) {
                 final long key = blockIterator.getDataItemsKey();
                 if (key < lowestKey) lowestKey = key;
             }
-            for (DataFileIterator blockIterator : blockIterators) { // find which iterator is the newest that has the lowest key
-                long key = blockIterator.getDataItemsKey();
-                if (key == lowestKey && blockIterator.getDataFileCreationDate().isAfter(newestIteratorTime)) {
-                    newestIteratorTime = blockIterator.getDataFileCreationDate();
-                    newestIteratorWithLowestKey = blockIterator;
+            // check if that key is in range
+            if (lowestKey >= minimumValidKey || lowestKey <= maximumValidKey) {
+                // find which iterator is the newest that has the lowest key
+                for (DataFileIterator blockIterator : blockIterators) {
+                    long key = blockIterator.getDataItemsKey();
+                    if (key == lowestKey && blockIterator.getDataFileCreationDate().isAfter(newestIteratorTime)) {
+                        newestIteratorTime = blockIterator.getDataFileCreationDate();
+                        newestIteratorWithLowestKey = blockIterator;
+                    }
                 }
+                assert newestIteratorWithLowestKey != null;
+                // write that key from newest iterator to new merge file
+                long newDataLocation = newFileWriter.storeData(newestIteratorWithLowestKey.getDataItemData());
+                // check if newFile is full
+                if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
+                    // finish writing current file, add it for reading then open new file for writing
+                    final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
+                    addNewDataFileReader(newFileWriter.getPath(), metadata);
+                    newFileWriter = newDataFile(mergeTime, true);
+                }
+                // add to movesMap
+                movesMap.put(lowestKey, new long[]{newestIteratorWithLowestKey.getDataItemsDataLocation(), newDataLocation});
+            } else {
+                System.out.println("lowestKey ["+lowestKey+"] is out of range ["+minimumValidKey+"] > ["+maximumValidKey+"]");
             }
-            assert newestIteratorWithLowestKey != null;
-            // write that key from newest iterator to new merge file
-            long newDataLocation = newFileWriter.storeData(newestIteratorWithLowestKey.getDataItemData());
-            // check if newFile is full
-            if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
-                // finish writing current file, add it for reading then open new file for writing
-                final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
-                addNewDataFileReader(newFileWriter.getPath(), metadata);
-                newFileWriter = newDataFile(mergeTime,true);
-            }
-            // add to movesMap
-            movesMap.put(lowestKey, new long[]{newestIteratorWithLowestKey.getDataItemsDataLocation(), newDataLocation});
             // move all iterators on that contained lowestKey
             blockIteratorsIterator = blockIterators.listIterator();
             while (blockIteratorsIterator.hasNext()) {
@@ -270,9 +296,9 @@ public class DataFileCollection {
         // add it for reading
         addNewDataFileReader(newFileWriter.getPath(), metadata);
         // call locationChangeHandler with the write-lock so no writes are changing the index while we are
-        writeLock.lock(); System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
+        writeLock.lock(); //System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
         locationChangeHandler.accept(movesMap.toImmutable());
-        writeLock.unlock(); System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
+        writeLock.unlock(); //System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
         // delete old files
         deleteFiles(filesToMerge);
     }
@@ -302,7 +328,7 @@ public class DataFileCollection {
     public void startWriting() throws IOException {
         var currentDataFileWriter = this.currentDataFileWriter.get();
         if (currentDataFileWriter != null) throw new IOException("Tried to start writing when we were already writing.");
-        writeLock.lock(); System.out.println("WRITE LOCK - LOCK - START WRITING");
+        writeLock.lock();// System.out.println("WRITE LOCK - LOCK - START WRITING");
         this.currentDataFileWriter.set(newDataFile(Instant.now(), false));
     }
 
@@ -322,7 +348,7 @@ public class DataFileCollection {
         DataFileMetadata metadata = currentDataFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // open reader on newly written file and add it to indexedFileList ready to be read.
         addNewDataFileReader(currentDataFileWriter.getPath(), metadata);
-        writeLock.unlock(); System.out.println("WRITE LOCK - UNLOCK - END WRITING");
+        writeLock.unlock();// System.out.println("WRITE LOCK - UNLOCK - END WRITING - minimumValidKey="+minimumValidKey+" maximumValidKey="+maximumValidKey);
     }
 
     /**
