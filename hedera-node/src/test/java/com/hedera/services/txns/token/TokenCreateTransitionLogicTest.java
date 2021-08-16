@@ -65,6 +65,7 @@ import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyWithFallback;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -172,6 +173,8 @@ class TokenCreateTransitionLogicTest {
 			fractional(15L, 100L)
 					.setMinimumAmount(5L)
 					.setMaximumAmount(15L));
+	private final CustomFee selfDenominatingRoyaltyFee = new CustomFeeBuilder(fixedFeeCollector).withRoyaltyFee(
+			royaltyWithFallback(9, 10, fixedHts(Id.DEFAULT.asGrpcToken(), 10)));
 	private final List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
@@ -180,6 +183,7 @@ class TokenCreateTransitionLogicTest {
 			customFractionalFeeA,
 			customFractionalFeeB
 	);
+	private final List<CustomFee> grpcCustomFeesWithRoyalty = List.of(selfDenominatingRoyaltyFee);
 
 	@BeforeEach
 	private void setup() {
@@ -288,6 +292,11 @@ class TokenCreateTransitionLogicTest {
 		verify(typedTokenStore).persistNew(any());
 		verify(typedTokenStore).persistTokenRelationships(anyList());
 	}
+	
+	@Test
+	void followsHappyPathForRoyalty() {
+		
+	}
 
 	@Test
 	void followsHappyPathForCustomFees() {
@@ -319,13 +328,15 @@ class TokenCreateTransitionLogicTest {
 		given(denom.getType()).willReturn(FUNGIBLE_COMMON);
 		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
 		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(true);
+		given(treasuryAssociatedTokenIds.contains(newProvisionalToken.getId())).willReturn(false);
 		given(newProvisionalToken.hasKycKey()).willReturn(true);
 		given(newProvisionalToken.hasFreezeKey()).willReturn(true);
-
+		
 		subject.doStateTransition();
 
 		assertNotNull(newProvisionalToken.getCustomFees());
 		verify(typedTokenStore).persistTokenRelationships(anyList());
+		verify(feeCollectorModel).associateWith(anyList(), anyInt());
 	}
 
 	@Test
@@ -764,7 +775,29 @@ class TokenCreateTransitionLogicTest {
 												.setDenominatingTokenId(denomId.asGrpcToken())
 												.build()))
 						.setFeeCollectorAccountId(feeCollector)
-						.build()));
+						.build(),
+				CustomFee.newBuilder()
+						.setRoyaltyFee(RoyaltyFee.newBuilder()
+								.setExchangeValueFraction(Fraction.newBuilder()
+										.setNumerator(5)
+										.setDenominator(10)
+										.build())
+								.setFallbackFee(FixedFee.newBuilder()
+										.setAmount(10)
+										.setDenominatingTokenId(Id.DEFAULT.asGrpcToken())
+										.build()))
+						.build(),
+				CustomFee.newBuilder()
+						.setRoyaltyFee(RoyaltyFee.newBuilder()
+								.setExchangeValueFraction(Fraction.newBuilder()
+										.setNumerator(5)
+										.setDenominator(10)
+										.build())
+								.setFallbackFee(FixedFee.newBuilder()
+										.setAmount(10)
+										.build()))
+						.build()
+				));
 		tokenCreateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -1042,6 +1075,14 @@ class TokenCreateTransitionLogicTest {
 		givenTxWithInvalidSupplies();
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
+	
+	@Test
+	void objectContractWorks() {
+		final var newId = ids.newTokenId(treasury);
+		subject.reclaimCreatedIds();
+		subject.resetCreatedIds();
+		assertEquals(newId, ids.newTokenId(treasury));
+	}
 
 	private void givenInvalidSupplyTypeAndSupply() {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
@@ -1081,7 +1122,7 @@ class TokenCreateTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(false, false, false, false);
 	}
-
+	
 	private void givenValidTxnCtx(
 			boolean withKyc,
 			boolean withFreeze,
