@@ -29,6 +29,7 @@ import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -46,18 +47,34 @@ class TokenOpsUsageTest {
 		// setup:
 		final var expectedHbarFixed = FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
 		final var expectedHtsFixed = FeeBuilder.LONG_SIZE + 2 * FeeBuilder.BASIC_ENTITY_ID_SIZE;
-		final var expectedFractional = 4 * FeeBuilder.LONG_SIZE;
+		final var expectedFractional = 4 * FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
+		final var expectedRoyaltyNoFallback = 2 * FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
+		final var expectedRoyaltyHtsFallback = 3 * FeeBuilder.LONG_SIZE + 2 * FeeBuilder.BASIC_ENTITY_ID_SIZE;
+		final var expectedRoyaltyHbarFallback = 3 * FeeBuilder.LONG_SIZE + FeeBuilder.BASIC_ENTITY_ID_SIZE;
 		// given:
-		final var perHbarFixedFee = subject.bytesNeededToRepr(1, 0, 0);
-		final var perHtsFixedFee = subject.bytesNeededToRepr(0, 1, 0);
-		final var perFracFee = subject.bytesNeededToRepr(0, 0, 1);
-		final var oneOfEach = subject.bytesNeededToRepr(1, 1, 1);
+		final var perHbarFixedFee = subject.bytesNeededToRepr(1, 0, 0, 0, 0, 0);
+		final var perHtsFixedFee = subject.bytesNeededToRepr(0, 1, 0, 0, 0, 0);
+		final var perFracFee = subject.bytesNeededToRepr(0, 0, 1, 0, 0, 0);
+		final var perRoyaltyNoFallbackFee = subject.bytesNeededToRepr(0, 0, 0, 1, 0, 0);
+		final var perRoyaltyHtsFallbackFee = subject.bytesNeededToRepr(0, 0, 0, 0, 1, 0);
+		final var perRoyaltyHbarFallbackFee = subject.bytesNeededToRepr(0, 0, 0, 0, 0, 1);
+		final var oneOfEach = subject.bytesNeededToRepr(1, 1, 1, 1, 1, 1);
 
 		// expect:
 		assertEquals(expectedHbarFixed, perHbarFixedFee);
 		assertEquals(expectedHtsFixed, perHtsFixedFee);
 		assertEquals(expectedFractional, perFracFee);
-		assertEquals(expectedHbarFixed + expectedHtsFixed + expectedFractional, oneOfEach);
+		assertEquals(expectedRoyaltyNoFallback, perRoyaltyNoFallbackFee);
+		assertEquals(expectedRoyaltyHtsFallback, perRoyaltyHtsFallbackFee);
+		assertEquals(expectedRoyaltyHbarFallback, perRoyaltyHbarFallbackFee);
+		assertEquals(
+				expectedHbarFixed
+						+ expectedHtsFixed
+						+ expectedFractional
+						+ expectedRoyaltyNoFallback
+						+ expectedRoyaltyHtsFallback
+						+ expectedRoyaltyHbarFallback,
+				oneOfEach);
 	}
 
 	@Test
@@ -74,9 +91,15 @@ class TokenOpsUsageTest {
 		aSchedule.add(CustomFee.newBuilder().setFractionalFee(FractionalFee.getDefaultInstance()).build());
 		aSchedule.add(CustomFee.newBuilder().setFractionalFee(FractionalFee.getDefaultInstance()).build());
 		aSchedule.add(CustomFee.newBuilder().setFractionalFee(FractionalFee.getDefaultInstance()).build());
+		aSchedule.add(CustomFee.newBuilder().setRoyaltyFee(RoyaltyFee.getDefaultInstance()).build());
+		aSchedule.add(CustomFee.newBuilder().setRoyaltyFee(RoyaltyFee.newBuilder()
+				.setFallbackFee(FixedFee.newBuilder().build())).build());
+		aSchedule.add(CustomFee.newBuilder().setRoyaltyFee(RoyaltyFee.newBuilder()
+				.setFallbackFee(FixedFee.newBuilder().setDenominatingTokenId(IdUtils.asToken("1.2.3"))
+						.build())).build());
 
 		// given:
-		final var expected = subject.bytesNeededToRepr(1, 2, 3);
+		final var expected = subject.bytesNeededToRepr(1, 2, 3, 1, 1, 1);
 
 		// when:
 		final var actual = subject.bytesNeededToRepr(aSchedule);
@@ -91,18 +114,17 @@ class TokenOpsUsageTest {
 		final var now = 1_234_567L;
 		final var lifetime = 7776000L;
 		final var expiry = now + lifetime;
-		final var curSize = subject.bytesNeededToRepr(1, 0 ,1);
-		final var newSize = subject.bytesNeededToRepr(2, 1 ,0);
-		final var serSize = newSize / 2;
+		final var curSize = subject.bytesNeededToRepr(1, 0 ,1, 1, 0, 1);
+		final var newSize = subject.bytesNeededToRepr(2, 1 ,0, 2, 1, 0);
 		final var ctx = new ExtantFeeScheduleContext(expiry, curSize);
-		final var opMeta = new FeeScheduleUpdateMeta(now, newSize, serSize);
+		final var opMeta = new FeeScheduleUpdateMeta(now, newSize);
 		// and:
 		final var sigUsage = new SigUsage(1, 2, 3);
 		final var baseMeta = new BaseTransactionMeta(50, 0);
 		// and:
 		final var exp = new UsageAccumulator();
 		exp.resetForTransaction(baseMeta, sigUsage);
-		exp.addBpt(serSize + FeeBuilder.BASIC_ENTITY_ID_SIZE);
+		exp.addBpt(newSize + FeeBuilder.BASIC_ENTITY_ID_SIZE);
 		exp.addRbs((newSize - curSize) * lifetime);
 
 		// given:

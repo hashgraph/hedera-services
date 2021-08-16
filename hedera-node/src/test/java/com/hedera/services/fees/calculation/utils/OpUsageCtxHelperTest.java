@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
@@ -39,6 +40,7 @@ import java.util.List;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -79,7 +81,7 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForExtantToken() {
 		// setup:
 		extant.setFeeSchedule(fcFees());
-		final var expBytes = tokenOpsUsage.bytesNeededToRepr(1, 2, 3);
+		final var expBytes = tokenOpsUsage.bytesNeededToRepr(1, 2, 3, 1, 1, 1);
 
 		given(tokens.get(MerkleEntityId.fromTokenId(target))).willReturn(extant);
 
@@ -111,7 +113,12 @@ class OpUsageCtxHelperTest {
 				fractionalFee(
 						1, 3, 1, 2, false, collector),
 				fractionalFee(
-						1, 4, 1, 2, false, collector)
+						1, 4, 1, 2, false, collector),
+				royaltyFee(1, 10, null, collector),
+				royaltyFee(1, 10,
+						new FixedFeeSpec(1, null), collector),
+				royaltyFee(1, 10,
+						new FixedFeeSpec(1, aDenom), collector)
 		);
 	}
 }

@@ -313,9 +313,6 @@ class SignedTxnAccessorTest {
 	void setsFeeScheduleUpdateMeta() {
 		// setup:
 		final var txn = signedFeeScheduleUpdateTxn();
-		final var expectedGrpcReprBytes =
-				feeScheduleUpdateTxn().getTokenFeeScheduleUpdate().getSerializedSize()
-						- feeScheduleUpdateTxn().getTokenFeeScheduleUpdate().getTokenId().getSerializedSize();
 		final var tokenOpsUsage = new TokenOpsUsage();
 		final var expectedReprBytes = tokenOpsUsage.bytesNeededToRepr(fees());
 		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -329,7 +326,6 @@ class SignedTxnAccessorTest {
 		// then:
 		assertEquals(now, expandedMeta.effConsensusTime());
 		assertEquals(expectedReprBytes, expandedMeta.numBytesInNewFeeScheduleRepr());
-		assertEquals(expectedGrpcReprBytes, expandedMeta.numBytesInGrpcFeeScheduleRepr());
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

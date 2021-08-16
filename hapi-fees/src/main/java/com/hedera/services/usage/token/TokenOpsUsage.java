@@ -34,9 +34,13 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public class TokenOpsUsage {
-	private static final int FIXED_HBAR_REPR_SIZE = LONG_SIZE + BASIC_ENTITY_ID_SIZE;
-	private static final int FIXED_HTS_REPR_SIZE = LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE;
+	/* Sizes of various fee types, _not_ including the collector entity id */
+	private static final int FIXED_HBAR_REPR_SIZE = LONG_SIZE;
+	private static final int FIXED_HTS_REPR_SIZE = LONG_SIZE + BASIC_ENTITY_ID_SIZE;
 	private static final int FRACTIONAL_REPR_SIZE = 4 * LONG_SIZE;
+	private static final int ROYALTY_NO_FALLBACK_REPR_SIZE = 2 * LONG_SIZE;
+	private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
+	private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
 
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 
@@ -49,7 +53,7 @@ public class TokenOpsUsage {
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + opMeta.numBytesInGrpcFeeScheduleRepr());
+		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + opMeta.numBytesInNewFeeScheduleRepr());
 		final var lifetime = Math.max(0, ctx.expiry() - opMeta.effConsensusTime());
 		final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				ctx.numBytesInFeeScheduleRepr(),
@@ -63,6 +67,9 @@ public class TokenOpsUsage {
 		int numFixedHbarFees = 0;
 		int numFixedHtsFees = 0;
 		int numFractionalFees = 0;
+		int numRoyaltyNoFallbackFees = 0;
+		int numRoyaltyHtsFallbackFees = 0;
+		int numRoyaltyHbarFallbackFees = 0;
 		for (var fee : feeSchedule) {
 			if (fee.hasFixedFee()) {
 				if (fee.getFixedFee().hasDenominatingTokenId()) {
@@ -70,16 +77,48 @@ public class TokenOpsUsage {
 				} else {
 					numFixedHbarFees++;
 				}
-			} else {
+			} else if (fee.hasFractionalFee()) {
 				numFractionalFees++;
+			} else {
+				final var royaltyFee = fee.getRoyaltyFee();
+				if (royaltyFee.hasFallbackFee()) {
+					if (royaltyFee.getFallbackFee().hasDenominatingTokenId()) {
+						numRoyaltyHtsFallbackFees++;
+					} else {
+						numRoyaltyHbarFallbackFees++;
+					}
+				} else {
+					numRoyaltyNoFallbackFees++;
+				}
 			}
 		}
-		return bytesNeededToRepr(numFixedHbarFees, numFixedHtsFees, numFractionalFees);
+		return bytesNeededToRepr(
+				numFixedHbarFees,
+				numFixedHtsFees,
+				numFractionalFees,
+				numRoyaltyNoFallbackFees,
+				numRoyaltyHtsFallbackFees,
+				numRoyaltyHbarFallbackFees);
 	}
 
-	public int bytesNeededToRepr(int numFixedHbarFees, int numFixedHtsFees, int numFractionalFees) {
-		return numFixedHbarFees * FIXED_HBAR_REPR_SIZE
-				+ numFixedHtsFees * FIXED_HTS_REPR_SIZE
-				+ numFractionalFees * FRACTIONAL_REPR_SIZE;
+	public int bytesNeededToRepr(
+			int numFixedHbarFees,
+			int numFixedHtsFees,
+			int numFractionalFees,
+			int numRoyaltyNoFallbackFees,
+			int numRoyaltyHtsFallbackFees,
+			int numRoyaltyHbarFallbackFees
+	) {
+		return numFixedHbarFees * plusCollectorSize(FIXED_HBAR_REPR_SIZE)
+				+ numFixedHtsFees * plusCollectorSize(FIXED_HTS_REPR_SIZE)
+				+ numFractionalFees * plusCollectorSize(FRACTIONAL_REPR_SIZE)
+				+ numRoyaltyNoFallbackFees * plusCollectorSize(ROYALTY_NO_FALLBACK_REPR_SIZE)
+				+ numRoyaltyHtsFallbackFees * plusCollectorSize(ROYALTY_HTS_FALLBACK_REPR_SIZE)
+				+ numRoyaltyHbarFallbackFees * plusCollectorSize(ROYALTY_HBAR_FALLBACK_REPR_SIZE);
+
+	}
+
+	private int plusCollectorSize(int feeReprSize) {
+		return feeReprSize + BASIC_ENTITY_ID_SIZE;
 	}
 }
