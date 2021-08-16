@@ -22,8 +22,6 @@ package com.hedera.test.utils;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,17 +36,18 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.stream.Stream;
 
 public class IdUtils {
+	
+	public static Id asModelId(String v) {
+		long [] nativeParts = asDotDelimitedLongArray(v);
+		return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
+	}
+	
 	public static TokenID tokenWith(long num) {
 		return TokenID.newBuilder()
 				.setShardNum(0)
 				.setRealmNum(0)
 				.setTokenNum(num)
 				.build();
-	}
-
-	public static Id asModelId(String v) {
-		long[] nativeParts = asDotDelimitedLongArray(v);
-		return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
 	}
 
 	public static TopicID asTopic(String v) {
@@ -141,31 +140,11 @@ public class IdUtils {
 		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
 	}
 
-	public static BalanceChange nftChange(final Id token,
-										  final AccountID from,
-										  final AccountID to,
-										  final long serialNumber
-	) {
-		return BalanceChange.changingNftOwnership(token, token.asGrpcToken(), adjustFromNft(from, to, serialNumber));
-	}
-
 	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {
 		return NftTransfer.newBuilder()
 				.setSenderAccountID(from)
 				.setReceiverAccountID(to)
 				.setSerialNumber(serialNo)
 				.build();
-	}
-
-	public static FcAssessedCustomFee hbarChangeForCustomFees(final AccountID account, final long amount) {
-		return FcAssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
-	}
-
-	public static FcAssessedCustomFee tokenChangeForCustomFees(
-			final EntityId token,
-			final AccountID account,
-			final long amount
-	) {
-		return FcAssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
 	}
 }
