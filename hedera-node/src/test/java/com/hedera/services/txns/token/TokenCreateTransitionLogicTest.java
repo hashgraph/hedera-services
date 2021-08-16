@@ -319,13 +319,15 @@ class TokenCreateTransitionLogicTest {
 		given(denom.getType()).willReturn(FUNGIBLE_COMMON);
 		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
 		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(true);
+		given(treasuryAssociatedTokenIds.contains(newProvisionalToken.getId())).willReturn(false);
 		given(newProvisionalToken.hasKycKey()).willReturn(true);
 		given(newProvisionalToken.hasFreezeKey()).willReturn(true);
-
+		
 		subject.doStateTransition();
 
 		assertNotNull(newProvisionalToken.getCustomFees());
 		verify(typedTokenStore).persistTokenRelationships(anyList());
+		verify(feeCollectorModel).associateWith(anyList(), anyInt());
 	}
 
 	@Test
@@ -764,7 +766,29 @@ class TokenCreateTransitionLogicTest {
 												.setDenominatingTokenId(denomId.asGrpcToken())
 												.build()))
 						.setFeeCollectorAccountId(feeCollector)
-						.build()));
+						.build(),
+				CustomFee.newBuilder()
+						.setRoyaltyFee(RoyaltyFee.newBuilder()
+								.setExchangeValueFraction(Fraction.newBuilder()
+										.setNumerator(5)
+										.setDenominator(10)
+										.build())
+								.setFallbackFee(FixedFee.newBuilder()
+										.setAmount(10)
+										.setDenominatingTokenId(Id.DEFAULT.asGrpcToken())
+										.build()))
+						.build(),
+				CustomFee.newBuilder()
+						.setRoyaltyFee(RoyaltyFee.newBuilder()
+								.setExchangeValueFraction(Fraction.newBuilder()
+										.setNumerator(5)
+										.setDenominator(10)
+										.build())
+								.setFallbackFee(FixedFee.newBuilder()
+										.setAmount(10)
+										.build()))
+						.build()
+				));
 		tokenCreateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -1042,6 +1066,14 @@ class TokenCreateTransitionLogicTest {
 		givenTxWithInvalidSupplies();
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
+	
+	@Test
+	void objectContractWorks() {
+		final var newId = ids.newTokenId(treasury);
+		subject.reclaimCreatedIds();
+		subject.resetCreatedIds();
+		assertEquals(newId, ids.newTokenId(treasury));
+	}
 
 	private void givenInvalidSupplyTypeAndSupply() {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
@@ -1081,7 +1113,7 @@ class TokenCreateTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(false, false, false, false);
 	}
-
+	
 	private void givenValidTxnCtx(
 			boolean withKyc,
 			boolean withFreeze,

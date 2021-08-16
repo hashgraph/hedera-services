@@ -252,6 +252,8 @@ class CustomFeeTest {
 		fee.setFractionalFee(new com.hedera.services.store.models.fees.FractionalFee(15, 10, 10, 10, false));
 		assertEquals(15, fee.getFractionalFee().getMaximumAmount());
 		
+		CustomFee someCustomFee = new CustomFee(null, (com.hedera.services.store.models.fees.FixedFee) null);
+		assertFalse(someCustomFee.shouldCollectorBeAutoAssociated());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
