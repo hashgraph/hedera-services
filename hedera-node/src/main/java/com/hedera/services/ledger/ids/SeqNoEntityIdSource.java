@@ -85,8 +85,9 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	@Override
 	public void reclaimProvisionalIds() {
+		final var curSeqNo = seqNo.get();
 		while (provisionalIds != 0) {
-			seqNo.get().decrement();
+			curSeqNo.decrement();
 			--provisionalIds;
 		}
 	}
@@ -94,5 +95,9 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 	@Override
 	public void resetProvisionalIds() {
 		provisionalIds = 0;
+	}
+
+	int getProvisionalIds() {
+		return provisionalIds;
 	}
 }

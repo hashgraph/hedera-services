@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 class SeqNoEntityIdSourceTest {
 	final AccountID sponsor = asAccount("1.2.3");
@@ -50,7 +51,30 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
-	void name() {
+	void resetsToZero() {
+		// given:
+		subject.newTokenId(sponsor);
+		subject.newTokenId(sponsor);
+
+		// when:
+		subject.resetProvisionalIds();
+
+		// then:
+		assertEquals(0, subject.getProvisionalIds());
+	}
+
+	@Test
+	void reclaimsAsExpected() {
+		// given:
+		subject.newTokenId(sponsor);
+		subject.newTokenId(sponsor);
+
+		// when:
+		subject.reclaimProvisionalIds();
+
+		// then:
+		assertEquals(0, subject.getProvisionalIds());
+		verify(seqNo, times(2)).decrement();
 	}
 
 	@Test
@@ -107,6 +131,8 @@ class SeqNoEntityIdSourceTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);
 	}
 
 	@Test
