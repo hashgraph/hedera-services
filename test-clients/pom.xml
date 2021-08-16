@@ -21,7 +21,7 @@
     <picocli.version>4.6.1</picocli.version>
     <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
-    <snakeyaml.version>1.26</snakeyaml.version>
+    <snakeyaml.version>1.29</snakeyaml.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
