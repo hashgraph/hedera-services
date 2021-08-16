@@ -57,7 +57,7 @@ class RecordStreamObjectTest {
 	private static final RecordStreamObject realObject = getRecordStreamObject();
 
 	@BeforeAll
-	public static void setUp() {
+	static void setUp() {
 		when(record.toString()).thenReturn("mock record");
 		when(transaction.toString()).thenReturn("mock transaction");
 		when(consensusTimestamp.toString()).thenReturn("mock consensusTimestamp");
@@ -72,7 +72,7 @@ class RecordStreamObjectTest {
 
 	@Test
 	void initTest() {
-		assertEquals(recordStreamObject.getTimestamp(), consensusTimestamp);
+		assertEquals(consensusTimestamp, recordStreamObject.getTimestamp());
 	}
 
 	@Test
@@ -118,14 +118,14 @@ class RecordStreamObjectTest {
 
 	@Test
 	void serializationDeserializationTest() throws IOException {
-		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			 SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream)) {
+		try (final var byteArrayOutputStream = new ByteArrayOutputStream();
+			 final var out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			realObject.serialize(out);
 			byteArrayOutputStream.flush();
-			byte[] bytes = byteArrayOutputStream.toByteArray();
-			try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-				 SerializableDataInputStream input = new SerializableDataInputStream(byteArrayInputStream)) {
-				RecordStreamObject deserialized = new RecordStreamObject();
+			final var bytes = byteArrayOutputStream.toByteArray();
+			try (final var byteArrayInputStream = new ByteArrayInputStream(bytes);
+				 final var input = new SerializableDataInputStream(byteArrayInputStream)) {
+				final var deserialized = new RecordStreamObject();
 				deserialized.deserialize(input, RecordStreamObject.CLASS_VERSION);
 				assertEquals(realObject, deserialized);
 				assertEquals(realObject.getTimestamp(), deserialized.getTimestamp());
@@ -134,16 +134,19 @@ class RecordStreamObjectTest {
 	}
 
 	private static RecordStreamObject getRecordStreamObject() {
-		final Instant consensusTimestamp = Instant.now();
-		final AccountID.Builder accountID = AccountID.newBuilder().setAccountNum(3);
-		final TransactionID.Builder transactionID = TransactionID.newBuilder().setAccountID(accountID);
-		final TransactionBody.Builder transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID);
-		final SignedTransaction.Builder signedTransaction = SignedTransaction.newBuilder().setBodyBytes(
-				transactionBody.build().toByteString());
-		final Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(
-				signedTransaction.getBodyBytes()).build();
-		final TransactionRecord record = TransactionRecord.newBuilder().setConsensusTimestamp(
-				MiscUtils.asTimestamp(consensusTimestamp)).setTransactionID(transactionID).build();
+		final var consensusTimestamp = Instant.now();
+		final var accountID = AccountID.newBuilder().setAccountNum(3);
+		final var transactionID = TransactionID.newBuilder().setAccountID(accountID);
+		final var transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID);
+		final var signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(transactionBody.build().toByteString());
+		final var transaction = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTransaction.getBodyBytes())
+				.build();
+		final var record = TransactionRecord.newBuilder()
+				.setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp))
+				.setTransactionID(transactionID)
+				.build();
 		return new RecordStreamObject(record, transaction, consensusTimestamp);
 	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,7 @@ class IdTest {
 	@Test
 	void hashCodeDiscriminates() {
 		final var aId = new Id(1, 2, 3);
-		final var bId = new Id(0,2, 3);
+		final var bId = new Id(0, 2, 3);
 		final var cId = new Id(1, 0, 3);
 		final var dId = new Id(1, 2, 0);
 		final var eId = new Id(1, 2, 3);
@@ -49,7 +49,7 @@ class IdTest {
 	@Test
 	void equalsDiscriminates() {
 		final var aId = new Id(1, 2, 3);
-		final var bId = new Id(0,2, 3);
+		final var bId = new Id(0, 2, 3);
 		final var cId = new Id(1, 0, 3);
 		final var dId = new Id(1, 2, 0);
 		final var eId = new Id(1, 2, 3);
@@ -58,8 +58,8 @@ class IdTest {
 		assertNotEquals(cId, aId);
 		assertNotEquals(dId, aId);
 		assertEquals(eId, aId);
-		assertNotEquals(aId, null);
-		assertNotEquals(aId, new Object());
+		assertNotEquals(null, aId);
+		assertNotEquals(new Object(), aId);
 		assertEquals(aId, aId);
 	}
 
@@ -97,21 +97,16 @@ class IdTest {
 
 	@Test
 	void comparatorWorks() {
-		// given:
 		final var a = new Id(0, 0, 1);
 		final var b = new Id(1, 0, 0);
 		final var c = new Id(0, 1, 0);
-		// and:
 		final var l = new ArrayList<Id>();
 
-		// when:
 		l.add(a);
 		l.add(b);
 		l.add(c);
-		// and:
 		l.sort(Id.ID_COMPARATOR);
 
-		// then:
 		assertEquals(List.of(c, b, a), l);
 	}
 }
