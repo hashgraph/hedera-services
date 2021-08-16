@@ -254,9 +254,6 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -289,6 +286,9 @@ import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SemanticPrecheck;
@@ -341,6 +341,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -567,7 +568,7 @@ public class ServicesContext {
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
+	private AtomicReference<VirtualMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
@@ -1998,7 +1999,7 @@ public class ServicesContext {
 		return queryableStorage;
 	}
 
-	public AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts() {
+	public AtomicReference<VirtualMap<MerkleEntityId, MerkleAccount>> queryableAccounts() {
 		if (queryableAccounts == null) {
 			queryableAccounts = new AtomicReference<>(accounts());
 		}
@@ -2125,7 +2126,7 @@ public class ServicesContext {
 		return state.networkCtx().midnightRates();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public VirtualMap<MerkleEntityId, MerkleAccount> accounts() {
 		return state.accounts();
 	}
 

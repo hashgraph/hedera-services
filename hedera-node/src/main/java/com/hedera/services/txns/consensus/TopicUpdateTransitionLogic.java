@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,10 +66,10 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public TopicUpdateTransitionLogic(
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext,

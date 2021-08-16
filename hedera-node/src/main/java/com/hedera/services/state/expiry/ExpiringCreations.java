@@ -36,7 +36,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,12 +51,12 @@ public class ExpiringCreations implements EntityCreator {
 
 	private final ExpiryManager expiries;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;

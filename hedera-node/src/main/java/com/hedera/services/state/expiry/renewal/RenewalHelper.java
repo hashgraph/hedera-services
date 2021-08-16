@@ -33,6 +33,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +61,7 @@ public class RenewalHelper {
 	private final TokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 
 	private MerkleAccount lastClassifiedAccount = null;
@@ -71,7 +72,7 @@ public class RenewalHelper {
 			HederaNumbers hederaNumbers,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels
 	) {
 		this.shard = hederaNumbers.shard();

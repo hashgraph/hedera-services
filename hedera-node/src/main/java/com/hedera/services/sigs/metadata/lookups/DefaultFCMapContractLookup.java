@@ -26,7 +26,7 @@ import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.function.Supplier;
 
@@ -35,9 +35,9 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public DefaultFCMapContractLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public DefaultFCMapContractLookup(Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 

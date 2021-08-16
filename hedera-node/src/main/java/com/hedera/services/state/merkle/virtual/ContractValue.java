@@ -70,11 +70,6 @@ public class ContractValue implements VirtualValue {
     }
 
     @Override
-    public void update(ByteBuffer byteBuffer) throws IOException {
-        serialize(byteBuffer);
-    }
-
-    @Override
     public ContractValue copy() {
         return new ContractValue(this, false);
     }

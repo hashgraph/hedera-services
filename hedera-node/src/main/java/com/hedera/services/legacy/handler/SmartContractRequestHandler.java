@@ -63,7 +63,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
@@ -110,7 +110,7 @@ public class SmartContractRequestHandler {
 
 	private HederaLedger ledger;
 	private ServicesRepositoryRoot repository;
-	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -122,7 +122,7 @@ public class SmartContractRequestHandler {
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
 			HederaLedger ledger,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,

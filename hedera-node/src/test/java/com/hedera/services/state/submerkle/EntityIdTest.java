@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -197,5 +198,16 @@ public class EntityIdTest {
 		assertEquals(tokenId, subject.toGrpcTokenId());
 		assertEquals(scheduleId, subject.toGrpcScheduleId());
 		assertEquals(merkleId, subject.asMerkle());
+	}
+
+	@Test
+	public void virtualSerialization() throws IOException {
+		ByteBuffer buffer = ByteBuffer.wrap(new byte[100]);
+		subject.serialize(buffer);
+
+		EntityId id = new EntityId();
+		id.deserialize(buffer, 0);
+
+		assertEquals(id.num(), num);
 	}
 }

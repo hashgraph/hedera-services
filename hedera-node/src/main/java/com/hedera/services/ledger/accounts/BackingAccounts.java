@@ -23,7 +23,7 @@ package com.hedera.services.ledger.accounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,9 +34,9 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	Set<AccountID> existingAccounts = new HashSet<>();
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> delegate;
 
-	public BackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
+	public BackingAccounts(Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 		rebuildFromSources();
 	}

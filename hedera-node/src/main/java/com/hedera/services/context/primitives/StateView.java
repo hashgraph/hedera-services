@@ -62,6 +62,7 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,9 +103,9 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityId, MerkleTopic>> EMPTY_TOPICS_SUPPLIER =
 			() -> EMPTY_TOPICS;
 
-	public static final FCMap<MerkleEntityId, MerkleAccount> EMPTY_ACCOUNTS =
-			new FCMap<>();
-	public static final Supplier<FCMap<MerkleEntityId, MerkleAccount>> EMPTY_ACCOUNTS_SUPPLIER =
+	public static final VirtualMap<MerkleEntityId, MerkleAccount> EMPTY_ACCOUNTS =
+			new VirtualMap<>();
+	public static final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> EMPTY_ACCOUNTS_SUPPLIER =
 			() -> EMPTY_ACCOUNTS;
 
 	public static final FCMap<MerkleBlobMeta, MerkleOptionalBlob> EMPTY_STORAGE =
@@ -130,14 +131,14 @@ public class StateView {
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private final NodeLocalProperties properties;
 
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
@@ -149,7 +150,7 @@ public class StateView {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
@@ -161,7 +162,7 @@ public class StateView {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
 			Supplier<MerkleDiskFs> diskFs,
@@ -460,11 +461,11 @@ public class StateView {
 		return topics.get();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public VirtualMap<MerkleEntityId, MerkleAccount> accounts() {
 		return accounts.get();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
+	public VirtualMap<MerkleEntityId, MerkleAccount> contracts() {
 		return accounts.get();
 	}
 
