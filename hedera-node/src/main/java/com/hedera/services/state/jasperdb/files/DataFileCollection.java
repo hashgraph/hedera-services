@@ -265,8 +265,7 @@ public class DataFileCollection {
                 // check if newFile is full
                 if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
                     // finish writing current file, add it for reading then open new file for writing
-                    final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
-                    addNewDataFileReader(newFileWriter.getPath(), metadata);
+                    closeCurrentMergeFile(newFileWriter,minimumValidKey,maximumValidKey,locationChangeHandler,movesMap);
                     newFileWriter = newDataFile(mergeTime, true);
                 }
                 // add to movesMap
@@ -292,6 +291,16 @@ public class DataFileCollection {
             }
         }
         // close current file
+        closeCurrentMergeFile(newFileWriter,minimumValidKey,maximumValidKey,locationChangeHandler,movesMap);
+        // delete old files
+        deleteFiles(filesToMerge);
+    }
+
+    /** Finish a merge file and close it. */
+    private void closeCurrentMergeFile(DataFileWriter newFileWriter, long minimumValidKey, long maximumValidKey,
+                                       Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
+                                       LongObjectHashMap<long[]> movesMap) throws IOException {
+        // close current file
         final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // add it for reading
         addNewDataFileReader(newFileWriter.getPath(), metadata);
@@ -299,8 +308,6 @@ public class DataFileCollection {
         writeLock.lock(); //System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
         locationChangeHandler.accept(movesMap.toImmutable());
         writeLock.unlock(); //System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
-        // delete old files
-        deleteFiles(filesToMerge);
     }
 
     /**

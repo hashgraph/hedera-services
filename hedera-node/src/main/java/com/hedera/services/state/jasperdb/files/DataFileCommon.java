@@ -46,7 +46,7 @@ public class DataFileCommon {
      * Chosen max size for a data file, this is a balance as fewer bigger files are faster to read from but large files
      * are extensive to merge. It must be less than MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES.
      */
-    static final long MAX_DATA_FILE_SIZE = 128*GB;
+    static final long MAX_DATA_FILE_SIZE = 64*GB;
 
     /** Size of keys in bytes, assumed to be a single long as all our use cases just needed a long */
     static final int KEY_SIZE = Long.BYTES;

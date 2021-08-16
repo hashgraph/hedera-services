@@ -143,14 +143,14 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     private void doMerge() {
         final Instant startMerge = Instant.now();
         Function<List<DataFileReader>, List<DataFileReader>> filesToMergeFilter;
-        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) {
+        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) { // every 2 hours
             lastFullMerge = startMerge;
             filesToMergeFilter = dataFileReaders -> dataFileReaders; // everything
-        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) {
+        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
             lastMediumMerge = startMerge;
-            filesToMergeFilter = newestFilesSmallerThan(10*1024);
-        } else {
-            filesToMergeFilter = newestFilesSmallerThan(1024);
+            filesToMergeFilter = newestFilesSmallerThan(10*1024); // < 10Gb
+        } else { // every 5 minutes
+            filesToMergeFilter = newestFilesSmallerThan(2*1024); // < 2Gb
         }
         try {
             pathToKeyHashValue.mergeAll(filesToMergeFilter);
