@@ -108,6 +108,13 @@ class MerkleTopicTest {
 				topicFrom(2).toString());
 	}
 
+	@Test
+	void merkleMethodsWork() {
+		final var topic = new MerkleTopic();
+		assertEquals(MerkleTopic.MERKLE_VERSION, topic.getVersion());
+		assertEquals(MerkleTopic.RUNTIME_CONSTRUCTABLE_ID, topic.getClassId());
+	}
+
 	private MerkleTopic topicFrom(int s) throws IOException, NoSuchAlgorithmException {
 		long v = 1_234_567L + s * 1_000_000L;
 		long t = s + 1;

@@ -133,14 +133,6 @@ public class IdUtils {
 				.build();
 	}
 
-	public static NftTransfer adjustFromNft(AccountID from, AccountID to, long serialNumber) {
-		return NftTransfer.newBuilder()
-				.setSenderAccountID(from)
-				.setReceiverAccountID(to)
-				.setSerialNumber(serialNumber)
-				.build();
-	}
-
 	public static BalanceChange hbarChange(final AccountID account, final long amount) {
 		return BalanceChange.changingHbar(adjustFrom(account, amount));
 	}

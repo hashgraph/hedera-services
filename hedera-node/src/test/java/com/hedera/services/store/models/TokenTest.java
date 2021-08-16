@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -52,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -412,42 +414,30 @@ class TokenTest {
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		subject.setSupplyKey(someKey);
-		subject.setWipeKey(someKey);
 
-		final var loadedUniqueTokensMap = (HashMap<Long, UniqueToken>) mock(HashMap.class);
-		final var uniqueToken = mock(UniqueToken.class);
+		final Map<Long, UniqueToken> loadedUniqueTokensMap = new HashMap<>();
 		final var owner = nonTreasuryAccount.getId();
-		given(uniqueToken.getOwner()).willReturn(owner);
-		given(loadedUniqueTokensMap.get(any())).willReturn(uniqueToken);
+		final var uniqueToken = new UniqueToken(id, 1L, owner);
 		subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
+
 		final var ownershipTracker = mock(OwnershipTracker.class);
-		final List<Long> emptySerialNumber = List.of();
 		final var singleSerialNumber = List.of(1L);
-		final var serialNumbers = List.of(1L, 2L);
 
-		assertThrows(InvalidTransactionException.class, () -> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber);
-		});
+		/* Invalid to wipe serial numbers for a FUNGIBLE_COMMON token */
+		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber), FAIL_INVALID);
 
-		subject.setTotalSupply(100);
-		treasuryRel.setBalance(0);
-		assertThrows(InvalidTransactionException.class, () -> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber);
-		});
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-		treasuryRel.setBalance(100);
-		assertThrows(InvalidTransactionException.class, () -> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, emptySerialNumber);
-		});
+		/* Must have a wipe key */
+		assertFailsWith(
+				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
+				TOKEN_HAS_NO_WIPE_KEY);
 
-		subject.setWipeKey(null);
-		assertThrows(InvalidTransactionException.class, () -> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, serialNumbers);
-		}, "Cannot wipe Unique Tokens without wipe key");
-
-		nonTreasuryRel = new TokenRelationship(subject, new Account(new Id(1, 2, 3)));
-		given(uniqueToken.getOwner()).willReturn(Id.DEFAULT);
-		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L)), FAIL_INVALID);
+		/* Not allowed to wipe treasury */
+		subject.setWipeKey(someKey);
+		assertFailsWith(
+				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
+				CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
 	}
 
 	@Test

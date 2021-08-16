@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
 import java.time.Instant;
@@ -60,8 +58,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_T
  * @author Michael Tinker
  */
 public class ContextOptionValidator implements OptionValidator {
-	private static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
-
 	private final long maxEntityLifetime;
 	private final AccountID nodeAccount;
 	private final TransactionContext txnCtx;
@@ -244,7 +240,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand) {
-		return rawMemoCheck(utf8Cand, Arrays.contains(utf8Cand, (byte)0));
+		return rawMemoCheck(utf8Cand, Arrays.contains(utf8Cand, (byte) 0));
 	}
 
 	@Override

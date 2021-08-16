@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,8 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -33,14 +31,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class RichInstant {
-	private static final Logger log = LogManager.getLogger(RichInstant.class);
-
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
 	private int nanos;
 	private long seconds;
 
-	public RichInstant() { }
+	public RichInstant() {
+	}
 
 	public RichInstant(long seconds, int nanos) {
 		this.seconds = seconds;
@@ -74,7 +71,7 @@ public class RichInstant {
 		if (o == null || RichInstant.class != o.getClass()) {
 			return false;
 		}
-		var that = (RichInstant)o;
+		var that = (RichInstant) o;
 		return seconds == that.seconds && nanos == that.nanos;
 	}
 
@@ -105,8 +102,9 @@ public class RichInstant {
 	public Timestamp toGrpc() {
 		return isMissing()
 				? Timestamp.getDefaultInstance() :
-				Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos) .build();
+				Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 	}
+
 	public boolean isAfter(RichInstant other) {
 		return (seconds > other.seconds) || (seconds == other.seconds && (nanos > other.nanos));
 	}

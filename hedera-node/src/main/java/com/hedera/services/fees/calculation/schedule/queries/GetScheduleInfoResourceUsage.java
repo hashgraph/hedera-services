@@ -27,8 +27,6 @@ import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,8 +35,6 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 
 public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetScheduleInfoResourceUsage.class);
-
 	private final ScheduleOpsUsage scheduleOpsUsage;
 
 	public GetScheduleInfoResourceUsage(ScheduleOpsUsage scheduleOpsUsage) {

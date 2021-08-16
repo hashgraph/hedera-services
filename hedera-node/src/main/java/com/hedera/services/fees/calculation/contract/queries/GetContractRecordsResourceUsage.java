@@ -27,12 +27,8 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class GetContractRecordsResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetContractInfoResourceUsage.class);
-
 	private final SmartContractFeeBuilder usageEstimator;
 
 	public GetContractRecordsResourceUsage(SmartContractFeeBuilder usageEstimator) {
@@ -51,6 +47,7 @@ public class GetContractRecordsResourceUsage implements QueryResourceUsageEstima
 
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageEstimator.getContractRecordsQueryFeeMatrices(GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS, type);
+		return usageEstimator.getContractRecordsQueryFeeMatrices(GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS,
+				type);
 	}
 }

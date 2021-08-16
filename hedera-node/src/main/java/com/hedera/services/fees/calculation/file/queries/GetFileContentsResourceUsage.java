@@ -26,12 +26,8 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.FileFeeBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetFileContentsResourceUsage.class);
-
 	private final FileFeeBuilder usageEstimator;
 
 	public GetFileContentsResourceUsage(FileFeeBuilder usageEstimator) {

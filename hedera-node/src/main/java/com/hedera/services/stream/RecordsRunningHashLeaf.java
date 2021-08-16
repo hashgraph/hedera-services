@@ -25,8 +25,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -36,10 +34,8 @@ import java.util.Objects;
  * Hash calculated from all {@link RecordStreamObject} in history
  */
 public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
-	private static final Logger log = LogManager.getLogger(RecordsRunningHashLeaf.class);
-
-	public static final long CLASS_ID = 0xe370929ba5429d9bL;
-	public static final int CLASS_VERSION = 1;
+	static final long CLASS_ID = 0xe370929ba5429d9bL;
+	static final int CLASS_VERSION = 1;
 	/**
 	 * a runningHash of all RecordStreamObject
 	 */
@@ -63,7 +59,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		try {
 			// should wait until runningHash has been calculated and set
 			out.writeSerializable(runningHash.getFutureHash().get(), true);
@@ -75,7 +71,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		runningHash = new RunningHash();
 		runningHash.setHash(in.readSerializable());
 	}
@@ -84,18 +80,14 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean isDataExternal() {
-		return false;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		RecordsRunningHashLeaf that = (RecordsRunningHashLeaf) o;
+	public boolean equals(final Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		final var that = (RecordsRunningHashLeaf) o;
 		if (this.runningHash.getHash() != null && that.runningHash.getHash() != null) {
 			return this.runningHash.getHash().equals(that.runningHash.getHash());
 		}
@@ -111,7 +103,6 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 	}
 
 	public RecordsRunningHashLeaf copy() {
-		// throwIfImmutable();
 		return new RecordsRunningHashLeaf(this);
 	}
 
