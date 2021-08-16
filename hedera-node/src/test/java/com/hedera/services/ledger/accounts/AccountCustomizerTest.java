@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,37 +64,29 @@ class AccountCustomizerTest {
 	void directlyCustomizesAnAccount() {
 		setupWithLiveChangeManager();
 
-		// given:
-		TestAccount ta = subject.isDeleted(true)
+		final var ta = subject.isDeleted(true)
 				.expiry(55L)
 				.memo("Something!")
 				.customizing(new TestAccount());
 
-		// expect:
-		assertEquals(ta.value, 55L);
+		assertEquals(55L, ta.value);
 		assertTrue(ta.flag);
-		assertEquals(ta.thing, "Something!");
+		assertEquals("Something!", ta.thing);
 	}
 
 	@Test
 	void setsCustomizedProperties() {
 		setupWithLiveChangeManager();
+		final Long id = 1L;
+		final TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger = mock(TransactionalLedger.class);
+		final String customMemo = "alpha bravo charlie";
+		final boolean customIsReceiverSigRequired = true;
 
-		// given:
-		Long id = 1L;
-		TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger = mock(TransactionalLedger.class);
-		// and:
-		String customMemo = "alpha bravo charlie";
-		boolean customIsReceiverSigRequired = true;
-
-		// when:
 		subject
 				.isReceiverSigRequired(customIsReceiverSigRequired)
 				.memo(customMemo);
-		// and:
 		subject.customize(id, ledger);
 
-		// then:
 		verify(ledger).set(id, OBJ, customMemo);
 		verify(ledger).set(id, FLAG, customIsReceiverSigRequired);
 	}
@@ -102,14 +94,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedKeyProperty() {
 		setupWithMockChangeManager();
+		final JKey key = new JKeyList();
 
-		// given:
-		JKey key = new JKeyList();
-
-		// when:
 		subject.key(key);
 
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(KEY)::equals),
@@ -119,14 +107,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedMemoProperty() {
 		setupWithMockChangeManager();
+		final String memo = "standardization ftw?";
 
-		// given:
-		String memo = "standardization ftw?";
-
-		// when:
 		subject.memo(memo);
 
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(MEMO)::equals),
@@ -136,14 +120,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedProxyProperty() {
 		setupWithMockChangeManager();
+		final var proxy = new EntityId();
 
-		// given:
-		EntityId proxy = new EntityId();
-
-		// when:
 		subject.proxy(proxy);
 
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(PROXY)::equals),
@@ -153,14 +133,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedExpiryProperty() {
 		setupWithMockChangeManager();
+		final Long expiry = 1L;
 
-		// given:
-		Long expiry = 1L;
+		subject.expiry(expiry.longValue());
 
-		// when:
-		subject.expiry(expiry);
-
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(EXPIRY)::equals),
@@ -170,14 +146,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedAutoRenewProperty() {
 		setupWithMockChangeManager();
+		final Long autoRenew = 1L;
 
-		// given:
-		Long autoRenew = 1L;
+		subject.autoRenewPeriod(autoRenew.longValue());
 
-		// when:
-		subject.autoRenewPeriod(autoRenew);
-
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_PERIOD)::equals),
@@ -187,14 +159,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedIsSmartContractProperty() {
 		setupWithMockChangeManager();
+		final Boolean isSmartContract = Boolean.TRUE;
 
-		// given:
-		Boolean isSmartContract = Boolean.TRUE;
+		subject.isSmartContract(isSmartContract.booleanValue());
 
-		// when:
-		subject.isSmartContract(isSmartContract);
-
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_SMART_CONTRACT)::equals),
@@ -204,14 +172,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedIsDeletedProperty() {
 		setupWithMockChangeManager();
+		final Boolean isDeleted = Boolean.TRUE;
 
-		// given:
-		Boolean isDeleted = Boolean.TRUE;
+		subject.isDeleted(isDeleted.booleanValue());
 
-		// when:
-		subject.isDeleted(isDeleted);
-
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_DELETED)::equals),
@@ -221,14 +185,10 @@ class AccountCustomizerTest {
 	@Test
 	void changesExpectedReceiverSigRequiredProperty() {
 		setupWithMockChangeManager();
+		final Boolean isSigRequired = Boolean.FALSE;
 
-		// given:
-		Boolean isSigRequired = Boolean.FALSE;
+		subject.isReceiverSigRequired(isSigRequired.booleanValue());
 
-		// when:
-		subject.isReceiverSigRequired(isSigRequired);
-
-		// expect:
 		verify(changeManager).update(
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_RECEIVER_SIG_REQUIRED)::equals),
