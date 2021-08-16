@@ -100,7 +100,7 @@ public class TypedTokenStore {
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
 			AddKnownTreasuryDelegate legacyStoreDelegate,
-            RemoveKnownTreasuryDelegate delegate
+			RemoveKnownTreasuryDelegate delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -111,8 +111,8 @@ public class TypedTokenStore {
 		this.delegate = delegate;
 		this.backingTokenRels = backingTokenRels;
 
-        this.addKnownTreasury = legacyStoreDelegate;
-    }
+		this.addKnownTreasury = legacyStoreDelegate;
+	}
 
 	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
 		final var tokenId = rel.getToken().getId();
@@ -146,10 +146,13 @@ public class TypedTokenStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param token   the token in the relationship to load
-	 * @param account the account in the relationship to load
+	 * @param token
+	 * 		the token in the relationship to load
+	 * @param account
+	 * 		the account in the relationship to load
 	 * @return a usable model of the token-account relationship
-	 * @throws InvalidTransactionException if the requested relationship does not exist
+	 * @throws InvalidTransactionException
+	 * 		if the requested relationship does not exist
 	 */
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
 		final var tokenId = token.getId();
@@ -176,7 +179,8 @@ public class TypedTokenStore {
 	 * {@link TransactionRecordService} to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 * of the active transaction with these changes.
 	 *
-	 * @param tokenRelationships the token relationships to save
+	 * @param tokenRelationships
+	 * 		the token relationships to save
 	 */
 	public void persistTokenRelationships(List<TokenRelationship> tokenRelationships) {
 		final var currentTokenRels = tokenRels.get();
@@ -217,7 +221,8 @@ public class TypedTokenStore {
 	 * ownership
 	 * of {@link UniqueToken}
 	 *
-	 * @param ownershipTracker holds changes to {@link UniqueToken} ownership
+	 * @param ownershipTracker
+	 * 		holds changes to {@link UniqueToken} ownership
 	 */
 	public void persistTrackers(OwnershipTracker ownershipTracker) {
 		transactionRecordService.includeOwnershipChanges(ownershipTracker);
@@ -232,9 +237,11 @@ public class TypedTokenStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param id the token to load
+	 * @param id
+	 * 		the token to load
 	 * @return a usable model of the token
-	 * @throws InvalidTransactionException if the requested token is missing, deleted, or expired and pending removal
+	 * @throws InvalidTransactionException
+	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
@@ -253,9 +260,12 @@ public class TypedTokenStore {
 	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *
-	 * @param token         the token model, on which to load the of the unique token
-	 * @param serialNumbers the serial numbers to load
-	 * @throws InvalidTransactionException if the requested token class is missing, deleted, or expired and pending removal
+	 * @param token
+	 * 		the token model, on which to load the of the unique token
+	 * @param serialNumbers
+	 * 		the serial numbers to load
+	 * @throws InvalidTransactionException
+	 * 		if the requested token class is missing, deleted, or expired and pending removal
 	 */
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
 		final var tokenId = token.getId();
@@ -277,7 +287,8 @@ public class TypedTokenStore {
 	 * Use carefully. Returns a model of the requested token which may be marked as deleted or
 	 * even marked as auto-removed if the Merkle state has no token with that id.
 	 *
-	 * @param id the token to load
+	 * @param id
+	 * 		the token to load
 	 * @return a usable model of the token
 	 */
 	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
@@ -298,8 +309,10 @@ public class TypedTokenStore {
 	/**
 	 * Loads a token from the swirlds state. Throws the given response code upon unusable token.
 	 *
-	 * @param id - id of the token to be loaded
-	 * @param code - the {@link ResponseCodeEnum} code to fail with if the token is not present or is erroneous
+	 * @param id
+	 * 		- id of the token to be loaded
+	 * @param code
+	 * 		- the {@link ResponseCodeEnum} code to fail with if the token is not present or is erroneous
 	 * @return - the loaded token
 	 */
 	public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
@@ -319,7 +332,8 @@ public class TypedTokenStore {
 	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
 	 * with these changes.
 	 *
-	 * @param token the token to save
+	 * @param token
+	 * 		the token to save
 	 */
 	public void persistToken(Token token) {
 		final var key = token.getId().asMerkle();
@@ -349,7 +363,8 @@ public class TypedTokenStore {
 	 * Maps the properties between the mutable and immutable token, and later puts the immutable one in state.
 	 * Adds the token's treasury to the known treasuries map.
 	 *
-	 * @param token - the model of the token to be persisted in state.
+	 * @param token
+	 * 		- the model of the token to be persisted in state.
 	 */
 	public void persistNew(Token token) {
 		/* create new merkle token */
@@ -466,7 +481,7 @@ public class TypedTokenStore {
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setWipeKey(immutableToken.getWipeKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
-        token.setAdminKey(immutableToken.getAdminKey());
+		token.setAdminKey(immutableToken.getAdminKey());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
@@ -490,8 +505,8 @@ public class TypedTokenStore {
 		void perform(final AccountID aId, final TokenID tId);
 	}
 
-    @FunctionalInterface
-    public interface RemoveKnownTreasuryDelegate {
-        void perform(final AccountID aId, final TokenID tId);
-    }
+	@FunctionalInterface
+	public interface RemoveKnownTreasuryDelegate {
+		void perform(final AccountID aId, final TokenID tId);
+	}
 }

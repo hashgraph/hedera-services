@@ -68,11 +68,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
  *
- * <b>NOTE:</b> Some operations will likely be moved to specializations
- * of this class as NFTs are fully supported. For example, a
- * {@link Token#mint(TokenRelationship, long, boolean)} signature only makes
- * sense for a token of type {@code FUNGIBLE_COMMON}; the signature for
- * a {@code NON_FUNGIBLE_UNIQUE} will likely be {@code mint(TokenRelationship, byte[])}.
+ * <b>NOTE:</b> Some operations only apply to specific token types.
+ * For example, a {@link Token#mint(TokenRelationship, long, boolean)}
+ * call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
+ * signature for a {@code NON_FUNGIBLE_UNIQUE} is {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
  */
 public class Token {
 	private final Id id;
@@ -112,19 +111,25 @@ public class Token {
 	/**
 	 * Creates a new instance of the model token, which is later persisted in state.
 	 *
-	 * @param tokenId the new token id
-	 * @param op the transaction body containing the necessary data for token creation
-	 * @param treasury treasury of the token
-	 * @param autoRenewAccount optional(nullable) account used for auto-renewal
-	 * @param customFees a list of valid custom fees
-	 * @param consensusTimestamp the consensus time of the token create transaction
+	 * @param tokenId
+	 * 		the new token id
+	 * @param op
+	 * 		the transaction body containing the necessary data for token creation
+	 * @param treasury
+	 * 		treasury of the token
+	 * @param autoRenewAccount
+	 * 		optional(nullable) account used for auto-renewal
+	 * @param customFees
+	 * 		a list of valid custom fees
+	 * @param consensusTimestamp
+	 * 		the consensus time of the token create transaction
 	 * @return a new instance of the {@link Token} class
 	 */
 	public static Token fromGrpcTokenCreate(
 			final Id tokenId,
 			final TokenCreateTransactionBody op,
 			final Account treasury,
-			@Nullable  Account autoRenewAccount,
+			@Nullable Account autoRenewAccount,
 			final List<CustomFee> customFees,
 			final long consensusTimestamp
 	) {
@@ -147,7 +152,8 @@ public class Token {
 		supplyKey.ifPresent(token::setSupplyKey);
 		feeScheduleKey.ifPresent(token::setFeeScheduleKey);
 
-		token.initSupplyConstraints(TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(op.getSupplyType()), op.getMaxSupply());
+		token.initSupplyConstraints(TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(op.getSupplyType()),
+				op.getMaxSupply());
 		token.setType(TokenTypesMapper.grpcTokenTypeToModelType(op.getTokenType()));
 
 		token.setTreasury(treasury);
@@ -208,7 +214,8 @@ public class Token {
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
 			// The default sentinel account is used (0.0.0) to represent unique tokens owned by the Treasury
-			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT, m.toByteArray());
+			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT,
+					m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
 			ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
 		}
@@ -308,20 +315,21 @@ public class Token {
 		accountRel.setBalance(newAccountBalance);
 		setTotalSupply(newTotalSupply);
 	}
+
 	/**
 	 * Performs a check if the target token has an admin key.
 	 * If the admin key is not present throws an exception and does not mutate the token.
 	 * If the admin key is present, marks it as deleted.
 	 */
-    public void delete() {
-        validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
+	public void delete() {
+		validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
 
-        setIsDeleted(true);
-    }
+		setIsDeleted(true);
+	}
 
-    public boolean hasAdminKey() {
-        return adminKey != null;
-    }
+	public boolean hasAdminKey() {
+		return adminKey != null;
+	}
 
 	public TokenRelationship newRelationshipWith(final Account account) {
 		final var newRel = new TokenRelationship(this, account);
@@ -335,7 +343,9 @@ public class Token {
 	/**
 	 * Creates new {@link TokenRelationship} for the specified {@link Account}
 	 * IMPORTANT: The provided account is set to KYC granted and unfrozen by default
-	 * @param account the Account for which to create the relationship
+	 *
+	 * @param account
+	 * 		the Account for which to create the relationship
 	 * @return newly created {@link TokenRelationship}
 	 */
 	public TokenRelationship newEnabledRelationship(final Account account) {
@@ -345,7 +355,8 @@ public class Token {
 		return rel;
 	}
 
-	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode, boolean ignoreSupplyKey) {
+	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode,
+			boolean ignoreSupplyKey) {
 		validateTrue(treasuryRel != null, FAIL_INVALID,
 				"Cannot mint with a null treasuryRel");
 		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID,

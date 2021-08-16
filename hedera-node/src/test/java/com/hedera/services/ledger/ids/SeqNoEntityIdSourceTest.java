@@ -50,6 +50,10 @@ class SeqNoEntityIdSourceTest {
 	}
 
 	@Test
+	void name() {
+	}
+
+	@Test
 	void returnsExpectedAccountId() {
 		given(seqNo.getAndIncrement()).willReturn(555L);
 

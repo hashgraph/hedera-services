@@ -31,8 +31,6 @@ import java.time.Instant;
 
 /**
  * Defines a type able to create ids of various entities under various conditions.
- *
- * @author Michael Tinker
  */
 public interface EntityIdSource {
 	/**
