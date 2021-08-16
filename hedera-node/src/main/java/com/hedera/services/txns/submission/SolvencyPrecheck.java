@@ -34,7 +34,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,7 +69,7 @@ public class SolvencyPrecheck {
 	private final PrecheckVerifier precheckVerifier;
 	private final Supplier<StateView> stateView;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public SolvencyPrecheck(
 			FeeExemptions feeExemptions,
@@ -78,7 +78,7 @@ public class SolvencyPrecheck {
 			PrecheckVerifier precheckVerifier,
 			Supplier<StateView> stateView,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.validator = validator;

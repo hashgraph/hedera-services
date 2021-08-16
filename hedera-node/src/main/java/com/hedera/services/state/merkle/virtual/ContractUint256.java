@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -171,11 +170,6 @@ public class ContractUint256 implements VirtualKey, VirtualValue {
                 ((data[offset+29] & 255) << 16) +
                 ((data[offset+30] & 255) <<  8) +
                 ((data[offset+31] & 255) <<  0));
-    }
-
-    @Override
-    public void update(ByteBuffer byteBuffer) throws IOException {
-        serialize(byteBuffer);
     }
 
     @Override

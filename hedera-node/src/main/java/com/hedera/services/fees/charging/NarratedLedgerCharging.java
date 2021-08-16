@@ -29,7 +29,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -45,7 +45,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private final HederaLedger ledger;
 	private final FeeExemptions feeExemptions;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 	private long nodeFee;
@@ -64,7 +64,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 			HederaLedger ledger,
 			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.ledger = ledger;
 		this.accounts = accounts;

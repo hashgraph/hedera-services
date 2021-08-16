@@ -48,6 +48,8 @@ import com.hedera.services.state.org.LegacyStateChildIndices;
 import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.org.StateVersions;
+import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
+import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -413,7 +415,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	MerkleNode createAccounts() {
 		try {
-			return new VirtualMap<MerkleEntityId, MerkleAccount>(new VFCDataSourceImplV3<>(
+			return new VirtualMap<MerkleEntityId, MerkleAccount>(new VFCDataSourceJasperDB<>(
 					Long.BYTES,
 					MerkleEntityId::new,
 					DataFileCommon.VARIABLE_DATA_SIZE,

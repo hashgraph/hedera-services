@@ -71,6 +71,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -485,11 +486,11 @@ public class StateView {
 		return stateChildren == null ? emptyFcm() : stateChildren.getTopics();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public VirtualMap<MerkleEntityId, MerkleAccount> accounts() {
 		return stateChildren == null ? emptyFcm() : stateChildren.getAccounts();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
+	public VirtualMap<MerkleEntityId, MerkleAccount> contracts() {
 		return stateChildren == null ? emptyFcm() : stateChildren.getAccounts();
 	}
 
