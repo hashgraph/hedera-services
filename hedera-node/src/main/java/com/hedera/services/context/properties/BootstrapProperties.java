@@ -180,7 +180,8 @@ public class BootstrapProperties implements PropertySource {
 			"hedera.realm",
 			"hedera.shard",
 			"ledger.numSystemAccounts",
-			"ledger.totalTinyBarFloat"
+			"ledger.totalTinyBarFloat",
+			"tokens.nfts.areQueriesEnabled"
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
@@ -370,6 +371,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),
 			entry("tokens.nfts.maxQueryRange", AS_LONG),
 			entry("tokens.nfts.useTreasuryWildcards", AS_BOOLEAN),
+			entry("tokens.nfts.areQueriesEnabled", AS_BOOLEAN),
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.maxStorageKb", AS_INT),
 			entry("contracts.defaultLifetime", AS_LONG),
