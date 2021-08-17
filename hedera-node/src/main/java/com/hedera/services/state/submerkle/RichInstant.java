@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.ByteBufferSelfSerializable;
@@ -34,6 +35,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
+@ConstructableIgnored
 public class RichInstant implements ByteBufferSelfSerializable {
 	private static final Logger log = LogManager.getLogger(RichInstant.class);
 
@@ -142,7 +144,7 @@ public class RichInstant implements ByteBufferSelfSerializable {
 
 	@Override
 	public long getClassId() {
-		return 0;
+		return 73713701;
 	}
 
 	@Override

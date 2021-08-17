@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +46,7 @@ public class FeeCalcUtils {
 		throw new IllegalStateException("Utility class");
 	}
 
-	public static Timestamp lookupAccountExpiry(MerkleEntityId key, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public static Timestamp lookupAccountExpiry(MerkleEntityId key, VirtualMap<MerkleEntityId, MerkleAccount> accounts) {
 		try {
 			MerkleAccount account = accounts.get(key);
 			long expiration = account.getExpiry();

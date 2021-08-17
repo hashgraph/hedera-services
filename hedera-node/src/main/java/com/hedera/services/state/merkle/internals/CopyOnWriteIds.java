@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle.internals;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
 import java.io.IOException;
@@ -50,6 +51,7 @@ import static java.util.Comparator.comparingLong;
  * {@code a} and {@code aCopy = a.copy()}, both instances will share
  * the same {@code long[] ids} array until one is mutated.
  */
+@ConstructableIgnored
 public class CopyOnWriteIds implements ByteBufferSelfSerializable {
 	private static final int NUM_OFFSET = 0;
 	private static final int REALM_OFFSET = 1;
@@ -343,7 +345,7 @@ public class CopyOnWriteIds implements ByteBufferSelfSerializable {
 
 	@Override
 	public long getClassId() {
-		return 0;
+		return 59824572;
 	}
 
 	@Override

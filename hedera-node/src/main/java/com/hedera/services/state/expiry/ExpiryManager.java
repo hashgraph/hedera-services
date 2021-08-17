@@ -122,7 +122,13 @@ public class ExpiryManager {
 
 		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		final var currentAccounts = accounts.get();
-		currentAccounts.forEach((id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
+
+		System.out.println("ACCOUNTS " + accounts.get());
+		for (var iter = currentAccounts.entries(); iter.hasNext(); ) {
+			Map.Entry<MerkleEntityId, MerkleAccount> entry = iter.next();
+			stageExpiringRecords(entry.getKey().getNum(), entry.getValue().records(), _payerExpiries);
+		}
+
 		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
 		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 

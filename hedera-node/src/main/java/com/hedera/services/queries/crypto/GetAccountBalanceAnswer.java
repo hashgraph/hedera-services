@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.Optional;
 
@@ -55,7 +55,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
+		VirtualMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
 		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 		return validityOf(op, accounts);
 	}
@@ -72,7 +72,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
+		VirtualMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
 		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
 		AccountID id = targetOf(op);
@@ -112,7 +112,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 	private ResponseCodeEnum validityOf(
 			CryptoGetAccountBalanceQuery op,
-			FCMap<MerkleEntityId, MerkleAccount> accounts
+			VirtualMap<MerkleEntityId, MerkleAccount> accounts
 	) {
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
