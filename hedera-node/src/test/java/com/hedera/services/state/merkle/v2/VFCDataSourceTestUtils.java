@@ -244,12 +244,6 @@ public class VFCDataSourceTestUtils {
         }
 
         @Override
-        public void update(ByteBuffer buffer) throws IOException {
-            buffer.putInt(id);
-            buffer.put(data);
-        }
-
-        @Override
         public VirtualValue copy() {
             return this;
         }

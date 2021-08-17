@@ -13,7 +13,7 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 /**
  * Writer for creating a data file. This is designed to be used from a single thread.
  *
- * A data files contains a number of data items. Each data item is written to the file like this:
+ * A data file contains a number of data items. Each data item is written to the file like this:
  *
  * <ul>
  *     <li>integer - value data length in bytes (ONLY IF NOT IN FIXED SIZE MODE)</li>
@@ -27,19 +27,22 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 @SuppressWarnings("DuplicatedCode")
 public final class DataFileWriter {
     private final BufferedOutputStream writingStream;
-    private final boolean isMergeFile;
-    private final int dataSize;
-    private final boolean hasVariableDataSize;
-    private final int index;
+    private final boolean isMergeFile; // Might not need it. Was keeping track of "original" file vs. "merge" file
+    private final int dataSize; // size of value data or -1 if variable length (see commons for constant)
+    private final boolean hasVariableDataSize; // computed based on dataSize.
+    private final int index; // file index number
+    // moment in time when the file should be considered as existing for.
+    // When we merge files, we take the newest timestamp of the set of merge files and give it to this new file.
     private final Instant creationInstant;
     private final Path path;
     private final Path lockFilePath;
-    private ByteBuffer tempWriteBuffer = null;
-    private long writePosition = 0;
-    private long dataItemCount = 0;
+    private ByteBuffer tempWriteBuffer = null; // reused for perf
+    private long writePosition = 0; // position in the file to write next
+    private long dataItemCount = 0; // number if items already written to the file
 
     /**
-     * Create a new data file in the given directory, in append mode.
+     * Create a new data file in the given directory, in append mode. Puts the object into "writing" mode
+     * (i.e. creates a lock file. So you'd better start writing data and be sure to finish it off).
      *
      * @param filePrefix string prefix for all files, must not contain "_" chars
      * @param dataFileDir the path to directory to create the data file in
@@ -54,23 +57,23 @@ public final class DataFileWriter {
         this.hasVariableDataSize = dataSize == VARIABLE_DATA_SIZE;
         this.isMergeFile = isMergeFile;
         this.creationInstant = creationTime;
-        this.path = createDataFilePath(filePrefix,dataFileDir,index, creationInstant);
+        this.path = createDataFilePath(filePrefix, dataFileDir, index, creationInstant);
         this.lockFilePath = getLockFilePath(path);
-        if (Files.exists(lockFilePath)) throw new IOException("Tried to start writing to data file ["+path+"] when lock file already existed");
+        if (Files.exists(lockFilePath)) throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
         writingStream = new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 4*1024*1024);
         Files.createFile(lockFilePath);
     }
 
     /**
-     * Get the number of bytes written so far plus footer size.
+     * Get the number of bytes written so far plus footer size. Tells you what the size of the file would
+     * be at this moment in time if you were to close it now.
      */
     public long getFileSizeEstimate() {
-        int paddingBytesNeeded = (int)(DataFileCommon.PAGE_SIZE - (writePosition % DataFileCommon.PAGE_SIZE));
-        return writePosition + paddingBytesNeeded + FOOTER_SIZE;
+        return writePosition + computePaddingLength() + FOOTER_SIZE;
     }
 
     /**
-     * Get the path for the file being written
+     * Get the path for the file being written. Useful when needing to get a reader to the file.
      */
     public Path getPath() {
         return path;
@@ -80,12 +83,12 @@ public final class DataFileWriter {
      * Store data in provided ByteBuffer from its current position to its limit.
      *
      * @param key a long key
-     * @param dataToStore buffer containing data to be written, must be rewound
+     * @param dataToStore buffer containing data to be written, must be rewound and limit set correctly
      * @return the data location of written data in bytes
      * @throws IOException If there was a problem appending data to file
      */
     public synchronized long storeData(long key, ByteBuffer dataToStore) throws IOException {
-        final int dataValueSize,dataSize;
+        final int dataValueSize, dataSize;
         final ByteBuffer tempWriteBuffer;
         if (hasVariableDataSize) {
             dataValueSize = dataToStore.remaining();
@@ -96,7 +99,7 @@ public final class DataFileWriter {
         } else {
             dataValueSize = this.dataSize;
             if (dataToStore.remaining() != dataValueSize) {
-                throw new BufferTooSmallException(dataValueSize,dataToStore.remaining());
+                throw new BufferTooSmallException(dataValueSize, dataToStore.remaining());
             }
             dataSize = DataFileCommon.KEY_SIZE + dataValueSize;
             tempWriteBuffer = getTempWriteBuffer(dataSize);
@@ -109,11 +112,11 @@ public final class DataFileWriter {
         tempWriteBuffer.put(dataToStore);
         // write temp buffer to file
         tempWriteBuffer.flip();
-        writingStream.write(tempWriteBuffer.array(),tempWriteBuffer.position(), tempWriteBuffer.limit() -tempWriteBuffer.position());
+        writingStream.write(tempWriteBuffer.array(), tempWriteBuffer.position(), tempWriteBuffer.limit() - tempWriteBuffer.position());
         // increment data item counter
-        dataItemCount ++;
+        dataItemCount++;
         // return the offset where we wrote the data
-        return DataFileCommon.dataLocation(index,byteOffset);
+        return DataFileCommon.dataLocation(index, byteOffset);
     }
 
     /**
@@ -131,18 +134,18 @@ public final class DataFileWriter {
      * @throws IOException If there was a problem appending data to file
      */
     public synchronized long storeData(ByteBuffer blockBuffer) throws IOException {
+        // This method is called by merge
         if (!hasVariableDataSize && (blockBuffer.remaining() != (dataSize+KEY_SIZE))) {
             throw new BufferTooSmallException(dataSize+KEY_SIZE,blockBuffer.remaining());
         }
-        final int dataSize = hasVariableDataSize ? blockBuffer.remaining() : KEY_SIZE+this.dataSize;
         final long byteOffset = writePosition;
-        writePosition += dataSize;
+        writePosition += blockBuffer.remaining();
         // write temp buffer to file
-        writingStream.write(blockBuffer.array(),blockBuffer.position(), blockBuffer.limit() -blockBuffer.position());
+        writingStream.write(blockBuffer.array(), blockBuffer.position(), blockBuffer.limit() - blockBuffer.position());
         // increment data item counter
-        dataItemCount ++;
+        dataItemCount++;
         // return the offset where we wrote the data
-        return DataFileCommon.dataLocation(index,byteOffset);
+        return DataFileCommon.dataLocation(index, byteOffset);
     }
 
     /**
@@ -153,19 +156,19 @@ public final class DataFileWriter {
     public synchronized DataFileMetadata finishWriting(long minimumValidKey, long maximumValidKey) throws IOException {
         // pad the end of file till we are a whole number of pages
         final ByteBuffer tempWriteBuffer = getTempWriteBuffer(DataFileCommon.PAGE_SIZE);
-        int paddingBytesNeeded = (int)(DataFileCommon.PAGE_SIZE - (writePosition % DataFileCommon.PAGE_SIZE));
+        int paddingBytesNeeded = computePaddingLength();
         tempWriteBuffer.position(0);
         for (int i = 0; i < paddingBytesNeeded; i++)  tempWriteBuffer.put((byte)0);
         tempWriteBuffer.flip();
-        writingStream.write(tempWriteBuffer.array(),tempWriteBuffer.position(), paddingBytesNeeded);
+        writingStream.write(tempWriteBuffer.array(), tempWriteBuffer.position(), paddingBytesNeeded);
         writePosition += paddingBytesNeeded;
         // write any metadata to end of file.
-        DataFileMetadata metadataFooter = new DataFileMetadata(DataFileCommon.FILE_FORMAT_VERSION,dataSize,
-                dataItemCount,index, creationInstant,minimumValidKey,maximumValidKey,isMergeFile);
+        DataFileMetadata metadataFooter = new DataFileMetadata(DataFileCommon.FILE_FORMAT_VERSION, dataSize,
+                dataItemCount, index, creationInstant, minimumValidKey, maximumValidKey, isMergeFile);
         ByteBuffer footerData = metadataFooter.getFooterForWriting();
         // write footer to file
-        writingStream.write(footerData.array(),footerData.position(), footerData.limit() -footerData.position());
-        // close and reopen file as read only
+        writingStream.write(footerData.array(), footerData.position(), footerData.limit() - footerData.position());
+        // close
         writingStream.flush();
         writingStream.close();
         // delete lock file
@@ -185,5 +188,9 @@ public final class DataFileWriter {
         }
         tempWriteBuffer.limit(size);
         return tempWriteBuffer;
+    }
+
+    private int computePaddingLength() {
+        return (int)(DataFileCommon.PAGE_SIZE - (writePosition % DataFileCommon.PAGE_SIZE));
     }
 }

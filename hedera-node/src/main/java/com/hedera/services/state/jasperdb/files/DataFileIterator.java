@@ -38,7 +38,7 @@ public final class DataFileIterator implements AutoCloseable {
             this.hasVariableSizedData = metadata.hasVariableSizeData();
             if (!this.hasVariableSizedData) this.currentDataItemSizeBytes = KEY_SIZE + metadata.getDataItemValueSize();
             this.inputStream = new DataInputStream(new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ),
-                    1024*1024)); // 1Mb buffer
+                    1024*1024)); // 1Mb buffer TODO perf profile the size to use
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -64,7 +64,7 @@ public final class DataFileIterator implements AutoCloseable {
         // if we are reading a file with variableSized data we need to read the item size first
         if (hasVariableSizedData) {
             // read ahead 12 bytes in stream, then rewind back
-            inputStream.mark(Integer.BYTES+Long.BYTES);
+            inputStream.mark(Integer.BYTES + Long.BYTES);
             // read data value size
             currentDataItemSizeBytes = Integer.BYTES + KEY_SIZE + inputStream.readInt();
             // read key
@@ -86,8 +86,11 @@ public final class DataFileIterator implements AutoCloseable {
             dataItemBuffer.position(0);
         }
         // read dataItem from file
+        // TODO We can avoid reading the data at this point and read it later only if it is needed. The merging
+        // code may determine that we don't need to read this data at all. It would be better to skip the bytes
+        // than to read them if we don't need them.
         int readBytes = inputStream.read(dataItemBuffer.array(),0,currentDataItemSizeBytes);
-        if (readBytes < currentDataItemSizeBytes) throw new EOFException("Was tring to read a data item ["+currentDataItem+"] but ran out of data in the file ["+path+"].");
+        if (readBytes < currentDataItemSizeBytes) throw new EOFException("Was trying to read a data item ["+currentDataItem+"] but ran out of data in the file ["+path+"].");
         // increment dataItem and current byte position
         currentDataItemByteOffset = nextDataItemByteOffset;
         nextDataItemByteOffset += currentDataItemSizeBytes;

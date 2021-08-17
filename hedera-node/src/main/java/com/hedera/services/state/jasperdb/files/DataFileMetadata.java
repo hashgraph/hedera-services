@@ -19,8 +19,8 @@ public final class DataFileMetadata {
     private final long dataItemCount;
     private final int index;
     private final Instant creationDate;
-    private final long minimumValidKey;
-    private final long maximumValidKey;
+    private final long minimumValidKey; // minLeafPath at the time this file was created (assuming key==path)
+    private final long maximumValidKey; // maxLeafPath at the time this file was created (assuming key==path)
     private final boolean isMergeFile;
 
     public DataFileMetadata(int fileFormatVersion, int dataItemValueSize, long dataItemCount, int index,

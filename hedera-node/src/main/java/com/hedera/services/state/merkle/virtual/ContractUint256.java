@@ -174,11 +174,6 @@ public class ContractUint256 implements VirtualKey, VirtualValue {
     }
 
     @Override
-    public void update(ByteBuffer byteBuffer) throws IOException {
-        serialize(byteBuffer);
-    }
-
-    @Override
     public ContractUint256 copy() {
         // It is immutable anyway
         return new ContractUint256(this);
