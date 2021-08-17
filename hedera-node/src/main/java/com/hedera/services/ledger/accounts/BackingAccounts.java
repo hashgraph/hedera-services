@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -44,9 +45,11 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	@Override
 	public void rebuildFromSources() {
 		existingAccounts.clear();
-		delegate.get().keySet().stream()
-				.map(MerkleEntityId::toAccountId)
-				.forEach(existingAccounts::add);
+
+		for (var iter = delegate.get().entries(); iter.hasNext(); ) {
+			Map.Entry<MerkleEntityId, MerkleAccount> entry = iter.next();
+			existingAccounts.add(entry.getKey().toAccountId());
+		}
 	}
 
 	@Override

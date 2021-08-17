@@ -22,9 +22,9 @@ package com.hedera.services.state.validation;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 public interface LedgerValidator {
-	void assertIdsAreValid(FCMap<MerkleEntityId, MerkleAccount> accounts);
-	boolean hasExpectedTotalBalance(FCMap<MerkleEntityId, MerkleAccount> accounts);
+	void assertIdsAreValid(VirtualMap<MerkleEntityId, MerkleAccount> accounts);
+	boolean hasExpectedTotalBalance(VirtualMap<MerkleEntityId, MerkleAccount> accounts);
 }

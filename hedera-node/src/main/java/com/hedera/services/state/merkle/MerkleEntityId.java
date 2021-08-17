@@ -30,12 +30,12 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualLongKey;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class MerkleEntityId extends AbstractMerkleLeaf implements VirtualKey {
+public class MerkleEntityId extends AbstractMerkleLeaf implements VirtualLongKey {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd5dd2ebaa0bde03L;
 
@@ -206,5 +206,10 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements VirtualKey {
 	@Override
 	public boolean equals(ByteBuffer buffer, int version) throws IOException {
 		return buffer.getLong() == num;
+	}
+
+	@Override
+	public long getKeyAsLong() {
+		return num;
 	}
 }
