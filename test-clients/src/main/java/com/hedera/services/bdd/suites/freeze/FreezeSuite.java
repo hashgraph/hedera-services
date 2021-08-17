@@ -20,108 +20,102 @@ package com.hedera.services.bdd.suites.freeze;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.regression.Utilities;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.regression.Utilities;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class FreezeSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
+  private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
-	private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
-	private static final String UPDATE_NEW_FILE = UPLOAD_PATH_PREFIX + "addNewFile/newFile.zip";
-	private static String zipFile = "Archive.zip";
+  private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
+  private static final String UPDATE_NEW_FILE = UPLOAD_PATH_PREFIX + "addNewFile/newFile.zip";
+  private static String zipFile = "Archive.zip";
 
-	private int startHour;
-	private int startMin;
-	private int endHour;
-	private int endMin;
-	private static String uploadPath = "updateSettings";
-	private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
+  private int startHour;
+  private int startMin;
+  private int endHour;
+  private int endMin;
+  private static String uploadPath = "updateSettings";
+  private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
-	public static void main(String... args) {
+  public static void main(String... args) {
 
-		if (args.length > 0) {
-			uploadPath = args[0];
-		}
-		new FreezeSuite().runSuiteSync();
-	}
+    if (args.length > 0) {
+      uploadPath = args[0];
+    }
+    new FreezeSuite().runSuiteSync();
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return allOf(positiveTests(), negativeTests());
+  }
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
+  private List<HapiApiSpec> positiveTests() {
+    return Arrays.asList();
+  }
 
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-				uploadNewFile()
-		);
-	}
+  private List<HapiApiSpec> negativeTests() {
+    return Arrays.asList(uploadNewFile());
+  }
 
-	private HapiApiSpec uploadNewFile() {
-		String uploadFile = UPDATE_NEW_FILE;
-		generateFreezeTime(1);
-		if (uploadPath != null) {
-			log.info("Creating zip file from " + uploadPath);
-			createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
-			uploadFile = zipFile;
-		}
+  private HapiApiSpec uploadNewFile() {
+    String uploadFile = UPDATE_NEW_FILE;
+    generateFreezeTime(1);
+    if (uploadPath != null) {
+      log.info("Creating zip file from " + uploadPath);
+      createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
+      uploadFile = zipFile;
+    }
 
-		log.info("Uploading file " + uploadFile);
-		File f = new File(uploadFile);
-		byte[] bytes = new byte[0];
-		try {
-			bytes = Files.readAllBytes(f.toPath());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		final byte[] hash = UpdateFile150.sha384Digest(bytes);
+    log.info("Uploading file " + uploadFile);
+    File f = new File(uploadFile);
+    byte[] bytes = new byte[0];
+    try {
+      bytes = Files.readAllBytes(f.toPath());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    final byte[] hash = UpdateFile150.sha384Digest(bytes);
 
-		return defaultHapiSpec("uploadFileAndUpdate")
-				.given(
-						fileUpdate(fileIDString).path(uploadFile)
-						.payingWith(GENESIS)
-				).when(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash)
-								.payingWith(GENESIS)
-								.startingIn(60).seconds().andLasting(1).minutes()
-				).then(
-				);
-	}
+    return defaultHapiSpec("uploadFileAndUpdate")
+        .given(fileUpdate(fileIDString).path(uploadFile).payingWith(GENESIS))
+        .when(
+            freeze()
+                .setFileID(fileIDString)
+                .setFileHash(hash)
+                .payingWith(GENESIS)
+                .startingIn(60)
+                .seconds()
+                .andLasting(1)
+                .minutes())
+        .then();
+  }
 
-	private void generateFreezeTime(int freezeDurationMinutes) {
-		long freezeStartTimeMillis = System.currentTimeMillis() + 60000l;
-		int[] startHourMin = Utilities.getUTCHourMinFromMillis(freezeStartTimeMillis);
-		startHour = startHourMin[0];
-		startMin = startHourMin[1];
-		endMin = startMin + freezeDurationMinutes;
-		endHour = (startHour + endMin / 60) % 24;
-		endMin = endMin % 60;
-	}
+  private void generateFreezeTime(int freezeDurationMinutes) {
+    long freezeStartTimeMillis = System.currentTimeMillis() + 60000l;
+    int[] startHourMin = Utilities.getUTCHourMinFromMillis(freezeStartTimeMillis);
+    startHour = startHourMin[0];
+    startMin = startHourMin[1];
+    endMin = startMin + freezeDurationMinutes;
+    endHour = (startHour + endMin / 60) % 24;
+    endMin = endMin % 60;
+  }
 }

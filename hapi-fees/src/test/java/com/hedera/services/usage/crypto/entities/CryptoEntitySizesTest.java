@@ -20,28 +20,28 @@ package com.hedera.services.usage.crypto.entities;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+
 class CryptoEntitySizesTest {
-	private CryptoEntitySizes subject = CRYPTO_ENTITY_SIZES;
+  private CryptoEntitySizes subject = CRYPTO_ENTITY_SIZES;
 
-	@Test
-	void knowsExpectedFixedBytes() {
-		// expect:
-		assertEquals(3 * BOOL_SIZE + 5 * LONG_SIZE, subject.fixedBytesInAccountRepr());
-	}
+  @Test
+  void knowsExpectedFixedBytes() {
+    // expect:
+    assertEquals(3 * BOOL_SIZE + 5 * LONG_SIZE, subject.fixedBytesInAccountRepr());
+  }
 
-	@Test
-	void knowsTotalBytes() {
-		// when:
-		var actual = subject.bytesInTokenAssocRepr();
+  @Test
+  void knowsTotalBytes() {
+    // when:
+    var actual = subject.bytesInTokenAssocRepr();
 
-		// then:
-		assertEquals(LONG_SIZE + 2 * BOOL_SIZE, actual);
-	}
+    // then:
+    assertEquals(LONG_SIZE + 2 * BOOL_SIZE, actual);
+  }
 }

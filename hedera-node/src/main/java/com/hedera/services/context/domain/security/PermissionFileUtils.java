@@ -20,15 +20,6 @@ package com.hedera.services.context.domain.security;
  * ‍
  */
 
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -91,89 +82,99 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class PermissionFileUtils {
-	private static final EnumMap<HederaFunctionality, String> permissionKeys = new EnumMap<>(HederaFunctionality.class);
-	static final Map<String, HederaFunctionality> legacyKeys;
+  private static final EnumMap<HederaFunctionality, String> permissionKeys =
+      new EnumMap<>(HederaFunctionality.class);
+  static final Map<String, HederaFunctionality> legacyKeys;
 
-	public static String permissionFileKeyForTxn(TransactionBody txn) {
-		try {
-			return permissionKeys.get(functionOf(txn));
-		} catch (UnknownHederaFunctionality ignore) {
-			return "";
-		}
-	}
+  public static String permissionFileKeyForTxn(TransactionBody txn) {
+    try {
+      return permissionKeys.get(functionOf(txn));
+    } catch (UnknownHederaFunctionality ignore) {
+      return "";
+    }
+  }
 
-	public static String permissionFileKeyForQuery(Query query) {
-		if (query.getQueryCase() == TRANSACTIONGETFASTRECORD) {
-			return "getFastTransactionRecord";
-		} else {
-			return functionalityOfQuery(query).map(permissionKeys::get).orElse("");
-		}
-	}
+  public static String permissionFileKeyForQuery(Query query) {
+    if (query.getQueryCase() == TRANSACTIONGETFASTRECORD) {
+      return "getFastTransactionRecord";
+    } else {
+      return functionalityOfQuery(query).map(permissionKeys::get).orElse("");
+    }
+  }
 
-	static {
-		/* Transactions */
-		permissionKeys.put(CryptoCreate, "createAccount");
-		permissionKeys.put(CryptoTransfer, "cryptoTransfer");
-		permissionKeys.put(CryptoUpdate, "updateAccount");
-		permissionKeys.put(CryptoDelete, "cryptoDelete");
-		permissionKeys.put(CryptoAddLiveHash, "addLiveHash");
-		permissionKeys.put(CryptoDeleteLiveHash, "deleteLiveHash");
-		permissionKeys.put(FileCreate, "createFile");
-		permissionKeys.put(FileUpdate, "updateFile");
-		permissionKeys.put(FileDelete, "deleteFile");
-		permissionKeys.put(FileAppend, "appendContent");
-		permissionKeys.put(ContractCreate, "createContract");
-		permissionKeys.put(ContractUpdate, "updateContract");
-		permissionKeys.put(ContractCall, "contractCallMethod");
-		permissionKeys.put(ContractDelete, "deleteContract");
-		permissionKeys.put(ConsensusCreateTopic, "createTopic");
-		permissionKeys.put(ConsensusUpdateTopic, "updateTopic");
-		permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
-		permissionKeys.put(ConsensusSubmitMessage, "submitMessage");
-		permissionKeys.put(TokenCreate, "tokenCreate");
-		permissionKeys.put(TokenFreezeAccount, "tokenFreezeAccount");
-		permissionKeys.put(TokenUnfreezeAccount, "tokenUnfreezeAccount");
-		permissionKeys.put(TokenGrantKycToAccount, "tokenGrantKycToAccount");
-		permissionKeys.put(TokenRevokeKycFromAccount, "tokenRevokeKycFromAccount");
-		permissionKeys.put(TokenDelete, "tokenDelete");
-		permissionKeys.put(TokenMint, "tokenMint");
-		permissionKeys.put(TokenBurn, "tokenBurn");
-		permissionKeys.put(TokenAccountWipe, "tokenAccountWipe");
-		permissionKeys.put(TokenUpdate, "tokenUpdate");
-		permissionKeys.put(TokenAssociateToAccount, "tokenAssociateToAccount");
-		permissionKeys.put(TokenDissociateFromAccount, "tokenDissociateFromAccount");
-		permissionKeys.put(SystemDelete, "systemDelete");
-		permissionKeys.put(SystemUndelete, "systemUndelete");
-		permissionKeys.put(Freeze, "freeze");
-		permissionKeys.put(UncheckedSubmit, "uncheckedSubmit");
-		permissionKeys.put(ScheduleCreate, "scheduleCreate");
-		permissionKeys.put(ScheduleDelete, "scheduleDelete");
-		permissionKeys.put(ScheduleSign, "scheduleSign");
-		/* Queries */
-		permissionKeys.put(ConsensusGetTopicInfo, "getTopicInfo");
-		permissionKeys.put(GetBySolidityID, "getBySolidityID");
-		permissionKeys.put(ContractCallLocal, "contractCallLocalMethod");
-		permissionKeys.put(ContractGetInfo, "getContractInfo");
-		permissionKeys.put(ContractGetBytecode, "contractGetBytecode");
-		permissionKeys.put(ContractGetRecords, "getTxRecordByContractID");
-		permissionKeys.put(CryptoGetAccountBalance, "cryptoGetBalance");
-		permissionKeys.put(CryptoGetAccountRecords, "getAccountRecords");
-		permissionKeys.put(CryptoGetInfo, "getAccountInfo");
-		permissionKeys.put(CryptoGetLiveHash, "getLiveHash");
-		permissionKeys.put(FileGetContents, "getFileContent");
-		permissionKeys.put(FileGetInfo, "getFileInfo");
-		permissionKeys.put(TransactionGetReceipt, "getTransactionReceipts");
-		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
-		permissionKeys.put(GetVersionInfo, "getVersionInfo");
-		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
-		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
-		permissionKeys.put(TokenGetNftInfo, "tokenGetNftInfo");
-		permissionKeys.put(TokenGetNftInfos, "tokenGetNftInfos");
-		permissionKeys.put(TokenGetAccountNftInfos, "tokenGetAccountNftInfos");
-		permissionKeys.put(TokenFeeScheduleUpdate, "tokenFeeScheduleUpdate");
+  static {
+    /* Transactions */
+    permissionKeys.put(CryptoCreate, "createAccount");
+    permissionKeys.put(CryptoTransfer, "cryptoTransfer");
+    permissionKeys.put(CryptoUpdate, "updateAccount");
+    permissionKeys.put(CryptoDelete, "cryptoDelete");
+    permissionKeys.put(CryptoAddLiveHash, "addLiveHash");
+    permissionKeys.put(CryptoDeleteLiveHash, "deleteLiveHash");
+    permissionKeys.put(FileCreate, "createFile");
+    permissionKeys.put(FileUpdate, "updateFile");
+    permissionKeys.put(FileDelete, "deleteFile");
+    permissionKeys.put(FileAppend, "appendContent");
+    permissionKeys.put(ContractCreate, "createContract");
+    permissionKeys.put(ContractUpdate, "updateContract");
+    permissionKeys.put(ContractCall, "contractCallMethod");
+    permissionKeys.put(ContractDelete, "deleteContract");
+    permissionKeys.put(ConsensusCreateTopic, "createTopic");
+    permissionKeys.put(ConsensusUpdateTopic, "updateTopic");
+    permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
+    permissionKeys.put(ConsensusSubmitMessage, "submitMessage");
+    permissionKeys.put(TokenCreate, "tokenCreate");
+    permissionKeys.put(TokenFreezeAccount, "tokenFreezeAccount");
+    permissionKeys.put(TokenUnfreezeAccount, "tokenUnfreezeAccount");
+    permissionKeys.put(TokenGrantKycToAccount, "tokenGrantKycToAccount");
+    permissionKeys.put(TokenRevokeKycFromAccount, "tokenRevokeKycFromAccount");
+    permissionKeys.put(TokenDelete, "tokenDelete");
+    permissionKeys.put(TokenMint, "tokenMint");
+    permissionKeys.put(TokenBurn, "tokenBurn");
+    permissionKeys.put(TokenAccountWipe, "tokenAccountWipe");
+    permissionKeys.put(TokenUpdate, "tokenUpdate");
+    permissionKeys.put(TokenAssociateToAccount, "tokenAssociateToAccount");
+    permissionKeys.put(TokenDissociateFromAccount, "tokenDissociateFromAccount");
+    permissionKeys.put(SystemDelete, "systemDelete");
+    permissionKeys.put(SystemUndelete, "systemUndelete");
+    permissionKeys.put(Freeze, "freeze");
+    permissionKeys.put(UncheckedSubmit, "uncheckedSubmit");
+    permissionKeys.put(ScheduleCreate, "scheduleCreate");
+    permissionKeys.put(ScheduleDelete, "scheduleDelete");
+    permissionKeys.put(ScheduleSign, "scheduleSign");
+    /* Queries */
+    permissionKeys.put(ConsensusGetTopicInfo, "getTopicInfo");
+    permissionKeys.put(GetBySolidityID, "getBySolidityID");
+    permissionKeys.put(ContractCallLocal, "contractCallLocalMethod");
+    permissionKeys.put(ContractGetInfo, "getContractInfo");
+    permissionKeys.put(ContractGetBytecode, "contractGetBytecode");
+    permissionKeys.put(ContractGetRecords, "getTxRecordByContractID");
+    permissionKeys.put(CryptoGetAccountBalance, "cryptoGetBalance");
+    permissionKeys.put(CryptoGetAccountRecords, "getAccountRecords");
+    permissionKeys.put(CryptoGetInfo, "getAccountInfo");
+    permissionKeys.put(CryptoGetLiveHash, "getLiveHash");
+    permissionKeys.put(FileGetContents, "getFileContent");
+    permissionKeys.put(FileGetInfo, "getFileInfo");
+    permissionKeys.put(TransactionGetReceipt, "getTransactionReceipts");
+    permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
+    permissionKeys.put(GetVersionInfo, "getVersionInfo");
+    permissionKeys.put(TokenGetInfo, "tokenGetInfo");
+    permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
+    permissionKeys.put(TokenGetNftInfo, "tokenGetNftInfo");
+    permissionKeys.put(TokenGetNftInfos, "tokenGetNftInfos");
+    permissionKeys.put(TokenGetAccountNftInfos, "tokenGetAccountNftInfos");
+    permissionKeys.put(TokenFeeScheduleUpdate, "tokenFeeScheduleUpdate");
 
-		legacyKeys = permissionKeys.entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-	}
+    legacyKeys =
+        permissionKeys.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+  }
 }

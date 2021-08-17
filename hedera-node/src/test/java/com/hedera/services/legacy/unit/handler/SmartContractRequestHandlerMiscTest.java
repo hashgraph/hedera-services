@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,13 @@ package com.hedera.services.legacy.unit.handler;
  * limitations under the License.
  * ‍
  */
+
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -75,6 +82,13 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Date;
 import org.ethereum.core.AccountState;
 import org.ethereum.crypto.HashUtil;
 import org.ethereum.datasource.DbSource;
@@ -86,26 +100,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Date;
-
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-
 /**
  * @author oc/peter
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
-
 class SmartContractRequestHandlerMiscTest {
 
   private static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
@@ -145,19 +143,19 @@ class SmartContractRequestHandlerMiscTest {
   /**
    * TestInstance.Lifecycle.PER_CLASS is used to force non static implementation of BeforeAll When
    * using this mode, a new test instance will be created once per test class. Thus, if your test
-   * methods rely on state stored in instance variables, you may need to reset that state in
-   *
-   * @BeforeEach or @AfterEach methods.
+   * methods rely on state stored in instance variables, you may need to reset that state
+   * in @BeforeEach or @AfterEach methods.
    */
-
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
-    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate =
+        new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
             new BackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
-    ledger = new HederaLedger(
+    ledger =
+        new HederaLedger(
             mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
@@ -176,16 +174,16 @@ class SmartContractRequestHandlerMiscTest {
   void setUp() throws Exception {
     // setup:
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(MerklePair.class, MerklePair::new));
+        new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
-    //Init FCMap
+    // Init FCMap
     fcMap = new FCMap<>();
     storageMap = new FCMap<>();
     // Create accounts
@@ -193,22 +191,18 @@ class SmartContractRequestHandlerMiscTest {
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
 
-    //Init Repository
+    // Init Repository
     repository = getLocalRepositoryInstance();
 
     gasPrice = new BigInteger("1");
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
     long expiryTime = Long.MAX_VALUE;
-    rates = RequestBuilder
-            .getExchangeRateSetBuilder(
-                    1, 12,
-                    expiryTime,
-                    1, 15,
-                    expiryTime);
+    rates = RequestBuilder.getExchangeRateSetBuilder(1, 12, expiryTime, 1, 15, expiryTime);
     given(exchange.activeRates()).willReturn(rates);
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
-    smartHandler = new SmartContractRequestHandler(
+    smartHandler =
+        new SmartContractRequestHandler(
             repository,
             ledger,
             () -> fcMap,
@@ -254,18 +248,29 @@ class SmartContractRequestHandlerMiscTest {
     }
     ByteString fileData = ByteString.copyFrom(fileBytes);
 
-    Timestamp startTime = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()));
-    Timestamp expTime = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(130));
+    Timestamp startTime = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()));
+    Timestamp expTime =
+        RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(130));
     Duration transactionDuration = RequestBuilder.getDuration(100);
     boolean generateRecord = true;
     String memo = "SmartContractFile";
 
-    Transaction txn = RequestBuilder.getFileCreateBuilder(payerAccount, 0L, 0L,
-        nodeAccount, 0L, 0L,
-        100L, startTime, transactionDuration, generateRecord,
-        memo, fileData, expTime, Collections.emptyList());
+    Transaction txn =
+        RequestBuilder.getFileCreateBuilder(
+            payerAccount,
+            0L,
+            0L,
+            nodeAccount,
+            0L,
+            0L,
+            100L,
+            startTime,
+            transactionDuration,
+            generateRecord,
+            memo,
+            fileData,
+            expTime,
+            Collections.emptyList());
 
     TransactionBody body = null;
     try {
@@ -285,25 +290,38 @@ class SmartContractRequestHandlerMiscTest {
     return fileBytes;
   }
 
-
   private TransactionBody getCreateTransactionBody() {
     return getCreateTransactionBody(0L, 250000L, null);
   }
 
   private TransactionBody getCreateTransactionBody(long initialBalance, long gas, Key adminKey) {
-    Timestamp startTime = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()));
+    Timestamp startTime = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()));
     Duration transactionDuration = RequestBuilder.getDuration(100);
     Duration renewalDuration = RequestBuilder.getDuration(3600 * 24);
     boolean generateRecord = true;
     String memo = "SmartContract";
     String sCMemo = "SmartContractMemo";
 
-    Transaction txn = RequestBuilder.getCreateContractRequest(payerAccount, 0L, 0L,
-        nodeAccount, 0L, 0L,
-        100L, startTime, transactionDuration, generateRecord,
-        memo, gas, contractFileId, ByteString.EMPTY, initialBalance,
-        renewalDuration, sCMemo, adminKey);
+    Transaction txn =
+        RequestBuilder.getCreateContractRequest(
+            payerAccount,
+            0L,
+            0L,
+            nodeAccount,
+            0L,
+            0L,
+            100L,
+            startTime,
+            transactionDuration,
+            generateRecord,
+            memo,
+            gas,
+            contractFileId,
+            ByteString.EMPTY,
+            initialBalance,
+            renewalDuration,
+            sCMemo,
+            adminKey);
 
     TransactionBody body = null;
     try {
@@ -323,12 +341,14 @@ class SmartContractRequestHandlerMiscTest {
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getKey());
     Assertions.assertTrue(mv.getKey() instanceof JContractIDKey);
-    String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
+    String bytesPath =
+        String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
   }
 
   private void checkContractDataArtifactExists(ContractID contractId) {
-    String bytesPath = String.format("/%d/d%d", contractId.getRealmNum(), contractId.getContractNum());
+    String bytesPath =
+        String.format("/%d/d%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
   }
 
@@ -341,32 +361,42 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
     Assertions.assertTrue(record.hasContractCreateResult());
 
     ContractID newContractId = record.getReceipt().getContractID();
     checkContractArtifactsExist(newContractId);
   }
 
-
-  private TransactionBody getCallTransactionBody(ContractID newContractId,
-      ByteString functionData, long gas, long value) {
-    Timestamp startTime = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()));
+  private TransactionBody getCallTransactionBody(
+      ContractID newContractId, ByteString functionData, long gas, long value) {
+    Timestamp startTime = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()));
     Duration transactionDuration = RequestBuilder.getDuration(100);
 
-    Transaction txn = RequestBuilder.getContractCallRequest(payerAccount, 0L, 0L,
-        nodeAccount, 0L, 0L,
-        100L /* fee */, startTime,
-        transactionDuration, gas, newContractId,
-        functionData, value);
+    Transaction txn =
+        RequestBuilder.getContractCallRequest(
+            payerAccount,
+            0L,
+            0L,
+            nodeAccount,
+            0L,
+            0L,
+            100L /* fee */,
+            startTime,
+            transactionDuration,
+            gas,
+            newContractId,
+            functionData,
+            value);
 
     TransactionBody body = null;
     try {
@@ -387,7 +417,8 @@ class SmartContractRequestHandlerMiscTest {
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
 
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -404,18 +435,25 @@ class SmartContractRequestHandlerMiscTest {
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
-  private Query getCallLocalQuery(ContractID newContractId,
-      ByteString functionData, long gas, long maxResultSize) {
+  private Query getCallLocalQuery(
+      ContractID newContractId, ByteString functionData, long gas, long maxResultSize) {
 
-    Transaction transferTransaction = TestHelper.createTransferUnsigned(payerAccountId,
-        feeCollAccountId, payerAccountId, nodeAccountId, 100000L /* amount */);
+    Transaction transferTransaction =
+        TestHelper.createTransferUnsigned(
+            payerAccountId, feeCollAccountId, payerAccountId, nodeAccountId, 100000L /* amount */);
 
-    return RequestBuilder.getContractCallLocalQuery(newContractId, gas,
-        functionData, 0L /* value */, maxResultSize,
-        transferTransaction, ResponseType.ANSWER_ONLY);
+    return RequestBuilder.getContractCallLocalQuery(
+        newContractId,
+        gas,
+        functionData,
+        0L /* value */,
+        maxResultSize,
+        transferTransaction,
+        ResponseType.ANSWER_ONLY);
   }
 
   @Test
@@ -427,7 +465,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -460,9 +499,10 @@ class SmartContractRequestHandlerMiscTest {
 
     // Call the contract to get the entry back
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeMapGet(2));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -482,14 +522,16 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
     Assertions.assertTrue(record.hasContractCreateResult());
 
     ContractID newContractId = record.getReceipt().getContractID();
@@ -505,7 +547,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -522,7 +565,8 @@ class SmartContractRequestHandlerMiscTest {
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
@@ -534,7 +578,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -550,9 +595,10 @@ class SmartContractRequestHandlerMiscTest {
     // Call the contract to get a value from the created contract.  The created contract
     // is  hard-coded to return uint 7.
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetIndirect());
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -572,7 +618,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -587,9 +634,10 @@ class SmartContractRequestHandlerMiscTest {
 
     // Call the contract to get the address of the created contract.
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetAddress());
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -616,7 +664,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -631,12 +680,14 @@ class SmartContractRequestHandlerMiscTest {
 
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
-    //validate that contruct function results are empty in case of a failure
+    // validate that contruct function results are empty in case of a failure
     assert (record.hasContractCallResult());
     assert (record.getContractCallResult().getContractCallResult().isEmpty());
     Assertions.assertNotNull(record.getReceipt());
-    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
@@ -648,7 +699,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -666,7 +718,8 @@ class SmartContractRequestHandlerMiscTest {
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
@@ -681,18 +734,21 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     long payerAfter = getBalance(payerAccountId);
     long totalAfter = getTotalBalance();
 
-    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertEquals(
+        ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
     Assertions.assertEquals(totalBefore, totalAfter);
     // In unit testing, no fees, just gas used.  The offered value was not taken from the payer.
-    Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
+    Timestamp consensusTimeStamp =
+        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
     long gasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
     Assertions.assertEquals(
-            record.getContractCreateResult().getGasUsed() * gasPrice, payerBefore - payerAfter);
+        record.getContractCreateResult().getGasUsed() * gasPrice, payerBefore - payerAfter);
   }
 
   @Test
@@ -707,7 +763,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
     long payerAfter = getBalance(payerAccountId);
@@ -715,8 +772,8 @@ class SmartContractRequestHandlerMiscTest {
 
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
     Assertions.assertEquals(totalBefore, totalAfter);
-    Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond())
-        .build();
+    Timestamp consensusTimeStamp =
+        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
     long gasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
     // In unit testing, no fees, just gas used.  The offered value was taken from the payer.
     Assertions.assertEquals(
@@ -733,15 +790,17 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Call the contract to exercise SHL
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -761,16 +820,17 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Call the contract to exercise SHR
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShr(2, 4));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -790,16 +850,17 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Call the contract to exercise SAR
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpSar(2, 4));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -819,19 +880,20 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String contractSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
-        0, 0, newContractId.getContractNum()));
+    String contractSolidityAddress =
+        CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, newContractId.getContractNum()));
 
     // Call the contract to exercise EXTCODEHASH
-    ByteString dataToGet = ByteString
-        .copyFrom(SCEncoding.encodeOpExtCodeHash(contractSolidityAddress));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ByteString dataToGet =
+        ByteString.copyFrom(SCEncoding.encodeOpExtCodeHash(contractSolidityAddress));
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -853,19 +915,20 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String accountSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
-        0, 0, payerAccount));
+    String accountSolidityAddress =
+        CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
 
     // Call the contract to exercise EXTCODEHASH
-    ByteString dataToGet = ByteString
-        .copyFrom(SCEncoding.encodeOpExtCodeHash(accountSolidityAddress));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ByteString dataToGet =
+        ByteString.copyFrom(SCEncoding.encodeOpExtCodeHash(accountSolidityAddress));
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -889,7 +952,8 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -904,9 +968,10 @@ class SmartContractRequestHandlerMiscTest {
 
     // Call the contract to get the address of the created contract.
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetAddress());
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -927,10 +992,8 @@ class SmartContractRequestHandlerMiscTest {
     ContractID opcodeContractId = record.getReceipt().getContractID();
 
     // Call the opcode contract to exercise EXTCODEHASH
-    dataToGet = ByteString
-        .copyFrom(SCEncoding.encodeOpExtCodeHash(innerContractSolidityAddress));
-    cCLQuery = getCallLocalQuery(opcodeContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
+    dataToGet = ByteString.copyFrom(SCEncoding.encodeOpExtCodeHash(innerContractSolidityAddress));
+    cCLQuery = getCallLocalQuery(opcodeContractId, dataToGet, 250000L, 0).getContractCallLocal();
     response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
@@ -953,18 +1016,19 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
     String precompiledSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 3));
 
     // Call the contract to exercise EXTCODEHASH
-    ByteString dataToGet = ByteString
-        .copyFrom(SCEncoding.encodeOpExtCodeHash(precompiledSolidityAddress));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ByteString dataToGet =
+        ByteString.copyFrom(SCEncoding.encodeOpExtCodeHash(precompiledSolidityAddress));
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 0).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -972,7 +1036,8 @@ class SmartContractRequestHandlerMiscTest {
     Assertions.assertNotNull(callResults);
     Assertions.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
-    // Finds existing account and returns not-contract, correct because there is no code at that address.
+    // Finds existing account and returns not-contract, correct because there is no code at that
+    // address.
     String returned = CommonUtils.hex(retVal);
     String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assertions.assertEquals(expected, returned);
@@ -987,16 +1052,17 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Call the contract to exercise SHL
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 1200)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 1200).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -1016,18 +1082,20 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Call the contract to exercise SHL
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 12)
-        .getContractCallLocal();
-    ContractCallLocalResponse response = smartHandler
-        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L, 12).getContractCallLocal();
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
-    Assertions.assertEquals(ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED,
+    Assertions.assertEquals(
+        ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED,
         response.getHeader().getNodeTransactionPrecheckCode());
     Assertions.assertNotNull(response.getFunctionResult().getErrorMessage());
     Assertions.assertTrue(response.getFunctionResult().getErrorMessage().length() > 0);
@@ -1043,10 +1111,9 @@ class SmartContractRequestHandlerMiscTest {
     try {
       repository.close();
     } catch (Throwable tx) {
-      //do nothing now.
+      // do nothing now.
     } finally {
       repository = null;
-
     }
   }
 
@@ -1073,12 +1140,13 @@ class SmartContractRequestHandlerMiscTest {
   }
 
   private long getContractCreateGasPriceInTinyBars(final Timestamp at) {
-    FeeData usagePrices = TEST_USAGE_PRICES.pricesGiven(HederaFunctionality.ContractCreate, at).get(SubType.DEFAULT);
+    FeeData usagePrices =
+        TEST_USAGE_PRICES.pricesGiven(HederaFunctionality.ContractCreate, at).get(SubType.DEFAULT);
     long feeInTinyCents = usagePrices.getServicedata().getGas() / 1000;
-    long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(rates.getCurrentRate(), feeInTinyCents);
+    long feeInTinyBars =
+        FeeBuilder.getTinybarsFromTinyCents(rates.getCurrentRate(), feeInTinyCents);
     return feeInTinyBars == 0 ? 1 : feeInTinyBars;
   }
-
 
   @Test
   @DisplayName("cr Create In Constructor")
@@ -1089,9 +1157,11 @@ class SmartContractRequestHandlerMiscTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertNotEquals(0, record.getContractCreateResult().getContractID().getContractNum());
+    Assertions.assertNotEquals(
+        0, record.getContractCreateResult().getContractID().getContractNum());
   }
 }

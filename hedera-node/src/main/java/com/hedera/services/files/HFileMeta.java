@@ -20,84 +20,83 @@ package com.hedera.services.files;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-
 public class HFileMeta {
-	private JKey wacl;
-	private long expiry;
-	private String memo = DEFAULT_MEMO;
-	private boolean deleted;
+  private JKey wacl;
+  private long expiry;
+  private String memo = DEFAULT_MEMO;
+  private boolean deleted;
 
-	public HFileMeta(boolean deleted, JKey wacl, long expiry) {
-		this.deleted = deleted;
-		this.wacl = wacl;
-		this.expiry = expiry;
-	}
+  public HFileMeta(boolean deleted, JKey wacl, long expiry) {
+    this.deleted = deleted;
+    this.wacl = wacl;
+    this.expiry = expiry;
+  }
 
-	public HFileMeta(boolean deleted, JKey wacl, long expiry, String memo) {
-		this.wacl = wacl;
-		this.memo = memo;
-		this.deleted = deleted;
-		this.expiry = expiry;
-	}
+  public HFileMeta(boolean deleted, JKey wacl, long expiry, String memo) {
+    this.wacl = wacl;
+    this.memo = memo;
+    this.deleted = deleted;
+    this.expiry = expiry;
+  }
 
-	public byte[] serialize() throws IOException {
-		return HFileMetaSerde.serialize(this);
-	}
+  public byte[] serialize() throws IOException {
+    return HFileMetaSerde.serialize(this);
+  }
 
-	public static HFileMeta deserialize(byte[] bytes) throws IOException {
-		DataInputStream stream = new DataInputStream(new ByteArrayInputStream(bytes));
+  public static HFileMeta deserialize(byte[] bytes) throws IOException {
+    DataInputStream stream = new DataInputStream(new ByteArrayInputStream(bytes));
 
-		return HFileMetaSerde.deserialize(stream);
-	}
+    return HFileMetaSerde.deserialize(stream);
+  }
 
-	public boolean isDeleted() {
-		return deleted;
-	}
+  public boolean isDeleted() {
+    return deleted;
+  }
 
-	public void setDeleted(boolean deleted) {
-		this.deleted = deleted;
-	}
+  public void setDeleted(boolean deleted) {
+    this.deleted = deleted;
+  }
 
-	public JKey getWacl() {
-		return wacl;
-	}
+  public JKey getWacl() {
+    return wacl;
+  }
 
-	public void setWacl(JKey wacl) {
-		this.wacl = wacl;
-	}
+  public void setWacl(JKey wacl) {
+    this.wacl = wacl;
+  }
 
-	public long getExpiry() {
-		return expiry;
-	}
+  public long getExpiry() {
+    return expiry;
+  }
 
-	public void setExpiry(long expiry) {
-		this.expiry = expiry;
-	}
+  public void setExpiry(long expiry) {
+    this.expiry = expiry;
+  }
 
-	public String getMemo() {
-		return memo;
-	}
+  public String getMemo() {
+    return memo;
+  }
 
-	public void setMemo(String memo) {
-		this.memo = memo;
-	}
+  public void setMemo(String memo) {
+    this.memo = memo;
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("memo", memo)
-				.add("wacl", MiscUtils.describe(wacl))
-				.add("expiry", expiry)
-				.add("deleted", deleted)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("memo", memo)
+        .add("wacl", MiscUtils.describe(wacl))
+        .add("expiry", expiry)
+        .add("deleted", deleted)
+        .toString();
+  }
 }

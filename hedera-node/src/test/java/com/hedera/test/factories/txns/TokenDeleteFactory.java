@@ -26,33 +26,32 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenDeleteFactory extends SignedTxnFactory<TokenDeleteFactory> {
-	private TokenDeleteFactory() {}
+  private TokenDeleteFactory() {}
 
-	private TokenID id;
+  private TokenID id;
 
-	public static TokenDeleteFactory newSignedTokenDelete() {
-		return new TokenDeleteFactory();
-	}
+  public static TokenDeleteFactory newSignedTokenDelete() {
+    return new TokenDeleteFactory();
+  }
 
-	public TokenDeleteFactory deleting(TokenID id) {
-		this.id = id;
-		return this;
-	}
+  public TokenDeleteFactory deleting(TokenID id) {
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenDeleteFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenDeleteFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenDeleteTransactionBody.newBuilder()
-				.setToken(id);
-		txn.setTokenDeletion(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenDeleteTransactionBody.newBuilder().setToken(id);
+    txn.setTokenDeletion(op);
+  }
 }

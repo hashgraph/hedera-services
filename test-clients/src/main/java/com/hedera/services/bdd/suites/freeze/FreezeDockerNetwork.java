@@ -20,45 +20,42 @@ package com.hedera.services.bdd.suites.freeze;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class FreezeDockerNetwork extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FreezeDockerNetwork.class);
+  private static final Logger log = LogManager.getLogger(FreezeDockerNetwork.class);
 
-	public static void main(String... args) {
-		new FreezeDockerNetwork().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new FreezeDockerNetwork().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				new HapiApiSpec[]{
-						justFreeze(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          justFreeze(),
+        });
+  }
 
-	private HapiApiSpec justFreeze() {
-		return customHapiSpec("JustFreeze")
-				.withProperties(Map.of(
-						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"
-				)).given( ).when(
-				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
-				);
-	}
+  private HapiApiSpec justFreeze() {
+    return customHapiSpec("JustFreeze")
+        .withProperties(
+            Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
+        .given()
+        .when()
+        .then(freeze().startingIn(60).seconds().andLasting(1).minutes());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

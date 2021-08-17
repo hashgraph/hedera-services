@@ -25,12 +25,10 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum NftEntitySizes {
-	NFT_ENTITY_SIZES;
+  NFT_ENTITY_SIZES;
 
-	public long fixedBytesInNftRepr() {
-		/* { creation time, tokenId, accountId, serialNum } */
-		return BASIC_RICH_INSTANT_SIZE
-				+ 2 * BASIC_ENTITY_ID_SIZE
-				+ LONG_SIZE;
-	}
+  public long fixedBytesInNftRepr() {
+    /* { creation time, tokenId, accountId, serialNum } */
+    return BASIC_RICH_INSTANT_SIZE + 2 * BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+  }
 }

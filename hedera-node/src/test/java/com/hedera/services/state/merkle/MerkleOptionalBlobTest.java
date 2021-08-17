@@ -20,19 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.swirlds.blob.BinaryObject;
-import com.swirlds.blob.BinaryObjectStore;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import java.io.IOException;
-import java.util.Arrays;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,261 +33,275 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+import com.swirlds.blob.BinaryObject;
+import com.swirlds.blob.BinaryObjectStore;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 class MerkleOptionalBlobTest {
-	byte[] stuff = "abcdefghijklmnopqrstuvwxyz".getBytes();
-	byte[] newStuff = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
+  byte[] stuff = "abcdefghijklmnopqrstuvwxyz".getBytes();
+  byte[] newStuff = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
 
-	String readableStuffDelegate = "<me>";
-	static final Hash stuffDelegateHash = new Hash(new byte[] {
-			(byte)0xf0, (byte)0xe1, (byte)0xd2, (byte)0xc3,
-			(byte)0xf4, (byte)0xe5, (byte)0xd6, (byte)0xc7,
-			(byte)0xf8, (byte)0xe9, (byte)0xda, (byte)0xcb,
-			(byte)0xfc, (byte)0xed, (byte)0xde, (byte)0xcf,
-			(byte)0xf0, (byte)0xe1, (byte)0xd2, (byte)0xc3,
-			(byte)0xf4, (byte)0xe5, (byte)0xd6, (byte)0xc7,
-			(byte)0xf8, (byte)0xe9, (byte)0xda, (byte)0xcb,
-			(byte)0xfc, (byte)0xed, (byte)0xde, (byte)0xcf,
-			(byte)0xf0, (byte)0xe1, (byte)0xd2, (byte)0xc3,
-			(byte)0xf4, (byte)0xe5, (byte)0xd6, (byte)0xc7,
-			(byte)0xf8, (byte)0xe9, (byte)0xda, (byte)0xcb,
-			(byte)0xfc, (byte)0xed, (byte)0xde, (byte)0xcf,
-	});
+  String readableStuffDelegate = "<me>";
+  static final Hash stuffDelegateHash =
+      new Hash(
+          new byte[] {
+            (byte) 0xf0, (byte) 0xe1, (byte) 0xd2, (byte) 0xc3,
+            (byte) 0xf4, (byte) 0xe5, (byte) 0xd6, (byte) 0xc7,
+            (byte) 0xf8, (byte) 0xe9, (byte) 0xda, (byte) 0xcb,
+            (byte) 0xfc, (byte) 0xed, (byte) 0xde, (byte) 0xcf,
+            (byte) 0xf0, (byte) 0xe1, (byte) 0xd2, (byte) 0xc3,
+            (byte) 0xf4, (byte) 0xe5, (byte) 0xd6, (byte) 0xc7,
+            (byte) 0xf8, (byte) 0xe9, (byte) 0xda, (byte) 0xcb,
+            (byte) 0xfc, (byte) 0xed, (byte) 0xde, (byte) 0xcf,
+            (byte) 0xf0, (byte) 0xe1, (byte) 0xd2, (byte) 0xc3,
+            (byte) 0xf4, (byte) 0xe5, (byte) 0xd6, (byte) 0xc7,
+            (byte) 0xf8, (byte) 0xe9, (byte) 0xda, (byte) 0xcb,
+            (byte) 0xfc, (byte) 0xed, (byte) 0xde, (byte) 0xcf,
+          });
 
-	BinaryObjectStore blobStore;
-	BinaryObject newDelegate;
-	BinaryObject stuffDelegate;
-	BinaryObject newStuffDelegate;
+  BinaryObjectStore blobStore;
+  BinaryObject newDelegate;
+  BinaryObject stuffDelegate;
+  BinaryObject newStuffDelegate;
 
-	MerkleOptionalBlob subject;
+  MerkleOptionalBlob subject;
 
-	@BeforeEach
-	void setup() {
-		newDelegate = mock(BinaryObject.class);
-		stuffDelegate = mock(BinaryObject.class);
-		newStuffDelegate = mock(BinaryObject.class);
-		given(stuffDelegate.toString()).willReturn(readableStuffDelegate);
-		given(stuffDelegate.getHash()).willReturn(stuffDelegateHash);
-		blobStore = mock(BinaryObjectStore.class);
-		given(blobStore.put(argThat((byte[] bytes) -> Arrays.equals(bytes, stuff)))).willReturn(stuffDelegate);
-		given(blobStore.put(argThat((byte[] bytes) -> Arrays.equals(bytes, newStuff)))).willReturn(newStuffDelegate);
-		given(blobStore.get(stuffDelegate)).willReturn(stuff);
+  @BeforeEach
+  void setup() {
+    newDelegate = mock(BinaryObject.class);
+    stuffDelegate = mock(BinaryObject.class);
+    newStuffDelegate = mock(BinaryObject.class);
+    given(stuffDelegate.toString()).willReturn(readableStuffDelegate);
+    given(stuffDelegate.getHash()).willReturn(stuffDelegateHash);
+    blobStore = mock(BinaryObjectStore.class);
+    given(blobStore.put(argThat((byte[] bytes) -> Arrays.equals(bytes, stuff))))
+        .willReturn(stuffDelegate);
+    given(blobStore.put(argThat((byte[] bytes) -> Arrays.equals(bytes, newStuff))))
+        .willReturn(newStuffDelegate);
+    given(blobStore.get(stuffDelegate)).willReturn(stuff);
 
-		MerkleOptionalBlob.blobSupplier = () -> newDelegate;
-		MerkleOptionalBlob.blobStoreSupplier = () -> blobStore;
+    MerkleOptionalBlob.blobSupplier = () -> newDelegate;
+    MerkleOptionalBlob.blobStoreSupplier = () -> blobStore;
 
-		subject = new MerkleOptionalBlob(stuff);
-	}
+    subject = new MerkleOptionalBlob(stuff);
+  }
 
-	@AfterEach
-	public void cleanup() {
-		MerkleOptionalBlob.blobSupplier = BinaryObject::new;
-		MerkleOptionalBlob.blobStoreSupplier = BinaryObjectStore::getInstance;
-	}
+  @AfterEach
+  public void cleanup() {
+    MerkleOptionalBlob.blobSupplier = BinaryObject::new;
+    MerkleOptionalBlob.blobStoreSupplier = BinaryObjectStore::getInstance;
+  }
 
-	@Test
-	void modifyWorksWithNonEmpty() {
-		// when:
-		subject.modify(newStuff);
+  @Test
+  void modifyWorksWithNonEmpty() {
+    // when:
+    subject.modify(newStuff);
 
-		// then:
-		verify(stuffDelegate).release();
-		// and:
-		assertEquals(newStuffDelegate, subject.getDelegate());
-	}
+    // then:
+    verify(stuffDelegate).release();
+    // and:
+    assertEquals(newStuffDelegate, subject.getDelegate());
+  }
 
-	@Test
-	void modifyWorksWithEmpty() {
-		// given:
-		subject = new MerkleOptionalBlob();
+  @Test
+  void modifyWorksWithEmpty() {
+    // given:
+    subject = new MerkleOptionalBlob();
 
-		// when:
-		subject.modify(newStuff);
+    // when:
+    subject.modify(newStuff);
 
-		// then:
-		assertEquals(newStuffDelegate, subject.getDelegate());
-	}
+    // then:
+    assertEquals(newStuffDelegate, subject.getDelegate());
+  }
 
-	@Test
-	void getDataWorksWithStuff() {
-		// expect:
-		assertArrayEquals(stuff, subject.getData());
-	}
+  @Test
+  void getDataWorksWithStuff() {
+    // expect:
+    assertArrayEquals(stuff, subject.getData());
+  }
 
-	@Test
-	void getDataWorksWithNoStuff() {
-		// expect:
-		assertArrayEquals(MerkleOptionalBlob.NO_DATA, new MerkleOptionalBlob().getData());
-	}
+  @Test
+  void getDataWorksWithNoStuff() {
+    // expect:
+    assertArrayEquals(MerkleOptionalBlob.NO_DATA, new MerkleOptionalBlob().getData());
+  }
 
-	@Test
-	void emptyHashAsExpected() {
-		// given:
-		var defaultSubject = new MerkleOptionalBlob();
+  @Test
+  void emptyHashAsExpected() {
+    // given:
+    var defaultSubject = new MerkleOptionalBlob();
 
-		// expect;
-		assertEquals(MerkleOptionalBlob.MISSING_DELEGATE_HASH, defaultSubject.getHash());
-	}
+    // expect;
+    assertEquals(MerkleOptionalBlob.MISSING_DELEGATE_HASH, defaultSubject.getHash());
+  }
 
-	@Test
-	void stuffHashDelegates() {
-		// expect;
-		assertEquals(stuffDelegateHash, subject.getHash());
-	}
+  @Test
+  void stuffHashDelegates() {
+    // expect;
+    assertEquals(stuffDelegateHash, subject.getHash());
+  }
 
-	@Test
-	void merkleMethodsWork() {
-		// expect;
-		assertEquals(MerkleOptionalBlob.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleOptionalBlob.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertTrue(subject.isLeaf());
-		assertThrows(UnsupportedOperationException.class, () -> subject.setHash(null));
-		assertDoesNotThrow(() -> subject.serializeAbbreviated(null));
-	}
+  @Test
+  void merkleMethodsWork() {
+    // expect;
+    assertEquals(MerkleOptionalBlob.MERKLE_VERSION, subject.getVersion());
+    assertEquals(MerkleOptionalBlob.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertTrue(subject.isLeaf());
+    assertThrows(UnsupportedOperationException.class, () -> subject.setHash(null));
+    assertDoesNotThrow(() -> subject.serializeAbbreviated(null));
+  }
 
-	@Test
-	void deserializeWorksWithEmpty() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleOptionalBlob();
+  @Test
+  void deserializeWorksWithEmpty() throws IOException {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
+    // and:
+    var defaultSubject = new MerkleOptionalBlob();
 
-		given(in.readBoolean()).willReturn(false);
+    given(in.readBoolean()).willReturn(false);
 
-		// when:
-		defaultSubject.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
+    // when:
+    defaultSubject.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
 
-		// then:
-		verify(newDelegate, never()).deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
-	}
+    // then:
+    verify(newDelegate, never()).deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
+  }
 
-	@Test
-	void serializeWorksWithEmpty() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		var defaultSubject = new MerkleOptionalBlob();
+  @Test
+  void serializeWorksWithEmpty() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    var defaultSubject = new MerkleOptionalBlob();
 
-		// when:
-		defaultSubject.serialize(out);
+    // when:
+    defaultSubject.serialize(out);
 
-		// then:
-		verify(out).writeBoolean(false);
-	}
+    // then:
+    verify(out).writeBoolean(false);
+  }
 
-	@Test
-	void serializeWorksWithDelegate() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out, stuffDelegate);
+  @Test
+  void serializeWorksWithDelegate() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = inOrder(out, stuffDelegate);
 
-		// when:
-		subject.serialize(out);
+    // when:
+    subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(stuffDelegate).serialize(out);
-	}
+    // then:
+    inOrder.verify(out).writeBoolean(true);
+    inOrder.verify(stuffDelegate).serialize(out);
+  }
 
-	@Test
-	void deserializeAbbrevWorksWithDelegate() {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
+  @Test
+  void deserializeAbbrevWorksWithDelegate() {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
 
-		// when:
-		subject.deserializeAbbreviated(in, stuffDelegateHash, MerkleOptionalBlob.MERKLE_VERSION);
+    // when:
+    subject.deserializeAbbreviated(in, stuffDelegateHash, MerkleOptionalBlob.MERKLE_VERSION);
 
-		// then:
-		verify(newDelegate).deserializeAbbreviated(in, stuffDelegateHash, MerkleOptionalBlob.MERKLE_VERSION);
-	}
+    // then:
+    verify(newDelegate)
+        .deserializeAbbreviated(in, stuffDelegateHash, MerkleOptionalBlob.MERKLE_VERSION);
+  }
 
-	@Test
-	void deserializeAbbrevWorksWithoutDelegate() {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
+  @Test
+  void deserializeAbbrevWorksWithoutDelegate() {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
 
-		// when:
-		subject.deserializeAbbreviated(in, MerkleOptionalBlob.MISSING_DELEGATE_HASH, MerkleOptionalBlob.MERKLE_VERSION);
+    // when:
+    subject.deserializeAbbreviated(
+        in, MerkleOptionalBlob.MISSING_DELEGATE_HASH, MerkleOptionalBlob.MERKLE_VERSION);
 
-		// then:
-		assertEquals(MerkleOptionalBlob.NO_DATA, subject.getData());
-		assertEquals(MerkleOptionalBlob.MISSING_DELEGATE, subject.getDelegate());
-	}
+    // then:
+    assertEquals(MerkleOptionalBlob.NO_DATA, subject.getData());
+    assertEquals(MerkleOptionalBlob.MISSING_DELEGATE, subject.getDelegate());
+  }
 
-	@Test
-	void deserializeWorksWithDelegate() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleOptionalBlob();
+  @Test
+  void deserializeWorksWithDelegate() throws IOException {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
+    // and:
+    var defaultSubject = new MerkleOptionalBlob();
 
-		given(in.readBoolean()).willReturn(true);
+    given(in.readBoolean()).willReturn(true);
 
-		// when:
-		defaultSubject.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
+    // when:
+    defaultSubject.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
 
-		// then:
-		verify(newDelegate).deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
-	}
+    // then:
+    verify(newDelegate).deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
+  }
 
-	@Test
-	void toStringWorks() {
-		// expect:
-		assertEquals(
-				"MerkleOptionalBlob{delegate=" + readableStuffDelegate + "}",
-				subject.toString());
-		assertEquals(
-				"MerkleOptionalBlob{delegate=" + null + "}",
-				new MerkleOptionalBlob().toString());
-	}
+  @Test
+  void toStringWorks() {
+    // expect:
+    assertEquals("MerkleOptionalBlob{delegate=" + readableStuffDelegate + "}", subject.toString());
+    assertEquals("MerkleOptionalBlob{delegate=" + null + "}", new MerkleOptionalBlob().toString());
+  }
 
-	@Test
-	void copyWorks() {
-		given(stuffDelegate.copy()).willReturn(stuffDelegate);
+  @Test
+  void copyWorks() {
+    given(stuffDelegate.copy()).willReturn(stuffDelegate);
 
-		// when:
-		var subjectCopy = subject.copy();
+    // when:
+    var subjectCopy = subject.copy();
 
-		// then:
-		assertTrue(subjectCopy != subject);
-		assertEquals(subject, subjectCopy);
-	}
+    // then:
+    assertTrue(subjectCopy != subject);
+    assertEquals(subject, subjectCopy);
+  }
 
-	@Test
-	void deleteDelegatesIfAppropos() {
-		// when:
-		subject.release();
+  @Test
+  void deleteDelegatesIfAppropos() {
+    // when:
+    subject.release();
 
-		// then:
-		verify(stuffDelegate).release();
-	}
+    // then:
+    verify(stuffDelegate).release();
+  }
 
-	@Test
-	void doesntDelegateIfMissing() {
-		// given:
-		subject = new MerkleOptionalBlob();
+  @Test
+  void doesntDelegateIfMissing() {
+    // given:
+    subject = new MerkleOptionalBlob();
 
-		// when:
-		subject.release();
+    // when:
+    subject.release();
 
-		// then:
-		verify(stuffDelegate, never()).release();
-	}
+    // then:
+    verify(stuffDelegate, never()).release();
+  }
 
-	@Test
-	void objectContractMet() {
-		// given:
-		var one = new MerkleOptionalBlob();
-		var two = new MerkleOptionalBlob(stuff);
-		var three = new MerkleOptionalBlob(stuff);
-		var four = new Object();
+  @Test
+  void objectContractMet() {
+    // given:
+    var one = new MerkleOptionalBlob();
+    var two = new MerkleOptionalBlob(stuff);
+    var three = new MerkleOptionalBlob(stuff);
+    var four = new Object();
 
-		// then:
-		assertNotEquals(null, one);
-		assertNotEquals(four, one);
-		assertNotEquals(two, one);
-		// and:
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(two.hashCode(), three.hashCode());
-	}
+    // then:
+    assertNotEquals(null, one);
+    assertNotEquals(four, one);
+    assertNotEquals(two, one);
+    // and:
+    assertNotEquals(one.hashCode(), two.hashCode());
+    assertEquals(two.hashCode(), three.hashCode());
+  }
 }

@@ -20,6 +20,11 @@ package com.hedera.services.queries.file;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -31,84 +36,78 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-
-
 public class GetFileInfoAnswer implements AnswerService {
-	private static final Logger log = LogManager.getLogger(GetFileInfoAnswer.class);
+  private static final Logger log = LogManager.getLogger(GetFileInfoAnswer.class);
 
-	private final OptionValidator validator;
+  private final OptionValidator validator;
 
-	public GetFileInfoAnswer(OptionValidator validator) {
-		this.validator = validator;
-	}
+  public GetFileInfoAnswer(OptionValidator validator) {
+    this.validator = validator;
+  }
 
-	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
-		return COST_ANSWER == query.getFileGetInfo().getHeader().getResponseType();
-	}
+  @Override
+  public boolean needsAnswerOnlyCost(Query query) {
+    return COST_ANSWER == query.getFileGetInfo().getHeader().getResponseType();
+  }
 
-	@Override
-	public boolean requiresNodePayment(Query query) {
-		return typicallyRequiresNodePayment(query.getFileGetInfo().getHeader().getResponseType());
-	}
+  @Override
+  public boolean requiresNodePayment(Query query) {
+    return typicallyRequiresNodePayment(query.getFileGetInfo().getHeader().getResponseType());
+  }
 
-	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		var op = query.getFileGetInfo();
-		FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
+  @Override
+  public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
+    var op = query.getFileGetInfo();
+    FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
 
-		ResponseType type = op.getHeader().getResponseType();
-		if (validity != OK) {
-			log.debug("FileGetInfo not successful for: validity {}, query {} ", validity, query.getFileGetInfo());
-			response.setHeader(header(validity, type, cost));
-		} else {
-			if (type == COST_ANSWER) {
-				response.setHeader(costAnswerHeader(OK, cost));
-			} else {
-				var info = view.infoForFile(op.getFileID());
-				/* Include cost here to satisfy legacy regression tests. */
-				if (info.isPresent()) {
-					response.setHeader(answerOnlyHeader(OK, cost));
-					response.setFileInfo(info.get());
-				} else {
-					response.setHeader(answerOnlyHeader(FAIL_INVALID));
-				}
-			}
-		}
-		return Response.newBuilder()
-				.setFileGetInfo(response)
-				.build();
-	}
+    ResponseType type = op.getHeader().getResponseType();
+    if (validity != OK) {
+      log.debug(
+          "FileGetInfo not successful for: validity {}, query {} ",
+          validity,
+          query.getFileGetInfo());
+      response.setHeader(header(validity, type, cost));
+    } else {
+      if (type == COST_ANSWER) {
+        response.setHeader(costAnswerHeader(OK, cost));
+      } else {
+        var info = view.infoForFile(op.getFileID());
+        /* Include cost here to satisfy legacy regression tests. */
+        if (info.isPresent()) {
+          response.setHeader(answerOnlyHeader(OK, cost));
+          response.setFileInfo(info.get());
+        } else {
+          response.setHeader(answerOnlyHeader(FAIL_INVALID));
+        }
+      }
+    }
+    return Response.newBuilder().setFileGetInfo(response).build();
+  }
 
-	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		var id = query.getFileGetInfo().getFileID();
+  @Override
+  public ResponseCodeEnum checkValidity(Query query, StateView view) {
+    var id = query.getFileGetInfo().getFileID();
 
-		return validator.queryableFileStatus(id, view);
-	}
+    return validator.queryableFileStatus(id, view);
+  }
 
-	@Override
-	public HederaFunctionality canonicalFunction() {
-		return FileGetInfo;
-	}
+  @Override
+  public HederaFunctionality canonicalFunction() {
+    return FileGetInfo;
+  }
 
-	@Override
-	public ResponseCodeEnum extractValidityFrom(Response response) {
-		return response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode();
-	}
+  @Override
+  public ResponseCodeEnum extractValidityFrom(Response response) {
+    return response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode();
+  }
 
-	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		Transaction paymentTxn = query.getFileGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
-	}
+  @Override
+  public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    Transaction paymentTxn = query.getFileGetInfo().getHeader().getPayment();
+    return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+  }
 }

@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,33 +19,6 @@ package com.hedera.services.state.logic;
  * limitations under the License.
  * ‍
  */
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.inject.Inject;
-import java.time.Instant;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
@@ -68,224 +41,248 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
+import javax.inject.Inject;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class AwareNodeDiligenceScreenTest {
-	private long submittingMember = 2L;
-	private String pretendMemo = "ignored";
-	private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-	private AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
-	private AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
-	private AccountID payerAccountId = IdUtils.asAccount("0.0.5");
-	private TxnAccessor accessor;
-	private Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
+  private long submittingMember = 2L;
+  private String pretendMemo = "ignored";
+  private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+  private AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
+  private AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
+  private AccountID payerAccountId = IdUtils.asAccount("0.0.5");
+  private TxnAccessor accessor;
+  private Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+  @Mock private TransactionContext txnCtx;
+  @Mock private OptionValidator validator;
+  @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-	@Inject
-	private LogCaptor logCaptor;
+  @Inject private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private AwareNodeDiligenceScreen subject;
+  @LoggingSubject private AwareNodeDiligenceScreen subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
-	}
+  @BeforeEach
+  void setUp() {
+    subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
+  }
 
-	@Test
-	void flagsMissingNodeAccount() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(false);
+  @Test
+  void flagsMissingNodeAccount() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(false);
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
-		// and:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Node 0.0.3 (member #2) submitted a txn w/ missing node account 0.0.3")));
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
+    // and:
+    assertThat(
+        logCaptor.warnLogs(),
+        contains(
+            Matchers.startsWith(
+                "Node 0.0.3 (member #2) submitted a txn w/ missing node account 0.0.3")));
+  }
 
-	@Test
-	void flagsNodeSubmittingTxnWithDiffNodeAccountId() throws InvalidProtocolBufferException {
-		givenHandleCtx(bNodeAccount, aNodeAccount);
-		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		handleValidPayerAccount();
+  @Test
+  void flagsNodeSubmittingTxnWithDiffNodeAccountId() throws InvalidProtocolBufferException {
+    givenHandleCtx(bNodeAccount, aNodeAccount);
+    given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    handleValidPayerAccount();
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
-		// and:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Node 0.0.4 (member #2) submitted a txn meant for node account 0.0.3")));
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
+    // and:
+    assertThat(
+        logCaptor.warnLogs(),
+        contains(
+            Matchers.startsWith(
+                "Node 0.0.4 (member #2) submitted a txn meant for node account 0.0.3")));
+  }
 
-	@Test
-	void flagsInvalidPayerSig() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
-		handleValidPayerAccount();
+  @Test
+  void flagsInvalidPayerSig() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    given(txnCtx.isPayerSigKnownActive()).willReturn(false);
+    handleValidPayerAccount();
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx).setStatus(INVALID_PAYER_SIGNATURE);
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx).setStatus(INVALID_PAYER_SIGNATURE);
+  }
 
-	@Test
-	void flagsNodeDuplicate() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
-		handleValidPayerAccount();
+  @Test
+  void flagsNodeDuplicate() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+    handleValidPayerAccount();
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(NODE_DUPLICATE));
-		// and:
-		verify(txnCtx).setStatus(DUPLICATE_TRANSACTION);
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(NODE_DUPLICATE));
+    // and:
+    verify(txnCtx).setStatus(DUPLICATE_TRANSACTION);
+  }
 
-	@Test
-	void flagsInvalidDuration() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
-		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(false);
-		handleValidPayerAccount();
+  @Test
+  void flagsInvalidDuration() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+    given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(false);
+    handleValidPayerAccount();
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx).setStatus(INVALID_TRANSACTION_DURATION);
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx).setStatus(INVALID_TRANSACTION_DURATION);
+  }
 
-	@Test
-	void flagsInvalidChronology() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
-		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
-		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(TRANSACTION_EXPIRED);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		handleValidPayerAccount();
+  @Test
+  void flagsInvalidChronology() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+    given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
+    given(validator.chronologyStatus(accessor, consensusTime)).willReturn(TRANSACTION_EXPIRED);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    handleValidPayerAccount();
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx).setStatus(TRANSACTION_EXPIRED);
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx).setStatus(TRANSACTION_EXPIRED);
+  }
 
-	@Test
-	void flagsInvalidMemo() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
-		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
-		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
-				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
-		handleValidPayerAccount();
+  @Test
+  void flagsInvalidMemo() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+    given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
+    given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
+        .willReturn(INVALID_ZERO_BYTE_IN_STRING);
+    handleValidPayerAccount();
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx).setStatus(INVALID_ZERO_BYTE_IN_STRING);
-	}
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx).setStatus(INVALID_ZERO_BYTE_IN_STRING);
+  }
 
-	@Test
-	void doesntFlagWithAllOk() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
-		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
-		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
-				.willReturn(OK);
-		handleValidPayerAccount();
+  @Test
+  void doesntFlagWithAllOk() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+    given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
+    given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
+        .willReturn(OK);
+    handleValidPayerAccount();
 
-		// then:
-		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
-		// and:
-		verify(txnCtx, never()).setStatus(any());
-	}
+    // then:
+    assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // and:
+    verify(txnCtx, never()).setStatus(any());
+  }
 
-	@Test
-	void payerAccountDoesntExist() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+  @Test
+  void payerAccountDoesntExist() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-		// and:
-		verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
-	}
+    // and:
+    verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+  }
 
-	@Test
-	void payerAccountDeleted() throws InvalidProtocolBufferException {
-		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		var payerAccountRef = mock(MerkleAccount.class);
-		given(payerAccountRef.isDeleted()).willReturn(true);
-		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
-		given(backingAccounts.contains(payerAccountId)).willReturn(true);
+  @Test
+  void payerAccountDeleted() throws InvalidProtocolBufferException {
+    givenHandleCtx(aNodeAccount, aNodeAccount);
+    given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+    var payerAccountRef = mock(MerkleAccount.class);
+    given(payerAccountRef.isDeleted()).willReturn(true);
+    given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
+    given(backingAccounts.contains(payerAccountId)).willReturn(true);
 
-		// then:
-		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+    // then:
+    assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-		// and:
-		verify(txnCtx).setStatus(PAYER_ACCOUNT_DELETED);
-	}
+    // and:
+    verify(txnCtx).setStatus(PAYER_ACCOUNT_DELETED);
+  }
 
-	private void givenHandleCtx(
-			AccountID submittingNodeAccount,
-			AccountID designatedNodeAccount
-	) throws InvalidProtocolBufferException {
-		given(txnCtx.submittingNodeAccount()).willReturn(submittingNodeAccount);
-		accessor = accessorWith(designatedNodeAccount);
-		given(txnCtx.accessor()).willReturn(accessor);
-	}
+  private void givenHandleCtx(AccountID submittingNodeAccount, AccountID designatedNodeAccount)
+      throws InvalidProtocolBufferException {
+    given(txnCtx.submittingNodeAccount()).willReturn(submittingNodeAccount);
+    accessor = accessorWith(designatedNodeAccount);
+    given(txnCtx.accessor()).willReturn(accessor);
+  }
 
-	private TxnAccessor accessorWith(AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
-		var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
+  private TxnAccessor accessorWith(AccountID designatedNodeAccount)
+      throws InvalidProtocolBufferException {
+    var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
 
-		var bodyBytes = TransactionBody.newBuilder()
-				.setMemo(pretendMemo)
-				.setTransactionValidDuration(validDuration)
-				.setNodeAccountID(designatedNodeAccount)
-				.setTransactionID(transactionId)
-				.build()
-				.toByteString();
-		var signedTxn = Transaction.newBuilder()
-				.setSignedTransactionBytes(SignedTransaction.newBuilder()
-						.setBodyBytes(bodyBytes)
-						.build()
-						.toByteString())
-				.build();
-		return new SignedTxnAccessor(signedTxn);
-	}
+    var bodyBytes =
+        TransactionBody.newBuilder()
+            .setMemo(pretendMemo)
+            .setTransactionValidDuration(validDuration)
+            .setNodeAccountID(designatedNodeAccount)
+            .setTransactionID(transactionId)
+            .build()
+            .toByteString();
+    var signedTxn =
+        Transaction.newBuilder()
+            .setSignedTransactionBytes(
+                SignedTransaction.newBuilder().setBodyBytes(bodyBytes).build().toByteString())
+            .build();
+    return new SignedTxnAccessor(signedTxn);
+  }
 
-	/**
-	 * Handle the valid case of having a payer account that is not deleted. Also make sure that
-	 * the backing accounts recognizes that the payer account exists
-	 */
-	private void handleValidPayerAccount() {
-		var payerAccountRef = mock(MerkleAccount.class);
-		given(payerAccountRef.isDeleted()).willReturn(false);
-		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
-		given(backingAccounts.contains(payerAccountId)).willReturn(true);
-	}
+  /**
+   * Handle the valid case of having a payer account that is not deleted. Also make sure that the
+   * backing accounts recognizes that the payer account exists
+   */
+  private void handleValidPayerAccount() {
+    var payerAccountRef = mock(MerkleAccount.class);
+    given(payerAccountRef.isDeleted()).willReturn(false);
+    given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
+    given(backingAccounts.contains(payerAccountId)).willReturn(true);
+  }
 }

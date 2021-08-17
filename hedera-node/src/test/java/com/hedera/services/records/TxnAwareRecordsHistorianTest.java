@@ -20,6 +20,18 @@ package com.hedera.services.records;
  * ‍
  */
 
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -39,168 +51,156 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Consumer;
-
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
+import org.junit.jupiter.api.Test;
 
 class TxnAwareRecordsHistorianTest {
-	final private long submittingMember = 1L;
-	final private AccountID a = asAccount("0.0.1111");
-	final private EntityId aEntity = EntityId.fromGrpcAccountId(a);
-	final private TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
-	final private AccountID b = asAccount("0.0.2222");
-	final private AccountID c = asAccount("0.0.3333");
-	final private AccountID effPayer = asAccount("0.0.13257");
-	final private Instant now = Instant.now();
-	final private long nows = now.getEpochSecond();
-	final int accountRecordTtl = 1_000;
-	final int payerRecordTtl = 180;
-	final long expiry = now.getEpochSecond() + accountRecordTtl;
-	final long payerExpiry = now.getEpochSecond() + payerRecordTtl;
-	final private AccountID d = asAccount("0.0.4444");
-	final private AccountID funding = asAccount("0.0.98");
-	final private TransferList initialTransfers = withAdjustments(
-			a, -1_000L, b, 500L, c, 501L, d, -1L);
-	final private ExpirableTxnRecord finalRecord = ExpirableTxnRecord.newBuilder()
-			.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(a).build()))
-			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
-			.setMemo("This is different!")
-			.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
-			.build();
-	final private ExpirableTxnRecord jFinalRecord = finalRecord;
-	{
-		jFinalRecord.setExpiry(expiry);
-	}
-	final private ExpirableTxnRecord payerRecord = finalRecord;
-	{
-		payerRecord.setExpiry(payerExpiry);
-	}
+  private final long submittingMember = 1L;
+  private final AccountID a = asAccount("0.0.1111");
+  private final EntityId aEntity = EntityId.fromGrpcAccountId(a);
+  private final TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
+  private final AccountID b = asAccount("0.0.2222");
+  private final AccountID c = asAccount("0.0.3333");
+  private final AccountID effPayer = asAccount("0.0.13257");
+  private final Instant now = Instant.now();
+  private final long nows = now.getEpochSecond();
+  final int accountRecordTtl = 1_000;
+  final int payerRecordTtl = 180;
+  final long expiry = now.getEpochSecond() + accountRecordTtl;
+  final long payerExpiry = now.getEpochSecond() + payerRecordTtl;
+  private final AccountID d = asAccount("0.0.4444");
+  private final AccountID funding = asAccount("0.0.98");
+  private final TransferList initialTransfers =
+      withAdjustments(a, -1_000L, b, 500L, c, 501L, d, -1L);
+  private final ExpirableTxnRecord finalRecord =
+      ExpirableTxnRecord.newBuilder()
+          .setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(a).build()))
+          .setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
+          .setMemo("This is different!")
+          .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
+          .build();
+  private final ExpirableTxnRecord jFinalRecord = finalRecord;
 
-	private RecordCache recordCache;
-	private ExpiryManager expiries;
-	private GlobalDynamicProperties dynamicProperties;
-	private ExpiringCreations creator;
-	private ExpiringEntity expiringEntity;
-	private TransactionContext txnCtx;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+  {
+    jFinalRecord.setExpiry(expiry);
+  }
 
-	private TxnAwareRecordsHistorian subject;
+  private final ExpirableTxnRecord payerRecord = finalRecord;
 
-	@Test
-	void lastAddedIsEmptyAtFirst() {
-		setupForAdd();
+  {
+    payerRecord.setExpiry(payerExpiry);
+  }
 
-		// expect:
-		assertFalse(subject.lastCreatedRecord().isPresent());
-	}
+  private RecordCache recordCache;
+  private ExpiryManager expiries;
+  private GlobalDynamicProperties dynamicProperties;
+  private ExpiringCreations creator;
+  private ExpiringEntity expiringEntity;
+  private TransactionContext txnCtx;
+  private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	@Test
-	void addsRecordToAllQualifyingAccounts() {
-		setupForAdd();
-		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
+  private TxnAwareRecordsHistorian subject;
 
-		// when:
-		subject.finalizeExpirableTransactionRecord();
-		subject.saveExpirableTransactionRecord();
+  @Test
+  void lastAddedIsEmptyAtFirst() {
+    setupForAdd();
 
-		// then:
-		verify(txnCtx).recordSoFar();
-		verify(recordCache).setPostConsensus(
-				txnIdA,
-				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
-				payerRecord);
-		verify(creator).saveExpiringRecord(effPayer, finalRecord, nows, submittingMember);
-		// and:
-		assertEquals(finalRecord, subject.lastCreatedRecord().get());
-	}
+    // expect:
+    assertFalse(subject.lastCreatedRecord().isPresent());
+  }
 
-	@Test
-	void managesAddNewEntities() {
-		setupForAdd();
+  @Test
+  void addsRecordToAllQualifyingAccounts() {
+    setupForAdd();
+    given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
-		// when:
-		subject.noteNewExpirationEvents();
+    // when:
+    subject.finalizeExpirableTransactionRecord();
+    subject.saveExpirableTransactionRecord();
 
-		// then:
-		verify(txnCtx).expiringEntities();
-		verify(expiringEntity).id();
-		verify(expiringEntity).consumer();
-		verify(expiringEntity).expiry();
-		// and:
-		verify(expiries).trackExpirationEvent(any(), eq(nows));
-	}
+    // then:
+    verify(txnCtx).recordSoFar();
+    verify(recordCache)
+        .setPostConsensus(
+            txnIdA, ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()), payerRecord);
+    verify(creator).saveExpiringRecord(effPayer, finalRecord, nows, submittingMember);
+    // and:
+    assertEquals(finalRecord, subject.lastCreatedRecord().get());
+  }
 
-	@Test
-	void doesNotTrackExpiringEntity() {
-		setupForAdd();
-		given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
+  @Test
+  void managesAddNewEntities() {
+    setupForAdd();
 
-		// when:
-		subject.noteNewExpirationEvents();
+    // when:
+    subject.noteNewExpirationEvents();
 
-		// then:
-		verify(txnCtx).expiringEntities();
-		verify(expiringEntity, never()).id();
-		verify(expiringEntity, never()).consumer();
-		verify(expiringEntity, never()).expiry();
-		// and:
-		verify(expiries, never()).trackExpirationEvent(any(), eq(nows));
-	}
+    // then:
+    verify(txnCtx).expiringEntities();
+    verify(expiringEntity).id();
+    verify(expiringEntity).consumer();
+    verify(expiringEntity).expiry();
+    // and:
+    verify(expiries).trackExpirationEvent(any(), eq(nows));
+  }
 
-	private void setupForReview() {
-		setupForAdd();
-	}
+  @Test
+  void doesNotTrackExpiringEntity() {
+    setupForAdd();
+    given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
 
-	private void setupForAdd() {
-		expiries = mock(ExpiryManager.class);
+    // when:
+    subject.noteNewExpirationEvents();
 
-		dynamicProperties = mock(GlobalDynamicProperties.class);
-		given(dynamicProperties.fundingAccount()).willReturn(funding);
+    // then:
+    verify(txnCtx).expiringEntities();
+    verify(expiringEntity, never()).id();
+    verify(expiringEntity, never()).consumer();
+    verify(expiringEntity, never()).expiry();
+    // and:
+    verify(expiries, never()).trackExpirationEvent(any(), eq(nows));
+  }
 
-		creator = mock(ExpiringCreations.class);
-		given(creator.saveExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
+  private void setupForReview() {
+    setupForAdd();
+  }
 
-		expiringEntity = mock(ExpiringEntity.class);
-		given(expiringEntity.id()).willReturn(aEntity);
-		given(expiringEntity.consumer()).willReturn(mock(Consumer.class));
-		given(expiringEntity.expiry()).willReturn(nows);
+  private void setupForAdd() {
+    expiries = mock(ExpiryManager.class);
 
-		TransactionBody txn = mock(TransactionBody.class);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getTxnId()).willReturn(txnIdA);
-		given(accessor.getPayer()).willReturn(a);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.status()).willReturn(SUCCESS);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.consensusTime()).willReturn(now);
-		given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
-		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
-		given(txnCtx.effectivePayer()).willReturn(effPayer);
-		given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));
+    dynamicProperties = mock(GlobalDynamicProperties.class);
+    given(dynamicProperties.fundingAccount()).willReturn(funding);
 
-		accounts = mock(FCMap.class);
+    creator = mock(ExpiringCreations.class);
+    given(creator.saveExpiringRecord(effPayer, finalRecord, nows, submittingMember))
+        .willReturn(payerRecord);
 
-		recordCache = mock(RecordCache.class);
+    expiringEntity = mock(ExpiringEntity.class);
+    given(expiringEntity.id()).willReturn(aEntity);
+    given(expiringEntity.consumer()).willReturn(mock(Consumer.class));
+    given(expiringEntity.expiry()).willReturn(nows);
 
-		subject = new TxnAwareRecordsHistorian(
-				recordCache,
-				txnCtx,
-				expiries);
-		subject.setCreator(creator);
-	}
+    TransactionBody txn = mock(TransactionBody.class);
+    PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+    given(accessor.getTxn()).willReturn(txn);
+    given(accessor.getTxnId()).willReturn(txnIdA);
+    given(accessor.getPayer()).willReturn(a);
+    txnCtx = mock(TransactionContext.class);
+    given(txnCtx.status()).willReturn(SUCCESS);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(txnCtx.consensusTime()).willReturn(now);
+    given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
+    given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
+    given(txnCtx.effectivePayer()).willReturn(effPayer);
+    given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));
+
+    accounts = mock(FCMap.class);
+
+    recordCache = mock(RecordCache.class);
+
+    subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, expiries);
+    subject.setCreator(creator);
+  }
 }

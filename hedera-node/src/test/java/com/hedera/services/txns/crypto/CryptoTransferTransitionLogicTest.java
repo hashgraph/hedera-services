@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,24 @@ package com.hedera.services.txns.crypto;
  * limitations under the License.
  * ‍
  */
+
+import static com.hedera.test.utils.IdUtils.adjustFrom;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -42,269 +60,245 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.test.utils.IdUtils.adjustFrom;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hedera.test.utils.IdUtils.hbarChange;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verifyNoInteractions;
-
-
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferTransitionLogicTest {
-	final private int maxHbarAdjusts = 5;
-	final private int maxTokenAdjusts = 10;
-	final private int maxOwnershipChanges = 15;
-	private final boolean areNftsEnabled = false;
-	private final int maxFeeNesting = 20;
-	private final int maxBalanceChanges = 20;
-	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
-	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
-	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
+  private final int maxHbarAdjusts = 5;
+  private final int maxTokenAdjusts = 10;
+  private final int maxOwnershipChanges = 15;
+  private final boolean areNftsEnabled = false;
+  private final int maxFeeNesting = 20;
+  private final int maxBalanceChanges = 20;
+  private final ImpliedTransfersMeta.ValidationProps validationProps =
+      new ImpliedTransfersMeta.ValidationProps(
+          maxHbarAdjusts,
+          maxTokenAdjusts,
+          maxOwnershipChanges,
+          maxFeeNesting,
+          maxBalanceChanges,
+          areNftsEnabled);
+  private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+  private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
+  private final AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
+  private final AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 
-	@Mock
-	private HederaLedger ledger;
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private ImpliedTransfersMarshal impliedTransfersMarshal;
-	@Mock
-	private PureTransferSemanticChecks transferSemanticChecks;
-	@Mock
-	private ExpandHandleSpanMapAccessor spanMapAccessor;
-	@Mock
-	private PlatformTxnAccessor accessor;
+  @Mock private HederaLedger ledger;
+  @Mock private TransactionContext txnCtx;
+  @Mock private GlobalDynamicProperties dynamicProperties;
+  @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
+  @Mock private PureTransferSemanticChecks transferSemanticChecks;
+  @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
+  @Mock private PlatformTxnAccessor accessor;
 
-	private TransactionBody cryptoTransferTxn;
+  private TransactionBody cryptoTransferTxn;
 
-	private CryptoTransferTransitionLogic subject;
+  private CryptoTransferTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
-	}
+  @BeforeEach
+  private void setup() {
+    subject =
+        new CryptoTransferTransitionLogic(
+            ledger,
+            txnCtx,
+            dynamicProperties,
+            impliedTransfersMarshal,
+            transferSemanticChecks,
+            spanMapAccessor);
+  }
 
-	@Test
-	void happyPathUsesLedgerNetZero() {
-		final var a = asAccount("1.2.3");
-		final var b = asAccount("2.3.4");
-		final var impliedTransfers = ImpliedTransfers.valid(
-				validationProps, List.of(
-						hbarChange(a, +100),
-						hbarChange(b, -100)
-				),
-				new ArrayList<>(),
-				new ArrayList<>());
+  @Test
+  void happyPathUsesLedgerNetZero() {
+    final var a = asAccount("1.2.3");
+    final var b = asAccount("2.3.4");
+    final var impliedTransfers =
+        ImpliedTransfers.valid(
+            validationProps,
+            List.of(hbarChange(a, +100), hbarChange(b, -100)),
+            new ArrayList<>(),
+            new ArrayList<>());
 
-		givenValidTxnCtx();
-		// and:
-		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
+    givenValidTxnCtx();
+    // and:
+    given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
-		doThrow(new InvalidTransactionException(INSUFFICIENT_ACCOUNT_BALANCE)).when(ledger).doZeroSum(anyList());
+    doThrow(new InvalidTransactionException(INSUFFICIENT_ACCOUNT_BALANCE))
+        .when(ledger)
+        .doZeroSum(anyList());
 
-		// when:
-		assertFailsWith(
-				() -> subject.doStateTransition(),
-				INSUFFICIENT_ACCOUNT_BALANCE);
-	}
+    // when:
+    assertFailsWith(() -> subject.doStateTransition(), INSUFFICIENT_ACCOUNT_BALANCE);
+  }
 
-	@Test
-	void recomputesImpliedTransfersIfNotAvailableInSpan() {
-		final var a = asAccount("1.2.3");
-		final var b = asAccount("2.3.4");
-		final var impliedTransfers = ImpliedTransfers.valid(
-				validationProps, List.of(
-						hbarChange(a, +100),
-						hbarChange(b, -100)
-				),
-				new ArrayList<>(),
-				new ArrayList<>());
+  @Test
+  void recomputesImpliedTransfersIfNotAvailableInSpan() {
+    final var a = asAccount("1.2.3");
+    final var b = asAccount("2.3.4");
+    final var impliedTransfers =
+        ImpliedTransfers.valid(
+            validationProps,
+            List.of(hbarChange(a, +100), hbarChange(b, -100)),
+            new ArrayList<>(),
+            new ArrayList<>());
 
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
-		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
-				.willReturn(impliedTransfers);
+    givenValidTxnCtx();
+    given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+    // and:
+    given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+        .willReturn(impliedTransfers);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		assertDoesNotThrow(() -> subject.doStateTransition());
-	}
+    // then:
+    assertDoesNotThrow(() -> subject.doStateTransition());
+  }
 
-	@Test
-	void verifyIfAssessedCustomFeesSet() {
-		// setup :
-		final var a = Id.fromGrpcAccount(asAccount("1.2.3"));
-		final var b = Id.fromGrpcAccount(asAccount("2.3.4"));
-		final var c = Id.fromGrpcToken(asToken("4.5.6"));
-		final var d = Id.fromGrpcToken(asToken("5.6.7"));
+  @Test
+  void verifyIfAssessedCustomFeesSet() {
+    // setup :
+    final var a = Id.fromGrpcAccount(asAccount("1.2.3"));
+    final var b = Id.fromGrpcAccount(asAccount("2.3.4"));
+    final var c = Id.fromGrpcToken(asToken("4.5.6"));
+    final var d = Id.fromGrpcToken(asToken("5.6.7"));
 
-		// and :
-		final var customFeesBalanceChange = List.of(
-				new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] { 123L }));
-		final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId()));
-		final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
-		final var impliedTransfers = ImpliedTransfers.valid(
-				validationProps, List.of(
-						hbarChange(a.asGrpcAccount(), +100),
-						hbarChange(b.asGrpcAccount(), -100)
-				),
-				customFees,
-				customFeesBalanceChange);
+    // and :
+    final var customFeesBalanceChange =
+        List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
+    final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId()));
+    final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
+    final var impliedTransfers =
+        ImpliedTransfers.valid(
+            validationProps,
+            List.of(hbarChange(a.asGrpcAccount(), +100), hbarChange(b.asGrpcAccount(), -100)),
+            customFees,
+            customFeesBalanceChange);
 
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
-		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
-				.willReturn(impliedTransfers);
+    givenValidTxnCtx();
+    given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+    // and:
+    given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+        .willReturn(impliedTransfers);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
+    // then:
+    verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
+  }
 
-		// then:
-		verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
-	}
+  @Test
+  void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
+    final var impliedTransfers =
+        ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
+    givenValidTxnCtx();
+    given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+    // and:
+    given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+        .willReturn(impliedTransfers);
 
-	@Test
-	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
-		final var impliedTransfers = ImpliedTransfers.invalid(
-				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+    // when & then:
+    assertFailsWith(() -> subject.doStateTransition(), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+    // then:
+    verifyNoInteractions(ledger);
+  }
 
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
-		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
-				.willReturn(impliedTransfers);
+  @Test
+  void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
+    // setup:
+    final var impliedTransfers =
+        ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
-		// when & then:
-		assertFailsWith(
-				() -> subject.doStateTransition(),
-				TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN
-		);
-		// then:
-		verifyNoInteractions(ledger);
-	}
+    given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
-	@Test
-	void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
-		// setup:
-		final var impliedTransfers = ImpliedTransfers.invalid(
-				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+    // when:
+    final var validity = subject.validateSemantics(accessor);
 
-		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
+    // then:
+    assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
+  }
 
-		// when:
-		final var validity = subject.validateSemantics(accessor);
+  @Test
+  void computesFailureIfImpliedTransfersNotInSpan() {
+    // setup:
+    final var pretendXferTxn = TransactionBody.getDefaultInstance();
 
-		// then:
-		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
-	}
+    given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
+    given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+    given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+    given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+    given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+    given(accessor.getTxn()).willReturn(pretendXferTxn);
+    given(
+            transferSemanticChecks.fullPureValidation(
+                pretendXferTxn.getCryptoTransfer().getTransfers(),
+                pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
+                validationProps))
+        .willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
-	@Test
-	void computesFailureIfImpliedTransfersNotInSpan() {
-		// setup:
-		final var pretendXferTxn = TransactionBody.getDefaultInstance();
+    // when:
+    final var validity = subject.validateSemantics(accessor);
 
-		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
-		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
-		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
-		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
-		given(accessor.getTxn()).willReturn(pretendXferTxn);
-		given(transferSemanticChecks.fullPureValidation(
-				pretendXferTxn.getCryptoTransfer().getTransfers(),
-				pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
-				validationProps)
-		).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+    // then:
+    assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
+  }
 
-		// when:
-		final var validity = subject.validateSemantics(accessor);
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
 
-		// then:
-		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
-	}
+    // expect:
+    assertTrue(subject.applicability().test(cryptoTransferTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
+  private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+    var ex = assertThrows(InvalidTransactionException.class, something::run);
+    assertEquals(status, ex.getResponseCode());
+  }
 
-		// expect:
-		assertTrue(subject.applicability().test(cryptoTransferTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+  private void givenValidTxnCtx(TransferList wrapper) {
+    cryptoTransferTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(ourTxnId())
+            .setCryptoTransfer(
+                CryptoTransferTransactionBody.newBuilder().setTransfers(wrapper).build())
+            .build();
+  }
 
-	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
-	}
+  private void givenValidTxnCtx() {
+    cryptoTransferTxn = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
+    given(txnCtx.accessor()).willReturn(accessor);
+  }
 
-	private void givenValidTxnCtx(TransferList wrapper) {
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoTransfer(
-						CryptoTransferTransactionBody.newBuilder()
-								.setTransfers(wrapper)
-								.build()
-				).build();
-	}
+  private TransactionID ourTxnId() {
+    return TransactionID.newBuilder()
+        .setAccountID(payer)
+        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
+        .build();
+  }
 
-	private void givenValidTxnCtx() {
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-		given(txnCtx.accessor()).willReturn(accessor);
-	}
-
-	private TransactionID ourTxnId() {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
-				.build();
-	}
-
-	CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()
-			.setTransfers(TransferList.newBuilder()
-					.addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
-					.addAccountAmounts(adjustFrom(asAccount("0.0.2"), +1_000))
-					.build())
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(asToken("0.0.12345"))
-					.addAllTransfers(List.of(
-							adjustFrom(asAccount("0.0.2"), -1_000),
-							adjustFrom(asAccount("0.0.3"), +1_000)
-					)))
-			.build();
-
+  CryptoTransferTransactionBody xfers =
+      CryptoTransferTransactionBody.newBuilder()
+          .setTransfers(
+              TransferList.newBuilder()
+                  .addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
+                  .addAccountAmounts(adjustFrom(asAccount("0.0.2"), +1_000))
+                  .build())
+          .addTokenTransfers(
+              TokenTransferList.newBuilder()
+                  .setToken(asToken("0.0.12345"))
+                  .addAllTransfers(
+                      List.of(
+                          adjustFrom(asAccount("0.0.2"), -1_000),
+                          adjustFrom(asAccount("0.0.3"), +1_000))))
+          .build();
 }

@@ -20,33 +20,33 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class MockAppender extends AbstractAppender {
-	private final List<String> messages = new ArrayList<>();
+  private final List<String> messages = new ArrayList<>();
 
-	public MockAppender() {
-		super("MockAppender", null, null, true, null);
-	}
+  public MockAppender() {
+    super("MockAppender", null, null, true, null);
+  }
 
-	@Override
-	public void append(LogEvent event) {
-		messages.add(String.format("%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
-	}
+  @Override
+  public void append(LogEvent event) {
+    messages.add(
+        String.format("%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
+  }
 
-	public int size() {
-		return messages.size();
-	}
+  public int size() {
+    return messages.size();
+  }
 
-	public void clear() {
-		messages.clear();
-	}
+  public void clear() {
+    messages.clear();
+  }
 
-	public String get(int index) {
-		return messages.get(index);
-	}
+  public String get(int index) {
+    return messages.get(index);
+  }
 }

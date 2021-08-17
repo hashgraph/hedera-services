@@ -24,102 +24,96 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
 public class RichInstant {
-	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
+  public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
-	private int nanos;
-	private long seconds;
+  private int nanos;
+  private long seconds;
 
-	public RichInstant() {
-	}
+  public RichInstant() {}
 
-	public RichInstant(long seconds, int nanos) {
-		this.seconds = seconds;
-		this.nanos = nanos;
-	}
+  public RichInstant(long seconds, int nanos) {
+    this.seconds = seconds;
+    this.nanos = nanos;
+  }
 
-	public static RichInstant from(SerializableDataInputStream in) throws IOException {
-		return new RichInstant(in.readLong(), in.readInt());
-	}
+  public static RichInstant from(SerializableDataInputStream in) throws IOException {
+    return new RichInstant(in.readLong(), in.readInt());
+  }
 
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLong(seconds);
-		out.writeInt(nanos);
-	}
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeLong(seconds);
+    out.writeInt(nanos);
+  }
 
-	/* --- Object --- */
+  /* --- Object --- */
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("seconds", seconds)
-				.add("nanos", nanos)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("seconds", seconds).add("nanos", nanos).toString();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || RichInstant.class != o.getClass()) {
-			return false;
-		}
-		var that = (RichInstant) o;
-		return seconds == that.seconds && nanos == that.nanos;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || RichInstant.class != o.getClass()) {
+      return false;
+    }
+    var that = (RichInstant) o;
+    return seconds == that.seconds && nanos == that.nanos;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(seconds, nanos);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(seconds, nanos);
+  }
 
-	/* --- Bean --- */
+  /* --- Bean --- */
 
-	public long getSeconds() {
-		return seconds;
-	}
+  public long getSeconds() {
+    return seconds;
+  }
 
-	public int getNanos() {
-		return nanos;
-	}
+  public int getNanos() {
+    return nanos;
+  }
 
+  /* --- Helpers --- */
 
-	/* --- Helpers --- */
+  public static RichInstant fromGrpc(Timestamp grpc) {
+    return grpc.equals(Timestamp.getDefaultInstance())
+        ? MISSING_INSTANT
+        : new RichInstant(grpc.getSeconds(), grpc.getNanos());
+  }
 
-	public static RichInstant fromGrpc(Timestamp grpc) {
-		return grpc.equals(Timestamp.getDefaultInstance())
-				? MISSING_INSTANT
-				: new RichInstant(grpc.getSeconds(), grpc.getNanos());
-	}
+  public Timestamp toGrpc() {
+    return isMissing()
+        ? Timestamp.getDefaultInstance()
+        : Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+  }
 
-	public Timestamp toGrpc() {
-		return isMissing()
-				? Timestamp.getDefaultInstance() :
-				Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
-	}
+  public boolean isAfter(RichInstant other) {
+    return (seconds > other.seconds) || (seconds == other.seconds && (nanos > other.nanos));
+  }
 
-	public boolean isAfter(RichInstant other) {
-		return (seconds > other.seconds) || (seconds == other.seconds && (nanos > other.nanos));
-	}
+  public Instant toJava() {
+    return Instant.ofEpochSecond(seconds, nanos);
+  }
 
-	public Instant toJava() {
-		return Instant.ofEpochSecond(seconds, nanos);
-	}
+  public static RichInstant fromJava(Instant when) {
+    return Optional.ofNullable(when)
+        .map(at -> new RichInstant(at.getEpochSecond(), at.getNano()))
+        .orElse(null);
+  }
 
-	public static RichInstant fromJava(Instant when) {
-		return Optional.ofNullable(when)
-				.map(at -> new RichInstant(at.getEpochSecond(), at.getNano()))
-				.orElse(null);
-	}
-
-	public boolean isMissing() {
-		return this == MISSING_INSTANT;
-	}
+  public boolean isMissing() {
+    return this == MISSING_INSTANT;
+  }
 }

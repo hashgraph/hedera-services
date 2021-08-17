@@ -20,6 +20,9 @@ package com.hedera.services.fees.calculation.token.queries;
  * ‍
  */
 
+import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
+import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.token.TokenGetInfoUsage;
@@ -28,67 +31,67 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
-import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
-
 public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
+  static Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasTokenGetInfo();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasTokenGetInfo();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getTokenGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageFor(
+        query, view, query.getTokenGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    return usageFor(query, view, type, NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				query.getTokenGetInfo().getHeader().getResponseType(),
-				Optional.of(queryCtx));
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+    return usageFor(
+        query, view, query.getTokenGetInfo().getHeader().getResponseType(), Optional.of(queryCtx));
+  }
 
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getTokenGetInfo();
-		var optionalInfo = view.infoForToken(op.getToken());
-		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
-					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
-					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
-					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
-					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
-					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
-					.givenCurrentName(info.getName())
-					.givenCurrentMemo(info.getMemo())
-					.givenCurrentSymbol(info.getSymbol());
-			if (info.hasAutoRenewAccount()) {
-				estimate.givenCurrentlyUsingAutoRenewAccount();
-			}
-			return estimate.get();
-		} else {
-			return FeeData.getDefaultInstance();
-		}
-	}
+  private FeeData usageFor(
+      Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
+    var op = query.getTokenGetInfo();
+    var optionalInfo = view.infoForToken(op.getToken());
+    if (optionalInfo.isPresent()) {
+      var info = optionalInfo.get();
+      queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info));
+      var estimate =
+          factory
+              .apply(query)
+              .givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+              .givenCurrentFreezeKey(
+                  ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+              .givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+              .givenCurrentSupplyKey(
+                  ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+              .givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+              .givenCurrentName(info.getName())
+              .givenCurrentMemo(info.getMemo())
+              .givenCurrentSymbol(info.getSymbol());
+      if (info.hasAutoRenewAccount()) {
+        estimate.givenCurrentlyUsingAutoRenewAccount();
+      }
+      return estimate.get();
+    } else {
+      return FeeData.getDefaultInstance();
+    }
+  }
 
-	public static Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
-		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
-	}
+  public static Optional<Key> ifPresent(
+      TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
+    return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
+  }
 }

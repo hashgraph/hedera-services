@@ -20,6 +20,9 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
@@ -32,93 +35,88 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 /**
- * Implements the {@link TransitionLogic} for a HAPI CryptoTransfer transaction,
- * and the conditions under which such logic is syntactically correct. (It is
- * possible that the <i>semantics</i> of the transaction will still be wrong;
- * for example, if one of the accounts involved no longer has the necessary
- * funds available after consensus.)
+ * Implements the {@link TransitionLogic} for a HAPI CryptoTransfer transaction, and the conditions
+ * under which such logic is syntactically correct. (It is possible that the <i>semantics</i> of the
+ * transaction will still be wrong; for example, if one of the accounts involved no longer has the
+ * necessary funds available after consensus.)
  *
  * @author Michael Tinker
  */
 public class CryptoTransferTransitionLogic implements TransitionLogic {
-	private final HederaLedger ledger;
-	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
-	private final ImpliedTransfersMarshal impliedTransfersMarshal;
-	private final PureTransferSemanticChecks transferSemanticChecks;
-	private final ExpandHandleSpanMapAccessor spanMapAccessor;
+  private final HederaLedger ledger;
+  private final TransactionContext txnCtx;
+  private final GlobalDynamicProperties dynamicProperties;
+  private final ImpliedTransfersMarshal impliedTransfersMarshal;
+  private final PureTransferSemanticChecks transferSemanticChecks;
+  private final ExpandHandleSpanMapAccessor spanMapAccessor;
 
-	public CryptoTransferTransitionLogic(
-			HederaLedger ledger,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties,
-			ImpliedTransfersMarshal impliedTransfersMarshal,
-			PureTransferSemanticChecks transferSemanticChecks,
-			ExpandHandleSpanMapAccessor spanMapAccessor
-	) {
-		this.txnCtx = txnCtx;
-		this.ledger = ledger;
-		this.spanMapAccessor = spanMapAccessor;
-		this.dynamicProperties = dynamicProperties;
-		this.transferSemanticChecks = transferSemanticChecks;
-		this.impliedTransfersMarshal = impliedTransfersMarshal;
-	}
+  public CryptoTransferTransitionLogic(
+      HederaLedger ledger,
+      TransactionContext txnCtx,
+      GlobalDynamicProperties dynamicProperties,
+      ImpliedTransfersMarshal impliedTransfersMarshal,
+      PureTransferSemanticChecks transferSemanticChecks,
+      ExpandHandleSpanMapAccessor spanMapAccessor) {
+    this.txnCtx = txnCtx;
+    this.ledger = ledger;
+    this.spanMapAccessor = spanMapAccessor;
+    this.dynamicProperties = dynamicProperties;
+    this.transferSemanticChecks = transferSemanticChecks;
+    this.impliedTransfersMarshal = impliedTransfersMarshal;
+  }
 
-	@Override
-	public void doStateTransition() {
-		final var accessor = txnCtx.accessor();
-		final var impliedTransfers = finalImpliedTransfersFor(accessor);
+  @Override
+  public void doStateTransition() {
+    final var accessor = txnCtx.accessor();
+    final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
-		var outcome = impliedTransfers.getMeta().code();
-		validateTrue(outcome == OK, outcome);
+    var outcome = impliedTransfers.getMeta().code();
+    validateTrue(outcome == OK, outcome);
 
-		final var changes = impliedTransfers.getAllBalanceChanges();
-		ledger.doZeroSum(changes);
+    final var changes = impliedTransfers.getAllBalanceChanges();
+    ledger.doZeroSum(changes);
 
-		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
-	}
+    txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
+  }
 
-	private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
-		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (impliedTransfers == null) {
-			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
-		}
-		return impliedTransfers;
-	}
+  private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
+    var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+    if (impliedTransfers == null) {
+      final var op = accessor.getTxn().getCryptoTransfer();
+      impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+    }
+    return impliedTransfers;
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasCryptoTransfer;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasCryptoTransfer;
+  }
 
-	@Override
-	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (impliedTransfers != null) {
-			/* Accessor is for a consensus transaction with a expand-handle span
-			 * we've been managing in the normal way. */
-			return impliedTransfers.getMeta().code();
-		} else {
-			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
-			transaction that reached consensus without a managed expand-handle span. */
-			final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-					dynamicProperties.maxTransferListSize(),
-					dynamicProperties.maxTokenTransferListSize(),
-					dynamicProperties.maxNftTransfersLen(),
-					dynamicProperties.maxCustomFeeDepth(),
-					dynamicProperties.maxXferBalanceChanges(),
-					dynamicProperties.areNftsEnabled());
-			final var op = accessor.getTxn().getCryptoTransfer();
-			return transferSemanticChecks.fullPureValidation(
-					op.getTransfers(), op.getTokenTransfersList(), validationProps);
-		}
-	}
+  @Override
+  public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+    final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+    if (impliedTransfers != null) {
+      /* Accessor is for a consensus transaction with a expand-handle span
+       * we've been managing in the normal way. */
+      return impliedTransfers.getMeta().code();
+    } else {
+      /* Accessor is for either (1) a transaction in precheck or (2) a scheduled
+      transaction that reached consensus without a managed expand-handle span. */
+      final var validationProps =
+          new ImpliedTransfersMeta.ValidationProps(
+              dynamicProperties.maxTransferListSize(),
+              dynamicProperties.maxTokenTransferListSize(),
+              dynamicProperties.maxNftTransfersLen(),
+              dynamicProperties.maxCustomFeeDepth(),
+              dynamicProperties.maxXferBalanceChanges(),
+              dynamicProperties.areNftsEnabled());
+      final var op = accessor.getTxn().getCryptoTransfer();
+      return transferSemanticChecks.fullPureValidation(
+          op.getTransfers(), op.getTokenTransfersList(), validationProps);
+    }
+  }
 }

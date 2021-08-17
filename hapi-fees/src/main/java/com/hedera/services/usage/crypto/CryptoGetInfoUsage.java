@@ -20,44 +20,43 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
-import com.hedera.services.usage.QueryUsage;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-
-import java.nio.charset.Charset;
-
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+import com.hedera.services.usage.QueryUsage;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import java.nio.charset.Charset;
+
 public class CryptoGetInfoUsage extends QueryUsage {
-	private CryptoGetInfoUsage(Query query) {
-		super(query.getCryptoGetInfo().getHeader().getResponseType());
-		addTb(BASIC_ENTITY_ID_SIZE);
-		addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
-	}
+  private CryptoGetInfoUsage(Query query) {
+    super(query.getCryptoGetInfo().getHeader().getResponseType());
+    addTb(BASIC_ENTITY_ID_SIZE);
+    addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
+  }
 
-	public static CryptoGetInfoUsage newEstimate(Query query) {
-		return new CryptoGetInfoUsage(query);
-	}
+  public static CryptoGetInfoUsage newEstimate(Query query) {
+    return new CryptoGetInfoUsage(query);
+  }
 
-	public CryptoGetInfoUsage givenCurrentKey(Key key) {
-		addRb(getAccountKeyStorageSize(key));
-		return this;
-	}
+  public CryptoGetInfoUsage givenCurrentKey(Key key) {
+    addRb(getAccountKeyStorageSize(key));
+    return this;
+  }
 
-	public CryptoGetInfoUsage givenCurrentMemo(String memo) {
-		addRb(memo.getBytes(Charset.forName("UTF-8")).length);
-		return this;
-	}
+  public CryptoGetInfoUsage givenCurrentMemo(String memo) {
+    addRb(memo.getBytes(Charset.forName("UTF-8")).length);
+    return this;
+  }
 
-	public CryptoGetInfoUsage givenCurrentTokenAssocs(int count) {
-		addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
-		return this;
-	}
+  public CryptoGetInfoUsage givenCurrentTokenAssocs(int count) {
+    addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+    return this;
+  }
 
-	public CryptoGetInfoUsage givenCurrentlyUsingProxy() {
-		addRb(BASIC_ENTITY_ID_SIZE);
-		return this;
-	}
+  public CryptoGetInfoUsage givenCurrentlyUsingProxy() {
+    addRb(BASIC_ENTITY_ID_SIZE);
+    return this;
+  }
 }

@@ -26,50 +26,49 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class TokenAssociateFactory extends SignedTxnFactory<TokenAssociateFactory> {
-	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
+  Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
 
-	private AccountID target;
-	private List<TokenID> associations = new ArrayList<>();
+  private AccountID target;
+  private List<TokenID> associations = new ArrayList<>();
 
-	private TokenAssociateFactory() {
-	}
+  private TokenAssociateFactory() {}
 
-	public static TokenAssociateFactory newSignedTokenAssociate() {
-		return new TokenAssociateFactory();
-	}
+  public static TokenAssociateFactory newSignedTokenAssociate() {
+    return new TokenAssociateFactory();
+  }
 
-	public TokenAssociateFactory targeting(AccountID target) {
-		this.target = target;
-		return this;
-	}
+  public TokenAssociateFactory targeting(AccountID target) {
+    this.target = target;
+    return this;
+  }
 
-	public TokenAssociateFactory associating(TokenID token) {
-		associations.add(token);
-		return this;
-	}
+  public TokenAssociateFactory associating(TokenID token) {
+    associations.add(token);
+    return this;
+  }
 
-	@Override
-	protected TokenAssociateFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenAssociateFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		txn.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
-				.setAccount(target)
-				.addAllTokens(associations))
-				.build();
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    txn.setTokenAssociate(
+            TokenAssociateTransactionBody.newBuilder()
+                .setAccount(target)
+                .addAllTokens(associations))
+        .build();
+  }
 }

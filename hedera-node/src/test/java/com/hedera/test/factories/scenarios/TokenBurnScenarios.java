@@ -20,41 +20,34 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenBurnFactory.newSignedTokenBurn;
 
+import com.hedera.services.utils.PlatformTxnAccessor;
+
 public enum TokenBurnScenarios implements TxnHandlingScenario {
-	BURN_WITH_SUPPLY_KEYED_TOKEN {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenBurn()
-							.burning(KNOWN_TOKEN_WITH_SUPPLY)
-							.nonPayerKts(TOKEN_SUPPLY_KT)
-							.get()
-			));
-		}
-	},
-	BURN_WITH_MISSING_TOKEN {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenBurn()
-							.burning(MISSING_TOKEN)
-							.get()
-			));
-		}
-	},
-	BURN_FOR_TOKEN_WITHOUT_SUPPLY {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenBurn()
-							.burning(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-							.get()
-			));
-		}
-	},
+  BURN_WITH_SUPPLY_KEYED_TOKEN {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(
+              newSignedTokenBurn()
+                  .burning(KNOWN_TOKEN_WITH_SUPPLY)
+                  .nonPayerKts(TOKEN_SUPPLY_KT)
+                  .get()));
+    }
+  },
+  BURN_WITH_MISSING_TOKEN {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(from(newSignedTokenBurn().burning(MISSING_TOKEN).get()));
+    }
+  },
+  BURN_FOR_TOKEN_WITHOUT_SUPPLY {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(newSignedTokenBurn().burning(KNOWN_TOKEN_NO_SPECIAL_KEYS).get()));
+    }
+  },
 }

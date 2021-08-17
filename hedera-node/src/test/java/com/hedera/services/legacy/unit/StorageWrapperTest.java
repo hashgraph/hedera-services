@@ -20,83 +20,83 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.fcmap.FCMap;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
-
 import static com.hedera.test.utils.TxnUtils.randomUtf8Bytes;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.swirlds.fcmap.FCMap;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 class StorageWrapperTest {
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
-	private static final String TEST_CREATE_FILE_PATH = "/0/a1234/";
-	private static final String TEST_CREATE_DELETE_FILE_PATH = "/0/a1236/";
-	private static final String TEST_CREATE_APPEND_FILE_PATH = "/0/a1237/";
-	private static final String TEST_OVERRIDE_FILE_PATH = "/0/a1239/";
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
+  private static final String TEST_CREATE_FILE_PATH = "/0/a1234/";
+  private static final String TEST_CREATE_DELETE_FILE_PATH = "/0/a1236/";
+  private static final String TEST_CREATE_APPEND_FILE_PATH = "/0/a1237/";
+  private static final String TEST_OVERRIDE_FILE_PATH = "/0/a1239/";
 
-	@Test
-	void testFileCreateRead() {
-		final var fileCreateContent = randomUtf8Bytes(5000);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+  @Test
+  void testFileCreateRead() {
+    final var fileCreateContent = randomUtf8Bytes(5000);
+    final var storageWrapper = new FCStorageWrapper(storageMap);
 
-		storageWrapper.fileCreate(TEST_CREATE_FILE_PATH, fileCreateContent);
-		final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_FILE_PATH);
+    storageWrapper.fileCreate(TEST_CREATE_FILE_PATH, fileCreateContent);
+    final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_FILE_PATH);
 
-		assertTrue(storageWrapper.fileExists(TEST_CREATE_FILE_PATH));
-		assertArrayEquals(fileCreateContent, fileReadContent);
-	}
+    assertTrue(storageWrapper.fileExists(TEST_CREATE_FILE_PATH));
+    assertArrayEquals(fileCreateContent, fileReadContent);
+  }
 
-	@Test
-	void testFileCreateDelete() throws StorageKeyNotFoundException {
-		final var fileCreateContent = randomUtf8Bytes(5000);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+  @Test
+  void testFileCreateDelete() throws StorageKeyNotFoundException {
+    final var fileCreateContent = randomUtf8Bytes(5000);
+    final var storageWrapper = new FCStorageWrapper(storageMap);
 
-		storageWrapper.fileCreate(TEST_CREATE_DELETE_FILE_PATH, fileCreateContent);
-		assertTrue(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
+    storageWrapper.fileCreate(TEST_CREATE_DELETE_FILE_PATH, fileCreateContent);
+    assertTrue(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
 
-		storageWrapper.delete(TEST_CREATE_DELETE_FILE_PATH);
-		Assertions.assertFalse(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
-	}
+    storageWrapper.delete(TEST_CREATE_DELETE_FILE_PATH);
+    Assertions.assertFalse(storageWrapper.fileExists(TEST_CREATE_DELETE_FILE_PATH));
+  }
 
-	@Test
-	void testFileCreateAppend() {
-		final var fileCombinedContentExpected = randomUtf8Bytes(6000);
-		final var fistChunklength = ThreadLocalRandom.current().nextInt(1000, 5000);
-		final var file1Content = Arrays.copyOfRange(fileCombinedContentExpected, 0, fistChunklength);
-		final var file2Content = Arrays.copyOfRange(fileCombinedContentExpected, fistChunklength,
-				fileCombinedContentExpected.length);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+  @Test
+  void testFileCreateAppend() {
+    final var fileCombinedContentExpected = randomUtf8Bytes(6000);
+    final var fistChunklength = ThreadLocalRandom.current().nextInt(1000, 5000);
+    final var file1Content = Arrays.copyOfRange(fileCombinedContentExpected, 0, fistChunklength);
+    final var file2Content =
+        Arrays.copyOfRange(
+            fileCombinedContentExpected, fistChunklength, fileCombinedContentExpected.length);
+    final var storageWrapper = new FCStorageWrapper(storageMap);
 
-		storageWrapper.fileCreate(TEST_CREATE_APPEND_FILE_PATH, file1Content);
-		assertTrue(storageWrapper.fileExists(TEST_CREATE_APPEND_FILE_PATH));
+    storageWrapper.fileCreate(TEST_CREATE_APPEND_FILE_PATH, file1Content);
+    assertTrue(storageWrapper.fileExists(TEST_CREATE_APPEND_FILE_PATH));
 
-		storageWrapper.fileUpdate(TEST_CREATE_APPEND_FILE_PATH, file2Content);
-		final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_APPEND_FILE_PATH);
-		assertArrayEquals(fileCombinedContentExpected, fileReadContent);
-	}
+    storageWrapper.fileUpdate(TEST_CREATE_APPEND_FILE_PATH, file2Content);
+    final var fileReadContent = storageWrapper.fileRead(TEST_CREATE_APPEND_FILE_PATH);
+    assertArrayEquals(fileCombinedContentExpected, fileReadContent);
+  }
 
-	@Test
-	void testOverrideFile() {
-		final var fileCreateContent = randomUtf8Bytes(5000);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+  @Test
+  void testOverrideFile() {
+    final var fileCreateContent = randomUtf8Bytes(5000);
+    final var storageWrapper = new FCStorageWrapper(storageMap);
 
-		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileCreateContent);
-		assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
+    storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileCreateContent);
+    assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
 
-		final var fileReadContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
-		assertArrayEquals(fileCreateContent, fileReadContent);
+    final var fileReadContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
+    assertArrayEquals(fileCreateContent, fileReadContent);
 
-		final var fileOverriddenContent = randomUtf8Bytes(2000);
-		storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileOverriddenContent);
-		assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
+    final var fileOverriddenContent = randomUtf8Bytes(2000);
+    storageWrapper.fileCreate(TEST_OVERRIDE_FILE_PATH, fileOverriddenContent);
+    assertTrue(storageWrapper.fileExists(TEST_OVERRIDE_FILE_PATH));
 
-		final var fileReadAfterOverrideContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
-		assertArrayEquals(fileOverriddenContent, fileReadAfterOverrideContent);
-	}
+    final var fileReadAfterOverrideContent = storageWrapper.fileRead(TEST_OVERRIDE_FILE_PATH);
+    assertArrayEquals(fileOverriddenContent, fileReadAfterOverrideContent);
+  }
 }

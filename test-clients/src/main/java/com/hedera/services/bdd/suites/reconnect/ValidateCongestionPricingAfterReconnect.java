@@ -20,23 +20,6 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -54,146 +37,152 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
+
 /**
- * A reconnect test in which a congestion pricing multiplier is updated and triggered while the node 0.0.8 is
- * disconnected from the network. Once the node is reconnected validate that the congestion pricing is in affect on
- * reconnected node
+ * A reconnect test in which a congestion pricing multiplier is updated and triggered while the node
+ * 0.0.8 is disconnected from the network. Once the node is reconnected validate that the congestion
+ * pricing is in affect on reconnected node
  */
 public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
-	private static final String defaultCongestionMultipliers =
-			HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
-	private static final String defaultMinCongestionPeriod =
-			HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
+  private static final Logger log =
+      LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
+  private static final String defaultCongestionMultipliers =
+      HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
+  private static final String defaultMinCongestionPeriod =
+      HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
 
-	public static void main(String... args) {
-		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				new HapiApiSpec[] {
-						runTransfersBeforeReconnect(),
-						validateCongestionPricing(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          runTransfersBeforeReconnect(), validateCongestionPricing(),
+        });
+  }
 
-	private HapiApiSpec validateCongestionPricing() {
-		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
-		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-		String tmpMinCongestionPeriodInSecs = "5";
-		String civilianAccount = "civilian";
-		String oneContract = "contract";
+  private HapiApiSpec validateCongestionPricing() {
+    var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
+    var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+    String tmpMinCongestionPeriodInSecs = "5";
+    String civilianAccount = "civilian";
+    String oneContract = "contract";
 
-		AtomicLong normalPrice = new AtomicLong();
-		AtomicLong tenXPrice = new AtomicLong();
+    AtomicLong normalPrice = new AtomicLong();
+    AtomicLong tenXPrice = new AtomicLong();
 
-		return customHapiSpec("ValidateCongestionPricing")
-				.withProperties(Map.of(
-						"txn.start.offset.secs", "-5")
-				)
-				.given(
-						sleepFor(Duration.ofSeconds(25).toMillis()),
+    return customHapiSpec("ValidateCongestionPricing")
+        .withProperties(Map.of("txn.start.offset.secs", "-5"))
+        .given(
+            sleepFor(Duration.ofSeconds(25).toMillis()),
+            cryptoCreate(civilianAccount).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
+            fileCreate("bytecode")
+                .path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
+                .payingWith(GENESIS),
+            contractCreate(oneContract).bytecode("bytecode").payingWith(GENESIS).logging(),
+            contractCall(oneContract)
+                .payingWith(civilianAccount)
+                .fee(ONE_HUNDRED_HBARS)
+                .sending(ONE_HBAR)
+                .via("cheapCallBeforeCongestionPricing"),
+            getTxnRecord("cheapCallBeforeCongestionPricing").providingFeeTo(normalPrice::set),
+            getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode())
+        .when(
+            /* update the multiplier to 10x with a 1% congestion for tmpMinCongestionPeriodInSecs */
+            fileUpdate(APP_PROPERTIES)
+                .fee(ONE_HUNDRED_HBARS)
+                .payingWith(EXCHANGE_RATE_CONTROL)
+                .overridingProps(
+                    Map.of(
+                        "fees.percentCongestionMultipliers",
+                        "1,10x",
+                        "fees.minCongestionPeriod",
+                        tmpMinCongestionPeriodInSecs)),
+            fileUpdate(THROTTLE_DEFS)
+                .fee(ONE_HUNDRED_HBARS)
+                .payingWith(EXCHANGE_RATE_CONTROL)
+                .contents(artificialLimits.toByteArray()),
+            blockingOrder(
+                IntStream.range(0, 20)
+                    .mapToObj(
+                        i ->
+                            contractCall(oneContract)
+                                .payingWith(GENESIS)
+                                .fee(ONE_HUNDRED_HBARS)
+                                .sending(ONE_HBAR))
+                    .toArray(HapiSpecOperation[]::new)))
+        .then(
+            withLiveNode(reconnectingNode)
+                .within(5 * 60, TimeUnit.SECONDS)
+                .loggingAvailabilityEvery(30)
+                .sleepingBetweenRetriesFor(10),
+            blockingOrder(
+                IntStream.range(0, 10)
+                    .mapToObj(
+                        i ->
+                            contractCall(oneContract)
+                                .payingWith(GENESIS)
+                                .fee(ONE_HUNDRED_HBARS)
+                                .sending(ONE_HBAR)
+                                .setNode(reconnectingNode))
+                    .toArray(HapiSpecOperation[]::new)),
+            contractCall(oneContract)
+                .payingWith(civilianAccount)
+                .fee(ONE_HUNDRED_HBARS)
+                .sending(ONE_HBAR)
+                .via("pricyCallAfterReconnect")
+                .setNode(reconnectingNode),
+            getTxnRecord("pricyCallAfterReconnect")
+                .payingWith(GENESIS)
+                .providingFeeTo(tenXPrice::set)
+                .setNode(reconnectingNode),
 
-						cryptoCreate(civilianAccount)
-								.payingWith(GENESIS)
-								.balance(ONE_MILLION_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS),
-						contractCreate(oneContract)
-								.bytecode("bytecode")
-								.payingWith(GENESIS)
-								.logging(),
-						contractCall(oneContract)
-								.payingWith(civilianAccount)
-								.fee(ONE_HUNDRED_HBARS)
-								.sending(ONE_HBAR)
-								.via("cheapCallBeforeCongestionPricing"),
-						getTxnRecord("cheapCallBeforeCongestionPricing")
-								.providingFeeTo(normalPrice::set),
-						getAccountBalance(GENESIS)
-								.setNode(reconnectingNode)
-								.unavailableNode()
-				).when(
-						/* update the multiplier to 10x with a 1% congestion for tmpMinCongestionPeriodInSecs */
-						fileUpdate(APP_PROPERTIES)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.overridingProps(Map.of(
-										"fees.percentCongestionMultipliers", "1,10x",
-										"fees.minCongestionPeriod", tmpMinCongestionPeriodInSecs
-								)),
-						fileUpdate(THROTTLE_DEFS)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(artificialLimits.toByteArray()),
-						blockingOrder(
-								IntStream.range(0, 20).mapToObj(i ->
-										contractCall(oneContract)
-												.payingWith(GENESIS)
-												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR))
-										.toArray(HapiSpecOperation[]::new)
-						)
-				).then(
-						withLiveNode(reconnectingNode)
-								.within(5 * 60, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
-								.sleepingBetweenRetriesFor(10),
-						blockingOrder(
-								IntStream.range(0, 10).mapToObj(i ->
-										contractCall(oneContract)
-												.payingWith(GENESIS)
-												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR)
-												.setNode(reconnectingNode))
-										.toArray(HapiSpecOperation[]::new)
-						),
-						contractCall(oneContract)
-								.payingWith(civilianAccount)
-								.fee(ONE_HUNDRED_HBARS)
-								.sending(ONE_HBAR)
-								.via("pricyCallAfterReconnect")
-								.setNode(reconnectingNode),
+            /* check if the multiplier took effect in the contract call operation */
+            withOpContext(
+                (spec, opLog) -> {
+                  Assertions.assertEquals(
+                      10.0,
+                      (1.0 * tenXPrice.get()) / normalPrice.get(),
+                      0.1,
+                      "~10x multiplier should be in affect!");
+                }),
 
-						getTxnRecord("pricyCallAfterReconnect")
-								.payingWith(GENESIS)
-								.providingFeeTo(tenXPrice::set)
-								.setNode(reconnectingNode),
+            /* revert the multiplier before test ends */
+            fileUpdate(THROTTLE_DEFS)
+                .fee(ONE_HUNDRED_HBARS)
+                .payingWith(EXCHANGE_RATE_CONTROL)
+                .contents(defaultThrottles.toByteArray())
+                .setNode(reconnectingNode),
+            fileUpdate(APP_PROPERTIES)
+                .fee(ONE_HUNDRED_HBARS)
+                .payingWith(EXCHANGE_RATE_CONTROL)
+                .overridingProps(
+                    Map.of(
+                        "fees.percentCongestionMultipliers", defaultCongestionMultipliers,
+                        "fees.minCongestionPeriod", defaultMinCongestionPeriod)),
+            cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
+                .payingWith(GENESIS));
+  }
 
-						/* check if the multiplier took effect in the contract call operation */
-						withOpContext((spec, opLog) -> {
-							Assertions.assertEquals(
-									10.0,
-									(1.0 * tenXPrice.get()) / normalPrice.get(),
-									0.1,
-									"~10x multiplier should be in affect!");
-						}),
-
-						/* revert the multiplier before test ends */
-						fileUpdate(THROTTLE_DEFS)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(defaultThrottles.toByteArray())
-								.setNode(reconnectingNode),
-						fileUpdate(APP_PROPERTIES)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.overridingProps(Map.of(
-										"fees.percentCongestionMultipliers", defaultCongestionMultipliers,
-										"fees.minCongestionPeriod", defaultMinCongestionPeriod
-								)),
-
-						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-								.payingWith(GENESIS)
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

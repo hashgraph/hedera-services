@@ -21,5 +21,6 @@ package com.hedera.services.context;
  */
 
 public enum ServicesNodeType {
-	STAKED_NODE, ZERO_STAKE_NODE
+  STAKED_NODE,
+  ZERO_STAKE_NODE
 }

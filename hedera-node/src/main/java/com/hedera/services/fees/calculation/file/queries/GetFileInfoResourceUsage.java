@@ -29,40 +29,41 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
 public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
-	private final FileOpsUsage fileOpsUsage;
+  private final FileOpsUsage fileOpsUsage;
 
-	public GetFileInfoResourceUsage(FileOpsUsage fileOpsUsage) {
-		this.fileOpsUsage = fileOpsUsage;
-	}
+  public GetFileInfoResourceUsage(FileOpsUsage fileOpsUsage) {
+    this.fileOpsUsage = fileOpsUsage;
+  }
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasFileGetInfo();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasFileGetInfo();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getFileGetInfo().getHeader().getResponseType());
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageGivenType(query, view, query.getFileGetInfo().getHeader().getResponseType());
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getFileGetInfo();
-		var info = view.infoForFile(op.getFileID());
-		/* Given the test in {@code GetFileInfoAnswer.checkValidity}, this can only be empty
-		 * under the extraordinary circumstance that the desired file expired during the query
-		 * answer flow (which will now fail downstream with an appropriate status code); so
-		 * just return the default {@code FeeData} here. */
-		if (info.isEmpty()) {
-			return FeeData.getDefaultInstance();
-		}
-		var details = info.get();
-		var ctx = ExtantFileContext.newBuilder()
-				.setCurrentSize(details.getSize())
-				.setCurrentWacl(details.getKeys())
-				.setCurrentMemo(details.getMemo())
-				.setCurrentExpiry(details.getExpirationTime().getSeconds())
-				.build();
-		return fileOpsUsage.fileInfoUsage(query, ctx);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    var op = query.getFileGetInfo();
+    var info = view.infoForFile(op.getFileID());
+    /* Given the test in {@code GetFileInfoAnswer.checkValidity}, this can only be empty
+     * under the extraordinary circumstance that the desired file expired during the query
+     * answer flow (which will now fail downstream with an appropriate status code); so
+     * just return the default {@code FeeData} here. */
+    if (info.isEmpty()) {
+      return FeeData.getDefaultInstance();
+    }
+    var details = info.get();
+    var ctx =
+        ExtantFileContext.newBuilder()
+            .setCurrentSize(details.getSize())
+            .setCurrentWacl(details.getKeys())
+            .setCurrentMemo(details.getMemo())
+            .setCurrentExpiry(details.getExpirationTime().getSeconds())
+            .build();
+    return fileOpsUsage.fileInfoUsage(query, ctx);
+  }
 }

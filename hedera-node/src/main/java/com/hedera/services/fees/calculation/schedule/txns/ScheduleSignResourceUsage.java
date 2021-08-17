@@ -30,37 +30,38 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-
 public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
-    private final ScheduleOpsUsage scheduleOpsUsage;
-    private final GlobalDynamicProperties properties;
+  private final ScheduleOpsUsage scheduleOpsUsage;
+  private final GlobalDynamicProperties properties;
 
-    public ScheduleSignResourceUsage(
-            ScheduleOpsUsage scheduleOpsUsage,
-            GlobalDynamicProperties properties
-    ) {
-        this.scheduleOpsUsage = scheduleOpsUsage;
-        this.properties = properties;
+  public ScheduleSignResourceUsage(
+      ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties properties) {
+    this.scheduleOpsUsage = scheduleOpsUsage;
+    this.properties = properties;
+  }
+
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasScheduleSign();
+  }
+
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var op = txn.getScheduleSign();
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+    var optionalInfo = view.infoForSchedule(op.getScheduleID());
+    if (optionalInfo.isPresent()) {
+      var info = optionalInfo.get();
+      return scheduleOpsUsage.scheduleSignUsage(
+          txn, sigUsage, info.getExpirationTime().getSeconds());
+    } else {
+      long latestExpiry =
+          txn.getTransactionID().getTransactionValidStart().getSeconds()
+              + properties.scheduledTxExpiryTimeSecs();
+      return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);
     }
-
-    @Override
-    public boolean applicableTo(TransactionBody txn) {
-        return txn.hasScheduleSign();
-    }
-
-    @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-    	var op = txn.getScheduleSign();
-        var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-
-        var optionalInfo = view.infoForSchedule(op.getScheduleID());
-        if (optionalInfo.isPresent()) {
-            var info = optionalInfo.get();
-            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, info.getExpirationTime().getSeconds());
-        } else {
-            long latestExpiry = txn.getTransactionID().getTransactionValidStart().getSeconds()
-                    + properties.scheduledTxExpiryTimeSecs();
-            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);
-        }
-    }
+  }
 }

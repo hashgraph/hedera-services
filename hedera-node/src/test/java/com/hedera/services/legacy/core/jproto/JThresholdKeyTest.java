@@ -9,9 +9,9 @@ package com.hedera.services.legacy.core.jproto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,16 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class JThresholdKeyTest {
   @Test
@@ -55,9 +54,9 @@ class JThresholdKeyTest {
   }
 
   private Key thresholdKey(KeyList keyList, int threshold) {
-    return Key.newBuilder().setThresholdKey(
-            ThresholdKey.newBuilder().setKeys(keyList).setThreshold(threshold)
-    ).build();
+    return Key.newBuilder()
+        .setThresholdKey(ThresholdKey.newBuilder().setKeys(keyList).setThreshold(threshold))
+        .build();
   }
 
   private JKey jThresholdKey(KeyList keyList, int threshold) throws Exception {
@@ -66,13 +65,11 @@ class JThresholdKeyTest {
 
   @Test
   void JThresholdKeyWithVariousThresholdTest() throws Exception {
-    Key validContractIDKey = Key.newBuilder().setContractID(
-            ContractID.newBuilder().setContractNum(1L).build()
-    ).build();
-    Key validRSA3072Key = Key.newBuilder().setRSA3072(
-            TxnUtils.randomUtf8ByteString(16)
-    ).build();
-    KeyList validKeyList = KeyList.newBuilder().addKeys(validContractIDKey).addKeys(validRSA3072Key).build();
+    Key validContractIDKey =
+        Key.newBuilder().setContractID(ContractID.newBuilder().setContractNum(1L).build()).build();
+    Key validRSA3072Key = Key.newBuilder().setRSA3072(TxnUtils.randomUtf8ByteString(16)).build();
+    KeyList validKeyList =
+        KeyList.newBuilder().addKeys(validContractIDKey).addKeys(validRSA3072Key).build();
 
     assertFalse(jThresholdKey(validKeyList, 0).isValid());
     assertTrue(jThresholdKey(validKeyList, 1).isValid());
@@ -82,17 +79,18 @@ class JThresholdKeyTest {
 
   @Test
   void invalidJThresholdKeyTest() throws Exception {
-    Key validED25519Key = Key.newBuilder().setEd25519(
-            TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
-    ).build();
-    Key validECDSA384Key = Key.newBuilder().setECDSA384(
-            TxnUtils.randomUtf8ByteString(24)
-    ).build();
+    Key validED25519Key =
+        Key.newBuilder()
+            .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
+            .build();
+    Key validECDSA384Key = Key.newBuilder().setECDSA384(TxnUtils.randomUtf8ByteString(24)).build();
     KeyList invalidKeyList1 = KeyList.newBuilder().build();
     Key invalidKey1 = thresholdKey(invalidKeyList1, 1);
-    KeyList invalidKeyList2 = KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey1).build();
+    KeyList invalidKeyList2 =
+        KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey1).build();
     Key invalidKey2 = thresholdKey(invalidKeyList2, 2);
-    KeyList invalidKeyList3 = KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(invalidKey2).build();
+    KeyList invalidKeyList3 =
+        KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(invalidKey2).build();
 
     JKey jThresholdKey1 = JKey.convertKey(invalidKey1, 1);
     assertFalse(jThresholdKey1.isValid());

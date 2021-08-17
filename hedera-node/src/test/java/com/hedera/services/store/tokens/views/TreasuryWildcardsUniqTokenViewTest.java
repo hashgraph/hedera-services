@@ -20,6 +20,12 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -33,6 +39,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,140 +50,145 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Consumer;
-
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willAnswer;
-
 @ExtendWith(MockitoExtension.class)
 class TreasuryWildcardsUniqTokenViewTest {
-	@Mock
-	private Iterator<Long> firstMockRange;
-	@Mock
-	private Iterator<Long> secondMockRange;
-	@Mock
-	private TokenStore tokenStore;
-	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
-	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
-	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
-	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
+  @Mock private Iterator<Long> firstMockRange;
+  @Mock private Iterator<Long> secondMockRange;
+  @Mock private TokenStore tokenStore;
+  @Mock private FCMap<MerkleEntityId, MerkleToken> tokens;
+  @Mock private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+  @Mock private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
+  @Mock private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
+  @Mock private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
 
-	private TreasuryWildcardsUniqTokenView subject;
+  private TreasuryWildcardsUniqTokenView subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new TreasuryWildcardsUniqTokenView(
-				tokenStore, () -> tokens, () -> nfts, () -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType);
-	}
+  @BeforeEach
+  void setUp() {
+    subject =
+        new TreasuryWildcardsUniqTokenView(
+            tokenStore,
+            () -> tokens,
+            () -> nfts,
+            () -> nftsByType,
+            () -> nftsByOwner,
+            () -> treasuryNftsByType);
+  }
 
-	@Test
-	void withNoTreasuriesWorksSameAsExplicitOwners() {
-		setupFirstMockRange();
+  @Test
+  void withNoTreasuriesWorksSameAsExplicitOwners() {
+    setupFirstMockRange();
 
-		given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end + 1);
-		given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end)).willReturn(firstMockRange);
-		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
-		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
+    given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end + 1);
+    given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end)).willReturn(firstMockRange);
+    given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
+    given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
+    final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
 
-		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo), actual);
-	}
+    Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo), actual);
+  }
 
-	@Test
-	void withTreasuriesMergesMultiSource() {
-		setupFirstMockRange();
-		setupSecondMockRange();
+  @Test
+  void withTreasuriesMergesMultiSource() {
+    setupFirstMockRange();
+    setupSecondMockRange();
 
-		given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end - 1);
-		given(treasuryNftsByType.getCount(asPhi(treasuryTokenId.identityCode()))).willReturn(1);
-		given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end - 1)).willReturn(firstMockRange);
-		given(treasuryNftsByType.get(asPhi(treasuryTokenId.identityCode()), 0, 1)).willReturn(secondMockRange);
-		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
-		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
-		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
-		given(tokenStore.listOfTokensServed(grpcOwnerId))
-				.willReturn(List.of(treasuryTokenId.toGrpcTokenId(), yTreasuryTokenId.toGrpcTokenId()));
+    given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end - 1);
+    given(treasuryNftsByType.getCount(asPhi(treasuryTokenId.identityCode()))).willReturn(1);
+    given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end - 1))
+        .willReturn(firstMockRange);
+    given(treasuryNftsByType.get(asPhi(treasuryTokenId.identityCode()), 0, 1))
+        .willReturn(secondMockRange);
+    given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
+    given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
+    given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
+    given(tokenStore.listOfTokensServed(grpcOwnerId))
+        .willReturn(List.of(treasuryTokenId.toGrpcTokenId(), yTreasuryTokenId.toGrpcTokenId()));
 
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
+    final var actual = subject.ownedAssociations(grpcOwnerId, start, end);
 
-		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
-	}
+    Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
+  }
 
-	@Test
-	void getsAllAssociationsWithRangeToSpare() {
-		setupFirstMockRange();
-		setupSecondMockRange();
-		given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end - 1);
-		given(treasuryNftsByType.getCount(asPhi(treasuryTokenId.identityCode()))).willReturn(1);
-		given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end - 1)).willReturn(firstMockRange);
-		given(treasuryNftsByType.get(asPhi(treasuryTokenId.identityCode()), 0, 1)).willReturn(secondMockRange);
-		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
-		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
-		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
-		// and:
-		given(tokenStore.listOfTokensServed(grpcOwnerId))
-				.willReturn(List.of(treasuryTokenId.toGrpcTokenId()));
+  @Test
+  void getsAllAssociationsWithRangeToSpare() {
+    setupFirstMockRange();
+    setupSecondMockRange();
+    given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end - 1);
+    given(treasuryNftsByType.getCount(asPhi(treasuryTokenId.identityCode()))).willReturn(1);
+    given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end - 1))
+        .willReturn(firstMockRange);
+    given(treasuryNftsByType.get(asPhi(treasuryTokenId.identityCode()), 0, 1))
+        .willReturn(secondMockRange);
+    given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
+    given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
+    given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
+    // and:
+    given(tokenStore.listOfTokensServed(grpcOwnerId))
+        .willReturn(List.of(treasuryTokenId.toGrpcTokenId()));
 
-		// when:
-		final var actual = subject.ownedAssociations(grpcOwnerId, start, end+1);
+    // when:
+    final var actual = subject.ownedAssociations(grpcOwnerId, start, end + 1);
 
-		// then:
-		Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
-	}
+    // then:
+    Assertions.assertEquals(List.of(explicitInfo, interpolatedInfo, treasuryInfo), actual);
+  }
 
-	private void setupFirstMockRange() {
-		willAnswer(invocationOnMock -> {
-			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(someExplicitNftId.identityCode());
-			consumer.accept(wildcardNftId.identityCode());
-			return null;
-		}).given(firstMockRange).forEachRemaining(any());
-	}
+  private void setupFirstMockRange() {
+    willAnswer(
+            invocationOnMock -> {
+              final Consumer<Long> consumer = invocationOnMock.getArgument(0);
+              consumer.accept(someExplicitNftId.identityCode());
+              consumer.accept(wildcardNftId.identityCode());
+              return null;
+            })
+        .given(firstMockRange)
+        .forEachRemaining(any());
+  }
 
-	private void setupSecondMockRange() {
-		willAnswer(invocationOnMock -> {
-			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(otherWildcardNftId.identityCode());
-			return null;
-		}).given(secondMockRange).forEachRemaining(any());
-	}
+  private void setupSecondMockRange() {
+    willAnswer(
+            invocationOnMock -> {
+              final Consumer<Long> consumer = invocationOnMock.getArgument(0);
+              consumer.accept(otherWildcardNftId.identityCode());
+              return null;
+            })
+        .given(secondMockRange)
+        .forEachRemaining(any());
+  }
 
-	private final int start = 123;
-	private final int end = 126;
-	private final long someSerial = 1L;
-	private final long wildcardSerial = 2L;
-	private final long treasurySerial = 3L;
-	private final byte[] someMeta = "As you wish...".getBytes(StandardCharsets.UTF_8);
-	private final byte[] wildMeta = "...caution to the wind, then!".getBytes(StandardCharsets.UTF_8);
-	private final byte[] om = "Post-haste!".getBytes(StandardCharsets.UTF_8);
-	private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
-	private final EntityId tokenId = new EntityId(0, 0, 6);
-	private final EntityId otherTokenId = new EntityId(0, 0, 7);
-	private final EntityId treasuryTokenId = new EntityId(0, 0, 8);
-	private final EntityId yTreasuryTokenId = new EntityId(0, 0, 9);
-	private final EntityId ownerId = new EntityId(0, 0, 3);
-	private final AccountID grpcOwnerId = ownerId.toGrpcAccountId();
-	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
-	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
-	private final MerkleUniqueToken otherWildNft = new MerkleUniqueToken(MISSING_ENTITY_ID, om, someCreationTime);
-	private final MerkleUniqueTokenId someExplicitNftId = new MerkleUniqueTokenId(tokenId, someSerial);
-	private final MerkleUniqueTokenId wildcardNftId = new MerkleUniqueTokenId(otherTokenId, wildcardSerial);
-	private final MerkleUniqueTokenId otherWildcardNftId = new MerkleUniqueTokenId(treasuryTokenId, treasurySerial);
-	private final TokenNftInfo explicitInfo = GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
-	private final TokenNftInfo interpolatedInfo = GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft, grpcOwnerId);
-	private final TokenNftInfo treasuryInfo = GrpcUtils.reprOf(treasuryTokenId.toGrpcTokenId(), treasurySerial, otherWildNft, grpcOwnerId);
-
+  private final int start = 123;
+  private final int end = 126;
+  private final long someSerial = 1L;
+  private final long wildcardSerial = 2L;
+  private final long treasurySerial = 3L;
+  private final byte[] someMeta = "As you wish...".getBytes(StandardCharsets.UTF_8);
+  private final byte[] wildMeta = "...caution to the wind, then!".getBytes(StandardCharsets.UTF_8);
+  private final byte[] om = "Post-haste!".getBytes(StandardCharsets.UTF_8);
+  private final RichInstant someCreationTime = new RichInstant(1_234_567L, 890);
+  private final EntityId tokenId = new EntityId(0, 0, 6);
+  private final EntityId otherTokenId = new EntityId(0, 0, 7);
+  private final EntityId treasuryTokenId = new EntityId(0, 0, 8);
+  private final EntityId yTreasuryTokenId = new EntityId(0, 0, 9);
+  private final EntityId ownerId = new EntityId(0, 0, 3);
+  private final AccountID grpcOwnerId = ownerId.toGrpcAccountId();
+  private final MerkleUniqueToken someExplicitNft =
+      new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
+  private final MerkleUniqueToken wildcardNft =
+      new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
+  private final MerkleUniqueToken otherWildNft =
+      new MerkleUniqueToken(MISSING_ENTITY_ID, om, someCreationTime);
+  private final MerkleUniqueTokenId someExplicitNftId =
+      new MerkleUniqueTokenId(tokenId, someSerial);
+  private final MerkleUniqueTokenId wildcardNftId =
+      new MerkleUniqueTokenId(otherTokenId, wildcardSerial);
+  private final MerkleUniqueTokenId otherWildcardNftId =
+      new MerkleUniqueTokenId(treasuryTokenId, treasurySerial);
+  private final TokenNftInfo explicitInfo =
+      GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
+  private final TokenNftInfo interpolatedInfo =
+      GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft, grpcOwnerId);
+  private final TokenNftInfo treasuryInfo =
+      GrpcUtils.reprOf(treasuryTokenId.toGrpcTokenId(), treasurySerial, otherWildNft, grpcOwnerId);
 }

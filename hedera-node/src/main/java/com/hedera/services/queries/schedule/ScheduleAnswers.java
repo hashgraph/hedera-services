@@ -21,13 +21,13 @@ package com.hedera.services.queries.schedule;
  */
 
 public class ScheduleAnswers {
-    private final GetScheduleInfoAnswer scheduleInfo;
+  private final GetScheduleInfoAnswer scheduleInfo;
 
-    public ScheduleAnswers(GetScheduleInfoAnswer scheduleInfo) {
-        this.scheduleInfo = scheduleInfo;
-    }
+  public ScheduleAnswers(GetScheduleInfoAnswer scheduleInfo) {
+    this.scheduleInfo = scheduleInfo;
+  }
 
-    public GetScheduleInfoAnswer getScheduleInfo() {
-        return scheduleInfo;
-    }
+  public GetScheduleInfoAnswer getScheduleInfo() {
+    return scheduleInfo;
+  }
 }

@@ -20,6 +20,9 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
@@ -30,51 +33,47 @@ import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-
 public class PlatformSubmissionManager {
-	private static final Logger log = LogManager.getLogger(PlatformSubmissionManager.class);
+  private static final Logger log = LogManager.getLogger(PlatformSubmissionManager.class);
 
-	private final Platform platform;
-	private final RecordCache recordCache;
-	private final MiscSpeedometers speedometers;
+  private final Platform platform;
+  private final RecordCache recordCache;
+  private final MiscSpeedometers speedometers;
 
-	public PlatformSubmissionManager(
-			Platform platform,
-			RecordCache recordCache,
-			MiscSpeedometers speedometers
-	) {
-		this.platform = platform;
-		this.recordCache = recordCache;
-		this.speedometers = speedometers;
-	}
+  public PlatformSubmissionManager(
+      Platform platform, RecordCache recordCache, MiscSpeedometers speedometers) {
+    this.platform = platform;
+    this.recordCache = recordCache;
+    this.speedometers = speedometers;
+  }
 
-	public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
-		accessor = effective(accessor);
+  public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
+    accessor = effective(accessor);
 
-		var success = (accessor != null) &&
-				platform.createTransaction(new SwirldTransaction(accessor.getSignedTxnWrapperBytes()));
-		if (success) {
-			recordCache.addPreConsensus(accessor.getTxnId());
-			return OK;
-		} else {
-			speedometers.cyclePlatformTxnRejections();
-			return PLATFORM_TRANSACTION_NOT_CREATED;
-		}
-	}
+    var success =
+        (accessor != null)
+            && platform.createTransaction(
+                new SwirldTransaction(accessor.getSignedTxnWrapperBytes()));
+    if (success) {
+      recordCache.addPreConsensus(accessor.getTxnId());
+      return OK;
+    } else {
+      speedometers.cyclePlatformTxnRejections();
+      return PLATFORM_TRANSACTION_NOT_CREATED;
+    }
+  }
 
-	private SignedTxnAccessor effective(SignedTxnAccessor accessor) {
-		var txn = accessor.getTxn();
-		if (txn.hasUncheckedSubmit()) {
-			try {
-				return new SignedTxnAccessor(txn.getUncheckedSubmit().getTransactionBytes().toByteArray());
-			} catch (InvalidProtocolBufferException e) {
-				log.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
-				return null;
-			}
-		} else {
-			return accessor;
-		}
-	}
+  private SignedTxnAccessor effective(SignedTxnAccessor accessor) {
+    var txn = accessor.getTxn();
+    if (txn.hasUncheckedSubmit()) {
+      try {
+        return new SignedTxnAccessor(txn.getUncheckedSubmit().getTransactionBytes().toByteArray());
+      } catch (InvalidProtocolBufferException e) {
+        log.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
+        return null;
+      }
+    } else {
+      return accessor;
+    }
+  }
 }

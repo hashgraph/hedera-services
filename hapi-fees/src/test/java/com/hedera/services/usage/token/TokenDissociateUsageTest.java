@@ -20,6 +20,14 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
@@ -35,70 +43,64 @@ import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 class TokenDissociateUsageTest {
-	private long now = 1_234_567L;
-	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	private TokenID firstId = IdUtils.asToken("0.0.75231");
-	private TokenID secondId = IdUtils.asToken("0.0.75232");
-	private AccountID id = IdUtils.asAccount("1.2.3");
+  private long now = 1_234_567L;
+  private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+  private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+  private TokenID firstId = IdUtils.asToken("0.0.75231");
+  private TokenID secondId = IdUtils.asToken("0.0.75232");
+  private AccountID id = IdUtils.asAccount("1.2.3");
 
-	private TokenDissociateTransactionBody op;
-	private TransactionBody txn;
+  private TokenDissociateTransactionBody op;
+  private TransactionBody txn;
 
-	private EstimatorFactory factory;
-	private TxnUsageEstimator base;
-	private TokenDissociateUsage subject;
+  private EstimatorFactory factory;
+  private TxnUsageEstimator base;
+  private TokenDissociateUsage subject;
 
-	@BeforeEach
-	void setup() {
-		base = mock(TxnUsageEstimator.class);
-		given(base.get()).willReturn(A_USAGES_MATRIX);
+  @BeforeEach
+  void setup() {
+    base = mock(TxnUsageEstimator.class);
+    given(base.get()).willReturn(A_USAGES_MATRIX);
 
-		factory = mock(EstimatorFactory.class);
-		given(factory.get(any(), any(), any())).willReturn(base);
+    factory = mock(EstimatorFactory.class);
+    given(factory.get(any(), any(), any())).willReturn(base);
 
-		TxnUsage.estimatorFactory = factory;
-	}
+    TxnUsage.estimatorFactory = factory;
+  }
 
-	@Test
-	void assessesEverything() {
-		givenOpWithTwoDissociations();
-		// and:
-		subject = TokenDissociateUsage.newEstimate(txn, sigUsage);
+  @Test
+  void assessesEverything() {
+    givenOpWithTwoDissociations();
+    // and:
+    subject = TokenDissociateUsage.newEstimate(txn, sigUsage);
 
-		// when:
-		var usage = subject.get();
+    // when:
+    var usage = subject.get();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, usage);
-		// and:
-		verify(base, times(3)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
-	}
+    // then:
+    assertEquals(A_USAGES_MATRIX, usage);
+    // and:
+    verify(base, times(3)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
+  }
 
-	private void givenOpWithTwoDissociations() {
-		op = TokenDissociateTransactionBody.newBuilder()
-				.setAccount(id)
-				.addTokens(firstId)
-				.addTokens(secondId)
-				.build();
-		setTxn();
-	}
+  private void givenOpWithTwoDissociations() {
+    op =
+        TokenDissociateTransactionBody.newBuilder()
+            .setAccount(id)
+            .addTokens(firstId)
+            .addTokens(secondId)
+            .build();
+    setTxn();
+  }
 
-	private void setTxn() {
-		txn = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(now)))
-				.setTokenDissociate(op)
-				.build();
-	}
+  private void setTxn() {
+    txn =
+        TransactionBody.newBuilder()
+            .setTransactionID(
+                TransactionID.newBuilder()
+                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+            .setTokenDissociate(op)
+            .build();
+  }
 }

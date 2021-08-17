@@ -19,33 +19,33 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.context.properties.PropertySource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class HederaNumbersTest {
-	PropertySource properties;
-	HederaNumbers subject;
+  PropertySource properties;
+  HederaNumbers subject;
 
-	@BeforeEach
-	private void setup() {
-		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(123L);
-		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
-		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
+  @BeforeEach
+  private void setup() {
+    properties = mock(PropertySource.class);
+    given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(123L);
+    given(properties.getLongProperty("hedera.shard")).willReturn(1L);
+    given(properties.getLongProperty("hedera.realm")).willReturn(2L);
 
-		subject = new HederaNumbers(properties);
-	}
+    subject = new HederaNumbers(properties);
+  }
 
-	@Test
-	void hasExpectedNumbers() {
-		// expect:
-		assertEquals(1L, subject.shard());
-		assertEquals(2L, subject.realm());
-		assertEquals(123L, subject.numReservedSystemEntities());
-	}
+  @Test
+  void hasExpectedNumbers() {
+    // expect:
+    assertEquals(1L, subject.shard());
+    assertEquals(2L, subject.realm());
+    assertEquals(123L, subject.numReservedSystemEntities());
+  }
 }

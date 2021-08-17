@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,14 @@ package com.hedera.services.txns.submission;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.security.ops.SystemOpAuthorization;
@@ -37,119 +45,114 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class SystemPrecheckTest {
-	private final AccountID systemPayer = IdUtils.asAccount("0.0.50");
-	private final AccountID civilianPayer = IdUtils.asAccount("0.0.1234");
-	private final SignedTxnAccessor civilianXferAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
-			.setBodyBytes(TransactionBody.newBuilder()
-					.setTransactionID(TransactionID.newBuilder()
-							.setAccountID(civilianPayer))
-					.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-					.build()
-					.toByteString())
-			.build());
-	private final SignedTxnAccessor systemXferAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
-			.setBodyBytes(TransactionBody.newBuilder()
-					.setTransactionID(TransactionID.newBuilder()
-							.setAccountID(systemPayer))
-					.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-					.build()
-					.toByteString())
-			.build());
+  private final AccountID systemPayer = IdUtils.asAccount("0.0.50");
+  private final AccountID civilianPayer = IdUtils.asAccount("0.0.1234");
+  private final SignedTxnAccessor civilianXferAccessor =
+      SignedTxnAccessor.uncheckedFrom(
+          Transaction.newBuilder()
+              .setBodyBytes(
+                  TransactionBody.newBuilder()
+                      .setTransactionID(TransactionID.newBuilder().setAccountID(civilianPayer))
+                      .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                      .build()
+                      .toByteString())
+              .build());
+  private final SignedTxnAccessor systemXferAccessor =
+      SignedTxnAccessor.uncheckedFrom(
+          Transaction.newBuilder()
+              .setBodyBytes(
+                  TransactionBody.newBuilder()
+                      .setTransactionID(TransactionID.newBuilder().setAccountID(systemPayer))
+                      .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                      .build()
+                      .toByteString())
+              .build());
 
-	@Mock
-	private SystemOpPolicies systemOpPolicies;
-	@Mock
-	private HapiOpPermissions hapiOpPermissions;
-	@Mock
-	private TransactionThrottling txnThrottling;
+  @Mock private SystemOpPolicies systemOpPolicies;
+  @Mock private HapiOpPermissions hapiOpPermissions;
+  @Mock private TransactionThrottling txnThrottling;
 
-	private SystemPrecheck subject;
+  private SystemPrecheck subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new SystemPrecheck(systemOpPolicies, hapiOpPermissions, txnThrottling);
-	}
+  @BeforeEach
+  void setUp() {
+    subject = new SystemPrecheck(systemOpPolicies, hapiOpPermissions, txnThrottling);
+  }
 
-	@Test
-	void rejectsUnsupportedOp() {
-		given(hapiOpPermissions.permissibilityOf(CryptoTransfer, civilianPayer)).willReturn(NOT_SUPPORTED);
+  @Test
+  void rejectsUnsupportedOp() {
+    given(hapiOpPermissions.permissibilityOf(CryptoTransfer, civilianPayer))
+        .willReturn(NOT_SUPPORTED);
 
-		// when:
-		var actual = subject.screen(civilianXferAccessor);
+    // when:
+    var actual = subject.screen(civilianXferAccessor);
 
-		// then:
-		assertEquals(NOT_SUPPORTED, actual);
-	}
+    // then:
+    assertEquals(NOT_SUPPORTED, actual);
+  }
 
-	@Test
-	void rejectsUnprivilegedPayer() {
-		givenPermissible(civilianPayer);
-		given(systemOpPolicies.check(civilianXferAccessor)).willReturn(SystemOpAuthorization.IMPERMISSIBLE);
+  @Test
+  void rejectsUnprivilegedPayer() {
+    givenPermissible(civilianPayer);
+    given(systemOpPolicies.check(civilianXferAccessor))
+        .willReturn(SystemOpAuthorization.IMPERMISSIBLE);
 
-		// when:
-		var actual = subject.screen(civilianXferAccessor);
+    // when:
+    var actual = subject.screen(civilianXferAccessor);
 
-		// then:
-		assertEquals(SystemOpAuthorization.IMPERMISSIBLE.asStatus(), actual);
-	}
+    // then:
+    assertEquals(SystemOpAuthorization.IMPERMISSIBLE.asStatus(), actual);
+  }
 
-	@Test
-	void throttlesCivilianIfBusy() {
-		givenPermissible(civilianPayer);
-		givenPriviliged();
-		given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(true);
+  @Test
+  void throttlesCivilianIfBusy() {
+    givenPermissible(civilianPayer);
+    givenPriviliged();
+    given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(true);
 
-		// when:
-		var actual = subject.screen(civilianXferAccessor);
+    // when:
+    var actual = subject.screen(civilianXferAccessor);
 
-		// then:
-		assertEquals(BUSY, actual);
-	}
+    // then:
+    assertEquals(BUSY, actual);
+  }
 
-	@Test
-	void doesntThrottleSystemAccounts() {
-		givenPermissible(systemPayer);
-		givenPriviliged();
+  @Test
+  void doesntThrottleSystemAccounts() {
+    givenPermissible(systemPayer);
+    givenPriviliged();
 
-		// when:
-		var actual = subject.screen(systemXferAccessor);
+    // when:
+    var actual = subject.screen(systemXferAccessor);
 
-		// then:
-		assertEquals(OK, actual);
-	}
+    // then:
+    assertEquals(OK, actual);
+  }
 
-	@Test
-	void okIfAllScreensPass() {
-		givenPermissible(civilianPayer);
-		givenPriviliged();
-		givenCapacity();
+  @Test
+  void okIfAllScreensPass() {
+    givenPermissible(civilianPayer);
+    givenPriviliged();
+    givenCapacity();
 
-		// when:
-		var actual = subject.screen(civilianXferAccessor);
+    // when:
+    var actual = subject.screen(civilianXferAccessor);
 
-		// then:
-		assertEquals(OK, actual);
-	}
+    // then:
+    assertEquals(OK, actual);
+  }
 
-	private void givenCapacity() {
-		given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(false);
-	}
+  private void givenCapacity() {
+    given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(false);
+  }
 
-	private void givenPermissible(AccountID payer) {
-		given(hapiOpPermissions.permissibilityOf(CryptoTransfer, payer)).willReturn(OK);
-	}
+  private void givenPermissible(AccountID payer) {
+    given(hapiOpPermissions.permissibilityOf(CryptoTransfer, payer)).willReturn(OK);
+  }
 
-	private void givenPriviliged() {
-		given(systemOpPolicies.check(any())).willReturn(SystemOpAuthorization.UNNECESSARY);
-	}
+  private void givenPriviliged() {
+    given(systemOpPolicies.check(any())).willReturn(SystemOpAuthorization.UNNECESSARY);
+  }
 }

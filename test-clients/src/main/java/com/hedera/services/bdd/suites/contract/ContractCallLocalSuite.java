@@ -20,17 +20,6 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -46,123 +35,124 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ContractCallLocalSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
+  private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 
-	public static void main(String... args) {
-		new ContractCallLocalSuite().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new ContractCallLocalSuite().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return allOf(positiveSpecs(), negativeSpecs());
+  }
 
-	private List<HapiApiSpec> negativeSpecs() {
-		return Arrays.asList(
-				impureCallFails(),
-				insufficientFeeFails(),
-				undersizedMaxResultFails(),
-				lowBalanceFails()
-		);
-	}
+  private List<HapiApiSpec> negativeSpecs() {
+    return Arrays.asList(
+        impureCallFails(), insufficientFeeFails(), undersizedMaxResultFails(), lowBalanceFails());
+  }
 
-	private List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
-				vanillaSuccess()
-		);
-	}
+  private List<HapiApiSpec> positiveSpecs() {
+    return Arrays.asList(vanillaSuccess());
+  }
 
-	private HapiApiSpec vanillaSuccess() {
-		return defaultHapiSpec("VanillaSuccess")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-				).then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.has(resultWith().resultThruAbi(
-										ContractResources.GET_CHILD_RESULT_ABI,
-										isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))
-				);
-	}
+  private HapiApiSpec vanillaSuccess() {
+    return defaultHapiSpec("VanillaSuccess")
+        .given(
+            fileCreate("parentDelegateBytecode")
+                .path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+            contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD))
+        .when(contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI))
+        .then(
+            sleepFor(3_000L),
+            contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+                .has(
+                    resultWith()
+                        .resultThruAbi(
+                            ContractResources.GET_CHILD_RESULT_ABI,
+                            isLiteralResult(new Object[] {BigInteger.valueOf(7L)}))));
+  }
 
-	private HapiApiSpec impureCallFails() {
-		return defaultHapiSpec("ImpureCallFails")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
-				).when().then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-								.nodePayment(1_234_567)
-								.hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION)
-				);
-	}
+  private HapiApiSpec impureCallFails() {
+    return defaultHapiSpec("ImpureCallFails")
+        .given(
+            fileCreate("parentDelegateBytecode")
+                .path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+            contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD))
+        .when()
+        .then(
+            sleepFor(3_000L),
+            contractCallLocal("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+                .nodePayment(1_234_567)
+                .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
+  }
 
-	private HapiApiSpec insufficientFeeFails() {
-		final long ADEQUATE_QUERY_PAYMENT = 500_000L;
+  private HapiApiSpec insufficientFeeFails() {
+    final long ADEQUATE_QUERY_PAYMENT = 500_000L;
 
-		return defaultHapiSpec("InsufficientFee")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-				).then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.nodePayment(ADEQUATE_QUERY_PAYMENT)
-								.fee(0L)
-								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
-	}
+    return defaultHapiSpec("InsufficientFee")
+        .given(
+            fileCreate("parentDelegateBytecode")
+                .path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+            contractCreate("parentDelegate").bytecode("parentDelegateBytecode"))
+        .when(contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI))
+        .then(
+            sleepFor(3_000L),
+            contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+                .nodePayment(ADEQUATE_QUERY_PAYMENT)
+                .fee(0L)
+                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+  }
 
-	private HapiApiSpec lowBalanceFails() {
-		final long ADEQUATE_QUERY_PAYMENT = 500_000_000L;
+  private HapiApiSpec lowBalanceFails() {
+    final long ADEQUATE_QUERY_PAYMENT = 500_000_000L;
 
-		return defaultHapiSpec("LowBalanceFails")
-				.given(
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
-						cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-				).then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.logged()
-								.payingWith("payer")
-								.nodePayment(ADEQUATE_QUERY_PAYMENT)
-								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
-						getAccountBalance("payer").logged(),
-						sleepFor(1_000L),
-						getAccountBalance("payer").logged()
-				);
-	}
+    return defaultHapiSpec("LowBalanceFails")
+        .given(
+            fileCreate("parentDelegateBytecode")
+                .path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+            contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
+            cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT))
+        .when(contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI))
+        .then(
+            sleepFor(3_000L),
+            contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+                .logged()
+                .payingWith("payer")
+                .nodePayment(ADEQUATE_QUERY_PAYMENT)
+                .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
+            getAccountBalance("payer").logged(),
+            sleepFor(1_000L),
+            getAccountBalance("payer").logged());
+  }
 
-	private HapiApiSpec undersizedMaxResultFails() {
-		return defaultHapiSpec("UndersizedMaxResult")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
-				).then(
-						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.maxResultSize(1L)
-								.nodePayment(1_234_567)
-								.hasAnswerOnlyPrecheck(RESULT_SIZE_LIMIT_EXCEEDED));
-	}
+  private HapiApiSpec undersizedMaxResultFails() {
+    return defaultHapiSpec("UndersizedMaxResult")
+        .given(
+            fileCreate("parentDelegateBytecode")
+                .path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
+            contractCreate("parentDelegate").bytecode("parentDelegateBytecode"))
+        .when(contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI))
+        .then(
+            sleepFor(3_000L),
+            contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+                .maxResultSize(1L)
+                .nodePayment(1_234_567)
+                .hasAnswerOnlyPrecheck(RESULT_SIZE_LIMIT_EXCEEDED));
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

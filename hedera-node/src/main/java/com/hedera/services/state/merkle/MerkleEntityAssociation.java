@@ -27,143 +27,153 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import java.io.IOException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.IOException;
-
 public class MerkleEntityAssociation extends AbstractMerkleLeaf {
-	static final int MERKLE_VERSION = 1;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0xce8d38caab2e51dcL;
+  static final int MERKLE_VERSION = 1;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0xce8d38caab2e51dcL;
 
-	private long fromShard, fromRealm, fromNum;
-	private long toShard, toRealm, toNum;
+  private long fromShard, fromRealm, fromNum;
+  private long toShard, toRealm, toNum;
 
-	public MerkleEntityAssociation() {
-	}
+  public MerkleEntityAssociation() {}
 
-	public MerkleEntityAssociation(
-			long fromShard, long fromRealm, long fromNum,
-			long toShard, long toRealm, long toNum
-	) {
-		this.fromShard = fromShard;
-		this.fromRealm = fromRealm;
-		this.fromNum = fromNum;
-		this.toShard = toShard;
-		this.toRealm = toRealm;
-		this.toNum = toNum;
-	}
+  public MerkleEntityAssociation(
+      long fromShard, long fromRealm, long fromNum, long toShard, long toRealm, long toNum) {
+    this.fromShard = fromShard;
+    this.fromRealm = fromRealm;
+    this.fromNum = fromNum;
+    this.toShard = toShard;
+    this.toRealm = toRealm;
+    this.toNum = toNum;
+  }
 
-	public static MerkleEntityAssociation fromModelRel(TokenRelationship tokenRelationship) {
-		final var accountId = tokenRelationship.getAccount().getId();
-		final var tokenId = tokenRelationship.getToken().getId();
-		return new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
-	}
+  public static MerkleEntityAssociation fromModelRel(TokenRelationship tokenRelationship) {
+    final var accountId = tokenRelationship.getAccount().getId();
+    final var tokenId = tokenRelationship.getToken().getId();
+    return new MerkleEntityAssociation(
+        accountId.getShard(),
+        accountId.getRealm(),
+        accountId.getNum(),
+        tokenId.getShard(),
+        tokenId.getRealm(),
+        tokenId.getNum());
+  }
 
-	public static MerkleEntityAssociation fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
-		return fromAccountTokenRel(rel.getLeft(), rel.getRight());
-	}
+  public static MerkleEntityAssociation fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
+    return fromAccountTokenRel(rel.getLeft(), rel.getRight());
+  }
 
-	public static MerkleEntityAssociation fromAccountTokenRel(AccountID account, TokenID token) {
-		return new MerkleEntityAssociation(
-				account.getShardNum(), account.getRealmNum(), account.getAccountNum(),
-				token.getShardNum(), token.getRealmNum(), token.getTokenNum());
-	}
+  public static MerkleEntityAssociation fromAccountTokenRel(AccountID account, TokenID token) {
+    return new MerkleEntityAssociation(
+        account.getShardNum(),
+        account.getRealmNum(),
+        account.getAccountNum(),
+        token.getShardNum(),
+        token.getRealmNum(),
+        token.getTokenNum());
+  }
 
-	public Pair<AccountID, TokenID> asAccountTokenRel() {
-		return Pair.of(
-				AccountID.newBuilder()
-						.setShardNum(fromShard)
-						.setRealmNum(fromRealm)
-						.setAccountNum(fromNum)
-						.build(),
-				TokenID.newBuilder()
-						.setShardNum(toShard)
-						.setRealmNum(toRealm)
-						.setTokenNum(toNum)
-						.build());
-	}
+  public Pair<AccountID, TokenID> asAccountTokenRel() {
+    return Pair.of(
+        AccountID.newBuilder()
+            .setShardNum(fromShard)
+            .setRealmNum(fromRealm)
+            .setAccountNum(fromNum)
+            .build(),
+        TokenID.newBuilder().setShardNum(toShard).setRealmNum(toRealm).setTokenNum(toNum).build());
+  }
 
-	/* --- MerkleLeaf --- */
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  /* --- MerkleLeaf --- */
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		fromShard = in.readLong();
-		fromRealm = in.readLong();
-		fromNum = in.readLong();
-		toShard = in.readLong();
-		toRealm = in.readLong();
-		toNum = in.readLong();
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    fromShard = in.readLong();
+    fromRealm = in.readLong();
+    fromNum = in.readLong();
+    toShard = in.readLong();
+    toRealm = in.readLong();
+    toNum = in.readLong();
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLong(fromShard);
-		out.writeLong(fromRealm);
-		out.writeLong(fromNum);
-		out.writeLong(toShard);
-		out.writeLong(toRealm);
-		out.writeLong(toNum);
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeLong(fromShard);
+    out.writeLong(fromRealm);
+    out.writeLong(fromNum);
+    out.writeLong(toShard);
+    out.writeLong(toRealm);
+    out.writeLong(toNum);
+  }
 
-	/* --- Object --- */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || MerkleEntityAssociation.class != o.getClass()) {
-			return false;
-		}
+  /* --- Object --- */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || MerkleEntityAssociation.class != o.getClass()) {
+      return false;
+    }
 
-		var that = (MerkleEntityAssociation) o;
-		return new EqualsBuilder()
-				.append(fromShard, that.fromShard).append(fromRealm, that.fromRealm).append(fromNum, that.fromNum)
-				.append(toShard, that.toShard).append(toRealm, that.toRealm).append(toNum, that.toNum)
-				.isEquals();
-	}
+    var that = (MerkleEntityAssociation) o;
+    return new EqualsBuilder()
+        .append(fromShard, that.fromShard)
+        .append(fromRealm, that.fromRealm)
+        .append(fromNum, that.fromNum)
+        .append(toShard, that.toShard)
+        .append(toRealm, that.toRealm)
+        .append(toNum, that.toNum)
+        .isEquals();
+  }
 
-	@Override
-	public int hashCode() {
-		return new HashCodeBuilder(17, 37)
-				.append(fromShard).append(fromRealm).append(fromNum)
-				.append(toShard).append(toRealm).append(toNum)
-				.toHashCode();
-	}
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(fromShard)
+        .append(fromRealm)
+        .append(fromNum)
+        .append(toShard)
+        .append(toRealm)
+        .append(toNum)
+        .toHashCode();
+  }
 
-	/* --- FastCopyable --- */
-	@Override
-	public MerkleEntityAssociation copy() {
-		setImmutable(true);
-		return new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
-	}
+  /* --- FastCopyable --- */
+  @Override
+  public MerkleEntityAssociation copy() {
+    setImmutable(true);
+    return new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
+  }
 
-	/* --- Bean --- */
+  /* --- Bean --- */
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("fromShard", fromShard).add("fromRealm", fromRealm).add("fromNum", fromNum)
-				.add("toShard", toShard).add("toRealm", toRealm).add("toNum", toNum)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("fromShard", fromShard)
+        .add("fromRealm", fromRealm)
+        .add("fromNum", fromNum)
+        .add("toShard", toShard)
+        .add("toRealm", toRealm)
+        .add("toNum", toNum)
+        .toString();
+  }
 
-	public String toAbbrevString() {
-		return String.format(
-				"%d.%d.%d <-> %d.%d.%d",
-				fromShard, fromRealm, fromNum,
-				toShard, toRealm, toNum);
-	}
+  public String toAbbrevString() {
+    return String.format(
+        "%d.%d.%d <-> %d.%d.%d", fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
+  }
 }

@@ -20,6 +20,8 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
@@ -27,53 +29,52 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-
 public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
-	private long expectedNftLifetime = 0L;
+  private long expectedNftLifetime = 0L;
 
-	private SubType currentSubType;
+  private SubType currentSubType;
 
-	public TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
-		super(tokenMintOp, usageEstimator);
-	}
+  public TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
+    super(tokenMintOp, usageEstimator);
+  }
 
-	public TokenMintUsage givenSubType(SubType subType) {
-		this.currentSubType = subType;
-		return this;
-	}
+  public TokenMintUsage givenSubType(SubType subType) {
+    this.currentSubType = subType;
+    return this;
+  }
 
-	public TokenMintUsage givenExpectedLifetime(long secs) {
-		expectedNftLifetime = secs;
-		return this;
-	}
+  public TokenMintUsage givenExpectedLifetime(long secs) {
+    expectedNftLifetime = secs;
+    return this;
+  }
 
-	public static TokenMintUsage newEstimate(TransactionBody tokenMintOp, SigUsage sigUsage) {
-		return new TokenMintUsage(tokenMintOp, estimatorFactory.get(sigUsage, tokenMintOp, ESTIMATOR_UTILS));
-	}
+  public static TokenMintUsage newEstimate(TransactionBody tokenMintOp, SigUsage sigUsage) {
+    return new TokenMintUsage(
+        tokenMintOp, estimatorFactory.get(sigUsage, tokenMintOp, ESTIMATOR_UTILS));
+  }
 
-	@Override
-	TokenMintUsage self() {
-		return this;
-	}
+  @Override
+  TokenMintUsage self() {
+    return this;
+  }
 
-	public FeeData get() {
-		var op = this.op.getTokenMint();
+  public FeeData get() {
+    var op = this.op.getTokenMint();
 
-		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-			var metadataBytes = 0;
-			for (ByteString o : op.getMetadataList()) {
-				metadataBytes += o.size();
-			}
-			usageEstimator.addBpt(metadataBytes);
-			usageEstimator.addRbs(expectedNftLifetime * metadataBytes);
-			addTokenTransfersRecordRb(1, 0, op.getMetadataCount());
-		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
-			addAmountBpt();
-			addTokenTransfersRecordRb(1, 1, 0);
-		}
+    if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
+      var metadataBytes = 0;
+      for (ByteString o : op.getMetadataList()) {
+        metadataBytes += o.size();
+      }
+      usageEstimator.addBpt(metadataBytes);
+      usageEstimator.addRbs(expectedNftLifetime * metadataBytes);
+      addTokenTransfersRecordRb(1, 0, op.getMetadataCount());
+    } else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
+      addAmountBpt();
+      addTokenTransfersRecordRb(1, 1, 0);
+    }
 
-		addEntityBpt();
-		return usageEstimator.get(currentSubType);
-	}
+    addEntityBpt();
+    return usageEstimator.get(currentSubType);
+  }
 }

@@ -25,12 +25,13 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public class AccountIDConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		return IdUtils.asAccount(inputString);
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    return IdUtils.asAccount(inputString);
+  }
 }

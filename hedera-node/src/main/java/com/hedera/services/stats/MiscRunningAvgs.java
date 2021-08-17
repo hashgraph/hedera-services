@@ -25,97 +25,94 @@ import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsRunningAverage;
 
 public class MiscRunningAvgs {
-	private final RunningAvgFactory runningAvg;
+  private final RunningAvgFactory runningAvg;
 
-	StatsRunningAverage accountRetryWaitMs;
-	StatsRunningAverage accountLookupRetries;
-	StatsRunningAverage handledSubmitMessageSize;
+  StatsRunningAverage accountRetryWaitMs;
+  StatsRunningAverage accountLookupRetries;
+  StatsRunningAverage handledSubmitMessageSize;
 
-	StatsRunningAverage writeQueueSizeRecordStream;
-	StatsRunningAverage hashQueueSizeRecordStream;
+  StatsRunningAverage writeQueueSizeRecordStream;
+  StatsRunningAverage hashQueueSizeRecordStream;
 
-	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
-		this.runningAvg = runningAvg;
+  public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
+    this.runningAvg = runningAvg;
 
-		double halfLife = properties.statsRunningAvgHalfLifeSecs();
+    double halfLife = properties.statsRunningAvgHalfLifeSecs();
 
-		accountRetryWaitMs = new StatsRunningAverage(halfLife);
-		accountLookupRetries = new StatsRunningAverage(halfLife);
-		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
+    accountRetryWaitMs = new StatsRunningAverage(halfLife);
+    accountLookupRetries = new StatsRunningAverage(halfLife);
+    handledSubmitMessageSize = new StatsRunningAverage(halfLife);
 
-		writeQueueSizeRecordStream = new StatsRunningAverage(halfLife);
-		hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
-	}
+    writeQueueSizeRecordStream = new StatsRunningAverage(halfLife);
+    hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
+  }
 
-	public void registerWith(Platform platform) {
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.ACCOUNT_LOOKUP_RETRIES,
-						Descriptions.ACCOUNT_LOOKUP_RETRIES,
-						accountLookupRetries));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.ACCOUNT_RETRY_WAIT_MS,
-						Descriptions.ACCOUNT_RETRY_WAIT_MS,
-						accountRetryWaitMs));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
-						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
-						handledSubmitMessageSize));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
-						Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
-						writeQueueSizeRecordStream));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.HASH_QUEUE_SIZE_RECORD_STREAM,
-						Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
-						hashQueueSizeRecordStream
-				)
-		);
-	}
+  public void registerWith(Platform platform) {
+    platform.addAppStatEntry(
+        runningAvg.from(
+            Names.ACCOUNT_LOOKUP_RETRIES,
+            Descriptions.ACCOUNT_LOOKUP_RETRIES,
+            accountLookupRetries));
+    platform.addAppStatEntry(
+        runningAvg.from(
+            Names.ACCOUNT_RETRY_WAIT_MS, Descriptions.ACCOUNT_RETRY_WAIT_MS, accountRetryWaitMs));
+    platform.addAppStatEntry(
+        runningAvg.from(
+            Names.HANDLED_SUBMIT_MESSAGE_SIZE,
+            Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
+            handledSubmitMessageSize));
+    platform.addAppStatEntry(
+        runningAvg.from(
+            Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
+            Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
+            writeQueueSizeRecordStream));
+    platform.addAppStatEntry(
+        runningAvg.from(
+            Names.HASH_QUEUE_SIZE_RECORD_STREAM,
+            Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
+            hashQueueSizeRecordStream));
+  }
 
-	public void recordAccountLookupRetries(int num) {
-		accountLookupRetries.recordValue(num);
-	}
+  public void recordAccountLookupRetries(int num) {
+    accountLookupRetries.recordValue(num);
+  }
 
-	public void recordAccountRetryWaitMs(double time) {
-		accountRetryWaitMs.recordValue(time);
-	}
+  public void recordAccountRetryWaitMs(double time) {
+    accountRetryWaitMs.recordValue(time);
+  }
 
-	public void recordHandledSubmitMessageSize(int bytes) {
-		handledSubmitMessageSize.recordValue(bytes);
-	}
+  public void recordHandledSubmitMessageSize(int bytes) {
+    handledSubmitMessageSize.recordValue(bytes);
+  }
 
-	public void writeQueueSizeRecordStream(int num) {
-		writeQueueSizeRecordStream.recordValue(num);
-	}
+  public void writeQueueSizeRecordStream(int num) {
+    writeQueueSizeRecordStream.recordValue(num);
+  }
 
-	public void hashQueueSizeRecordStream(int num) {
-		hashQueueSizeRecordStream.recordValue(num);
-	}
+  public void hashQueueSizeRecordStream(int num) {
+    hashQueueSizeRecordStream.recordValue(num);
+  }
 
-	static class Names {
-		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
-		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
-		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
+  static class Names {
+    public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
+    public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
+    public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
 
-		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
-		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
-	}
+    public static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
+    public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
+  }
 
-	static class Descriptions {
-		public static final String ACCOUNT_RETRY_WAIT_MS =
-				"average time is millis spent waiting to lookup the account number";
-		public static final String ACCOUNT_LOOKUP_RETRIES =
-				"average number of retry attempts made to lookup the account number";
-		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
-				"average size of the handled HCS submit message transaction";
+  static class Descriptions {
+    public static final String ACCOUNT_RETRY_WAIT_MS =
+        "average time is millis spent waiting to lookup the account number";
+    public static final String ACCOUNT_LOOKUP_RETRIES =
+        "average number of retry attempts made to lookup the account number";
+    public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
+        "average size of the handled HCS submit message transaction";
 
-		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
-				"size of the queue from which we take records and write to RecordStream file";
-		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "size of working queue for calculating hash and runningHash";
-	}
+    public static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
+        "size of the queue from which we take records and write to RecordStream file";
+    public static final String HASH_QUEUE_SIZE_RECORD_STREAM =
+        "size of working queue for calculating hash and runningHash";
+  }
 }

@@ -20,80 +20,77 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class NftIdTest {
-	private long shard = 1;
-	private long realm = 2;
-	private long num = 3;
-	private long serialNo = 4;
-	private long bShard = 2;
-	private long bRealm = 3;
-	private long bNum = 4;
-	private long bSerialNo = 5;
+  private long shard = 1;
+  private long realm = 2;
+  private long num = 3;
+  private long serialNo = 4;
+  private long bShard = 2;
+  private long bRealm = 3;
+  private long bNum = 4;
+  private long bSerialNo = 5;
 
-	@Test
-	void objectContractWorks() {
-		// given:
-		final var subject = new NftId(shard, realm, num, serialNo);
-		final var bSubject = new NftId(bShard, realm, num, serialNo);
-		final var cSubject = new NftId(shard, bRealm, num, serialNo);
-		final var dSubject = new NftId(shard, realm, bNum, serialNo);
-		final var eSubject = new NftId(shard, realm, num, bSerialNo);
-		final var rSubject = new NftId(shard, realm, num, serialNo);
-		final var sSubject = subject;
+  @Test
+  void objectContractWorks() {
+    // given:
+    final var subject = new NftId(shard, realm, num, serialNo);
+    final var bSubject = new NftId(bShard, realm, num, serialNo);
+    final var cSubject = new NftId(shard, bRealm, num, serialNo);
+    final var dSubject = new NftId(shard, realm, bNum, serialNo);
+    final var eSubject = new NftId(shard, realm, num, bSerialNo);
+    final var rSubject = new NftId(shard, realm, num, serialNo);
+    final var sSubject = subject;
 
-		// expect:
-		assertEquals(subject, rSubject);
-		assertEquals(subject.hashCode(), rSubject.hashCode());
-		assertEquals(subject, sSubject);
-		assertNotEquals(subject, bSubject);
-		assertNotEquals(subject.hashCode(), bSubject.hashCode());
-		assertNotEquals(subject, cSubject);
-		assertNotEquals(subject.hashCode(), cSubject.hashCode());
-		assertNotEquals(subject, dSubject);
-		assertNotEquals(subject.hashCode(), dSubject.hashCode());
-		assertNotEquals(subject, eSubject);
-		assertNotEquals(subject.hashCode(), eSubject.hashCode());
-	}
+    // expect:
+    assertEquals(subject, rSubject);
+    assertEquals(subject.hashCode(), rSubject.hashCode());
+    assertEquals(subject, sSubject);
+    assertNotEquals(subject, bSubject);
+    assertNotEquals(subject.hashCode(), bSubject.hashCode());
+    assertNotEquals(subject, cSubject);
+    assertNotEquals(subject.hashCode(), cSubject.hashCode());
+    assertNotEquals(subject, dSubject);
+    assertNotEquals(subject.hashCode(), dSubject.hashCode());
+    assertNotEquals(subject, eSubject);
+    assertNotEquals(subject.hashCode(), eSubject.hashCode());
+  }
 
-	@Test
-	void toStringWorks() {
-		// setup:
-		final var desired = "NftId{shard=1, realm=2, num=3, serialNo=4}";
+  @Test
+  void toStringWorks() {
+    // setup:
+    final var desired = "NftId{shard=1, realm=2, num=3, serialNo=4}";
 
-		// given:
-		final var subject = new NftId(shard, realm, num, serialNo);
+    // given:
+    final var subject = new NftId(shard, realm, num, serialNo);
 
-		// expect:
-		assertEquals(desired, subject.toString());
-	}
+    // expect:
+    assertEquals(desired, subject.toString());
+  }
 
-	@Test
-	void gettersWork() {
-		// given:
-		final var subject = new NftId(shard, realm, num, serialNo);
-		TokenID expectedTokenId = TokenID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setTokenNum(num)
-				.build();
+  @Test
+  void gettersWork() {
+    // given:
+    final var subject = new NftId(shard, realm, num, serialNo);
+    TokenID expectedTokenId =
+        TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
 
-		assertEquals(shard, subject.shard());
-		assertEquals(realm, subject.realm());
-		assertEquals(num, subject.num());
-		assertEquals(serialNo, subject.serialNo());
-		assertEquals(expectedTokenId, subject.tokenId());
-	}
+    assertEquals(shard, subject.shard());
+    assertEquals(realm, subject.realm());
+    assertEquals(num, subject.num());
+    assertEquals(serialNo, subject.serialNo());
+    assertEquals(expectedTokenId, subject.tokenId());
+  }
 
-	@Test
-	void nullEqualsWorks() {
-		// given:
-		final var subject = new NftId(shard, realm, num, serialNo);
+  @Test
+  void nullEqualsWorks() {
+    // given:
+    final var subject = new NftId(shard, realm, num, serialNo);
 
-		assertNotEquals(null, subject);
-	}
+    assertNotEquals(null, subject);
+  }
 }

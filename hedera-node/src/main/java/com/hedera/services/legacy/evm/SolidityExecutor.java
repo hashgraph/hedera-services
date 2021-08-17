@@ -20,6 +20,29 @@ package com.hedera.services.legacy.evm;
  * ‍
  */
 
+import static com.hedera.services.contracts.execution.DomainUtils.asReceipt;
+import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccountInitializer;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static java.math.BigInteger.ZERO;
+import static java.util.Comparator.comparingLong;
+import static org.apache.commons.lang3.ArrayUtils.getLength;
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
+import static org.ethereum.util.BIUtil.isCovers;
+import static org.ethereum.util.BIUtil.toBI;
+import static org.ethereum.util.BIUtil.transfer;
+import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
+import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
+import static org.ethereum.vm.VMUtils.zipAndEncode;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
@@ -31,6 +54,16 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -63,530 +96,535 @@ import org.ethereum.vm.program.invoke.ProgramInvokeFactory;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactoryImpl;
 import org.ethereum.vm.program.invoke.ProgramInvokeImpl;
 
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import static com.hedera.services.contracts.execution.DomainUtils.asReceipt;
-import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccountInitializer;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static java.math.BigInteger.ZERO;
-import static java.util.Comparator.comparingLong;
-import static org.apache.commons.lang3.ArrayUtils.getLength;
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
-import static org.ethereum.util.BIUtil.isCovers;
-import static org.ethereum.util.BIUtil.toBI;
-import static org.ethereum.util.BIUtil.transfer;
-import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
-import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
-import static org.ethereum.vm.VMUtils.zipAndEncode;
-
 public class SolidityExecutor {
-	private static final Logger logger = LogManager.getLogger(SolidityExecutor.class);
-	private static final BlockStore NULL_BLOCK_STORE = null;
+  private static final Logger logger = LogManager.getLogger(SolidityExecutor.class);
+  private static final BlockStore NULL_BLOCK_STORE = null;
 
-	private final EthereumListener listener = new EthereumListenerAdapter();
+  private final EthereumListener listener = new EthereumListenerAdapter();
 
-	private final long rbh;
-	private final long sbh;
-	private final long gasPrice;
-	private final Block block;
-	private final byte[] payerAddress;
-	private final byte[] fundingAddress;
-	private final Instant startTime;
-	private final boolean localCall;
-	private final Transaction solidityTxn;
-	private final CommonConfig commonConfig;
-	private final SequenceNumber seqNo;
-	private final TransactionBody txn;
-	private final SystemProperties config;
-	private final BlockchainConfig blockchainConfig;
-	private final SoliditySigsVerifier sigsVerifier;
-	private final ProgramInvokeFactory programInvokeFactory = new ProgramInvokeFactoryImpl();
-	private final ServicesRepositoryImpl repository;
-	private final ServicesRepositoryImpl trackingRepository;
-	private final NewAccountCreateAdapter contractCreateAdaptor = new SequenceAccountCreator();
-	private final GlobalDynamicProperties dynamicProperties;
-	private final Optional<TransactionContext> txnCtx;
+  private final long rbh;
+  private final long sbh;
+  private final long gasPrice;
+  private final Block block;
+  private final byte[] payerAddress;
+  private final byte[] fundingAddress;
+  private final Instant startTime;
+  private final boolean localCall;
+  private final Transaction solidityTxn;
+  private final CommonConfig commonConfig;
+  private final SequenceNumber seqNo;
+  private final TransactionBody txn;
+  private final SystemProperties config;
+  private final BlockchainConfig blockchainConfig;
+  private final SoliditySigsVerifier sigsVerifier;
+  private final ProgramInvokeFactory programInvokeFactory = new ProgramInvokeFactoryImpl();
+  private final ServicesRepositoryImpl repository;
+  private final ServicesRepositoryImpl trackingRepository;
+  private final NewAccountCreateAdapter contractCreateAdaptor = new SequenceAccountCreator();
+  private final GlobalDynamicProperties dynamicProperties;
+  private final Optional<TransactionContext> txnCtx;
 
-	private VM vm;
-	private String errorMessage;
-	private boolean readyToExecute = false;
-	private Program program;
-	private BigInteger gasLeft;
-	private ProgramResult result = new ProgramResult();
-	private TransactionReceipt receipt;
-	private PrecompiledContracts.PrecompiledContract precompiledContract;
-	private List<LogInfo> logs;
-	private Optional<List<ContractID>> createdContracts = Optional.empty();
-	private ByteArraySet touchedAccounts = new ByteArraySet();
-	private ResponseCodeEnum errorCode;
+  private VM vm;
+  private String errorMessage;
+  private boolean readyToExecute = false;
+  private Program program;
+  private BigInteger gasLeft;
+  private ProgramResult result = new ProgramResult();
+  private TransactionReceipt receipt;
+  private PrecompiledContracts.PrecompiledContract precompiledContract;
+  private List<LogInfo> logs;
+  private Optional<List<ContractID>> createdContracts = Optional.empty();
+  private ByteArraySet touchedAccounts = new ByteArraySet();
+  private ResponseCodeEnum errorCode;
 
-	private class SequenceAccountCreator extends NewAccountCreateAdapter {
-		@Override
-		public byte[] calculateNewAddress(byte[] ownerAddress, Repository track) {
-			AccountState creatorHgState = trackingRepository.getAccountState(solidityTxn.getSender());
+  private class SequenceAccountCreator extends NewAccountCreateAdapter {
+    @Override
+    public byte[] calculateNewAddress(byte[] ownerAddress, Repository track) {
+      AccountState creatorHgState = trackingRepository.getAccountState(solidityTxn.getSender());
 
-			return asSolidityAddress(
-					0,
-					creatorHgState.getRealmId(),
-					seqNo.getAndIncrement());
-		}
-	}
+      return asSolidityAddress(0, creatorHgState.getRealmId(), seqNo.getAndIncrement());
+    }
+  }
 
-	public SolidityExecutor(
-			Transaction solidityTxn,
-			ServicesRepositoryImpl repository,
-			Block block,
-			String payerAddress,
-			String fundingAddress,
-			TransactionBody txn,
-			Instant startTime,
-			SequenceNumber seqNo,
-			long rbh,
-			long sbh,
-			TransactionContext txnCtx,
-			boolean localCall,
-			SoliditySigsVerifier sigsVerifier,
-			GlobalDynamicProperties dynamicProperties
-	) {
-		this.txn = txn;
-		this.rbh = rbh;
-		this.sbh = sbh;
-		this.block = block;
-		this.seqNo = seqNo;
-		this.txnCtx = Optional.ofNullable(txnCtx);
-		this.gasLeft = toBI(solidityTxn.getGasLimit());
-		this.gasPrice = ByteUtil.byteArrayToInt(solidityTxn.getGasPrice());
-		this.startTime = startTime;
-		this.localCall = localCall;
-		this.repository = repository;
-		this.solidityTxn = solidityTxn;
-		this.sigsVerifier = sigsVerifier;
-		this.trackingRepository = repository.startTracking();
-		this.dynamicProperties = dynamicProperties;
-		this.payerAddress = Optional.ofNullable(payerAddress)
-				.map(CommonUtils::unhex)
-				.orElse(solidityTxn.getSender());
-		this.fundingAddress = Optional.ofNullable(fundingAddress)
-				.map(CommonUtils::unhex)
-				.orElse(EMPTY_BYTE_ARRAY);
+  public SolidityExecutor(
+      Transaction solidityTxn,
+      ServicesRepositoryImpl repository,
+      Block block,
+      String payerAddress,
+      String fundingAddress,
+      TransactionBody txn,
+      Instant startTime,
+      SequenceNumber seqNo,
+      long rbh,
+      long sbh,
+      TransactionContext txnCtx,
+      boolean localCall,
+      SoliditySigsVerifier sigsVerifier,
+      GlobalDynamicProperties dynamicProperties) {
+    this.txn = txn;
+    this.rbh = rbh;
+    this.sbh = sbh;
+    this.block = block;
+    this.seqNo = seqNo;
+    this.txnCtx = Optional.ofNullable(txnCtx);
+    this.gasLeft = toBI(solidityTxn.getGasLimit());
+    this.gasPrice = ByteUtil.byteArrayToInt(solidityTxn.getGasPrice());
+    this.startTime = startTime;
+    this.localCall = localCall;
+    this.repository = repository;
+    this.solidityTxn = solidityTxn;
+    this.sigsVerifier = sigsVerifier;
+    this.trackingRepository = repository.startTracking();
+    this.dynamicProperties = dynamicProperties;
+    this.payerAddress =
+        Optional.ofNullable(payerAddress).map(CommonUtils::unhex).orElse(solidityTxn.getSender());
+    this.fundingAddress =
+        Optional.ofNullable(fundingAddress).map(CommonUtils::unhex).orElse(EMPTY_BYTE_ARRAY);
 
-		commonConfig = CommonConfig.getDefault();
-		config = commonConfig.systemProperties();
-		blockchainConfig = config.getBlockchainConfig().getConfigForBlock(block.getNumber());
-	}
+    commonConfig = CommonConfig.getDefault();
+    config = commonConfig.systemProperties();
+    blockchainConfig = config.getBlockchainConfig().getConfigForBlock(block.getNumber());
+  }
 
-	public void init() {
-		if (localCall || payerIsSolvent()) {
-			readyToExecute = true;
-		}
-	}
+  public void init() {
+    if (localCall || payerIsSolvent()) {
+      readyToExecute = true;
+    }
+  }
 
-	private boolean payerIsSolvent() {
-		var totalCost = toBI(solidityTxn.getValue()).add(gasCost());
-		var payerBalance = repository.getBalance(this.payerAddress);
-		var isSolvent = isCovers(payerBalance, totalCost);
+  private boolean payerIsSolvent() {
+    var totalCost = toBI(solidityTxn.getValue()).add(gasCost());
+    var payerBalance = repository.getBalance(this.payerAddress);
+    var isSolvent = isCovers(payerBalance, totalCost);
 
-		if (!isSolvent) {
-			errorCode = INSUFFICIENT_PAYER_BALANCE;
-			setError(String.format("Transaction cost %s exceeds payer balance %s", totalCost, payerBalance));
-		}
+    if (!isSolvent) {
+      errorCode = INSUFFICIENT_PAYER_BALANCE;
+      setError(
+          String.format("Transaction cost %s exceeds payer balance %s", totalCost, payerBalance));
+    }
 
-		return isSolvent;
-	}
+    return isSolvent;
+  }
 
-	public void execute() {
-		if (!readyToExecute) {
-			return;
-		}
+  public void execute() {
+    if (!readyToExecute) {
+      return;
+    }
 
-		if (!localCall) {
-			repository.increaseNonce(solidityTxn.getSender());
-			repository.addBalance(this.payerAddress, gasCost().negate());
-		}
+    if (!localCall) {
+      repository.increaseNonce(solidityTxn.getSender());
+      repository.addBalance(this.payerAddress, gasCost().negate());
+    }
 
-		if (solidityTxn.isContractCreation()) {
-			create();
-		} else {
-			call();
-		}
-	}
+    if (solidityTxn.isContractCreation()) {
+      create();
+    } else {
+      call();
+    }
+  }
 
-	private BigInteger gasCost() {
-		return toBI(solidityTxn.getGasPrice()).multiply(toBI(solidityTxn.getGasLimit()));
-	}
+  private BigInteger gasCost() {
+    return toBI(solidityTxn.getGasPrice()).multiply(toBI(solidityTxn.getGasLimit()));
+  }
 
-	private void call() {
-		if (!readyToExecute) {
-			return;
-		}
+  private void call() {
+    if (!readyToExecute) {
+      return;
+    }
 
-		byte[] targetAddress = solidityTxn.getReceiveAddress();
-		precompiledContract = PrecompiledContracts.getContractForAddress(DataWord.of(targetAddress), blockchainConfig);
+    byte[] targetAddress = solidityTxn.getReceiveAddress();
+    precompiledContract =
+        PrecompiledContracts.getContractForAddress(DataWord.of(targetAddress), blockchainConfig);
 
-		if (precompiledContract != null) {
-			var gasRequired = BigInteger.valueOf(precompiledContract.getGasForData(solidityTxn.getData()));
-			if (!localCall && gasLeft.compareTo(gasRequired) < 0) {
-				var gasLimit = BigInteger.valueOf(dynamicProperties.maxGas());
-				var gasSupplied = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
-				errorCode = (gasSupplied.compareTo(gasLimit) < 0) ? INSUFFICIENT_GAS : MAX_GAS_LIMIT_EXCEEDED;
-				setError(String.format(
-						"OOG calling precompiled contract 0x%s (%s required, %s remaining)",
-						CommonUtils.hex(targetAddress), gasRequired, gasLeft));
-				gasLeft = ZERO;
-				return;
-			} else {
-				gasLeft = gasLeft.subtract(gasRequired);
-				Pair<Boolean, byte[]> out = precompiledContract.execute(solidityTxn.getData());
-				if (!out.getLeft()) {
-					errorCode = CONTRACT_EXECUTION_EXCEPTION;
-					setError(String.format("Error executing precompiled contract 0x%s",
-							CommonUtils.hex(targetAddress)));
-					gasLeft = ZERO;
-					return;
-				}
-			}
-		} else {
-			byte[] code = repository.getCode(targetAddress);
-			if (isEmpty(code)) {
-				errorCode = CONTRACT_BYTECODE_EMPTY;
-				setError(String.format("Error: Bytecode is empty for contract 0x%s", CommonUtils.hex(targetAddress)));
-			} else {
-				var programInvoke = programInvokeFactory.createProgramInvoke(
-						solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
-				((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
-				this.vm = new VM(config, VMHook.EMPTY);
-				this.program = new Program(
-						repository.getCodeHash(targetAddress),
-						code,
-						programInvoke,
-						solidityTxn,
-						config,
-						VMHook.EMPTY,
-						contractCreateAdaptor,
-						fundingAddress,
-						rbh,
-						sbh,
-						dynamicProperties.defaultContractLifetime(),
-						dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
-			}
-		}
-		if (!localCall) {
-			transfer(trackingRepository, solidityTxn.getSender(), targetAddress, toBI(solidityTxn.getValue()));
-			touchedAccounts.add(targetAddress);
-		}
-	}
+    if (precompiledContract != null) {
+      var gasRequired =
+          BigInteger.valueOf(precompiledContract.getGasForData(solidityTxn.getData()));
+      if (!localCall && gasLeft.compareTo(gasRequired) < 0) {
+        var gasLimit = BigInteger.valueOf(dynamicProperties.maxGas());
+        var gasSupplied = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
+        errorCode =
+            (gasSupplied.compareTo(gasLimit) < 0) ? INSUFFICIENT_GAS : MAX_GAS_LIMIT_EXCEEDED;
+        setError(
+            String.format(
+                "OOG calling precompiled contract 0x%s (%s required, %s remaining)",
+                CommonUtils.hex(targetAddress), gasRequired, gasLeft));
+        gasLeft = ZERO;
+        return;
+      } else {
+        gasLeft = gasLeft.subtract(gasRequired);
+        Pair<Boolean, byte[]> out = precompiledContract.execute(solidityTxn.getData());
+        if (!out.getLeft()) {
+          errorCode = CONTRACT_EXECUTION_EXCEPTION;
+          setError(
+              String.format(
+                  "Error executing precompiled contract 0x%s", CommonUtils.hex(targetAddress)));
+          gasLeft = ZERO;
+          return;
+        }
+      }
+    } else {
+      byte[] code = repository.getCode(targetAddress);
+      if (isEmpty(code)) {
+        errorCode = CONTRACT_BYTECODE_EMPTY;
+        setError(
+            String.format(
+                "Error: Bytecode is empty for contract 0x%s", CommonUtils.hex(targetAddress)));
+      } else {
+        var programInvoke =
+            programInvokeFactory.createProgramInvoke(
+                solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
+        ((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
+        this.vm = new VM(config, VMHook.EMPTY);
+        this.program =
+            new Program(
+                    repository.getCodeHash(targetAddress),
+                    code,
+                    programInvoke,
+                    solidityTxn,
+                    config,
+                    VMHook.EMPTY,
+                    contractCreateAdaptor,
+                    fundingAddress,
+                    rbh,
+                    sbh,
+                    dynamicProperties.defaultContractLifetime(),
+                    dynamicProperties.cacheRecordsTtl())
+                .withCommonConfig(commonConfig);
+      }
+    }
+    if (!localCall) {
+      transfer(
+          trackingRepository, solidityTxn.getSender(), targetAddress, toBI(solidityTxn.getValue()));
+      touchedAccounts.add(targetAddress);
+    }
+  }
 
-	private void create() {
-		var sponsor = trackingRepository.getAccountState(solidityTxn.getSender());
-		long newSequence = seqNo.getAndIncrement();
-		byte[] newContractAddress = asSolidityAddress(0, sponsor.getRealmId(), newSequence);
+  private void create() {
+    var sponsor = trackingRepository.getAccountState(solidityTxn.getSender());
+    long newSequence = seqNo.getAndIncrement();
+    byte[] newContractAddress = asSolidityAddress(0, sponsor.getRealmId(), newSequence);
 
-		solidityTxn.setContractAddress(newContractAddress);
+    solidityTxn.setContractAddress(newContractAddress);
 
-		var alreadyExtant = trackingRepository.getAccountState(newContractAddress);
-		if (alreadyExtant != null && alreadyExtant.isContractExist(blockchainConfig)) {
-			errorCode = CONTRACT_EXECUTION_EXCEPTION;
-			setError(String.format("Cannot overwrite extant contract @ 0x%s!", CommonUtils.hex(newContractAddress)));
-			gasLeft = ZERO;
-			return;
-		}
+    var alreadyExtant = trackingRepository.getAccountState(newContractAddress);
+    if (alreadyExtant != null && alreadyExtant.isContractExist(blockchainConfig)) {
+      errorCode = CONTRACT_EXECUTION_EXCEPTION;
+      setError(
+          String.format(
+              "Cannot overwrite extant contract @ 0x%s!", CommonUtils.hex(newContractAddress)));
+      gasLeft = ZERO;
+      return;
+    }
 
-		BigInteger oldBalance = repository.getBalance(newContractAddress);
-		trackingRepository.createAccount(newContractAddress);
-		trackingRepository.addBalance(newContractAddress, oldBalance);
-		trackingRepository.setSmartContract(newContractAddress, true);
-		trackingRepository.setRealmId(newContractAddress, sponsor.getRealmId());
-		trackingRepository.setShardId(newContractAddress, sponsor.getShardId());
-		trackingRepository.setAccountNum(newContractAddress, newSequence);
+    BigInteger oldBalance = repository.getBalance(newContractAddress);
+    trackingRepository.createAccount(newContractAddress);
+    trackingRepository.addBalance(newContractAddress, oldBalance);
+    trackingRepository.setSmartContract(newContractAddress, true);
+    trackingRepository.setRealmId(newContractAddress, sponsor.getRealmId());
+    trackingRepository.setShardId(newContractAddress, sponsor.getShardId());
+    trackingRepository.setAccountNum(newContractAddress, newSequence);
 
-		long createTimeMs = startTime.getEpochSecond();
-		if (txn != null && txn.hasContractCreateInstance()) {
-			var op = txn.getContractCreateInstance();
-			var autoRenewPeriod = op.getAutoRenewPeriod();
-			trackingRepository.setAutoRenewPeriod(newContractAddress, autoRenewPeriod.getSeconds());
-			var expiry = RequestBuilder.getExpirationTime(this.startTime, autoRenewPeriod);
-			trackingRepository.setExpirationTime(newContractAddress, expiry.getSeconds());
-			trackingRepository.setCreateTimeMs(newContractAddress, createTimeMs);
-		}
+    long createTimeMs = startTime.getEpochSecond();
+    if (txn != null && txn.hasContractCreateInstance()) {
+      var op = txn.getContractCreateInstance();
+      var autoRenewPeriod = op.getAutoRenewPeriod();
+      trackingRepository.setAutoRenewPeriod(newContractAddress, autoRenewPeriod.getSeconds());
+      var expiry = RequestBuilder.getExpirationTime(this.startTime, autoRenewPeriod);
+      trackingRepository.setExpirationTime(newContractAddress, expiry.getSeconds());
+      trackingRepository.setCreateTimeMs(newContractAddress, createTimeMs);
+    }
 
-		if (blockchainConfig.eip161()) {
-			trackingRepository.increaseNonce(newContractAddress);
-		}
+    if (blockchainConfig.eip161()) {
+      trackingRepository.increaseNonce(newContractAddress);
+    }
 
-		if (!isEmpty(solidityTxn.getData())) {
-			ProgramInvoke programInvoke = programInvokeFactory.createProgramInvoke(
-					solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
-			((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
-			this.vm = new VM(config, VMHook.EMPTY);
-			this.program = new Program(
-					null,
-					solidityTxn.getData(),
-					programInvoke,
-					solidityTxn,
-					config,
-					VMHook.EMPTY,
-					contractCreateAdaptor,
-					fundingAddress,
-					rbh,
-					sbh,
-					dynamicProperties.defaultContractLifetime(),
-					dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
-		}
-		if (!localCall) {
-			transfer(trackingRepository, solidityTxn.getSender(), newContractAddress, toBI(solidityTxn.getValue()));
-			touchedAccounts.add(newContractAddress);
-		}
-	}
+    if (!isEmpty(solidityTxn.getData())) {
+      ProgramInvoke programInvoke =
+          programInvokeFactory.createProgramInvoke(
+              solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
+      ((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
+      this.vm = new VM(config, VMHook.EMPTY);
+      this.program =
+          new Program(
+                  null,
+                  solidityTxn.getData(),
+                  programInvoke,
+                  solidityTxn,
+                  config,
+                  VMHook.EMPTY,
+                  contractCreateAdaptor,
+                  fundingAddress,
+                  rbh,
+                  sbh,
+                  dynamicProperties.defaultContractLifetime(),
+                  dynamicProperties.cacheRecordsTtl())
+              .withCommonConfig(commonConfig);
+    }
+    if (!localCall) {
+      transfer(
+          trackingRepository,
+          solidityTxn.getSender(),
+          newContractAddress,
+          toBI(solidityTxn.getValue()));
+      touchedAccounts.add(newContractAddress);
+    }
+  }
 
-	public void go() {
-		if (!readyToExecute) {
-			return;
-		}
+  public void go() {
+    if (!readyToExecute) {
+      return;
+    }
 
-		try {
-			if (vm != null) {
-				if (config.playVM()) {
-					vm.play(program);
-				}
+    try {
+      if (vm != null) {
+        if (config.playVM()) {
+          vm.play(program);
+        }
 
-				result = program.getResult();
-				gasLeft = toBI(solidityTxn.getGasLimit()).subtract(toBI(program.getResult().getGasUsed()));
-				if (solidityTxn.isContractCreation() && !result.isRevert()) {
-					long durationInSeconds = program.getOwnerRemainingDuration();
-					int codeLengthBytes = getLength(program.getResult().getHReturn());
-					long returnDataGasValue = Program.calculateStorageGasNeeded(
-							codeLengthBytes, durationInSeconds, this.sbh, this.gasPrice);
-					if (gasLeft.compareTo(BigInteger.valueOf(returnDataGasValue)) < 0) {
-						if (!blockchainConfig.getConstants().createEmptyContractOnOOG()) {
-							program.setRuntimeFailure(Program.Exception.notEnoughSpendingGas(
-									"No gas to return just created contract", returnDataGasValue, program));
-							result = program.getResult();
-						}
-						result.setHReturn(EMPTY_BYTE_ARRAY);
-					} else if (getLength(result.getHReturn()) > blockchainConfig.getConstants().getMAX_CONTRACT_SZIE()) {
-						program.setRuntimeFailure(Program.Exception.notEnoughSpendingGas(
-								"Contract size too large: " + getLength(result.getHReturn()), returnDataGasValue,
-								program));
-						result = program.getResult();
-						result.setHReturn(EMPTY_BYTE_ARRAY);
-					} else {
-						gasLeft = gasLeft.subtract(BigInteger.valueOf(returnDataGasValue));
-						trackingRepository.saveCode(solidityTxn.getContractAddress(), result.getHReturn());
-					}
-				}
+        result = program.getResult();
+        gasLeft = toBI(solidityTxn.getGasLimit()).subtract(toBI(program.getResult().getGasUsed()));
+        if (solidityTxn.isContractCreation() && !result.isRevert()) {
+          long durationInSeconds = program.getOwnerRemainingDuration();
+          int codeLengthBytes = getLength(program.getResult().getHReturn());
+          long returnDataGasValue =
+              Program.calculateStorageGasNeeded(
+                  codeLengthBytes, durationInSeconds, this.sbh, this.gasPrice);
+          if (gasLeft.compareTo(BigInteger.valueOf(returnDataGasValue)) < 0) {
+            if (!blockchainConfig.getConstants().createEmptyContractOnOOG()) {
+              program.setRuntimeFailure(
+                  Program.Exception.notEnoughSpendingGas(
+                      "No gas to return just created contract", returnDataGasValue, program));
+              result = program.getResult();
+            }
+            result.setHReturn(EMPTY_BYTE_ARRAY);
+          } else if (getLength(result.getHReturn())
+              > blockchainConfig.getConstants().getMAX_CONTRACT_SZIE()) {
+            program.setRuntimeFailure(
+                Program.Exception.notEnoughSpendingGas(
+                    "Contract size too large: " + getLength(result.getHReturn()),
+                    returnDataGasValue,
+                    program));
+            result = program.getResult();
+            result.setHReturn(EMPTY_BYTE_ARRAY);
+          } else {
+            gasLeft = gasLeft.subtract(BigInteger.valueOf(returnDataGasValue));
+            trackingRepository.saveCode(solidityTxn.getContractAddress(), result.getHReturn());
+          }
+        }
 
-				String validationError = config.getBlockchainConfig().getConfigForBlock(block.getNumber())
-						.validateTransactionChanges(NULL_BLOCK_STORE, block, solidityTxn, null);
-				if (validationError != null) {
-					program.setRuntimeFailure(new RuntimeException(validationError));
-				}
+        String validationError =
+            config
+                .getBlockchainConfig()
+                .getConfigForBlock(block.getNumber())
+                .validateTransactionChanges(NULL_BLOCK_STORE, block, solidityTxn, null);
+        if (validationError != null) {
+          program.setRuntimeFailure(new RuntimeException(validationError));
+        }
 
-				boolean hasValidSigs = true;
-				if (!localCall) {
-					Set<AccountID> receivers = StreamSupport.stream(program.getEndowments().spliterator(), false)
-							.map(EntityIdUtils::accountParsedFromSolidityAddress)
-							.collect(Collectors.toSet());
-					hasValidSigs = sigsVerifier.allRequiredKeysAreActive(receivers);
-				}
-				if (result.getException() != null || result.isRevert() || !hasValidSigs) {
-					result.getDeleteAccounts().clear();
-					result.getLogInfoList().clear();
-					result.resetFutureRefund();
-					rollback();
+        boolean hasValidSigs = true;
+        if (!localCall) {
+          Set<AccountID> receivers =
+              StreamSupport.stream(program.getEndowments().spliterator(), false)
+                  .map(EntityIdUtils::accountParsedFromSolidityAddress)
+                  .collect(Collectors.toSet());
+          hasValidSigs = sigsVerifier.allRequiredKeysAreActive(receivers);
+        }
+        if (result.getException() != null || result.isRevert() || !hasValidSigs) {
+          result.getDeleteAccounts().clear();
+          result.getLogInfoList().clear();
+          result.resetFutureRefund();
+          rollback();
 
-					if (result.getException() != null) {
-						throw result.getException();
-					} else if (!hasValidSigs) {
-						errorCode = INVALID_SIGNATURE;
-						setError("Non-contract receiver signatures required, but not present");
-					} else {
-						errorCode = CONTRACT_REVERT_EXECUTED;
-						setError("Execution was reverted");
-					}
-				} else {
-					touchedAccounts.addAll(result.getTouchedAccounts());
-					trackingRepository.commit();
-				}
-			} else {
-				trackingRepository.commit();
-			}
-		} catch (Throwable e) {
-			if (e instanceof Program.OutOfGasException) {
-				BigInteger gasUpperBound = BigInteger.valueOf(dynamicProperties.maxGas());
-				BigInteger gasProvided = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
-				if (gasUpperBound.compareTo(gasProvided) > 0) {
-					errorCode = INSUFFICIENT_GAS;
-				} else {
-					errorCode = MAX_GAS_LIMIT_EXCEEDED;
-				}
-			} else if (e instanceof Program.InvalidAccountAddressException) {
-				errorCode = ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-			} else if (e instanceof Program.SameOwnerObtainerOnSelfSestructException) {
-				errorCode = ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-			} else if (e instanceof Program.StaticCallModificationException) {
-				errorCode = ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
-			} else if (e instanceof Program.EmptyByteCodeException) {
-				errorCode = CONTRACT_BYTECODE_EMPTY;
-			} else {
-				errorCode = CONTRACT_EXECUTION_EXCEPTION;
-			}
-			// https://github.com/ethereum/cpp-ethereum/blob/develop/libethereum/Executive.cpp#L241
-			rollback();
-			gasLeft = ZERO;
-			setError(e.getMessage());
-		}
-	}
+          if (result.getException() != null) {
+            throw result.getException();
+          } else if (!hasValidSigs) {
+            errorCode = INVALID_SIGNATURE;
+            setError("Non-contract receiver signatures required, but not present");
+          } else {
+            errorCode = CONTRACT_REVERT_EXECUTED;
+            setError("Execution was reverted");
+          }
+        } else {
+          touchedAccounts.addAll(result.getTouchedAccounts());
+          trackingRepository.commit();
+        }
+      } else {
+        trackingRepository.commit();
+      }
+    } catch (Throwable e) {
+      if (e instanceof Program.OutOfGasException) {
+        BigInteger gasUpperBound = BigInteger.valueOf(dynamicProperties.maxGas());
+        BigInteger gasProvided = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
+        if (gasUpperBound.compareTo(gasProvided) > 0) {
+          errorCode = INSUFFICIENT_GAS;
+        } else {
+          errorCode = MAX_GAS_LIMIT_EXCEEDED;
+        }
+      } else if (e instanceof Program.InvalidAccountAddressException) {
+        errorCode = ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+      } else if (e instanceof Program.SameOwnerObtainerOnSelfSestructException) {
+        errorCode = ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+      } else if (e instanceof Program.StaticCallModificationException) {
+        errorCode = ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+      } else if (e instanceof Program.EmptyByteCodeException) {
+        errorCode = CONTRACT_BYTECODE_EMPTY;
+      } else {
+        errorCode = CONTRACT_EXECUTION_EXCEPTION;
+      }
+      // https://github.com/ethereum/cpp-ethereum/blob/develop/libethereum/Executive.cpp#L241
+      rollback();
+      gasLeft = ZERO;
+      setError(e.getMessage());
+    }
+  }
 
-	public ResponseCodeEnum getErrorCode() {
-		return errorCode;
-	}
+  public ResponseCodeEnum getErrorCode() {
+    return errorCode;
+  }
 
-	private void rollback() {
-		trackingRepository.rollback();
-		touchedAccounts.remove(
-				solidityTxn.isContractCreation() ? solidityTxn.getContractAddress() : solidityTxn.getReceiveAddress());
-	}
+  private void rollback() {
+    trackingRepository.rollback();
+    touchedAccounts.remove(
+        solidityTxn.isContractCreation()
+            ? solidityTxn.getContractAddress()
+            : solidityTxn.getReceiveAddress());
+  }
 
-	public TransactionExecutionSummary finalizeExecution() {
-		if (!readyToExecute) {
-			return null;
-		}
+  public TransactionExecutionSummary finalizeExecution() {
+    if (!readyToExecute) {
+      return null;
+    }
 
-		TransactionExecutionSummary.Builder summaryBuilder = TransactionExecutionSummary.builderFor(solidityTxn)
-				.gasLeftover(gasLeft)
-				.logs(result.getLogInfoList())
-				.result(result.getHReturn());
+    TransactionExecutionSummary.Builder summaryBuilder =
+        TransactionExecutionSummary.builderFor(solidityTxn)
+            .gasLeftover(gasLeft)
+            .logs(result.getLogInfoList())
+            .result(result.getHReturn());
 
-		if (result != null) {
-			finalizeAnyCreatedContracts();
-			if (result.isRevert() || !StringUtils.isEmpty(errorMessage)) {
-				long storageGasRefund = result.getStorageGasUsed();
-				if (storageGasRefund > 0) {
-					gasLeft = gasLeft.add(BigInteger.valueOf(storageGasRefund));
-				}
+    if (result != null) {
+      finalizeAnyCreatedContracts();
+      if (result.isRevert() || !StringUtils.isEmpty(errorMessage)) {
+        long storageGasRefund = result.getStorageGasUsed();
+        if (storageGasRefund > 0) {
+          gasLeft = gasLeft.add(BigInteger.valueOf(storageGasRefund));
+        }
+      }
 
-			}
+      result.addFutureRefund(
+          (long) result.getDeleteAccounts().size()
+              * config
+                  .getBlockchainConfig()
+                  .getConfigForBlock(block.getNumber())
+                  .getGasCost()
+                  .getSUICIDE_REFUND());
+      long gasRefund = Math.min(result.getFutureRefund(), getGasUsed() / 2);
+      gasLeft = gasLeft.add(BigInteger.valueOf(gasRefund));
 
-			result.addFutureRefund((long) result.getDeleteAccounts().size() * config.getBlockchainConfig()
-					.getConfigForBlock(block.getNumber()).getGasCost().getSUICIDE_REFUND());
-			long gasRefund = Math.min(result.getFutureRefund(), getGasUsed() / 2);
-			gasLeft = gasLeft.add(BigInteger.valueOf(gasRefund));
+      summaryBuilder
+          .gasUsed(toBI(result.getGasUsed()))
+          .gasRefund(toBI(gasRefund))
+          .deletedAccounts(result.getDeleteAccounts())
+          .internalTransactions(result.getInternalTransactions());
+      if (result.getException() != null) {
+        summaryBuilder.markAsFailed();
+      }
+    }
 
-			summaryBuilder.gasUsed(toBI(result.getGasUsed())).gasRefund(toBI(gasRefund))
-					.deletedAccounts(result.getDeleteAccounts())
-					.internalTransactions(result.getInternalTransactions());
-			if (result.getException() != null) {
-				summaryBuilder.markAsFailed();
-			}
-		}
+    TransactionExecutionSummary summary = summaryBuilder.build();
+    if (!localCall) {
+      repository.addBalance(this.payerAddress, summary.getLeftover().add(summary.getRefund()));
+      touchedAccounts.add(this.payerAddress);
 
-		TransactionExecutionSummary summary = summaryBuilder.build();
-		if (!localCall) {
-			repository.addBalance(this.payerAddress, summary.getLeftover().add(summary.getRefund()));
-			touchedAccounts.add(this.payerAddress);
+      var fee = summary.getFee();
+      repository.addBalance(this.fundingAddress, fee);
+      touchedAccounts.add(this.fundingAddress);
+      txnCtx.ifPresent(ctx -> ctx.addNonThresholdFeeChargedToPayer(fee.longValue()));
+    }
 
-			var fee = summary.getFee();
-			repository.addBalance(this.fundingAddress, fee);
-			touchedAccounts.add(this.fundingAddress);
-			txnCtx.ifPresent(ctx -> ctx.addNonThresholdFeeChargedToPayer(fee.longValue()));
-		}
+    if (result != null) {
+      logs = result.getLogInfoList();
+      for (DataWord address : result.getDeleteAccounts()) {
+        repository.setDeleted(address.getLast20Bytes(), true);
+      }
+    }
 
-		if (result != null) {
-			logs = result.getLogInfoList();
-			for (DataWord address : result.getDeleteAccounts()) {
-				repository.setDeleted(address.getLast20Bytes(), true);
-			}
-		}
+    if (blockchainConfig.eip161()) {
+      touchedAccounts.forEach(
+          address ->
+              Optional.ofNullable(repository.getAccountState(address))
+                  .ifPresent(
+                      account -> {
+                        if (account.isEmpty()) {
+                          repository.delete(address);
+                        }
+                      }));
+    }
 
-		if (blockchainConfig.eip161()) {
-			touchedAccounts.forEach(address ->
-					Optional.ofNullable(repository.getAccountState(address))
-							.ifPresent(account -> {
-								if (account.isEmpty()) {
-									repository.delete(address);
-								}
-							}));
-		}
+    listener.onTransactionExecuted(summary);
+    if (config.vmTrace() && program != null && result != null) {
+      var trace =
+          program.getTrace().result(result.getHReturn()).error(result.getException()).toString();
+      if (config.vmTraceCompressed()) {
+        trace = zipAndEncode(trace);
+      }
+      var hash = CommonUtils.hex(solidityTxn.getHash());
+      saveProgramTraceFile(config, hash, trace);
+      listener.onVMTraceCreated(hash, trace);
+    }
 
-		listener.onTransactionExecuted(summary);
-		if (config.vmTrace() && program != null && result != null) {
-			var trace = program.getTrace().result(result.getHReturn()).error(result.getException()).toString();
-			if (config.vmTraceCompressed()) {
-				trace = zipAndEncode(trace);
-			}
-			var hash = CommonUtils.hex(solidityTxn.getHash());
-			saveProgramTraceFile(config, hash, trace);
-			listener.onVMTraceCreated(hash, trace);
-		}
+    return summary;
+  }
 
-		return summary;
-	}
+  public TransactionReceipt getReceipt() {
+    if (receipt == null) {
+      receipt = asReceipt(getGasUsed(), errorMessage, solidityTxn, getVMLogs(), getResult());
+    }
+    return receipt;
+  }
 
-	public TransactionReceipt getReceipt() {
-		if (receipt == null) {
-			receipt = asReceipt(getGasUsed(), errorMessage, solidityTxn, getVMLogs(), getResult());
-		}
-		return receipt;
-	}
+  public List<LogInfo> getVMLogs() {
+    return logs;
+  }
 
-	public List<LogInfo> getVMLogs() {
-		return logs;
-	}
+  public Optional<List<ContractID>> getCreatedContracts() {
+    return createdContracts;
+  }
 
-	public Optional<List<ContractID>> getCreatedContracts() {
-		return createdContracts;
-	}
+  public ProgramResult getResult() {
+    return result;
+  }
 
-	public ProgramResult getResult() {
-		return result;
-	}
+  private long getGasUsed() {
+    return toBI(solidityTxn.getGasLimit()).subtract(gasLeft).longValue();
+  }
 
-	private long getGasUsed() {
-		return toBI(solidityTxn.getGasLimit()).subtract(gasLeft).longValue();
-	}
+  private void finalizeAnyCreatedContracts() {
+    Map<byte[], List<byte[]>> creations =
+        Optional.ofNullable(contractCreateAdaptor.getCreatedContracts())
+            .orElse(Collections.emptyMap());
+    if (!creations.isEmpty()) {
+      final Consumer<byte[]> initializer =
+          newScopedAccountInitializer(
+              startTime.getEpochSecond(),
+              dynamicProperties.defaultContractLifetime(),
+              solidityTxn.getSender(),
+              repository);
+      createdContracts =
+          Optional.of(
+              creations.values().stream()
+                  .flatMap(List::stream)
+                  .peek(initializer::accept)
+                  .map(address -> asContract(accountParsedFromSolidityAddress(address)))
+                  .sorted(
+                      comparingLong(ContractID::getShardNum)
+                          .thenComparingLong(ContractID::getRealmNum)
+                          .thenComparingLong(ContractID::getContractNum))
+                  .collect(Collectors.toList()));
+    }
+  }
 
-	private void finalizeAnyCreatedContracts() {
-		Map<byte[], List<byte[]>> creations =
-				Optional.ofNullable(contractCreateAdaptor.getCreatedContracts()).orElse(Collections.emptyMap());
-		if (!creations.isEmpty()) {
-			final Consumer<byte[]> initializer = newScopedAccountInitializer(
-					startTime.getEpochSecond(),
-					dynamicProperties.defaultContractLifetime(),
-					solidityTxn.getSender(),
-					repository);
-			createdContracts = Optional.of(
-					creations.values()
-							.stream()
-							.flatMap(List::stream)
-							.peek(initializer::accept)
-							.map(address -> asContract(accountParsedFromSolidityAddress(address)))
-							.sorted(comparingLong(ContractID::getShardNum)
-									.thenComparingLong(ContractID::getRealmNum)
-									.thenComparingLong(ContractID::getContractNum))
-							.collect(Collectors.toList()));
-		}
-	}
-
-	private void setError(String message) {
-		logger.debug(message);
-		errorMessage = message;
-	}
+  private void setError(String message) {
+    logger.debug(message);
+    errorMessage = message;
+  }
 }

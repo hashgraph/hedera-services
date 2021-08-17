@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,20 +22,19 @@ package com.hedera.services.ledger.properties;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
-	OWNER {
-		@Override
-		public BiConsumer<MerkleUniqueToken, Object> setter() {
-			return (t, o) -> t.setOwner((EntityId) o);
-		}
+  OWNER {
+    @Override
+    public BiConsumer<MerkleUniqueToken, Object> setter() {
+      return (t, o) -> t.setOwner((EntityId) o);
+    }
 
-		@Override
-		public Function<MerkleUniqueToken, Object> getter() {
-			return MerkleUniqueToken::getOwner;
-		}
-	}
+    @Override
+    public Function<MerkleUniqueToken, Object> getter() {
+      return MerkleUniqueToken::getOwner;
+    }
+  }
 }

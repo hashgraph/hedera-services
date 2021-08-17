@@ -20,32 +20,32 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractID;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hederahashgraph.api.proto.java.ContractID;
+import org.junit.jupiter.api.Test;
+
 class JContractIDKeyTest {
-	@Test
-	void zeroContractIDKeyTest() {
-		JContractIDKey key = new JContractIDKey(ContractID.newBuilder().build());
-		assertTrue(key.isEmpty());
-		assertFalse(key.isValid());
-	}
+  @Test
+  void zeroContractIDKeyTest() {
+    JContractIDKey key = new JContractIDKey(ContractID.newBuilder().build());
+    assertTrue(key.isEmpty());
+    assertFalse(key.isValid());
+  }
 
-	@Test
-	void nonZeroContractIDKeyTest() {
-		JContractIDKey key = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
-		assertFalse(key.isEmpty());
-		assertTrue(key.isValid());
-	}
+  @Test
+  void nonZeroContractIDKeyTest() {
+    JContractIDKey key = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
+    assertFalse(key.isEmpty());
+    assertTrue(key.isValid());
+  }
 
-	@Test
-	void scheduleOpsAsExpected() {
-		var subject = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
-		assertFalse(subject.isForScheduledTxn());
-		subject.setForScheduledTxn(true);
-		assertTrue(subject.isForScheduledTxn());
-	}
+  @Test
+  void scheduleOpsAsExpected() {
+    var subject = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
+    assertFalse(subject.isForScheduledTxn());
+    subject.setForScheduledTxn(true);
+    assertTrue(subject.isForScheduledTxn());
+  }
 }

@@ -20,99 +20,107 @@ package com.hedera.services.bdd.spec.keys;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
+
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import org.junit.jupiter.api.Assertions;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
+import org.junit.jupiter.api.Assertions;
 
 public class SigControl implements Serializable {
-	private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-	public enum Nature {SIG_ON, SIG_OFF, LIST, THRESHOLD}
+  public enum Nature {
+    SIG_ON,
+    SIG_OFF,
+    LIST,
+    THRESHOLD
+  }
 
-	private final Nature nature;
-	private int threshold = -1;
-	private SigControl[] childControls = new SigControl[0];
+  private final Nature nature;
+  private int threshold = -1;
+  private SigControl[] childControls = new SigControl[0];
 
-	public static final SigControl ON = new SigControl(SIG_ON);
-	public static final SigControl OFF = new SigControl(SIG_OFF);
-	public static final SigControl ANY = new SigControl(SIG_ON);
+  public static final SigControl ON = new SigControl(SIG_ON);
+  public static final SigControl OFF = new SigControl(SIG_OFF);
+  public static final SigControl ANY = new SigControl(SIG_ON);
 
-	public Nature getNature() {
-		return nature;
-	}
+  public Nature getNature() {
+    return nature;
+  }
 
-	public int getThreshold() {
-		return threshold;
-	}
+  public int getThreshold() {
+    return threshold;
+  }
 
-	public SigControl[] getChildControls() {
-		return childControls;
-	}
+  public SigControl[] getChildControls() {
+    return childControls;
+  }
 
-	public int numSimpleKeys() {
-		return countSimpleKeys(this);
-	}
+  public int numSimpleKeys() {
+    return countSimpleKeys(this);
+  }
 
-	private int countSimpleKeys(SigControl controller) {
-		return (EnumSet.of(SIG_ON, SIG_OFF).contains(controller.nature))
-				? 1 : Stream.of(controller.childControls).mapToInt(this::countSimpleKeys).sum();
-	}
+  private int countSimpleKeys(SigControl controller) {
+    return (EnumSet.of(SIG_ON, SIG_OFF).contains(controller.nature))
+        ? 1
+        : Stream.of(controller.childControls).mapToInt(this::countSimpleKeys).sum();
+  }
 
-	public boolean appliesTo(Key key) {
-		if (this == ON || this == OFF) {
-			return (!key.hasKeyList() && !key.hasThresholdKey());
-		} else {
-			KeyList composite = KeyFactory.getCompositeList(key);
-			if (composite.getKeysCount() == childControls.length) {
-				return IntStream
-						.range(0, childControls.length)
-						.allMatch(i -> childControls[i].appliesTo(composite.getKeys(i)));
-			} else {
-				return false;
-			}
-		}
-	}
+  public boolean appliesTo(Key key) {
+    if (this == ON || this == OFF) {
+      return (!key.hasKeyList() && !key.hasThresholdKey());
+    } else {
+      KeyList composite = KeyFactory.getCompositeList(key);
+      if (composite.getKeysCount() == childControls.length) {
+        return IntStream.range(0, childControls.length)
+            .allMatch(i -> childControls[i].appliesTo(composite.getKeys(i)));
+      } else {
+        return false;
+      }
+    }
+  }
 
-	public static SigControl listSigs(SigControl... childControls) {
-		Assertions.assertTrue(childControls.length > 0, "A list must have at least one child key!");
-		return new SigControl(childControls);
-	}
+  public static SigControl listSigs(SigControl... childControls) {
+    Assertions.assertTrue(childControls.length > 0, "A list must have at least one child key!");
+    return new SigControl(childControls);
+  }
 
-	public static SigControl threshSigs(int M, SigControl... childControls) {
-		Assertions.assertTrue(childControls.length > 0, "A threshold must have at least one child key!");
-		return new SigControl(M, childControls);
-	}
+  public static SigControl threshSigs(int M, SigControl... childControls) {
+    Assertions.assertTrue(
+        childControls.length > 0, "A threshold must have at least one child key!");
+    return new SigControl(M, childControls);
+  }
 
-	protected SigControl(Nature nature) {
-		this.nature = nature;
-	}
+  protected SigControl(Nature nature) {
+    this.nature = nature;
+  }
 
-	protected SigControl(SigControl... childControls) {
-		nature = Nature.LIST;
-		this.childControls = childControls;
-	}
+  protected SigControl(SigControl... childControls) {
+    nature = Nature.LIST;
+    this.childControls = childControls;
+  }
 
-	protected SigControl(int threshold, SigControl... childControls) {
-		nature = Nature.THRESHOLD;
-		this.threshold = threshold;
-		this.childControls = childControls;
-	}
+  protected SigControl(int threshold, SigControl... childControls) {
+    nature = Nature.THRESHOLD;
+    this.threshold = threshold;
+    this.childControls = childControls;
+  }
 
-	@Override
-	public String toString() {
-		return "SigControl{" +
-				"nature=" + nature +
-				", threshold=" + threshold +
-				", childControls=" + Arrays.toString(childControls) +
-				'}';
-	}
+  @Override
+  public String toString() {
+    return "SigControl{"
+        + "nature="
+        + nature
+        + ", threshold="
+        + threshold
+        + ", childControls="
+        + Arrays.toString(childControls)
+        + '}';
+  }
 }

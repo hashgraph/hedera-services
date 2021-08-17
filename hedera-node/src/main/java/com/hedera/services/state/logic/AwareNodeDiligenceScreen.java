@@ -20,16 +20,6 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.diligence.DuplicateClassification;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -40,112 +30,133 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.diligence.DuplicateClassification;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class AwareNodeDiligenceScreen {
-	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
+  private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
-	final static String WRONG_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
-	final static String MISSING_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
+  static final String WRONG_NODE_LOG_TPL =
+      "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
+  static final String MISSING_NODE_LOG_TPL =
+      "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
 
-	private final OptionValidator validator;
-	private final TransactionContext txnCtx;
-	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+  private final OptionValidator validator;
+  private final TransactionContext txnCtx;
+  private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-	public AwareNodeDiligenceScreen(
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
-	) {
-		this.txnCtx = txnCtx;
-		this.validator = validator;
-		this.backingAccounts = backingAccounts;
-	}
+  public AwareNodeDiligenceScreen(
+      OptionValidator validator,
+      TransactionContext txnCtx,
+      BackingStore<AccountID, MerkleAccount> backingAccounts) {
+    this.txnCtx = txnCtx;
+    this.validator = validator;
+    this.backingAccounts = backingAccounts;
+  }
 
-	public boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
-		var accessor = txnCtx.accessor();
+  public boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
+    var accessor = txnCtx.accessor();
 
-		var submittingAccount = txnCtx.submittingNodeAccount();
-		var designatedAccount = accessor.getTxn().getNodeAccountID();
+    var submittingAccount = txnCtx.submittingNodeAccount();
+    var designatedAccount = accessor.getTxn().getNodeAccountID();
 
-		boolean designatedNodeExists = backingAccounts.contains(designatedAccount);
-		if (!designatedNodeExists) {
-			logAccountWarning(MISSING_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
-			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
-			return true;
-		}
+    boolean designatedNodeExists = backingAccounts.contains(designatedAccount);
+    if (!designatedNodeExists) {
+      logAccountWarning(
+          MISSING_NODE_LOG_TPL,
+          submittingAccount,
+          txnCtx.submittingSwirldsMember(),
+          designatedAccount,
+          accessor);
+      txnCtx.setStatus(INVALID_NODE_ACCOUNT);
+      return true;
+    }
 
-		var payerAccountId = accessor.getPayer();
-		boolean payerAccountExists = backingAccounts.contains(payerAccountId);
+    var payerAccountId = accessor.getPayer();
+    boolean payerAccountExists = backingAccounts.contains(payerAccountId);
 
-		if (!payerAccountExists) {
-			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
-			return true;
-		}
+    if (!payerAccountExists) {
+      txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+      return true;
+    }
 
-		var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
+    var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
 
-		if (payerAccountRef.isDeleted()) {
-			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);
-			return true;
-		}
+    if (payerAccountRef.isDeleted()) {
+      txnCtx.setStatus(PAYER_ACCOUNT_DELETED);
+      return true;
+    }
 
-		if (!submittingAccount.equals(designatedAccount)) {
-			logAccountWarning(WRONG_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
-			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
-			return true;
-		}
+    if (!submittingAccount.equals(designatedAccount)) {
+      logAccountWarning(
+          WRONG_NODE_LOG_TPL,
+          submittingAccount,
+          txnCtx.submittingSwirldsMember(),
+          designatedAccount,
+          accessor);
+      txnCtx.setStatus(INVALID_NODE_ACCOUNT);
+      return true;
+    }
 
-		if (!txnCtx.isPayerSigKnownActive()) {
-			txnCtx.setStatus(INVALID_PAYER_SIGNATURE);
-			return true;
-		}
+    if (!txnCtx.isPayerSigKnownActive()) {
+      txnCtx.setStatus(INVALID_PAYER_SIGNATURE);
+      return true;
+    }
 
-		if (duplicity == NODE_DUPLICATE) {
-			txnCtx.setStatus(DUPLICATE_TRANSACTION);
-			return true;
-		}
+    if (duplicity == NODE_DUPLICATE) {
+      txnCtx.setStatus(DUPLICATE_TRANSACTION);
+      return true;
+    }
 
-		long txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
-		if (!validator.isValidTxnDuration(txnDuration)) {
-			txnCtx.setStatus(INVALID_TRANSACTION_DURATION);
-			return true;
-		}
+    long txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
+    if (!validator.isValidTxnDuration(txnDuration)) {
+      txnCtx.setStatus(INVALID_TRANSACTION_DURATION);
+      return true;
+    }
 
-		var cronStatus = validator.chronologyStatus(accessor, txnCtx.consensusTime());
-		if (cronStatus != OK) {
-			txnCtx.setStatus(cronStatus);
-			return true;
-		}
+    var cronStatus = validator.chronologyStatus(accessor, txnCtx.consensusTime());
+    if (cronStatus != OK) {
+      txnCtx.setStatus(cronStatus);
+      return true;
+    }
 
-		var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
-		if (memoValidity != OK) {
-			txnCtx.setStatus(memoValidity);
-			return true;
-		}
+    var memoValidity =
+        validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
+    if (memoValidity != OK) {
+      txnCtx.setStatus(memoValidity);
+      return true;
+    }
 
-		return false;
-	}
+    return false;
+  }
 
-	/**
-	 * Logs account warnings
-	 *
-	 * @param message template for the log which includes each of the additional parameters
-	 * @param submittingNodeAccount submitting node account for the transaction
-	 * @param submittingMember submitting member
-	 * @param relatedAccount related account as to which the warning applies to
-	 * @param accessor transaction accessor
-	 */
-	private void logAccountWarning(
-			String message,
-			AccountID submittingNodeAccount,
-			long submittingMember,
-			AccountID relatedAccount,
-			TxnAccessor accessor
-	) {
-		log.warn(message,
-				readableId(submittingNodeAccount),
-				submittingMember,
-				readableId(relatedAccount),
-				accessor.getSignedTxnWrapper());
-	}
-
+  /**
+   * Logs account warnings
+   *
+   * @param message template for the log which includes each of the additional parameters
+   * @param submittingNodeAccount submitting node account for the transaction
+   * @param submittingMember submitting member
+   * @param relatedAccount related account as to which the warning applies to
+   * @param accessor transaction accessor
+   */
+  private void logAccountWarning(
+      String message,
+      AccountID submittingNodeAccount,
+      long submittingMember,
+      AccountID relatedAccount,
+      TxnAccessor accessor) {
+    log.warn(
+        message,
+        readableId(submittingNodeAccount),
+        submittingMember,
+        readableId(relatedAccount),
+        accessor.getSignedTxnWrapper());
+  }
 }

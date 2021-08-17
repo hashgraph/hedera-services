@@ -28,61 +28,60 @@ import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.common.CommonUtils;
+import java.util.Optional;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
-
 public class SpecKeyFromMnemonic extends UtilOp {
-	private static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
+  private static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
 
-	private final String name;
-	private final String mnemonic;
-	private Optional<String> linkedId = Optional.empty();
+  private final String name;
+  private final String mnemonic;
+  private Optional<String> linkedId = Optional.empty();
 
-	public SpecKeyFromMnemonic(String name, String mnemonic) {
-		this.name = name;
-		this.mnemonic = mnemonic;
-	}
+  public SpecKeyFromMnemonic(String name, String mnemonic) {
+    this.name = name;
+    this.mnemonic = mnemonic;
+  }
 
-	public SpecKeyFromMnemonic linkedTo(String id) {
-		linkedId = Optional.of(id);
-		return this;
-	}
+  public SpecKeyFromMnemonic linkedTo(String id) {
+    linkedId = Optional.of(id);
+    return this;
+  }
 
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		byte[] seed = Bip0032.seedFrom(mnemonic);
-		byte[] privateKey = Bip0032.privateKeyFrom(seed);
-		createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
-		return false;
-	}
+  @Override
+  protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    byte[] seed = Bip0032.seedFrom(mnemonic);
+    byte[] privateKey = Bip0032.privateKeyFrom(seed);
+    createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
+    return false;
+  }
 
-	static void createAndLinkSimpleKey(
-			HapiApiSpec spec,
-			byte[] privateKey,
-			String name,
-			Optional<String> linkedId,
-			Logger logToUse) {
-		var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
-		var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
-		var pk = new EdDSAPrivateKey(privateKeySpec);
-		var pubKeyHex = CommonUtils.hex(pk.getAbyte());
-		logToUse.info("Hex-encoded public key: " + pubKeyHex);
-		var key = Ed25519Factory.populatedFrom(pk.getAbyte());
-		spec.registry().saveKey(name, key);
-		spec.keys().incorporate(name, pubKeyHex, pk, KeyShape.SIMPLE);
-		linkedId.ifPresent(s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
-	}
+  static void createAndLinkSimpleKey(
+      HapiApiSpec spec,
+      byte[] privateKey,
+      String name,
+      Optional<String> linkedId,
+      Logger logToUse) {
+    var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
+    var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
+    var pk = new EdDSAPrivateKey(privateKeySpec);
+    var pubKeyHex = CommonUtils.hex(pk.getAbyte());
+    logToUse.info("Hex-encoded public key: " + pubKeyHex);
+    var key = Ed25519Factory.populatedFrom(pk.getAbyte());
+    spec.registry().saveKey(name, key);
+    spec.keys().incorporate(name, pubKeyHex, pk, KeyShape.SIMPLE);
+    linkedId.ifPresent(s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
+  }
 
-	@Override
-	protected MoreObjects.ToStringHelper toStringHelper() {
-		var helper = super.toStringHelper();
-		helper.add("name", name);
-		linkedId.ifPresent(s -> helper.add("linkedId", s));
-		return helper;
-	}
+  @Override
+  protected MoreObjects.ToStringHelper toStringHelper() {
+    var helper = super.toStringHelper();
+    helper.add("name", name);
+    linkedId.ifPresent(s -> helper.add("linkedId", s));
+    return helper;
+  }
 }

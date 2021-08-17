@@ -20,45 +20,47 @@ package com.hedera.services.usage.file;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 class ExtantFileContextTest {
-	private String memo = "Currently unavailable";
-	private long expiry = 1_234_567L;
-	private KeyList wacl = KeyUtils.A_KEY_LIST.getKeyList();
-	private long size = 54_321L;
+  private String memo = "Currently unavailable";
+  private long expiry = 1_234_567L;
+  private KeyList wacl = KeyUtils.A_KEY_LIST.getKeyList();
+  private long size = 54_321L;
 
-	@Test
-	void buildsAsExpected() {
-		// given:
-		var subject = ExtantFileContext.newBuilder()
-				.setCurrentExpiry(expiry)
-				.setCurrentMemo(memo)
-				.setCurrentWacl(wacl)
-				.setCurrentSize(size)
-				.build();
+  @Test
+  void buildsAsExpected() {
+    // given:
+    var subject =
+        ExtantFileContext.newBuilder()
+            .setCurrentExpiry(expiry)
+            .setCurrentMemo(memo)
+            .setCurrentWacl(wacl)
+            .setCurrentSize(size)
+            .build();
 
-		// expect:
-		assertEquals(memo, subject.currentMemo());
-		assertEquals(expiry, subject.currentExpiry());
-		assertEquals(wacl, subject.currentWacl());
-		assertEquals(size, subject.currentSize());
-	}
+    // expect:
+    assertEquals(memo, subject.currentMemo());
+    assertEquals(expiry, subject.currentExpiry());
+    assertEquals(wacl, subject.currentWacl());
+    assertEquals(size, subject.currentSize());
+  }
 
-	@Test
-	void rejectsIncompleteContext() {
-		// given:
-		var builder = ExtantFileContext.newBuilder()
-				.setCurrentExpiry(expiry)
-				.setCurrentMemo(memo)
-				.setCurrentWacl(wacl);
+  @Test
+  void rejectsIncompleteContext() {
+    // given:
+    var builder =
+        ExtantFileContext.newBuilder()
+            .setCurrentExpiry(expiry)
+            .setCurrentMemo(memo)
+            .setCurrentWacl(wacl);
 
-		// expect:
-		assertThrows(IllegalStateException.class, builder::build);
-	}
+    // expect:
+    assertThrows(IllegalStateException.class, builder::build);
+  }
 }

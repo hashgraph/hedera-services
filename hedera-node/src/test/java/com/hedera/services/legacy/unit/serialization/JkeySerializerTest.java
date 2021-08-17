@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit.serialization;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,12 @@ package com.hedera.services.legacy.unit.serialization;
  * limitations under the License.
  * ‍
  */
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -31,11 +37,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.CommonUtils;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.security.KeyPair;
@@ -44,25 +45,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author oc
  * @version Junit5 Tests the JKeySerializer 1) Create a JThreshold Key , sez & desez 2) Create a
- * JKeyList Key , sez & desez 3) Create a JEd25519Key, sez & desez 4) Create a JECDSA_383Key, sez &
- * desez 5) Create a Key Proto, sez & desez
+ *     JKeyList Key , sez & desez 3) Create a JEd25519Key, sez & desez 4) Create a JECDSA_383Key,
+ *     sez & desez 5) Create a Key Proto, sez & desez
  */
 @DisplayName("JKeySerializer Test Suite")
 class JkeySerializerTest {
 
-
-  /**
-   * Tester Util Class
-   */
+  /** Tester Util Class */
   private JKey getSpecificJKeysMade(final String action, final int numKeys, final int depth) {
     JKey jkey = null;
     List<JKey> keyList = new ArrayList<>();
@@ -89,13 +86,13 @@ class JkeySerializerTest {
   }
 
   /**
-   *
    * @param numKeys
    * @param threshold
    * @param keyList
    * @return
    */
-  private JKey genThresholdKeyRecursive(final int numKeys, final int threshold, final List<JKey> keyList) {
+  private JKey genThresholdKeyRecursive(
+      final int numKeys, final int threshold, final List<JKey> keyList) {
     // if bottom level
     if (keyList.size() == 1) {
       return keyList.get(0);
@@ -119,7 +116,6 @@ class JkeySerializerTest {
   }
 
   /**
-   *
    * @param numKeys
    * @param keyList
    * @return
@@ -155,15 +151,14 @@ class JkeySerializerTest {
     return akey;
   }
 
-
   /**
    * Generates a complex key of given depth with a mix of basic key, threshold key and key list.
    *
    * @param depth of the generated key
    * @return generated key
    */
-  private static Key genSampleComplexKey(final int depth, final Map<String, PrivateKey> pubKey2privKeyMap)
-          throws Exception {
+  private static Key genSampleComplexKey(
+      final int depth, final Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
     Key rv = null;
     int numKeys = 3;
     int threshold = 2;
@@ -171,7 +166,7 @@ class JkeySerializerTest {
     if (depth == 1) {
       rv = genSingleEd25519Key(pubKey2privKeyMap);
 
-      //verify the size
+      // verify the size
       int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
       assertEquals(1, size);
     } else if (depth == 2) {
@@ -181,7 +176,7 @@ class JkeySerializerTest {
       keys.add(genKeyListInstance(numKeys, pubKey2privKeyMap));
       rv = genKeyList(keys);
 
-      //verify the size
+      // verify the size
       int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
       assertEquals(1 + numKeys * 2, size);
     } else {
@@ -194,13 +189,13 @@ class JkeySerializerTest {
   /**
    * Computes number of expanded keys by traversing the key recursively.
    *
-   * @param key     the complex key to be computed
-   * @param depth   current level that is to be traversed. The first level has a value of 1.
+   * @param key the complex key to be computed
+   * @param depth current level that is to be traversed. The first level has a value of 1.
    * @param counter keeps track the number of keys
    * @return number of expanded keys
    */
-
-  private static int computeNumOfExpandedKeys(final Key key, int depth, final AtomicCounter counter) {
+  private static int computeNumOfExpandedKeys(
+      final Key key, int depth, final AtomicCounter counter) {
     if (!(key.hasThresholdKey() || key.hasKeyList())) {
       counter.increment();
       return counter.value();
@@ -244,8 +239,8 @@ class JkeySerializerTest {
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
    * @return generated threshold key
    */
-  private static Key genThresholdKeyInstance(int numKeys, int threshold,
-                                             Map<String, PrivateKey> pubKey2privKeyMap) {
+  private static Key genThresholdKeyInstance(
+      int numKeys, int threshold, Map<String, PrivateKey> pubKey2privKeyMap) {
     List<Key> keys = genEd25519Keys(numKeys, pubKey2privKeyMap);
     Key rv = genThresholdKey(keys, threshold);
     return rv;
@@ -257,7 +252,8 @@ class JkeySerializerTest {
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
    * @return a list of generated Ed25519 keys
    */
-  private static List<Key> genEd25519Keys(final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
+  private static List<Key> genEd25519Keys(
+      final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
     List<Key> rv = new ArrayList<>();
     for (int i = 0; i < numKeys; i++) {
       KeyPair pair = new KeyPairGenerator().generateKeyPair();
@@ -276,9 +272,11 @@ class JkeySerializerTest {
    * @return generated threshold key
    */
   private static Key genThresholdKey(final List<Key> keys, final int threshold) {
-    ThresholdKey tkey = ThresholdKey.newBuilder()
+    ThresholdKey tkey =
+        ThresholdKey.newBuilder()
             .setKeys(KeyList.newBuilder().addAllKeys(keys).build())
-            .setThreshold(threshold).build();
+            .setThreshold(threshold)
+            .build();
     Key rv = Key.newBuilder().setThresholdKey(tkey).build();
     return rv;
   }
@@ -315,24 +313,23 @@ class JkeySerializerTest {
       dis = new DataInputStream(in);
 
       jkeyReborn = JKeySerializer.deserialize(dis);
-      //Write Assertions Here
-      assertAll("JKeyRebornChecks1",
+      // Write Assertions Here
+      assertAll(
+          "JKeyRebornChecks1",
           () -> assertNotNull(jkeyReborn),
           () -> assertTrue(jkeyReborn instanceof JThresholdKey),
           () -> assertTrue(jkeyReborn.hasThresholdKey()),
-          () -> assertEquals(jkeyReborn.getThresholdKey().getThreshold(), 3)
-      );
+          () -> assertEquals(jkeyReborn.getThresholdKey().getThreshold(), 3));
       JKeyList afterJkeysList = jkeyReborn.getThresholdKey().getKeys();
 
-      assertAll("JKeyRebornChecks2",
+      assertAll(
+          "JKeyRebornChecks2",
           () -> assertNotNull(afterJkeysList),
-          () -> assertTrue(afterJkeysList.getKeysList() != null)
-      );
+          () -> assertTrue(afterJkeysList.getKeysList() != null));
 
       int afterJkeysListSize = afterJkeysList.getKeysList().size();
 
-      assertAll("JKeyRebornChecks2",
-          () -> assertEquals(afterJkeysListSize, beforeJKeyListSize));
+      assertAll("JKeyRebornChecks2", () -> assertEquals(afterJkeysListSize, beforeJKeyListSize));
 
       dis.close();
       in.close();
@@ -342,7 +339,6 @@ class JkeySerializerTest {
       dis = null;
       in = null;
     }
-
   }
 
   @Test
@@ -367,25 +363,24 @@ class JkeySerializerTest {
       dis = new DataInputStream(in);
 
       jkeyReborn = JKeySerializer.deserialize(dis);
-      //Write Assertions Here
-      assertAll("JKeyRebornChecks1",
+      // Write Assertions Here
+      assertAll(
+          "JKeyRebornChecks1",
           () -> assertNotNull(jkeyReborn),
           () -> assertTrue(jkeyReborn instanceof JKeyList),
           () -> assertTrue(jkeyReborn.hasKeyList()),
-          () -> assertFalse(jkeyReborn.hasThresholdKey())
-      );
+          () -> assertFalse(jkeyReborn.hasThresholdKey()));
 
       JKeyList afterJkeysList = jkeyReborn.getKeyList();
 
-      assertAll("JKeyRebornChecks2",
+      assertAll(
+          "JKeyRebornChecks2",
           () -> assertNotNull(afterJkeysList),
-          () -> assertTrue(afterJkeysList.getKeysList() != null)
-      );
+          () -> assertTrue(afterJkeysList.getKeysList() != null));
 
       int afterJkeysListSize = afterJkeysList.getKeysList().size();
 
-      assertAll("JKeyRebornChecks2",
-          () -> assertEquals(afterJkeysListSize, beforeJKeyListSize));
+      assertAll("JKeyRebornChecks2", () -> assertEquals(afterJkeysListSize, beforeJKeyListSize));
 
       dis.close();
       in.close();
@@ -395,9 +390,7 @@ class JkeySerializerTest {
       dis = null;
       in = null;
     }
-
   }
-
 
   @Test
   @DisplayName("03.Test JKey Proto Sez-Desez")
@@ -410,7 +403,7 @@ class JkeySerializerTest {
     JThresholdKey jThresholdAfter = null;
 
     List<JKey> jListBef = null;
-    //Jkey will have JEd25519Key,JThresholdKey,JKeyList
+    // Jkey will have JEd25519Key,JThresholdKey,JKeyList
     try {
       protoKey = genSampleComplexKey(2, pubKey2privKeyMap);
       jkey = JKey.mapKey(protoKey);
@@ -432,19 +425,19 @@ class JkeySerializerTest {
       dis = new DataInputStream(in);
 
       jkeyReborn = JKeySerializer.deserialize(dis);
-      //Write Top Assertions Here
+      // Write Top Assertions Here
 
-      assertAll("JKeyRebornChecks-Top Level",
+      assertAll(
+          "JKeyRebornChecks-Top Level",
           () -> assertNotNull(jkeyReborn),
           () -> assertTrue(jkeyReborn instanceof JKeyList),
           () -> assertTrue(jkeyReborn.hasKeyList()),
-          () -> assertFalse(jkeyReborn.hasThresholdKey())
-      );
+          () -> assertFalse(jkeyReborn.hasThresholdKey()));
 
       List<JKey> jListAft = jkeyReborn.getKeyList().getKeysList();
 
       assertEquals(jListBef.size(), jListAft.size());
-      //Order Checks
+      // Order Checks
       for (int i = 0; i > jListBef.size(); i++) {
         assertEquals(jListAft.get(i), jListBef.get(i));
       }
@@ -456,7 +449,5 @@ class JkeySerializerTest {
       dis = null;
       in = null;
     }
-
   }
-
 }

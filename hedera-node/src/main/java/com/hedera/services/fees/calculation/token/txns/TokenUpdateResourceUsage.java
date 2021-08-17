@@ -20,6 +20,8 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import static com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage.ifPresent;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
@@ -29,42 +31,46 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-
 import java.util.function.BiFunction;
 
-import static com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage.ifPresent;
-
 public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
-	static BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory = TokenUpdateUsage::newEstimate;
+  static BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory =
+      TokenUpdateUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasTokenUpdate();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasTokenUpdate();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var op = txn.getTokenUpdate();
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var optionalInfo = view.infoForToken(op.getToken());
-		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			var estimate = factory.apply(txn, sigUsage)
-					.givenCurrentExpiry(info.getExpiry().getSeconds())
-					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
-					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
-					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
-					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
-					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
-					.givenCurrentMemo(info.getMemo())
-					.givenCurrentName(info.getName())
-					.givenCurrentSymbol(info.getSymbol());
-			if (info.hasAutoRenewAccount()) {
-				estimate.givenCurrentlyUsingAutoRenewAccount();
-			}
-			return estimate.get();
-		} else {
-			return FeeData.getDefaultInstance();
-		}
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var op = txn.getTokenUpdate();
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    var optionalInfo = view.infoForToken(op.getToken());
+    if (optionalInfo.isPresent()) {
+      var info = optionalInfo.get();
+      var estimate =
+          factory
+              .apply(txn, sigUsage)
+              .givenCurrentExpiry(info.getExpiry().getSeconds())
+              .givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+              .givenCurrentFreezeKey(
+                  ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+              .givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+              .givenCurrentSupplyKey(
+                  ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+              .givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+              .givenCurrentMemo(info.getMemo())
+              .givenCurrentName(info.getName())
+              .givenCurrentSymbol(info.getSymbol());
+      if (info.hasAutoRenewAccount()) {
+        estimate.givenCurrentlyUsingAutoRenewAccount();
+      }
+      return estimate.get();
+    } else {
+      return FeeData.getDefaultInstance();
+    }
+  }
 }

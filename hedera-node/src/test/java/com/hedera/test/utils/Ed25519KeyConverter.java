@@ -28,17 +28,17 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public class Ed25519KeyConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext)
-			throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		try {
-			return JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(inputString)));
-		} catch (Exception e) {
-			throw new IllegalArgumentException(e);
-		}
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    try {
+      return JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(inputString)));
+    } catch (Exception e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
 }

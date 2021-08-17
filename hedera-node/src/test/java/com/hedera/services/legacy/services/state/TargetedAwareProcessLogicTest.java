@@ -20,6 +20,10 @@ package com.hedera.services.legacy.services.state;
  * ‍
  */
 
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -36,6 +40,10 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.function.BiPredicate;
+import javax.inject.Inject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,109 +51,90 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.function.BiPredicate;
-
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
-
-@ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
+@ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
 class TargetedAwareProcessLogicTest {
-	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
+  private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
 
-	@Mock
-	private TxnAccessor txnAccessor;
-	@Mock
-	private ServicesContext ctx;
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private AccountRecordsHistorian recordsHistorian;
-	@Mock
-	private RecordStreamManager recordStreamManager;
-	@Mock
-	private NonBlockingHandoff nonBlockingHandoff;
-	@Mock
-	private Rationalization rationalization;
-	@Mock
-	private ReusableBodySigningFactory bodySigningFactory;
-	@Mock
-	private BiPredicate<JKey, TransactionSignature> validityTest;
-	@Mock
-	private AwareProcessLogic.PayerSigValidity payerSigValidity;
+  @Mock private TxnAccessor txnAccessor;
+  @Mock private ServicesContext ctx;
+  @Mock private TransactionContext txnCtx;
+  @Mock private AccountRecordsHistorian recordsHistorian;
+  @Mock private RecordStreamManager recordStreamManager;
+  @Mock private NonBlockingHandoff nonBlockingHandoff;
+  @Mock private Rationalization rationalization;
+  @Mock private ReusableBodySigningFactory bodySigningFactory;
+  @Mock private BiPredicate<JKey, TransactionSignature> validityTest;
+  @Mock private AwareProcessLogic.PayerSigValidity payerSigValidity;
 
-	@Inject
-	private LogCaptor logCaptor;
+  @Inject private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private AwareProcessLogic subject;
+  @LoggingSubject private AwareProcessLogic subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
-	}
+  @BeforeEach
+  void setUp() {
+    subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
+  }
 
-	@Test
-	void usesPayerSigValidityWithValidityTest() {
-		// setup:
-		subject.setPayerSigValidity(payerSigValidity);
+  @Test
+  void usesPayerSigValidityWithValidityTest() {
+    // setup:
+    subject.setPayerSigValidity(payerSigValidity);
 
-		given(payerSigValidity.test(txnAccessor, validityTest)).willReturn(true);
+    given(payerSigValidity.test(txnAccessor, validityTest)).willReturn(true);
 
-		// expect:
-		Assertions.assertTrue(subject.hasActivePayerSig(txnAccessor));
-	}
+    // expect:
+    Assertions.assertTrue(subject.hasActivePayerSig(txnAccessor));
+  }
 
-	@Test
-	void defaultsFalseIfValidityTestThrows() {
-		// setup:
-		subject.setPayerSigValidity(payerSigValidity);
+  @Test
+  void defaultsFalseIfValidityTestThrows() {
+    // setup:
+    subject.setPayerSigValidity(payerSigValidity);
 
-		given(payerSigValidity.test(txnAccessor, validityTest)).willThrow(RuntimeException.class);
+    given(payerSigValidity.test(txnAccessor, validityTest)).willThrow(RuntimeException.class);
 
-		// expect:
-		Assertions.assertFalse(subject.hasActivePayerSig(txnAccessor));
-		// and:
-		Assertions.assertTrue(logCaptor.warnLogs().get(0)
-				.startsWith("Unhandled exception when testing payer sig activation"));
-	}
+    // expect:
+    Assertions.assertFalse(subject.hasActivePayerSig(txnAccessor));
+    // and:
+    Assertions.assertTrue(
+        logCaptor
+            .warnLogs()
+            .get(0)
+            .startsWith("Unhandled exception when testing payer sig activation"));
+  }
 
-	@Test
-	void streamsRecordIfPresent() {
-		// setup:
-		final Transaction txn = Transaction.getDefaultInstance();
-		final ExpirableTxnRecord lastRecord = ExpirableTxnRecord.newBuilder().build();
-		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
+  @Test
+  void streamsRecordIfPresent() {
+    // setup:
+    final Transaction txn = Transaction.getDefaultInstance();
+    final ExpirableTxnRecord lastRecord = ExpirableTxnRecord.newBuilder().build();
+    final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
 
-		given(txnAccessor.getSignedTxnWrapper()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(txnAccessor);
-		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.of(lastRecord));
-		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
-		given(ctx.txnCtx()).willReturn(txnCtx);
-		given(ctx.nonBlockingHandoff()).willReturn(nonBlockingHandoff);
-		given(nonBlockingHandoff.offer(expectedRso)).willReturn(true);
+    given(txnAccessor.getSignedTxnWrapper()).willReturn(txn);
+    given(txnCtx.accessor()).willReturn(txnAccessor);
+    given(txnCtx.consensusTime()).willReturn(consensusNow);
+    given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.of(lastRecord));
+    given(ctx.recordsHistorian()).willReturn(recordsHistorian);
+    given(ctx.txnCtx()).willReturn(txnCtx);
+    given(ctx.nonBlockingHandoff()).willReturn(nonBlockingHandoff);
+    given(nonBlockingHandoff.offer(expectedRso)).willReturn(true);
 
-		// when:
-		subject.addRecordToStream();
+    // when:
+    subject.addRecordToStream();
 
-		// then:
-		verify(nonBlockingHandoff).offer(expectedRso);
-	}
+    // then:
+    verify(nonBlockingHandoff).offer(expectedRso);
+  }
 
-	@Test
-	void doesNothingIfNoLastCreatedRecord() {
-		given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.empty());
-		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
+  @Test
+  void doesNothingIfNoLastCreatedRecord() {
+    given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.empty());
+    given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 
-		// when:
-		subject.addRecordToStream();
+    // when:
+    subject.addRecordToStream();
 
-		// then:
-		verifyNoInteractions(recordStreamManager);
-	}
+    // then:
+    verifyNoInteractions(recordStreamManager);
+  }
 }

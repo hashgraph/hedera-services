@@ -20,40 +20,39 @@ package com.hedera.services.usage.contract;
  * ‍
  */
 
-import com.hedera.services.usage.QueryUsage;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-
-import java.nio.charset.Charset;
-
 import static com.hedera.services.usage.contract.entities.ContractEntitySizes.CONTRACT_ENTITY_SIZES;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+import com.hedera.services.usage.QueryUsage;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import java.nio.charset.Charset;
+
 public class ContractGetInfoUsage extends QueryUsage {
-	private ContractGetInfoUsage(Query query) {
-		super(query.getContractGetInfo().getHeader().getResponseType());
-		addTb(BASIC_ENTITY_ID_SIZE);
-		addRb(CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr());
-	}
+  private ContractGetInfoUsage(Query query) {
+    super(query.getContractGetInfo().getHeader().getResponseType());
+    addTb(BASIC_ENTITY_ID_SIZE);
+    addRb(CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr());
+  }
 
-	public static ContractGetInfoUsage newEstimate(Query query) {
-		return new ContractGetInfoUsage(query);
-	}
+  public static ContractGetInfoUsage newEstimate(Query query) {
+    return new ContractGetInfoUsage(query);
+  }
 
-	public ContractGetInfoUsage givenCurrentKey(Key key) {
-		addRb(getAccountKeyStorageSize(key));
-		return this;
-	}
+  public ContractGetInfoUsage givenCurrentKey(Key key) {
+    addRb(getAccountKeyStorageSize(key));
+    return this;
+  }
 
-	public ContractGetInfoUsage givenCurrentMemo(String memo) {
-		addRb(memo.getBytes(Charset.forName("UTF-8")).length);
-		return this;
-	}
+  public ContractGetInfoUsage givenCurrentMemo(String memo) {
+    addRb(memo.getBytes(Charset.forName("UTF-8")).length);
+    return this;
+  }
 
-	public ContractGetInfoUsage givenCurrentTokenAssocs(int count) {
-		addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
-		return this;
-	}
+  public ContractGetInfoUsage givenCurrentTokenAssocs(int count) {
+    addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+    return this;
+  }
 }

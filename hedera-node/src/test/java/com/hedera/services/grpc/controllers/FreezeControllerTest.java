@@ -20,6 +20,10 @@ package com.hedera.services.grpc.controllers;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -27,30 +31,26 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class FreezeControllerTest {
-	Transaction txn = Transaction.getDefaultInstance();
-	TxnResponseHelper txnResponseHelper;
-	StreamObserver<TransactionResponse> txnObserver;
+  Transaction txn = Transaction.getDefaultInstance();
+  TxnResponseHelper txnResponseHelper;
+  StreamObserver<TransactionResponse> txnObserver;
 
-	FreezeController subject;
+  FreezeController subject;
 
-	@BeforeEach
-	private void setup() {
-		txnResponseHelper = mock(TxnResponseHelper.class);
+  @BeforeEach
+  private void setup() {
+    txnResponseHelper = mock(TxnResponseHelper.class);
 
-		subject = new FreezeController(txnResponseHelper);
-	}
+    subject = new FreezeController(txnResponseHelper);
+  }
 
-	@Test
-	void forwardsTransferAsExpected() {
-		// when:
-		subject.freeze(txn, txnObserver);
+  @Test
+  void forwardsTransferAsExpected() {
+    // when:
+    subject.freeze(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, Freeze);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, Freeze);
+  }
 }

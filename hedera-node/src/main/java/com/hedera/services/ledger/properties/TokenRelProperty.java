@@ -21,42 +21,41 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
-	TOKEN_BALANCE {
-		@Override
-		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, l) -> a.setBalance((long)l);
-		}
+  TOKEN_BALANCE {
+    @Override
+    public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+      return (a, l) -> a.setBalance((long) l);
+    }
 
-		@Override
-		public Function<MerkleTokenRelStatus, Object> getter() {
-			return MerkleTokenRelStatus::getBalance;
-		}
-	},
-	IS_FROZEN {
-		@Override
-		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setFrozen((boolean)f);
-		}
+    @Override
+    public Function<MerkleTokenRelStatus, Object> getter() {
+      return MerkleTokenRelStatus::getBalance;
+    }
+  },
+  IS_FROZEN {
+    @Override
+    public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+      return (a, f) -> a.setFrozen((boolean) f);
+    }
 
-		@Override
-		public Function<MerkleTokenRelStatus, Object> getter() {
-			return MerkleTokenRelStatus::isFrozen;
-		}
-	},
-	IS_KYC_GRANTED {
-		@Override
-		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setKycGranted((boolean)f);
-		}
+    @Override
+    public Function<MerkleTokenRelStatus, Object> getter() {
+      return MerkleTokenRelStatus::isFrozen;
+    }
+  },
+  IS_KYC_GRANTED {
+    @Override
+    public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+      return (a, f) -> a.setKycGranted((boolean) f);
+    }
 
-		@Override
-		public Function<MerkleTokenRelStatus, Object> getter() {
-			return MerkleTokenRelStatus::isKycGranted;
-		}
-	}
+    @Override
+    public Function<MerkleTokenRelStatus, Object> getter() {
+      return MerkleTokenRelStatus::isKycGranted;
+    }
+  }
 }

@@ -20,11 +20,6 @@ package com.hedera.services.sysfiles.validation;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-
-import java.util.EnumSet;
-import java.util.Set;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -76,57 +71,61 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.EnumSet;
+import java.util.Set;
+
 public class ExpectedCustomThrottles {
-	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_0160 = EnumSet.of(
-			CryptoCreate,
-			CryptoTransfer,
-			CryptoUpdate,
-			CryptoDelete,
-			FileCreate,
-			FileUpdate,
-			FileDelete,
-			FileAppend,
-			ContractCreate,
-			ContractUpdate,
-			ContractCall,
-			ContractDelete,
-			ConsensusCreateTopic,
-			ConsensusUpdateTopic,
-			ConsensusDeleteTopic,
-			ConsensusSubmitMessage,
-			TokenCreate,
-			TokenGetNftInfo,
-			TokenGetAccountNftInfos,
-			TokenGetNftInfos,
-			TokenFreezeAccount,
-			TokenUnfreezeAccount,
-			TokenGrantKycToAccount,
-			TokenRevokeKycFromAccount,
-			TokenDelete,
-			TokenMint,
-			TokenBurn,
-			TokenAccountWipe,
-			TokenUpdate,
-			TokenAssociateToAccount,
-			TokenDissociateFromAccount,
-			ScheduleCreate,
-			ScheduleSign,
-			ScheduleDelete,
-			ConsensusGetTopicInfo,
-			ContractCallLocal,
-			ContractGetInfo,
-			ContractGetBytecode,
-			ContractGetRecords,
-			CryptoGetAccountBalance,
-			CryptoGetAccountRecords,
-			CryptoGetInfo,
-			FileGetContents,
-			FileGetInfo,
-			TransactionGetReceipt,
-			TransactionGetRecord,
-			GetVersionInfo,
-			TokenGetInfo,
-			ScheduleGetInfo,
-			TokenFeeScheduleUpdate
-	);
+  public static final Set<HederaFunctionality> OPS_FOR_RELEASE_0160 =
+      EnumSet.of(
+          CryptoCreate,
+          CryptoTransfer,
+          CryptoUpdate,
+          CryptoDelete,
+          FileCreate,
+          FileUpdate,
+          FileDelete,
+          FileAppend,
+          ContractCreate,
+          ContractUpdate,
+          ContractCall,
+          ContractDelete,
+          ConsensusCreateTopic,
+          ConsensusUpdateTopic,
+          ConsensusDeleteTopic,
+          ConsensusSubmitMessage,
+          TokenCreate,
+          TokenGetNftInfo,
+          TokenGetAccountNftInfos,
+          TokenGetNftInfos,
+          TokenFreezeAccount,
+          TokenUnfreezeAccount,
+          TokenGrantKycToAccount,
+          TokenRevokeKycFromAccount,
+          TokenDelete,
+          TokenMint,
+          TokenBurn,
+          TokenAccountWipe,
+          TokenUpdate,
+          TokenAssociateToAccount,
+          TokenDissociateFromAccount,
+          ScheduleCreate,
+          ScheduleSign,
+          ScheduleDelete,
+          ConsensusGetTopicInfo,
+          ContractCallLocal,
+          ContractGetInfo,
+          ContractGetBytecode,
+          ContractGetRecords,
+          CryptoGetAccountBalance,
+          CryptoGetAccountRecords,
+          CryptoGetInfo,
+          FileGetContents,
+          FileGetInfo,
+          TransactionGetReceipt,
+          TransactionGetRecord,
+          GetVersionInfo,
+          TokenGetInfo,
+          ScheduleGetInfo,
+          TokenFeeScheduleUpdate);
 }

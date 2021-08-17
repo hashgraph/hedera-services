@@ -22,58 +22,57 @@ package com.hedera.services.txns;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Provides logic to identify what {@link TransitionLogic} applies to the
- * active node and transaction context.
+ * Provides logic to identify what {@link TransitionLogic} applies to the active node and
+ * transaction context.
  *
  * @author Michael Tinker
  */
 public class TransitionLogicLookup {
-	private final EnumMap<HederaFunctionality, Optional<TransitionLogic>> unambiguousLookups =
-			new EnumMap<>(HederaFunctionality.class);
-	private final Function<HederaFunctionality, List<TransitionLogic>> transitions;
+  private final EnumMap<HederaFunctionality, Optional<TransitionLogic>> unambiguousLookups =
+      new EnumMap<>(HederaFunctionality.class);
+  private final Function<HederaFunctionality, List<TransitionLogic>> transitions;
 
-	public TransitionLogicLookup(Function<HederaFunctionality, List<TransitionLogic>> transitions) {
-		this.transitions = transitions;
-		for (var function : HederaFunctionality.class.getEnumConstants()) {
-			final var allTransitions = transitions.apply(function);
-			if (allTransitions != null && allTransitions.size() == 1) {
-				unambiguousLookups.put(function, Optional.of(allTransitions.get(0)));
-			}
-		}
-	}
+  public TransitionLogicLookup(Function<HederaFunctionality, List<TransitionLogic>> transitions) {
+    this.transitions = transitions;
+    for (var function : HederaFunctionality.class.getEnumConstants()) {
+      final var allTransitions = transitions.apply(function);
+      if (allTransitions != null && allTransitions.size() == 1) {
+        unambiguousLookups.put(function, Optional.of(allTransitions.get(0)));
+      }
+    }
+  }
 
-	/**
-	 * Returns the {@link TransitionLogic}, if any, relevant to the given txn.
-	 *
-	 * @param function the HederaFunctionality that txn requires.
-	 * @param txn the txn to find logic for.
-	 * @return relevant transition logic, if it exists.
-	 */
-	public Optional<TransitionLogic> lookupFor(HederaFunctionality function, TransactionBody txn) {
-		if (unambiguousLookups.containsKey(function)) {
-			final var onlyCandidate = unambiguousLookups.get(function);
-			if (onlyCandidate.isPresent() && onlyCandidate.get().applicability().test(txn)) {
-				return onlyCandidate;
-			}
-			return Optional.empty();
-		}
-		return Optional.ofNullable(transitions.apply(function))
-				.flatMap(transitions -> from(transitions, txn));
-	}
+  /**
+   * Returns the {@link TransitionLogic}, if any, relevant to the given txn.
+   *
+   * @param function the HederaFunctionality that txn requires.
+   * @param txn the txn to find logic for.
+   * @return relevant transition logic, if it exists.
+   */
+  public Optional<TransitionLogic> lookupFor(HederaFunctionality function, TransactionBody txn) {
+    if (unambiguousLookups.containsKey(function)) {
+      final var onlyCandidate = unambiguousLookups.get(function);
+      if (onlyCandidate.isPresent() && onlyCandidate.get().applicability().test(txn)) {
+        return onlyCandidate;
+      }
+      return Optional.empty();
+    }
+    return Optional.ofNullable(transitions.apply(function))
+        .flatMap(transitions -> from(transitions, txn));
+  }
 
-	private Optional<TransitionLogic> from(List<TransitionLogic> transitions, TransactionBody txn) {
-		for (TransitionLogic candidate : transitions) {
-			if (candidate.applicability().test(txn)) {
-				return Optional.of(candidate);
-			}
-		}
-		return Optional.empty();
-	}
+  private Optional<TransitionLogic> from(List<TransitionLogic> transitions, TransactionBody txn) {
+    for (TransitionLogic candidate : transitions) {
+      if (candidate.applicability().test(txn)) {
+        return Optional.of(candidate);
+      }
+    }
+    return Optional.empty();
+  }
 }

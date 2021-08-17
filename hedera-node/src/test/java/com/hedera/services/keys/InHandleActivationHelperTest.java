@@ -20,23 +20,6 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.RationalizedSigMeta;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.TransactionSignature;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,143 +29,168 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.RationalizedSigMeta;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.TransactionSignature;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class InHandleActivationHelperTest {
-	private byte[] scopedTxnBytes = "ANYTHING".getBytes();
-	private JKey other = new JEd25519Key("other".getBytes());
-	private JKey scheduled = new JEd25519Key("scheduled".getBytes());
-	List<JKey> required = List.of(other, scheduled);
+  private byte[] scopedTxnBytes = "ANYTHING".getBytes();
+  private JKey other = new JEd25519Key("other".getBytes());
+  private JKey scheduled = new JEd25519Key("scheduled".getBytes());
+  List<JKey> required = List.of(other, scheduled);
 
-	PlatformTxnAccessor accessor;
+  PlatformTxnAccessor accessor;
 
-	RationalizedSigMeta sigMeta;
-	TransactionSignature sig;
-	CharacteristicsFactory characteristicsFactory;
-	Function<byte[], TransactionSignature> sigsFn;
-	List<TransactionSignature> sigs = new ArrayList<>();
+  RationalizedSigMeta sigMeta;
+  TransactionSignature sig;
+  CharacteristicsFactory characteristicsFactory;
+  Function<byte[], TransactionSignature> sigsFn;
+  List<TransactionSignature> sigs = new ArrayList<>();
 
-	InHandleActivationHelper.Activation activation;
+  InHandleActivationHelper.Activation activation;
 
-	InHandleActivationHelper subject;
+  InHandleActivationHelper subject;
 
-	@BeforeEach
-	@SuppressWarnings("unchecked")
-	void setup() {
-		scheduled.setForScheduledTxn(true);
+  @BeforeEach
+  @SuppressWarnings("unchecked")
+  void setup() {
+    scheduled.setForScheduledTxn(true);
 
-		characteristicsFactory = mock(CharacteristicsFactory.class);
-		given(characteristicsFactory.inferredFor(any())).willReturn(DEFAULT_ACTIVATION_CHARACTERISTICS);
+    characteristicsFactory = mock(CharacteristicsFactory.class);
+    given(characteristicsFactory.inferredFor(any())).willReturn(DEFAULT_ACTIVATION_CHARACTERISTICS);
 
-		sigMeta = mock(RationalizedSigMeta.class);
-		given(sigMeta.verifiedSigs()).willReturn(sigs);
-		given(sigMeta.couldRationalizeOthers()).willReturn(true);
-		given(sigMeta.othersReqSigs()).willReturn(required);
+    sigMeta = mock(RationalizedSigMeta.class);
+    given(sigMeta.verifiedSigs()).willReturn(sigs);
+    given(sigMeta.couldRationalizeOthers()).willReturn(true);
+    given(sigMeta.othersReqSigs()).willReturn(required);
 
-		accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getTxnBytes()).willReturn(scopedTxnBytes);
-		given(accessor.getSigMeta()).willReturn(sigMeta);
+    accessor = mock(PlatformTxnAccessor.class);
+    given(accessor.getTxnBytes()).willReturn(scopedTxnBytes);
+    given(accessor.getSigMeta()).willReturn(sigMeta);
 
-		sig = mock(TransactionSignature.class);
+    sig = mock(TransactionSignature.class);
 
-		sigsFn = mock(Function.class);
-		given(sigMeta.pkToVerifiedSigFn()).willReturn(sigsFn);
+    sigsFn = mock(Function.class);
+    given(sigMeta.pkToVerifiedSigFn()).willReturn(sigsFn);
 
-		subject = new InHandleActivationHelper(characteristicsFactory, () -> accessor);
+    subject = new InHandleActivationHelper(characteristicsFactory, () -> accessor);
 
-		activation = mock(InHandleActivationHelper.Activation.class);
+    activation = mock(InHandleActivationHelper.Activation.class);
 
-		InHandleActivationHelper.activation = activation;
-	}
+    InHandleActivationHelper.activation = activation;
+  }
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void usesEmptyKeysOnErrorReport() {
-		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+  @Test
+  @SuppressWarnings("unchecked")
+  void usesEmptyKeysOnErrorReport() {
+    // setup:
+    BiPredicate<JKey, TransactionSignature> tests =
+        (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(sigMeta.couldRationalizeOthers()).willReturn(false);
+    given(sigMeta.couldRationalizeOthers()).willReturn(false);
 
-		// when:
-		boolean ans = subject.areOtherPartiesActive(tests);
+    // when:
+    boolean ans = subject.areOtherPartiesActive(tests);
 
-		// then:
-		assertTrue(ans);
+    // then:
+    assertTrue(ans);
 
-		// and:
-		verify(activation, never()).test(any(), any(), any(), any());
-	}
+    // and:
+    verify(activation, never()).test(any(), any(), any(), any());
+  }
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void usesExpectedSigsFnForOthers() {
-		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+  @Test
+  @SuppressWarnings("unchecked")
+  void usesExpectedSigsFnForOthers() {
+    // setup:
+    BiPredicate<JKey, TransactionSignature> tests =
+        (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(false);
+    given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS))
+        .willReturn(false);
 
-		// when:
-		boolean otherAns = subject.areOtherPartiesActive(tests);
-		boolean scheduledAns = subject.areScheduledPartiesActive(TransactionBody.getDefaultInstance(), tests);
+    // when:
+    boolean otherAns = subject.areOtherPartiesActive(tests);
+    boolean scheduledAns =
+        subject.areScheduledPartiesActive(TransactionBody.getDefaultInstance(), tests);
 
-		// then:
-		assertFalse(otherAns);
-		assertFalse(scheduledAns);
-	}
+    // then:
+    assertFalse(otherAns);
+    assertFalse(scheduledAns);
+  }
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void usesExpectedKeysForOtherPartiesActive() {
-		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+  @Test
+  @SuppressWarnings("unchecked")
+  void usesExpectedKeysForOtherPartiesActive() {
+    // setup:
+    BiPredicate<JKey, TransactionSignature> tests =
+        (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+    given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS))
+        .willReturn(true);
 
-		// when:
-		boolean ans = subject.areOtherPartiesActive(tests);
-		boolean ansAgain = subject.areOtherPartiesActive(tests);
+    // when:
+    boolean ans = subject.areOtherPartiesActive(tests);
+    boolean ansAgain = subject.areOtherPartiesActive(tests);
 
-		// then:
-		assertTrue(ans);
-		assertTrue(ansAgain);
-	}
+    // then:
+    assertTrue(ans);
+    assertTrue(ansAgain);
+  }
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void usesExpectedKeysForScheduled() {
-		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+  @Test
+  @SuppressWarnings("unchecked")
+  void usesExpectedKeysForScheduled() {
+    // setup:
+    BiPredicate<JKey, TransactionSignature> tests =
+        (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(activation.test(scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+    given(activation.test(scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS))
+        .willReturn(true);
 
-		// when:
-		boolean ans = subject.areScheduledPartiesActive(nonFileDelete(), tests);
+    // when:
+    boolean ans = subject.areScheduledPartiesActive(nonFileDelete(), tests);
 
-		// then:
-		assertTrue(ans);
-	}
+    // then:
+    assertTrue(ans);
+  }
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void countsScheduledKeysAsExpected() {
-		// setup:
-		BiConsumer<JKey, TransactionSignature> visitor = (BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
+  @Test
+  @SuppressWarnings("unchecked")
+  void countsScheduledKeysAsExpected() {
+    // setup:
+    BiConsumer<JKey, TransactionSignature> visitor =
+        (BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
 
-		given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
+    given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
 
-		// when:
-		subject.visitScheduledCryptoSigs(visitor);
+    // when:
+    subject.visitScheduledCryptoSigs(visitor);
 
-		// then:
-		verify(visitor).accept(scheduled, sig);
-	}
+    // then:
+    verify(visitor).accept(scheduled, sig);
+  }
 
-	@AfterEach
-	void cleanup() {
-		InHandleActivationHelper.activation = HederaKeyActivation::isActive;
-	}
+  @AfterEach
+  void cleanup() {
+    InHandleActivationHelper.activation = HederaKeyActivation::isActive;
+  }
 
-	private TransactionBody nonFileDelete() {
-		return TransactionBody.newBuilder()
-				.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-				.build();
-	}
+  private TransactionBody nonFileDelete() {
+    return TransactionBody.newBuilder()
+        .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+        .build();
+  }
 }

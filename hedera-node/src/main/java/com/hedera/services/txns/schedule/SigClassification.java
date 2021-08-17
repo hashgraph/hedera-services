@@ -21,5 +21,8 @@ package com.hedera.services.txns.schedule;
  */
 
 public enum SigClassification {
-	NO_MATCH, INVALID_SCHEDULED_TXN_MATCH, TOP_LEVEL_MATCH, VALID_SCHEDULED_TXN_MATCH;
+  NO_MATCH,
+  INVALID_SCHEDULED_TXN_MATCH,
+  TOP_LEVEL_MATCH,
+  VALID_SCHEDULED_TXN_MATCH;
 }

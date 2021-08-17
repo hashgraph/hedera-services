@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,8 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -30,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -38,111 +39,118 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
-	private boolean shouldPurge = false;
-	private final String contract;
-	private Optional<String> transferAccount = Optional.empty();
-	private Optional<String> transferContract = Optional.empty();
+  private boolean shouldPurge = false;
+  private final String contract;
+  private Optional<String> transferAccount = Optional.empty();
+  private Optional<String> transferContract = Optional.empty();
 
-	@Override
-	public HederaFunctionality type() {
-		return HederaFunctionality.ContractDelete;
-	}
+  @Override
+  public HederaFunctionality type() {
+    return HederaFunctionality.ContractDelete;
+  }
 
-	@Override
-	protected HapiContractDelete self() {
-		return this;
-	}
+  @Override
+  protected HapiContractDelete self() {
+    return this;
+  }
 
-	public HapiContractDelete(String contract) {
-		this.contract = contract;
-	}
+  public HapiContractDelete(String contract) {
+    this.contract = contract;
+  }
 
-	public HapiContractDelete transferAccount(String to) {
-		transferAccount = Optional.of(to);
-		return this;
-	}
-	public HapiContractDelete transferContract(String to) {
-		transferContract = Optional.of(to);
-		return this;
-	}
+  public HapiContractDelete transferAccount(String to) {
+    transferAccount = Optional.of(to);
+    return this;
+  }
 
-	public HapiContractDelete purging() {
-		shouldPurge = true;
-		return this;
-	}
+  public HapiContractDelete transferContract(String to) {
+    transferContract = Optional.of(to);
+    return this;
+  }
 
-	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.ContractDelete,
-				scFees::getContractDeleteTxFeeMatrices, txn, numPayerSigs);
-	}
+  public HapiContractDelete purging() {
+    shouldPurge = true;
+    return this;
+  }
 
-	@Override
-	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		ContractDeleteTransactionBody opBody = spec
-				.txns()
-				.<ContractDeleteTransactionBody, ContractDeleteTransactionBody.Builder>body(
-						ContractDeleteTransactionBody.class, builder -> {
-							builder.setContractID(spec.registry().getContractId(contract));
-							transferContract.ifPresent(c ->
-									builder.setTransferContractID(spec.registry().getContractId(c)));
-							transferAccount.ifPresent(a ->
-									builder.setTransferAccountID(spec.registry().getAccountID(a)));
-						}
-					);
-		return builder -> builder.setContractDeleteInstance(opBody);
-	}
+  @Override
+  protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+    return spec.fees()
+        .forActivityBasedOp(
+            HederaFunctionality.ContractDelete,
+            scFees::getContractDeleteTxFeeMatrices,
+            txn,
+            numPayerSigs);
+  }
 
-	@Override
-	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
-		if (actualStatus != SUCCESS) {
-			return;
-		}
-		if (shouldPurge) {
-			if (spec.registry().hasAccountId(contract)) {
-				spec.registry().removeAccount(contract);
-			}
-			spec.registry().removeKey(contract);
-			spec.registry().removeContractId(contract);
-			spec.registry().removeContractInfo(contract);
-			if (spec.registry().hasContractChoice(contract)) {
-				SupportedContract choice = spec.registry().getContractChoice(contract);
-				AtomicInteger tag = new AtomicInteger();
-				choice.getCallDetails().forEach(detail -> {
-					spec.registry().removeActionableCall(contract + "-" + tag.getAndIncrement());
-				});
-				choice.getLocalCallDetails().forEach(detail -> {
-					spec.registry().removeActionableLocalCall(contract + "-" + tag.getAndIncrement());
-				});
-				spec.registry().removeContractChoice(contract);
-			}
-		}
-	}
+  @Override
+  protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    ContractDeleteTransactionBody opBody =
+        spec.txns()
+            .<ContractDeleteTransactionBody, ContractDeleteTransactionBody.Builder>body(
+                ContractDeleteTransactionBody.class,
+                builder -> {
+                  builder.setContractID(spec.registry().getContractId(contract));
+                  transferContract.ifPresent(
+                      c -> builder.setTransferContractID(spec.registry().getContractId(c)));
+                  transferAccount.ifPresent(
+                      a -> builder.setTransferAccountID(spec.registry().getAccountID(a)));
+                });
+    return builder -> builder.setContractDeleteInstance(opBody);
+  }
 
-	@Override
-	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::deleteContract;
-	}
+  @Override
+  protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    if (actualStatus != SUCCESS) {
+      return;
+    }
+    if (shouldPurge) {
+      if (spec.registry().hasAccountId(contract)) {
+        spec.registry().removeAccount(contract);
+      }
+      spec.registry().removeKey(contract);
+      spec.registry().removeContractId(contract);
+      spec.registry().removeContractInfo(contract);
+      if (spec.registry().hasContractChoice(contract)) {
+        SupportedContract choice = spec.registry().getContractChoice(contract);
+        AtomicInteger tag = new AtomicInteger();
+        choice
+            .getCallDetails()
+            .forEach(
+                detail -> {
+                  spec.registry().removeActionableCall(contract + "-" + tag.getAndIncrement());
+                });
+        choice
+            .getLocalCallDetails()
+            .forEach(
+                detail -> {
+                  spec.registry().removeActionableLocalCall(contract + "-" + tag.getAndIncrement());
+                });
+        spec.registry().removeContractChoice(contract);
+      }
+    }
+  }
 
-	@Override
-	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return Arrays.asList(
-				spec -> spec.registry().getKey(effectivePayer(spec)),
-				spec -> spec.registry().getKey(contract));
-	}
+  @Override
+  protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::deleteContract;
+  }
 
-	@Override
-	protected MoreObjects.ToStringHelper toStringHelper() {
-		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("contract", contract);
-		transferAccount.ifPresent(a -> helper.add("transferAccount", a));
-		transferContract.ifPresent(c -> helper.add("transferContract", c));
-		Optional.ofNullable(lastReceipt)
-				.ifPresent(receipt -> helper.add("deleted", receipt.getContractID().getContractNum()));
-		return helper;
-	}
+  @Override
+  protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    return Arrays.asList(
+        spec -> spec.registry().getKey(effectivePayer(spec)),
+        spec -> spec.registry().getKey(contract));
+  }
+
+  @Override
+  protected MoreObjects.ToStringHelper toStringHelper() {
+    MoreObjects.ToStringHelper helper = super.toStringHelper().add("contract", contract);
+    transferAccount.ifPresent(a -> helper.add("transferAccount", a));
+    transferContract.ifPresent(c -> helper.add("transferContract", c));
+    Optional.ofNullable(lastReceipt)
+        .ifPresent(receipt -> helper.add("deleted", receipt.getContractID().getContractNum()));
+    return helper;
+  }
 }

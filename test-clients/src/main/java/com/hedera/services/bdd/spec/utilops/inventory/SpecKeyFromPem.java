@@ -32,115 +32,122 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SpecKeyFromPem extends UtilOp {
-	static final Logger log = LogManager.getLogger(SpecKeyFromPem.class);
+  static final Logger log = LogManager.getLogger(SpecKeyFromPem.class);
 
-	private static final String DEFAULT_PASSPHRASE = "swirlds";
+  private static final String DEFAULT_PASSPHRASE = "swirlds";
 
-	private static final SigControl SIMPLE = SigControl.ON;
-	private static final SigControl SIMPLE_WACL = KeyShape.listOf(1);
+  private static final SigControl SIMPLE = SigControl.ON;
+  private static final SigControl SIMPLE_WACL = KeyShape.listOf(1);
 
-	private String pemLoc;
-	private Optional<Supplier<String>> pemLocFn = Optional.empty();
-	private String passphrase = DEFAULT_PASSPHRASE;
-	private SigControl control = SIMPLE;
-	private Optional<Supplier<String>> nameSupplier = Optional.empty();
-	private Optional<Supplier<String>> linkSupplier = Optional.empty();
-	private Optional<String> name = Optional.empty();
-	private Optional<String> linkedId = Optional.empty();
+  private String pemLoc;
+  private Optional<Supplier<String>> pemLocFn = Optional.empty();
+  private String passphrase = DEFAULT_PASSPHRASE;
+  private SigControl control = SIMPLE;
+  private Optional<Supplier<String>> nameSupplier = Optional.empty();
+  private Optional<Supplier<String>> linkSupplier = Optional.empty();
+  private Optional<String> name = Optional.empty();
+  private Optional<String> linkedId = Optional.empty();
 
-	public SpecKeyFromPem(String pemLoc) {
-		this.pemLoc = pemLoc;
-	}
+  public SpecKeyFromPem(String pemLoc) {
+    this.pemLoc = pemLoc;
+  }
 
-	public SpecKeyFromPem(Supplier<String> pemLocFn) {
-		this.pemLocFn = Optional.of(pemLocFn);
-	}
+  public SpecKeyFromPem(Supplier<String> pemLocFn) {
+    this.pemLocFn = Optional.of(pemLocFn);
+  }
 
-	public SpecKeyFromPem simpleWacl() {
-		this.control = SIMPLE_WACL;
-		return this;
-	}
+  public SpecKeyFromPem simpleWacl() {
+    this.control = SIMPLE_WACL;
+    return this;
+  }
 
-	public SpecKeyFromPem passphrase(String secret) {
-		passphrase = secret;
-		return this;
-	}
+  public SpecKeyFromPem passphrase(String secret) {
+    passphrase = secret;
+    return this;
+  }
 
-	public SpecKeyFromPem name(String custom) {
-		name = Optional.of(custom);
-		return this;
-	}
+  public SpecKeyFromPem name(String custom) {
+    name = Optional.of(custom);
+    return this;
+  }
 
-	public SpecKeyFromPem name(Supplier<String> nameFn) {
-		nameSupplier = Optional.of(nameFn);
-		return this;
-	}
+  public SpecKeyFromPem name(Supplier<String> nameFn) {
+    nameSupplier = Optional.of(nameFn);
+    return this;
+  }
 
-	public SpecKeyFromPem linkedTo(String id) {
-		linkedId = Optional.of(id);
-		return this;
-	}
+  public SpecKeyFromPem linkedTo(String id) {
+    linkedId = Optional.of(id);
+    return this;
+  }
 
-	public SpecKeyFromPem linkedTo(Supplier<String> linkFn) {
-		linkSupplier = Optional.of(linkFn);
-		return this;
-	}
+  public SpecKeyFromPem linkedTo(Supplier<String> linkFn) {
+    linkSupplier = Optional.of(linkFn);
+    return this;
+  }
 
-	private String actualName() {
-		return nameSupplier.map(Supplier::get).orElse(name.orElse(pemLoc.substring(0, pemLoc.indexOf(".pem"))));
-	}
+  private String actualName() {
+    return nameSupplier
+        .map(Supplier::get)
+        .orElse(name.orElse(pemLoc.substring(0, pemLoc.indexOf(".pem"))));
+  }
 
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		pemLoc = pemLocFn.map(Supplier::get).orElse(pemLoc);
-		var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), passphrase);
-		var key = populatedFrom(ocKeystore);
-		var real = actualName();
-		linkedId.ifPresent(s -> {
-			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
-			spec.registry().saveKey(s, key);
-		});
-		linkSupplier.ifPresent(fn -> {
-			var s = fn.get();
-			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
-			spec.registry().saveKey(s, key);
-		});
-		spec.registry().saveKey(real, key);
-		spec.keys().incorporate(real, ocKeystore, control);
-		return false;
-	}
+  @Override
+  protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    pemLoc = pemLocFn.map(Supplier::get).orElse(pemLoc);
+    var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), passphrase);
+    var key = populatedFrom(ocKeystore);
+    var real = actualName();
+    linkedId.ifPresent(
+        s -> {
+          spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+          spec.registry().saveKey(s, key);
+        });
+    linkSupplier.ifPresent(
+        fn -> {
+          var s = fn.get();
+          spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+          spec.registry().saveKey(s, key);
+        });
+    spec.registry().saveKey(real, key);
+    spec.keys().incorporate(real, ocKeystore, control);
+    return false;
+  }
 
-	private Key populatedFrom(KeyPairObj ocKeystore) throws InvalidKeySpecException, IllegalArgumentException {
-		if (control == SIMPLE) {
-			return Key.newBuilder()
-					.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
-					.build();
-		} else if (control == SIMPLE_WACL) {
-			return Key.newBuilder()
-					.setKeyList(KeyList.newBuilder()
-							.addKeys(Key.newBuilder()
-									.setEd25519(
-											ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
-					.build();
-		} else {
-			throw new IllegalStateException("Cannot populate key shape " + control);
-		}
-	}
+  private Key populatedFrom(KeyPairObj ocKeystore)
+      throws InvalidKeySpecException, IllegalArgumentException {
+    if (control == SIMPLE) {
+      return Key.newBuilder()
+          .setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
+          .build();
+    } else if (control == SIMPLE_WACL) {
+      return Key.newBuilder()
+          .setKeyList(
+              KeyList.newBuilder()
+                  .addKeys(
+                      Key.newBuilder()
+                          .setEd25519(
+                              ByteString.copyFrom(
+                                  CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
+          .build();
+    } else {
+      throw new IllegalStateException("Cannot populate key shape " + control);
+    }
+  }
 
-	@Override
-	protected MoreObjects.ToStringHelper toStringHelper() {
-		var helper = super.toStringHelper();
-		helper.add("pem", pemLoc);
-		name.ifPresent(n -> helper.add("name", n));
-		return helper;
-	}
+  @Override
+  protected MoreObjects.ToStringHelper toStringHelper() {
+    var helper = super.toStringHelper();
+    helper.add("pem", pemLoc);
+    name.ifPresent(n -> helper.add("name", n));
+    return helper;
+  }
 }

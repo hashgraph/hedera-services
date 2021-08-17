@@ -20,6 +20,8 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
@@ -28,29 +30,29 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-
 import java.util.function.BiFunction;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-
 public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {
-	static BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory = TokenDissociateUsage::newEstimate;
+  static BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory =
+      TokenDissociateUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasTokenDissociate();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasTokenDissociate();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var op = txn.getTokenDissociate();
-		var account = view.accounts().get(fromAccountId(op.getAccount()));
-		if (account == null) {
-			return FeeData.getDefaultInstance();
-		} else {
-			var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-			var estimate = factory.apply(txn, sigUsage);
-			return estimate.get();
-		}
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var op = txn.getTokenDissociate();
+    var account = view.accounts().get(fromAccountId(op.getAccount()));
+    if (account == null) {
+      return FeeData.getDefaultInstance();
+    } else {
+      var sigUsage =
+          new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+      var estimate = factory.apply(txn, sigUsage);
+      return estimate.get();
+    }
+  }
 }

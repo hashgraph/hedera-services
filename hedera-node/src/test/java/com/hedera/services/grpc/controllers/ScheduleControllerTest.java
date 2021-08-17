@@ -20,6 +20,13 @@ package com.hedera.services.grpc.controllers;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
@@ -31,70 +38,63 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 class ScheduleControllerTest {
-    Query query = Query.getDefaultInstance();
-    Transaction txn = Transaction.getDefaultInstance();
+  Query query = Query.getDefaultInstance();
+  Transaction txn = Transaction.getDefaultInstance();
 
-    ScheduleAnswers answers;
-    TxnResponseHelper txnResponseHelper;
-    QueryResponseHelper queryResponseHelper;
-    StreamObserver<Response> queryObserver;
-    StreamObserver<TransactionResponse> txnObserver;
+  ScheduleAnswers answers;
+  TxnResponseHelper txnResponseHelper;
+  QueryResponseHelper queryResponseHelper;
+  StreamObserver<Response> queryObserver;
+  StreamObserver<TransactionResponse> txnObserver;
 
-    ScheduleController subject;
+  ScheduleController subject;
 
-    @BeforeEach
-    private void setup() {
-        answers = mock(ScheduleAnswers.class);
-        txnObserver = mock(StreamObserver.class);
-        queryObserver = mock(StreamObserver.class);
+  @BeforeEach
+  private void setup() {
+    answers = mock(ScheduleAnswers.class);
+    txnObserver = mock(StreamObserver.class);
+    queryObserver = mock(StreamObserver.class);
 
-        txnResponseHelper = mock(TxnResponseHelper.class);
-        queryResponseHelper = mock(QueryResponseHelper.class);
+    txnResponseHelper = mock(TxnResponseHelper.class);
+    queryResponseHelper = mock(QueryResponseHelper.class);
 
-        subject = new ScheduleController(answers, txnResponseHelper, queryResponseHelper);
-    }
+    subject = new ScheduleController(answers, txnResponseHelper, queryResponseHelper);
+  }
 
-    @Test
-    void forwardScheduleCreateAsExpected() {
-        // when:
-        subject.createSchedule(txn, txnObserver);
+  @Test
+  void forwardScheduleCreateAsExpected() {
+    // when:
+    subject.createSchedule(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ScheduleCreate);
-    }
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, ScheduleCreate);
+  }
 
-    @Test
-    void forwardScheduleDeleteAsExpected() {
-        // when:
-        subject.deleteSchedule(txn, txnObserver);
+  @Test
+  void forwardScheduleDeleteAsExpected() {
+    // when:
+    subject.deleteSchedule(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ScheduleDelete);
-    }
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, ScheduleDelete);
+  }
 
-    @Test
-    void forwardScheduleSignAsExpected() {
-        // when:
-        subject.signSchedule(txn, txnObserver);
+  @Test
+  void forwardScheduleSignAsExpected() {
+    // when:
+    subject.signSchedule(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ScheduleSign);
-    }
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, ScheduleSign);
+  }
 
-    @Test
-    void forwardsScheduleInfoAsExpected() {
-        // when:
-        subject.getScheduleInfo(query, queryObserver);
+  @Test
+  void forwardsScheduleInfoAsExpected() {
+    // when:
+    subject.getScheduleInfo(query, queryObserver);
 
-        // expect:
-        verify(queryResponseHelper).answer(query, queryObserver, null , ScheduleGetInfo);
-    }
+    // expect:
+    verify(queryResponseHelper).answer(query, queryObserver, null, ScheduleGetInfo);
+  }
 }

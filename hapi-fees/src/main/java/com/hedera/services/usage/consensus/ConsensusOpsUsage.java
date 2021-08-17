@@ -20,28 +20,27 @@ package com.hedera.services.usage.consensus;
  * ‍
  */
 
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
-
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
 
-public class ConsensusOpsUsage {
-	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
 
-	public void submitMessageUsage(
-			SigUsage sigUsage,
-			SubmitMessageMeta submitMeta,
-			BaseTransactionMeta baseMeta,
-			UsageAccumulator accumulator
-	) {
-		accumulator.resetForTransaction(baseMeta, sigUsage);
-		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
-		/* SubmitMessage receipts include a sequence number and running hash */
-		final var extraReceiptBytes = LONG_SIZE + TX_HASH_SIZE;
-		accumulator.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);
-	}
+public class ConsensusOpsUsage {
+  private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+
+  public void submitMessageUsage(
+      SigUsage sigUsage,
+      SubmitMessageMeta submitMeta,
+      BaseTransactionMeta baseMeta,
+      UsageAccumulator accumulator) {
+    accumulator.resetForTransaction(baseMeta, sigUsage);
+    accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
+    /* SubmitMessage receipts include a sequence number and running hash */
+    final var extraReceiptBytes = LONG_SIZE + TX_HASH_SIZE;
+    accumulator.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);
+  }
 }

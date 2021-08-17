@@ -20,26 +20,6 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
-import com.hedera.services.sigs.factories.PlatformSigFactory;
-import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.txns.PlatformTxnFactory;
-import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.function.Predicate;
-
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -56,262 +36,286 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.PlatformSigFactory;
+import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.txns.PlatformTxnFactory;
+import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
+import java.util.List;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class HederaToPlatformSigOpsTest {
-	static List<JKey> payerKey;
-	static List<JKey> otherKeys;
-	PubKeyToSigBytes allSigBytes;
-	PlatformTxnAccessor platformTxn;
-	HederaSigningOrder keyOrdering;
+  static List<JKey> payerKey;
+  static List<JKey> otherKeys;
+  PubKeyToSigBytes allSigBytes;
+  PlatformTxnAccessor platformTxn;
+  HederaSigningOrder keyOrdering;
 
-	@BeforeAll
-	private static void setupAll() throws Throwable {
-		payerKey = List.of(KeyTree.withRoot(ed25519()).asJKey());
-		otherKeys = List.of(
-				KeyTree.withRoot(ed25519()).asJKey(),
-				KeyTree.withRoot(ed25519()).asJKey());
-	}
+  @BeforeAll
+  private static void setupAll() throws Throwable {
+    payerKey = List.of(KeyTree.withRoot(ed25519()).asJKey());
+    otherKeys = List.of(KeyTree.withRoot(ed25519()).asJKey(), KeyTree.withRoot(ed25519()).asJKey());
+  }
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		allSigBytes = mock(PubKeyToSigBytes.class);
-		keyOrdering = mock(HederaSigningOrder.class);
-		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()));
-	}
+  @BeforeEach
+  private void setup() throws Throwable {
+    allSigBytes = mock(PubKeyToSigBytes.class);
+    keyOrdering = mock(HederaSigningOrder.class);
+    platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()));
+  }
 
-	private void wellBehavedOrdersAndSigSources() throws Exception {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		// and:
-		given(allSigBytes.sigBytesFor(any()))
-				.willReturn("1".getBytes())
-				.willReturn("2".getBytes())
-				.willReturn("3".getBytes());
-	}
+  private void wellBehavedOrdersAndSigSources() throws Exception {
+    given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(payerKey));
+    given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(otherKeys));
+    // and:
+    given(allSigBytes.sigBytesFor(any()))
+        .willReturn("1".getBytes())
+        .willReturn("2".getBytes())
+        .willReturn("3".getBytes());
+  }
 
-	@Test
-	void includesSuccessfulExpansions() throws Exception {
-		// given:
-		wellBehavedOrdersAndSigSources();
+  @Test
+  void includesSuccessfulExpansions() throws Exception {
+    // given:
+    wellBehavedOrdersAndSigSources();
 
-		// when:
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+    // when:
+    final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		// then:
-		assertEquals(OK, status);
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
-	}
+    // then:
+    assertEquals(OK, status);
+    assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+  }
 
-	@Test
-	void returnsImmediatelyOnPayerKeyOrderFailure() {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
+  @Test
+  void returnsImmediatelyOnPayerKeyOrderFailure() {
+    given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		// when:
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+    // when:
+    final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		// then:
-		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
+    // then:
+    assertEquals(INVALID_ACCOUNT_ID, status);
+  }
 
-	@Test
-	void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		// and:
-		given(allSigBytes.sigBytesFor(any()))
-				.willReturn("1".getBytes())
-				.willReturn("2".getBytes())
-				.willThrow(KeyPrefixMismatchException.class);
+  @Test
+  void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
+    given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(payerKey));
+    given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(otherKeys));
+    // and:
+    given(allSigBytes.sigBytesFor(any()))
+        .willReturn("1".getBytes())
+        .willReturn("2".getBytes())
+        .willThrow(KeyPrefixMismatchException.class);
 
-		// when:
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+    // when:
+    final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		// then:
-		assertEquals(OK, status);
-		assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getPlatformTxn().getSignatures());
-	}
+    // then:
+    assertEquals(OK, status);
+    assertEquals(
+        expectedSigsWithOtherPartiesCreationError(), platformTxn.getPlatformTxn().getSignatures());
+  }
 
-	@Test
-	void rationalizesMissingSigs() throws Exception {
-		// setup:
-		final var rationalization = new Rationalization();
+  @Test
+  void rationalizesMissingSigs() throws Exception {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		// given:
-		wellBehavedOrdersAndSigSources();
+    // given:
+    wellBehavedOrdersAndSigSources();
 
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				ALWAYS_VALID,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
+    // when:
+    rationalization.performFor(
+        platformTxn,
+        ALWAYS_VALID,
+        keyOrdering,
+        allSigBytes,
+        new BodySigningSigFactory(platformTxn));
 
-		// then:
-		assertEquals(OK, rationalization.finalStatus());
-		assertTrue(rationalization.usedSyncVerification());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-	}
+    // then:
+    assertEquals(OK, rationalization.finalStatus());
+    assertTrue(rationalization.usedSyncVerification());
+    assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
+    assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
+  }
 
-	@Test
-	void stopImmediatelyOnPayerKeyOrderFailure() {
-		// setup:
-		final var rationalization = new Rationalization();
+  @Test
+  void stopImmediatelyOnPayerKeyOrderFailure() {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
+    given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				ALWAYS_VALID,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
+    // when:
+    rationalization.performFor(
+        platformTxn,
+        ALWAYS_VALID,
+        keyOrdering,
+        allSigBytes,
+        new BodySigningSigFactory(platformTxn));
 
-		// then:
-		assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
-	}
+    // then:
+    assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
+  }
 
-	@Test
-	void stopImmediatelyOnOtherPartiesKeyOrderFailure() throws Exception {
-		// setup:
-		final var rationalization = new Rationalization();
+  @Test
+  void stopImmediatelyOnOtherPartiesKeyOrderFailure() throws Exception {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		// given:
-		wellBehavedOrdersAndSigSources();
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
+    // given:
+    wellBehavedOrdersAndSigSources();
+    given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				ALWAYS_VALID,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
+    // when:
+    rationalization.performFor(
+        platformTxn,
+        ALWAYS_VALID,
+        keyOrdering,
+        allSigBytes,
+        new BodySigningSigFactory(platformTxn));
 
-		// then:
-		assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
-	}
+    // then:
+    assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
+  }
 
-	@Test
-	void stopImmediatelyOnOtherPartiesSigCreationFailure() throws Exception {
-		// setup:
-		final var rationalization = new Rationalization();
+  @Test
+  void stopImmediatelyOnOtherPartiesSigCreationFailure() throws Exception {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		// and:
-		given(allSigBytes.sigBytesFor(any()))
-				.willReturn("1".getBytes())
-				.willReturn("2".getBytes())
-				.willThrow(KeyPrefixMismatchException.class);
+    given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(payerKey));
+    given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+        .willReturn(new SigningOrderResult<>(otherKeys));
+    // and:
+    given(allSigBytes.sigBytesFor(any()))
+        .willReturn("1".getBytes())
+        .willReturn("2".getBytes())
+        .willThrow(KeyPrefixMismatchException.class);
 
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				ALWAYS_VALID,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
+    // when:
+    rationalization.performFor(
+        platformTxn,
+        ALWAYS_VALID,
+        keyOrdering,
+        allSigBytes,
+        new BodySigningSigFactory(platformTxn));
 
-		// then:
-		assertEquals(KEY_PREFIX_MISMATCH, rationalization.finalStatus());
-	}
+    // then:
+    assertEquals(KEY_PREFIX_MISMATCH, rationalization.finalStatus());
+  }
 
-	@Test
-	void rationalizesOnlyMissingSigs() throws Exception {
-		// setup:
-		final var rationalization = new Rationalization();
+  @Test
+  void rationalizesOnlyMissingSigs() throws Exception {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		// given:
-		wellBehavedOrdersAndSigSources();
-		platformTxn.getPlatformTxn().addAll(
-				asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new TransactionSignature[0]));
-		// and:
-		SyncVerifier syncVerifier = l -> {
-			if (l.equals(expectedSigsWithNoErrors().subList(0, 1))) {
-				throw new AssertionError("Payer sigs were verified async!");
-			} else {
-				ALWAYS_VALID.verifySync(l);
-			}
-		};
+    // given:
+    wellBehavedOrdersAndSigSources();
+    platformTxn
+        .getPlatformTxn()
+        .addAll(
+            asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new TransactionSignature[0]));
+    // and:
+    SyncVerifier syncVerifier =
+        l -> {
+          if (l.equals(expectedSigsWithNoErrors().subList(0, 1))) {
+            throw new AssertionError("Payer sigs were verified async!");
+          } else {
+            ALWAYS_VALID.verifySync(l);
+          }
+        };
 
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				syncVerifier,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
+    // when:
+    rationalization.performFor(
+        platformTxn,
+        syncVerifier,
+        keyOrdering,
+        allSigBytes,
+        new BodySigningSigFactory(platformTxn));
 
-		// then:
-		assertTrue(rationalization.usedSyncVerification());
-		assertEquals(OK, rationalization.finalStatus());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-	}
+    // then:
+    assertTrue(rationalization.usedSyncVerification());
+    assertEquals(OK, rationalization.finalStatus());
+    assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
+    assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
+  }
 
-	@Test
-	void doesNothingToTxnIfAllSigsAreRational() throws Exception {
-		// setup:
-		final var rationalization = new Rationalization();
+  @Test
+  void doesNothingToTxnIfAllSigsAreRational() throws Exception {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		// given:
-		wellBehavedOrdersAndSigSources();
-		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()));
-		platformTxn.getPlatformTxn().addAll(
-				asValid(expectedSigsWithNoErrors()).toArray(new TransactionSignature[0]));
-		// and:
-		SyncVerifier syncVerifier = l -> {
-			throw new AssertionError("All sigs were verified async!");
-		};
+    // given:
+    wellBehavedOrdersAndSigSources();
+    platformTxn =
+        new PlatformTxnAccessor(PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()));
+    platformTxn
+        .getPlatformTxn()
+        .addAll(asValid(expectedSigsWithNoErrors()).toArray(new TransactionSignature[0]));
+    // and:
+    SyncVerifier syncVerifier =
+        l -> {
+          throw new AssertionError("All sigs were verified async!");
+        };
 
-		// when:
-		rationalization.performFor(
-				platformTxn,
-				syncVerifier,
-				keyOrdering,
-				allSigBytes,
-				new BodySigningSigFactory(platformTxn));
+    // when:
+    rationalization.performFor(
+        platformTxn,
+        syncVerifier,
+        keyOrdering,
+        allSigBytes,
+        new BodySigningSigFactory(platformTxn));
 
-		// then:
-		assertFalse(rationalization.usedSyncVerification());
-		assertEquals(OK, rationalization.finalStatus());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-		assertFalse(((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn()).hasClearBeenCalled());
-	}
+    // then:
+    assertFalse(rationalization.usedSyncVerification());
+    assertEquals(OK, rationalization.finalStatus());
+    assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+    assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
+    assertFalse(
+        ((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn())
+            .hasClearBeenCalled());
+  }
 
-	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getSigMeta().verifiedSigs().stream()
-				.map(TransactionSignature::getSignatureStatus)
-				.allMatch(statusPred);
-	}
+  private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
+    return platformTxn.getSigMeta().verifiedSigs().stream()
+        .map(TransactionSignature::getSignatureStatus)
+        .allMatch(statusPred);
+  }
 
-	private List<TransactionSignature> expectedSigsWithNoErrors() {
-		return List.of(
-				dummyFor(payerKey.get(0), "1"),
-				dummyFor(otherKeys.get(0), "2"),
-				dummyFor(otherKeys.get(1), "3"));
-	}
+  private List<TransactionSignature> expectedSigsWithNoErrors() {
+    return List.of(
+        dummyFor(payerKey.get(0), "1"),
+        dummyFor(otherKeys.get(0), "2"),
+        dummyFor(otherKeys.get(1), "3"));
+  }
 
-	private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
-		return expectedSigsWithNoErrors().subList(0, 1);
-	}
+  private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
+    return expectedSigsWithNoErrors().subList(0, 1);
+  }
 
-	private TransactionSignature dummyFor(JKey key, String sig) {
-		return PlatformSigFactory.createEd25519(
-				key.getEd25519(),
-				sig.getBytes(),
-				platformTxn.getTxnBytes());
-	}
+  private TransactionSignature dummyFor(JKey key, String sig) {
+    return PlatformSigFactory.createEd25519(
+        key.getEd25519(), sig.getBytes(), platformTxn.getTxnBytes());
+  }
 }

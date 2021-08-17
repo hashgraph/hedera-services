@@ -24,119 +24,106 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
- * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a running
- * Hash calculated from all {@link RecordStreamObject} in history
+ * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a
+ * running Hash calculated from all {@link RecordStreamObject} in history
  */
 public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
-	static final long CLASS_ID = 0xe370929ba5429d9bL;
-	static final int CLASS_VERSION = 1;
-	/**
-	 * a runningHash of all RecordStreamObject
-	 */
-	private RunningHash runningHash;
+  static final long CLASS_ID = 0xe370929ba5429d9bL;
+  static final int CLASS_VERSION = 1;
+  /** a runningHash of all RecordStreamObject */
+  private RunningHash runningHash;
 
-	/**
-	 * no-args constructor required by ConstructableRegistry
-	 */
-	public RecordsRunningHashLeaf() {
-	}
+  /** no-args constructor required by ConstructableRegistry */
+  public RecordsRunningHashLeaf() {}
 
-	public RecordsRunningHashLeaf(final RunningHash runningHash) {
-		this.runningHash = runningHash;
-	}
+  public RecordsRunningHashLeaf(final RunningHash runningHash) {
+    this.runningHash = runningHash;
+  }
 
-	private RecordsRunningHashLeaf(final RecordsRunningHashLeaf runningHashLeaf) {
-		this.runningHash = runningHashLeaf.runningHash;
-		setImmutable(false);
-		runningHashLeaf.setImmutable(true);
-		setHash(runningHashLeaf.getHash());
-	}
+  private RecordsRunningHashLeaf(final RecordsRunningHashLeaf runningHashLeaf) {
+    this.runningHash = runningHashLeaf.runningHash;
+    setImmutable(false);
+    runningHashLeaf.setImmutable(true);
+    setHash(runningHashLeaf.getHash());
+  }
 
-	@Override
-	public void serialize(final SerializableDataOutputStream out) throws IOException {
-		try {
-			// should wait until runningHash has been calculated and set
-			out.writeSerializable(runningHash.getFutureHash().get(), true);
-		} catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
-			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
-					ex);
-		}
-	}
+  @Override
+  public void serialize(final SerializableDataOutputStream out) throws IOException {
+    try {
+      // should wait until runningHash has been calculated and set
+      out.writeSerializable(runningHash.getFutureHash().get(), true);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      throw new IOException(
+          "Got interrupted when getting runningHash when serializing RunningHashLeaf", ex);
+    }
+  }
 
-	@Override
-	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		runningHash = new RunningHash();
-		runningHash.setHash(in.readSerializable());
-	}
+  @Override
+  public void deserialize(final SerializableDataInputStream in, final int version)
+      throws IOException {
+    runningHash = new RunningHash();
+    runningHash.setHash(in.readSerializable());
+  }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (RecordsRunningHashLeaf) o;
-		if (this.runningHash.getHash() != null && that.runningHash.getHash() != null) {
-			return this.runningHash.getHash().equals(that.runningHash.getHash());
-		}
-		return new EqualsBuilder().append(this.runningHash, that.runningHash).isEquals();
-	}
+  /** {@inheritDoc} */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final var that = (RecordsRunningHashLeaf) o;
+    if (this.runningHash.getHash() != null && that.runningHash.getHash() != null) {
+      return this.runningHash.getHash().equals(that.runningHash.getHash());
+    }
+    return new EqualsBuilder().append(this.runningHash, that.runningHash).isEquals();
+  }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int hashCode() {
-		return Objects.hash(runningHash);
-	}
+  /** {@inheritDoc} */
+  @Override
+  public int hashCode() {
+    return Objects.hash(runningHash);
+  }
 
-	public RecordsRunningHashLeaf copy() {
-		return new RecordsRunningHashLeaf(this);
-	}
+  public RecordsRunningHashLeaf copy() {
+    return new RecordsRunningHashLeaf(this);
+  }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public long getClassId() {
-		return CLASS_ID;
-	}
+  /** {@inheritDoc} */
+  @Override
+  public long getClassId() {
+    return CLASS_ID;
+  }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getVersion() {
-		return CLASS_VERSION;
-	}
+  /** {@inheritDoc} */
+  @Override
+  public int getVersion() {
+    return CLASS_VERSION;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
-				getHash(),
-				runningHash.getHash());
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+        getHash(), runningHash.getHash());
+  }
 
-	public RunningHash getRunningHash() {
-		return runningHash;
-	}
+  public RunningHash getRunningHash() {
+    return runningHash;
+  }
 
-	public void setRunningHash(final RunningHash runningHash) {
-		this.runningHash = runningHash;
-		// should invalidate current Hash when updating the runningHash object
-		// because its Hash should be calculated based on the runningHash object
-		this.invalidateHash();
-	}
+  public void setRunningHash(final RunningHash runningHash) {
+    this.runningHash = runningHash;
+    // should invalidate current Hash when updating the runningHash object
+    // because its Hash should be calculated based on the runningHash object
+    this.invalidateHash();
+  }
 }

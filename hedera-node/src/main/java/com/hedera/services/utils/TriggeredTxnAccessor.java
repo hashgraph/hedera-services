@@ -25,29 +25,28 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
 public class TriggeredTxnAccessor extends SignedTxnAccessor {
-    private final AccountID payer;
-    private final ScheduleID scheduleRef;
+  private final AccountID payer;
+  private final ScheduleID scheduleRef;
 
-    public TriggeredTxnAccessor(
-            byte[] signedTxnWrapperBytes,
-            AccountID payer,
-            ScheduleID scheduleRef
-    ) throws InvalidProtocolBufferException {
-        super(signedTxnWrapperBytes);
-        this.payer = payer;
-        this.scheduleRef = scheduleRef;
-    }
+  public TriggeredTxnAccessor(byte[] signedTxnWrapperBytes, AccountID payer, ScheduleID scheduleRef)
+      throws InvalidProtocolBufferException {
+    super(signedTxnWrapperBytes);
+    this.payer = payer;
+    this.scheduleRef = scheduleRef;
+  }
 
-    @Override
-    public boolean isTriggeredTxn() {
-        return true;
-    }
+  @Override
+  public boolean isTriggeredTxn() {
+    return true;
+  }
 
-    @Override
-    public AccountID getPayer() { return payer; }
+  @Override
+  public AccountID getPayer() {
+    return payer;
+  }
 
-    @Override
-    public ScheduleID getScheduleRef() {
-        return scheduleRef;
-    }
+  @Override
+  public ScheduleID getScheduleRef() {
+    return scheduleRef;
+  }
 }

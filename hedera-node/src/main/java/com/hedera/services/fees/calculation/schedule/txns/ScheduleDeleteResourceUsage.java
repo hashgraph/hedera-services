@@ -30,37 +30,38 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-
 public class ScheduleDeleteResourceUsage implements TxnResourceUsageEstimator {
-    private final ScheduleOpsUsage scheduleOpsUsage;
-    private final GlobalDynamicProperties properties;
+  private final ScheduleOpsUsage scheduleOpsUsage;
+  private final GlobalDynamicProperties properties;
 
-    public ScheduleDeleteResourceUsage(
-            ScheduleOpsUsage scheduleOpsUsage,
-            GlobalDynamicProperties properties
-    ) {
-        this.scheduleOpsUsage = scheduleOpsUsage;
-        this.properties = properties;
+  public ScheduleDeleteResourceUsage(
+      ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties properties) {
+    this.scheduleOpsUsage = scheduleOpsUsage;
+    this.properties = properties;
+  }
+
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasScheduleDelete();
+  }
+
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var op = txn.getScheduleDelete();
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+    var optionalInfo = view.infoForSchedule(op.getScheduleID());
+    if (optionalInfo.isPresent()) {
+      var info = optionalInfo.get();
+      return scheduleOpsUsage.scheduleDeleteUsage(
+          txn, sigUsage, info.getExpirationTime().getSeconds());
+    } else {
+      long latestExpiry =
+          txn.getTransactionID().getTransactionValidStart().getSeconds()
+              + properties.scheduledTxExpiryTimeSecs();
+      return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, latestExpiry);
     }
-
-    @Override
-    public boolean applicableTo(TransactionBody txn) {
-        return txn.hasScheduleDelete();
-    }
-
-    @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-        var op = txn.getScheduleDelete();
-        var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-
-        var optionalInfo = view.infoForSchedule(op.getScheduleID());
-        if (optionalInfo.isPresent()) {
-            var info = optionalInfo.get();
-            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, info.getExpirationTime().getSeconds());
-        } else {
-            long latestExpiry = txn.getTransactionID().getTransactionValidStart().getSeconds()
-                    + properties.scheduledTxExpiryTimeSecs();
-            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, latestExpiry);
-        }
-    }
+  }
 }

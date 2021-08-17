@@ -23,14 +23,13 @@ package com.hedera.services.bdd.suites.validation;
 import java.util.Map;
 
 public class TopLevelConfig {
-	private Map<String, NetworkConfig> networks;
+  private Map<String, NetworkConfig> networks;
 
-	public Map<String, NetworkConfig> getNetworks() {
-		return networks;
-	}
+  public Map<String, NetworkConfig> getNetworks() {
+    return networks;
+  }
 
-	public void setNetworks(Map<String, NetworkConfig> networks) {
-		this.networks = networks;
-	}
-
+  public void setNetworks(Map<String, NetworkConfig> networks) {
+    this.networks = networks;
+  }
 }

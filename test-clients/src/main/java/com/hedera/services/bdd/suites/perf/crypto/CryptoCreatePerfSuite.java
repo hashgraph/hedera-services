@@ -20,62 +20,58 @@ package com.hedera.services.bdd.suites.perf.crypto;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CryptoCreatePerfSuite extends LoadTest {
-	private static final Logger log = LogManager.getLogger(CryptoCreatePerfSuite.class);
+  private static final Logger log = LogManager.getLogger(CryptoCreatePerfSuite.class);
 
-	public static void main(String... args) {
-		CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
-		suite.runSuiteSync();
-	}
+  public static void main(String... args) {
+    CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
+    suite.runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runCryptoCreates());
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(runCryptoCreates());
+  }
 
-	private HapiApiSpec runCryptoCreates() {
-		final int NUM_CREATES = 1000000;
-		return defaultHapiSpec("cryptoCreatePerf")
-				.given(
-				).when(
-						inParallel(
-								asOpArray(NUM_CREATES, i ->
-										(i == (NUM_CREATES - 1)) ? cryptoCreate("testAccount" + i)
-												.balance(100_000_000_000L)
-												.key(GENESIS)
-												.withRecharging()
-												.rechargeWindow(30)
-												.payingWith(GENESIS) :
-												cryptoCreate("testAccount" + i)
-														.balance(100_000_000_000L)
-														.key(GENESIS)
-														.withRecharging()
-														.rechargeWindow(30)
-														.payingWith(GENESIS)
-														.deferStatusResolution()
-								)
-						)
-				).then(
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes()
-				);
-	}
+  private HapiApiSpec runCryptoCreates() {
+    final int NUM_CREATES = 1000000;
+    return defaultHapiSpec("cryptoCreatePerf")
+        .given()
+        .when(
+            inParallel(
+                asOpArray(
+                    NUM_CREATES,
+                    i ->
+                        (i == (NUM_CREATES - 1))
+                            ? cryptoCreate("testAccount" + i)
+                                .balance(100_000_000_000L)
+                                .key(GENESIS)
+                                .withRecharging()
+                                .rechargeWindow(30)
+                                .payingWith(GENESIS)
+                            : cryptoCreate("testAccount" + i)
+                                .balance(100_000_000_000L)
+                                .key(GENESIS)
+                                .withRecharging()
+                                .rechargeWindow(30)
+                                .payingWith(GENESIS)
+                                .deferStatusResolution())))
+        .then(freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }
-
-

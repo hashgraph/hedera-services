@@ -20,6 +20,9 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.utils.MiscUtils.describe;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -28,270 +31,266 @@ import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.utils.MiscUtils.describe;
-
 public class MerkleAccountState extends AbstractMerkleLeaf {
-	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
-	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
+  private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
+  static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
 
-	static final int RELEASE_090_VERSION = 4;
-	static final int RELEASE_0160_VERSION = 5;
-	private static final int MERKLE_VERSION = RELEASE_0160_VERSION;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
+  static final int RELEASE_090_VERSION = 4;
+  static final int RELEASE_0160_VERSION = 5;
+  private static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
-	static DomainSerdes serdes = new DomainSerdes();
+  static DomainSerdes serdes = new DomainSerdes();
 
-	public static final String DEFAULT_MEMO = "";
+  public static final String DEFAULT_MEMO = "";
 
-	private JKey key;
-	private long expiry;
-	private long hbarBalance;
-	private long autoRenewSecs;
-	private String memo = DEFAULT_MEMO;
-	private boolean deleted;
-	private boolean smartContract;
-	private boolean receiverSigRequired;
-	private EntityId proxy;
-	private long nftsOwned;
+  private JKey key;
+  private long expiry;
+  private long hbarBalance;
+  private long autoRenewSecs;
+  private String memo = DEFAULT_MEMO;
+  private boolean deleted;
+  private boolean smartContract;
+  private boolean receiverSigRequired;
+  private EntityId proxy;
+  private long nftsOwned;
 
-	public MerkleAccountState() {
-	}
+  public MerkleAccountState() {}
 
-	public MerkleAccountState(
-			JKey key,
-			long expiry,
-			long hbarBalance,
-			long autoRenewSecs,
-			String memo,
-			boolean deleted,
-			boolean smartContract,
-			boolean receiverSigRequired,
-			EntityId proxy
-	) {
-		this.key = key;
-		this.expiry = expiry;
-		this.hbarBalance = hbarBalance;
-		this.autoRenewSecs = autoRenewSecs;
-		this.memo = Optional.ofNullable(memo).orElse(DEFAULT_MEMO);
-		this.deleted = deleted;
-		this.smartContract = smartContract;
-		this.receiverSigRequired = receiverSigRequired;
-		this.proxy = proxy;
-	}
+  public MerkleAccountState(
+      JKey key,
+      long expiry,
+      long hbarBalance,
+      long autoRenewSecs,
+      String memo,
+      boolean deleted,
+      boolean smartContract,
+      boolean receiverSigRequired,
+      EntityId proxy) {
+    this.key = key;
+    this.expiry = expiry;
+    this.hbarBalance = hbarBalance;
+    this.autoRenewSecs = autoRenewSecs;
+    this.memo = Optional.ofNullable(memo).orElse(DEFAULT_MEMO);
+    this.deleted = deleted;
+    this.smartContract = smartContract;
+    this.receiverSigRequired = receiverSigRequired;
+    this.proxy = proxy;
+  }
 
-	/* --- MerkleLeaf --- */
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  /* --- MerkleLeaf --- */
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		key = serdes.readNullable(in, serdes::deserializeKey);
-		expiry = in.readLong();
-		hbarBalance = in.readLong();
-		autoRenewSecs = in.readLong();
-		memo = in.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		deleted = in.readBoolean();
-		smartContract = in.readBoolean();
-		receiverSigRequired = in.readBoolean();
-		proxy = serdes.readNullableSerializable(in);
-		if (version >= RELEASE_0160_VERSION) {
-			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
-			nftsOwned = in.readLong();
-		}
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    key = serdes.readNullable(in, serdes::deserializeKey);
+    expiry = in.readLong();
+    hbarBalance = in.readLong();
+    autoRenewSecs = in.readLong();
+    memo = in.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
+    deleted = in.readBoolean();
+    smartContract = in.readBoolean();
+    receiverSigRequired = in.readBoolean();
+    proxy = serdes.readNullableSerializable(in);
+    if (version >= RELEASE_0160_VERSION) {
+      /* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
+      nftsOwned = in.readLong();
+    }
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullable(key, out, serdes::serializeKey);
-		out.writeLong(expiry);
-		out.writeLong(hbarBalance);
-		out.writeLong(autoRenewSecs);
-		out.writeNormalisedString(memo);
-		out.writeBoolean(deleted);
-		out.writeBoolean(smartContract);
-		out.writeBoolean(receiverSigRequired);
-		serdes.writeNullableSerializable(proxy, out);
-		out.writeLong(nftsOwned);
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    serdes.writeNullable(key, out, serdes::serializeKey);
+    out.writeLong(expiry);
+    out.writeLong(hbarBalance);
+    out.writeLong(autoRenewSecs);
+    out.writeNormalisedString(memo);
+    out.writeBoolean(deleted);
+    out.writeBoolean(smartContract);
+    out.writeBoolean(receiverSigRequired);
+    serdes.writeNullableSerializable(proxy, out);
+    out.writeLong(nftsOwned);
+  }
 
-	/* --- Copyable --- */
-	public MerkleAccountState copy() {
-		setImmutable(true);
-		var copied = new MerkleAccountState(
-				key,
-				expiry,
-				hbarBalance,
-				autoRenewSecs,
-				memo,
-				deleted,
-				smartContract,
-				receiverSigRequired,
-				proxy);
-		copied.setNftsOwned(nftsOwned);
-		return copied;
-	}
+  /* --- Copyable --- */
+  public MerkleAccountState copy() {
+    setImmutable(true);
+    var copied =
+        new MerkleAccountState(
+            key,
+            expiry,
+            hbarBalance,
+            autoRenewSecs,
+            memo,
+            deleted,
+            smartContract,
+            receiverSigRequired,
+            proxy);
+    copied.setNftsOwned(nftsOwned);
+    return copied;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || MerkleAccountState.class != o.getClass()) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || MerkleAccountState.class != o.getClass()) {
+      return false;
+    }
 
-		var that = (MerkleAccountState) o;
+    var that = (MerkleAccountState) o;
 
-		return this.expiry == that.expiry &&
-				this.hbarBalance == that.hbarBalance &&
-				this.autoRenewSecs == that.autoRenewSecs &&
-				Objects.equals(this.memo, that.memo) &&
-				this.deleted == that.deleted &&
-				this.smartContract == that.smartContract &&
-				this.receiverSigRequired == that.receiverSigRequired &&
-				Objects.equals(this.proxy, that.proxy) &&
-				this.nftsOwned == that.nftsOwned &&
-				equalUpToDecodability(this.key, that.key);
-	}
+    return this.expiry == that.expiry
+        && this.hbarBalance == that.hbarBalance
+        && this.autoRenewSecs == that.autoRenewSecs
+        && Objects.equals(this.memo, that.memo)
+        && this.deleted == that.deleted
+        && this.smartContract == that.smartContract
+        && this.receiverSigRequired == that.receiverSigRequired
+        && Objects.equals(this.proxy, that.proxy)
+        && this.nftsOwned == that.nftsOwned
+        && equalUpToDecodability(this.key, that.key);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-				key,
-				expiry,
-				hbarBalance,
-				autoRenewSecs,
-				memo,
-				deleted,
-				smartContract,
-				receiverSigRequired,
-				proxy,
-				nftsOwned);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        key,
+        expiry,
+        hbarBalance,
+        autoRenewSecs,
+        memo,
+        deleted,
+        smartContract,
+        receiverSigRequired,
+        proxy,
+        nftsOwned);
+  }
 
-	/* --- Bean --- */
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("key", describe(key))
-				.add("expiry", expiry)
-				.add("balance", hbarBalance)
-				.add("autoRenewSecs", autoRenewSecs)
-				.add("memo", memo)
-				.add("deleted", deleted)
-				.add("smartContract", smartContract)
-				.add("receiverSigRequired", receiverSigRequired)
-				.add("proxy", proxy)
-				.add("nftsOwned", nftsOwned)
-				.toString();
-	}
+  /* --- Bean --- */
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("key", describe(key))
+        .add("expiry", expiry)
+        .add("balance", hbarBalance)
+        .add("autoRenewSecs", autoRenewSecs)
+        .add("memo", memo)
+        .add("deleted", deleted)
+        .add("smartContract", smartContract)
+        .add("receiverSigRequired", receiverSigRequired)
+        .add("proxy", proxy)
+        .add("nftsOwned", nftsOwned)
+        .toString();
+  }
 
-	public JKey key() {
-		return key;
-	}
+  public JKey key() {
+    return key;
+  }
 
-	public long expiry() {
-		return expiry;
-	}
+  public long expiry() {
+    return expiry;
+  }
 
-	public long balance() {
-		return hbarBalance;
-	}
+  public long balance() {
+    return hbarBalance;
+  }
 
-	public long autoRenewSecs() {
-		return autoRenewSecs;
-	}
+  public long autoRenewSecs() {
+    return autoRenewSecs;
+  }
 
-	public String memo() {
-		return memo;
-	}
+  public String memo() {
+    return memo;
+  }
 
-	public boolean isDeleted() {
-		return deleted;
-	}
+  public boolean isDeleted() {
+    return deleted;
+  }
 
-	public boolean isSmartContract() {
-		return smartContract;
-	}
+  public boolean isSmartContract() {
+    return smartContract;
+  }
 
-	public boolean isReceiverSigRequired() {
-		return receiverSigRequired;
-	}
+  public boolean isReceiverSigRequired() {
+    return receiverSigRequired;
+  }
 
-	public EntityId proxy() {
-		return proxy;
-	}
+  public EntityId proxy() {
+    return proxy;
+  }
 
-	public long nftsOwned() {
-		return nftsOwned;
-	}
+  public long nftsOwned() {
+    return nftsOwned;
+  }
 
-	public void setKey(JKey key) {
-		assertMutable("key");
-		this.key = key;
-	}
+  public void setKey(JKey key) {
+    assertMutable("key");
+    this.key = key;
+  }
 
-	public void setExpiry(long expiry) {
-		assertMutable("expiry");
-		this.expiry = expiry;
-	}
+  public void setExpiry(long expiry) {
+    assertMutable("expiry");
+    this.expiry = expiry;
+  }
 
-	public void setHbarBalance(long hbarBalance) {
-		assertMutable("hbarBalance");
-		this.hbarBalance = hbarBalance;
-	}
+  public void setHbarBalance(long hbarBalance) {
+    assertMutable("hbarBalance");
+    this.hbarBalance = hbarBalance;
+  }
 
-	public void setAutoRenewSecs(long autoRenewSecs) {
-		assertMutable("autoRenewSecs");
-		this.autoRenewSecs = autoRenewSecs;
-	}
+  public void setAutoRenewSecs(long autoRenewSecs) {
+    assertMutable("autoRenewSecs");
+    this.autoRenewSecs = autoRenewSecs;
+  }
 
-	public void setMemo(String memo) {
-		assertMutable("memo");
-		this.memo = memo;
-	}
+  public void setMemo(String memo) {
+    assertMutable("memo");
+    this.memo = memo;
+  }
 
-	public void setDeleted(boolean deleted) {
-		assertMutable("isSmartContract");
-		this.deleted = deleted;
-	}
+  public void setDeleted(boolean deleted) {
+    assertMutable("isSmartContract");
+    this.deleted = deleted;
+  }
 
-	public void setSmartContract(boolean smartContract) {
-		assertMutable("isSmartContract");
-		this.smartContract = smartContract;
-	}
+  public void setSmartContract(boolean smartContract) {
+    assertMutable("isSmartContract");
+    this.smartContract = smartContract;
+  }
 
-	public void setReceiverSigRequired(boolean receiverSigRequired) {
-		assertMutable("isReceiverSigRequired");
-		this.receiverSigRequired = receiverSigRequired;
-	}
+  public void setReceiverSigRequired(boolean receiverSigRequired) {
+    assertMutable("isReceiverSigRequired");
+    this.receiverSigRequired = receiverSigRequired;
+  }
 
-	public void setProxy(EntityId proxy) {
-		assertMutable("proxy");
-		this.proxy = proxy;
-	}
+  public void setProxy(EntityId proxy) {
+    assertMutable("proxy");
+    this.proxy = proxy;
+  }
 
-	public void setNftsOwned(long nftsOwned) {
-		assertMutable("nftsOwned");
-		this.nftsOwned = nftsOwned;
-	}
+  public void setNftsOwned(long nftsOwned) {
+    assertMutable("nftsOwned");
+    this.nftsOwned = nftsOwned;
+  }
 
-	private void assertMutable(String proximalField) {
-		if (isImmutable()) {
-			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
-		}
-	}
+  private void assertMutable(String proximalField) {
+    if (isImmutable()) {
+      throw new MutabilityException(
+          "Cannot set " + proximalField + " on an immutable account state!");
+    }
+  }
 }

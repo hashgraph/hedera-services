@@ -27,36 +27,34 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenRevokeKycFactory extends SignedTxnFactory<TokenRevokeKycFactory> {
-	private TokenRevokeKycFactory() {}
+  private TokenRevokeKycFactory() {}
 
-	private AccountID to;
-	private TokenID id;
+  private AccountID to;
+  private TokenID id;
 
-	public static TokenRevokeKycFactory newSignedTokenRevokeKyc() {
-		return new TokenRevokeKycFactory();
-	}
+  public static TokenRevokeKycFactory newSignedTokenRevokeKyc() {
+    return new TokenRevokeKycFactory();
+  }
 
-	public TokenRevokeKycFactory revoking(TokenID id, AccountID to) {
-		this.to = to;
-		this.id = id;
-		return this;
-	}
+  public TokenRevokeKycFactory revoking(TokenID id, AccountID to) {
+    this.to = to;
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenRevokeKycFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenRevokeKycFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenRevokeKycTransactionBody.newBuilder()
-				.setToken(id)
-				.setAccount(to);
-		txn.setTokenRevokeKyc(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenRevokeKycTransactionBody.newBuilder().setToken(id).setAccount(to);
+    txn.setTokenRevokeKyc(op);
+  }
 }

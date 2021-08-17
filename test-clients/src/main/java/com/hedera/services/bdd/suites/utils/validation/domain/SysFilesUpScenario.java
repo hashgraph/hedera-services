@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SysFilesUpScenario {
-	List<UpdateAction> updates = new ArrayList<>();
+  List<UpdateAction> updates = new ArrayList<>();
 
-	public List<UpdateAction> getUpdates() {
-		return updates;
-	}
+  public List<UpdateAction> getUpdates() {
+    return updates;
+  }
 
-	public void setUpdates(List<UpdateAction> updates) {
-		this.updates = updates;
-	}
+  public void setUpdates(List<UpdateAction> updates) {
+    this.updates = updates;
+  }
 }

@@ -20,6 +20,8 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -28,7 +30,6 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,161 +38,154 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
-
 public class SolidityLog implements SelfSerializable {
-	static final int MERKLE_VERSION = 1;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2af05aa9c7ff917L;
+  static final int MERKLE_VERSION = 1;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0x2af05aa9c7ff917L;
 
-	private static final byte[] MISSING_BYTES = new byte[0];
+  private static final byte[] MISSING_BYTES = new byte[0];
 
-	private byte[] data = MISSING_BYTES;
-	private byte[] bloom = MISSING_BYTES;
-	private EntityId contractId;
-	private List<byte[]> topics = Collections.emptyList();
+  private byte[] data = MISSING_BYTES;
+  private byte[] bloom = MISSING_BYTES;
+  private EntityId contractId;
+  private List<byte[]> topics = Collections.emptyList();
 
-	static DomainSerdes serdes = new DomainSerdes();
+  static DomainSerdes serdes = new DomainSerdes();
 
-	public static final int MAX_DATA_BYTES = 32 * 1024;
-	public static final int MAX_BLOOM_BYTES = 256;
-	public static final int MAX_TOPIC_BYTES = 1024;
+  public static final int MAX_DATA_BYTES = 32 * 1024;
+  public static final int MAX_BLOOM_BYTES = 256;
+  public static final int MAX_TOPIC_BYTES = 1024;
 
-	public SolidityLog() { }
+  public SolidityLog() {}
 
-	public SolidityLog(
-			EntityId contractId,
-			byte[] bloom,
-			List<byte[]> topics,
-			byte[] data
-	) {
-		this.contractId = contractId;
-		this.bloom = bloom;
-		this.topics = topics;
-		this.data = data;
-	}
+  public SolidityLog(EntityId contractId, byte[] bloom, List<byte[]> topics, byte[] data) {
+    this.contractId = contractId;
+    this.bloom = bloom;
+    this.topics = topics;
+    this.data = data;
+  }
 
-	/* --- SelfSerializable --- */
+  /* --- SelfSerializable --- */
 
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		data = in.readByteArray(MAX_DATA_BYTES);
-		bloom = in.readByteArray(MAX_BLOOM_BYTES);
-		contractId = serdes.readNullableSerializable(in);
-		int numTopics = in.readInt();
-		if (numTopics > 0) {
-			topics = new LinkedList<>();
-			for (int i = 0; i < numTopics; i++) {
-				topics.add(in.readByteArray(MAX_TOPIC_BYTES));
-			}
-		}
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    data = in.readByteArray(MAX_DATA_BYTES);
+    bloom = in.readByteArray(MAX_BLOOM_BYTES);
+    contractId = serdes.readNullableSerializable(in);
+    int numTopics = in.readInt();
+    if (numTopics > 0) {
+      topics = new LinkedList<>();
+      for (int i = 0; i < numTopics; i++) {
+        topics.add(in.readByteArray(MAX_TOPIC_BYTES));
+      }
+    }
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeByteArray(data);
-		out.writeByteArray(bloom);
-		serdes.writeNullableSerializable(contractId, out);
-		out.writeInt(topics.size());
-		for (byte[] topic : topics) {
-			out.writeByteArray(topic);
-		}
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeByteArray(data);
+    out.writeByteArray(bloom);
+    serdes.writeNullableSerializable(contractId, out);
+    out.writeInt(topics.size());
+    for (byte[] topic : topics) {
+      out.writeByteArray(topic);
+    }
+  }
 
-	/* --- Object --- */
+  /* --- Object --- */
 
-	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || SolidityLog.class != o.getClass()) {
-			return false;
-		}
-		SolidityLog that = (SolidityLog) o;
-		return Objects.equals(contractId, that.contractId) &&
-				Arrays.equals(bloom, that.bloom) &&
-				Arrays.equals(data, that.data) &&
-				areSameTopics(topics, that.topics);
-	}
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || SolidityLog.class != o.getClass()) {
+      return false;
+    }
+    SolidityLog that = (SolidityLog) o;
+    return Objects.equals(contractId, that.contractId)
+        && Arrays.equals(bloom, that.bloom)
+        && Arrays.equals(data, that.data)
+        && areSameTopics(topics, that.topics);
+  }
 
-	private static boolean areSameTopics(List<byte[]> a, List<byte[]> b) {
-		int aLen = Optional.ofNullable(a).map(List::size).orElse(-1);
-		int bLen = Optional.ofNullable(b).map(List::size).orElse(-1);
-		if (aLen != bLen) {
-			return false;
-		} else {
-			for (int i = 0; i < aLen; i++) {
-				if (!Arrays.equals(a.get(i), b.get(i))) {
-					return false;
-				}
-			}
-			return true;
-		}
-	}
+  private static boolean areSameTopics(List<byte[]> a, List<byte[]> b) {
+    int aLen = Optional.ofNullable(a).map(List::size).orElse(-1);
+    int bLen = Optional.ofNullable(b).map(List::size).orElse(-1);
+    if (aLen != bLen) {
+      return false;
+    } else {
+      for (int i = 0; i < aLen; i++) {
+        if (!Arrays.equals(a.get(i), b.get(i))) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
 
-	@Override
-	public int hashCode() {
-		int result = Objects.hash(contractId, topics);
-		result = 31 * result + Arrays.hashCode(bloom);
-		return 31 * result + Arrays.hashCode(data);
-	}
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(contractId, topics);
+    result = 31 * result + Arrays.hashCode(bloom);
+    return 31 * result + Arrays.hashCode(data);
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("data", CommonUtils.hex(data))
-				.add("bloom", CommonUtils.hex(bloom))
-				.add("contractId", contractId)
-				.add("topics", topics.stream().map(CommonUtils::hex).collect(toList()))
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("data", CommonUtils.hex(data))
+        .add("bloom", CommonUtils.hex(bloom))
+        .add("contractId", contractId)
+        .add("topics", topics.stream().map(CommonUtils::hex).collect(toList()))
+        .toString();
+  }
 
-	/* --- Bean --- */
+  /* --- Bean --- */
 
-	public EntityId getContractId() {
-		return contractId;
-	}
+  public EntityId getContractId() {
+    return contractId;
+  }
 
-	public byte[] getBloom() {
-		return bloom;
-	}
+  public byte[] getBloom() {
+    return bloom;
+  }
 
-	public List<byte[]> getTopics() {
-		return topics;
-	}
+  public List<byte[]> getTopics() {
+    return topics;
+  }
 
-	public byte[] getData() {
-		return data;
-	}
+  public byte[] getData() {
+    return data;
+  }
 
-	/* --- Helpers --- */
+  /* --- Helpers --- */
 
-	public static SolidityLog fromGrpc(ContractLoginfo grpc) {
-		return new SolidityLog(
-				grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null,
-				grpc.getBloom().isEmpty() ? MISSING_BYTES : grpc.getBloom().toByteArray(),
-				grpc.getTopicList().stream().map(ByteString::toByteArray).collect(toList()),
-				grpc.getData().isEmpty() ? MISSING_BYTES : grpc.getData().toByteArray());
-	}
+  public static SolidityLog fromGrpc(ContractLoginfo grpc) {
+    return new SolidityLog(
+        grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null,
+        grpc.getBloom().isEmpty() ? MISSING_BYTES : grpc.getBloom().toByteArray(),
+        grpc.getTopicList().stream().map(ByteString::toByteArray).collect(toList()),
+        grpc.getData().isEmpty() ? MISSING_BYTES : grpc.getData().toByteArray());
+  }
 
-	public ContractLoginfo toGrpc() {
-		var grpc = ContractLoginfo.newBuilder();
-		if (contractId != null) {
-			grpc.setContractID(contractId.toGrpcContractId());
-		}
-		grpc.setBloom(ByteString.copyFrom(bloom));
-		grpc.setData(ByteString.copyFrom(data));
-		grpc.addAllTopic(topics.stream().map(ByteString::copyFrom).collect(toList()));
-		return grpc.build();
-	}
+  public ContractLoginfo toGrpc() {
+    var grpc = ContractLoginfo.newBuilder();
+    if (contractId != null) {
+      grpc.setContractID(contractId.toGrpcContractId());
+    }
+    grpc.setBloom(ByteString.copyFrom(bloom));
+    grpc.setData(ByteString.copyFrom(data));
+    grpc.addAllTopic(topics.stream().map(ByteString::copyFrom).collect(toList()));
+    return grpc.build();
+  }
 }

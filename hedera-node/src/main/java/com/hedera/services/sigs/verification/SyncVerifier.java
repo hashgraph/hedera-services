@@ -21,22 +21,21 @@ package com.hedera.services.sigs.verification;
  */
 
 import com.swirlds.common.crypto.TransactionSignature;
-
 import java.util.List;
 
 /**
- * Defines a type able to synchronously verify {@link com.swirlds.common.crypto.TransactionSignature} instances.
- * (In particular, able to resolve their {@link TransactionSignature#getSignatureStatus()} accessor to a value
- * other than {@link com.swirlds.common.crypto.VerificationStatus}.)
+ * Defines a type able to synchronously verify {@link
+ * com.swirlds.common.crypto.TransactionSignature} instances. (In particular, able to resolve their
+ * {@link TransactionSignature#getSignatureStatus()} accessor to a value other than {@link
+ * com.swirlds.common.crypto.VerificationStatus}.)
  *
  * @author Michael Tinker
  */
 public interface SyncVerifier {
-	/**
-	 * Synchronously verify a list of {@link TransactionSignature} objects <b>in-place</b>.
-	 *
-	 * @param unknownSigs
-	 * 		the sigs to verify.
-	 */
-	void verifySync(List<TransactionSignature> unknownSigs);
+  /**
+   * Synchronously verify a list of {@link TransactionSignature} objects <b>in-place</b>.
+   *
+   * @param unknownSigs the sigs to verify.
+   */
+  void verifySync(List<TransactionSignature> unknownSigs);
 }

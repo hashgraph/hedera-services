@@ -20,61 +20,58 @@ package com.hedera.services.bdd.suites.perf.token;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class TokenCreatePerfSuite extends LoadTest {
-	private static final Logger log = LogManager.getLogger(TokenCreatePerfSuite.class);
+  private static final Logger log = LogManager.getLogger(TokenCreatePerfSuite.class);
 
-	public static void main(String... args) {
-		parseArgs(args);
-		TokenCreatePerfSuite suite = new TokenCreatePerfSuite();
-		suite.runSuiteSync();
-	}
+  public static void main(String... args) {
+    parseArgs(args);
+    TokenCreatePerfSuite suite = new TokenCreatePerfSuite();
+    suite.runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runTokenCreates());
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(runTokenCreates());
+  }
 
-	private HapiApiSpec runTokenCreates() {
-		final int NUM_CREATES = 100000;
-		return defaultHapiSpec("tokenCreatePerf")
-				.given(
-				).when(
-						inParallel(
-								asOpArray(NUM_CREATES, i ->
-										(i == (NUM_CREATES - 1)) ? tokenCreate("testToken" + i)
-												.payingWith(GENESIS)
-												.initialSupply(100_000_000_000L)
-												.signedBy(GENESIS):
-												tokenCreate("testToken" + i)
-														.payingWith(GENESIS)
-														.signedBy(GENESIS)
-														.initialSupply(100_000_000_000L)
-														.deferStatusResolution()
-								)
-						)
-				).then(
-						UtilVerbs.sleepFor(200000),
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes()
-				);
-	}
+  private HapiApiSpec runTokenCreates() {
+    final int NUM_CREATES = 100000;
+    return defaultHapiSpec("tokenCreatePerf")
+        .given()
+        .when(
+            inParallel(
+                asOpArray(
+                    NUM_CREATES,
+                    i ->
+                        (i == (NUM_CREATES - 1))
+                            ? tokenCreate("testToken" + i)
+                                .payingWith(GENESIS)
+                                .initialSupply(100_000_000_000L)
+                                .signedBy(GENESIS)
+                            : tokenCreate("testToken" + i)
+                                .payingWith(GENESIS)
+                                .signedBy(GENESIS)
+                                .initialSupply(100_000_000_000L)
+                                .deferStatusResolution())))
+        .then(
+            UtilVerbs.sleepFor(200000),
+            freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }
-
-

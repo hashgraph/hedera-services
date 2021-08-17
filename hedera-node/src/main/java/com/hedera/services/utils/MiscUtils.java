@@ -20,44 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.CommonUtils;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkletree.MerklePair;
-import org.apache.commons.codec.DecoderException;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import static com.hedera.services.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
@@ -182,523 +144,570 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkletree.MerklePair;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.apache.commons.codec.DecoderException;
+
 public class MiscUtils {
-	MiscUtils() {
-		throw new IllegalStateException("Utility Class");
-	}
+  MiscUtils() {
+    throw new IllegalStateException("Utility Class");
+  }
 
-	public static final EnumSet<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
-			ConsensusGetTopicInfo,
-			GetBySolidityID,
-			ContractCallLocal,
-			ContractGetInfo,
-			ContractGetBytecode,
-			ContractGetRecords,
-			CryptoGetAccountBalance,
-			CryptoGetAccountRecords,
-			CryptoGetInfo,
-			CryptoGetLiveHash,
-			FileGetContents,
-			FileGetInfo,
-			TransactionGetReceipt,
-			TransactionGetRecord,
-			GetVersionInfo,
-			TokenGetInfo,
-			ScheduleGetInfo,
-			TokenGetNftInfo,
-			TokenGetNftInfos,
-			TokenGetAccountNftInfos
-	);
+  public static final EnumSet<HederaFunctionality> QUERY_FUNCTIONS =
+      EnumSet.of(
+          ConsensusGetTopicInfo,
+          GetBySolidityID,
+          ContractCallLocal,
+          ContractGetInfo,
+          ContractGetBytecode,
+          ContractGetRecords,
+          CryptoGetAccountBalance,
+          CryptoGetAccountRecords,
+          CryptoGetInfo,
+          CryptoGetLiveHash,
+          FileGetContents,
+          FileGetInfo,
+          TransactionGetReceipt,
+          TransactionGetRecord,
+          GetVersionInfo,
+          TokenGetInfo,
+          ScheduleGetInfo,
+          TokenGetNftInfo,
+          TokenGetNftInfos,
+          TokenGetAccountNftInfos);
 
-	static final String TOKEN_MINT_METRIC = "mintToken";
-	static final String TOKEN_BURN_METRIC = "burnToken";
-	static final String TOKEN_CREATE_METRIC = "createToken";
-	static final String TOKEN_DELETE_METRIC = "deleteToken";
-	static final String TOKEN_UPDATE_METRIC = "updateToken";
-	static final String TOKEN_FREEZE_METRIC = "freezeTokenAccount";
-	static final String TOKEN_UNFREEZE_METRIC = "unfreezeTokenAccount";
-	static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
-	static final String TOKEN_REVOKE_KYC_METRIC = "revokeKycFromTokenAccount";
-	static final String TOKEN_WIPE_ACCOUNT_METRIC = "wipeTokenAccount";
-	static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
-	static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
-	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
-	static final String TOKEN_GET_NFT_INFO_METRIC = "getTokenNftInfo";
-	static final String TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC = "getAccountNftInfos";
-	static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeScheduleUpdate";
-	static final String TOKEN_GET_NFT_INFOS_METRIC = "getTokenNftInfos";
+  static final String TOKEN_MINT_METRIC = "mintToken";
+  static final String TOKEN_BURN_METRIC = "burnToken";
+  static final String TOKEN_CREATE_METRIC = "createToken";
+  static final String TOKEN_DELETE_METRIC = "deleteToken";
+  static final String TOKEN_UPDATE_METRIC = "updateToken";
+  static final String TOKEN_FREEZE_METRIC = "freezeTokenAccount";
+  static final String TOKEN_UNFREEZE_METRIC = "unfreezeTokenAccount";
+  static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
+  static final String TOKEN_REVOKE_KYC_METRIC = "revokeKycFromTokenAccount";
+  static final String TOKEN_WIPE_ACCOUNT_METRIC = "wipeTokenAccount";
+  static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
+  static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
+  static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
+  static final String TOKEN_GET_NFT_INFO_METRIC = "getTokenNftInfo";
+  static final String TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC = "getAccountNftInfos";
+  static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeScheduleUpdate";
+  static final String TOKEN_GET_NFT_INFOS_METRIC = "getTokenNftInfos";
 
-	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
-	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
-	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
-	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
+  static final String SCHEDULE_CREATE_METRIC = "createSchedule";
+  static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
+  static final String SCHEDULE_SIGN_METRIC = "signSchedule";
+  static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
 
-	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
-			new EnumMap<>(Query.QueryCase.class);
+  private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
+      new EnumMap<>(Query.QueryCase.class);
 
-	static {
-		queryFunctions.put(NETWORKGETVERSIONINFO, GetVersionInfo);
-		queryFunctions.put(GETBYKEY, GetByKey);
-		queryFunctions.put(CONSENSUSGETTOPICINFO, ConsensusGetTopicInfo);
-		queryFunctions.put(GETBYSOLIDITYID, GetBySolidityID);
-		queryFunctions.put(CONTRACTCALLLOCAL, ContractCallLocal);
-		queryFunctions.put(CONTRACTGETINFO, ContractGetInfo);
-		queryFunctions.put(CONTRACTGETBYTECODE, ContractGetBytecode);
-		queryFunctions.put(CONTRACTGETRECORDS, ContractGetRecords);
-		queryFunctions.put(CRYPTOGETACCOUNTBALANCE, CryptoGetAccountBalance);
-		queryFunctions.put(CRYPTOGETACCOUNTRECORDS, CryptoGetAccountRecords);
-		queryFunctions.put(CRYPTOGETINFO, CryptoGetInfo);
-		queryFunctions.put(CRYPTOGETLIVEHASH, CryptoGetLiveHash);
-		queryFunctions.put(FILEGETCONTENTS, FileGetContents);
-		queryFunctions.put(FILEGETINFO, FileGetInfo);
-		queryFunctions.put(TRANSACTIONGETRECEIPT, TransactionGetReceipt);
-		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
-		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
-		queryFunctions.put(TOKENGETNFTINFO, TokenGetNftInfo);
-		queryFunctions.put(TOKENGETNFTINFOS, TokenGetNftInfos);
-		queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
-		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
-	}
+  static {
+    queryFunctions.put(NETWORKGETVERSIONINFO, GetVersionInfo);
+    queryFunctions.put(GETBYKEY, GetByKey);
+    queryFunctions.put(CONSENSUSGETTOPICINFO, ConsensusGetTopicInfo);
+    queryFunctions.put(GETBYSOLIDITYID, GetBySolidityID);
+    queryFunctions.put(CONTRACTCALLLOCAL, ContractCallLocal);
+    queryFunctions.put(CONTRACTGETINFO, ContractGetInfo);
+    queryFunctions.put(CONTRACTGETBYTECODE, ContractGetBytecode);
+    queryFunctions.put(CONTRACTGETRECORDS, ContractGetRecords);
+    queryFunctions.put(CRYPTOGETACCOUNTBALANCE, CryptoGetAccountBalance);
+    queryFunctions.put(CRYPTOGETACCOUNTRECORDS, CryptoGetAccountRecords);
+    queryFunctions.put(CRYPTOGETINFO, CryptoGetInfo);
+    queryFunctions.put(CRYPTOGETLIVEHASH, CryptoGetLiveHash);
+    queryFunctions.put(FILEGETCONTENTS, FileGetContents);
+    queryFunctions.put(FILEGETINFO, FileGetInfo);
+    queryFunctions.put(TRANSACTIONGETRECEIPT, TransactionGetReceipt);
+    queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
+    queryFunctions.put(TOKENGETINFO, TokenGetInfo);
+    queryFunctions.put(TOKENGETNFTINFO, TokenGetNftInfo);
+    queryFunctions.put(TOKENGETNFTINFOS, TokenGetNftInfos);
+    queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
+    queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
+  }
 
-	public static final EnumMap<HederaFunctionality, String> BASE_STAT_NAMES =
-			new EnumMap<>(HederaFunctionality.class);
+  public static final EnumMap<HederaFunctionality, String> BASE_STAT_NAMES =
+      new EnumMap<>(HederaFunctionality.class);
 
-	static {
-		/* Transactions */
-		BASE_STAT_NAMES.put(CryptoCreate, CRYPTO_CREATE_METRIC);
-		BASE_STAT_NAMES.put(CryptoTransfer, CRYPTO_TRANSFER_METRIC);
-		BASE_STAT_NAMES.put(CryptoUpdate, CRYPTO_UPDATE_METRIC);
-		BASE_STAT_NAMES.put(CryptoDelete, CRYPTO_DELETE_METRIC);
-		BASE_STAT_NAMES.put(CryptoAddLiveHash, ADD_LIVE_HASH_METRIC);
-		BASE_STAT_NAMES.put(CryptoDeleteLiveHash, DELETE_LIVE_HASH_METRIC);
-		BASE_STAT_NAMES.put(FileCreate, CREATE_FILE_METRIC);
-		BASE_STAT_NAMES.put(FileUpdate, UPDATE_FILE_METRIC);
-		BASE_STAT_NAMES.put(FileDelete, DELETE_FILE_METRIC);
-		BASE_STAT_NAMES.put(FileAppend, FILE_APPEND_METRIC);
-		BASE_STAT_NAMES.put(ContractCreate, CREATE_CONTRACT_METRIC);
-		BASE_STAT_NAMES.put(ContractUpdate, UPDATE_CONTRACT_METRIC);
-		BASE_STAT_NAMES.put(ContractCall, CALL_CONTRACT_METRIC);
-		BASE_STAT_NAMES.put(ContractDelete, DELETE_CONTRACT_METRIC);
-		BASE_STAT_NAMES.put(ConsensusCreateTopic, CREATE_TOPIC_METRIC);
-		BASE_STAT_NAMES.put(ConsensusUpdateTopic, UPDATE_TOPIC_METRIC);
-		BASE_STAT_NAMES.put(ConsensusDeleteTopic, DELETE_TOPIC_METRIC);
-		BASE_STAT_NAMES.put(ConsensusSubmitMessage, SUBMIT_MESSAGE_METRIC);
-		BASE_STAT_NAMES.put(TokenCreate, TOKEN_CREATE_METRIC);
-		BASE_STAT_NAMES.put(TokenFreezeAccount, TOKEN_FREEZE_METRIC);
-		BASE_STAT_NAMES.put(TokenUnfreezeAccount, TOKEN_UNFREEZE_METRIC);
-		BASE_STAT_NAMES.put(TokenGrantKycToAccount, TOKEN_GRANT_KYC_METRIC);
-		BASE_STAT_NAMES.put(TokenRevokeKycFromAccount, TOKEN_REVOKE_KYC_METRIC);
-		BASE_STAT_NAMES.put(TokenDelete, TOKEN_DELETE_METRIC);
-		BASE_STAT_NAMES.put(TokenMint, TOKEN_MINT_METRIC);
-		BASE_STAT_NAMES.put(TokenBurn, TOKEN_BURN_METRIC);
-		BASE_STAT_NAMES.put(TokenAccountWipe, TOKEN_WIPE_ACCOUNT_METRIC);
-		BASE_STAT_NAMES.put(TokenUpdate, TOKEN_UPDATE_METRIC);
-		BASE_STAT_NAMES.put(TokenAssociateToAccount, TOKEN_ASSOCIATE_METRIC);
-		BASE_STAT_NAMES.put(TokenDissociateFromAccount, TOKEN_DISSOCIATE_METRIC);
-		BASE_STAT_NAMES.put(ScheduleCreate, SCHEDULE_CREATE_METRIC);
-		BASE_STAT_NAMES.put(ScheduleSign, SCHEDULE_SIGN_METRIC);
-		BASE_STAT_NAMES.put(ScheduleDelete, SCHEDULE_DELETE_METRIC);
-		BASE_STAT_NAMES.put(UncheckedSubmit, UNCHECKED_SUBMIT_METRIC);
-		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
-		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
-		BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
-		/* Queries */
-		BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
-		BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
-		BASE_STAT_NAMES.put(ContractCallLocal, LOCALCALL_CONTRACT_METRIC);
-		BASE_STAT_NAMES.put(ContractGetInfo, GET_CONTRACT_INFO_METRIC);
-		BASE_STAT_NAMES.put(ContractGetBytecode, GET_CONTRACT_BYTECODE_METRIC);
-		BASE_STAT_NAMES.put(ContractGetRecords, GET_CONTRACT_RECORDS_METRIC);
-		BASE_STAT_NAMES.put(CryptoGetAccountBalance, GET_ACCOUNT_BALANCE_METRIC);
-		BASE_STAT_NAMES.put(CryptoGetAccountRecords, GET_ACCOUNT_RECORDS_METRIC);
-		BASE_STAT_NAMES.put(CryptoGetInfo, GET_ACCOUNT_INFO_METRIC);
-		BASE_STAT_NAMES.put(CryptoGetLiveHash, GET_LIVE_HASH_METRIC);
-		BASE_STAT_NAMES.put(FileGetContents, GET_FILE_CONTENT_METRIC);
-		BASE_STAT_NAMES.put(FileGetInfo, GET_FILE_INFO_METRIC);
-		BASE_STAT_NAMES.put(TransactionGetReceipt, GET_RECEIPT_METRIC);
-		BASE_STAT_NAMES.put(TransactionGetRecord, GET_RECORD_METRIC);
-		BASE_STAT_NAMES.put(GetVersionInfo, GET_VERSION_INFO_METRIC);
-		BASE_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
-		BASE_STAT_NAMES.put(TokenGetNftInfo, TOKEN_GET_NFT_INFO_METRIC);
-		BASE_STAT_NAMES.put(TokenGetNftInfos, TOKEN_GET_NFT_INFOS_METRIC);
-		BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
-		BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
-		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
-	}
+  static {
+    /* Transactions */
+    BASE_STAT_NAMES.put(CryptoCreate, CRYPTO_CREATE_METRIC);
+    BASE_STAT_NAMES.put(CryptoTransfer, CRYPTO_TRANSFER_METRIC);
+    BASE_STAT_NAMES.put(CryptoUpdate, CRYPTO_UPDATE_METRIC);
+    BASE_STAT_NAMES.put(CryptoDelete, CRYPTO_DELETE_METRIC);
+    BASE_STAT_NAMES.put(CryptoAddLiveHash, ADD_LIVE_HASH_METRIC);
+    BASE_STAT_NAMES.put(CryptoDeleteLiveHash, DELETE_LIVE_HASH_METRIC);
+    BASE_STAT_NAMES.put(FileCreate, CREATE_FILE_METRIC);
+    BASE_STAT_NAMES.put(FileUpdate, UPDATE_FILE_METRIC);
+    BASE_STAT_NAMES.put(FileDelete, DELETE_FILE_METRIC);
+    BASE_STAT_NAMES.put(FileAppend, FILE_APPEND_METRIC);
+    BASE_STAT_NAMES.put(ContractCreate, CREATE_CONTRACT_METRIC);
+    BASE_STAT_NAMES.put(ContractUpdate, UPDATE_CONTRACT_METRIC);
+    BASE_STAT_NAMES.put(ContractCall, CALL_CONTRACT_METRIC);
+    BASE_STAT_NAMES.put(ContractDelete, DELETE_CONTRACT_METRIC);
+    BASE_STAT_NAMES.put(ConsensusCreateTopic, CREATE_TOPIC_METRIC);
+    BASE_STAT_NAMES.put(ConsensusUpdateTopic, UPDATE_TOPIC_METRIC);
+    BASE_STAT_NAMES.put(ConsensusDeleteTopic, DELETE_TOPIC_METRIC);
+    BASE_STAT_NAMES.put(ConsensusSubmitMessage, SUBMIT_MESSAGE_METRIC);
+    BASE_STAT_NAMES.put(TokenCreate, TOKEN_CREATE_METRIC);
+    BASE_STAT_NAMES.put(TokenFreezeAccount, TOKEN_FREEZE_METRIC);
+    BASE_STAT_NAMES.put(TokenUnfreezeAccount, TOKEN_UNFREEZE_METRIC);
+    BASE_STAT_NAMES.put(TokenGrantKycToAccount, TOKEN_GRANT_KYC_METRIC);
+    BASE_STAT_NAMES.put(TokenRevokeKycFromAccount, TOKEN_REVOKE_KYC_METRIC);
+    BASE_STAT_NAMES.put(TokenDelete, TOKEN_DELETE_METRIC);
+    BASE_STAT_NAMES.put(TokenMint, TOKEN_MINT_METRIC);
+    BASE_STAT_NAMES.put(TokenBurn, TOKEN_BURN_METRIC);
+    BASE_STAT_NAMES.put(TokenAccountWipe, TOKEN_WIPE_ACCOUNT_METRIC);
+    BASE_STAT_NAMES.put(TokenUpdate, TOKEN_UPDATE_METRIC);
+    BASE_STAT_NAMES.put(TokenAssociateToAccount, TOKEN_ASSOCIATE_METRIC);
+    BASE_STAT_NAMES.put(TokenDissociateFromAccount, TOKEN_DISSOCIATE_METRIC);
+    BASE_STAT_NAMES.put(ScheduleCreate, SCHEDULE_CREATE_METRIC);
+    BASE_STAT_NAMES.put(ScheduleSign, SCHEDULE_SIGN_METRIC);
+    BASE_STAT_NAMES.put(ScheduleDelete, SCHEDULE_DELETE_METRIC);
+    BASE_STAT_NAMES.put(UncheckedSubmit, UNCHECKED_SUBMIT_METRIC);
+    BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
+    BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
+    BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
+    /* Queries */
+    BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
+    BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
+    BASE_STAT_NAMES.put(ContractCallLocal, LOCALCALL_CONTRACT_METRIC);
+    BASE_STAT_NAMES.put(ContractGetInfo, GET_CONTRACT_INFO_METRIC);
+    BASE_STAT_NAMES.put(ContractGetBytecode, GET_CONTRACT_BYTECODE_METRIC);
+    BASE_STAT_NAMES.put(ContractGetRecords, GET_CONTRACT_RECORDS_METRIC);
+    BASE_STAT_NAMES.put(CryptoGetAccountBalance, GET_ACCOUNT_BALANCE_METRIC);
+    BASE_STAT_NAMES.put(CryptoGetAccountRecords, GET_ACCOUNT_RECORDS_METRIC);
+    BASE_STAT_NAMES.put(CryptoGetInfo, GET_ACCOUNT_INFO_METRIC);
+    BASE_STAT_NAMES.put(CryptoGetLiveHash, GET_LIVE_HASH_METRIC);
+    BASE_STAT_NAMES.put(FileGetContents, GET_FILE_CONTENT_METRIC);
+    BASE_STAT_NAMES.put(FileGetInfo, GET_FILE_INFO_METRIC);
+    BASE_STAT_NAMES.put(TransactionGetReceipt, GET_RECEIPT_METRIC);
+    BASE_STAT_NAMES.put(TransactionGetRecord, GET_RECORD_METRIC);
+    BASE_STAT_NAMES.put(GetVersionInfo, GET_VERSION_INFO_METRIC);
+    BASE_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
+    BASE_STAT_NAMES.put(TokenGetNftInfo, TOKEN_GET_NFT_INFO_METRIC);
+    BASE_STAT_NAMES.put(TokenGetNftInfos, TOKEN_GET_NFT_INFOS_METRIC);
+    BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
+    BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
+    BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
+  }
 
-	public static String baseStatNameOf(HederaFunctionality function) {
-		return BASE_STAT_NAMES.getOrDefault(function, function.toString());
-	}
+  public static String baseStatNameOf(HederaFunctionality function) {
+    return BASE_STAT_NAMES.getOrDefault(function, function.toString());
+  }
 
-	public static List<AccountAmount> canonicalDiffRepr(List<AccountAmount> a, List<AccountAmount> b) {
-		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
-	}
+  public static List<AccountAmount> canonicalDiffRepr(
+      List<AccountAmount> a, List<AccountAmount> b) {
+    return canonicalRepr(
+        Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
+  }
 
-	private static AccountAmount negationOf(AccountAmount adjustment) {
-		return adjustment.toBuilder().setAmount(-1 * adjustment.getAmount()).build();
-	}
+  private static AccountAmount negationOf(AccountAmount adjustment) {
+    return adjustment.toBuilder().setAmount(-1 * adjustment.getAmount()).build();
+  }
 
-	public static List<AccountAmount> canonicalRepr(List<AccountAmount> transfers) {
-		return transfers.stream()
-				.collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount, Math::addExact))
-				.entrySet().stream()
-				.filter(e -> e.getValue() != 0)
-				.sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
-				.map(e -> AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
-				.collect(toList());
-	}
+  public static List<AccountAmount> canonicalRepr(List<AccountAmount> transfers) {
+    return transfers.stream()
+        .collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount, Math::addExact))
+        .entrySet()
+        .stream()
+        .filter(e -> e.getValue() != 0)
+        .sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
+        .map(
+            e ->
+                AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
+        .collect(toList());
+  }
 
-	public static String readableTransferList(TransferList accountAmounts) {
-		return accountAmounts.getAccountAmountsList()
-				.stream()
-				.map(aa -> String.format(
-						"%s %s %s%s",
-						EntityIdUtils.readableId(aa.getAccountID()),
-						aa.getAmount() < 0 ? "->" : "<-",
-						aa.getAmount() < 0 ? "-" : "+",
-						BigInteger.valueOf(aa.getAmount()).abs().toString()))
-				.collect(toList())
-				.toString();
-	}
+  public static String readableTransferList(TransferList accountAmounts) {
+    return accountAmounts.getAccountAmountsList().stream()
+        .map(
+            aa ->
+                String.format(
+                    "%s %s %s%s",
+                    EntityIdUtils.readableId(aa.getAccountID()),
+                    aa.getAmount() < 0 ? "->" : "<-",
+                    aa.getAmount() < 0 ? "-" : "+",
+                    BigInteger.valueOf(aa.getAmount()).abs().toString()))
+        .collect(toList())
+        .toString();
+  }
 
-	public static String readableNftTransferList(TokenTransferList tokenTransferList) {
-		return tokenTransferList.getNftTransfersList()
-				.stream()
-				.map(nftTransfer -> String.format(
-						"%s %s %s",
-						Long.valueOf(nftTransfer.getSerialNumber()).toString(),
-						EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
-						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
-				.collect(toList())
-				.toString();
-	}
+  public static String readableNftTransferList(TokenTransferList tokenTransferList) {
+    return tokenTransferList.getNftTransfersList().stream()
+        .map(
+            nftTransfer ->
+                String.format(
+                    "%s %s %s",
+                    Long.valueOf(nftTransfer.getSerialNumber()).toString(),
+                    EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
+                    EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
+        .collect(toList())
+        .toString();
+  }
 
-	public static JKey lookupInCustomStore(LegacyEd25519KeyReader b64Reader, String storeLoc, String kpId) {
-		try {
-			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
-		} catch (IllegalArgumentException e) {
-			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc,
-					kpId);
-			throw new IllegalArgumentException(msg, e);
-		}
-	}
+  public static JKey lookupInCustomStore(
+      LegacyEd25519KeyReader b64Reader, String storeLoc, String kpId) {
+    try {
+      return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
+    } catch (IllegalArgumentException e) {
+      var msg =
+          String.format(
+              "Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
+      throw new IllegalArgumentException(msg, e);
+    }
+  }
 
-	public static String readableProperty(Object o) {
-		if (o instanceof FCQueue) {
-			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
-		} else {
-			return o.toString();
-		}
-	}
+  public static String readableProperty(Object o) {
+    if (o instanceof FCQueue) {
+      return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o))
+          .toString();
+    } else {
+      return o.toString();
+    }
+  }
 
-	public static JKey asFcKeyUnchecked(Key key) {
-		try {
-			return JKey.mapKey(key);
-		} catch (DecoderException impermissible) {
-			throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
-		}
-	}
+  public static JKey asFcKeyUnchecked(Key key) {
+    try {
+      return JKey.mapKey(key);
+    } catch (DecoderException impermissible) {
+      throw new IllegalArgumentException(
+          "Key " + key + " should have been decode-able!", impermissible);
+    }
+  }
 
-	public static Optional<JKey> asUsableFcKey(Key key) {
-		try {
-			var fcKey = JKey.mapKey(key);
-			if (!fcKey.isValid()) {
-				return Optional.empty();
-			}
-			return Optional.of(fcKey);
-		} catch (DecoderException ignore) {
-			return Optional.empty();
-		}
-	}
+  public static Optional<JKey> asUsableFcKey(Key key) {
+    try {
+      var fcKey = JKey.mapKey(key);
+      if (!fcKey.isValid()) {
+        return Optional.empty();
+      }
+      return Optional.of(fcKey);
+    } catch (DecoderException ignore) {
+      return Optional.empty();
+    }
+  }
 
-	public static Key asKeyUnchecked(JKey fcKey) {
-		try {
-			return mapJKey(fcKey);
-		} catch (Exception impossible) {
-			return Key.getDefaultInstance();
-		}
-	}
+  public static Key asKeyUnchecked(JKey fcKey) {
+    try {
+      return mapJKey(fcKey);
+    } catch (Exception impossible) {
+      return Key.getDefaultInstance();
+    }
+  }
 
-	public static Timestamp asTimestamp(Instant when) {
-		return Timestamp.newBuilder()
-				.setSeconds(when.getEpochSecond())
-				.setNanos(when.getNano())
-				.build();
-	}
+  public static Timestamp asTimestamp(Instant when) {
+    return Timestamp.newBuilder()
+        .setSeconds(when.getEpochSecond())
+        .setNanos(when.getNano())
+        .build();
+  }
 
-	public static Instant timestampToInstant(Timestamp timestamp) {
-		return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
-	}
+  public static Instant timestampToInstant(Timestamp timestamp) {
+    return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+  }
 
-	public static Optional<QueryHeader> activeHeaderFrom(Query query) {
-		switch (query.getQueryCase()) {
-			case TOKENGETNFTINFO:
-				return Optional.of(query.getTokenGetNftInfo().getHeader());
-			case TOKENGETNFTINFOS:
-				return Optional.of(query.getTokenGetNftInfos().getHeader());
-			case TOKENGETACCOUNTNFTINFOS:
-				return Optional.of(query.getTokenGetAccountNftInfos().getHeader());
-			case TOKENGETINFO:
-				return Optional.of(query.getTokenGetInfo().getHeader());
-			case SCHEDULEGETINFO:
-				return Optional.of(query.getScheduleGetInfo().getHeader());
-			case CONSENSUSGETTOPICINFO:
-				return Optional.of(query.getConsensusGetTopicInfo().getHeader());
-			case GETBYSOLIDITYID:
-				return Optional.of(query.getGetBySolidityID().getHeader());
-			case CONTRACTCALLLOCAL:
-				return Optional.of(query.getContractCallLocal().getHeader());
-			case CONTRACTGETINFO:
-				return Optional.of(query.getContractGetInfo().getHeader());
-			case CONTRACTGETBYTECODE:
-				return Optional.of(query.getContractGetBytecode().getHeader());
-			case CONTRACTGETRECORDS:
-				return Optional.of(query.getContractGetRecords().getHeader());
-			case CRYPTOGETACCOUNTBALANCE:
-				return Optional.of(query.getCryptogetAccountBalance().getHeader());
-			case CRYPTOGETACCOUNTRECORDS:
-				return Optional.of(query.getCryptoGetAccountRecords().getHeader());
-			case CRYPTOGETINFO:
-				return Optional.of(query.getCryptoGetInfo().getHeader());
-			case CRYPTOGETLIVEHASH:
-				return Optional.of(query.getCryptoGetLiveHash().getHeader());
-			case CRYPTOGETPROXYSTAKERS:
-				return Optional.of(query.getCryptoGetProxyStakers().getHeader());
-			case FILEGETCONTENTS:
-				return Optional.of(query.getFileGetContents().getHeader());
-			case FILEGETINFO:
-				return Optional.of(query.getFileGetInfo().getHeader());
-			case TRANSACTIONGETRECEIPT:
-				return Optional.of(query.getTransactionGetReceipt().getHeader());
-			case TRANSACTIONGETRECORD:
-				return Optional.of(query.getTransactionGetRecord().getHeader());
-			case TRANSACTIONGETFASTRECORD:
-				return Optional.of(query.getTransactionGetFastRecord().getHeader());
-			case NETWORKGETVERSIONINFO:
-				return Optional.of(query.getNetworkGetVersionInfo().getHeader());
-			default:
-				return Optional.empty();
-		}
-	}
+  public static Optional<QueryHeader> activeHeaderFrom(Query query) {
+    switch (query.getQueryCase()) {
+      case TOKENGETNFTINFO:
+        return Optional.of(query.getTokenGetNftInfo().getHeader());
+      case TOKENGETNFTINFOS:
+        return Optional.of(query.getTokenGetNftInfos().getHeader());
+      case TOKENGETACCOUNTNFTINFOS:
+        return Optional.of(query.getTokenGetAccountNftInfos().getHeader());
+      case TOKENGETINFO:
+        return Optional.of(query.getTokenGetInfo().getHeader());
+      case SCHEDULEGETINFO:
+        return Optional.of(query.getScheduleGetInfo().getHeader());
+      case CONSENSUSGETTOPICINFO:
+        return Optional.of(query.getConsensusGetTopicInfo().getHeader());
+      case GETBYSOLIDITYID:
+        return Optional.of(query.getGetBySolidityID().getHeader());
+      case CONTRACTCALLLOCAL:
+        return Optional.of(query.getContractCallLocal().getHeader());
+      case CONTRACTGETINFO:
+        return Optional.of(query.getContractGetInfo().getHeader());
+      case CONTRACTGETBYTECODE:
+        return Optional.of(query.getContractGetBytecode().getHeader());
+      case CONTRACTGETRECORDS:
+        return Optional.of(query.getContractGetRecords().getHeader());
+      case CRYPTOGETACCOUNTBALANCE:
+        return Optional.of(query.getCryptogetAccountBalance().getHeader());
+      case CRYPTOGETACCOUNTRECORDS:
+        return Optional.of(query.getCryptoGetAccountRecords().getHeader());
+      case CRYPTOGETINFO:
+        return Optional.of(query.getCryptoGetInfo().getHeader());
+      case CRYPTOGETLIVEHASH:
+        return Optional.of(query.getCryptoGetLiveHash().getHeader());
+      case CRYPTOGETPROXYSTAKERS:
+        return Optional.of(query.getCryptoGetProxyStakers().getHeader());
+      case FILEGETCONTENTS:
+        return Optional.of(query.getFileGetContents().getHeader());
+      case FILEGETINFO:
+        return Optional.of(query.getFileGetInfo().getHeader());
+      case TRANSACTIONGETRECEIPT:
+        return Optional.of(query.getTransactionGetReceipt().getHeader());
+      case TRANSACTIONGETRECORD:
+        return Optional.of(query.getTransactionGetRecord().getHeader());
+      case TRANSACTIONGETFASTRECORD:
+        return Optional.of(query.getTransactionGetFastRecord().getHeader());
+      case NETWORKGETVERSIONINFO:
+        return Optional.of(query.getNetworkGetVersionInfo().getHeader());
+      default:
+        return Optional.empty();
+    }
+  }
 
-	static String getTxnStat(TransactionBody txn) {
-		try {
-			return BASE_STAT_NAMES.get(functionOf(txn));
-		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {
-			return "NotImplemented";
-		}
-	}
+  static String getTxnStat(TransactionBody txn) {
+    try {
+      return BASE_STAT_NAMES.get(functionOf(txn));
+    } catch (UnknownHederaFunctionality unknownHederaFunctionality) {
+      return "NotImplemented";
+    }
+  }
 
-	public static HederaFunctionality functionOf(TransactionBody txn) throws UnknownHederaFunctionality {
-		if (txn.hasSystemDelete()) {
-			return SystemDelete;
-		} else if (txn.hasSystemUndelete()) {
-			return SystemUndelete;
-		} else if (txn.hasContractCall()) {
-			return ContractCall;
-		} else if (txn.hasContractCreateInstance()) {
-			return ContractCreate;
-		} else if (txn.hasContractUpdateInstance()) {
-			return ContractUpdate;
-		} else if (txn.hasCryptoAddLiveHash()) {
-			return CryptoAddLiveHash;
-		} else if (txn.hasCryptoCreateAccount()) {
-			return CryptoCreate;
-		} else if (txn.hasCryptoDelete()) {
-			return CryptoDelete;
-		} else if (txn.hasCryptoDeleteLiveHash()) {
-			return CryptoDeleteLiveHash;
-		} else if (txn.hasCryptoTransfer()) {
-			return CryptoTransfer;
-		} else if (txn.hasCryptoUpdateAccount()) {
-			return CryptoUpdate;
-		} else if (txn.hasFileAppend()) {
-			return FileAppend;
-		} else if (txn.hasFileCreate()) {
-			return FileCreate;
-		} else if (txn.hasFileDelete()) {
-			return FileDelete;
-		} else if (txn.hasFileUpdate()) {
-			return FileUpdate;
-		} else if (txn.hasContractDeleteInstance()) {
-			return ContractDelete;
-		} else if (txn.hasFreeze()) {
-			return Freeze;
-		} else if (txn.hasConsensusCreateTopic()) {
-			return ConsensusCreateTopic;
-		} else if (txn.hasConsensusUpdateTopic()) {
-			return ConsensusUpdateTopic;
-		} else if (txn.hasConsensusDeleteTopic()) {
-			return ConsensusDeleteTopic;
-		} else if (txn.hasConsensusSubmitMessage()) {
-			return ConsensusSubmitMessage;
-		} else if (txn.hasTokenCreation()) {
-			return TokenCreate;
-		} else if (txn.hasTokenFreeze()) {
-			return TokenFreezeAccount;
-		} else if (txn.hasTokenUnfreeze()) {
-			return TokenUnfreezeAccount;
-		} else if (txn.hasTokenGrantKyc()) {
-			return TokenGrantKycToAccount;
-		} else if (txn.hasTokenRevokeKyc()) {
-			return TokenRevokeKycFromAccount;
-		} else if (txn.hasTokenDeletion()) {
-			return TokenDelete;
-		} else if (txn.hasTokenUpdate()) {
-			return TokenUpdate;
-		} else if (txn.hasTokenMint()) {
-			return TokenMint;
-		} else if (txn.hasTokenBurn()) {
-			return TokenBurn;
-		} else if (txn.hasTokenWipe()) {
-			return TokenAccountWipe;
-		} else if (txn.hasTokenAssociate()) {
-			return TokenAssociateToAccount;
-		} else if (txn.hasTokenDissociate()) {
-			return TokenDissociateFromAccount;
-		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return TokenFeeScheduleUpdate;
-		} else if (txn.hasScheduleCreate()) {
-			return ScheduleCreate;
-		} else if (txn.hasScheduleSign()) {
-			return ScheduleSign;
-		} else if (txn.hasScheduleDelete()) {
-			return ScheduleDelete;
-		} else if (txn.hasUncheckedSubmit()) {
-			return UncheckedSubmit;
-		} else {
-			throw new UnknownHederaFunctionality();
-		}
-	}
+  public static HederaFunctionality functionOf(TransactionBody txn)
+      throws UnknownHederaFunctionality {
+    if (txn.hasSystemDelete()) {
+      return SystemDelete;
+    } else if (txn.hasSystemUndelete()) {
+      return SystemUndelete;
+    } else if (txn.hasContractCall()) {
+      return ContractCall;
+    } else if (txn.hasContractCreateInstance()) {
+      return ContractCreate;
+    } else if (txn.hasContractUpdateInstance()) {
+      return ContractUpdate;
+    } else if (txn.hasCryptoAddLiveHash()) {
+      return CryptoAddLiveHash;
+    } else if (txn.hasCryptoCreateAccount()) {
+      return CryptoCreate;
+    } else if (txn.hasCryptoDelete()) {
+      return CryptoDelete;
+    } else if (txn.hasCryptoDeleteLiveHash()) {
+      return CryptoDeleteLiveHash;
+    } else if (txn.hasCryptoTransfer()) {
+      return CryptoTransfer;
+    } else if (txn.hasCryptoUpdateAccount()) {
+      return CryptoUpdate;
+    } else if (txn.hasFileAppend()) {
+      return FileAppend;
+    } else if (txn.hasFileCreate()) {
+      return FileCreate;
+    } else if (txn.hasFileDelete()) {
+      return FileDelete;
+    } else if (txn.hasFileUpdate()) {
+      return FileUpdate;
+    } else if (txn.hasContractDeleteInstance()) {
+      return ContractDelete;
+    } else if (txn.hasFreeze()) {
+      return Freeze;
+    } else if (txn.hasConsensusCreateTopic()) {
+      return ConsensusCreateTopic;
+    } else if (txn.hasConsensusUpdateTopic()) {
+      return ConsensusUpdateTopic;
+    } else if (txn.hasConsensusDeleteTopic()) {
+      return ConsensusDeleteTopic;
+    } else if (txn.hasConsensusSubmitMessage()) {
+      return ConsensusSubmitMessage;
+    } else if (txn.hasTokenCreation()) {
+      return TokenCreate;
+    } else if (txn.hasTokenFreeze()) {
+      return TokenFreezeAccount;
+    } else if (txn.hasTokenUnfreeze()) {
+      return TokenUnfreezeAccount;
+    } else if (txn.hasTokenGrantKyc()) {
+      return TokenGrantKycToAccount;
+    } else if (txn.hasTokenRevokeKyc()) {
+      return TokenRevokeKycFromAccount;
+    } else if (txn.hasTokenDeletion()) {
+      return TokenDelete;
+    } else if (txn.hasTokenUpdate()) {
+      return TokenUpdate;
+    } else if (txn.hasTokenMint()) {
+      return TokenMint;
+    } else if (txn.hasTokenBurn()) {
+      return TokenBurn;
+    } else if (txn.hasTokenWipe()) {
+      return TokenAccountWipe;
+    } else if (txn.hasTokenAssociate()) {
+      return TokenAssociateToAccount;
+    } else if (txn.hasTokenDissociate()) {
+      return TokenDissociateFromAccount;
+    } else if (txn.hasTokenFeeScheduleUpdate()) {
+      return TokenFeeScheduleUpdate;
+    } else if (txn.hasScheduleCreate()) {
+      return ScheduleCreate;
+    } else if (txn.hasScheduleSign()) {
+      return ScheduleSign;
+    } else if (txn.hasScheduleDelete()) {
+      return ScheduleDelete;
+    } else if (txn.hasUncheckedSubmit()) {
+      return UncheckedSubmit;
+    } else {
+      throw new UnknownHederaFunctionality();
+    }
+  }
 
-	public static Optional<HederaFunctionality> functionalityOfQuery(Query query) {
-		return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
-	}
+  public static Optional<HederaFunctionality> functionalityOfQuery(Query query) {
+    return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
+  }
 
-	public static String describe(JKey k) {
-		if (k == null) {
-			return "<N/A>";
-		} else {
-			Key readable = null;
-			try {
-				readable = mapJKey(k);
-			} catch (Exception ignore) {
-			}
-			return String.valueOf(readable);
-		}
-	}
+  public static String describe(JKey k) {
+    if (k == null) {
+      return "<N/A>";
+    } else {
+      Key readable = null;
+      try {
+        readable = mapJKey(k);
+      } catch (Exception ignore) {
+      }
+      return String.valueOf(readable);
+    }
+  }
 
-	public static Set<AccountID> getNodeAccounts(AddressBook addressBook) {
-		return IntStream.range(0, addressBook.getSize())
-				.mapToObj(addressBook::getAddress)
-				.map(address -> parseAccount(address.getMemo()))
-				.collect(toSet());
-	}
+  public static Set<AccountID> getNodeAccounts(AddressBook addressBook) {
+    return IntStream.range(0, addressBook.getSize())
+        .mapToObj(addressBook::getAddress)
+        .map(address -> parseAccount(address.getMemo()))
+        .collect(toSet());
+  }
 
-	public static TransactionBody asOrdinary(SchedulableTransactionBody scheduledTxn) {
-		var ordinary = TransactionBody.newBuilder();
-		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
-				.setMemo(scheduledTxn.getMemo());
-		if (scheduledTxn.hasContractCall()) {
-			ordinary.setContractCall(scheduledTxn.getContractCall());
-		} else if (scheduledTxn.hasContractCreateInstance()) {
-			ordinary.setContractCreateInstance(scheduledTxn.getContractCreateInstance());
-		} else if (scheduledTxn.hasContractUpdateInstance()) {
-			ordinary.setContractUpdateInstance(scheduledTxn.getContractUpdateInstance());
-		} else if (scheduledTxn.hasContractDeleteInstance()) {
-			ordinary.setContractDeleteInstance(scheduledTxn.getContractDeleteInstance());
-		} else if (scheduledTxn.hasCryptoCreateAccount()) {
-			ordinary.setCryptoCreateAccount(scheduledTxn.getCryptoCreateAccount());
-		} else if (scheduledTxn.hasCryptoDelete()) {
-			ordinary.setCryptoDelete(scheduledTxn.getCryptoDelete());
-		} else if (scheduledTxn.hasCryptoTransfer()) {
-			ordinary.setCryptoTransfer(scheduledTxn.getCryptoTransfer());
-		} else if (scheduledTxn.hasCryptoUpdateAccount()) {
-			ordinary.setCryptoUpdateAccount(scheduledTxn.getCryptoUpdateAccount());
-		} else if (scheduledTxn.hasFileAppend()) {
-			ordinary.setFileAppend(scheduledTxn.getFileAppend());
-		} else if (scheduledTxn.hasFileCreate()) {
-			ordinary.setFileCreate(scheduledTxn.getFileCreate());
-		} else if (scheduledTxn.hasFileDelete()) {
-			ordinary.setFileDelete(scheduledTxn.getFileDelete());
-		} else if (scheduledTxn.hasFileUpdate()) {
-			ordinary.setFileUpdate(scheduledTxn.getFileUpdate());
-		} else if (scheduledTxn.hasSystemDelete()) {
-			ordinary.setSystemDelete(scheduledTxn.getSystemDelete());
-		} else if (scheduledTxn.hasSystemUndelete()) {
-			ordinary.setSystemUndelete(scheduledTxn.getSystemUndelete());
-		} else if (scheduledTxn.hasFreeze()) {
-			ordinary.setFreeze(scheduledTxn.getFreeze());
-		} else if (scheduledTxn.hasConsensusCreateTopic()) {
-			ordinary.setConsensusCreateTopic(scheduledTxn.getConsensusCreateTopic());
-		} else if (scheduledTxn.hasConsensusUpdateTopic()) {
-			ordinary.setConsensusUpdateTopic(scheduledTxn.getConsensusUpdateTopic());
-		} else if (scheduledTxn.hasConsensusDeleteTopic()) {
-			ordinary.setConsensusDeleteTopic(scheduledTxn.getConsensusDeleteTopic());
-		} else if (scheduledTxn.hasConsensusSubmitMessage()) {
-			ordinary.setConsensusSubmitMessage(scheduledTxn.getConsensusSubmitMessage());
-		} else if (scheduledTxn.hasTokenCreation()) {
-			ordinary.setTokenCreation(scheduledTxn.getTokenCreation());
-		} else if (scheduledTxn.hasTokenFreeze()) {
-			ordinary.setTokenFreeze(scheduledTxn.getTokenFreeze());
-		} else if (scheduledTxn.hasTokenUnfreeze()) {
-			ordinary.setTokenUnfreeze(scheduledTxn.getTokenUnfreeze());
-		} else if (scheduledTxn.hasTokenGrantKyc()) {
-			ordinary.setTokenGrantKyc(scheduledTxn.getTokenGrantKyc());
-		} else if (scheduledTxn.hasTokenRevokeKyc()) {
-			ordinary.setTokenRevokeKyc(scheduledTxn.getTokenRevokeKyc());
-		} else if (scheduledTxn.hasTokenDeletion()) {
-			ordinary.setTokenDeletion(scheduledTxn.getTokenDeletion());
-		} else if (scheduledTxn.hasTokenUpdate()) {
-			ordinary.setTokenUpdate(scheduledTxn.getTokenUpdate());
-		} else if (scheduledTxn.hasTokenMint()) {
-			ordinary.setTokenMint(scheduledTxn.getTokenMint());
-		} else if (scheduledTxn.hasTokenBurn()) {
-			ordinary.setTokenBurn(scheduledTxn.getTokenBurn());
-		} else if (scheduledTxn.hasTokenWipe()) {
-			ordinary.setTokenWipe(scheduledTxn.getTokenWipe());
-		} else if (scheduledTxn.hasTokenAssociate()) {
-			ordinary.setTokenAssociate(scheduledTxn.getTokenAssociate());
-		} else if (scheduledTxn.hasTokenDissociate()) {
-			ordinary.setTokenDissociate(scheduledTxn.getTokenDissociate());
-		} else if (scheduledTxn.hasScheduleDelete()) {
-			ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
-		}
-		return ordinary.build();
-	}
+  public static TransactionBody asOrdinary(SchedulableTransactionBody scheduledTxn) {
+    var ordinary = TransactionBody.newBuilder();
+    ordinary.setTransactionFee(scheduledTxn.getTransactionFee()).setMemo(scheduledTxn.getMemo());
+    if (scheduledTxn.hasContractCall()) {
+      ordinary.setContractCall(scheduledTxn.getContractCall());
+    } else if (scheduledTxn.hasContractCreateInstance()) {
+      ordinary.setContractCreateInstance(scheduledTxn.getContractCreateInstance());
+    } else if (scheduledTxn.hasContractUpdateInstance()) {
+      ordinary.setContractUpdateInstance(scheduledTxn.getContractUpdateInstance());
+    } else if (scheduledTxn.hasContractDeleteInstance()) {
+      ordinary.setContractDeleteInstance(scheduledTxn.getContractDeleteInstance());
+    } else if (scheduledTxn.hasCryptoCreateAccount()) {
+      ordinary.setCryptoCreateAccount(scheduledTxn.getCryptoCreateAccount());
+    } else if (scheduledTxn.hasCryptoDelete()) {
+      ordinary.setCryptoDelete(scheduledTxn.getCryptoDelete());
+    } else if (scheduledTxn.hasCryptoTransfer()) {
+      ordinary.setCryptoTransfer(scheduledTxn.getCryptoTransfer());
+    } else if (scheduledTxn.hasCryptoUpdateAccount()) {
+      ordinary.setCryptoUpdateAccount(scheduledTxn.getCryptoUpdateAccount());
+    } else if (scheduledTxn.hasFileAppend()) {
+      ordinary.setFileAppend(scheduledTxn.getFileAppend());
+    } else if (scheduledTxn.hasFileCreate()) {
+      ordinary.setFileCreate(scheduledTxn.getFileCreate());
+    } else if (scheduledTxn.hasFileDelete()) {
+      ordinary.setFileDelete(scheduledTxn.getFileDelete());
+    } else if (scheduledTxn.hasFileUpdate()) {
+      ordinary.setFileUpdate(scheduledTxn.getFileUpdate());
+    } else if (scheduledTxn.hasSystemDelete()) {
+      ordinary.setSystemDelete(scheduledTxn.getSystemDelete());
+    } else if (scheduledTxn.hasSystemUndelete()) {
+      ordinary.setSystemUndelete(scheduledTxn.getSystemUndelete());
+    } else if (scheduledTxn.hasFreeze()) {
+      ordinary.setFreeze(scheduledTxn.getFreeze());
+    } else if (scheduledTxn.hasConsensusCreateTopic()) {
+      ordinary.setConsensusCreateTopic(scheduledTxn.getConsensusCreateTopic());
+    } else if (scheduledTxn.hasConsensusUpdateTopic()) {
+      ordinary.setConsensusUpdateTopic(scheduledTxn.getConsensusUpdateTopic());
+    } else if (scheduledTxn.hasConsensusDeleteTopic()) {
+      ordinary.setConsensusDeleteTopic(scheduledTxn.getConsensusDeleteTopic());
+    } else if (scheduledTxn.hasConsensusSubmitMessage()) {
+      ordinary.setConsensusSubmitMessage(scheduledTxn.getConsensusSubmitMessage());
+    } else if (scheduledTxn.hasTokenCreation()) {
+      ordinary.setTokenCreation(scheduledTxn.getTokenCreation());
+    } else if (scheduledTxn.hasTokenFreeze()) {
+      ordinary.setTokenFreeze(scheduledTxn.getTokenFreeze());
+    } else if (scheduledTxn.hasTokenUnfreeze()) {
+      ordinary.setTokenUnfreeze(scheduledTxn.getTokenUnfreeze());
+    } else if (scheduledTxn.hasTokenGrantKyc()) {
+      ordinary.setTokenGrantKyc(scheduledTxn.getTokenGrantKyc());
+    } else if (scheduledTxn.hasTokenRevokeKyc()) {
+      ordinary.setTokenRevokeKyc(scheduledTxn.getTokenRevokeKyc());
+    } else if (scheduledTxn.hasTokenDeletion()) {
+      ordinary.setTokenDeletion(scheduledTxn.getTokenDeletion());
+    } else if (scheduledTxn.hasTokenUpdate()) {
+      ordinary.setTokenUpdate(scheduledTxn.getTokenUpdate());
+    } else if (scheduledTxn.hasTokenMint()) {
+      ordinary.setTokenMint(scheduledTxn.getTokenMint());
+    } else if (scheduledTxn.hasTokenBurn()) {
+      ordinary.setTokenBurn(scheduledTxn.getTokenBurn());
+    } else if (scheduledTxn.hasTokenWipe()) {
+      ordinary.setTokenWipe(scheduledTxn.getTokenWipe());
+    } else if (scheduledTxn.hasTokenAssociate()) {
+      ordinary.setTokenAssociate(scheduledTxn.getTokenAssociate());
+    } else if (scheduledTxn.hasTokenDissociate()) {
+      ordinary.setTokenDissociate(scheduledTxn.getTokenDissociate());
+    } else if (scheduledTxn.hasScheduleDelete()) {
+      ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
+    }
+    return ordinary.build();
+  }
 
-	/**
-	 * A permutation (invertible function) on 64 bits. The constants were found
-	 * by automated search, to optimize avalanche. Avalanche means that for a
-	 * random number x, flipping bit i of x has about a 50 percent chance of
-	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
-	 * achieves a probability between 49.8 and 50.2 percent.
-	 *
-	 * @param x the value to permute
-	 * @return the avalanche-optimized permutation
-	 */
-	public static long perm64(long x) {
-		// Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
-		x += x <<  30;
-		x ^= x >>> 27;
-		x += x <<  16;
-		x ^= x >>> 20;
-		x += x <<   5;
-		x ^= x >>> 18;
-		x += x <<  10;
-		x ^= x >>> 24;
-		x += x <<  30;
-		return x;
-	}
-	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
-			FCMap<K, V> map,
-			BiConsumer<? super K, ? super V> action
-	) {
-		map.forEachNode((final MerkleNode node) -> {
-			if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
-				final MerklePair<K, V> pair = node.cast();
-				action.accept(pair.getKey(), pair.getValue());
-			}
-		});
-	}
+  /**
+   * A permutation (invertible function) on 64 bits. The constants were found by automated search,
+   * to optimize avalanche. Avalanche means that for a random number x, flipping bit i of x has
+   * about a 50 percent chance of flipping bit j of perm64(x). For each possible pair (i,j), this
+   * function achieves a probability between 49.8 and 50.2 percent.
+   *
+   * @param x the value to permute
+   * @return the avalanche-optimized permutation
+   */
+  public static long perm64(long x) {
+    // Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
+    x += x << 30;
+    x ^= x >>> 27;
+    x += x << 16;
+    x ^= x >>> 20;
+    x += x << 5;
+    x ^= x >>> 18;
+    x += x << 10;
+    x ^= x >>> 24;
+    x += x << 30;
+    return x;
+  }
+
+  public static <K extends MerkleNode, V extends MerkleNode> void forEach(
+      FCMap<K, V> map, BiConsumer<? super K, ? super V> action) {
+    map.forEachNode(
+        (final MerkleNode node) -> {
+          if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
+            final MerklePair<K, V> pair = node.cast();
+            action.accept(pair.getKey(), pair.getValue());
+          }
+        });
+  }
 }

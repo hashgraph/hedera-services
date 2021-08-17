@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.file.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,12 @@ package com.hedera.services.fees.calculation.file.txns;
  * limitations under the License.
  * ‍
  */
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
@@ -32,68 +38,62 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class FileAppendResourceUsageTest {
-	private SigValueObj sigUsage;
-	private FileFeeBuilder usageEstimator;
-	private FileAppendResourceUsage subject;
+  private SigValueObj sigUsage;
+  private FileFeeBuilder usageEstimator;
+  private FileAppendResourceUsage subject;
 
-	StateView view;
-	FileID fid = IdUtils.asFile("1.2.3");
+  StateView view;
+  FileID fid = IdUtils.asFile("1.2.3");
 
-	private TransactionBody nonFileAppendTxn;
-	private TransactionBody fileAppendTxn;
+  private TransactionBody nonFileAppendTxn;
+  private TransactionBody fileAppendTxn;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		FileAppendTransactionBody append = mock(FileAppendTransactionBody.class);
-		given(append.getFileID()).willReturn(fid);
-		fileAppendTxn = mock(TransactionBody.class);
-		given(fileAppendTxn.hasFileAppend()).willReturn(true);
-		given(fileAppendTxn.getFileAppend()).willReturn(append);
+  @BeforeEach
+  private void setup() throws Throwable {
+    FileAppendTransactionBody append = mock(FileAppendTransactionBody.class);
+    given(append.getFileID()).willReturn(fid);
+    fileAppendTxn = mock(TransactionBody.class);
+    given(fileAppendTxn.hasFileAppend()).willReturn(true);
+    given(fileAppendTxn.getFileAppend()).willReturn(append);
 
-		nonFileAppendTxn = mock(TransactionBody.class);
-		given(nonFileAppendTxn.hasFileAppend()).willReturn(false);
+    nonFileAppendTxn = mock(TransactionBody.class);
+    given(nonFileAppendTxn.hasFileAppend()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(FileFeeBuilder.class);
+    sigUsage = mock(SigValueObj.class);
+    usageEstimator = mock(FileFeeBuilder.class);
 
-		view = mock(StateView.class);
+    view = mock(StateView.class);
 
-		subject = new FileAppendResourceUsage(usageEstimator);
-	}
+    subject = new FileAppendResourceUsage(usageEstimator);
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(fileAppendTxn));
-		assertFalse(subject.applicableTo(nonFileAppendTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(fileAppendTxn));
+    assertFalse(subject.applicableTo(nonFileAppendTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// setup:
-		JKey wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
-		HFileMeta jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
-		// and:
-		Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    // setup:
+    JKey wacl =
+        JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
+    HFileMeta jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
+    // and:
+    Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 
-		given(view.attrOf(fid)).willReturn(Optional.of(jInfo));
+    given(view.attrOf(fid)).willReturn(Optional.of(jInfo));
 
-		// when:
-		subject.usageGiven(fileAppendTxn, sigUsage, view);
+    // when:
+    subject.usageGiven(fileAppendTxn, sigUsage, view);
 
-		// then:
-		verify(usageEstimator).getFileAppendTxFeeMatrices(fileAppendTxn, expiry, sigUsage);
-	}
+    // then:
+    verify(usageEstimator).getFileAppendTxFeeMatrices(fileAppendTxn, expiry, sigUsage);
+  }
 }

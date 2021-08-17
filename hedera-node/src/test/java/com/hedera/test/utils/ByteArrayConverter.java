@@ -25,17 +25,15 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
-/**
- * Convert hex string to byte array.
- */
+/** Convert hex string to byte array. */
 public final class ByteArrayConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext)
-			throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		return CommonUtils.unhex(inputString);
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    return CommonUtils.unhex(inputString);
+  }
 }

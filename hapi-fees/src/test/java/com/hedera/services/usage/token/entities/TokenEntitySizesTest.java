@@ -20,9 +20,6 @@ package com.hedera.services.usage.token.entities;
  * ‍
  */
 
-import com.hederahashgraph.fee.FeeBuilder;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
@@ -31,65 +28,76 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hederahashgraph.fee.FeeBuilder;
+import org.junit.jupiter.api.Test;
+
 class TokenEntitySizesTest {
-	private TokenEntitySizes subject = TokenEntitySizes.TOKEN_ENTITY_SIZES;
+  private TokenEntitySizes subject = TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
-	@Test
-	void sizesFixedAsExpected() {
-		// setup:
-		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * FeeBuilder.BOOL_SIZE
-				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
-				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
+  @Test
+  void sizesFixedAsExpected() {
+    // setup:
+    long expected =
+        NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * FeeBuilder.BOOL_SIZE
+            + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
+            + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+            + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 
-		// given:
-		long actual = subject.fixedBytesInTokenRepr();
+    // given:
+    long actual = subject.fixedBytesInTokenRepr();
 
-		// expect:
-		assertEquals(expected, actual);
-	}
+    // expect:
+    assertEquals(expected, actual);
+  }
 
-	@Test
-	void sizesAsExpected() {
-		// setup:
-		var symbol = "ABCDEFGH";
-		var name = "WhyWouldINameItThis";
-		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 4
-				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
-				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ symbol.getBytes().length + name.getBytes().length;
+  @Test
+  void sizesAsExpected() {
+    // setup:
+    var symbol = "ABCDEFGH";
+    var name = "WhyWouldINameItThis";
+    long expected =
+        NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 4
+            + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
+            + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+            + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE
+            + symbol.getBytes().length
+            + name.getBytes().length;
 
-		// given:
-		long actual = subject.totalBytesInTokenReprGiven(symbol, name);
+    // given:
+    long actual = subject.totalBytesInTokenReprGiven(symbol, name);
 
-		// expect:
-		assertEquals(expected, actual);
-	}
+    // expect:
+    assertEquals(expected, actual);
+  }
 
-	@Test
-	void understandsRecordTransfersSize() {
-		// setup:
-		int numTokens = 3, fungibleNumTransfers = 8, uniqueNumTransfers = 2;
+  @Test
+  void understandsRecordTransfersSize() {
+    // setup:
+    int numTokens = 3, fungibleNumTransfers = 8, uniqueNumTransfers = 2;
 
-		// given:
-		var expected = 3 * BASIC_ENTITY_ID_SIZE + 8 * (8 + BASIC_ENTITY_ID_SIZE) + 2 * (8 + 2 * BASIC_ENTITY_ID_SIZE);
+    // given:
+    var expected =
+        3 * BASIC_ENTITY_ID_SIZE
+            + 8 * (8 + BASIC_ENTITY_ID_SIZE)
+            + 2 * (8 + 2 * BASIC_ENTITY_ID_SIZE);
 
-		// then:
-		assertEquals(expected,
-				subject.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
-	}
+    // then:
+    assertEquals(
+        expected,
+        subject.bytesUsedToRecordTokenTransfers(
+            numTokens, fungibleNumTransfers, uniqueNumTransfers));
+  }
 
-	@Test
-	void returnsRequiredBytesForRel() {
-		// expect:
-		assertEquals(
-				3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * FeeBuilder.BOOL_SIZE,
-				subject.bytesUsedPerAccountRelationship());
-	}
+  @Test
+  void returnsRequiredBytesForRel() {
+    // expect:
+    assertEquals(
+        3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * FeeBuilder.BOOL_SIZE,
+        subject.bytesUsedPerAccountRelationship());
+  }
 
-	@Test
-	void returnsRequiredBytesForUniqueTokenTransfers() {
-		assertEquals(3 * (2L * 24 + 8), subject.bytesUsedForUniqueTokenTransfers(3));
-	}
+  @Test
+  void returnsRequiredBytesForUniqueTokenTransfers() {
+    assertEquals(3 * (2L * 24 + 8), subject.bytesUsedForUniqueTokenTransfers(3));
+  }
 }

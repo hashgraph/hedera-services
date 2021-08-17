@@ -20,62 +20,54 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-
-import javax.annotation.Nonnull;
 import java.util.Objects;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import javax.annotation.Nonnull;
 
 /**
- * Defines a final class to handle scheduled transaction execution once the scheduled transaction is signed by the
- * required number of parties.
+ * Defines a final class to handle scheduled transaction execution once the scheduled transaction is
+ * signed by the required number of parties.
  *
  * @author Michael Tinker
  * @author Abhishek Pandey
  */
 public final class ScheduleExecutor {
-	/**
-	 * Given a {@link ScheduleID}, {@link ScheduleStore}, {@link TransactionContext} it first checks if the underlying
-	 * transaction is already executed/deleted before attempting to execute and then returns response code after
-	 * triggering the underlying transaction. A ResponseEnumCode of OK is returned upon successful trigger of the
-	 * inner transaction. The arguments cannot be null, the return type would always be a proper ResponseEnumCode.
-	 *
-	 * @param id
-	 * 		the id of the scheduled transaction
-	 * @param store
-	 * 		the relevant store of schedule entities
-	 * @param context
-	 * 		the active (parent) transaction context
-	 * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
-	 */
-	ResponseCodeEnum processExecution(
-			@Nonnull ScheduleID id,
-			@Nonnull ScheduleStore store,
-			@Nonnull TransactionContext context
-	) throws InvalidProtocolBufferException {
-		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
-		Objects.requireNonNull(store, "The schedule entity store cannot be null");
-		Objects.requireNonNull(context, "The active transaction context cannot be null");
+  /**
+   * Given a {@link ScheduleID}, {@link ScheduleStore}, {@link TransactionContext} it first checks
+   * if the underlying transaction is already executed/deleted before attempting to execute and then
+   * returns response code after triggering the underlying transaction. A ResponseEnumCode of OK is
+   * returned upon successful trigger of the inner transaction. The arguments cannot be null, the
+   * return type would always be a proper ResponseEnumCode.
+   *
+   * @param id the id of the scheduled transaction
+   * @param store the relevant store of schedule entities
+   * @param context the active (parent) transaction context
+   * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
+   */
+  ResponseCodeEnum processExecution(
+      @Nonnull ScheduleID id, @Nonnull ScheduleStore store, @Nonnull TransactionContext context)
+      throws InvalidProtocolBufferException {
+    Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
+    Objects.requireNonNull(store, "The schedule entity store cannot be null");
+    Objects.requireNonNull(context, "The active transaction context cannot be null");
 
-		final var executionStatus = store.markAsExecuted(id);
-		if (executionStatus != OK) {
-			return executionStatus;
-		}
+    final var executionStatus = store.markAsExecuted(id);
+    if (executionStatus != OK) {
+      return executionStatus;
+    }
 
-		final var schedule = store.get(id);
-		final var transaction = schedule.asSignedTxn();
-		context.trigger(
-				new TriggeredTxnAccessor(
-						transaction.toByteArray(),
-						schedule.effectivePayer().toGrpcAccountId(),
-						id));
-		return OK;
-	}
+    final var schedule = store.get(id);
+    final var transaction = schedule.asSignedTxn();
+    context.trigger(
+        new TriggeredTxnAccessor(
+            transaction.toByteArray(), schedule.effectivePayer().toGrpcAccountId(), id));
+    return OK;
+  }
 }
-

@@ -9,9 +9,9 @@ package com.hederahashgraph.fee;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,14 +27,12 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.exception.InvalidTxBodyException;
-
 import java.util.List;
 
 /**
  * This class includes methods for generating Fee Matrices and calculating Fee for Crypto related
  * Transactions and Query.
  */
-
 public class CryptoFeeBuilder extends FeeBuilder {
 
   /**
@@ -42,7 +40,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
    *
    * @param txBody transaction body
    * @param sigValObj signature value object
-   *
    * @return fee data
    * @throws InvalidTxBodyException when transaction body is invalid
    */
@@ -65,14 +62,23 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int cryptoCreateSize = getCryptoCreateAccountBodyTxSize(txBody);
     bpt = txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
-    rbs = getCryptoRBS(txBody, cryptoCreateSize)
-        + calculateRBS(txBody); // TxRecord
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
+    rbs = getCryptoRBS(txBody, cryptoCreateSize) + calculateRBS(txBody); // TxRecord
+    long rbsNetwork =
+        getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     bpr = INT_SIZE;
 
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatricesForTx =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
     return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
   }
 
@@ -81,7 +87,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
    *
    * @param txBody transaction body
    * @param sigValObj signature value object
-   *
    * @return fee data
    * @throws InvalidTxBodyException when transaction body is invalid
    */
@@ -91,9 +96,8 @@ public class CryptoFeeBuilder extends FeeBuilder {
     /**
      * accountIDToDeleteFrom AccountID The account ID that should have a claim deleted
      *
-     * hashToDelete bytes The hash in the claim to delete (a SHA-384 hash, 48 bytes)
+     * <p>hashToDelete bytes The hash in the claim to delete (a SHA-384 hash, 48 bytes)
      */
-
     if (txBody == null || !txBody.hasCryptoDelete()) {
       throw new InvalidTxBodyException("CryptoCreate Tx Body not available for Fee Calculation");
     }
@@ -116,8 +120,17 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // TxRecord
     rbs = calculateRBS(txBody);
     long rbsNetwork = getDefaultRBHNetworkSize();
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatricesForTx =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
     return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
   }
@@ -147,9 +160,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     return rbsSize;
   }
 
-  /**
-   * This method returns the total bytes in Crypto Transaction body
-   */
+  /** This method returns the total bytes in Crypto Transaction body */
   private int getCryptoCreateAccountBodyTxSize(TransactionBody txBody) {
     /*
      * Key key - calculated value , uint64 initialBalance - LONG_SIZE, AccountID proxyAccountID - 3
@@ -169,7 +180,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int cryptoAcctBodySize = keySize + BASIC_ACCOUNT_SIZE + newRealmAdminKeySize;
 
     return cryptoAcctBodySize;
-
   }
 
   /**
@@ -202,14 +212,22 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * ResponseType - 4 bytes Transaction Record Size
      *
      */
-   
-    bpr = BASIC_QUERY_RES_HEADER ;
 
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    bpr = BASIC_QUERY_RES_HEADER;
+
+    FeeComponents feeMatrices =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
     return FeeData.getDefaultInstance();
-
   }
 
   /**
@@ -217,10 +235,10 @@ public class CryptoFeeBuilder extends FeeBuilder {
    *
    * @param transRecord transaction record
    * @param responseType response type
-   *
    * @return fee data
    */
-  public FeeData getTransactionRecordQueryFeeMatrices(TransactionRecord transRecord,ResponseType responseType) {
+  public FeeData getTransactionRecordQueryFeeMatrices(
+      TransactionRecord transRecord, ResponseType responseType) {
 
     if (transRecord == null) {
       return FeeData.getDefaultInstance();
@@ -252,11 +270,19 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     bpr = BASIC_QUERY_RES_HEADER + txRecordSize + getStateProofSize(responseType);
 
-   FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatrices =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
     return getQueryFeeDataMatrices(feeMatrices);
-
   }
 
   /**
@@ -264,10 +290,10 @@ public class CryptoFeeBuilder extends FeeBuilder {
    *
    * @param transRecord transaction record
    * @param responseType response type
-   *
    * @return fee data
    */
-  public FeeData getCryptoAccountRecordsQueryFeeMatrices(List<TransactionRecord> transRecord,ResponseType responseType) {
+  public FeeData getCryptoAccountRecordsQueryFeeMatrices(
+      List<TransactionRecord> transRecord, ResponseType responseType) {
 
     // get the Fee Matrices
     long bpt = 0;
@@ -301,9 +327,17 @@ public class CryptoFeeBuilder extends FeeBuilder {
     }
     bpr = BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
 
-    
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatrices =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
     return getQueryFeeDataMatrices(feeMatrices);
   }
@@ -345,12 +379,12 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int acountAmountSize = 0;
     if (transRecord.hasTransferList()) {
       int accountAmountCount = transRecord.getTransferList().getAccountAmountsCount();
-      acountAmountSize = accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8 bytes Amount)
+      acountAmountSize =
+          accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8 bytes Amount)
     }
 
     int txRecordSize = BASIC_TX_RECORD_SIZE + memoBytesSize + acountAmountSize;
 
     return txRecordSize;
-
   }
 }

@@ -33,130 +33,131 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-
 import java.util.List;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
-	NOOP_TOKEN_STORE;
+  NOOP_TOKEN_STORE;
 
-	@Override
-	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean isKnownTreasury(AccountID aId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public boolean isKnownTreasury(AccountID aId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public List<TokenID> listOfTokensServed(AccountID treasury) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public List<TokenID> listOfTokensServed(AccountID treasury) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean associationExists(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public boolean associationExists(AccountID aId, TokenID tId) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public CreationResult<TokenID> createProvisionally(
+      TokenCreateTransactionBody request, AccountID sponsor, long now) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void commitCreation() {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void commitCreation() {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void rollbackCreation() {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void rollbackCreation() {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean isCreationPending() {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public boolean isCreationPending() {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		/* No-op */
-	}
+  @Override
+  public void setAccountsLedger(
+      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+    /* No-op */
+  }
 
-	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		/* No-op */
-	}
+  @Override
+  public void setHederaLedger(HederaLedger ledger) {
+    /* No-op */
+  }
 
-	@Override
-	public void apply(TokenID id, Consumer<MerkleToken> change) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void apply(TokenID id, Consumer<MerkleToken> change) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean exists(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public boolean exists(TokenID id) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public MerkleToken get(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public MerkleToken get(TokenID id) {
+    throw new UnsupportedOperationException();
+  }
 }

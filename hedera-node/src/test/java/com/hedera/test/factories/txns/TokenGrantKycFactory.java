@@ -27,36 +27,34 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenGrantKycFactory extends SignedTxnFactory<TokenGrantKycFactory> {
-	private TokenGrantKycFactory() {}
+  private TokenGrantKycFactory() {}
 
-	private AccountID to;
-	private TokenID id;
+  private AccountID to;
+  private TokenID id;
 
-	public static TokenGrantKycFactory newSignedTokenGrantKyc() {
-		return new TokenGrantKycFactory();
-	}
+  public static TokenGrantKycFactory newSignedTokenGrantKyc() {
+    return new TokenGrantKycFactory();
+  }
 
-	public TokenGrantKycFactory granting(TokenID id, AccountID to) {
-		this.to = to;
-		this.id = id;
-		return this;
-	}
+  public TokenGrantKycFactory granting(TokenID id, AccountID to) {
+    this.to = to;
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenGrantKycFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenGrantKycFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenGrantKycTransactionBody.newBuilder()
-				.setToken(id)
-				.setAccount(to);
-		txn.setTokenGrantKyc(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenGrantKycTransactionBody.newBuilder().setToken(id).setAccount(to);
+    txn.setTokenGrantKyc(op);
+  }
 }

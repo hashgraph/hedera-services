@@ -20,17 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.DetachedAccountException;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.NonZeroNetTransfersException;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -44,171 +33,186 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.services.exceptions.DeletedAccountException;
+import com.hedera.services.exceptions.DetachedAccountException;
+import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.exceptions.NonZeroNetTransfersException;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.TransferList;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 public class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
-	@BeforeEach
-	private void setup() {
-		commonSetup();
-		setupWithMockLedger();
-	}
+  @BeforeEach
+  private void setup() {
+    commonSetup();
+    setupWithMockLedger();
+  }
 
-	@Test
-	void throwsOnNetTransfersIfNotInTxn() {
-		// setup:
-		doThrow(IllegalStateException.class).when(accountsLedger).throwIfNotInTxn();
+  @Test
+  void throwsOnNetTransfersIfNotInTxn() {
+    // setup:
+    doThrow(IllegalStateException.class).when(accountsLedger).throwIfNotInTxn();
 
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.netTransfersInTxn());
-	}
+    // expect:
+    assertThrows(IllegalStateException.class, () -> subject.netTransfersInTxn());
+  }
 
-	@Test
-	void throwsOnTransferWithDeletedFromAccount() {
-		// setup:
-		DeletedAccountException e = null;
+  @Test
+  void throwsOnTransferWithDeletedFromAccount() {
+    // setup:
+    DeletedAccountException e = null;
 
-		// when:
-		try {
-			subject.doTransfer(deleted, misc, 1L);
-		} catch (DeletedAccountException aide) {
-			e = aide;
-		}
+    // when:
+    try {
+      subject.doTransfer(deleted, misc, 1L);
+    } catch (DeletedAccountException aide) {
+      e = aide;
+    }
 
-		// then:
-		assertEquals("0.0.3456", e.getMessage());
-		verify(accountsLedger, never()).set(any(), any(), any());
-	}
+    // then:
+    assertEquals("0.0.3456", e.getMessage());
+    verify(accountsLedger, never()).set(any(), any(), any());
+  }
 
-	@Test
-	void throwsOnTransferWithDeletedToAccount() {
-		// setup:
-		DeletedAccountException e = null;
+  @Test
+  void throwsOnTransferWithDeletedToAccount() {
+    // setup:
+    DeletedAccountException e = null;
 
-		// when:
-		try {
-			subject.doTransfer(misc, deleted, 1L);
-		} catch (DeletedAccountException aide) {
-			e = aide;
-		}
+    // when:
+    try {
+      subject.doTransfer(misc, deleted, 1L);
+    } catch (DeletedAccountException aide) {
+      e = aide;
+    }
 
-		// then:
-		assertEquals("0.0.3456", e.getMessage());
-		verify(accountsLedger, never()).set(any(), any(), any());
-	}
+    // then:
+    assertEquals("0.0.3456", e.getMessage());
+    verify(accountsLedger, never()).set(any(), any(), any());
+  }
 
-	@Test
-	void throwsOnTransfersWithDeleted() {
-		// given:
-		TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, deleted, -2, genesis, 1);
-		DeletedAccountException e = null;
+  @Test
+  void throwsOnTransfersWithDeleted() {
+    // given:
+    TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, deleted, -2, genesis, 1);
+    DeletedAccountException e = null;
 
-		// expect:
-		try {
-			subject.doTransfers(accountAmounts);
-		} catch (DeletedAccountException aide) {
-			e = aide;
-		}
+    // expect:
+    try {
+      subject.doTransfers(accountAmounts);
+    } catch (DeletedAccountException aide) {
+      e = aide;
+    }
 
-		// then:
-		assertEquals("0.0.3456", e.getMessage());
-		verify(accountsLedger, never()).set(any(), any(), any());
-	}
+    // then:
+    assertEquals("0.0.3456", e.getMessage());
+    verify(accountsLedger, never()).set(any(), any(), any());
+  }
 
-	@Test
-	void throwsOnTransfersWithDetached() {
-		// setup:
-		TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
-		DetachedAccountException e = null;
-		var mockValidator = mock(OptionValidator.class);
+  @Test
+  void throwsOnTransfersWithDetached() {
+    // setup:
+    TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
+    DetachedAccountException e = null;
+    var mockValidator = mock(OptionValidator.class);
 
-		when(accountsLedger.get(detached, EXPIRY)).thenReturn(666L);
-		when(accountsLedger.get(detached, BALANCE)).thenReturn(0L);
-		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
-		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
+    when(accountsLedger.get(detached, EXPIRY)).thenReturn(666L);
+    when(accountsLedger.get(detached, BALANCE)).thenReturn(0L);
+    given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
+    given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
-		subject.setTokenRelsLedger(tokenRelsLedger);
+    subject =
+        new HederaLedger(
+            tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+    subject.setTokenRelsLedger(tokenRelsLedger);
 
-		// expect:
-		try {
-			subject.doTransfers(accountAmounts);
-		} catch (DetachedAccountException dae) {
-			e = dae;
-		}
+    // expect:
+    try {
+      subject.doTransfers(accountAmounts);
+    } catch (DetachedAccountException dae) {
+      e = dae;
+    }
 
-		// then:
-		assertEquals("0.0.4567", e.getMessage());
-		verify(accountsLedger, never()).set(any(), any(), any());
-	}
+    // then:
+    assertEquals("0.0.4567", e.getMessage());
+    verify(accountsLedger, never()).set(any(), any(), any());
+  }
 
-	@Test
-	void notDetachedUntilGivenChanceToRenew() {
-		// setup:
-		TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
-		DetachedAccountException e = null;
-		var mockValidator = mock(OptionValidator.class);
+  @Test
+  void notDetachedUntilGivenChanceToRenew() {
+    // setup:
+    TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
+    DetachedAccountException e = null;
+    var mockValidator = mock(OptionValidator.class);
 
-		when(accountsLedger.get(detached, EXPIRY)).thenReturn(666L);
-		when(accountsLedger.get(detached, BALANCE)).thenReturn(1L);
-		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
-		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
+    when(accountsLedger.get(detached, EXPIRY)).thenReturn(666L);
+    when(accountsLedger.get(detached, BALANCE)).thenReturn(1L);
+    given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
+    given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
-		subject.setTokenRelsLedger(tokenRelsLedger);
+    subject =
+        new HederaLedger(
+            tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+    subject.setTokenRelsLedger(tokenRelsLedger);
 
-		// expect:
-		Assertions.assertDoesNotThrow(() -> subject.doTransfers(accountAmounts));
-	}
+    // expect:
+    Assertions.assertDoesNotThrow(() -> subject.doTransfers(accountAmounts));
+  }
 
-	@Test
-	void doesReasonableTransfers() {
-		// given:
-		TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, rand, -2, genesis, 1);
+  @Test
+  void doesReasonableTransfers() {
+    // given:
+    TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, rand, -2, genesis, 1);
 
-		// expect:
-		subject.doTransfers(accountAmounts);
+    // expect:
+    subject.doTransfers(accountAmounts);
 
-		// then:
-		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + 1);
-		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 2);
-		verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE + 1);
-	}
+    // then:
+    verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + 1);
+    verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 2);
+    verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE + 1);
+  }
 
-	@Test
-	void throwsOnImpossibleTransfers() {
-		// given:
-		TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, rand, 2, genesis, 3);
+  @Test
+  void throwsOnImpossibleTransfers() {
+    // given:
+    TransferList accountAmounts = TxnUtils.withAdjustments(misc, 1, rand, 2, genesis, 3);
 
-		// expect:
-		assertThrows(NonZeroNetTransfersException.class, () -> subject.doTransfers(accountAmounts));
-	}
+    // expect:
+    assertThrows(NonZeroNetTransfersException.class, () -> subject.doTransfers(accountAmounts));
+  }
 
-	@Test
-	void doesReasonableTransfer() {
-		// setup:
-		long amount = 1_234L;
+  @Test
+  void doesReasonableTransfer() {
+    // setup:
+    long amount = 1_234L;
 
-		// when:
-		subject.doTransfer(genesis, misc, amount);
+    // when:
+    subject.doTransfer(genesis, misc, amount);
 
-		// then:
-		verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE - amount);
-		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + amount);
-	}
+    // then:
+    verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE - amount);
+    verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + amount);
+  }
 
-	@Test
-	void throwsOnImpossibleTransferWithBrokerPayer() {
-		// setup:
-		long amount = GENESIS_BALANCE + 1;
-		InsufficientFundsException e = null;
+  @Test
+  void throwsOnImpossibleTransferWithBrokerPayer() {
+    // setup:
+    long amount = GENESIS_BALANCE + 1;
+    InsufficientFundsException e = null;
 
-		// when:
-		try {
-			subject.doTransfer(genesis, misc, amount);
-		} catch (InsufficientFundsException ibce) {
-			e = ibce;
-		}
+    // when:
+    try {
+      subject.doTransfer(genesis, misc, amount);
+    } catch (InsufficientFundsException ibce) {
+      e = ibce;
+    }
 
-		// then:
-		assertEquals(messageFor(genesis, -1 * amount), e.getMessage());
-		verify(accountsLedger, never()).set(any(), any(), any());
-	}
+    // then:
+    assertEquals(messageFor(genesis, -1 * amount), e.getMessage());
+    verify(accountsLedger, never()).set(any(), any(), any());
+  }
 }

@@ -25,9 +25,8 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
@@ -35,57 +34,55 @@ import java.util.Optional;
  * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
-	private ExpirableTxnRecord lastExpirableRecord;
+  private ExpirableTxnRecord lastExpirableRecord;
 
-	private EntityCreator creator;
+  private EntityCreator creator;
 
-	private final RecordCache recordCache;
-	private final ExpiryManager expiries;
-	private final TransactionContext txnCtx;
+  private final RecordCache recordCache;
+  private final ExpiryManager expiries;
+  private final TransactionContext txnCtx;
 
-	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
-		this.expiries = expiries;
-		this.txnCtx = txnCtx;
-		this.recordCache = recordCache;
-	}
+  public TxnAwareRecordsHistorian(
+      RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
+    this.expiries = expiries;
+    this.txnCtx = txnCtx;
+    this.recordCache = recordCache;
+  }
 
-	@Override
-	public Optional<ExpirableTxnRecord> lastCreatedRecord() {
-		return Optional.ofNullable(lastExpirableRecord);
-	}
+  @Override
+  public Optional<ExpirableTxnRecord> lastCreatedRecord() {
+    return Optional.ofNullable(lastExpirableRecord);
+  }
 
-	@Override
-	public void setCreator(EntityCreator creator) {
-		this.creator = creator;
-	}
+  @Override
+  public void setCreator(EntityCreator creator) {
+    this.creator = creator;
+  }
 
-	@Override
-	public void finalizeExpirableTransactionRecord() {
-		lastExpirableRecord = txnCtx.recordSoFar();
-	}
+  @Override
+  public void finalizeExpirableTransactionRecord() {
+    lastExpirableRecord = txnCtx.recordSoFar();
+  }
 
-	@Override
-	public void saveExpirableTransactionRecord() {
-		long now = txnCtx.consensusTime().getEpochSecond();
-		long submittingMember = txnCtx.submittingSwirldsMember();
-		var accessor = txnCtx.accessor();
-		var payerRecord = creator.saveExpiringRecord(
-				txnCtx.effectivePayer(),
-				lastExpirableRecord,
-				now,
-				submittingMember);
-		recordCache.setPostConsensus(
-				accessor.getTxnId(),
-				ResponseCodeEnum.valueOf(lastExpirableRecord.getReceipt().getStatus()),
-				payerRecord);
-	}
+  @Override
+  public void saveExpirableTransactionRecord() {
+    long now = txnCtx.consensusTime().getEpochSecond();
+    long submittingMember = txnCtx.submittingSwirldsMember();
+    var accessor = txnCtx.accessor();
+    var payerRecord =
+        creator.saveExpiringRecord(
+            txnCtx.effectivePayer(), lastExpirableRecord, now, submittingMember);
+    recordCache.setPostConsensus(
+        accessor.getTxnId(),
+        ResponseCodeEnum.valueOf(lastExpirableRecord.getReceipt().getStatus()),
+        payerRecord);
+  }
 
-	@Override
-	public void noteNewExpirationEvents() {
-		for (var expiringEntity : txnCtx.expiringEntities()) {
-			expiries.trackExpirationEvent(
-					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),
-					expiringEntity.expiry());
-		}
-	}
+  @Override
+  public void noteNewExpirationEvents() {
+    for (var expiringEntity : txnCtx.expiringEntities()) {
+      expiries.trackExpirationEvent(
+          Pair.of(expiringEntity.id().num(), expiringEntity.consumer()), expiringEntity.expiry());
+    }
+  }
 }

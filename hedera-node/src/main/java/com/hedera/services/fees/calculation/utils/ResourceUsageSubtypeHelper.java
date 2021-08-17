@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.utils;
 
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenType;
-
 import java.util.Optional;
 
 /**
@@ -30,10 +29,10 @@ import java.util.Optional;
  * Defaulted to `TOKEN_FUNGIBLE_COMMON` unless its a `NON_FUNGIBLE_UNIQUE` token
  */
 public class ResourceUsageSubtypeHelper {
-	public SubType determineTokenType(Optional<TokenType> tokenType) {
-		if (tokenType.isPresent() && tokenType.get() == TokenType.NON_FUNGIBLE_UNIQUE) {
-			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-		}
-		return SubType.TOKEN_FUNGIBLE_COMMON;
-	}
+  public SubType determineTokenType(Optional<TokenType> tokenType) {
+    if (tokenType.isPresent() && tokenType.get() == TokenType.NON_FUNGIBLE_UNIQUE) {
+      return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+    }
+    return SubType.TOKEN_FUNGIBLE_COMMON;
+  }
 }

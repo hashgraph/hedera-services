@@ -20,24 +20,6 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -51,118 +33,132 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
- * Implements the {@link TransitionLogic} for a HAPI CryptoCreate transaction,
- * and the conditions under which such logic is syntactically correct. (It is
- * possible that the <i>semantics</i> of the transaction will still be wrong;
- * for example, if the sponsor account can no longer afford to fund the
- * initial balance of the new account.)
+ * Implements the {@link TransitionLogic} for a HAPI CryptoCreate transaction, and the conditions
+ * under which such logic is syntactically correct. (It is possible that the <i>semantics</i> of the
+ * transaction will still be wrong; for example, if the sponsor account can no longer afford to fund
+ * the initial balance of the new account.)
  *
  * @author Michael Tinker
  */
 public class CryptoCreateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
+  private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final HederaLedger ledger;
-	private final OptionValidator validator;
-	private final TransactionContext txnCtx;
+  private final HederaLedger ledger;
+  private final OptionValidator validator;
+  private final TransactionContext txnCtx;
 
-	public CryptoCreateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx
-	) {
-		this.ledger = ledger;
-		this.txnCtx = txnCtx;
-		this.validator = validator;
-	}
+  public CryptoCreateTransitionLogic(
+      HederaLedger ledger, OptionValidator validator, TransactionContext txnCtx) {
+    this.ledger = ledger;
+    this.txnCtx = txnCtx;
+    this.validator = validator;
+  }
 
-	@Override
-	public void doStateTransition() {
-		try {
-			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
+  @Override
+  public void doStateTransition() {
+    try {
+      TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
+      AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
 
-			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
-			long balance = op.getInitialBalance();
-			AccountID created = ledger.create(sponsor, balance, asCustomizer(op));
+      CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
+      long balance = op.getInitialBalance();
+      AccountID created = ledger.create(sponsor, balance, asCustomizer(op));
 
-			txnCtx.setCreated(created);
-			txnCtx.setStatus(SUCCESS);
-		} catch (InsufficientFundsException ife) {
-			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+      txnCtx.setCreated(created);
+      txnCtx.setStatus(SUCCESS);
+    } catch (InsufficientFundsException ife) {
+      txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
+    } catch (Exception e) {
+      log.warn("Avoidable exception!", e);
+      txnCtx.setStatus(FAIL_INVALID);
+    }
+  }
 
-	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
-		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
-		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
+  private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
+    long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
+    long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
 
-		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-		JKey key = asFcKeyUnchecked(op.getKey());
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
-				.key(key)
-				.memo(op.getMemo())
-				.expiry(expiry)
-				.autoRenewPeriod(autoRenewPeriod)
-				.isReceiverSigRequired(op.getReceiverSigRequired());
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
-		}
-		return customizer;
-	}
+    /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
+    JKey key = asFcKeyUnchecked(op.getKey());
+    HederaAccountCustomizer customizer =
+        new HederaAccountCustomizer()
+            .key(key)
+            .memo(op.getMemo())
+            .expiry(expiry)
+            .autoRenewPeriod(autoRenewPeriod)
+            .isReceiverSigRequired(op.getReceiverSigRequired());
+    if (op.hasProxyAccountID()) {
+      customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
+    }
+    return customizer;
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasCryptoCreateAccount;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasCryptoCreateAccount;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
-		CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
+  public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
+    CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 
-		var memoValidity = validator.memoCheck(op.getMemo());
-		if (memoValidity != OK) {
-			return memoValidity;
-		}
-		if (!op.hasKey()) {
-			return KEY_REQUIRED;
-		}
-		if (!validator.hasGoodEncoding(op.getKey())) {
-			return BAD_ENCODING;
-		}
-		var fcKey = asFcKeyUnchecked(op.getKey());
-		if (fcKey.isEmpty()) {
-			return KEY_REQUIRED;
-		}
-		if (!fcKey.isValid()) {
-			return BAD_ENCODING;
-		}
-		if (op.getInitialBalance() < 0L) {
-			return INVALID_INITIAL_BALANCE;
-		}
-		if (!op.hasAutoRenewPeriod()) {
-			return INVALID_RENEWAL_PERIOD;
-		}
-		if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-			return AUTORENEW_DURATION_NOT_IN_RANGE;
-		}
-		if (op.getSendRecordThreshold() < 0L) {
-			return INVALID_SEND_RECORD_THRESHOLD;
-		}
-		if (op.getReceiveRecordThreshold() < 0L) {
-			return INVALID_RECEIVE_RECORD_THRESHOLD;
-		}
+    var memoValidity = validator.memoCheck(op.getMemo());
+    if (memoValidity != OK) {
+      return memoValidity;
+    }
+    if (!op.hasKey()) {
+      return KEY_REQUIRED;
+    }
+    if (!validator.hasGoodEncoding(op.getKey())) {
+      return BAD_ENCODING;
+    }
+    var fcKey = asFcKeyUnchecked(op.getKey());
+    if (fcKey.isEmpty()) {
+      return KEY_REQUIRED;
+    }
+    if (!fcKey.isValid()) {
+      return BAD_ENCODING;
+    }
+    if (op.getInitialBalance() < 0L) {
+      return INVALID_INITIAL_BALANCE;
+    }
+    if (!op.hasAutoRenewPeriod()) {
+      return INVALID_RENEWAL_PERIOD;
+    }
+    if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+      return AUTORENEW_DURATION_NOT_IN_RANGE;
+    }
+    if (op.getSendRecordThreshold() < 0L) {
+      return INVALID_SEND_RECORD_THRESHOLD;
+    }
+    if (op.getReceiveRecordThreshold() < 0L) {
+      return INVALID_RECEIVE_RECORD_THRESHOLD;
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 }

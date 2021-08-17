@@ -30,118 +30,118 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class TransactionRecordService {
-	private final TransactionContext txnCtx;
+  private final TransactionContext txnCtx;
 
-	public TransactionRecordService(TransactionContext txnCtx) {
-		this.txnCtx = txnCtx;
-	}
+  public TransactionRecordService(TransactionContext txnCtx) {
+    this.txnCtx = txnCtx;
+  }
 
-	/**
-	 * Update the record of the active transaction with the changes to the
-	 * given token. There are three cases,
-	 * <ol>
-	 * <li>The token was just created, and the receipt should include its id.</li>
-	 * <li>The token's total supply has changed, and the receipt should include its new supply.</li>
-	 * <li>The token is of type {@link com.hedera.services.state.enums.TokenType} NON_FUNGIBLE_UNIQUE and Mint
-	 * operation was executed </li>
-	 * </ol>
-	 * Only the second and third is implemented at this time.
-	 *
-	 * @param token
-	 * 		the model of a changed token
-	 */
-	public void includeChangesToToken(Token token) {
-		if (token.hasChangedSupply()) {
-			txnCtx.setNewTotalSupply(token.getTotalSupply());
-		}
+  /**
+   * Update the record of the active transaction with the changes to the given token. There are
+   * three cases,
+   *
+   * <ol>
+   *   <li>The token was just created, and the receipt should include its id.
+   *   <li>The token's total supply has changed, and the receipt should include its new supply.
+   *   <li>The token is of type {@link com.hedera.services.state.enums.TokenType}
+   *       NON_FUNGIBLE_UNIQUE and Mint operation was executed
+   * </ol>
+   *
+   * Only the second and third is implemented at this time.
+   *
+   * @param token the model of a changed token
+   */
+  public void includeChangesToToken(Token token) {
+    if (token.hasChangedSupply()) {
+      txnCtx.setNewTotalSupply(token.getTotalSupply());
+    }
 
-		if (token.hasMintedUniqueTokens()) {
-			List<Long> serialNumbers = new ArrayList<>();
-			for (UniqueToken uniqueToken : token.mintedUniqueTokens()) {
-				serialNumbers.add(uniqueToken.getSerialNumber());
-			}
-			txnCtx.setCreated(serialNumbers);
-		}
-	}
+    if (token.hasMintedUniqueTokens()) {
+      List<Long> serialNumbers = new ArrayList<>();
+      for (UniqueToken uniqueToken : token.mintedUniqueTokens()) {
+        serialNumbers.add(uniqueToken.getSerialNumber());
+      }
+      txnCtx.setCreated(serialNumbers);
+    }
+  }
 
-	/**
-	 * Updates the record of the active transaction with the fungible token balance adjustments it caused.
-	 *
-	 * <b>MAJOR CAVEAT:</b> Assumes the active transaction doesn't change any non-fungible
-	 * unique token ownerships. This is valid for the current set of refactored HTS
-	 * operations, which apply to <i>either</i> unique or common tokens. But it will not
-	 * valid when CryptoTransfer is refactored!
-	 *
-	 * @param tokenRels
-	 * 		List of models of the changed relationships
-	 */
-	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
-		final Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
-		for (final var tokenRel : tokenRels) {
-			if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
-				continue;
-			}
-			final var tokenId = tokenRel.getToken().getId();
-			final var accountId = tokenRel.getAccount().getId();
+  /**
+   * Updates the record of the active transaction with the fungible token balance adjustments it
+   * caused.
+   *
+   * <p><b>MAJOR CAVEAT:</b> Assumes the active transaction doesn't change any non-fungible unique
+   * token ownerships. This is valid for the current set of refactored HTS operations, which apply
+   * to <i>either</i> unique or common tokens. But it will not valid when CryptoTransfer is
+   * refactored!
+   *
+   * @param tokenRels List of models of the changed relationships
+   */
+  public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
+    final Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
+    for (final var tokenRel : tokenRels) {
+      if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
+        continue;
+      }
+      final var tokenId = tokenRel.getToken().getId();
+      final var accountId = tokenRel.getAccount().getId();
 
-			final var builder = transferListMap.computeIfAbsent(
-					tokenId, ignore -> TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
-			builder.addTransfers(AccountAmount.newBuilder()
-					.setAccountID(accountId.asGrpcAccount())
-					.setAmount(tokenRel.getBalanceChange()));
-			transferListMap.put(tokenId, builder);
-		}
-		if (!transferListMap.isEmpty()) {
-			var transferList = new ArrayList<TokenTransferList>();
-			for (final var transferBuilder : transferListMap.values()) {
-				transferList.add(transferBuilder.build());
-			}
-			txnCtx.setTokenTransferLists(transferList);
-		}
-	}
+      final var builder =
+          transferListMap.computeIfAbsent(
+              tokenId, ignore -> TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
+      builder.addTransfers(
+          AccountAmount.newBuilder()
+              .setAccountID(accountId.asGrpcAccount())
+              .setAmount(tokenRel.getBalanceChange()));
+      transferListMap.put(tokenId, builder);
+    }
+    if (!transferListMap.isEmpty()) {
+      var transferList = new ArrayList<TokenTransferList>();
+      for (final var transferBuilder : transferListMap.values()) {
+        transferList.add(transferBuilder.build());
+      }
+      txnCtx.setTokenTransferLists(transferList);
+    }
+  }
 
-	/**
-	 * Updates the record of the active transaction with the ownership changes it caused.
-	 *
-	 * <b>MAJOR CAVEAT:</b> Assumes the active transaction doesn't adjust any fungible
-	 * common token balances. This is valid for the current set of refactored HTS
-	 * operations, which apply to <i>either</i> unique or common tokens. But it will not
-	 * valid when CryptoTransfer is refactored!
-	 *
-	 * @param ownershipTracker
-	 * 		the model of ownership changes
-	 */
-	public void includeOwnershipChanges(OwnershipTracker ownershipTracker) {
-		if (ownershipTracker.isEmpty()) {
-			return;
-		}
+  /**
+   * Updates the record of the active transaction with the ownership changes it caused.
+   *
+   * <p><b>MAJOR CAVEAT:</b> Assumes the active transaction doesn't adjust any fungible common token
+   * balances. This is valid for the current set of refactored HTS operations, which apply to
+   * <i>either</i> unique or common tokens. But it will not valid when CryptoTransfer is refactored!
+   *
+   * @param ownershipTracker the model of ownership changes
+   */
+  public void includeOwnershipChanges(OwnershipTracker ownershipTracker) {
+    if (ownershipTracker.isEmpty()) {
+      return;
+    }
 
-		List<TokenTransferList> transferLists = new ArrayList<>();
-		var changes = ownershipTracker.getChanges();
-		for (Id token : changes.keySet()) {
-			TokenID tokenID = token.asGrpcToken();
+    List<TokenTransferList> transferLists = new ArrayList<>();
+    var changes = ownershipTracker.getChanges();
+    for (Id token : changes.keySet()) {
+      TokenID tokenID = token.asGrpcToken();
 
-			List<NftTransfer> transfers = new ArrayList<>();
-			for (OwnershipTracker.Change change : changes.get(token)) {
-				Id previousOwner = change.getPreviousOwner();
-				Id newOwner = change.getNewOwner();
-				transfers.add(NftTransfer.newBuilder()
-						.setSenderAccountID(previousOwner.asGrpcAccount())
-						.setReceiverAccountID(newOwner.asGrpcAccount())
-						.setSerialNumber(change.getSerialNumber()).build());
-			}
-			transferLists.add(TokenTransferList.newBuilder()
-					.setToken(tokenID)
-					.addAllNftTransfers(transfers)
-					.build());
-		}
-		txnCtx.setTokenTransferLists(transferLists);
-	}
+      List<NftTransfer> transfers = new ArrayList<>();
+      for (OwnershipTracker.Change change : changes.get(token)) {
+        Id previousOwner = change.getPreviousOwner();
+        Id newOwner = change.getNewOwner();
+        transfers.add(
+            NftTransfer.newBuilder()
+                .setSenderAccountID(previousOwner.asGrpcAccount())
+                .setReceiverAccountID(newOwner.asGrpcAccount())
+                .setSerialNumber(change.getSerialNumber())
+                .build());
+      }
+      transferLists.add(
+          TokenTransferList.newBuilder().setToken(tokenID).addAllNftTransfers(transfers).build());
+    }
+    txnCtx.setTokenTransferLists(transferLists);
+  }
 }

@@ -20,6 +20,11 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
@@ -27,93 +32,96 @@ import com.swirlds.platform.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class MiscRunningAvgsTest {
-	double halfLife = 10.0;
-	Platform platform;
+  double halfLife = 10.0;
+  Platform platform;
 
-	RunningAvgFactory factory;
-	NodeLocalProperties properties;
+  RunningAvgFactory factory;
+  NodeLocalProperties properties;
 
-	MiscRunningAvgs subject;
+  MiscRunningAvgs subject;
 
-	@BeforeEach
-	void setup() throws Exception {
-		factory = mock(RunningAvgFactory.class);
-		platform = mock(Platform.class);
+  @BeforeEach
+  void setup() throws Exception {
+    factory = mock(RunningAvgFactory.class);
+    platform = mock(Platform.class);
 
-		properties = mock(NodeLocalProperties.class);
-		given(properties.statsRunningAvgHalfLifeSecs()).willReturn(halfLife);
+    properties = mock(NodeLocalProperties.class);
+    given(properties.statsRunningAvgHalfLifeSecs()).willReturn(halfLife);
 
-		subject = new MiscRunningAvgs(factory, properties);
-	}
+    subject = new MiscRunningAvgs(factory, properties);
+  }
 
-	@Test
-	void registersExpectedStatEntries() {
-		// setup:
-		StatEntry retries = mock(StatEntry.class);
-		StatEntry waitMs = mock(StatEntry.class);
-		StatEntry queueSizes = mock(StatEntry.class);
-		StatEntry submitSizes = mock(StatEntry.class);
+  @Test
+  void registersExpectedStatEntries() {
+    // setup:
+    StatEntry retries = mock(StatEntry.class);
+    StatEntry waitMs = mock(StatEntry.class);
+    StatEntry queueSizes = mock(StatEntry.class);
+    StatEntry submitSizes = mock(StatEntry.class);
 
-		given(factory.from(
-				argThat(MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES::equals),
-				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES::equals),
-				argThat(subject.accountLookupRetries::equals))).willReturn(retries);
-		given(factory.from(
-				argThat(MiscRunningAvgs.Names.ACCOUNT_RETRY_WAIT_MS::equals),
-				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
-				argThat(subject.accountRetryWaitMs::equals))).willReturn(waitMs);
-		given(factory.from(
-				argThat(MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
-				argThat(MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
-				argThat(subject.writeQueueSizeRecordStream::equals))).willReturn(queueSizes);
-		given(factory.from(
-				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
-				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
-				argThat(subject.handledSubmitMessageSize::equals))).willReturn(submitSizes);
+    given(
+            factory.from(
+                argThat(MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES::equals),
+                argThat(MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES::equals),
+                argThat(subject.accountLookupRetries::equals)))
+        .willReturn(retries);
+    given(
+            factory.from(
+                argThat(MiscRunningAvgs.Names.ACCOUNT_RETRY_WAIT_MS::equals),
+                argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
+                argThat(subject.accountRetryWaitMs::equals)))
+        .willReturn(waitMs);
+    given(
+            factory.from(
+                argThat(MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
+                argThat(MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
+                argThat(subject.writeQueueSizeRecordStream::equals)))
+        .willReturn(queueSizes);
+    given(
+            factory.from(
+                argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
+                argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
+                argThat(subject.handledSubmitMessageSize::equals)))
+        .willReturn(submitSizes);
 
-		// when:
-		subject.registerWith(platform);
+    // when:
+    subject.registerWith(platform);
 
-		// then:
-		verify(platform).addAppStatEntry(retries);
-		verify(platform).addAppStatEntry(waitMs);
-		verify(platform).addAppStatEntry(queueSizes);
-		verify(platform).addAppStatEntry(submitSizes);
-	}
+    // then:
+    verify(platform).addAppStatEntry(retries);
+    verify(platform).addAppStatEntry(waitMs);
+    verify(platform).addAppStatEntry(queueSizes);
+    verify(platform).addAppStatEntry(submitSizes);
+  }
 
-	@Test
-	void recordsToExpectedAvgs() {
-		// setup:
-		StatsRunningAverage retries = mock(StatsRunningAverage.class);
-		StatsRunningAverage waitMs = mock(StatsRunningAverage.class);
-		StatsRunningAverage queueSize = mock(StatsRunningAverage.class);
-		StatsRunningAverage submitSizes = mock(StatsRunningAverage.class);
-		StatsRunningAverage hashS = mock(StatsRunningAverage.class);
-		// and:
-		subject.accountLookupRetries = retries;
-		subject.accountRetryWaitMs = waitMs;
-		subject.handledSubmitMessageSize = submitSizes;
-		subject.writeQueueSizeRecordStream = queueSize;
-		subject.hashQueueSizeRecordStream = hashS;
+  @Test
+  void recordsToExpectedAvgs() {
+    // setup:
+    StatsRunningAverage retries = mock(StatsRunningAverage.class);
+    StatsRunningAverage waitMs = mock(StatsRunningAverage.class);
+    StatsRunningAverage queueSize = mock(StatsRunningAverage.class);
+    StatsRunningAverage submitSizes = mock(StatsRunningAverage.class);
+    StatsRunningAverage hashS = mock(StatsRunningAverage.class);
+    // and:
+    subject.accountLookupRetries = retries;
+    subject.accountRetryWaitMs = waitMs;
+    subject.handledSubmitMessageSize = submitSizes;
+    subject.writeQueueSizeRecordStream = queueSize;
+    subject.hashQueueSizeRecordStream = hashS;
 
-		// when:
-		subject.recordAccountLookupRetries(1);
-		subject.recordAccountRetryWaitMs(2.0);
-		subject.recordHandledSubmitMessageSize(3);
-		subject.writeQueueSizeRecordStream(4);
-		subject.hashQueueSizeRecordStream(5);
+    // when:
+    subject.recordAccountLookupRetries(1);
+    subject.recordAccountRetryWaitMs(2.0);
+    subject.recordHandledSubmitMessageSize(3);
+    subject.writeQueueSizeRecordStream(4);
+    subject.hashQueueSizeRecordStream(5);
 
-		// then:
-		verify(retries).recordValue(1.0);
-		verify(waitMs).recordValue(2.0);
-		verify(submitSizes).recordValue(3.0);
-		verify(queueSize).recordValue(4.0);
-		verify(hashS).recordValue(5);
-	}
+    // then:
+    verify(retries).recordValue(1.0);
+    verify(waitMs).recordValue(2.0);
+    verify(submitSizes).recordValue(3.0);
+    verify(queueSize).recordValue(4.0);
+    verify(hashS).recordValue(5);
+  }
 }

@@ -24,40 +24,38 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.Optional;
 
 public class ScheduleSigningMetadata {
-    private final Optional<JKey> adminKey;
-    private final Optional<AccountID> designatedPayer;
-    private final TransactionBody scheduledTxn;
+  private final Optional<JKey> adminKey;
+  private final Optional<AccountID> designatedPayer;
+  private final TransactionBody scheduledTxn;
 
-    public ScheduleSigningMetadata(
-            Optional<JKey> adminKey,
-            TransactionBody scheduledTxn,
-            Optional<AccountID> designatedPayer
-    ) {
-        this.adminKey = adminKey;
-        this.scheduledTxn = scheduledTxn;
-        this.designatedPayer = designatedPayer;
-    }
+  public ScheduleSigningMetadata(
+      Optional<JKey> adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {
+    this.adminKey = adminKey;
+    this.scheduledTxn = scheduledTxn;
+    this.designatedPayer = designatedPayer;
+  }
 
-    public static ScheduleSigningMetadata from(MerkleSchedule schedule) {
-        return new ScheduleSigningMetadata(
-                schedule.adminKey(),
-                schedule.ordinaryViewOfScheduledTxn(),
-                schedule.hasExplicitPayer() ? Optional.of(schedule.payer().toGrpcAccountId()) : Optional.empty());
-    }
+  public static ScheduleSigningMetadata from(MerkleSchedule schedule) {
+    return new ScheduleSigningMetadata(
+        schedule.adminKey(),
+        schedule.ordinaryViewOfScheduledTxn(),
+        schedule.hasExplicitPayer()
+            ? Optional.of(schedule.payer().toGrpcAccountId())
+            : Optional.empty());
+  }
 
-    public Optional<JKey> adminKey() {
-        return adminKey;
-    }
+  public Optional<JKey> adminKey() {
+    return adminKey;
+  }
 
-    public Optional<AccountID> overridePayer() {
-        return designatedPayer;
-    }
+  public Optional<AccountID> overridePayer() {
+    return designatedPayer;
+  }
 
-    public TransactionBody scheduledTxn() {
-        return scheduledTxn;
-    }
+  public TransactionBody scheduledTxn() {
+    return scheduledTxn;
+  }
 }

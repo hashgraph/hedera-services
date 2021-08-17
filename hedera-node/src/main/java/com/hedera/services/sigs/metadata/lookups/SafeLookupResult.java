@@ -20,12 +20,6 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
-import com.hedera.services.sigs.order.KeyOrderingFailure;
-
-import java.util.EnumMap;
-import java.util.Optional;
-
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
@@ -36,60 +30,65 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 
+import com.google.common.base.MoreObjects;
+import com.hedera.services.sigs.order.KeyOrderingFailure;
+import java.util.EnumMap;
+import java.util.Optional;
+
 /**
- * Defines a type able to look up metadata associated to the signing activities
- * of any Hedera entity (account, smart contract, or file).
+ * Defines a type able to look up metadata associated to the signing activities of any Hedera entity
+ * (account, smart contract, or file).
  *
  * @author Michael Tinker
  */
 public class SafeLookupResult<T> {
-	private final Optional<T> metadata;
-	private final KeyOrderingFailure failure;
+  private final Optional<T> metadata;
+  private final KeyOrderingFailure failure;
 
-	private static final EnumMap<KeyOrderingFailure, SafeLookupResult<?>> KNOWN_FAILURES =
-			new EnumMap<>(KeyOrderingFailure.class);
-	static {
-		KNOWN_FAILURES.put(MISSING_FILE, new SafeLookupResult<>(MISSING_FILE));
-		KNOWN_FAILURES.put(MISSING_TOKEN, new SafeLookupResult<>(MISSING_TOKEN));
-		KNOWN_FAILURES.put(MISSING_ACCOUNT, new SafeLookupResult<>(MISSING_ACCOUNT));
-		KNOWN_FAILURES.put(INVALID_CONTRACT, new SafeLookupResult<>(INVALID_CONTRACT));
-		KNOWN_FAILURES.put(IMMUTABLE_CONTRACT, new SafeLookupResult<>(IMMUTABLE_CONTRACT));
-		KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
-		KNOWN_FAILURES.put(MISSING_AUTORENEW_ACCOUNT, new SafeLookupResult<>(MISSING_AUTORENEW_ACCOUNT));
-		KNOWN_FAILURES.put(MISSING_SCHEDULE, new SafeLookupResult<>(MISSING_SCHEDULE));
-	}
+  private static final EnumMap<KeyOrderingFailure, SafeLookupResult<?>> KNOWN_FAILURES =
+      new EnumMap<>(KeyOrderingFailure.class);
 
-	private SafeLookupResult(KeyOrderingFailure failure) {
-		this.failure = failure;
-		metadata = Optional.empty();
-	}
+  static {
+    KNOWN_FAILURES.put(MISSING_FILE, new SafeLookupResult<>(MISSING_FILE));
+    KNOWN_FAILURES.put(MISSING_TOKEN, new SafeLookupResult<>(MISSING_TOKEN));
+    KNOWN_FAILURES.put(MISSING_ACCOUNT, new SafeLookupResult<>(MISSING_ACCOUNT));
+    KNOWN_FAILURES.put(INVALID_CONTRACT, new SafeLookupResult<>(INVALID_CONTRACT));
+    KNOWN_FAILURES.put(IMMUTABLE_CONTRACT, new SafeLookupResult<>(IMMUTABLE_CONTRACT));
+    KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
+    KNOWN_FAILURES.put(
+        MISSING_AUTORENEW_ACCOUNT, new SafeLookupResult<>(MISSING_AUTORENEW_ACCOUNT));
+    KNOWN_FAILURES.put(MISSING_SCHEDULE, new SafeLookupResult<>(MISSING_SCHEDULE));
+  }
 
-	public SafeLookupResult(T metadata) {
-		this.failure = NONE;
-		this.metadata = Optional.of(metadata);
-	}
+  private SafeLookupResult(KeyOrderingFailure failure) {
+    this.failure = failure;
+    metadata = Optional.empty();
+  }
 
-	@SuppressWarnings("unchecked")
-	public static <R> SafeLookupResult<R> failure(KeyOrderingFailure type) {
-		return (SafeLookupResult<R>)KNOWN_FAILURES.get(type);
-	}
+  public SafeLookupResult(T metadata) {
+    this.failure = NONE;
+    this.metadata = Optional.of(metadata);
+  }
 
-	public boolean succeeded() {
-		return metadata.isPresent();
-	}
+  @SuppressWarnings("unchecked")
+  public static <R> SafeLookupResult<R> failure(KeyOrderingFailure type) {
+    return (SafeLookupResult<R>) KNOWN_FAILURES.get(type);
+  }
 
-	public KeyOrderingFailure failureIfAny() {
-		return failure;
-	}
+  public boolean succeeded() {
+    return metadata.isPresent();
+  }
 
-	public T metadata() {
-		return metadata.get();
-	}
+  public KeyOrderingFailure failureIfAny() {
+    return failure;
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(SafeLookupResult.class)
-				.add("failure", failure)
-				.toString();
-	}
+  public T metadata() {
+    return metadata.get();
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(SafeLookupResult.class).add("failure", failure).toString();
+  }
 }

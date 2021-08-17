@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,29 @@ package com.hedera.services.txns.crypto;
  * limitations under the License.
  * ‍
  */
+
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -35,261 +58,238 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
+import javax.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
-import java.time.Instant;
-
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
-
 @ExtendWith(LogCaptureExtension.class)
 class CryptoDeleteTransitionLogicTest {
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
-	final private boolean withKnownTreasury = true;
+  private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+  private final AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+  private final boolean withKnownTreasury = true;
 
-	private HederaLedger ledger;
-	private TransactionBody cryptoDeleteTxn;
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+  private HederaLedger ledger;
+  private TransactionBody cryptoDeleteTxn;
+  private TransactionContext txnCtx;
+  private PlatformTxnAccessor accessor;
 
-	@Inject
-	private LogCaptor logCaptor;
-	@LoggingSubject
-	private CryptoDeleteTransitionLogic subject;
+  @Inject private LogCaptor logCaptor;
+  @LoggingSubject private CryptoDeleteTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		txnCtx = mock(TransactionContext.class);
-		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+  @BeforeEach
+  private void setup() {
+    txnCtx = mock(TransactionContext.class);
+    ledger = mock(HederaLedger.class);
+    accessor = mock(PlatformTxnAccessor.class);
 
-		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
+    given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		subject = new CryptoDeleteTransitionLogic(ledger, txnCtx);
-	}
+    subject = new CryptoDeleteTransitionLogic(ledger, txnCtx);
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(cryptoDeleteTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(cryptoDeleteTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void rejectsTargetAsBeneficiary() {
-		givenValidTxnCtx(target);
+  @Test
+  void rejectsTargetAsBeneficiary() {
+    givenValidTxnCtx(target);
 
-		// expect:
-		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.semanticCheck().apply(cryptoDeleteTxn));
-	}
+    // expect:
+    assertEquals(
+        TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.semanticCheck().apply(cryptoDeleteTxn));
+  }
 
-	@Test
-	void acceptsValidTxn() {
-		givenValidTxnCtx();
+  @Test
+  void acceptsValidTxn() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(cryptoDeleteTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(cryptoDeleteTxn));
+  }
 
-	@Test
-	void translatesMissingAccount() {
-		givenValidTxnCtx();
-		willThrow(MissingAccountException.class).given(ledger).delete(any(), any());
+  @Test
+  void translatesMissingAccount() {
+    givenValidTxnCtx();
+    willThrow(MissingAccountException.class).given(ledger).delete(any(), any());
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
-	}
+    // then:
+    verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+  }
 
-	@Test
-	void translatesDeletedAccount() {
-		givenValidTxnCtx();
-		willThrow(DeletedAccountException.class).given(ledger).delete(any(), any());
+  @Test
+  void translatesDeletedAccount() {
+    givenValidTxnCtx();
+    willThrow(DeletedAccountException.class).given(ledger).delete(any(), any());
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(ACCOUNT_DELETED);
-	}
+    // then:
+    verify(txnCtx).setStatus(ACCOUNT_DELETED);
+  }
 
-	@Test
-	void followsHappyPath() {
-		givenValidTxnCtx();
+  @Test
+  void followsHappyPath() {
+    givenValidTxnCtx();
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(ledger).delete(target, payer);
-		verify(txnCtx).setStatus(SUCCESS);
-	}
+    // then:
+    verify(ledger).delete(target, payer);
+    verify(txnCtx).setStatus(SUCCESS);
+  }
 
-	@Test
-	void rejectsDetachedAccountAsTarget() {
-		// setup:
-		givenValidTxnCtx();
-		given(ledger.isDetached(target)).willReturn(true);
+  @Test
+  void rejectsDetachedAccountAsTarget() {
+    // setup:
+    givenValidTxnCtx();
+    given(ledger.isDetached(target)).willReturn(true);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// when:
-		verify(ledger, never()).delete(target, payer);
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-	}
+    // when:
+    verify(ledger, never()).delete(target, payer);
+    verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+  }
 
-	@Test
-	void rejectsDetachedAccountAsReceiver() {
-		// setup:
-		var receiver = IdUtils.asAccount("0.0.7676");
+  @Test
+  void rejectsDetachedAccountAsReceiver() {
+    // setup:
+    var receiver = IdUtils.asAccount("0.0.7676");
 
-		givenValidTxnCtx(receiver);
-		given(ledger.isDetached(receiver)).willReturn(true);
+    givenValidTxnCtx(receiver);
+    given(ledger.isDetached(receiver)).willReturn(true);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// when:
-		verify(ledger, never()).delete(target, receiver);
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-	}
+    // when:
+    verify(ledger, never()).delete(target, receiver);
+    verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+  }
 
-	@Test
-	void capturesFailInvalid() {
-		// setup:
-		givenValidTxnCtx();
-		given(ledger.isKnownTreasury(target)).willThrow(RuntimeException.class);
-		// and:
-		var desired = "Avoidable exception! java.lang.RuntimeException: null";
+  @Test
+  void capturesFailInvalid() {
+    // setup:
+    givenValidTxnCtx();
+    given(ledger.isKnownTreasury(target)).willThrow(RuntimeException.class);
+    // and:
+    var desired = "Avoidable exception! java.lang.RuntimeException: null";
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// when:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-		assertThat(logCaptor.warnLogs(), contains(desired));
-	}
+    // when:
+    verify(txnCtx).setStatus(FAIL_INVALID);
+    assertThat(logCaptor.warnLogs(), contains(desired));
+  }
 
-	@Test
-	void rejectsDeletionOfKnownTreasury() {
-		// setup:
-		givenValidTxnCtx();
-		given(ledger.isKnownTreasury(target)).willReturn(withKnownTreasury);
+  @Test
+  void rejectsDeletionOfKnownTreasury() {
+    // setup:
+    givenValidTxnCtx();
+    given(ledger.isKnownTreasury(target)).willReturn(withKnownTreasury);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// when:
-		verify(ledger, never()).delete(target, payer);
-		verify(txnCtx).setStatus(ACCOUNT_IS_TREASURY);
-	}
+    // when:
+    verify(ledger, never()).delete(target, payer);
+    verify(txnCtx).setStatus(ACCOUNT_IS_TREASURY);
+  }
 
-	@Test
-	void rejectsIfTargetHasNonZeroTokenBalances() {
-		givenValidTxnCtx();
-		given(ledger.allTokenBalancesVanish(target)).willReturn(false);
+  @Test
+  void rejectsIfTargetHasNonZeroTokenBalances() {
+    givenValidTxnCtx();
+    given(ledger.allTokenBalancesVanish(target)).willReturn(false);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(ledger, never()).delete(target, payer);
-		verify(txnCtx).setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-	}
+    // then:
+    verify(ledger, never()).delete(target, payer);
+    verify(txnCtx).setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+  }
 
-	@Test
-	void rejectsIfTargetMissing() {
-		givenDeleteTxnMissingTarget();
+  @Test
+  void rejectsIfTargetMissing() {
+    givenDeleteTxnMissingTarget();
 
-		// when:
-		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
+    // when:
+    ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
 
-		// then:
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
-	}
+    // then:
+    assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
+  }
 
-	@Test
-	void rejectsIfTransferMissing() {
-		givenDeleteTxnMissingTransfer();
+  @Test
+  void rejectsIfTransferMissing() {
+    givenDeleteTxnMissingTransfer();
 
-		// when:
-		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
+    // when:
+    ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
 
-		// then:
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
-	}
+    // then:
+    assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
+  }
 
-	private void givenValidTxnCtx() {
-		givenValidTxnCtx(payer);
-	}
+  private void givenValidTxnCtx() {
+    givenValidTxnCtx(payer);
+  }
 
-	private void givenValidTxnCtx(AccountID transfer) {
-		cryptoDeleteTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoDelete(
-						CryptoDeleteTransactionBody.newBuilder()
-								.setDeleteAccountID(target)
-								.setTransferAccountID(transfer)
-								.build()
-				).build();
-		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-	}
+  private void givenValidTxnCtx(AccountID transfer) {
+    cryptoDeleteTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(ourTxnId())
+            .setCryptoDelete(
+                CryptoDeleteTransactionBody.newBuilder()
+                    .setDeleteAccountID(target)
+                    .setTransferAccountID(transfer)
+                    .build())
+            .build();
+    given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+  }
 
-	private void givenDeleteTxnMissingTarget() {
-		cryptoDeleteTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoDelete(
-						CryptoDeleteTransactionBody.newBuilder()
-								.setTransferAccountID(asAccount("0.0.1234"))
-								.build()
-				).build();
-	}
+  private void givenDeleteTxnMissingTarget() {
+    cryptoDeleteTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(ourTxnId())
+            .setCryptoDelete(
+                CryptoDeleteTransactionBody.newBuilder()
+                    .setTransferAccountID(asAccount("0.0.1234"))
+                    .build())
+            .build();
+  }
 
-	private void givenDeleteTxnMissingTransfer() {
-		cryptoDeleteTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoDelete(
-						CryptoDeleteTransactionBody.newBuilder()
-								.setDeleteAccountID(asAccount("0.0.1234"))
-								.build()
-				).build();
-	}
+  private void givenDeleteTxnMissingTransfer() {
+    cryptoDeleteTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(ourTxnId())
+            .setCryptoDelete(
+                CryptoDeleteTransactionBody.newBuilder()
+                    .setDeleteAccountID(asAccount("0.0.1234"))
+                    .build())
+            .build();
+  }
 
-	private TransactionID ourTxnId() {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
-				.build();
-	}
+  private TransactionID ourTxnId() {
+    return TransactionID.newBuilder()
+        .setAccountID(payer)
+        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
+        .build();
+  }
 }

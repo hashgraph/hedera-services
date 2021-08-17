@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,26 @@ package com.hedera.services.txns.schedule;
  * limitations under the License.
  * ‍
  */
+
+import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
@@ -43,346 +63,328 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 class ScheduleCreateTransitionLogicTest {
-	long thisSecond = 1_234_567L;
-	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private byte[] bodyBytes = TransactionBody.newBuilder()
-			.setMemo("Just this")
-			.build()
-			.toByteArray();
-	final TransactionID scheduledTxnId = TransactionID.newBuilder()
-			.setAccountID(IdUtils.asAccount("0.0.2"))
-			.setScheduled(true)
-			.build();
+  long thisSecond = 1_234_567L;
+  private Instant now = Instant.ofEpochSecond(thisSecond);
+  private byte[] bodyBytes =
+      TransactionBody.newBuilder().setMemo("Just this").build().toByteArray();
+  final TransactionID scheduledTxnId =
+      TransactionID.newBuilder()
+          .setAccountID(IdUtils.asAccount("0.0.2"))
+          .setScheduled(true)
+          .build();
 
-	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	private final Key invalidKey = Key.newBuilder().build();
+  private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
+  private final Key invalidKey = Key.newBuilder().build();
 
-	private OptionValidator validator;
-	private ScheduleStore store;
-	private MerkleSchedule merkleSchedule;
-	private PlatformTxnAccessor accessor;
-	private TransactionContext txnCtx;
-	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
-	private ScheduleExecutor executor;
+  private OptionValidator validator;
+  private ScheduleStore store;
+  private MerkleSchedule merkleSchedule;
+  private PlatformTxnAccessor accessor;
+  private TransactionContext txnCtx;
+  private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
+  private ScheduleExecutor executor;
 
-	private boolean adminKeyActuallySkipped = false;
-	private boolean invalidAdminKeyIsSentinelKeyList = false;
-	private AccountID payer = IdUtils.asAccount("1.2.3");
-	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
-	private String entityMemo = "some cool memo?";
-	private String innerMemo = "Strictly business now";
+  private boolean adminKeyActuallySkipped = false;
+  private boolean invalidAdminKeyIsSentinelKeyList = false;
+  private AccountID payer = IdUtils.asAccount("1.2.3");
+  private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
+  private String entityMemo = "some cool memo?";
+  private String innerMemo = "Strictly business now";
 
-	private TransactionID txnId;
-	private TransactionBody scheduleCreateTxn;
-	private InHandleActivationHelper activationHelper;
-	private SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
+  private TransactionID txnId;
+  private TransactionBody scheduleCreateTxn;
+  private InHandleActivationHelper activationHelper;
+  private SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
 
-	private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
-	private Optional<JKey> jAdminKey;
-	private SigMapScheduleClassifier classifier;
-	private Optional<List<JKey>> validScheduleKeys = Optional.of(
-			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
+  private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+  private Optional<JKey> jAdminKey;
+  private SigMapScheduleClassifier classifier;
+  private Optional<List<JKey>> validScheduleKeys =
+      Optional.of(List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
 
-	private ScheduleCreateTransitionLogic subject;
+  private ScheduleCreateTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() throws InvalidProtocolBufferException {
-		validator = mock(OptionValidator.class);
-		store = mock(ScheduleStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
-		activationHelper = mock(InHandleActivationHelper.class);
-		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
-		executor = mock(ScheduleExecutor.class);
-		merkleSchedule = mock(MerkleSchedule.class);
+  @BeforeEach
+  private void setup() throws InvalidProtocolBufferException {
+    validator = mock(OptionValidator.class);
+    store = mock(ScheduleStore.class);
+    accessor = mock(PlatformTxnAccessor.class);
+    activationHelper = mock(InHandleActivationHelper.class);
+    replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
+    executor = mock(ScheduleExecutor.class);
+    merkleSchedule = mock(MerkleSchedule.class);
 
-		given(accessor.getTxnBytes()).willReturn(bodyBytes);
+    given(accessor.getTxnBytes()).willReturn(bodyBytes);
 
-		classifier = mock(SigMapScheduleClassifier.class);
+    classifier = mock(SigMapScheduleClassifier.class);
 
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
-				.willReturn(Pair.of(OK, true));
+    given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+        .willReturn(Pair.of(OK, true));
 
-		given(executor.processExecution(any(), any(), any())).willReturn(OK);
+    given(executor.processExecution(any(), any(), any())).willReturn(OK);
 
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.activePayer()).willReturn(payer);
-		given(txnCtx.activePayerKey()).willReturn(payerKey);
+    txnCtx = mock(TransactionContext.class);
+    given(txnCtx.activePayer()).willReturn(payer);
+    given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator, executor);
+    subject =
+        new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator, executor);
 
-		subject.signingsWitness = replSigningWitness;
-		subject.classifier = classifier;
-	}
+    subject.signingsWitness = replSigningWitness;
+    subject.classifier = classifier;
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(scheduleCreateTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(scheduleCreateTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void followsHappyPath() {
-		// setup:
-		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
+  @Test
+  void followsHappyPath() {
+    // setup:
+    given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+    given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
-		givenValidTxnCtx();
-		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
+    givenValidTxnCtx();
+    given(merkleSchedule.adminKey()).willReturn(jAdminKey);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(store).lookupSchedule(bodyBytes);
+    // then:
+    verify(store).lookupSchedule(bodyBytes);
 
-		// and:
-		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
-		// and:
-		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
-		// and:
-		verify(store).commitCreation();
-		verify(txnCtx).addExpiringEntities(any());
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-	}
+    // and:
+    verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
+    // and:
+    verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
+    // and:
+    verify(store).commitCreation();
+    verify(txnCtx).addExpiringEntities(any());
+    verify(txnCtx).setStatus(SUCCESS);
+    verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+  }
 
-	@Test
-	void followsHappyPathEvenIfNoNewValidSignatures() {
-		// setup:
-		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
+  @Test
+  void followsHappyPathEvenIfNoNewValidSignatures() {
+    // setup:
+    given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+    given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
-		givenValidTxnCtx();
-		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		// and:
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
-				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
+    givenValidTxnCtx();
+    given(merkleSchedule.adminKey()).willReturn(jAdminKey);
+    // and:
+    given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+        .willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(store).commitCreation();
-		verify(txnCtx).addExpiringEntities(any());
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-	}
+    // then:
+    verify(store).commitCreation();
+    verify(txnCtx).addExpiringEntities(any());
+    verify(txnCtx).setStatus(SUCCESS);
+    verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+  }
 
-	@Test
-	void rejectsRecreationOfExistingSchedule() {
-		// given:
-		givenValidTxnCtx();
+  @Test
+  void rejectsRecreationOfExistingSchedule() {
+    // given:
+    givenValidTxnCtx();
 
-		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+    given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 
-		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.of(schedule), merkleSchedule));
+    // and:
+    given(store.lookupSchedule(eq(bodyBytes)))
+        .willReturn(Pair.of(Optional.of(schedule), merkleSchedule));
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(store, never()).createProvisionally(any(), any());
-		// and:
-		verify(store, never()).commitCreation();
-		verify(txnCtx, never()).addExpiringEntities(any());
-		verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED);
-		verify(txnCtx).setCreated(schedule);
-		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-	}
+    // then:
+    verify(store, never()).createProvisionally(any(), any());
+    // and:
+    verify(store, never()).commitCreation();
+    verify(txnCtx, never()).addExpiringEntities(any());
+    verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED);
+    verify(txnCtx).setCreated(schedule);
+    verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+  }
 
-	@Test
-	void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
-		// given:
-		givenValidTxnCtx();
-		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
-		// and:
-		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
-				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
+  @Test
+  void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
+    // given:
+    givenValidTxnCtx();
+    given(merkleSchedule.adminKey()).willReturn(jAdminKey);
+    // and:
+    given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+        .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// and:
-		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
-		verify(store, never()).commitCreation();
-		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
-		verify(executor, never()).processExecution(schedule, store, txnCtx);
-	}
+    // and:
+    verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
+    verify(store, never()).commitCreation();
+    verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
+    verify(executor, never()).processExecution(schedule, store, txnCtx);
+  }
 
-	@Test
-	void capturesFailingCreateProvisionally() {
-		// given:
-		givenValidTxnCtx();
+  @Test
+  void capturesFailingCreateProvisionally() {
+    // given:
+    givenValidTxnCtx();
 
-		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.empty(), merkleSchedule));
-		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
-				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
+    // and:
+    given(store.lookupSchedule(eq(bodyBytes)))
+        .willReturn(Pair.of(Optional.empty(), merkleSchedule));
+    given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
+        .willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(store, never()).commitCreation();
-		verify(txnCtx, never()).setStatus(SUCCESS);
-	}
+    // then:
+    verify(store, never()).commitCreation();
+    verify(txnCtx, never()).setStatus(SUCCESS);
+  }
 
-	@Test
-	void setsFailInvalidIfUnhandledException() {
-		givenValidTxnCtx();
-		// and:
-		given(store.lookupSchedule(eq(bodyBytes))).willThrow(IllegalArgumentException.class);
+  @Test
+  void setsFailInvalidIfUnhandledException() {
+    givenValidTxnCtx();
+    // and:
+    given(store.lookupSchedule(eq(bodyBytes))).willThrow(IllegalArgumentException.class);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
+    // then:
+    verify(txnCtx).setStatus(FAIL_INVALID);
+  }
 
-	@Test
-	void failsOnAdminKeySetAsSentinelKeylist() {
-		// setup:
-		invalidAdminKeyIsSentinelKeyList = true;
-		givenCtx(true, false, false);
+  @Test
+  void failsOnAdminKeySetAsSentinelKeylist() {
+    // setup:
+    invalidAdminKeyIsSentinelKeyList = true;
+    givenCtx(true, false, false);
 
-		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
+  }
 
-	@Test
-	void syntaxOkWithNoAdminKey() {
-		// setup:
-		adminKeyActuallySkipped = true;
-		givenValidTxnCtx();
+  @Test
+  void syntaxOkWithNoAdminKey() {
+    // setup:
+    adminKeyActuallySkipped = true;
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
+  }
 
-	@Test
-	void failsOnInvalidAdminKey() {
-		givenCtx(true, false, false);
+  @Test
+  void failsOnInvalidAdminKey() {
+    givenCtx(true, false, false);
 
-		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
+  }
 
-	@Test
-	void failsOnInvalidEntityMemo() {
-		givenCtx(false, true, false);
+  @Test
+  void failsOnInvalidEntityMemo() {
+    givenCtx(false, true, false);
 
-		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
+  }
 
-	@Test
-	void failsOnInvalidInnerMemo() {
-		givenCtx(false, false, true);
+  @Test
+  void failsOnInvalidInnerMemo() {
+    givenCtx(false, false, true);
 
-		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
+  }
 
-	@Test
-	void acceptsValidTxn() {
-		givenValidTxnCtx();
+  @Test
+  void acceptsValidTxn() {
+    givenValidTxnCtx();
 
-		assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
-	}
+    assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
+  }
 
-	private void givenValidTxnCtx() {
-		givenCtx(false, false, false);
-	}
+  private void givenValidTxnCtx() {
+    givenCtx(false, false, false);
+  }
 
-	private void givenCtx(
-			boolean invalidAdminKey,
-			boolean invalidEntityMemo,
-			boolean invalidInnerMemo
-	) {
-		given(accessor.getSigMap()).willReturn(sigMap);
-		jAdminKey = asUsableFcKey(key);
-		given(classifier.validScheduleKeys(
-				eq(List.of(payerKey, jAdminKey.get())),
-				eq(sigMap),
-				any(),
-				any())).willReturn(validScheduleKeys);
+  private void givenCtx(
+      boolean invalidAdminKey, boolean invalidEntityMemo, boolean invalidInnerMemo) {
+    given(accessor.getSigMap()).willReturn(sigMap);
+    jAdminKey = asUsableFcKey(key);
+    given(
+            classifier.validScheduleKeys(
+                eq(List.of(payerKey, jAdminKey.get())), eq(sigMap), any(), any()))
+        .willReturn(validScheduleKeys);
 
-		txnId = TransactionID.newBuilder()
-				.setTransactionValidStart(
-						Timestamp.newBuilder()
-								.setSeconds(now.getEpochSecond())
-								.setNanos(now.getNano()).build()
-				).build();
+    txnId =
+        TransactionID.newBuilder()
+            .setTransactionValidStart(
+                Timestamp.newBuilder()
+                    .setSeconds(now.getEpochSecond())
+                    .setNanos(now.getNano())
+                    .build())
+            .build();
 
-		var builder = TransactionBody.newBuilder();
-		var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
-				.setAdminKey(key)
-				.setPayerAccountID(payer)
-				.setMemo(entityMemo)
-				.setScheduledTransactionBody(
-						SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
+    var builder = TransactionBody.newBuilder();
+    var scheduleCreate =
+        ScheduleCreateTransactionBody.newBuilder()
+            .setAdminKey(key)
+            .setPayerAccountID(payer)
+            .setMemo(entityMemo)
+            .setScheduledTransactionBody(
+                SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
 
-		if (invalidAdminKey) {
-			if (invalidAdminKeyIsSentinelKeyList) {
-				scheduleCreate.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
-			} else {
-				scheduleCreate.setAdminKey(invalidKey);
-			}
-		}
+    if (invalidAdminKey) {
+      if (invalidAdminKeyIsSentinelKeyList) {
+        scheduleCreate.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
+      } else {
+        scheduleCreate.setAdminKey(invalidKey);
+      }
+    }
 
-		if (adminKeyActuallySkipped) {
-			scheduleCreate.clearAdminKey();
-		}
+    if (adminKeyActuallySkipped) {
+      scheduleCreate.clearAdminKey();
+    }
 
-		builder.setTransactionID(txnId);
-		builder.setScheduleCreate(scheduleCreate);
+    builder.setTransactionID(txnId);
+    builder.setScheduleCreate(scheduleCreate);
 
-		scheduleCreateTxn = builder.build();
+    scheduleCreateTxn = builder.build();
 
-		given(validator.memoCheck(entityMemo)).willReturn(invalidEntityMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
-		given(validator.memoCheck(innerMemo)).willReturn(invalidInnerMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
-		given(accessor.getTxnId()).willReturn(txnId);
-		given(accessor.getTxn()).willReturn(scheduleCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.activePayer()).willReturn(payer);
-		given(txnCtx.consensusTime()).willReturn(now);
-		given(store.isCreationPending()).willReturn(true);
-		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(Optional.empty(), merkleSchedule));
-		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
-				.willReturn(CreationResult.success(schedule));
-	}
+    given(validator.memoCheck(entityMemo))
+        .willReturn(invalidEntityMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
+    given(validator.memoCheck(innerMemo))
+        .willReturn(invalidInnerMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
+    given(accessor.getTxnId()).willReturn(txnId);
+    given(accessor.getTxn()).willReturn(scheduleCreateTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(txnCtx.activePayer()).willReturn(payer);
+    given(txnCtx.consensusTime()).willReturn(now);
+    given(store.isCreationPending()).willReturn(true);
+    given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(Optional.empty(), merkleSchedule));
+    given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
+        .willReturn(CreationResult.success(schedule));
+  }
 }

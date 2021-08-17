@@ -20,21 +20,21 @@ package com.hedera.services.usage.contract.entities;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ContractEntitySizesTest {
-	private ContractEntitySizes subject = ContractEntitySizes.CONTRACT_ENTITY_SIZES;
+import org.junit.jupiter.api.Test;
 
-	@Test
-	void knowsExpectedFixedBytes() {
-		// expect:
-		assertEquals(
-				1 * BOOL_SIZE + 4 * LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE + 40,
-				subject.fixedBytesInContractRepr());
-	}
+class ContractEntitySizesTest {
+  private ContractEntitySizes subject = ContractEntitySizes.CONTRACT_ENTITY_SIZES;
+
+  @Test
+  void knowsExpectedFixedBytes() {
+    // expect:
+    assertEquals(
+        1 * BOOL_SIZE + 4 * LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE + 40,
+        subject.fixedBytesInContractRepr());
+  }
 }

@@ -20,6 +20,12 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -33,96 +39,86 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.fcmap.FCMap;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.BiFunction;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class TokenDissociateResourceUsageTest {
-	private TokenDissociateResourceUsage subject;
+  private TokenDissociateResourceUsage subject;
 
-	AccountID target = IdUtils.asAccount("1.2.3");
-	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+  AccountID target = IdUtils.asAccount("1.2.3");
+  MerkleAccount account;
+  FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	private TransactionBody nonTokenDissociateTxn;
-	private TransactionBody tokenDissociateTxn;
+  private TransactionBody nonTokenDissociateTxn;
+  private TransactionBody tokenDissociateTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+  StateView view;
+  int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+  SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+  SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+  FeeData expected;
 
-	TokenDissociateUsage usage;
-	BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory;
+  TokenDissociateUsage usage;
+  BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory;
 
-	long expiry = 1_234_567L;
-	TokenID firstToken = IdUtils.asToken("0.0.123");
-	TokenID secondToken = IdUtils.asToken("0.0.124");
+  long expiry = 1_234_567L;
+  TokenID firstToken = IdUtils.asToken("0.0.123");
+  TokenID secondToken = IdUtils.asToken("0.0.124");
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		account = mock(MerkleAccount.class);
-		given(account.getExpiry()).willReturn(expiry);
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(account);
-		view = mock(StateView.class);
-		given(view.accounts()).willReturn(accounts);
+  @BeforeEach
+  private void setup() throws Throwable {
+    expected = mock(FeeData.class);
+    account = mock(MerkleAccount.class);
+    given(account.getExpiry()).willReturn(expiry);
+    accounts = mock(FCMap.class);
+    given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(account);
+    view = mock(StateView.class);
+    given(view.accounts()).willReturn(accounts);
 
-		tokenDissociateTxn = mock(TransactionBody.class);
-		given(tokenDissociateTxn.hasTokenDissociate()).willReturn(true);
-		given(tokenDissociateTxn.getTokenDissociate())
-				.willReturn(TokenDissociateTransactionBody.newBuilder()
-						.setAccount(IdUtils.asAccount("1.2.3"))
-						.addTokens(firstToken)
-						.addTokens(secondToken)
-						.build());
+    tokenDissociateTxn = mock(TransactionBody.class);
+    given(tokenDissociateTxn.hasTokenDissociate()).willReturn(true);
+    given(tokenDissociateTxn.getTokenDissociate())
+        .willReturn(
+            TokenDissociateTransactionBody.newBuilder()
+                .setAccount(IdUtils.asAccount("1.2.3"))
+                .addTokens(firstToken)
+                .addTokens(secondToken)
+                .build());
 
-		nonTokenDissociateTxn = mock(TransactionBody.class);
-		given(nonTokenDissociateTxn.hasTokenAssociate()).willReturn(false);
+    nonTokenDissociateTxn = mock(TransactionBody.class);
+    given(nonTokenDissociateTxn.hasTokenAssociate()).willReturn(false);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenDissociateUsage>) mock(BiFunction.class);
-		given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
+    factory = (BiFunction<TransactionBody, SigUsage, TokenDissociateUsage>) mock(BiFunction.class);
+    given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
 
-		usage = mock(TokenDissociateUsage.class);
-		given(usage.get()).willReturn(expected);
+    usage = mock(TokenDissociateUsage.class);
+    given(usage.get()).willReturn(expected);
 
-		TokenDissociateResourceUsage.factory = factory;
-		given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
+    TokenDissociateResourceUsage.factory = factory;
+    given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
 
-		subject = new TokenDissociateResourceUsage();
-	}
+    subject = new TokenDissociateResourceUsage();
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenDissociateTxn));
-		assertFalse(subject.applicableTo(nonTokenDissociateTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(tokenDissociateTxn));
+    assertFalse(subject.applicableTo(nonTokenDissociateTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenDissociateTxn, obj, view));
-	}
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    // expect:
+    assertEquals(expected, subject.usageGiven(tokenDissociateTxn, obj, view));
+  }
 
-	@Test
-	void returnsDefaultIfInfoMissing() throws Exception {
-		given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(null);
+  @Test
+  void returnsDefaultIfInfoMissing() throws Exception {
+    given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(null);
 
-		// expect:
-		assertEquals(
-				FeeData.getDefaultInstance(),
-				subject.usageGiven(tokenDissociateTxn, obj, view));
-	}
+    // expect:
+    assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(tokenDissociateTxn, obj, view));
+  }
 }

@@ -20,6 +20,9 @@ package com.hedera.services.fees;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -34,78 +37,74 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 @ExtendWith(MockitoExtension.class)
 class AwareHbarCentExchangeTest {
-	private long crossoverTime = 1_234_567L;
-	private ExchangeRateSet rates = ExchangeRateSet.newBuilder()
-			.setCurrentRate(ExchangeRate.newBuilder()
-					.setHbarEquiv(1).setCentEquiv(12)
-					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime)))
-			.setNextRate(ExchangeRate.newBuilder()
-					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime * 2))
-					.setHbarEquiv(1).setCentEquiv(24))
-			.build();
+  private long crossoverTime = 1_234_567L;
+  private ExchangeRateSet rates =
+      ExchangeRateSet.newBuilder()
+          .setCurrentRate(
+              ExchangeRate.newBuilder()
+                  .setHbarEquiv(1)
+                  .setCentEquiv(12)
+                  .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime)))
+          .setNextRate(
+              ExchangeRate.newBuilder()
+                  .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime * 2))
+                  .setHbarEquiv(1)
+                  .setCentEquiv(24))
+          .build();
 
-	@Mock
-	private TxnAccessor accessor;
-	@Mock
-	private TransactionContext txnCtx;
+  @Mock private TxnAccessor accessor;
+  @Mock private TransactionContext txnCtx;
 
-	private AwareHbarCentExchange subject;
+  private AwareHbarCentExchange subject;
 
-	@BeforeEach
-	void setUp() throws Exception {
-		subject = new AwareHbarCentExchange(txnCtx);
-	}
+  @BeforeEach
+  void setUp() throws Exception {
+    subject = new AwareHbarCentExchange(txnCtx);
+  }
 
-	@Test
-	void updatesWorkWithCurrentRate() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accessor.getTxn()).willReturn(beforeTxn);
+  @Test
+  void updatesWorkWithCurrentRate() {
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(accessor.getTxn()).willReturn(beforeTxn);
 
-		// when:
-		subject.updateRates(rates);
+    // when:
+    subject.updateRates(rates);
 
-		// expect:
-		assertEquals(rates, subject.activeRates());
-		assertEquals(rates.getCurrentRate(), subject.activeRate());
-		assertEquals(rates.getCurrentRate(), subject.rate(beforeCrossTime));
-		// and:
-		assertEquals(rates, subject.fcActiveRates().toGrpc());
-	}
+    // expect:
+    assertEquals(rates, subject.activeRates());
+    assertEquals(rates.getCurrentRate(), subject.activeRate());
+    assertEquals(rates.getCurrentRate(), subject.rate(beforeCrossTime));
+    // and:
+    assertEquals(rates, subject.fcActiveRates().toGrpc());
+  }
 
-	@Test
-	void updatesWorkWithNextRate() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accessor.getTxn()).willReturn(afterTxn);
+  @Test
+  void updatesWorkWithNextRate() {
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(accessor.getTxn()).willReturn(afterTxn);
 
-		// when:
-		subject.updateRates(rates);
+    // when:
+    subject.updateRates(rates);
 
-		// expect:
-		assertEquals(rates.getNextRate(), subject.activeRate());
-		assertEquals(rates.getNextRate(), subject.rate(afterCrossTime));
-		// and:
-		assertEquals(rates, subject.fcActiveRates().toGrpc());
-	}
+    // expect:
+    assertEquals(rates.getNextRate(), subject.activeRate());
+    assertEquals(rates.getNextRate(), subject.rate(afterCrossTime));
+    // and:
+    assertEquals(rates, subject.fcActiveRates().toGrpc());
+  }
 
-	private Timestamp beforeCrossTime = Timestamp.newBuilder()
-			.setSeconds(crossoverTime - 1).build();
-	private Timestamp afterCrossTime = Timestamp.newBuilder()
-			.setSeconds(crossoverTime).build();
-	private TransactionBody beforeTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(beforeCrossTime)
-					.build())
-			.build();
-	private TransactionBody afterTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(afterCrossTime)
-					.build())
-			.build();
+  private Timestamp beforeCrossTime = Timestamp.newBuilder().setSeconds(crossoverTime - 1).build();
+  private Timestamp afterCrossTime = Timestamp.newBuilder().setSeconds(crossoverTime).build();
+  private TransactionBody beforeTxn =
+      TransactionBody.newBuilder()
+          .setTransactionID(
+              TransactionID.newBuilder().setTransactionValidStart(beforeCrossTime).build())
+          .build();
+  private TransactionBody afterTxn =
+      TransactionBody.newBuilder()
+          .setTransactionID(
+              TransactionID.newBuilder().setTransactionValidStart(afterCrossTime).build())
+          .build();
 }

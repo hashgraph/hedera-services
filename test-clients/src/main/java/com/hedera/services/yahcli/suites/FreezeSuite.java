@@ -20,49 +20,43 @@ package com.hedera.services.yahcli.suites;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiFreeze;
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiFreeze;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FreezeSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
+  private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
-	private final Instant freezeStartTime;
+  private final Instant freezeStartTime;
 
-	private final Map<String, String> specConfig;
+  private final Map<String, String> specConfig;
 
-	public FreezeSuite(final Map<String, String> specConfig, final Instant freezeStartTime) {
-		this.specConfig = specConfig;
-		this.freezeStartTime = freezeStartTime;
-	}
+  public FreezeSuite(final Map<String, String> specConfig, final Instant freezeStartTime) {
+    this.specConfig = specConfig;
+    this.freezeStartTime = freezeStartTime;
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				freezeSystem(freezeStartTime)
-		});
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(new HapiApiSpec[] {freezeSystem(freezeStartTime)});
+  }
 
-	private HapiApiSpec freezeSystem(final Instant freezeStartTime) {
-		return HapiApiSpec.customHapiSpec(("freezeSystem"))
-				.withProperties(specConfig)
-				.given().when()
-				.then(
-						hapiFreeze(freezeStartTime)
-								.noLogging()
-								.yahcliLogging()
-				);
-	}
+  private HapiApiSpec freezeSystem(final Instant freezeStartTime) {
+    return HapiApiSpec.customHapiSpec(("freezeSystem"))
+        .withProperties(specConfig)
+        .given()
+        .when()
+        .then(hapiFreeze(freezeStartTime).noLogging().yahcliLogging());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

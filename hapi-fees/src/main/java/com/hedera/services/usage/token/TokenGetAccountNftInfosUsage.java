@@ -20,36 +20,35 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.usage.QueryUsage;
-import com.hederahashgraph.api.proto.java.Query;
-
-import java.util.List;
-
 import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.usage.QueryUsage;
+import com.hederahashgraph.api.proto.java.Query;
+import java.util.List;
+
 public class TokenGetAccountNftInfosUsage extends QueryUsage {
-    private static final long INT_SIZE_AS_LONG = INT_SIZE;
+  private static final long INT_SIZE_AS_LONG = INT_SIZE;
 
-    public TokenGetAccountNftInfosUsage(Query query) {
-        super(query.getTokenGetAccountNftInfos().getHeader().getResponseType());
-        addTb(BASIC_ENTITY_ID_SIZE);
-        addTb(2 * INT_SIZE_AS_LONG);
-    }
+  public TokenGetAccountNftInfosUsage(Query query) {
+    super(query.getTokenGetAccountNftInfos().getHeader().getResponseType());
+    addTb(BASIC_ENTITY_ID_SIZE);
+    addTb(2 * INT_SIZE_AS_LONG);
+  }
 
-    public static TokenGetAccountNftInfosUsage newEstimate(Query query) {
-        return new TokenGetAccountNftInfosUsage(query);
-    }
+  public static TokenGetAccountNftInfosUsage newEstimate(Query query) {
+    return new TokenGetAccountNftInfosUsage(query);
+  }
 
-    public TokenGetAccountNftInfosUsage givenMetadata(List<ByteString> metadata) {
-        int additionalRb = 0;
-        for (ByteString m : metadata) {
-            additionalRb += m.size();
-        }
-        addRb(additionalRb);
-        addRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size());
-        return this;
+  public TokenGetAccountNftInfosUsage givenMetadata(List<ByteString> metadata) {
+    int additionalRb = 0;
+    for (ByteString m : metadata) {
+      additionalRb += m.size();
     }
+    addRb(additionalRb);
+    addRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size());
+    return this;
+  }
 }

@@ -20,46 +20,44 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-
 import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 public class ZeroStakeAnswerFlow implements AnswerFlow {
-	private final Supplier<StateView> stateViews;
-	private final QueryHeaderValidity queryHeaderValidity;
-	private final FunctionalityThrottling throttles;
+  private final Supplier<StateView> stateViews;
+  private final QueryHeaderValidity queryHeaderValidity;
+  private final FunctionalityThrottling throttles;
 
-	public ZeroStakeAnswerFlow(
-			QueryHeaderValidity queryHeaderValidity,
-			Supplier<StateView> stateViews,
-			FunctionalityThrottling throttles
-	) {
-		this.queryHeaderValidity = queryHeaderValidity;
-		this.stateViews = stateViews;
-		this.throttles = throttles;
-	}
+  public ZeroStakeAnswerFlow(
+      QueryHeaderValidity queryHeaderValidity,
+      Supplier<StateView> stateViews,
+      FunctionalityThrottling throttles) {
+    this.queryHeaderValidity = queryHeaderValidity;
+    this.stateViews = stateViews;
+    this.throttles = throttles;
+  }
 
-	@Override
-	public Response satisfyUsing(AnswerService service, Query query) {
-		var view = stateViews.get();
+  @Override
+  public Response satisfyUsing(AnswerService service, Query query) {
+    var view = stateViews.get();
 
-		if (throttles.shouldThrottleQuery(service.canonicalFunction())) {
-			return service.responseGiven(query, view, BUSY);
-		}
+    if (throttles.shouldThrottleQuery(service.canonicalFunction())) {
+      return service.responseGiven(query, view, BUSY);
+    }
 
-		var validity = queryHeaderValidity.checkHeader(query);
-		if (validity == OK) {
-			validity = service.checkValidity(query, view);
-		}
+    var validity = queryHeaderValidity.checkHeader(query);
+    if (validity == OK) {
+      validity = service.checkValidity(query, view);
+    }
 
-		return service.responseGiven(query, view, validity);
-	}
+    return service.responseGiven(query, view, validity);
+  }
 }

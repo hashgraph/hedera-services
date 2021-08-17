@@ -20,6 +20,32 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
+import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.NEW_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.sigs.SigWrappers.asKind;
+import static com.hedera.test.factories.sigs.SigWrappers.asValid;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.swirlds.common.crypto.VerificationStatus.INVALID;
+import static com.swirlds.common.crypto.VerificationStatus.VALID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
@@ -51,407 +77,410 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
-import org.junit.jupiter.api.Test;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.NEW_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
-import static com.hedera.test.factories.sigs.SigWrappers.asKind;
-import static com.hedera.test.factories.sigs.SigWrappers.asValid;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.swirlds.common.crypto.VerificationStatus.INVALID;
-import static com.swirlds.common.crypto.VerificationStatus.VALID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.mock;
+import org.junit.jupiter.api.Test;
 
 class SigOpsRegressionTest {
-	private HederaFs hfs;
-	private MiscRunningAvgs runningAvgs;
-	private MiscSpeedometers speedometers;
-	private List<TransactionSignature> expectedSigs;
-	private ResponseCodeEnum actualStatus;
-	private ResponseCodeEnum expectedErrorStatus;
-	private PlatformTxnAccessor platformTxn;
-	private HederaSigningOrder signingOrder;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+  private HederaFs hfs;
+  private MiscRunningAvgs runningAvgs;
+  private MiscSpeedometers speedometers;
+  private List<TransactionSignature> expectedSigs;
+  private ResponseCodeEnum actualStatus;
+  private ResponseCodeEnum expectedErrorStatus;
+  private PlatformTxnAccessor platformTxn;
+  private HederaSigningOrder signingOrder;
+  private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
+  private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+  private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+  private SignatureWaivers mockSignatureWaivers =
+      new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
-	static boolean otherPartySigsAreActive(
-			PlatformTxnAccessor accessor,
-			HederaSigningOrder keyOrder,
-			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory
-	) {
-		return otherPartySigsAreActive(accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
-	}
+  static boolean otherPartySigsAreActive(
+      PlatformTxnAccessor accessor,
+      HederaSigningOrder keyOrder,
+      SigningOrderResultFactory<ResponseCodeEnum> summaryFactory) {
+    return otherPartySigsAreActive(
+        accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
+  }
 
-	static boolean otherPartySigsAreActive(
-			PlatformTxnAccessor accessor,
-			HederaSigningOrder keyOrder,
-			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
-			KeyActivationCharacteristics characteristics
-	) {
-		TransactionBody txn = accessor.getTxn();
-		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+  static boolean otherPartySigsAreActive(
+      PlatformTxnAccessor accessor,
+      HederaSigningOrder keyOrder,
+      SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
+      KeyActivationCharacteristics characteristics) {
+    TransactionBody txn = accessor.getTxn();
+    Function<byte[], TransactionSignature> sigsFn =
+        HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
 
-		final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
-		for (JKey otherKey : othersResult.getOrderedKeys()) {
-			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
-				return false;
-			}
-		}
-		return true;
-	}
+    final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
+    for (JKey otherKey : othersResult.getOrderedKeys()) {
+      if (!HederaKeyActivation.isActive(
+          otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
-	@Test
-	void setsExpectedPlatformSigsForCryptoCreate() throws Throwable {
-		// given:
-		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
+  @Test
+  void setsExpectedPlatformSigsForCryptoCreate() throws Throwable {
+    // given:
+    setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 
-		// when:
-		actualStatus = invokeExpansionScenario();
+    // when:
+    actualStatus = invokeExpansionScenario();
 
-		// then:
-		assertEquals(OK, actualStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
-	}
+    // then:
+    assertEquals(OK, actualStatus);
+    assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+  }
 
-	@Test
-	void setsExpectedErrorForBadPayer() throws Throwable {
-		// given:
-		setupFor(INVALID_PAYER_ID_SCENARIO);
+  @Test
+  void setsExpectedErrorForBadPayer() throws Throwable {
+    // given:
+    setupFor(INVALID_PAYER_ID_SCENARIO);
 
-		// when:
-		actualStatus = invokeExpansionScenario();
+    // when:
+    actualStatus = invokeExpansionScenario();
 
-		// then:
-		statusMatches(expectedErrorStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
-	}
+    // then:
+    statusMatches(expectedErrorStatus);
+    assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+  }
 
-	@Test
-	void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
-		// given:
-		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
+  @Test
+  void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
+    // given:
+    setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 
-		// when:
-		actualStatus = invokeExpansionScenario();
+    // when:
+    actualStatus = invokeExpansionScenario();
 
-		// then:
-		statusMatches(expectedErrorStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
-	}
+    // then:
+    statusMatches(expectedErrorStatus);
+    assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+  }
 
-	@Test
-	void rationalizesExpectedPlatformSigsForCryptoCreate() throws Throwable {
-		// given:
-		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
-		// and:
-		List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
+  @Test
+  void rationalizesExpectedPlatformSigsForCryptoCreate() throws Throwable {
+    // given:
+    setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
+    // and:
+    List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
 
-		// when:
-		final var ans = invokeRationalizationScenario();
+    // when:
+    final var ans = invokeRationalizationScenario();
 
-		// then:
-		assertTrue(ans.usedSyncVerification());
-		assertEquals(OK, ans.finalStatus());
-		assertEquals(expectedSigs, platformTxn.getSigMeta().verifiedSigs());
-		// and:
-		allVerificationStatusesAre(vs -> !VerificationStatus.UNKNOWN.equals(vs));
-	}
+    // then:
+    assertTrue(ans.usedSyncVerification());
+    assertEquals(OK, ans.finalStatus());
+    assertEquals(expectedSigs, platformTxn.getSigMeta().verifiedSigs());
+    // and:
+    allVerificationStatusesAre(vs -> !VerificationStatus.UNKNOWN.equals(vs));
+  }
 
-	@Test
-	void rubberstampsCorrectPlatformSigsForCryptoCreate() throws Throwable {
-		// given:
-		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
-		// and:
-		List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
-		platformTxn.getPlatformTxn().addAll(asValid(expectedSigs).toArray(new TransactionSignature[0]));
+  @Test
+  void rubberstampsCorrectPlatformSigsForCryptoCreate() throws Throwable {
+    // given:
+    setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
+    // and:
+    List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
+    platformTxn.getPlatformTxn().addAll(asValid(expectedSigs).toArray(new TransactionSignature[0]));
 
-		// when:
-		final var ans = invokeRationalizationScenario();
+    // when:
+    final var ans = invokeRationalizationScenario();
 
-		// then:
-		assertFalse(ans.usedSyncVerification());
-		assertEquals(OK, ans.finalStatus());
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
-		// and:
-		allVerificationStatusesAre(vs -> VerificationStatus.VALID.equals(vs));
-	}
+    // then:
+    assertFalse(ans.usedSyncVerification());
+    assertEquals(OK, ans.finalStatus());
+    assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+    // and:
+    allVerificationStatusesAre(vs -> VerificationStatus.VALID.equals(vs));
+  }
 
-	@Test
-	void validatesComplexPayerSigActivation() throws Throwable {
-		// given:
-		setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
-		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn)
-		).getPlatformSigs();
-		List<TransactionSignature> knownSigs = asKind(List.of(
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(3), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(6), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID)));
+  @Test
+  void validatesComplexPayerSigActivation() throws Throwable {
+    // given:
+    setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
+    // and:
+    List<TransactionSignature> unknownSigs =
+        PlatformSigOps.createEd25519PlatformSigsFrom(
+                List.of(
+                    COMPLEX_KEY_ACCOUNT_KT.asJKey(),
+                    CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
+                platformTxn.getPkToSigsFn(),
+                new BodySigningSigFactory(platformTxn))
+            .getPlatformSigs();
+    List<TransactionSignature> knownSigs =
+        asKind(
+            List.of(
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(1), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(3), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(6), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID)));
 
-		// expect:
-		assertTrue(invokePayerSigActivationScenario(knownSigs));
-	}
+    // expect:
+    assertTrue(invokePayerSigActivationScenario(knownSigs));
+  }
 
-	@Test
-	void deniesInactiveComplexPayerSig() throws Throwable {
-		// given:
-		setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
-		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn)
-		).getPlatformSigs();
-		List<TransactionSignature> knownSigs = asKind(List.of(
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID)));
+  @Test
+  void deniesInactiveComplexPayerSig() throws Throwable {
+    // given:
+    setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
+    // and:
+    List<TransactionSignature> unknownSigs =
+        PlatformSigOps.createEd25519PlatformSigsFrom(
+                List.of(
+                    COMPLEX_KEY_ACCOUNT_KT.asJKey(),
+                    CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
+                platformTxn.getPkToSigsFn(),
+                new BodySigningSigFactory(platformTxn))
+            .getPlatformSigs();
+    List<TransactionSignature> knownSigs =
+        asKind(
+            List.of(
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(0), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID)));
 
-		// expect:
-		assertFalse(invokePayerSigActivationScenario(knownSigs));
-	}
+    // expect:
+    assertFalse(invokePayerSigActivationScenario(knownSigs));
+  }
 
-	@Test
-	void validatesComplexOtherPartySigActivation() throws Throwable {
-		// given:
-		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
-		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn)
-		).getPlatformSigs();
-		List<TransactionSignature> knownSigs = asKind(List.of(
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(4), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(7), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(9), VALID)));
+  @Test
+  void validatesComplexOtherPartySigActivation() throws Throwable {
+    // given:
+    setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
+    // and:
+    List<TransactionSignature> unknownSigs =
+        PlatformSigOps.createEd25519PlatformSigsFrom(
+                List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
+                platformTxn.getPkToSigsFn(),
+                new BodySigningSigFactory(platformTxn))
+            .getPlatformSigs();
+    List<TransactionSignature> knownSigs =
+        asKind(
+            List.of(
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(2), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(4), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(7), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(9), VALID)));
 
-		// expect:
-		assertTrue(invokeOtherPartySigActivationScenario(knownSigs));
-	}
+    // expect:
+    assertTrue(invokeOtherPartySigActivationScenario(knownSigs));
+  }
 
-	@Test
-	void deniesInactiveComplexOtherPartySig() throws Throwable {
-		// given:
-		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
-		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn)
-		).getPlatformSigs();
-		List<TransactionSignature> knownSigs = asKind(List.of(
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(9), VALID)));
+  @Test
+  void deniesInactiveComplexOtherPartySig() throws Throwable {
+    // given:
+    setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
+    // and:
+    List<TransactionSignature> unknownSigs =
+        PlatformSigOps.createEd25519PlatformSigsFrom(
+                List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
+                platformTxn.getPkToSigsFn(),
+                new BodySigningSigFactory(platformTxn))
+            .getPlatformSigs();
+    List<TransactionSignature> knownSigs =
+        asKind(
+            List.of(
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(1), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(9), VALID)));
 
-		// expect:
-		assertFalse(invokeOtherPartySigActivationScenario(knownSigs));
-	}
+    // expect:
+    assertFalse(invokeOtherPartySigActivationScenario(knownSigs));
+  }
 
-	@Test
-	void deniesSecondInactiveComplexOtherPartySig() throws Throwable {
-		// given:
-		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO);
-		// and:
-		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey(), NEW_ACCOUNT_KT.asJKey()),
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn)
-		).getPlatformSigs();
-		List<TransactionSignature> knownSigs = asKind(List.of(
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(9), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(10), VALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(11), INVALID),
-				new AbstractMap.SimpleEntry<>(unknownSigs.get(12), INVALID)
-		));
+  @Test
+  void deniesSecondInactiveComplexOtherPartySig() throws Throwable {
+    // given:
+    setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO);
+    // and:
+    List<TransactionSignature> unknownSigs =
+        PlatformSigOps.createEd25519PlatformSigsFrom(
+                List.of(
+                    DEFAULT_PAYER_KT.asJKey(),
+                    COMPLEX_KEY_ACCOUNT_KT.asJKey(),
+                    NEW_ACCOUNT_KT.asJKey()),
+                platformTxn.getPkToSigsFn(),
+                new BodySigningSigFactory(platformTxn))
+            .getPlatformSigs();
+    List<TransactionSignature> knownSigs =
+        asKind(
+            List.of(
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(3), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(4), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(5), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(6), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(7), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(8), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(9), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(10), VALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(11), INVALID),
+                new AbstractMap.SimpleEntry<>(unknownSigs.get(12), INVALID)));
 
-		// expect:
-		assertFalse(invokeOtherPartySigActivationScenario(knownSigs));
-	}
+    // expect:
+    assertFalse(invokeOtherPartySigActivationScenario(knownSigs));
+  }
 
-	private List<TransactionSignature> expectedCryptoCreateScenarioSigs() throws Throwable {
-		return PlatformSigOps.createEd25519PlatformSigsFrom(
-				List.of(
-						DEFAULT_PAYER_KT.asJKey(),
-						CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn)
-		).getPlatformSigs();
-	}
+  private List<TransactionSignature> expectedCryptoCreateScenarioSigs() throws Throwable {
+    return PlatformSigOps.createEd25519PlatformSigsFrom(
+            List.of(DEFAULT_PAYER_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
+            platformTxn.getPkToSigsFn(),
+            new BodySigningSigFactory(platformTxn))
+        .getPlatformSigs();
+  }
 
-	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getSigMeta().verifiedSigs().stream()
-				.map(TransactionSignature::getSignatureStatus)
-				.allMatch(statusPred);
-	}
+  private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
+    return platformTxn.getSigMeta().verifiedSigs().stream()
+        .map(TransactionSignature::getSignatureStatus)
+        .allMatch(statusPred);
+  }
 
-	private void statusMatches(ResponseCodeEnum expectedStatus) {
-		assertEquals(expectedStatus, actualStatus);
-	}
+  private void statusMatches(ResponseCodeEnum expectedStatus) {
+    assertEquals(expectedStatus, actualStatus);
+  }
 
-	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
-		HederaSigningOrder keysOrder = new HederaSigningOrder(
-				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
-		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
-		final var impliedKey = impliedOrdering.getPayerKey();
-		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
+  private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
+    HederaSigningOrder keysOrder =
+        new HederaSigningOrder(
+            defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
+            new MockGlobalDynamicProps(),
+            mockSignatureWaivers);
+    final var impliedOrdering =
+        keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
+    final var impliedKey = impliedOrdering.getPayerKey();
+    platformTxn.setSigMeta(
+        RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
 
-		return payerSigIsActive(platformTxn, ONLY_IF_SIG_IS_VALID);
-	}
+    return payerSigIsActive(platformTxn, ONLY_IF_SIG_IS_VALID);
+  }
 
-	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
-		platformTxn.getPlatformTxn().clear();
-		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
-		HederaSigningOrder keysOrder = new HederaSigningOrder(
-				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
+  private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
+    platformTxn.getPlatformTxn().clear();
+    platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
+    HederaSigningOrder keysOrder =
+        new HederaSigningOrder(
+            defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
+            new MockGlobalDynamicProps(),
+            mockSignatureWaivers);
 
-		return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
-	}
+    return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
+  }
 
-	private ResponseCodeEnum invokeExpansionScenario() {
-		int MAGIC_NUMBER = 10;
-		SigMetadataLookup sigMetaLookups =
-				defaultLookupsPlusAccountRetriesFor(
-						hfs, () -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
-						runningAvgs, speedometers);
-		HederaSigningOrder keyOrder = new HederaSigningOrder(
-				sigMetaLookups,
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
+  private ResponseCodeEnum invokeExpansionScenario() {
+    int MAGIC_NUMBER = 10;
+    SigMetadataLookup sigMetaLookups =
+        defaultLookupsPlusAccountRetriesFor(
+            hfs,
+            () -> accounts,
+            () -> null,
+            ref -> null,
+            ref -> null,
+            MAGIC_NUMBER,
+            MAGIC_NUMBER,
+            runningAvgs,
+            speedometers);
+    HederaSigningOrder keyOrder =
+        new HederaSigningOrder(sigMetaLookups, new MockGlobalDynamicProps(), mockSignatureWaivers);
 
-		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
-		return expandIn(platformTxn, keyOrder, pkToSigFn);
-	}
+    final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
+    return expandIn(platformTxn, keyOrder, pkToSigFn);
+  }
 
-	private Rationalization invokeRationalizationScenario() {
-		// setup:
-		final var rationalization = new Rationalization();
+  private Rationalization invokeRationalizationScenario() {
+    // setup:
+    final var rationalization = new Rationalization();
 
-		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
-		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
-		HederaSigningOrder keyOrder = new HederaSigningOrder(
-				sigMetaLookups,
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
+    SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
+    SigMetadataLookup sigMetaLookups =
+        defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
+    HederaSigningOrder keyOrder =
+        new HederaSigningOrder(sigMetaLookups, new MockGlobalDynamicProps(), mockSignatureWaivers);
 
-		rationalization.performFor(
-				platformTxn,
-				syncVerifier,
-				keyOrder,
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn));
+    rationalization.performFor(
+        platformTxn,
+        syncVerifier,
+        keyOrder,
+        platformTxn.getPkToSigsFn(),
+        new BodySigningSigFactory(platformTxn));
 
-		return rationalization;
-	}
+    return rationalization;
+  }
 
-	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
-		hfs = scenario.hfs();
-		runningAvgs = mock(MiscRunningAvgs.class);
-		speedometers = mock(MiscSpeedometers.class);
-		accounts = scenario.accounts();
-		platformTxn = scenario.platformTxn();
+  private void setupFor(TxnHandlingScenario scenario) throws Throwable {
+    hfs = scenario.hfs();
+    runningAvgs = mock(MiscRunningAvgs.class);
+    speedometers = mock(MiscSpeedometers.class);
+    accounts = scenario.accounts();
+    platformTxn = scenario.platformTxn();
 
-		expectedErrorStatus = null;
+    expectedErrorStatus = null;
 
-		signingOrder = new HederaSigningOrder(
-				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
-		final var payerKeys =
-				signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
-		expectedSigs = new ArrayList<>();
-		if (payerKeys.hasErrorReport()) {
-			expectedErrorStatus = payerKeys.getErrorReport();
-		} else {
-			PlatformSigsCreationResult payerResult = PlatformSigOps.createEd25519PlatformSigsFrom(
-					payerKeys.getOrderedKeys(),
-					new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
-					new BodySigningSigFactory(platformTxn)
-			);
-			expectedSigs.addAll(payerResult.getPlatformSigs());
-			SigningOrderResult<ResponseCodeEnum> otherKeys =
-					signingOrder.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
-			if (otherKeys.hasErrorReport()) {
-				expectedErrorStatus = otherKeys.getErrorReport();
-			} else {
-				PlatformSigsCreationResult otherResult = PlatformSigOps.createEd25519PlatformSigsFrom(
-						otherKeys.getOrderedKeys(),
-						new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
-						new BodySigningSigFactory(platformTxn)
-				);
-				if (!otherResult.hasFailed()) {
-					expectedSigs.addAll(otherResult.getPlatformSigs());
-				}
-			}
-		}
-	}
+    signingOrder =
+        new HederaSigningOrder(
+            defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
+            new MockGlobalDynamicProps(),
+            mockSignatureWaivers);
+    final var payerKeys =
+        signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
+    expectedSigs = new ArrayList<>();
+    if (payerKeys.hasErrorReport()) {
+      expectedErrorStatus = payerKeys.getErrorReport();
+    } else {
+      PlatformSigsCreationResult payerResult =
+          PlatformSigOps.createEd25519PlatformSigsFrom(
+              payerKeys.getOrderedKeys(),
+              new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+              new BodySigningSigFactory(platformTxn));
+      expectedSigs.addAll(payerResult.getPlatformSigs());
+      SigningOrderResult<ResponseCodeEnum> otherKeys =
+          signingOrder.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
+      if (otherKeys.hasErrorReport()) {
+        expectedErrorStatus = otherKeys.getErrorReport();
+      } else {
+        PlatformSigsCreationResult otherResult =
+            PlatformSigOps.createEd25519PlatformSigsFrom(
+                otherKeys.getOrderedKeys(),
+                new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+                new BodySigningSigFactory(platformTxn));
+        if (!otherResult.hasFailed()) {
+          expectedSigs.addAll(otherResult.getPlatformSigs());
+        }
+      }
+    }
+  }
 }

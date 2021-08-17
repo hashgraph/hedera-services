@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.domain.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,68 +23,68 @@ package com.hedera.services.sysfiles.domain.throttling;
 import com.google.common.base.MoreObjects;
 
 public class ThrottleReqOpsScaleFactor {
-	private final int numerator;
-	private final int denominator;
+  private final int numerator;
+  private final int denominator;
 
-	private ThrottleReqOpsScaleFactor(int numerator, int denominator) {
-		this.numerator = numerator;
-		this.denominator = denominator;
-	}
+  private ThrottleReqOpsScaleFactor(int numerator, int denominator) {
+    this.numerator = numerator;
+    this.denominator = denominator;
+  }
 
-	public static ThrottleReqOpsScaleFactor from(String literal) {
-		final var splitIndex = literal.indexOf(':');
-		if (splitIndex == -1) {
-			throw new IllegalArgumentException("Missing ':' in scale literal '" + literal + "'");
-		}
-		final var n = Integer.parseInt(literal.substring(0, splitIndex));
-		final var d = Integer.parseInt(literal.substring(splitIndex + 1));
-		if (n < 0 || d < 0) {
-			throw new IllegalArgumentException("Negative number in scale literal '" + literal + "'");
-		}
-		if (d == 0) {
-			throw new IllegalArgumentException("Division by zero in scale literal '" + literal + "'");
-		}
-		return new ThrottleReqOpsScaleFactor(n, d);
-	}
+  public static ThrottleReqOpsScaleFactor from(String literal) {
+    final var splitIndex = literal.indexOf(':');
+    if (splitIndex == -1) {
+      throw new IllegalArgumentException("Missing ':' in scale literal '" + literal + "'");
+    }
+    final var n = Integer.parseInt(literal.substring(0, splitIndex));
+    final var d = Integer.parseInt(literal.substring(splitIndex + 1));
+    if (n < 0 || d < 0) {
+      throw new IllegalArgumentException("Negative number in scale literal '" + literal + "'");
+    }
+    if (d == 0) {
+      throw new IllegalArgumentException("Division by zero in scale literal '" + literal + "'");
+    }
+    return new ThrottleReqOpsScaleFactor(n, d);
+  }
 
-	public int scaling(int nominalOps) {
-		final int maxUnscaledOps = Integer.MAX_VALUE / numerator;
-		if (nominalOps > maxUnscaledOps) {
-			return Integer.MAX_VALUE / denominator;
-		}
-		return Math.max(1, nominalOps * numerator / denominator);
-	}
+  public int scaling(int nominalOps) {
+    final int maxUnscaledOps = Integer.MAX_VALUE / numerator;
+    if (nominalOps > maxUnscaledOps) {
+      return Integer.MAX_VALUE / denominator;
+    }
+    return Math.max(1, nominalOps * numerator / denominator);
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(ThrottleReqOpsScaleFactor.class)
-				.add("scale", numerator + ":" + denominator)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(ThrottleReqOpsScaleFactor.class)
+        .add("scale", numerator + ":" + denominator)
+        .toString();
+  }
 
-	@Override
-	public int hashCode() {
-		var result = Integer.hashCode(numerator);
-		return 31 * result + Integer.hashCode(denominator);
-	}
+  @Override
+  public int hashCode() {
+    var result = Integer.hashCode(numerator);
+    return 31 * result + Integer.hashCode(denominator);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
-		if (o == null || ThrottleReqOpsScaleFactor.class != o.getClass()) {
-			return false;
-		}
-		var that = (ThrottleReqOpsScaleFactor) o;
-		return this.numerator == that.numerator && this.denominator == that.denominator;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (o == null || ThrottleReqOpsScaleFactor.class != o.getClass()) {
+      return false;
+    }
+    var that = (ThrottleReqOpsScaleFactor) o;
+    return this.numerator == that.numerator && this.denominator == that.denominator;
+  }
 
-	public int getNumerator() {
-		return numerator;
-	}
+  public int getNumerator() {
+    return numerator;
+  }
 
-	public int getDenominator() {
-		return denominator;
-	}
+  public int getDenominator() {
+    return denominator;
+  }
 }

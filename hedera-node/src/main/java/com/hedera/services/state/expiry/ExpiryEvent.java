@@ -1,6 +1,5 @@
 package com.hedera.services.state.expiry;
 
-
 /*-
  * ‌
  * Hedera Services Node
@@ -23,35 +22,33 @@ package com.hedera.services.state.expiry;
 
 import com.google.common.base.MoreObjects;
 
-/**
- * Expiry event with the id and expiration time
- */
+/** Expiry event with the id and expiration time */
 public class ExpiryEvent<K> {
-	private final K id;
-	private final long expiry;
+  private final K id;
+  private final long expiry;
 
-	ExpiryEvent(K id, long expiry) {
-		this.id = id;
-		this.expiry = expiry;
-	}
+  ExpiryEvent(K id, long expiry) {
+    this.id = id;
+    this.expiry = expiry;
+  }
 
-	boolean isExpiredAt(long now) {
-		return expiry <= now;
-	}
+  boolean isExpiredAt(long now) {
+    return expiry <= now;
+  }
 
-	public K getId() {
-		return id;
-	}
+  public K getId() {
+    return id;
+  }
 
-	public long getExpiry() {
-		return expiry;
-	}
+  public long getExpiry() {
+    return expiry;
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(ExpiryEvent.class)
-				.add("id", id)
-				.add("expiry", expiry)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(ExpiryEvent.class)
+        .add("id", id)
+        .add("expiry", expiry)
+        .toString();
+  }
 }

@@ -21,195 +21,197 @@ package com.hedera.services.context.properties;
  */
 
 public class NodeLocalProperties {
-	private final PropertySource properties;
+  private final PropertySource properties;
 
-	private int port;
-	private int tlsPort;
-	private int precheckLookupRetries;
-	private int precheckLookupRetryBackoffMs;
-	private long statsHapiOpsSpeedometerUpdateIntervalMs;
-	private Profile activeProfile;
-	private double statsSpeedometerHalfLifeSecs;
-	private double statsRunningAvgHalfLifeSecs;
-	private String recordLogDir;
-	private long recordLogPeriod;
-	private boolean recordStreamEnabled;
-	private int recordStreamQueueCapacity;
-	private int queryBlobLookupRetries;
-	private long nettyProdKeepAliveTime;
-	private String nettyTlsCrtPath;
-	private String nettyTlsKeyPath;
-	private long nettyProdKeepAliveTimeout;
-	private long nettyMaxConnectionAge;
-	private long nettyMaxConnectionAgeGrace;
-	private long nettyMaxConnectionIdle;
-	private int nettyMaxConcurrentCalls;
-	private int nettyFlowControlWindow;
-	private String devListeningAccount;
-	private boolean devOnlyDefaultNodeListens;
-	private String accountsExportPath;
-	private boolean exportAccountsOnStartup;
-	private Profile nettyMode;
-	private int nettyStartRetries;
-	private long nettyStartRetryIntervalMs;
-	private boolean dumpFcmsOnIss;
+  private int port;
+  private int tlsPort;
+  private int precheckLookupRetries;
+  private int precheckLookupRetryBackoffMs;
+  private long statsHapiOpsSpeedometerUpdateIntervalMs;
+  private Profile activeProfile;
+  private double statsSpeedometerHalfLifeSecs;
+  private double statsRunningAvgHalfLifeSecs;
+  private String recordLogDir;
+  private long recordLogPeriod;
+  private boolean recordStreamEnabled;
+  private int recordStreamQueueCapacity;
+  private int queryBlobLookupRetries;
+  private long nettyProdKeepAliveTime;
+  private String nettyTlsCrtPath;
+  private String nettyTlsKeyPath;
+  private long nettyProdKeepAliveTimeout;
+  private long nettyMaxConnectionAge;
+  private long nettyMaxConnectionAgeGrace;
+  private long nettyMaxConnectionIdle;
+  private int nettyMaxConcurrentCalls;
+  private int nettyFlowControlWindow;
+  private String devListeningAccount;
+  private boolean devOnlyDefaultNodeListens;
+  private String accountsExportPath;
+  private boolean exportAccountsOnStartup;
+  private Profile nettyMode;
+  private int nettyStartRetries;
+  private long nettyStartRetryIntervalMs;
+  private boolean dumpFcmsOnIss;
 
-	public NodeLocalProperties(PropertySource properties) {
-		this.properties = properties;
+  public NodeLocalProperties(PropertySource properties) {
+    this.properties = properties;
 
-		reload();
-	}
+    reload();
+  }
 
-	public void reload() {
-		port = properties.getIntProperty("grpc.port");
-		tlsPort = properties.getIntProperty("grpc.tlsPort");
-		precheckLookupRetries = properties.getIntProperty("precheck.account.maxLookupRetries");
-		precheckLookupRetryBackoffMs = properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
-		activeProfile = properties.getProfileProperty("hedera.profiles.active");
-		statsHapiOpsSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
-		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
-		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
-		recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
-		recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
-		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
-		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
-		queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
-		nettyProdKeepAliveTime = properties.getLongProperty("netty.prod.keepAliveTime");
-		nettyTlsCrtPath = properties.getStringProperty("netty.tlsCrt.path");
-		nettyTlsKeyPath = properties.getStringProperty("netty.tlsKey.path");
-		nettyProdKeepAliveTimeout = properties.getLongProperty("netty.prod.keepAliveTimeout");
-		nettyMaxConnectionAge = properties.getLongProperty("netty.prod.maxConnectionAge");
-		nettyMaxConnectionAgeGrace = properties.getLongProperty("netty.prod.maxConnectionAgeGrace");
-		nettyMaxConnectionIdle = properties.getLongProperty("netty.prod.maxConnectionIdle");
-		nettyMaxConcurrentCalls = properties.getIntProperty("netty.prod.maxConcurrentCalls");
-		nettyFlowControlWindow = properties.getIntProperty("netty.prod.flowControlWindow");
-		devListeningAccount = properties.getStringProperty("dev.defaultListeningNodeAccount");
-		devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
-		accountsExportPath = properties.getStringProperty("hedera.accountsExportPath");
-		exportAccountsOnStartup = properties.getBooleanProperty("hedera.exportAccountsOnStartup");
-		nettyMode = properties.getProfileProperty("netty.mode");
-		nettyStartRetries = properties.getIntProperty("netty.startRetries");
-		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
-		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
-	}
+  public void reload() {
+    port = properties.getIntProperty("grpc.port");
+    tlsPort = properties.getIntProperty("grpc.tlsPort");
+    precheckLookupRetries = properties.getIntProperty("precheck.account.maxLookupRetries");
+    precheckLookupRetryBackoffMs =
+        properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
+    activeProfile = properties.getProfileProperty("hedera.profiles.active");
+    statsHapiOpsSpeedometerUpdateIntervalMs =
+        properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
+    statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
+    statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
+    recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
+    recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
+    recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
+    recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
+    queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
+    nettyProdKeepAliveTime = properties.getLongProperty("netty.prod.keepAliveTime");
+    nettyTlsCrtPath = properties.getStringProperty("netty.tlsCrt.path");
+    nettyTlsKeyPath = properties.getStringProperty("netty.tlsKey.path");
+    nettyProdKeepAliveTimeout = properties.getLongProperty("netty.prod.keepAliveTimeout");
+    nettyMaxConnectionAge = properties.getLongProperty("netty.prod.maxConnectionAge");
+    nettyMaxConnectionAgeGrace = properties.getLongProperty("netty.prod.maxConnectionAgeGrace");
+    nettyMaxConnectionIdle = properties.getLongProperty("netty.prod.maxConnectionIdle");
+    nettyMaxConcurrentCalls = properties.getIntProperty("netty.prod.maxConcurrentCalls");
+    nettyFlowControlWindow = properties.getIntProperty("netty.prod.flowControlWindow");
+    devListeningAccount = properties.getStringProperty("dev.defaultListeningNodeAccount");
+    devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
+    accountsExportPath = properties.getStringProperty("hedera.accountsExportPath");
+    exportAccountsOnStartup = properties.getBooleanProperty("hedera.exportAccountsOnStartup");
+    nettyMode = properties.getProfileProperty("netty.mode");
+    nettyStartRetries = properties.getIntProperty("netty.startRetries");
+    nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
+    dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
+  }
 
-	public int port() {
-		return port;
-	}
+  public int port() {
+    return port;
+  }
 
-	public int tlsPort() {
-		return tlsPort;
-	}
+  public int tlsPort() {
+    return tlsPort;
+  }
 
-	public int precheckLookupRetries() {
-		return precheckLookupRetries;
-	}
+  public int precheckLookupRetries() {
+    return precheckLookupRetries;
+  }
 
-	public int precheckLookupRetryBackoffMs() {
-		return precheckLookupRetryBackoffMs;
-	}
+  public int precheckLookupRetryBackoffMs() {
+    return precheckLookupRetryBackoffMs;
+  }
 
-	public Profile activeProfile() {
-		return activeProfile;
-	}
+  public Profile activeProfile() {
+    return activeProfile;
+  }
 
-	public long statsHapiOpsSpeedometerUpdateIntervalMs() {
-		return statsHapiOpsSpeedometerUpdateIntervalMs;
-	}
+  public long statsHapiOpsSpeedometerUpdateIntervalMs() {
+    return statsHapiOpsSpeedometerUpdateIntervalMs;
+  }
 
-	public double statsSpeedometerHalfLifeSecs() {
-		return statsSpeedometerHalfLifeSecs;
-	}
+  public double statsSpeedometerHalfLifeSecs() {
+    return statsSpeedometerHalfLifeSecs;
+  }
 
-	public double statsRunningAvgHalfLifeSecs() {
-		return statsRunningAvgHalfLifeSecs;
-	}
+  public double statsRunningAvgHalfLifeSecs() {
+    return statsRunningAvgHalfLifeSecs;
+  }
 
-	public String recordLogDir() {
-		return recordLogDir;
-	}
+  public String recordLogDir() {
+    return recordLogDir;
+  }
 
-	public long recordLogPeriod() {
-		return recordLogPeriod;
-	}
+  public long recordLogPeriod() {
+    return recordLogPeriod;
+  }
 
-	public boolean isRecordStreamEnabled() {
-		return recordStreamEnabled;
-	}
+  public boolean isRecordStreamEnabled() {
+    return recordStreamEnabled;
+  }
 
-	public int recordStreamQueueCapacity() {
-		return recordStreamQueueCapacity;
-	}
+  public int recordStreamQueueCapacity() {
+    return recordStreamQueueCapacity;
+  }
 
-	public int queryBlobLookupRetries() {
-		return queryBlobLookupRetries;
-	}
+  public int queryBlobLookupRetries() {
+    return queryBlobLookupRetries;
+  }
 
-	public long nettyProdKeepAliveTime() {
-		return nettyProdKeepAliveTime;
-	}
+  public long nettyProdKeepAliveTime() {
+    return nettyProdKeepAliveTime;
+  }
 
-	public String nettyTlsCrtPath() {
-		return nettyTlsCrtPath;
-	}
+  public String nettyTlsCrtPath() {
+    return nettyTlsCrtPath;
+  }
 
-	public String nettyTlsKeyPath() {
-		return nettyTlsKeyPath;
-	}
+  public String nettyTlsKeyPath() {
+    return nettyTlsKeyPath;
+  }
 
-	public long nettyProdKeepAliveTimeout() {
-		return nettyProdKeepAliveTimeout;
-	}
+  public long nettyProdKeepAliveTimeout() {
+    return nettyProdKeepAliveTimeout;
+  }
 
-	public long nettyMaxConnectionAge() {
-		return nettyMaxConnectionAge;
-	}
+  public long nettyMaxConnectionAge() {
+    return nettyMaxConnectionAge;
+  }
 
-	public long nettyMaxConnectionAgeGrace() {
-		return nettyMaxConnectionAgeGrace;
-	}
+  public long nettyMaxConnectionAgeGrace() {
+    return nettyMaxConnectionAgeGrace;
+  }
 
-	public long nettyMaxConnectionIdle() {
-		return nettyMaxConnectionIdle;
-	}
+  public long nettyMaxConnectionIdle() {
+    return nettyMaxConnectionIdle;
+  }
 
-	public int nettyMaxConcurrentCalls() {
-		return nettyMaxConcurrentCalls;
-	}
+  public int nettyMaxConcurrentCalls() {
+    return nettyMaxConcurrentCalls;
+  }
 
-	public int nettyFlowControlWindow() {
-		return nettyFlowControlWindow;
-	}
+  public int nettyFlowControlWindow() {
+    return nettyFlowControlWindow;
+  }
 
-	public String devListeningAccount() {
-		return devListeningAccount;
-	}
+  public String devListeningAccount() {
+    return devListeningAccount;
+  }
 
-	public boolean devOnlyDefaultNodeListens() {
-		return devOnlyDefaultNodeListens;
-	}
+  public boolean devOnlyDefaultNodeListens() {
+    return devOnlyDefaultNodeListens;
+  }
 
-	public String accountsExportPath() {
-		return accountsExportPath;
-	}
+  public String accountsExportPath() {
+    return accountsExportPath;
+  }
 
-	public boolean exportAccountsOnStartup() {
-		return exportAccountsOnStartup;
-	}
+  public boolean exportAccountsOnStartup() {
+    return exportAccountsOnStartup;
+  }
 
-	public Profile nettyMode() {
-		return nettyMode;
-	}
+  public Profile nettyMode() {
+    return nettyMode;
+  }
 
-	public int nettyStartRetries() {
-		return nettyStartRetries;
-	}
+  public int nettyStartRetries() {
+    return nettyStartRetries;
+  }
 
-	public long nettyStartRetryIntervalMs() {
-		return nettyStartRetryIntervalMs;
-	}
+  public long nettyStartRetryIntervalMs() {
+    return nettyStartRetryIntervalMs;
+  }
 
-	public boolean shouldDumpFcmsOnIss() {
-		return dumpFcmsOnIss;
-	}
+  public boolean shouldDumpFcmsOnIss() {
+    return dumpFcmsOnIss;
+  }
 }

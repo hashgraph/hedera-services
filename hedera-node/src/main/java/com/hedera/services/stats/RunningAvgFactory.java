@@ -24,18 +24,18 @@ import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
 
 public interface RunningAvgFactory {
-	default StatEntry from(String name, String desc, StatsRunningAverage runningAvg) {
-		return new StatEntry(
-				"app",
-				name,
-				desc,
-				"%,13.6f",
-				runningAvg,
-				newHalfLife -> {
-					runningAvg.reset(newHalfLife);
-					return runningAvg;
-				},
-				runningAvg::reset,
-				runningAvg::getWeightedMean);
-	}
+  default StatEntry from(String name, String desc, StatsRunningAverage runningAvg) {
+    return new StatEntry(
+        "app",
+        name,
+        desc,
+        "%,13.6f",
+        runningAvg,
+        newHalfLife -> {
+          runningAvg.reset(newHalfLife);
+          return runningAvg;
+        },
+        runningAvg::reset,
+        runningAvg::getWeightedMean);
+  }
 }

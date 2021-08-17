@@ -23,44 +23,43 @@ package com.hedera.test.factories.txns;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.OptionalLong;
 
-
 public class ContractCallFactory extends SignedTxnFactory<ContractCallFactory> {
-	private OptionalLong gas = OptionalLong.empty();
-	private OptionalLong sending = OptionalLong.empty();
+  private OptionalLong gas = OptionalLong.empty();
+  private OptionalLong sending = OptionalLong.empty();
 
-	private ContractCallFactory() {}
-	public static ContractCallFactory newSignedContractCall() {
-		return new ContractCallFactory();
-	}
+  private ContractCallFactory() {}
 
-	@Override
-	protected ContractCallFactory self() {
-		return this;
-	}
+  public static ContractCallFactory newSignedContractCall() {
+    return new ContractCallFactory();
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected ContractCallFactory self() {
+    return this;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		ContractCallTransactionBody.Builder op = ContractCallTransactionBody.newBuilder();
-		gas.ifPresent(op::setGas);
-		sending.ifPresent(op::setAmount);
-		txn.setContractCall(op);
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	public ContractCallFactory gas(long amount) {
-		gas = OptionalLong.of(amount);
-		return this;
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    ContractCallTransactionBody.Builder op = ContractCallTransactionBody.newBuilder();
+    gas.ifPresent(op::setGas);
+    sending.ifPresent(op::setAmount);
+    txn.setContractCall(op);
+  }
 
-	public ContractCallFactory sending(long amount) {
-		sending = OptionalLong.of(amount);
-		return this;
-	}
+  public ContractCallFactory gas(long amount) {
+    gas = OptionalLong.of(amount);
+    return this;
+  }
+
+  public ContractCallFactory sending(long amount) {
+    sending = OptionalLong.of(amount);
+    return this;
+  }
 }

@@ -20,27 +20,27 @@ package com.hedera.services.context;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static com.swirlds.common.PlatformStatus.MAINTENANCE;
 import static com.swirlds.common.PlatformStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+
 class ContextPlatformStatusTest {
-	ContextPlatformStatus subject = new ContextPlatformStatus();
+  ContextPlatformStatus subject = new ContextPlatformStatus();
 
-	@Test
-	void beginsAsStartingUp() {
-		// expect:
-		assertEquals(STARTING_UP, subject.get());
-	}
+  @Test
+  void beginsAsStartingUp() {
+    // expect:
+    assertEquals(STARTING_UP, subject.get());
+  }
 
-	@Test
-	void setterWorks() {
-		// when:
-		subject.set(MAINTENANCE);
+  @Test
+  void setterWorks() {
+    // when:
+    subject.set(MAINTENANCE);
 
-		// then:
-		assertEquals(MAINTENANCE, subject.get());
-	}
+    // then:
+    assertEquals(MAINTENANCE, subject.get());
+  }
 }

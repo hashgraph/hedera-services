@@ -24,33 +24,33 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class TxnValidityAndFeeReq {
-	private static final long NO_REQUIRED_FEE = 0;
+  private static final long NO_REQUIRED_FEE = 0;
 
-	private long requiredFee = NO_REQUIRED_FEE;
-	private ResponseCodeEnum validity;
+  private long requiredFee = NO_REQUIRED_FEE;
+  private ResponseCodeEnum validity;
 
-	public TxnValidityAndFeeReq(ResponseCodeEnum validity) {
-		this.validity = validity;
-	}
+  public TxnValidityAndFeeReq(ResponseCodeEnum validity) {
+    this.validity = validity;
+  }
 
-	public TxnValidityAndFeeReq(ResponseCodeEnum validity, long requiredFee) {
-		this.validity = validity;
-		this.requiredFee = requiredFee;
-	}
+  public TxnValidityAndFeeReq(ResponseCodeEnum validity, long requiredFee) {
+    this.validity = validity;
+    this.requiredFee = requiredFee;
+  }
 
-	public ResponseCodeEnum getValidity() {
-		return validity;
-	}
+  public ResponseCodeEnum getValidity() {
+    return validity;
+  }
 
-	public long getRequiredFee() {
-		return requiredFee;
-	}
+  public long getRequiredFee() {
+    return requiredFee;
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("validity", validity)
-				.add("requiredFee", requiredFee)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("validity", validity)
+        .add("requiredFee", requiredFee)
+        .toString();
+  }
 }

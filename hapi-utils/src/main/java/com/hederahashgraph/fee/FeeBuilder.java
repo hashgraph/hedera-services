@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.exception.InvalidTxBodyException;
-
 import java.math.BigInteger;
 import java.util.List;
 
@@ -41,8 +40,6 @@ import java.util.List;
  * component Fee for a given Transaction or Query. It includes common methods which is used to
  * calculate Fee for Crypto, File and Smart Contracts Transactions and Query
  */
-
-
 public class FeeBuilder {
   public static final long MAX_ENTITY_LIFETIME = 100L * 365L * 24L * 60L * 60L;
 
@@ -62,30 +59,29 @@ public class FeeBuilder {
   public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
-  /**
-   * Fields included: status, exchangeRate.
-   */
+  /** Fields included: status, exchangeRate. */
   public static final int BASIC_RECEIPT_SIZE = INT_SIZE + 2 * EXCHANGE_RATE_SIZE;
   /**
-   * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration, generateRecord
+   * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration,
+   * generateRecord
    */
   public static final int BASIC_TX_BODY_SIZE =
       BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
+
   public static final int STATE_PROOF_SIZE = 2000;
   public static final int BASE_FILEINFO_SIZE =
       BASIC_ENTITY_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
   public static final int BASIC_ACCOUNT_SIZE = 8 * LONG_SIZE + BOOL_SIZE;
-  /**
-   * Fields included: nodeTransactionPrecheckCode, responseType, cost
-   */
+  /** Fields included: nodeTransactionPrecheckCode, responseType, cost */
   public static final long BASIC_QUERY_RES_HEADER = 2L * INT_SIZE + LONG_SIZE;
+
   public static final long BASIC_QUERY_HEADER = 212L;
   public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ENTITY_ID_SIZE + 6 * LONG_SIZE;
   public static final long BASIC_CONTRACT_INFO_SIZE =
       2L * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
   /**
-   * Fields included in size: receipt (basic size), transactionHash, consensusTimestamp, transactionID
-   * transactionFee.
+   * Fields included in size: receipt (basic size), transactionHash, consensusTimestamp,
+   * transactionID transactionFee.
    */
   public static final int BASIC_TX_RECORD_SIZE =
       BASIC_RECEIPT_SIZE + TX_HASH_SIZE + LONG_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE;
@@ -96,24 +92,32 @@ public class FeeBuilder {
    *
    * @param componentCoefficients component coefficients
    * @param componentMetrics compnent metrics
-   *
    * @return long representation of the fee in tiny cents
    */
-  public static long getComponentFeeInTinyCents(FeeComponents componentCoefficients,
-      FeeComponents componentMetrics) {
+  public static long getComponentFeeInTinyCents(
+      FeeComponents componentCoefficients, FeeComponents componentMetrics) {
 
     long bytesUsageFee = componentCoefficients.getBpt() * componentMetrics.getBpt();
     long verificationFee = componentCoefficients.getVpt() * componentMetrics.getVpt();
     long ramStorageFee = componentCoefficients.getRbh() * componentMetrics.getRbh();
     long storageFee = componentCoefficients.getSbh() * componentMetrics.getSbh();
     long evmGasFee = componentCoefficients.getGas() * componentMetrics.getGas();
-    long txValueFee = Math.round((float)(componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
+    long txValueFee =
+        Math.round((float) (componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
     long bytesResponseFee = componentCoefficients.getBpr() * componentMetrics.getBpr();
     long storageBytesResponseFee = componentCoefficients.getSbpr() * componentMetrics.getSbpr();
     long componentUsage = componentCoefficients.getConstant() * componentMetrics.getConstant();
 
-    long totalComponentFee = componentUsage + (bytesUsageFee + verificationFee + ramStorageFee
-        + storageFee + evmGasFee + txValueFee + bytesResponseFee + storageBytesResponseFee);
+    long totalComponentFee =
+        componentUsage
+            + (bytesUsageFee
+                + verificationFee
+                + ramStorageFee
+                + storageFee
+                + evmGasFee
+                + txValueFee
+                + bytesResponseFee
+                + storageBytesResponseFee);
 
     if (totalComponentFee < componentCoefficients.getMin()) {
       totalComponentFee = componentCoefficients.getMin();
@@ -129,26 +133,23 @@ public class FeeBuilder {
    * @param feeCoefficients fee coefficients
    * @param componentMetrics component metrics
    * @param exchangeRate exchange rates
-   *
    * @return long representing the total fee request
    */
-  public static long getTotalFeeforRequest(FeeData feeCoefficients, FeeData componentMetrics,
-      ExchangeRate exchangeRate) {
+  public static long getTotalFeeforRequest(
+      FeeData feeCoefficients, FeeData componentMetrics, ExchangeRate exchangeRate) {
 
-    FeeObject feeObject = getFeeObject(feeCoefficients, componentMetrics,exchangeRate);
+    FeeObject feeObject = getFeeObject(feeCoefficients, componentMetrics, exchangeRate);
     return feeObject.getServiceFee() + feeObject.getNodeFee() + feeObject.getNetworkFee();
   }
 
   public static FeeObject getFeeObject(
-          FeeData feeData,
-          FeeData feeMatrices,
-          ExchangeRate exchangeRate,
-          long multiplier
-  ) {
+      FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate, long multiplier) {
     // get the Network Fee
-    long networkFee = getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata());
+    long networkFee =
+        getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata());
     long nodeFee = getComponentFeeInTinyCents(feeData.getNodedata(), feeMatrices.getNodedata());
-    long serviceFee = getComponentFeeInTinyCents(feeData.getServicedata(), feeMatrices.getServicedata());
+    long serviceFee =
+        getComponentFeeInTinyCents(feeData.getServicedata(), feeMatrices.getServicedata());
     // convert the Fee to tiny hbars
     networkFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, networkFee) * multiplier;
     nodeFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, nodeFee) * multiplier;
@@ -162,33 +163,35 @@ public class FeeBuilder {
    * @param feeData fee data
    * @param feeMatrices fee matrices
    * @param exchangeRate exchange rate
-   *
    * @return fee object
    */
-  public static FeeObject getFeeObject(FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate) {
-  	return getFeeObject(feeData, feeMatrices, exchangeRate, 1L);
+  public static FeeObject getFeeObject(
+      FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate) {
+    return getFeeObject(feeData, feeMatrices, exchangeRate, 1L);
   }
 
   /**
    * This method calculates the common bytes included in a every transaction. Common bytes only
    * differ based upon memo field.
-   * <p>
-   * Common fields in all transaction:
-   * </p>
+   *
+   * <p>Common fields in all transaction:
+   *
    * <ul>
-   *     <li>TransactionID transactionID - BASIC_ENTITY_ID_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
-   *     <li>AccountID nodeAccountID - BASIC_ENTITY_ID_SIZE</li>
-   *     <li>uint64 transactionFee - LONG_SIZE</li>
-   *     <li>Duration transactionValidDuration - (LONG_SIZE)</li>
-   *     <li>bool generateRecord - BOOL_SIZE</li>
-   *     <li>bytes string memo - get memo size from transaction</li>
+   *   <li>TransactionID transactionID - BASIC_ENTITY_ID_SIZE (accountId) + LONG_SIZE
+   *       (transactionValidStart)
+   *   <li>AccountID nodeAccountID - BASIC_ENTITY_ID_SIZE
+   *   <li>uint64 transactionFee - LONG_SIZE
+   *   <li>Duration transactionValidDuration - (LONG_SIZE)
+   *   <li>bool generateRecord - BOOL_SIZE
+   *   <li>bytes string memo - get memo size from transaction
    * </ul>
    *
    * @param txBody transaction body
    * @return long representing transaction size
    * @throws InvalidTxBodyException when transaction body is invalid
    */
-  public static long getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
+  public static long getCommonTransactionBodyBytes(TransactionBody txBody)
+      throws InvalidTxBodyException {
     if (txBody == null) {
       throw new InvalidTxBodyException("Transaction Body not available for Fee Calculation");
     }
@@ -225,7 +228,6 @@ public class FeeBuilder {
    *
    * @param key key
    * @param count count array
-   *
    * @return int array containing key metadata
    */
   public static int[] calculateKeysMetadata(Key key, int[] count) {
@@ -260,13 +262,13 @@ public class FeeBuilder {
    * Get signature count
    *
    * @param transaction transaction
-   *
    * @return int representing signature count
    */
   public static int getSignatureCount(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
-    } catch (InvalidProtocolBufferException ignored) { }
+    } catch (InvalidProtocolBufferException ignored) {
+    }
     return 0;
   }
 
@@ -274,13 +276,13 @@ public class FeeBuilder {
    * Get signature size
    *
    * @param transaction transaction
-   *
    * @return int representing signature size
    */
   public static int getSignatureSize(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
-    } catch (InvalidProtocolBufferException ignored) { }
+    } catch (InvalidProtocolBufferException ignored) {
+    }
     return 0;
   }
 
@@ -289,7 +291,6 @@ public class FeeBuilder {
    *
    * @param exchangeRate exchange rate
    * @param tinyCentsFee tiny cents fee
-   *
    * @return tinyHbars
    */
   public static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
@@ -301,32 +302,43 @@ public class FeeBuilder {
     return feeInBigInt.longValue();
   }
 
-
-  public static FeeData getFeeDataMatrices(FeeComponents feeComponents, int payerVpt, long rbsNetwork) {
+  public static FeeData getFeeDataMatrices(
+      FeeComponents feeComponents, int payerVpt, long rbsNetwork) {
 
     long rbh = Math.max(feeComponents.getRbh() > 0 ? 1 : 0, feeComponents.getRbh() / HRS_DIVISOR);
     long sbh = Math.max(feeComponents.getSbh() > 0 ? 1 : 0, feeComponents.getSbh() / HRS_DIVISOR);
     long rbhNetwork = Math.max(rbsNetwork > 0 ? 1 : 0, (rbsNetwork) / HRS_DIVISOR);
     FeeComponents feeMatricesForTxService =
-        FeeComponents.newBuilder().setConstant(FEE_MATRICES_CONST)
-            .setRbh(rbh).setSbh(sbh)
-            .setTv(feeComponents.getTv()).build();
+        FeeComponents.newBuilder()
+            .setConstant(FEE_MATRICES_CONST)
+            .setRbh(rbh)
+            .setSbh(sbh)
+            .setTv(feeComponents.getTv())
+            .build();
 
     FeeComponents feeMatricesForTxNetwork =
-        FeeComponents.newBuilder().setConstant(FEE_MATRICES_CONST)
-            .setBpt(feeComponents.getBpt()).setVpt(feeComponents.getVpt())
-            .setRbh(rbhNetwork).build();
+        FeeComponents.newBuilder()
+            .setConstant(FEE_MATRICES_CONST)
+            .setBpt(feeComponents.getBpt())
+            .setVpt(feeComponents.getVpt())
+            .setRbh(rbhNetwork)
+            .build();
 
-    FeeComponents feeMatricesForTxNode = FeeComponents.newBuilder()
-        .setConstant(FEE_MATRICES_CONST)
-        .setBpt(feeComponents.getBpt())
-        .setVpt(payerVpt)
-        .setBpr(feeComponents.getBpr()).setSbpr(feeComponents.getSbpr()).build();
+    FeeComponents feeMatricesForTxNode =
+        FeeComponents.newBuilder()
+            .setConstant(FEE_MATRICES_CONST)
+            .setBpt(feeComponents.getBpt())
+            .setVpt(payerVpt)
+            .setBpr(feeComponents.getBpr())
+            .setSbpr(feeComponents.getSbpr())
+            .build();
 
-    return FeeData.newBuilder().setNetworkdata(feeMatricesForTxNetwork)
-        .setNodedata(feeMatricesForTxNode).setServicedata(feeMatricesForTxService).build();
+    return FeeData.newBuilder()
+        .setNetworkdata(feeMatricesForTxNetwork)
+        .setNodedata(feeMatricesForTxNode)
+        .setServicedata(feeMatricesForTxService)
+        .build();
   }
-
 
   public static FeeData getQueryFeeDataMatrices(FeeComponents feeComponents) {
 
@@ -334,15 +346,19 @@ public class FeeBuilder {
 
     FeeComponents feeMatricesForTxNetwork = FeeComponents.getDefaultInstance();
 
-    FeeComponents feeMatricesForTxNode = FeeComponents.newBuilder()
-        .setConstant(FEE_MATRICES_CONST)
-        .setBpt(feeComponents.getBpt())
-        .setBpr(feeComponents.getBpr())
-        .setSbpr(feeComponents.getSbpr())
-        .build();
+    FeeComponents feeMatricesForTxNode =
+        FeeComponents.newBuilder()
+            .setConstant(FEE_MATRICES_CONST)
+            .setBpt(feeComponents.getBpt())
+            .setBpr(feeComponents.getBpr())
+            .setSbpr(feeComponents.getSbpr())
+            .build();
 
-    return FeeData.newBuilder().setNetworkdata(feeMatricesForTxNetwork)
-        .setNodedata(feeMatricesForTxNode).setServicedata(feeMatricesForTxService).build();
+    return FeeData.newBuilder()
+        .setNetworkdata(feeMatricesForTxNetwork)
+        .setNodedata(feeMatricesForTxNode)
+        .setServicedata(feeMatricesForTxService)
+        .build();
   }
 
   public static long getDefaultRBHNetworkSize() {
@@ -356,39 +372,38 @@ public class FeeBuilder {
     }
     // TransferList size
     if (txBody.hasCryptoTransfer()) {
-      txRecordSize = txRecordSize
-          + txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount()
-          * (BASIC_ACCOUNT_AMT_SIZE);
+      txRecordSize =
+          txRecordSize
+              + txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount()
+                  * (BASIC_ACCOUNT_AMT_SIZE);
     }
     return txRecordSize;
   }
 
   public static long getTxRecordUsageRBH(TransactionRecord txRecord, int timeInSeconds) {
-	if(txRecord == null) {
+    if (txRecord == null) {
       return 0;
     }
-	long txRecordSize = getTransactionRecordSize(txRecord);
+    long txRecordSize = getTransactionRecordSize(txRecord);
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
 
   public static int getHoursFromSec(int valueInSeconds) {
-	  return valueInSeconds==0 ? 0 : Math.max(1,(valueInSeconds/HRS_DIVISOR));
+    return valueInSeconds == 0 ? 0 : Math.max(1, (valueInSeconds / HRS_DIVISOR));
   }
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
 
-	if(txRecord == null) {
+    if (txRecord == null) {
       return 0;
     }
 
     int txRecordSize = BASIC_TX_RECORD_SIZE;
 
     if (txRecord.hasContractCallResult()) {
-      txRecordSize =
-          txRecordSize + getContractFunctionSize(txRecord.getContractCallResult());
+      txRecordSize = txRecordSize + getContractFunctionSize(txRecord.getContractCallResult());
     } else if (txRecord.hasContractCreateResult()) {
-      txRecordSize =
-          txRecordSize + getContractFunctionSize(txRecord.getContractCreateResult());
+      txRecordSize = txRecordSize + getContractFunctionSize(txRecord.getContractCreateResult());
     }
     if (txRecord.hasTransferList()) {
       txRecordSize =
@@ -402,7 +417,6 @@ public class FeeBuilder {
     }
 
     return txRecordSize + memoBytesSize;
-
   }
 
   public static int getContractFunctionSize(ContractFunctionResult contFuncResult) {
@@ -427,15 +441,16 @@ public class FeeBuilder {
 
   public static int getStateProofSize(ResponseType responseType) {
     return (responseType == ResponseType.ANSWER_STATE_PROOF
-        || responseType == ResponseType.COST_ANSWER_STATE_PROOF) ? STATE_PROOF_SIZE : 0;
+            || responseType == ResponseType.COST_ANSWER_STATE_PROOF)
+        ? STATE_PROOF_SIZE
+        : 0;
   }
 
   protected long calculateRBS(TransactionBody txBody) {
     return getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
   }
 
-  protected long calculateBPT(){
+  protected long calculateBPT() {
     return BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
   }
-
 }

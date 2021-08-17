@@ -20,14 +20,13 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
+
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-
 import java.util.List;
-
-import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 
 /**
  * Provides static methods to work with {@link com.swirlds.common.crypto.Signature} objects.
@@ -35,55 +34,49 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
  * @author Michael Tinker
  */
 public class PlatformSigOps {
-	/**
-	 * Return the result of trying to create one or more platform sigs using a given
-	 * {@link TxnScopedPlatformSigFactory}, where this {@code factory} should be invoked for
-	 * each public key in a left-to-right DFS traversal of the simple keys from a list of
-	 * Hedera keys, using signature bytes from a given {@link PubKeyToSigBytes}.
-	 *
-	 * @param pubKeys
-	 * 		a list of Hedera keys to traverse for public keys.
-	 * @param sigBytesFn
-	 * 		a source of cryptographic signatures to associate to the public keys.
-	 * @param factory
-	 * 		a factory to convert public keys and cryptographic sigs into sigs.
-	 * @return the result of attempting this creation.
-	 */
-	public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(
-			List<JKey> pubKeys,
-			PubKeyToSigBytes sigBytesFn,
-			TxnScopedPlatformSigFactory factory
-	) {
-		PlatformSigsCreationResult result = new PlatformSigsCreationResult();
-		for (JKey pk : pubKeys) {
-			visitSimpleKeys(pk, ed25519Key -> createPlatformSigFor(ed25519Key, sigBytesFn, factory, result));
-		}
-		return result;
-	}
+  /**
+   * Return the result of trying to create one or more platform sigs using a given {@link
+   * TxnScopedPlatformSigFactory}, where this {@code factory} should be invoked for each public key
+   * in a left-to-right DFS traversal of the simple keys from a list of Hedera keys, using signature
+   * bytes from a given {@link PubKeyToSigBytes}.
+   *
+   * @param pubKeys a list of Hedera keys to traverse for public keys.
+   * @param sigBytesFn a source of cryptographic signatures to associate to the public keys.
+   * @param factory a factory to convert public keys and cryptographic sigs into sigs.
+   * @return the result of attempting this creation.
+   */
+  public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(
+      List<JKey> pubKeys, PubKeyToSigBytes sigBytesFn, TxnScopedPlatformSigFactory factory) {
+    PlatformSigsCreationResult result = new PlatformSigsCreationResult();
+    for (JKey pk : pubKeys) {
+      visitSimpleKeys(
+          pk, ed25519Key -> createPlatformSigFor(ed25519Key, sigBytesFn, factory, result));
+    }
+    return result;
+  }
 
-	private static void createPlatformSigFor(
-			JKey ed25519Key,
-			PubKeyToSigBytes sigBytesFn,
-			TxnScopedPlatformSigFactory factory,
-			PlatformSigsCreationResult result
-	) {
-		if (result.hasFailed()) {
-			return;
-		}
+  private static void createPlatformSigFor(
+      JKey ed25519Key,
+      PubKeyToSigBytes sigBytesFn,
+      TxnScopedPlatformSigFactory factory,
+      PlatformSigsCreationResult result) {
+    if (result.hasFailed()) {
+      return;
+    }
 
-		try {
-			final var keyBytes = ed25519Key.getEd25519();
-			final var sigBytes = sigBytesFn.sigBytesFor(keyBytes);
-			if (sigBytes.length > 0) {
-				result.getPlatformSigs().add(factory.create(keyBytes, sigBytes));
-			}
-		} catch (KeyPrefixMismatchException kmpe) {
-			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
-			if (!ed25519Key.isForScheduledTxn())	{
-				result.setTerminatingEx(kmpe);
-			}
-		} catch (Exception e) {
-			result.setTerminatingEx(e);
-		}
-	}
+    try {
+      final var keyBytes = ed25519Key.getEd25519();
+      final var sigBytes = sigBytesFn.sigBytesFor(keyBytes);
+      if (sigBytes.length > 0) {
+        result.getPlatformSigs().add(factory.create(keyBytes, sigBytes));
+      }
+    } catch (KeyPrefixMismatchException kmpe) {
+      /* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
+      if (!ed25519Key.isForScheduledTxn()) {
+        result.setTerminatingEx(kmpe);
+      }
+    } catch (Exception e) {
+      result.setTerminatingEx(e);
+    }
+  }
 }

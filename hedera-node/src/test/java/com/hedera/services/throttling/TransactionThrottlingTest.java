@@ -20,6 +20,11 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -28,44 +33,43 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class TransactionThrottlingTest {
-	FunctionalityThrottling functionalThrottling;
+  FunctionalityThrottling functionalThrottling;
 
-	TransactionThrottling subject;
+  TransactionThrottling subject;
 
-	@BeforeEach
-	private void setup() {
-		functionalThrottling = mock(FunctionalityThrottling.class);
+  @BeforeEach
+  private void setup() {
+    functionalThrottling = mock(FunctionalityThrottling.class);
 
-		subject = new TransactionThrottling(functionalThrottling);
-	}
+    subject = new TransactionThrottling(functionalThrottling);
+  }
 
-	@Test
-	void delegatesExpectedFunction() {
-		// setup:
-		TransactionBody createTxn = TransactionBody.newBuilder()
-				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder().setMemo("Hi!"))
-				.build();
-		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
-				.setSignedTransactionBytes(
-						SignedTransaction.newBuilder()
-								.setBodyBytes(createTxn.toByteString())
-								.build()
-								.toByteString())
-						.build());
+  @Test
+  void delegatesExpectedFunction() {
+    // setup:
+    TransactionBody createTxn =
+        TransactionBody.newBuilder()
+            .setConsensusCreateTopic(
+                ConsensusCreateTopicTransactionBody.newBuilder().setMemo("Hi!"))
+            .build();
+    final var accessor =
+        SignedTxnAccessor.uncheckedFrom(
+            Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                    SignedTransaction.newBuilder()
+                        .setBodyBytes(createTxn.toByteString())
+                        .build()
+                        .toByteString())
+                .build());
 
-		given(functionalThrottling.shouldThrottleTxn(accessor)).willReturn(true);
+    given(functionalThrottling.shouldThrottleTxn(accessor)).willReturn(true);
 
-		// when:
-		boolean should = subject.shouldThrottle(accessor);
+    // when:
+    boolean should = subject.shouldThrottle(accessor);
 
-		// then:
-		assertTrue(should);
-		verify(functionalThrottling).shouldThrottleTxn(accessor);
-	}
+    // then:
+    assertTrue(should);
+    verify(functionalThrottling).shouldThrottleTxn(accessor);
+  }
 }

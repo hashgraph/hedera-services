@@ -20,6 +20,11 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -32,89 +37,81 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-
-/**
- * Provides the state transition for dissociating tokens from an account.
- */
+/** Provides the state transition for dissociating tokens from an account. */
 public class TokenDissociateTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final AccountStore accountStore;
-	private final TypedTokenStore tokenStore;
-	private final TransactionContext txnCtx;
-	private final OptionValidator validator;
-	private final DissociationFactory dissociationFactory;
+  private final AccountStore accountStore;
+  private final TypedTokenStore tokenStore;
+  private final TransactionContext txnCtx;
+  private final OptionValidator validator;
+  private final DissociationFactory dissociationFactory;
 
-	public TokenDissociateTransitionLogic(
-			TypedTokenStore tokenStore,
-			AccountStore accountStore,
-			TransactionContext txnCtx,
-			OptionValidator validator,
-			DissociationFactory dissociationFactory
-	) {
-		this.accountStore = accountStore;
-		this.tokenStore = tokenStore;
-		this.txnCtx = txnCtx;
-		this.validator = validator;
-		this.dissociationFactory = dissociationFactory;
-	}
+  public TokenDissociateTransitionLogic(
+      TypedTokenStore tokenStore,
+      AccountStore accountStore,
+      TransactionContext txnCtx,
+      OptionValidator validator,
+      DissociationFactory dissociationFactory) {
+    this.accountStore = accountStore;
+    this.tokenStore = tokenStore;
+    this.txnCtx = txnCtx;
+    this.validator = validator;
+    this.dissociationFactory = dissociationFactory;
+  }
 
-	@Override
-	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
-		var op = txnCtx.accessor().getTxn().getTokenDissociate();
-		final var accountId = Id.fromGrpcAccount(op.getAccount());
+  @Override
+  public void doStateTransition() {
+    /* --- Translate from gRPC types --- */
+    var op = txnCtx.accessor().getTxn().getTokenDissociate();
+    final var accountId = Id.fromGrpcAccount(op.getAccount());
 
-		/* --- Load the model objects --- */
-		final var account = accountStore.loadAccount(accountId);
-		final List<Dissociation> dissociations = new ArrayList<>();
-		for (var tokenId : op.getTokensList()) {
-			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
-		}
+    /* --- Load the model objects --- */
+    final var account = accountStore.loadAccount(accountId);
+    final List<Dissociation> dissociations = new ArrayList<>();
+    for (var tokenId : op.getTokensList()) {
+      dissociations.add(
+          dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
+    }
 
-		/* --- Do the business logic --- */
-		account.dissociateUsing(dissociations, validator);
+    /* --- Do the business logic --- */
+    account.dissociateUsing(dissociations, validator);
 
-		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account);
-		final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
-		for (var dissociation : dissociations) {
-			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
-		}
-		tokenStore.persistTokenRelationships(allUpdatedRels);
-	}
+    /* --- Persist the updated models --- */
+    accountStore.persistAccount(account);
+    final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
+    for (var dissociation : dissociations) {
+      dissociation.addUpdatedModelRelsTo(allUpdatedRels);
+    }
+    tokenStore.persistTokenRelationships(allUpdatedRels);
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenDissociate;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasTokenDissociate;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenDissociateTransactionBody op = txnBody.getTokenDissociate();
+  public ResponseCodeEnum validate(TransactionBody txnBody) {
+    TokenDissociateTransactionBody op = txnBody.getTokenDissociate();
 
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
+    if (!op.hasAccount()) {
+      return INVALID_ACCOUNT_ID;
+    }
 
-		if (repeatsItself(op.getTokensList())) {
-			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-		}
+    if (repeatsItself(op.getTokensList())) {
+      return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 }

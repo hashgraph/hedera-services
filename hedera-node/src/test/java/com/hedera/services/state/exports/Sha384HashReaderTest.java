@@ -20,7 +20,8 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,34 +29,32 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 class Sha384HashReaderTest {
-	String extantLoc = "src/test/resources/bootstrap/standard.properties";
-	String imaginaryLoc = "src/test/resources/bootstrap/not-so-standard.properties";
+  String extantLoc = "src/test/resources/bootstrap/standard.properties";
+  String imaginaryLoc = "src/test/resources/bootstrap/not-so-standard.properties";
 
-	Sha384HashReader subject = new Sha384HashReader();
+  Sha384HashReader subject = new Sha384HashReader();
 
-	@Test
-	void rethrowsIllegalArgumentExceptionIfMissingFile() {
-		// expect:
-		assertThrows(UncheckedIOException.class, () -> subject.readHash(imaginaryLoc));
-	}
+  @Test
+  void rethrowsIllegalArgumentExceptionIfMissingFile() {
+    // expect:
+    assertThrows(UncheckedIOException.class, () -> subject.readHash(imaginaryLoc));
+  }
 
-	@Test
-	void matchesLegacyValue() throws IOException, NoSuchAlgorithmException {
-		// expect:
-		assertArrayEquals(legacy(extantLoc), subject.readHash(extantLoc));
-	}
+  @Test
+  void matchesLegacyValue() throws IOException, NoSuchAlgorithmException {
+    // expect:
+    assertArrayEquals(legacy(extantLoc), subject.readHash(extantLoc));
+  }
 
-	public static byte[] legacy(String fileName) throws NoSuchAlgorithmException, IOException {
-		MessageDigest md;
-		md = MessageDigest.getInstance("SHA-384");
+  public static byte[] legacy(String fileName) throws NoSuchAlgorithmException, IOException {
+    MessageDigest md;
+    md = MessageDigest.getInstance("SHA-384");
 
-		byte[] array = Files.readAllBytes(Paths.get(fileName));
-		byte[] fileHash = md.digest(array);
-		return fileHash;
-	}
+    byte[] array = Files.readAllBytes(Paths.get(fileName));
+    byte[] fileHash = md.digest(array);
+    return fileHash;
+  }
 }

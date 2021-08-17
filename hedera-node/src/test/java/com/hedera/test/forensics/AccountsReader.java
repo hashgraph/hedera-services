@@ -9,9 +9,9 @@ package com.hedera.test.forensics;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,42 +36,40 @@ import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkletree.MerklePair;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class AccountsReader {
-	public static FCMap<MerkleEntityId, MerkleAccount> from(String loc) throws Exception {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCQueue.class, FCQueue::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMap.class, FCMap::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleEntityId.class, MerkleEntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(ExpirableTxnRecord.class, ExpirableTxnRecord::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnReceipt.class, TxnReceipt::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnId.class, TxnId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
+  public static FCMap<MerkleEntityId, MerkleAccount> from(String loc) throws Exception {
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerklePair.class, MerklePair::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(FCQueue.class, FCQueue::new));
+    ConstructableRegistry.registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerkleEntityId.class, MerkleEntityId::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(EntityId.class, EntityId::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(ExpirableTxnRecord.class, ExpirableTxnRecord::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(TxnReceipt.class, TxnReceipt::new));
+    ConstructableRegistry.registerConstructable(new ClassConstructorPair(TxnId.class, TxnId::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
 
-		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)), false)) {
-			FCMap<MerkleEntityId, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
-			return fcm;
-		}
-	}
+    try (MerkleDataInputStream in =
+        new MerkleDataInputStream(Files.newInputStream(Path.of(loc)), false)) {
+      FCMap<MerkleEntityId, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+      return fcm;
+    }
+  }
 }

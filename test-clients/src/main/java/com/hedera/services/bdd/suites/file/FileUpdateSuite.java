@@ -20,18 +20,6 @@ package com.hedera.services.bdd.suites.file;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -45,148 +33,154 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
- * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy FileServiceIT test class after
- * the FileServiceIT class is removed since all other test scenarios in this class are already covered by test suites
- * under com.hedera.services.legacy.regression.suites.file and com.hedera.services.legacy.regression.suites.crpto.
+ * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy
+ * FileServiceIT test class after the FileServiceIT class is removed since all other test scenarios
+ * in this class are already covered by test suites under
+ * com.hedera.services.legacy.regression.suites.file and
+ * com.hedera.services.legacy.regression.suites.crpto.
  *
- * 2. While this class now provides minimal coverage for proto's FileUpdate transaction, we shall add more positive and
- * negative test scenarios to cover FileUpdate, such as missing (partial) keys for update, for update of expirationTime,
- * for modifying keys field, etc.
+ * <p>2. While this class now provides minimal coverage for proto's FileUpdate transaction, we shall
+ * add more positive and negative test scenarios to cover FileUpdate, such as missing (partial) keys
+ * for update, for update of expirationTime, for modifying keys field, etc.
  *
- * We'll come back to add all missing test scenarios for this and other test suites once we are done with cleaning up
- * old test cases.
+ * <p>We'll come back to add all missing test scenarios for this and other test suites once we are
+ * done with cleaning up old test cases.
  */
 public class FileUpdateSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
+  private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
 
-	private static final long defaultMaxLifetime =
-			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+  private static final long defaultMaxLifetime =
+      Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
-	public static void main(String... args) {
-		new FileUpdateSuite().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new FileUpdateSuite().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-    	        vanillaUpdateSucceeds(),
-				updateFeesCompatibleWithCreates(),
-				apiPermissionsChangeDynamically(),
-				cannotUpdateExpirationPastMaxLifetime(),
-		});
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          vanillaUpdateSucceeds(),
+          updateFeesCompatibleWithCreates(),
+          apiPermissionsChangeDynamically(),
+          cannotUpdateExpirationPastMaxLifetime(),
+        });
+  }
 
-	private HapiApiSpec apiPermissionsChangeDynamically() {
-		return defaultHapiSpec("ApiPermissionsChangeDynamically")
-				.given(
-						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
-						getFileContents(API_PERMISSIONS).logged(),
-						tokenCreate("poc").payingWith("civilian")
-				).when(
-						fileUpdate(API_PERMISSIONS)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.erasingProps(Set.of("tokenCreate")),
-						getFileContents(API_PERMISSIONS).logged()
-				).then(
-						tokenCreate("poc").payingWith("civilian").hasPrecheck(NOT_SUPPORTED),
-						fileUpdate(API_PERMISSIONS)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokenCreate", "0-*")),
-						tokenCreate("secondPoc").payingWith("civilian")
-				);
-	}
+  private HapiApiSpec apiPermissionsChangeDynamically() {
+    return defaultHapiSpec("ApiPermissionsChangeDynamically")
+        .given(
+            cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+            getFileContents(API_PERMISSIONS).logged(),
+            tokenCreate("poc").payingWith("civilian"))
+        .when(
+            fileUpdate(API_PERMISSIONS)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .erasingProps(Set.of("tokenCreate")),
+            getFileContents(API_PERMISSIONS).logged())
+        .then(
+            tokenCreate("poc").payingWith("civilian").hasPrecheck(NOT_SUPPORTED),
+            fileUpdate(API_PERMISSIONS)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(Map.of("tokenCreate", "0-*")),
+            tokenCreate("secondPoc").payingWith("civilian"));
+  }
 
-	private HapiApiSpec updateFeesCompatibleWithCreates() {
-		long origLifetime = 100_000_000;
-		final byte[] old2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] new2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
+  private HapiApiSpec updateFeesCompatibleWithCreates() {
+    long origLifetime = 100_000_000;
+    final byte[] old2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
+    final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+    final byte[] new2k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K / 2);
 
-		return defaultHapiSpec("UpdateFeesCompatibleWithCreates")
-				.given(
-						fileCreate("test")
-								.contents(old2k)
-								.lifetime(origLifetime)
-								.via("create")
-				).when(
-						fileUpdate("test")
-								.contents(new4k)
-								.extendingExpiryBy(0)
-								.via("updateTo4"),
-						fileUpdate("test")
-								.contents(new2k)
-								.extendingExpiryBy(0)
-								.via("updateTo2"),
-						fileUpdate("test")
-								.extendingExpiryBy(origLifetime)
-								.via("extend"),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("maxFileSize", "1025"))
-								.via("special"),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("maxFileSize", "1024"))
-				).then(
-						UtilVerbs.withOpContext((spec, opLog) -> {
-							var createOp = getTxnRecord("create");
-							var to4kOp = getTxnRecord("updateTo4");
-							var to2kOp = getTxnRecord("updateTo2");
-							var extensionOp = getTxnRecord("extend");
-							var specialOp = getTxnRecord("special");
-							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
-							var createFee = createOp.getResponseRecord().getTransactionFee();
-							opLog.info("Creation : " + createFee);
-							opLog.info("New 4k   : " + to4kOp.getResponseRecord().getTransactionFee()
-									+ " (" + (to4kOp.getResponseRecord().getTransactionFee() - createFee) + ")");
-							opLog.info("New 2k   : " + to2kOp.getResponseRecord().getTransactionFee()
-									+ " (" + (to2kOp.getResponseRecord().getTransactionFee() - createFee) + ")");
-							opLog.info("Extension: " + extensionOp.getResponseRecord().getTransactionFee()
-									+ " (" + (extensionOp.getResponseRecord().getTransactionFee() - createFee) + ")");
-							opLog.info("Special: " + specialOp.getResponseRecord().getTransactionFee());
-						})
-				);
-	}
+    return defaultHapiSpec("UpdateFeesCompatibleWithCreates")
+        .given(fileCreate("test").contents(old2k).lifetime(origLifetime).via("create"))
+        .when(
+            fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
+            fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
+            fileUpdate("test").extendingExpiryBy(origLifetime).via("extend"),
+            fileUpdate(APP_PROPERTIES)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(Map.of("maxFileSize", "1025"))
+                .via("special"),
+            fileUpdate(APP_PROPERTIES)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(Map.of("maxFileSize", "1024")))
+        .then(
+            UtilVerbs.withOpContext(
+                (spec, opLog) -> {
+                  var createOp = getTxnRecord("create");
+                  var to4kOp = getTxnRecord("updateTo4");
+                  var to2kOp = getTxnRecord("updateTo2");
+                  var extensionOp = getTxnRecord("extend");
+                  var specialOp = getTxnRecord("special");
+                  allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
+                  var createFee = createOp.getResponseRecord().getTransactionFee();
+                  opLog.info("Creation : " + createFee);
+                  opLog.info(
+                      "New 4k   : "
+                          + to4kOp.getResponseRecord().getTransactionFee()
+                          + " ("
+                          + (to4kOp.getResponseRecord().getTransactionFee() - createFee)
+                          + ")");
+                  opLog.info(
+                      "New 2k   : "
+                          + to2kOp.getResponseRecord().getTransactionFee()
+                          + " ("
+                          + (to2kOp.getResponseRecord().getTransactionFee() - createFee)
+                          + ")");
+                  opLog.info(
+                      "Extension: "
+                          + extensionOp.getResponseRecord().getTransactionFee()
+                          + " ("
+                          + (extensionOp.getResponseRecord().getTransactionFee() - createFee)
+                          + ")");
+                  opLog.info("Special: " + specialOp.getResponseRecord().getTransactionFee());
+                }));
+  }
 
-	private HapiApiSpec vanillaUpdateSucceeds() {
-		final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		String firstMemo = "Originally";
-		String secondMemo = "Subsequently";
+  private HapiApiSpec vanillaUpdateSucceeds() {
+    final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+    final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+    String firstMemo = "Originally";
+    String secondMemo = "Subsequently";
 
-		return defaultHapiSpec("VanillaUpdateSucceeds")
-				.given(
-						fileCreate("test")
-								.entityMemo(firstMemo)
-								.contents(old4K)
-				).when(
-						fileUpdate("test")
-								.entityMemo(ZERO_BYTE_MEMO)
-								.contents(new4k)
-								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-						fileUpdate("test")
-								.entityMemo(secondMemo)
-								.contents(new4k)
-				).then(
-						getFileContents("test").hasContents(ignore -> new4k),
-						getFileInfo("test").hasMemo(secondMemo)
-				);
-	}
+    return defaultHapiSpec("VanillaUpdateSucceeds")
+        .given(fileCreate("test").entityMemo(firstMemo).contents(old4K))
+        .when(
+            fileUpdate("test")
+                .entityMemo(ZERO_BYTE_MEMO)
+                .contents(new4k)
+                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+            fileUpdate("test").entityMemo(secondMemo).contents(new4k))
+        .then(
+            getFileContents("test").hasContents(ignore -> new4k),
+            getFileInfo("test").hasMemo(secondMemo));
+  }
 
-	private HapiApiSpec cannotUpdateExpirationPastMaxLifetime() {
-		return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
-				.given(
-						fileCreate("test")
-				).when( ).then(
-						fileUpdate("test")
-								.lifetime(defaultMaxLifetime + 12_345L)
-								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
-				);
-	}
+  private HapiApiSpec cannotUpdateExpirationPastMaxLifetime() {
+    return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
+        .given(fileCreate("test"))
+        .when()
+        .then(
+            fileUpdate("test")
+                .lifetime(defaultMaxLifetime + 12_345L)
+                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

@@ -20,6 +20,16 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
+import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
@@ -31,135 +41,128 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
-import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
-
 public class CryptoOpsUsage {
-	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
-	private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
+  private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+  private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
 
-	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
-	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+  static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+  static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
-	public void cryptoTransferUsage(
-			SigUsage sigUsage,
-			CryptoTransferMeta xferMeta,
-			BaseTransactionMeta baseMeta,
-			UsageAccumulator accumulator
-	) {
-		accumulator.resetForTransaction(baseMeta, sigUsage);
+  public void cryptoTransferUsage(
+      SigUsage sigUsage,
+      CryptoTransferMeta xferMeta,
+      BaseTransactionMeta baseMeta,
+      UsageAccumulator accumulator) {
+    accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		final int tokenMultiplier = xferMeta.getTokenMultiplier();
+    final int tokenMultiplier = xferMeta.getTokenMultiplier();
 
-		/* BPT calculations shouldn't include any custom fee payment usage */
-		int totalXfers = baseMeta.getNumExplicitTransfers();
-		int weightedTokensInvolved = tokenMultiplier * xferMeta.getNumTokensInvolved();
-		int weightedTokenXfers = tokenMultiplier * xferMeta.getNumFungibleTokenTransfers();
-		long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
-		incBpt += (weightedTokenXfers + totalXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
-		incBpt += TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(xferMeta.getNumNftOwnershipChanges());
-		accumulator.addBpt(incBpt);
+    /* BPT calculations shouldn't include any custom fee payment usage */
+    int totalXfers = baseMeta.getNumExplicitTransfers();
+    int weightedTokensInvolved = tokenMultiplier * xferMeta.getNumTokensInvolved();
+    int weightedTokenXfers = tokenMultiplier * xferMeta.getNumFungibleTokenTransfers();
+    long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
+    incBpt += (weightedTokenXfers + totalXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
+    incBpt +=
+        TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(xferMeta.getNumNftOwnershipChanges());
+    accumulator.addBpt(incBpt);
 
-		totalXfers += xferMeta.getCustomFeeHbarTransfers();
-		weightedTokenXfers += tokenMultiplier * xferMeta.getCustomFeeTokenTransfers();
-		weightedTokensInvolved += tokenMultiplier * xferMeta.getCustomFeeTokensInvolved();
-		long incRb = totalXfers * LONG_ACCOUNT_AMOUNT_BYTES;
-		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-				weightedTokensInvolved,
-				weightedTokenXfers,
-				xferMeta.getNumNftOwnershipChanges());
-		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-	}
+    totalXfers += xferMeta.getCustomFeeHbarTransfers();
+    weightedTokenXfers += tokenMultiplier * xferMeta.getCustomFeeTokenTransfers();
+    weightedTokensInvolved += tokenMultiplier * xferMeta.getCustomFeeTokensInvolved();
+    long incRb = totalXfers * LONG_ACCOUNT_AMOUNT_BYTES;
+    incRb +=
+        TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+            weightedTokensInvolved, weightedTokenXfers, xferMeta.getNumNftOwnershipChanges());
+    accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+  }
 
-	public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {
-		var op = cryptoInfoReq.getCryptoGetInfo();
+  public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {
+    var op = cryptoInfoReq.getCryptoGetInfo();
 
-		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.addTb(BASIC_ENTITY_ID_SIZE);
-		long extraRb = 0;
-		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
-		extraRb += getAccountKeyStorageSize(ctx.currentKey());
-		if (ctx.currentlyHasProxy()) {
-			extraRb += BASIC_ENTITY_ID_SIZE;
-		}
-		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-		estimate.addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
+    var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+    estimate.addTb(BASIC_ENTITY_ID_SIZE);
+    long extraRb = 0;
+    extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
+    extraRb += getAccountKeyStorageSize(ctx.currentKey());
+    if (ctx.currentlyHasProxy()) {
+      extraRb += BASIC_ENTITY_ID_SIZE;
+    }
+    extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
+    estimate.addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
 
-		return estimate.get();
-	}
+    return estimate.get();
+  }
 
-	public long cryptoAutoRenewRb(ExtantCryptoContext ctx) {
-		return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ ctx.currentNonBaseRb()
-				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
-	}
+  public long cryptoAutoRenewRb(ExtantCryptoContext ctx) {
+    return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+        + ctx.currentNonBaseRb()
+        + ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+  }
 
-	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
-		var op = cryptoUpdate.getCryptoUpdateAccount();
+  public FeeData cryptoUpdateUsage(
+      TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
+    var op = cryptoUpdate.getCryptoUpdateAccount();
 
-		long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
-		long msgBytesUsed = BASIC_ENTITY_ID_SIZE
-				+ op.getMemo().getValueBytes().size()
-				+ keyBytesUsed
-				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
-				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
-				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0);
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
-		estimate.addBpt(msgBytesUsed);
+    long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
+    long msgBytesUsed =
+        BASIC_ENTITY_ID_SIZE
+            + op.getMemo().getValueBytes().size()
+            + keyBytesUsed
+            + (op.hasExpirationTime() ? LONG_SIZE : 0)
+            + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
+            + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0);
+    var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
+    estimate.addBpt(msgBytesUsed);
 
-		long newVariableBytes = 0;
-		newVariableBytes += !op.hasMemo()
-				? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
-				: op.getMemo().getValueBytes().size();
-		newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
-		newVariableBytes += (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
+    long newVariableBytes = 0;
+    newVariableBytes +=
+        !op.hasMemo()
+            ? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
+            : op.getMemo().getValueBytes().size();
+    newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
+    newVariableBytes +=
+        (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
 
-		long tokenRelBytes = ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
-		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
-		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
-				cryptoAutoRenewRb(ctx),
-				oldLifetime,
-				sharedFixedBytes + newVariableBytes,
-				newLifetime);
-		if (rbsDelta > 0) {
-			estimate.addRbs(rbsDelta);
-		}
+    long tokenRelBytes = ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+    long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
+    long newLifetime =
+        ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
+    long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
+    long rbsDelta =
+        ESTIMATOR_UTILS.changeInBsUsage(
+            cryptoAutoRenewRb(ctx), oldLifetime, sharedFixedBytes + newVariableBytes, newLifetime);
+    if (rbsDelta > 0) {
+      estimate.addRbs(rbsDelta);
+    }
 
-		return estimate.get();
-	}
+    return estimate.get();
+  }
 
-	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
-		var op = cryptoCreation.getCryptoCreateAccount();
+  public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
+    var op = cryptoCreation.getCryptoCreateAccount();
 
-		long variableBytes = 0;
-		variableBytes += op.getMemoBytes().size();
-		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
-		if (op.hasProxyAccountID()) {
-			variableBytes += BASIC_ENTITY_ID_SIZE;
-		}
+    long variableBytes = 0;
+    variableBytes += op.getMemoBytes().size();
+    variableBytes +=
+        keySizeIfPresent(
+            op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
+    if (op.hasProxyAccountID()) {
+      variableBytes += BASIC_ENTITY_ID_SIZE;
+    }
 
-		var lifetime = op.getAutoRenewPeriod().getSeconds();
+    var lifetime = op.getAutoRenewPeriod().getSeconds();
 
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
-		/* Variable bytes plus two additional longs for balance and auto-renew period;
-		   plus a boolean for receiver sig required. */
-		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
-		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+    var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
+    /* Variable bytes plus two additional longs for balance and auto-renew period;
+    plus a boolean for receiver sig required. */
+    estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
+    estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
+    estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
-		return estimate.get();
-	}
+    return estimate.get();
+  }
 }

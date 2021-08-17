@@ -20,35 +20,34 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.StatEntry;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.common.StatEntry;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
+
 class CounterFactoryTest {
-	CounterFactory subject = new CounterFactory() { };
+  CounterFactory subject = new CounterFactory() {};
 
-	@Test
-	void constructsExpectedEntry() {
-		// setup:
-		var name = "MyOp";
-		var desc = "Happy thoughts";
-		Supplier<Object> pretend = () -> 123;
+  @Test
+  void constructsExpectedEntry() {
+    // setup:
+    var name = "MyOp";
+    var desc = "Happy thoughts";
+    Supplier<Object> pretend = () -> 123;
 
-		// when:
-		StatEntry counter = subject.from(name, desc, pretend);
+    // when:
+    StatEntry counter = subject.from(name, desc, pretend);
 
-		// then:
-		assertEquals("app", counter.category);
-		assertEquals(name, counter.name);
-		assertEquals(desc, counter.desc);
-		assertEquals("%d", counter.format);
-		assertNull(counter.buffered);
-		assertNull(counter.init);
-		assertSame(pretend, counter.supplier);
-	}
+    // then:
+    assertEquals("app", counter.category);
+    assertEquals(name, counter.name);
+    assertEquals(desc, counter.desc);
+    assertEquals("%d", counter.format);
+    assertNull(counter.buffered);
+    assertNull(counter.init);
+    assertSame(pretend, counter.supplier);
+  }
 }

@@ -20,64 +20,66 @@ package com.hedera.services.yahcli.output;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
+import static com.hedera.services.yahcli.config.ConfigUtils.asId;
+
 import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.suites.Utils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
-import static com.hedera.services.yahcli.config.ConfigUtils.asId;
-
 public enum CommonMessages {
-	COMMON_MESSAGES;
+  COMMON_MESSAGES;
 
-	public void printGlobalInfo(ConfigManager config) {
-		var msg = String.format("Targeting %s, paying with %s", config.getTargetName(), asId(config.getDefaultPayer()));
-		System.out.println(msg);
-	}
+  public void printGlobalInfo(ConfigManager config) {
+    var msg =
+        String.format(
+            "Targeting %s, paying with %s", config.getTargetName(), asId(config.getDefaultPayer()));
+    System.out.println(msg);
+  }
 
-	public void beginBanner(String marker, String name) {
-		var msg = marker + " BEGINNING " + name + " " + marker;
-		System.out.println(msg);
-	}
+  public void beginBanner(String marker, String name) {
+    var msg = marker + " BEGINNING " + name + " " + marker;
+    System.out.println(msg);
+  }
 
-	public void appendBeginning(FileID target) {
-		var msg = "Appending to the uploaded " + Utils.nameOf(target) + "...";
-		System.out.print(msg);
-		System.out.flush();
-	}
+  public void appendBeginning(FileID target) {
+    var msg = "Appending to the uploaded " + Utils.nameOf(target) + "...";
+    System.out.print(msg);
+    System.out.flush();
+  }
 
-	public void appendEnding(ResponseCodeEnum resolvedStatus) {
-		System.out.println(resolvedStatus.toString());
-	}
+  public void appendEnding(ResponseCodeEnum resolvedStatus) {
+    System.out.println(resolvedStatus.toString());
+  }
 
-	public void uploadBeginning(FileID target) {
-		var msg = "Uploading the " + Utils.nameOf(target) + "...";
-		System.out.print(msg);
-		System.out.flush();
-	}
+  public void uploadBeginning(FileID target) {
+    var msg = "Uploading the " + Utils.nameOf(target) + "...";
+    System.out.print(msg);
+    System.out.flush();
+  }
 
-	public void uploadEnding(ResponseCodeEnum resolvedStatus) {
-		System.out.println(resolvedStatus.toString());
-	}
+  public void uploadEnding(ResponseCodeEnum resolvedStatus) {
+    System.out.println(resolvedStatus.toString());
+  }
 
-	public void downloadBeginning(FileID target) {
-		var msg = "Downloading the " + Utils.nameOf(target) + "...";
-		System.out.print(msg);
-		System.out.flush();
-	}
+  public void downloadBeginning(FileID target) {
+    var msg = "Downloading the " + Utils.nameOf(target) + "...";
+    System.out.print(msg);
+    System.out.flush();
+  }
 
-	public void downloadEnding(Response response) {
-		try {
-			var precheck = reflectForPrecheck(response);
-			System.out.println(precheck.toString());
-		} catch (Throwable throwable) {
-			throwable.printStackTrace();
-		}
-	}
+  public void downloadEnding(Response response) {
+    try {
+      var precheck = reflectForPrecheck(response);
+      System.out.println(precheck.toString());
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
+    }
+  }
 
-	public String fq(Integer num) {
-		return "0.0." + num;
-	}
+  public String fq(Integer num) {
+    return "0.0." + num;
+  }
 }

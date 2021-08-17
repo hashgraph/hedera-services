@@ -20,41 +20,36 @@ package com.hedera.services.bdd.suites.meta;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class VersionInfoSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
+  private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
 
-	public static void main(String... args) {
-		new VersionInfoSpec().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new VersionInfoSpec().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						discoversExpectedVersions()
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(new HapiApiSpec[] {discoversExpectedVersions()});
+  }
 
-	private HapiApiSpec discoversExpectedVersions() {
-		return defaultHapiSpec("getsExpectedVersions").given().when().then(
-				getVersionInfo()
-						.logged()
-						.hasNoDegenerateSemvers()
-		);
-	}
+  private HapiApiSpec discoversExpectedVersions() {
+    return defaultHapiSpec("getsExpectedVersions")
+        .given()
+        .when()
+        .then(getVersionInfo().logged().hasNoDegenerateSemvers());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

@@ -20,21 +20,6 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -46,80 +31,94 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
 class TransitionLogicLookupTest {
-	private TransitionLogic a = withApplicability(txn ->
-			txn.getTransactionID().getAccountID().equals(asAccount("0.0.2")));
-	private TransitionLogic b = withApplicability(txn ->
-			txn.getTransactionID().getAccountID().equals(asAccount("2.2.0")));
-	private TransitionLogic c = withApplicability(txn ->
-			txn.getTransactionID().getAccountID().equals(asAccount("2.2.2")));
-	Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
-			Map.entry(CryptoTransfer, List.of(b, a)),
-			Map.entry(TokenMint, List.of(c))
-	);
-	TransitionLogicLookup subject = new TransitionLogicLookup(transitionsMap::get);
-	TransactionBody aTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-			.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-			.build();
-	TransactionBody cTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("2.2.2")))
-			.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-			.build();
-	TransactionBody zTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("9.0.2")))
-			.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-			.build();
+  private TransitionLogic a =
+      withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("0.0.2")));
+  private TransitionLogic b =
+      withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.0")));
+  private TransitionLogic c =
+      withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.2")));
+  Map<HederaFunctionality, List<TransitionLogic>> transitionsMap =
+      Map.ofEntries(Map.entry(CryptoTransfer, List.of(b, a)), Map.entry(TokenMint, List.of(c)));
+  TransitionLogicLookup subject = new TransitionLogicLookup(transitionsMap::get);
+  TransactionBody aTxn =
+      TransactionBody.newBuilder()
+          .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+          .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+          .build();
+  TransactionBody cTxn =
+      TransactionBody.newBuilder()
+          .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("2.2.2")))
+          .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+          .build();
+  TransactionBody zTxn =
+      TransactionBody.newBuilder()
+          .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("9.0.2")))
+          .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+          .build();
 
-	@Test
-	void identifiesMissing() {
-		// expect:
-		assertFalse(subject.lookupFor(CryptoCreate, zTxn).isPresent());
-		assertFalse(subject.lookupFor(CryptoTransfer, zTxn).isPresent());
-		assertFalse(subject.lookupFor(TokenMint, zTxn).isPresent());
-	}
+  @Test
+  void identifiesMissing() {
+    // expect:
+    assertFalse(subject.lookupFor(CryptoCreate, zTxn).isPresent());
+    assertFalse(subject.lookupFor(CryptoTransfer, zTxn).isPresent());
+    assertFalse(subject.lookupFor(TokenMint, zTxn).isPresent());
+  }
 
-	@Test
-	void identifiesLogic() {
-		// expect:
-		assertEquals(a, subject.lookupFor(CryptoTransfer, aTxn).get());
-		assertEquals(c, subject.lookupFor(TokenMint, cTxn).get());
-	}
+  @Test
+  void identifiesLogic() {
+    // expect:
+    assertEquals(a, subject.lookupFor(CryptoTransfer, aTxn).get());
+    assertEquals(c, subject.lookupFor(TokenMint, cTxn).get());
+  }
 
-	@Test
-	void logicDefaultsToLegacyCheck() {
-		final var txn = TransactionBody.getDefaultInstance();
-		final var accessor = Mockito.mock(TxnAccessor.class);
-		final var semanticCheck = Mockito.mock(Function.class);
+  @Test
+  void logicDefaultsToLegacyCheck() {
+    final var txn = TransactionBody.getDefaultInstance();
+    final var accessor = Mockito.mock(TxnAccessor.class);
+    final var semanticCheck = Mockito.mock(Function.class);
 
-		final var subject = Mockito.mock(TransitionLogic.class);
+    final var subject = Mockito.mock(TransitionLogic.class);
 
-		given(accessor.getTxn()).willReturn(txn);
-		given(subject.semanticCheck()).willReturn(semanticCheck);
-		doCallRealMethod().when(subject).validateSemantics(accessor);
+    given(accessor.getTxn()).willReturn(txn);
+    given(subject.semanticCheck()).willReturn(semanticCheck);
+    doCallRealMethod().when(subject).validateSemantics(accessor);
 
-		// when:
-		subject.validateSemantics(accessor);
+    // when:
+    subject.validateSemantics(accessor);
 
-		// then:
-		verify(semanticCheck).apply(txn);
-	}
+    // then:
+    verify(semanticCheck).apply(txn);
+  }
 
-	private TransitionLogic withApplicability(Predicate<TransactionBody> p) {
-		return new TransitionLogic() {
-			@Override
-			public void doStateTransition() {
-			}
+  private TransitionLogic withApplicability(Predicate<TransactionBody> p) {
+    return new TransitionLogic() {
+      @Override
+      public void doStateTransition() {}
 
-			@Override
-			public Predicate<TransactionBody> applicability() {
-				return p;
-			}
+      @Override
+      public Predicate<TransactionBody> applicability() {
+        return p;
+      }
 
-			@Override
-			public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-				return ignore -> SUCCESS;
-			}
-		};
-	}
+      @Override
+      public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+        return ignore -> SUCCESS;
+      }
+    };
+  }
 }

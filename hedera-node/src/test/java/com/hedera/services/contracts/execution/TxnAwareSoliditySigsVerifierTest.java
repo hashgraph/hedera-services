@@ -9,9 +9,9 @@ package com.hedera.services.contracts.execution;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,12 @@ package com.hedera.services.contracts.execution;
  * limitations under the License.
  * ‍
  */
+
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.SyncActivationCheck;
@@ -31,126 +37,143 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Set;
-
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class TxnAwareSoliditySigsVerifierTest {
-	AccountID payer = IdUtils.asAccount("0.0.2");
-	AccountID sigRequired = IdUtils.asAccount("0.0.555");
-	AccountID smartContract = IdUtils.asAccount("0.0.666");
-	AccountID noSigRequired = IdUtils.asAccount("0.0.777");
-	Set<AccountID> touched;
-	SyncVerifier syncVerifier;
-	PlatformTxnAccessor accessor;
-	JKey expectedKey;
+  AccountID payer = IdUtils.asAccount("0.0.2");
+  AccountID sigRequired = IdUtils.asAccount("0.0.555");
+  AccountID smartContract = IdUtils.asAccount("0.0.666");
+  AccountID noSigRequired = IdUtils.asAccount("0.0.777");
+  Set<AccountID> touched;
+  SyncVerifier syncVerifier;
+  PlatformTxnAccessor accessor;
+  JKey expectedKey;
 
-	MerkleAccount sigReqAccount, noSigReqAccount, contract;
+  MerkleAccount sigReqAccount, noSigReqAccount, contract;
 
-	TransactionContext txnCtx;
-	SyncActivationCheck areActive;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+  TransactionContext txnCtx;
+  SyncActivationCheck areActive;
+  FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	TxnAwareSoliditySigsVerifier subject;
+  TxnAwareSoliditySigsVerifier subject;
 
-	@BeforeEach
-	private void setup() throws Exception {
-		syncVerifier = mock(SyncVerifier.class);
-		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
+  @BeforeEach
+  private void setup() throws Exception {
+    syncVerifier = mock(SyncVerifier.class);
+    expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		contract = mock(MerkleAccount.class);
-		given(contract.isSmartContract()).willReturn(true);
-		given(contract.isReceiverSigRequired()).willReturn(true);
-		sigReqAccount = mock(MerkleAccount.class);
-		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getKey()).willReturn(expectedKey);
-		noSigReqAccount = mock(MerkleAccount.class);
-		given(noSigReqAccount.isReceiverSigRequired()).willReturn(false);
+    contract = mock(MerkleAccount.class);
+    given(contract.isSmartContract()).willReturn(true);
+    given(contract.isReceiverSigRequired()).willReturn(true);
+    sigReqAccount = mock(MerkleAccount.class);
+    given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
+    given(sigReqAccount.getKey()).willReturn(expectedKey);
+    noSigReqAccount = mock(MerkleAccount.class);
+    given(noSigReqAccount.isReceiverSigRequired()).willReturn(false);
 
-		accessor = mock(PlatformTxnAccessor.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.activePayer()).willReturn(payer);
+    accessor = mock(PlatformTxnAccessor.class);
+    txnCtx = mock(TransactionContext.class);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(txnCtx.activePayer()).willReturn(payer);
 
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(sigReqAccount);
-		given(accounts.get(MerkleEntityId.fromAccountId(sigRequired))).willReturn(sigReqAccount);
-		given(accounts.get(MerkleEntityId.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
-		given(accounts.get(MerkleEntityId.fromAccountId(smartContract))).willReturn(contract);
+    accounts = mock(FCMap.class);
+    given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(sigReqAccount);
+    given(accounts.get(MerkleEntityId.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+    given(accounts.get(MerkleEntityId.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+    given(accounts.get(MerkleEntityId.fromAccountId(smartContract))).willReturn(contract);
 
-		areActive = mock(SyncActivationCheck.class);
+    areActive = mock(SyncActivationCheck.class);
 
-		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
-	}
+    subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
+  }
 
-	@Test
-	void respectsActivity() {
-		given(areActive.allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any())).willReturn(false);
-		// and:
-		touched = Set.of(payer, sigRequired, smartContract);
+  @Test
+  void respectsActivity() {
+    given(
+            areActive.allKeysAreActive(
+                argThat(List.of(expectedKey)::equals),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()))
+        .willReturn(false);
+    // and:
+    touched = Set.of(payer, sigRequired, smartContract);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
+    // when:
+    boolean flag = subject.allRequiredKeysAreActive(touched);
 
-		// then:
-		Assertions.assertFalse(flag);
-		// and:
-		verify(areActive).allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any());
-	}
+    // then:
+    Assertions.assertFalse(flag);
+    // and:
+    verify(areActive)
+        .allKeysAreActive(
+            argThat(List.of(expectedKey)::equals), any(), any(), any(), any(), any(), any(), any());
+  }
 
-	@Test
-	void filtersContracts() {
-		given(areActive.allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
-		// and:
-		touched = Set.of(payer, sigRequired, smartContract);
+  @Test
+  void filtersContracts() {
+    given(
+            areActive.allKeysAreActive(
+                argThat(List.of(expectedKey)::equals),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()))
+        .willReturn(true);
+    // and:
+    touched = Set.of(payer, sigRequired, smartContract);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
+    // when:
+    boolean flag = subject.allRequiredKeysAreActive(touched);
 
-		// then:
-		Assertions.assertTrue(flag);
-	}
+    // then:
+    Assertions.assertTrue(flag);
+  }
 
-	@Test
-	void filtersNoSigRequired() {
-		given(areActive.allKeysAreActive(
-				argThat(List.of(expectedKey)::equals),
-				any(), any(), any(), any(), any(), any(), any())).willReturn(true);
-		// and:
-		touched = Set.of(payer, noSigRequired, sigRequired);
+  @Test
+  void filtersNoSigRequired() {
+    given(
+            areActive.allKeysAreActive(
+                argThat(List.of(expectedKey)::equals),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()))
+        .willReturn(true);
+    // and:
+    touched = Set.of(payer, noSigRequired, sigRequired);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
+    // when:
+    boolean flag = subject.allRequiredKeysAreActive(touched);
 
-		// then:
-		Assertions.assertTrue(flag);
-		// and:
-		verify(areActive).allKeysAreActive(any(), any(), any(), any(), any(), any(), any(), any());
-	}
+    // then:
+    Assertions.assertTrue(flag);
+    // and:
+    verify(areActive).allKeysAreActive(any(), any(), any(), any(), any(), any(), any(), any());
+  }
 
-	@Test
-	void filtersPayerSinceSigIsGuaranteed() {
-		touched = Set.of(payer, noSigRequired);
+  @Test
+  void filtersPayerSinceSigIsGuaranteed() {
+    touched = Set.of(payer, noSigRequired);
 
-		// when:
-		boolean flag = subject.allRequiredKeysAreActive(touched);
+    // when:
+    boolean flag = subject.allRequiredKeysAreActive(touched);
 
-		// then:
-		Assertions.assertTrue(flag);
-	}
+    // then:
+    Assertions.assertTrue(flag);
+  }
 }

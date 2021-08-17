@@ -20,25 +20,24 @@ package com.hederahashgraph.builder;
  * ‍
  */
 
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.time.Instant;
-
 class RequestBuilderTest {
 
-	@Test
-	void testExpirationTime() {
-		final var seconds = 500L;
-		final var duration = RequestBuilder.getDuration(seconds);
-		final var now = Instant.now();
+  @Test
+  void testExpirationTime() {
+    final var seconds = 500L;
+    final var duration = RequestBuilder.getDuration(seconds);
+    final var now = Instant.now();
 
-		final var expirationTime = RequestBuilder.getExpirationTime(now, duration);
-		Assertions.assertNotNull(expirationTime);
+    final var expirationTime = RequestBuilder.getExpirationTime(now, duration);
+    Assertions.assertNotNull(expirationTime);
 
-		final var expirationInstant = RequestBuilder.convertProtoTimeStamp(expirationTime);
-		final var between = Duration.between(now, expirationInstant);
-		Assertions.assertEquals(seconds, between.getSeconds());
-	}
+    final var expirationInstant = RequestBuilder.convertProtoTimeStamp(expirationTime);
+    final var between = Duration.between(now, expirationInstant);
+    Assertions.assertEquals(seconds, between.getSeconds());
+  }
 }

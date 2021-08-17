@@ -20,6 +20,16 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -34,20 +44,9 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for token minting.
@@ -55,115 +54,117 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TokenMintTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final OptionValidator validator;
-	private final TypedTokenStore tokenStore;
-	private final TransactionContext txnCtx;
-	private final AccountStore accountStore;
-	private final GlobalDynamicProperties dynamicProperties;
+  private final OptionValidator validator;
+  private final TypedTokenStore tokenStore;
+  private final TransactionContext txnCtx;
+  private final AccountStore accountStore;
+  private final GlobalDynamicProperties dynamicProperties;
 
-	public TokenMintTransitionLogic(
-			OptionValidator validator,
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
-	) {
-		this.validator = validator;
-		this.tokenStore = tokenStore;
-		this.txnCtx = txnCtx;
-		this.accountStore = accountStore;
-		this.dynamicProperties = dynamicProperties;
-	}
+  public TokenMintTransitionLogic(
+      OptionValidator validator,
+      AccountStore accountStore,
+      TypedTokenStore tokenStore,
+      TransactionContext txnCtx,
+      GlobalDynamicProperties dynamicProperties) {
+    this.validator = validator;
+    this.tokenStore = tokenStore;
+    this.txnCtx = txnCtx;
+    this.accountStore = accountStore;
+    this.dynamicProperties = dynamicProperties;
+  }
 
-	@Override
-	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
-		final var op = txnCtx.accessor().getTxn().getTokenMint();
-		final var grpcId = op.getToken();
-		final var targetId = Id.fromGrpcToken(grpcId);
+  @Override
+  public void doStateTransition() {
+    /* --- Translate from gRPC types --- */
+    final var op = txnCtx.accessor().getTxn().getTokenMint();
+    final var grpcId = op.getToken();
+    final var targetId = Id.fromGrpcToken(grpcId);
 
-		/* --- Load the model objects --- */
-		final var token = tokenStore.loadToken(targetId);
-		validateMinting(token, op);
-		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
+    /* --- Load the model objects --- */
+    final var token = tokenStore.loadToken(targetId);
+    validateMinting(token, op);
+    final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
 
-		/* --- Instantiate change trackers --- */
-		final var ownershipTracker = new OwnershipTracker();
+    /* --- Instantiate change trackers --- */
+    final var ownershipTracker = new OwnershipTracker();
 
-		/* --- Do the business logic --- */
-		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
-			token.mint(treasuryRel, op.getAmount());
-		} else {
-			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(txnCtx.consensusTime()));
-		}
+    /* --- Do the business logic --- */
+    if (token.getType() == TokenType.FUNGIBLE_COMMON) {
+      token.mint(treasuryRel, op.getAmount());
+    } else {
+      token.mint(
+          ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(txnCtx.consensusTime()));
+    }
 
-		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationships(List.of(treasuryRel));
-		tokenStore.persistTrackers(ownershipTracker);
-		accountStore.persistAccount(token.getTreasury());
-	}
+    /* --- Persist the updated models --- */
+    tokenStore.persistToken(token);
+    tokenStore.persistTokenRelationships(List.of(treasuryRel));
+    tokenStore.persistTrackers(ownershipTracker);
+    accountStore.persistAccount(token.getTreasury());
+  }
 
-	private void validateMinting(Token token, TokenMintTransactionBody op) {
-		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
-			final var proposedTotal = tokenStore.currentMintedNfts() + op.getMetadataCount();
-			validateTrue(validator.isPermissibleTotalNfts(proposedTotal), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
-		}
-	}
+  private void validateMinting(Token token, TokenMintTransactionBody op) {
+    if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+      final var proposedTotal = tokenStore.currentMintedNfts() + op.getMetadataCount();
+      validateTrue(
+          validator.isPermissibleTotalNfts(proposedTotal),
+          MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+    }
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenMint;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasTokenMint;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenMintTransactionBody op = txnBody.getTokenMint();
+  public ResponseCodeEnum validate(TransactionBody txnBody) {
+    TokenMintTransactionBody op = txnBody.getTokenMint();
 
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
+    if (!op.hasToken()) {
+      return INVALID_TOKEN_ID;
+    }
 
-		final var numMetadata = op.getMetadataCount();
-		if (numMetadata > 0 && !dynamicProperties.areNftsEnabled()) {
-			return NOT_SUPPORTED;
-		}
+    final var numMetadata = op.getMetadataCount();
+    if (numMetadata > 0 && !dynamicProperties.areNftsEnabled()) {
+      return NOT_SUPPORTED;
+    }
 
-		boolean bothPresent = (op.getAmount() > 0 && numMetadata > 0);
-		boolean nonePresent = (op.getAmount() <= 0 && numMetadata == 0);
-		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && numMetadata > 0);
-		if (nonePresent) {
-			return INVALID_TOKEN_MINT_AMOUNT;
-		}
-		if (bothPresent) {
-			return INVALID_TRANSACTION_BODY;
-		}
+    boolean bothPresent = (op.getAmount() > 0 && numMetadata > 0);
+    boolean nonePresent = (op.getAmount() <= 0 && numMetadata == 0);
+    boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && numMetadata > 0);
+    if (nonePresent) {
+      return INVALID_TOKEN_MINT_AMOUNT;
+    }
+    if (bothPresent) {
+      return INVALID_TRANSACTION_BODY;
+    }
 
-		if (onlyMetadataIsPresent) {
-			return validateNfts(op);
-		}
+    if (onlyMetadataIsPresent) {
+      return validateNfts(op);
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 
-	private ResponseCodeEnum validateNfts(final TokenMintTransactionBody op) {
-		var validity = validator.maxBatchSizeMintCheck(op.getMetadataCount());
-		if (validity != OK) {
-			return validity;
-		}
+  private ResponseCodeEnum validateNfts(final TokenMintTransactionBody op) {
+    var validity = validator.maxBatchSizeMintCheck(op.getMetadataCount());
+    if (validity != OK) {
+      return validity;
+    }
 
-		for (ByteString bytes : op.getMetadataList()) {
-			validity = validator.nftMetadataCheck(bytes.toByteArray());
-			if (validity != OK) {
-				return validity;
-			}
-		}
-		return OK;
-	}
+    for (ByteString bytes : op.getMetadataList()) {
+      validity = validator.nftMetadataCheck(bytes.toByteArray());
+      if (validity != OK) {
+        return validity;
+      }
+    }
+    return OK;
+  }
 }

@@ -21,50 +21,47 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.hedera.services.legacy.core.TestHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Calendar;
 import java.util.Properties;
 import java.util.TimeZone;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Utilities {
-	private static final Logger log = LogManager.getLogger(Utilities.class);
-	protected static String DEFAULT_NODE_ACCOUNT_ID_STR = "0.0.3";
+  private static final Logger log = LogManager.getLogger(Utilities.class);
+  protected static String DEFAULT_NODE_ACCOUNT_ID_STR = "0.0.3";
 
-	/**
-	 * Gets the configured node account from application.properties
-	 *
-	 * @return the default listening account id
-	 */
-	public static long getDefaultNodeAccount() {
-		Properties properties = TestHelper.getApplicationProperties();
-		String nodeAccIDStr = properties
-				.getProperty("defaultListeningNodeAccount", DEFAULT_NODE_ACCOUNT_ID_STR);
-		long nodeAccount = 3;
-		try {
-			nodeAccount = Long.parseLong(nodeAccIDStr.substring(nodeAccIDStr.lastIndexOf('.') + 1));
-		} catch (NumberFormatException e) {
-			log.error("incorrect format of defaultListeningNodeAccount, using default nodeAccountId=3 ",
-					e);
-		}
-		return nodeAccount;
-	}
+  /**
+   * Gets the configured node account from application.properties
+   *
+   * @return the default listening account id
+   */
+  public static long getDefaultNodeAccount() {
+    Properties properties = TestHelper.getApplicationProperties();
+    String nodeAccIDStr =
+        properties.getProperty("defaultListeningNodeAccount", DEFAULT_NODE_ACCOUNT_ID_STR);
+    long nodeAccount = 3;
+    try {
+      nodeAccount = Long.parseLong(nodeAccIDStr.substring(nodeAccIDStr.lastIndexOf('.') + 1));
+    } catch (NumberFormatException e) {
+      log.error(
+          "incorrect format of defaultListeningNodeAccount, using default nodeAccountId=3 ", e);
+    }
+    return nodeAccount;
+  }
 
-	/**
-	 * Gets UTC hours and minutes from UTC milli seconds
-	 *
-	 * @param utcMillis
-	 * 		the UTC milliseconds given
-	 * @return the UTC hours and minutes got from UTC milliseconds
-	 */
-	public static int[] getUTCHourMinFromMillis(final long utcMillis) {
-		int[] hourMin = new int[2];
-		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-		cal.setTimeInMillis(utcMillis);
-		hourMin[0] = cal.get(Calendar.HOUR_OF_DAY);
-		hourMin[1] = cal.get(Calendar.MINUTE);
-		return hourMin;
-	}
-
+  /**
+   * Gets UTC hours and minutes from UTC milli seconds
+   *
+   * @param utcMillis the UTC milliseconds given
+   * @return the UTC hours and minutes got from UTC milliseconds
+   */
+  public static int[] getUTCHourMinFromMillis(final long utcMillis) {
+    int[] hourMin = new int[2];
+    Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    cal.setTimeInMillis(utcMillis);
+    hourMin[0] = cal.get(Calendar.HOUR_OF_DAY);
+    hourMin[1] = cal.get(Calendar.MINUTE);
+    return hourMin;
+  }
 }

@@ -37,12 +37,11 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import java.io.IOException;
+import java.time.Instant;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.time.Instant;
 
 public class FileServiceHandler {
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
@@ -53,17 +52,16 @@ public class FileServiceHandler {
   }
 
   private static JKey convertWacl(final KeyList waclAsKeyList) throws InvalidFileWACLException {
-        try {
-            return JKey.mapKey(Key.newBuilder().setKeyList(waclAsKeyList).build());
-        } catch (DecoderException e) {
-            throw new InvalidFileWACLException("input wacl=" + waclAsKeyList, e);
-        }
+    try {
+      return JKey.mapKey(Key.newBuilder().setKeyList(waclAsKeyList).build());
+    } catch (DecoderException e) {
+      throw new InvalidFileWACLException("input wacl=" + waclAsKeyList, e);
     }
+  }
 
-  /**
-   * Creates a file on the ledger.
-   */
-  TransactionRecord createFile(final TransactionBody gtx, final Instant timestamp, final FileID fid, final long selfId) {
+  /** Creates a file on the ledger. */
+  TransactionRecord createFile(
+      final TransactionBody gtx, final Instant timestamp, final FileID fid, final long selfId) {
     TransactionRecord txRecord;
     TransactionID txId = gtx.getTransactionID();
     FileCreateTransactionBody tx = gtx.getFileCreate();
@@ -74,17 +72,18 @@ public class FileServiceHandler {
       JKey jkey = convertWacl(tx.getKeys());
 
       // create virtual file for the data bytes
-	  byte[] fileData = tx.getContents().toByteArray();
-	  long fileSize = 0L;
-	  if (fileData != null) {
-	  	fileSize = fileData.length;
-	  }
-	  // compare size to allowable size
-	  if (1024 * 1024L < fileSize) {
-	  	throw new MaxFileSizeExceeded(
-				String.format("The file size %d (bytes) is greater than allowed %d (bytes) ", fileSize,
-	  					1024 * 1024L));
-	  }
+      byte[] fileData = tx.getContents().toByteArray();
+      long fileSize = 0L;
+      if (fileData != null) {
+        fileSize = fileData.length;
+      }
+      // compare size to allowable size
+      if (1024 * 1024L < fileSize) {
+        throw new MaxFileSizeExceeded(
+            String.format(
+                "The file size %d (bytes) is greater than allowed %d (bytes) ",
+                fileSize, 1024 * 1024L));
+      }
       String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
       long expireTimeSec =
           RequestBuilder.convertProtoTimeStamp(tx.getExpirationTime()).getEpochSecond();
@@ -92,8 +91,7 @@ public class FileServiceHandler {
       if (log.isDebugEnabled()) {
         log.debug("Creating file at path :: " + fileDataPath + " :: nodeId = " + selfId);
       }
-      storageWrapper
-          .fileCreate(fileDataPath, fileData);
+      storageWrapper.fileCreate(fileDataPath, fileData);
 
       // create virtual file for the meta data
       HFileMeta fi = new HFileMeta(false, jkey, expireTimeSec);
@@ -113,18 +111,28 @@ public class FileServiceHandler {
       status = ResponseCodeEnum.SERIALIZATION_FAILED;
     } catch (MaxFileSizeExceeded e) {
       status = ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
-      log.debug("Maximum File Size Exceeded {}", ()->e);
-	}
+      log.debug("Maximum File Size Exceeded {}", () -> e);
+    }
 
-    TransactionReceipt receipt = RequestBuilder.getTransactionReceipt(fid, status, ExchangeRateSet.getDefaultInstance());
-    TransactionRecord.Builder txRecordBuilder = TransactionRecord.newBuilder().setReceipt(receipt)
-        .setConsensusTimestamp(RequestBuilder.getTimestamp(timestamp)).setTransactionID(txId)
-        .setMemo(gtx.getMemo()).setTransactionFee(gtx.getTransactionFee());
+    TransactionReceipt receipt =
+        RequestBuilder.getTransactionReceipt(fid, status, ExchangeRateSet.getDefaultInstance());
+    TransactionRecord.Builder txRecordBuilder =
+        TransactionRecord.newBuilder()
+            .setReceipt(receipt)
+            .setConsensusTimestamp(RequestBuilder.getTimestamp(timestamp))
+            .setTransactionID(txId)
+            .setMemo(gtx.getMemo())
+            .setTransactionFee(gtx.getTransactionFee());
 
     txRecord = txRecordBuilder.build();
     if (log.isDebugEnabled()) {
-      log.debug("createFile TransactionRecord creation in state: " + Instant.now() + "; txRecord="
-          + TextFormat.shortDebugString(txRecord) + "; tx=" + TextFormat.shortDebugString(tx));
+      log.debug(
+          "createFile TransactionRecord creation in state: "
+              + Instant.now()
+              + "; txRecord="
+              + TextFormat.shortDebugString(txRecord)
+              + "; tx="
+              + TextFormat.shortDebugString(tx));
     }
     return txRecord;
   }

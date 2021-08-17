@@ -20,13 +20,6 @@ package com.hedera.services.bdd.suites.consensus;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -37,107 +30,99 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ChunkingSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ChunkingSuite.class);
-	private static final int CHUNK_SIZE = 1024;
+  private static final Logger log = LogManager.getLogger(ChunkingSuite.class);
+  private static final int CHUNK_SIZE = 1024;
 
-	public static void main(String... args) {
-		new ChunkingSuite().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new ChunkingSuite().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				chunkNumberIsValidated(),
-				chunkTransactionIDIsValidated(),
-				longMessageIsFragmentedIntoChunks()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        chunkNumberIsValidated(),
+        chunkTransactionIDIsValidated(),
+        longMessageIsFragmentedIntoChunks());
+  }
 
-	private HapiApiSpec chunkNumberIsValidated() {
-		return defaultHapiSpec("chunkNumberIsValidated")
-				.given(
-						createTopic("testTopic")
-				)
-				.when(
-				)
-				.then(
-						submitMessageTo("testTopic")
-								.message("failsForChunkNumberGreaterThanTotalChunks")
-								.chunkInfo(2, 3)
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(INVALID_CHUNK_NUMBER),
-						submitMessageTo("testTopic")
-								.message("acceptsChunkNumberLessThanTotalChunks")
-								.chunkInfo(3, 2)
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(SUCCESS),
-						submitMessageTo("testTopic")
-								.message("acceptsChunkNumberEqualTotalChunks")
-								.chunkInfo(5, 5)
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(SUCCESS)
+  private HapiApiSpec chunkNumberIsValidated() {
+    return defaultHapiSpec("chunkNumberIsValidated")
+        .given(createTopic("testTopic"))
+        .when()
+        .then(
+            submitMessageTo("testTopic")
+                .message("failsForChunkNumberGreaterThanTotalChunks")
+                .chunkInfo(2, 3)
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(INVALID_CHUNK_NUMBER),
+            submitMessageTo("testTopic")
+                .message("acceptsChunkNumberLessThanTotalChunks")
+                .chunkInfo(3, 2)
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(SUCCESS),
+            submitMessageTo("testTopic")
+                .message("acceptsChunkNumberEqualTotalChunks")
+                .chunkInfo(5, 5)
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(SUCCESS));
+  }
 
-				);
-	}
+  private HapiApiSpec chunkTransactionIDIsValidated() {
+    return defaultHapiSpec("chunkTransactionIDIsValidated")
+        .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
+        .when()
+        .then(
+            submitMessageTo("testTopic")
+                .message("failsForDifferentPayers")
+                .chunkInfo(3, 2, "initialTransactionPayer")
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+            submitMessageTo("testTopic")
+                .message(
+                    "acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
+                .chunkInfo(3, 3, "initialTransactionPayer")
+                .payingWith("initialTransactionPayer")
+                // Add delay to make sure the valid start of the transaction will not match
+                // that of the initialTransactionID
+                .delayBy(1000)
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(SUCCESS),
+            submitMessageTo("testTopic")
+                .message(
+                    "failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID")
+                .chunkInfo(2, 1)
+                // Also add delay here
+                .delayBy(1000)
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+            submitMessageTo("testTopic")
+                .message(
+                    "acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID")
+                .chunkInfo(4, 1)
+                .via("firstChunk")
+                .payingWith("initialTransactionPayer")
+                .usePresetTimestamp()
+                .hasRetryPrecheckFrom(BUSY)
+                .hasKnownStatus(SUCCESS));
+  }
 
-	private HapiApiSpec chunkTransactionIDIsValidated() {
-		return defaultHapiSpec("chunkTransactionIDIsValidated")
-				.given(
-						cryptoCreate("initialTransactionPayer"),
-						createTopic("testTopic")
-				)
-				.when(
-				)
-				.then(
-						submitMessageTo("testTopic")
-								.message("failsForDifferentPayers")
-								.chunkInfo(3, 2, "initialTransactionPayer")
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
-						submitMessageTo("testTopic")
-								.message("acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
-								.chunkInfo(3, 3, "initialTransactionPayer")
-								.payingWith("initialTransactionPayer")
-								// Add delay to make sure the valid start of the transaction will not match
-								// that of the initialTransactionID
-								.delayBy(1000)
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(SUCCESS),
-						submitMessageTo("testTopic")
-								.message("failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID")
-								.chunkInfo(2, 1)
-								// Also add delay here
-								.delayBy(1000)
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
-						submitMessageTo("testTopic")
-								.message("acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID")
-								.chunkInfo(4, 1)
-								.via("firstChunk")
-								.payingWith("initialTransactionPayer")
-								.usePresetTimestamp()
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(SUCCESS)
-				);
-	}
+  private HapiApiSpec longMessageIsFragmentedIntoChunks() {
+    String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
+    return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
+        .given(cryptoCreate("payer"), createTopic("testTopic"))
+        .when()
+        .then(chunkAFile(fileForLongMessage, CHUNK_SIZE, "payer", "testTopic"));
+  }
 
-	private HapiApiSpec longMessageIsFragmentedIntoChunks() {
-		String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
-		return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
-				.given(
-						cryptoCreate("payer"),
-						createTopic("testTopic")
-				)
-				.when(
-				)
-				.then(
-						chunkAFile(fileForLongMessage, CHUNK_SIZE, "payer", "testTopic")
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

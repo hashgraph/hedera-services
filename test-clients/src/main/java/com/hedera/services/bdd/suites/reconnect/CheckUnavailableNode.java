@@ -20,39 +20,36 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CheckUnavailableNode extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(CheckUnavailableNode.class);
+  private static final Logger log = LogManager.getLogger(CheckUnavailableNode.class);
 
-	public static void main(String... args) {
-		new CheckUnavailableNode().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new CheckUnavailableNode().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				checkUnavailableNode()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(checkUnavailableNode());
+  }
 
-	private HapiApiSpec checkUnavailableNode() {
-		return defaultHapiSpec("CheckUnavailableNode")
-				.given().when().then(
-						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
-				);
-	}
+  private HapiApiSpec checkUnavailableNode() {
+    return defaultHapiSpec("CheckUnavailableNode")
+        .given()
+        .when()
+        .then(getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

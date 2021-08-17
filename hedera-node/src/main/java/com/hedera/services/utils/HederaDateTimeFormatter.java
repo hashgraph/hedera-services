@@ -26,15 +26,16 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 
 public class HederaDateTimeFormatter {
-	private static final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-			.appendPattern("yyyy-MM-dd")
-			.appendLiteral('T')
-			.appendPattern("HH_mm_ss")
-			.appendLiteral('.')
-			.toFormatter()
-			.withZone(ZoneId.of("UTC"));
+  private static final DateTimeFormatter formatter =
+      new DateTimeFormatterBuilder()
+          .appendPattern("yyyy-MM-dd")
+          .appendLiteral('T')
+          .appendPattern("HH_mm_ss")
+          .appendLiteral('.')
+          .toFormatter()
+          .withZone(ZoneId.of("UTC"));
 
-	public static String format(Instant instant) {
-		return formatter.format(instant) + String.format("%09d", instant.getNano()) + "Z";
-	}
+  public static String format(Instant instant) {
+    return formatter.format(instant) + String.format("%09d", instant.getNano()) + "Z";
+  }
 }

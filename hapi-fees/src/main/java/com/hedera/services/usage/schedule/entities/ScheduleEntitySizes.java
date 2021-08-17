@@ -20,18 +20,18 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import com.hedera.services.usage.SigUsage;
-
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 
+import com.hedera.services.usage.SigUsage;
+
 public enum ScheduleEntitySizes {
-	SCHEDULE_ENTITY_SIZES;
+  SCHEDULE_ENTITY_SIZES;
 
-	public int bytesUsedForSigningKeys(int n) {
-		return n * KEY_SIZE;
-	}
+  public int bytesUsedForSigningKeys(int n) {
+    return n * KEY_SIZE;
+  }
 
-	public int estimatedScheduleSigs(SigUsage sigUsage) {
-		return Math.max(sigUsage.numSigs() - sigUsage.numPayerKeys(), 1);
-	}
+  public int estimatedScheduleSigs(SigUsage sigUsage) {
+    return Math.max(sigUsage.numSigs() - sigUsage.numPayerKeys(), 1);
+  }
 }

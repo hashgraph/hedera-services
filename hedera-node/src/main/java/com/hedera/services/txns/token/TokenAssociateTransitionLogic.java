@@ -20,6 +20,11 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
@@ -30,16 +35,10 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 /**
  * Provides the state transition for associating tokens to an account.
@@ -47,77 +46,77 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
  * @author Michael Tinker
  */
 public class TokenAssociateTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final AccountStore accountStore;
-	private final TypedTokenStore tokenStore;
-	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
+  private final AccountStore accountStore;
+  private final TypedTokenStore tokenStore;
+  private final TransactionContext txnCtx;
+  private final GlobalDynamicProperties dynamicProperties;
 
-	public TokenAssociateTransitionLogic(
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
-	) {
-		this.dynamicProperties = dynamicProperties;
-		this.accountStore = accountStore;
-		this.tokenStore = tokenStore;
-		this.txnCtx = txnCtx;
-	}
+  public TokenAssociateTransitionLogic(
+      AccountStore accountStore,
+      TypedTokenStore tokenStore,
+      TransactionContext txnCtx,
+      GlobalDynamicProperties dynamicProperties) {
+    this.dynamicProperties = dynamicProperties;
+    this.accountStore = accountStore;
+    this.tokenStore = tokenStore;
+    this.txnCtx = txnCtx;
+  }
 
-	@Override
-	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
-		final var op = txnCtx.accessor().getTxn().getTokenAssociate();
-		/* First the account */
-		final var grpcId = op.getAccount();
-		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
-		/* And then the tokens */
-		final List<Id> tokenIds = new ArrayList<>();
-		for (final var _grpcId : op.getTokensList()) {
-			tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
-		}
+  @Override
+  public void doStateTransition() {
+    /* --- Translate from gRPC types --- */
+    final var op = txnCtx.accessor().getTxn().getTokenAssociate();
+    /* First the account */
+    final var grpcId = op.getAccount();
+    final var accountId =
+        new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
+    /* And then the tokens */
+    final List<Id> tokenIds = new ArrayList<>();
+    for (final var _grpcId : op.getTokensList()) {
+      tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
+    }
 
-		/* --- Load the model objects --- */
-		final var account = accountStore.loadAccount(accountId);
-		final List<Token> tokens = new ArrayList<>();
-		for (final var tokenId : tokenIds) {
-			final var token = tokenStore.loadToken(tokenId);
-			tokens.add(token);
-		}
+    /* --- Load the model objects --- */
+    final var account = accountStore.loadAccount(accountId);
+    final List<Token> tokens = new ArrayList<>();
+    for (final var tokenId : tokenIds) {
+      final var token = tokenStore.loadToken(tokenId);
+      tokens.add(token);
+    }
 
-		/* --- Do the business logic --- */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount());
+    /* --- Do the business logic --- */
+    account.associateWith(tokens, dynamicProperties.maxTokensPerAccount());
 
-		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account);
-		for (final var token : tokens) {
-			tokenStore.persistTokenRelationships(List.of(token.newRelationshipWith(account)));
-		}
-	}
+    /* --- Persist the updated models --- */
+    accountStore.persistAccount(account);
+    for (final var token : tokens) {
+      tokenStore.persistTokenRelationships(List.of(token.newRelationshipWith(account)));
+    }
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenAssociate;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasTokenAssociate;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenAssociateTransactionBody op = txnBody.getTokenAssociate();
+  public ResponseCodeEnum validate(TransactionBody txnBody) {
+    TokenAssociateTransactionBody op = txnBody.getTokenAssociate();
 
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
+    if (!op.hasAccount()) {
+      return INVALID_ACCOUNT_ID;
+    }
 
-		if (repeatsItself(op.getTokensList())) {
-			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-		}
+    if (repeatsItself(op.getTokensList())) {
+      return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 }

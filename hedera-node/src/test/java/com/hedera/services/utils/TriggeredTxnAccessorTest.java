@@ -20,6 +20,11 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asSchedule;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,48 +36,36 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asSchedule;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class TriggeredTxnAccessorTest {
-    AccountID id = asAccount("0.0.1001");
-    boolean scheduled = true;
-    AccountID payer = asAccount("0.0.1234");
-    ScheduleID scheduleRef = asSchedule("0.0.5876");
+  AccountID id = asAccount("0.0.1001");
+  boolean scheduled = true;
+  AccountID payer = asAccount("0.0.1234");
+  ScheduleID scheduleRef = asSchedule("0.0.5876");
 
-    TransactionID txnId = TransactionID.newBuilder()
-            .setAccountID(id)
-            .setScheduled(scheduled).build();
-    TransactionBody txnBody = TransactionBody.newBuilder()
-            .setTransactionID(txnId)
-            .build();
-    SignedTransaction signedTxn = SignedTransaction.newBuilder()
-            .setBodyBytes(txnBody.toByteString())
-            .build();
-    Transaction tx = Transaction.newBuilder()
-            .setSignedTransactionBytes(
-                    signedTxn.toByteString())
-            .build();
+  TransactionID txnId = TransactionID.newBuilder().setAccountID(id).setScheduled(scheduled).build();
+  TransactionBody txnBody = TransactionBody.newBuilder().setTransactionID(txnId).build();
+  SignedTransaction signedTxn =
+      SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+  Transaction tx =
+      Transaction.newBuilder().setSignedTransactionBytes(signedTxn.toByteString()).build();
 
-    private TriggeredTxnAccessor subject;
+  private TriggeredTxnAccessor subject;
 
-    @BeforeEach
-    void setup() throws InvalidProtocolBufferException {
-        subject = new TriggeredTxnAccessor(tx.toByteArray(), payer, scheduleRef);
-    }
+  @BeforeEach
+  void setup() throws InvalidProtocolBufferException {
+    subject = new TriggeredTxnAccessor(tx.toByteArray(), payer, scheduleRef);
+  }
 
-    @Test
-    void validProperties() {
-        assertEquals(tx, subject.getSignedTxnWrapper());
-        assertEquals(tx, subject.getSignedTxnWrapper());
-        assertArrayEquals(tx.toByteArray(), subject.getSignedTxnWrapperBytes());
-        assertEquals(scheduleRef, subject.getScheduleRef());
-        assertEquals(payer, subject.getPayer());
-        assertEquals(txnBody, subject.getTxn());
-        assertArrayEquals(txnBody.toByteArray(), subject.getTxnBytes());
-        assertEquals(txnId, subject.getTxnId());
-        assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTxn.toByteArray()), subject.getHash());
-    }
+  @Test
+  void validProperties() {
+    assertEquals(tx, subject.getSignedTxnWrapper());
+    assertEquals(tx, subject.getSignedTxnWrapper());
+    assertArrayEquals(tx.toByteArray(), subject.getSignedTxnWrapperBytes());
+    assertEquals(scheduleRef, subject.getScheduleRef());
+    assertEquals(payer, subject.getPayer());
+    assertEquals(txnBody, subject.getTxn());
+    assertArrayEquals(txnBody.toByteArray(), subject.getTxnBytes());
+    assertEquals(txnId, subject.getTxnId());
+    assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTxn.toByteArray()), subject.getHash());
+  }
 }

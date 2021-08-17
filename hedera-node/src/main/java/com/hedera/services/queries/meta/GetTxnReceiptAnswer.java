@@ -9,9 +9,9 @@ package com.hedera.services.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,11 @@ package com.hedera.services.queries.meta;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
@@ -31,75 +36,67 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
-
 public class GetTxnReceiptAnswer implements AnswerService {
-	private final TransactionID DEFAULT_TXN_ID = TransactionID.getDefaultInstance();
-	private final RecordCache recordCache;
+  private final TransactionID DEFAULT_TXN_ID = TransactionID.getDefaultInstance();
+  private final RecordCache recordCache;
 
-	public GetTxnReceiptAnswer(RecordCache recordCache) {
-		this.recordCache = recordCache;
-	}
+  public GetTxnReceiptAnswer(RecordCache recordCache) {
+    this.recordCache = recordCache;
+  }
 
-	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
-		return false;
-	}
+  @Override
+  public boolean needsAnswerOnlyCost(Query query) {
+    return false;
+  }
 
-	@Override
-	public boolean requiresNodePayment(Query query) {
-		return false;
-	}
+  @Override
+  public boolean requiresNodePayment(Query query) {
+    return false;
+  }
 
-	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		TransactionGetReceiptQuery op = query.getTransactionGetReceipt();
-		TransactionGetReceiptResponse.Builder opResponse = TransactionGetReceiptResponse.newBuilder();
+  @Override
+  public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
+    TransactionGetReceiptQuery op = query.getTransactionGetReceipt();
+    TransactionGetReceiptResponse.Builder opResponse = TransactionGetReceiptResponse.newBuilder();
 
-		if (validity == OK) {
-			var txnId = op.getTransactionID();
-			var receipt = recordCache.getPriorityReceipt(txnId);
-			if (receipt == null) {
-				validity = RECEIPT_NOT_FOUND;
-			} else {
-				opResponse.setReceipt(receipt.toGrpc());
-				if (op.getIncludeDuplicates()) {
-					opResponse.addAllDuplicateTransactionReceipts(recordCache.getDuplicateReceipts(txnId));
-				}
-			}
-		}
-		opResponse.setHeader(answerOnlyHeader(validity));
+    if (validity == OK) {
+      var txnId = op.getTransactionID();
+      var receipt = recordCache.getPriorityReceipt(txnId);
+      if (receipt == null) {
+        validity = RECEIPT_NOT_FOUND;
+      } else {
+        opResponse.setReceipt(receipt.toGrpc());
+        if (op.getIncludeDuplicates()) {
+          opResponse.addAllDuplicateTransactionReceipts(recordCache.getDuplicateReceipts(txnId));
+        }
+      }
+    }
+    opResponse.setHeader(answerOnlyHeader(validity));
 
-		return Response.newBuilder()
-				.setTransactionGetReceipt(opResponse)
-				.build();
-	}
+    return Response.newBuilder().setTransactionGetReceipt(opResponse).build();
+  }
 
-	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		boolean isOk = (!DEFAULT_TXN_ID.equals(query.getTransactionGetReceipt().getTransactionID()));
+  @Override
+  public ResponseCodeEnum checkValidity(Query query, StateView view) {
+    boolean isOk = (!DEFAULT_TXN_ID.equals(query.getTransactionGetReceipt().getTransactionID()));
 
-		return isOk ? OK : INVALID_TRANSACTION_ID;
-	}
+    return isOk ? OK : INVALID_TRANSACTION_ID;
+  }
 
-	@Override
-	public ResponseCodeEnum extractValidityFrom(Response response) {
-		return response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
-	}
+  @Override
+  public ResponseCodeEnum extractValidityFrom(Response response) {
+    return response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
+  }
 
-	@Override
-	public HederaFunctionality canonicalFunction() {
-		return TransactionGetReceipt;
-	}
+  @Override
+  public HederaFunctionality canonicalFunction() {
+    return TransactionGetReceipt;
+  }
 
-	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		return Optional.empty();
-	}
+  @Override
+  public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    return Optional.empty();
+  }
 }

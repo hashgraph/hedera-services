@@ -20,37 +20,31 @@ package com.hedera.services.legacy.proto.utils;
  * ‍
  */
 
-import net.i2p.crypto.eddsa.EdDSAEngine;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import net.i2p.crypto.eddsa.EdDSAEngine;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 
 public class SignatureGenerator {
-	/**
-	 * Signs a message with a private key.
-	 *
-	 * @param msgBytes
-	 * 		to be signed
-	 * @param privateKey
-	 * 		private key
-	 * @return signature in hex format
-	 * @throws InvalidKeyException
-	 * 		if the key is invalid
-	 * @throws SignatureException
-	 * 		if there is an error in the signature
-	 */
-	public static String signBytes(final byte[] msgBytes, final PrivateKey privateKey
-	) throws InvalidKeyException, SignatureException {
-		if (!(privateKey instanceof EdDSAPrivateKey)) {
-			throw new IllegalArgumentException("Only Ed25519 signatures are supported at this time!");
-		}
-		final var engine = new EdDSAEngine();
-		engine.initSign(privateKey);
-		final var sigBytes = engine.signOneShot(msgBytes);
+  /**
+   * Signs a message with a private key.
+   *
+   * @param msgBytes to be signed
+   * @param privateKey private key
+   * @return signature in hex format
+   * @throws InvalidKeyException if the key is invalid
+   * @throws SignatureException if there is an error in the signature
+   */
+  public static String signBytes(final byte[] msgBytes, final PrivateKey privateKey)
+      throws InvalidKeyException, SignatureException {
+    if (!(privateKey instanceof EdDSAPrivateKey)) {
+      throw new IllegalArgumentException("Only Ed25519 signatures are supported at this time!");
+    }
+    final var engine = new EdDSAEngine();
+    engine.initSign(privateKey);
+    final var sigBytes = engine.signOneShot(msgBytes);
 
-		return com.swirlds.common.CommonUtils.hex(sigBytes);
-	}
-
+    return com.swirlds.common.CommonUtils.hex(sigBytes);
+  }
 }

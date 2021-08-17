@@ -20,12 +20,13 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static java.nio.file.Files.newBufferedWriter;
+
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -35,102 +36,99 @@ import java.security.KeyPair;
 import java.security.KeyStoreException;
 import java.util.List;
 import java.util.Map;
-
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
-import static java.nio.file.Files.newBufferedWriter;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 
 public class SpecUtils {
-	public static String asSerializedOcKeystore(
-			File aes256EncryptedPkcs8Pem,
-			String passphrase,
-			AccountID id
-	) throws KeyStoreException, IOException {
-		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-		return asSerializedOcKeystore(keyStore.get(0), id);
-	}
+  public static String asSerializedOcKeystore(
+      File aes256EncryptedPkcs8Pem, String passphrase, AccountID id)
+      throws KeyStoreException, IOException {
+    var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
+    return asSerializedOcKeystore(keyStore.get(0), id);
+  }
 
-	public static KeyPairObj asOcKeystore(File aes256EncryptedPkcs8Pem, String passphrase) throws KeyStoreException {
-		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-		var keyPair = keyStore.get(0);
-		return new KeyPairObj(
-				com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded()),
-				com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded()));
-	}
+  public static KeyPairObj asOcKeystore(File aes256EncryptedPkcs8Pem, String passphrase)
+      throws KeyStoreException {
+    var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
+    var keyPair = keyStore.get(0);
+    return new KeyPairObj(
+        com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded()),
+        com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded()));
+  }
 
-	public static String ed25519KeyToOcKeystore(EdDSAPrivateKey privKey, AccountID id) throws IOException {
-		var hexPublicKey = com.swirlds.common.CommonUtils.hex(privKey.getAbyte());
-		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(privKey.getEncoded());
-		var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
-		var keys = new AccountKeyListObj(id, List.of(keyPairObj));
+  public static String ed25519KeyToOcKeystore(EdDSAPrivateKey privKey, AccountID id)
+      throws IOException {
+    var hexPublicKey = com.swirlds.common.CommonUtils.hex(privKey.getAbyte());
+    var hexPrivateKey = com.swirlds.common.CommonUtils.hex(privKey.getEncoded());
+    var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
+    var keys = new AccountKeyListObj(id, List.of(keyPairObj));
 
-		var baos = new ByteArrayOutputStream();
-		var oos = new ObjectOutputStream(baos);
-		oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
-		oos.close();
+    var baos = new ByteArrayOutputStream();
+    var oos = new ObjectOutputStream(baos);
+    oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
+    oos.close();
 
-		return CommonUtils.base64encode(baos.toByteArray());
-	}
+    return CommonUtils.base64encode(baos.toByteArray());
+  }
 
-	public static String asSerializedOcKeystore(KeyPair keyPair, AccountID id) throws IOException {
-		var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
-		var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
-		var keys = new AccountKeyListObj(id, List.of(keyPairObj));
+  public static String asSerializedOcKeystore(KeyPair keyPair, AccountID id) throws IOException {
+    var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
+    var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
+    var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
+    var keys = new AccountKeyListObj(id, List.of(keyPairObj));
 
-		var baos = new ByteArrayOutputStream();
-		var oos = new ObjectOutputStream(baos);
-		oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
-		oos.close();
+    var baos = new ByteArrayOutputStream();
+    var oos = new ObjectOutputStream(baos);
+    oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
+    oos.close();
 
-		return CommonUtils.base64encode(baos.toByteArray());
-	}
+    return CommonUtils.base64encode(baos.toByteArray());
+  }
 
-	public static String asSerializedLegacyOcKeystore(
-			File aes256EncryptedPkcs8Pem,
-			String passphrase,
-			AccountID id
-	) throws KeyStoreException, IOException {
-		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-		return asSerializedLegacyOcKeystore(keyStore.get(0), id);
-	}
+  public static String asSerializedLegacyOcKeystore(
+      File aes256EncryptedPkcs8Pem, String passphrase, AccountID id)
+      throws KeyStoreException, IOException {
+    var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
+    return asSerializedLegacyOcKeystore(keyStore.get(0), id);
+  }
 
-	public static String asSerializedLegacyOcKeystore(KeyPair keyPair, AccountID id) throws IOException {
-		var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
-		var keyPairObj = new com.hedera.services.legacy.core.KeyPairObj(hexPublicKey, hexPrivateKey);
-		var keys = new com.hedera.services.legacy.core.AccountKeyListObj(id, List.of(keyPairObj));
+  public static String asSerializedLegacyOcKeystore(KeyPair keyPair, AccountID id)
+      throws IOException {
+    var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
+    var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
+    var keyPairObj = new com.hedera.services.legacy.core.KeyPairObj(hexPublicKey, hexPrivateKey);
+    var keys = new com.hedera.services.legacy.core.AccountKeyListObj(id, List.of(keyPairObj));
 
-		var baos = new ByteArrayOutputStream();
-		var oos = new ObjectOutputStream(baos);
-		oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
-		oos.close();
+    var baos = new ByteArrayOutputStream();
+    var oos = new ObjectOutputStream(baos);
+    oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
+    oos.close();
 
-		return CommonUtils.base64encode(baos.toByteArray());
-	}
+    return CommonUtils.base64encode(baos.toByteArray());
+  }
 
-	public static KeyPairObj asLegacyKp(EdDSAPrivateKey privateKey) {
-		var hexPublicKey = com.swirlds.common.CommonUtils.hex(privateKey.getAbyte());
-		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(privateKey.getEncoded());
-		return new KeyPairObj(hexPublicKey, hexPrivateKey);
-	}
+  public static KeyPairObj asLegacyKp(EdDSAPrivateKey privateKey) {
+    var hexPublicKey = com.swirlds.common.CommonUtils.hex(privateKey.getAbyte());
+    var hexPrivateKey = com.swirlds.common.CommonUtils.hex(privateKey.getEncoded());
+    return new KeyPairObj(hexPublicKey, hexPrivateKey);
+  }
 
-	public static KeyPairObj asLegacyKp(KeyPair keyPair) {
-		var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
-		return new KeyPairObj(hexPublicKey, hexPrivateKey);
-	}
+  public static KeyPairObj asLegacyKp(KeyPair keyPair) {
+    var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
+    var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
+    return new KeyPairObj(hexPublicKey, hexPrivateKey);
+  }
 
-	public static void main(String... args) throws Exception {
-		var pemLoc = new File("pretend-genesis.pem");
-		var passphrase = "guessAgain";
+  public static void main(String... args) throws Exception {
+    var pemLoc = new File("pretend-genesis.pem");
+    var passphrase = "guessAgain";
 
-		var b64Loc = "PretendStartupAccount.txt";
-		var literal = "0.0.2";
+    var b64Loc = "PretendStartupAccount.txt";
+    var literal = "0.0.2";
 
-		var txt = asSerializedLegacyOcKeystore(pemLoc, passphrase, asAccount(literal));
-		var out = newBufferedWriter(Paths.get(b64Loc));
+    var txt = asSerializedLegacyOcKeystore(pemLoc, passphrase, asAccount(literal));
+    var out = newBufferedWriter(Paths.get(b64Loc));
 
-		out.write(txt);
-		out.close();
-	}
+    out.write(txt);
+    out.close();
+  }
 }

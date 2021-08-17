@@ -30,24 +30,27 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
-	private final ScheduleOpsUsage scheduleOpsUsage;
-	private final GlobalDynamicProperties dynamicProperties;
+  private final ScheduleOpsUsage scheduleOpsUsage;
+  private final GlobalDynamicProperties dynamicProperties;
 
-	public ScheduleCreateResourceUsage(ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties dynamicProperties) {
-		this.scheduleOpsUsage = scheduleOpsUsage;
-		this.dynamicProperties = dynamicProperties;
-	}
+  public ScheduleCreateResourceUsage(
+      ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties dynamicProperties) {
+    this.scheduleOpsUsage = scheduleOpsUsage;
+    this.dynamicProperties = dynamicProperties;
+  }
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasScheduleCreate();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasScheduleCreate();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, dynamicProperties.scheduledTxExpiryTimeSecs());
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    return scheduleOpsUsage.scheduleCreateUsage(
+        txn, sigUsage, dynamicProperties.scheduledTxExpiryTimeSecs());
+  }
 }

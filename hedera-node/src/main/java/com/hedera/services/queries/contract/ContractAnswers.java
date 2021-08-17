@@ -21,43 +21,42 @@ package com.hedera.services.queries.contract;
  */
 
 public class ContractAnswers {
-	private final GetBytecodeAnswer getBytecode;
-	private final GetContractInfoAnswer getContractInfo;
-	private final GetBySolidityIdAnswer getBySolidityIdAnswer;
-	private final ContractCallLocalAnswer contractCallLocal;
-	private final GetContractRecordsAnswer getContractRecords;
+  private final GetBytecodeAnswer getBytecode;
+  private final GetContractInfoAnswer getContractInfo;
+  private final GetBySolidityIdAnswer getBySolidityIdAnswer;
+  private final ContractCallLocalAnswer contractCallLocal;
+  private final GetContractRecordsAnswer getContractRecords;
 
-	public ContractAnswers(
-			GetBytecodeAnswer getBytecode,
-			GetContractInfoAnswer getContractInfo,
-			GetBySolidityIdAnswer getBySolidityIdAnswer,
-			GetContractRecordsAnswer getContractRecords,
-			ContractCallLocalAnswer contractCallLocal
-	) {
-		this.getBytecode = getBytecode;
-		this.getContractRecords = getContractRecords;
-		this.getContractInfo = getContractInfo;
-		this.getBySolidityIdAnswer = getBySolidityIdAnswer;
-		this.contractCallLocal = contractCallLocal;
-	}
+  public ContractAnswers(
+      GetBytecodeAnswer getBytecode,
+      GetContractInfoAnswer getContractInfo,
+      GetBySolidityIdAnswer getBySolidityIdAnswer,
+      GetContractRecordsAnswer getContractRecords,
+      ContractCallLocalAnswer contractCallLocal) {
+    this.getBytecode = getBytecode;
+    this.getContractRecords = getContractRecords;
+    this.getContractInfo = getContractInfo;
+    this.getBySolidityIdAnswer = getBySolidityIdAnswer;
+    this.contractCallLocal = contractCallLocal;
+  }
 
-	public GetContractInfoAnswer getContractInfo() {
-		return getContractInfo;
-	}
+  public GetContractInfoAnswer getContractInfo() {
+    return getContractInfo;
+  }
 
-	public GetBytecodeAnswer getBytecode() {
-		return getBytecode;
-	}
+  public GetBytecodeAnswer getBytecode() {
+    return getBytecode;
+  }
 
-	public GetContractRecordsAnswer getContractRecords() {
-		return getContractRecords;
-	}
+  public GetContractRecordsAnswer getContractRecords() {
+    return getContractRecords;
+  }
 
-	public ContractCallLocalAnswer contractCallLocal() {
-		return contractCallLocal;
-	}
+  public ContractCallLocalAnswer contractCallLocal() {
+    return contractCallLocal;
+  }
 
-	public GetBySolidityIdAnswer getBySolidityId() {
-		return getBySolidityIdAnswer;
-	}
+  public GetBySolidityIdAnswer getBySolidityId() {
+    return getBySolidityIdAnswer;
+  }
 }

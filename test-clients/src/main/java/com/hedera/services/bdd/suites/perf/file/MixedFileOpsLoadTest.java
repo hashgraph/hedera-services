@@ -20,18 +20,6 @@ package com.hedera.services.bdd.suites.perf.file;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
-import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
@@ -39,76 +27,77 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-/**
- * Run mixed operations including FileCreate, FileAppend, FileUpdate
- */
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/** Run mixed operations including FileCreate, FileAppend, FileUpdate */
 public class MixedFileOpsLoadTest extends LoadTest {
-	private static final Logger log = LogManager.getLogger(MixedFileOpsLoadTest.class);
+  private static final Logger log = LogManager.getLogger(MixedFileOpsLoadTest.class);
 
-	public static void main(String... args) {
-		parseArgs(args);
+  public static void main(String... args) {
+    parseArgs(args);
 
-		MixedFileOpsLoadTest suite = new MixedFileOpsLoadTest();
-		suite.runSuiteSync();
-	}
+    MixedFileOpsLoadTest suite = new MixedFileOpsLoadTest();
+    suite.runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				runMixedFileOps()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(runMixedFileOps());
+  }
 
-	protected HapiApiSpec runMixedFileOps() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-		String initialContent = "The initial contents!";
-		String targetFile = "targetFile";
+  protected HapiApiSpec runMixedFileOps() {
+    PerfTestLoadSettings settings = new PerfTestLoadSettings();
+    final AtomicInteger submittedSoFar = new AtomicInteger(0);
+    String initialContent = "The initial contents!";
+    String targetFile = "targetFile";
 
-		Supplier<HapiSpecOperation[]> mixedFileOpsBurst = () -> new HapiSpecOperation[] {
-				fileCreate(targetFile + submittedSoFar.getAndIncrement())
-						.contents(initialContent)
-						.hasKnownStatusFrom(SUCCESS, UNKNOWN),
-				fileUpdate(targetFile)
-						.fee(ONE_HUNDRED_HBARS)
-						.contents(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K))
-						.noLogging()
-						.payingWith(GENESIS)
-						.hasAnyPrecheck()
-						.hasKnownStatusFrom(SUCCESS, UNKNOWN)
-						.deferStatusResolution(),
-				fileAppend(targetFile)
-						.content("dummy")
-						.hasAnyPrecheck()
-						.payingWith(GENESIS)
-						.fee(ONE_HUNDRED_HBARS)
-						.hasKnownStatusFrom(SUCCESS, UNKNOWN)
-						.deferStatusResolution()
-		};
+    Supplier<HapiSpecOperation[]> mixedFileOpsBurst =
+        () ->
+            new HapiSpecOperation[] {
+              fileCreate(targetFile + submittedSoFar.getAndIncrement())
+                  .contents(initialContent)
+                  .hasKnownStatusFrom(SUCCESS, UNKNOWN),
+              fileUpdate(targetFile)
+                  .fee(ONE_HUNDRED_HBARS)
+                  .contents(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K))
+                  .noLogging()
+                  .payingWith(GENESIS)
+                  .hasAnyPrecheck()
+                  .hasKnownStatusFrom(SUCCESS, UNKNOWN)
+                  .deferStatusResolution(),
+              fileAppend(targetFile)
+                  .content("dummy")
+                  .hasAnyPrecheck()
+                  .payingWith(GENESIS)
+                  .fee(ONE_HUNDRED_HBARS)
+                  .hasKnownStatusFrom(SUCCESS, UNKNOWN)
+                  .deferStatusResolution()
+            };
 
-		return defaultHapiSpec("runMixedFileOps")
-				.given(
-						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-						logIt(ignore -> settings.toString())
-				).when(
-						fileCreate(targetFile)
-								.contents(initialContent)
-								.hasAnyPrecheck()
-								.payingWith(GENESIS),
-						getFileInfo(targetFile)
-								.logging()
-								.payingWith(GENESIS)
-				).then(
-						defaultLoadTest(mixedFileOpsBurst, settings)
-				);
-	}
+    return defaultHapiSpec("runMixedFileOps")
+        .given(
+            withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+            logIt(ignore -> settings.toString()))
+        .when(
+            fileCreate(targetFile).contents(initialContent).hasAnyPrecheck().payingWith(GENESIS),
+            getFileInfo(targetFile).logging().payingWith(GENESIS))
+        .then(defaultLoadTest(mixedFileOpsBurst, settings));
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

@@ -20,46 +20,45 @@ package com.hedera.services.yahcli.commands.files;
  * ‍
  */
 
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
+import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
-import java.util.concurrent.Callable;
-
-import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
-
 @Command(
-		name = "download",
-		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Download system files")
+    name = "download",
+    subcommands = {picocli.CommandLine.HelpCommand.class},
+    description = "Download system files")
 public class SysFileDownloadCommand implements Callable<Integer> {
-	@ParentCommand
-	private SysFilesCommand sysFilesCommand;
+  @ParentCommand private SysFilesCommand sysFilesCommand;
 
-	@CommandLine.Option(names = { "-d", "--dest-dir" },
-			paramLabel = "destination directory",
-			defaultValue = "{network}/sysfiles/")
-	private String destDir;
+  @CommandLine.Option(
+      names = {"-d", "--dest-dir"},
+      paramLabel = "destination directory",
+      defaultValue = "{network}/sysfiles/")
+  private String destDir;
 
-	@Parameters(
-			arity = "1..*",
-			paramLabel = "<sysfiles>",
-			description = "one or more from " +
-					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
-					"{ 101, 102, 111, 112, 121, 122, 123 })---or 'all'")
-	private String[] sysFiles;
+  @Parameters(
+      arity = "1..*",
+      paramLabel = "<sysfiles>",
+      description =
+          "one or more from "
+              + "{ address-book, node-details, fees, rates, props, permissions, throttles } (or "
+              + "{ 101, 102, 111, 112, 121, 122, 123 })---or 'all'")
+  private String[] sysFiles;
 
-	@Override
-	public Integer call() throws Exception {
-		var config = configFrom(sysFilesCommand.getYahcli());
-		destDir = SysFilesCommand.resolvedDir(destDir, config);
+  @Override
+  public Integer call() throws Exception {
+    var config = configFrom(sysFilesCommand.getYahcli());
+    destDir = SysFilesCommand.resolvedDir(destDir, config);
 
-		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles);
-		delegate.runSuiteSync();
+    var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles);
+    delegate.runSuiteSync();
 
-		return 0;
-	}
-
+    return 0;
+  }
 }

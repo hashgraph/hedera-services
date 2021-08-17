@@ -20,13 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.TestAccount;
-import com.hedera.services.ledger.properties.TestAccountProperty;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
-import java.util.Map;
-import java.util.function.Function;
-
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
@@ -35,29 +28,37 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.ledger.accounts.TestAccount;
+import com.hedera.services.ledger.properties.TestAccountProperty;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Map;
+import java.util.function.Function;
+
 class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProperty> {
 
-	@Override
-	public ResponseCodeEnum checkUsing(final TestAccount account, final Map<TestAccountProperty, Object> changeSet) {
-		Function<TestAccountProperty, Object> getter = prop -> {
-			if (changeSet != null && changeSet.containsKey(prop)) {
-				return changeSet.get(prop);
-			} else {
-				return prop.getter().apply(account);
-			}
-		};
+  @Override
+  public ResponseCodeEnum checkUsing(
+      final TestAccount account, final Map<TestAccountProperty, Object> changeSet) {
+    Function<TestAccountProperty, Object> getter =
+        prop -> {
+          if (changeSet != null && changeSet.containsKey(prop)) {
+            return changeSet.get(prop);
+          } else {
+            return prop.getter().apply(account);
+          }
+        };
 
-		if ((boolean) getter.apply(FLAG)) {
-			return ACCOUNT_IS_TREASURY;
-		}
+    if ((boolean) getter.apply(FLAG)) {
+      return ACCOUNT_IS_TREASURY;
+    }
 
-		if ((long)getter.apply(LONG) != 123L) {
-			return ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
-		}
+    if ((long) getter.apply(LONG) != 123L) {
+      return ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
+    }
 
-		if (!getter.apply(OBJ).equals("DEFAULT")) {
-			return ACCOUNT_STILL_OWNS_NFTS;
-		}
-		return OK;
-	}
+    if (!getter.apply(OBJ).equals("DEFAULT")) {
+      return ACCOUNT_STILL_OWNS_NFTS;
+    }
+    return OK;
+  }
 }

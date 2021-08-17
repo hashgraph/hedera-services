@@ -21,10 +21,9 @@ package com.hedera.services.state.serdes;
  */
 
 import com.swirlds.common.io.SerializableDataInputStream;
-
 import java.io.IOException;
 
 @FunctionalInterface
 public interface IoReadingFunction<T> {
-	T read(SerializableDataInputStream in) throws IOException;
+  T read(SerializableDataInputStream in) throws IOException;
 }

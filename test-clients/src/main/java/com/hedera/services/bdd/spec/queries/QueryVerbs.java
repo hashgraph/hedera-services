@@ -20,6 +20,8 @@ package com.hedera.services.bdd.spec.queries;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal.fromDetails;
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
@@ -40,116 +42,113 @@ import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfos;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal.fromDetails;
-
 public class QueryVerbs {
-	public static HapiGetReceipt getReceipt(String txn) {
-		return new HapiGetReceipt(txn);
-	}
+  public static HapiGetReceipt getReceipt(String txn) {
+    return new HapiGetReceipt(txn);
+  }
 
-	public static HapiGetReceipt getReceipt(TransactionID txnId) {
-		return new HapiGetReceipt(txnId);
-	}
+  public static HapiGetReceipt getReceipt(TransactionID txnId) {
+    return new HapiGetReceipt(txnId);
+  }
 
-	public static HapiGetFileInfo getFileInfo(String file) {
-		return new HapiGetFileInfo(file);
-	}
+  public static HapiGetFileInfo getFileInfo(String file) {
+    return new HapiGetFileInfo(file);
+  }
 
-	public static HapiGetFileInfo getFileInfo(Supplier<String> supplier) {
-		return new HapiGetFileInfo(supplier);
-	}
+  public static HapiGetFileInfo getFileInfo(Supplier<String> supplier) {
+    return new HapiGetFileInfo(supplier);
+  }
 
-	public static HapiGetFileContents getFileContents(String file) {
-		return new HapiGetFileContents(file);
-	}
+  public static HapiGetFileContents getFileContents(String file) {
+    return new HapiGetFileContents(file);
+  }
 
-	public static HapiGetAccountInfo getAccountInfo(String account) {
-		return new HapiGetAccountInfo(account);
-	}
+  public static HapiGetAccountInfo getAccountInfo(String account) {
+    return new HapiGetAccountInfo(account);
+  }
 
-	public static HapiGetAccountRecords getAccountRecords(String account) {
-		return new HapiGetAccountRecords(account);
-	}
+  public static HapiGetAccountRecords getAccountRecords(String account) {
+    return new HapiGetAccountRecords(account);
+  }
 
-	public static HapiGetTxnRecord getTxnRecord(String txn) {
-		return new HapiGetTxnRecord(txn);
-	}
+  public static HapiGetTxnRecord getTxnRecord(String txn) {
+    return new HapiGetTxnRecord(txn);
+  }
 
-	public static HapiGetTxnRecord getTxnRecord(TransactionID txnId) {
-		return new HapiGetTxnRecord(txnId);
-	}
+  public static HapiGetTxnRecord getTxnRecord(TransactionID txnId) {
+    return new HapiGetTxnRecord(txnId);
+  }
 
-	public static HapiGetContractInfo getContractInfo(String contract) {
-		return new HapiGetContractInfo(contract);
-	}
+  public static HapiGetContractInfo getContractInfo(String contract) {
+    return new HapiGetContractInfo(contract);
+  }
 
-	public static HapiGetContractInfo getContractInfo(String contract, boolean idPredefined) {
-		return new HapiGetContractInfo(contract, idPredefined);
-	}
+  public static HapiGetContractInfo getContractInfo(String contract, boolean idPredefined) {
+    return new HapiGetContractInfo(contract, idPredefined);
+  }
 
-	public static HapiGetContractBytecode getContractBytecode(String contract) {
-		return new HapiGetContractBytecode(contract);
-	}
+  public static HapiGetContractBytecode getContractBytecode(String contract) {
+    return new HapiGetContractBytecode(contract);
+  }
 
-	public static HapiGetContractRecords getContractRecords(String contract) {
-		return new HapiGetContractRecords(contract);
-	}
+  public static HapiGetContractRecords getContractRecords(String contract) {
+    return new HapiGetContractRecords(contract);
+  }
 
-	public static HapiContractCallLocal callContractLocal(String contract) {
-		return new HapiContractCallLocal(contract);
-	}
+  public static HapiContractCallLocal callContractLocal(String contract) {
+    return new HapiContractCallLocal(contract);
+  }
 
-	public static HapiContractCallLocal contractCallLocal(String contract, String abi, Object... params) {
-		return new HapiContractCallLocal(abi, contract, params);
-	}
+  public static HapiContractCallLocal contractCallLocal(
+      String contract, String abi, Object... params) {
+    return new HapiContractCallLocal(abi, contract, params);
+  }
 
-	public static HapiContractCallLocal contractCallLocalFrom(String details) {
-		return fromDetails(details);
-	}
+  public static HapiContractCallLocal contractCallLocalFrom(String details) {
+    return fromDetails(details);
+  }
 
-	public static HapiContractCallLocal contractCallLocal(
-			String contract, String abi, Function<HapiApiSpec, Object[]> fn
-	) {
-		return new HapiContractCallLocal(abi, contract, fn);
-	}
+  public static HapiContractCallLocal contractCallLocal(
+      String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
+    return new HapiContractCallLocal(abi, contract, fn);
+  }
 
-	public static HapiGetAccountBalance getAccountBalance(String account) {
-		return new HapiGetAccountBalance(account);
-	}
+  public static HapiGetAccountBalance getAccountBalance(String account) {
+    return new HapiGetAccountBalance(account);
+  }
 
-	public static HapiGetAccountBalance getAccountBalance(Supplier<String> supplier) {
-		return new HapiGetAccountBalance(supplier);
-	}
+  public static HapiGetAccountBalance getAccountBalance(Supplier<String> supplier) {
+    return new HapiGetAccountBalance(supplier);
+  }
 
-	public static HapiGetTopicInfo getTopicInfo(String topic) {
-		return new HapiGetTopicInfo(topic);
-	}
+  public static HapiGetTopicInfo getTopicInfo(String topic) {
+    return new HapiGetTopicInfo(topic);
+  }
 
-	public static HapiGetVersionInfo getVersionInfo() {
-		return new HapiGetVersionInfo();
-	}
+  public static HapiGetVersionInfo getVersionInfo() {
+    return new HapiGetVersionInfo();
+  }
 
-	public static HapiGetTokenInfo getTokenInfo(String token) {
-		return new HapiGetTokenInfo(token);
-	}
+  public static HapiGetTokenInfo getTokenInfo(String token) {
+    return new HapiGetTokenInfo(token);
+  }
 
-	public static HapiGetScheduleInfo getScheduleInfo(String schedule) {
-		return new HapiGetScheduleInfo(schedule);
-	}
+  public static HapiGetScheduleInfo getScheduleInfo(String schedule) {
+    return new HapiGetScheduleInfo(schedule);
+  }
 
-	public static HapiGetTokenNftInfo getTokenNftInfo(String token, long serialNum) {
-		return new HapiGetTokenNftInfo(token, serialNum);
-	}
+  public static HapiGetTokenNftInfo getTokenNftInfo(String token, long serialNum) {
+    return new HapiGetTokenNftInfo(token, serialNum);
+  }
 
-	public static HapiGetTokenNftInfos getTokenNftInfos(String token, long start, long end) {
-		return new HapiGetTokenNftInfos(token, start, end);
-	}
+  public static HapiGetTokenNftInfos getTokenNftInfos(String token, long start, long end) {
+    return new HapiGetTokenNftInfos(token, start, end);
+  }
 
-	public static HapiGetAccountNftInfos getAccountNftInfos(String account, long start, long end) {
-		return new HapiGetAccountNftInfos(account, start, end);
-	}
+  public static HapiGetAccountNftInfos getAccountNftInfos(String account, long start, long end) {
+    return new HapiGetAccountNftInfos(account, start, end);
+  }
 }

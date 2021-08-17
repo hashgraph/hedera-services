@@ -20,6 +20,18 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
@@ -34,172 +46,156 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.EnumSet;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.EnumSet;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 /**
- * Implements the {@link TransitionLogic} for a HAPI CryptoUpdate transaction,
- * and the conditions under which such logic has valid semantics. (It is
- * possible that the transaction will still resolve to a status other than
- * success; for example if the target account has been deleted when the
- * update is handled.)
+ * Implements the {@link TransitionLogic} for a HAPI CryptoUpdate transaction, and the conditions
+ * under which such logic has valid semantics. (It is possible that the transaction will still
+ * resolve to a status other than success; for example if the target account has been deleted when
+ * the update is handled.)
  *
  * @author Michael Tinker
  */
 public class CryptoUpdateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
+  private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
 
-	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
+  private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final HederaLedger ledger;
-	private final OptionValidator validator;
-	private final TransactionContext txnCtx;
+  private final HederaLedger ledger;
+  private final OptionValidator validator;
+  private final TransactionContext txnCtx;
 
-	public CryptoUpdateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx
-	) {
-		this.ledger = ledger;
-		this.validator = validator;
-		this.txnCtx = txnCtx;
-	}
+  public CryptoUpdateTransitionLogic(
+      HederaLedger ledger, OptionValidator validator, TransactionContext txnCtx) {
+    this.ledger = ledger;
+    this.validator = validator;
+    this.txnCtx = txnCtx;
+  }
 
-	@Override
-	public void doStateTransition() {
-		try {
-			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
-			final var target = op.getAccountIDToUpdate();
-			final var customizer = asCustomizer(op);
+  @Override
+  public void doStateTransition() {
+    try {
+      final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
+      final var target = op.getAccountIDToUpdate();
+      final var customizer = asCustomizer(op);
 
-			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
-				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
-				return;
-			}
-			final var validity = sanityCheck(target, customizer);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
+      if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
+        txnCtx.setStatus(INVALID_EXPIRATION_TIME);
+        return;
+      }
+      final var validity = sanityCheck(target, customizer);
+      if (validity != OK) {
+        txnCtx.setStatus(validity);
+        return;
+      }
 
-			ledger.customize(target, customizer);
-			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException mae) {
-			txnCtx.setStatus(INVALID_ACCOUNT_ID);
-		} catch (DeletedAccountException aide) {
-			txnCtx.setStatus(ACCOUNT_DELETED);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+      ledger.customize(target, customizer);
+      txnCtx.setStatus(SUCCESS);
+    } catch (MissingAccountException mae) {
+      txnCtx.setStatus(INVALID_ACCOUNT_ID);
+    } catch (DeletedAccountException aide) {
+      txnCtx.setStatus(ACCOUNT_DELETED);
+    } catch (Exception e) {
+      log.warn(
+          "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+      txnCtx.setStatus(FAIL_INVALID);
+    }
+  }
 
-	private ResponseCodeEnum sanityCheck(AccountID target, HederaAccountCustomizer customizer) {
-		if (!ledger.exists(target) || ledger.isSmartContract(target)) {
-			return INVALID_ACCOUNT_ID;
-		}
+  private ResponseCodeEnum sanityCheck(AccountID target, HederaAccountCustomizer customizer) {
+    if (!ledger.exists(target) || ledger.isSmartContract(target)) {
+      return INVALID_ACCOUNT_ID;
+    }
 
-		final var changes = customizer.getChanges();
-		final var keyChanges = customizer.getChanges().keySet();
+    final var changes = customizer.getChanges();
+    final var keyChanges = customizer.getChanges().keySet();
 
-		if (ledger.isDetached(target)) {
-			if (!keyChanges.equals(EXPIRY_ONLY)) {
-				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-			}
-		}
+    if (ledger.isDetached(target)) {
+      if (!keyChanges.equals(EXPIRY_ONLY)) {
+        return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+      }
+    }
 
-		if (keyChanges.contains(AccountProperty.EXPIRY)) {
-			final long newExpiry = (long)changes.get(AccountProperty.EXPIRY);
-			if (newExpiry < ledger.expiry(target)) {
-				return EXPIRATION_REDUCTION_NOT_ALLOWED;
-			}
-		}
+    if (keyChanges.contains(AccountProperty.EXPIRY)) {
+      final long newExpiry = (long) changes.get(AccountProperty.EXPIRY);
+      if (newExpiry < ledger.expiry(target)) {
+        return EXPIRATION_REDUCTION_NOT_ALLOWED;
+      }
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 
-	private HederaAccountCustomizer asCustomizer(CryptoUpdateTransactionBody op) {
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer();
+  private HederaAccountCustomizer asCustomizer(CryptoUpdateTransactionBody op) {
+    HederaAccountCustomizer customizer = new HederaAccountCustomizer();
 
-		if (op.hasKey()) {
-			/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-			var fcKey = asFcKeyUnchecked(op.getKey());
-			customizer.key(fcKey);
-		}
-		if (op.hasExpirationTime()) {
-			customizer.expiry(op.getExpirationTime().getSeconds());
-		}
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
-		}
-		if (op.hasReceiverSigRequiredWrapper()) {
-			customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());
-		} else if (op.getReceiverSigRequired()) {
-			customizer.isReceiverSigRequired(true);
-		}
-		if (op.hasAutoRenewPeriod()) {
-			customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
-		}
-		if (op.hasMemo()) {
-			customizer.memo(op.getMemo().getValue());
-		}
+    if (op.hasKey()) {
+      /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
+      var fcKey = asFcKeyUnchecked(op.getKey());
+      customizer.key(fcKey);
+    }
+    if (op.hasExpirationTime()) {
+      customizer.expiry(op.getExpirationTime().getSeconds());
+    }
+    if (op.hasProxyAccountID()) {
+      customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
+    }
+    if (op.hasReceiverSigRequiredWrapper()) {
+      customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());
+    } else if (op.getReceiverSigRequired()) {
+      customizer.isReceiverSigRequired(true);
+    }
+    if (op.hasAutoRenewPeriod()) {
+      customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
+    }
+    if (op.hasMemo()) {
+      customizer.memo(op.getMemo().getValue());
+    }
 
-		return customizer;
-	}
+    return customizer;
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasCryptoUpdateAccount;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasCryptoUpdateAccount;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
-		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
+  private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
+    CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
 
-		var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
-		if (memoValidity != OK) {
-			return memoValidity;
-		}
+    var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+    if (memoValidity != OK) {
+      return memoValidity;
+    }
 
-		if (op.hasKey()) {
-			try {
-				JKey fcKey = JKey.mapKey(op.getKey());
-				/* Note that an empty key is never valid. */
-				if (!fcKey.isValid()) {
-					return BAD_ENCODING;
-				}
-			} catch (DecoderException e) {
-				return BAD_ENCODING;
-			}
-		}
+    if (op.hasKey()) {
+      try {
+        JKey fcKey = JKey.mapKey(op.getKey());
+        /* Note that an empty key is never valid. */
+        if (!fcKey.isValid()) {
+          return BAD_ENCODING;
+        }
+      } catch (DecoderException e) {
+        return BAD_ENCODING;
+      }
+    }
 
-		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-			return AUTORENEW_DURATION_NOT_IN_RANGE;
-		}
+    if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+      return AUTORENEW_DURATION_NOT_IN_RANGE;
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 }

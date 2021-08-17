@@ -20,6 +20,11 @@ package com.hedera.services.store;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -28,54 +33,50 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 /**
- * Provides an abstract store, having common functionality related to {@link EntityIdSource}, {@link HederaLedger}
- * and {@link TransactionalLedger} for accounts.
+ * Provides an abstract store, having common functionality related to {@link EntityIdSource}, {@link
+ * HederaLedger} and {@link TransactionalLedger} for accounts.
  */
 public abstract class HederaStore {
-	protected final EntityIdSource ids;
+  protected final EntityIdSource ids;
 
-	protected HederaLedger hederaLedger;
-	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+  protected HederaLedger hederaLedger;
+  protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	protected HederaStore(
-			EntityIdSource ids
-	) {
-		this.ids = ids;
-	}
+  protected HederaStore(EntityIdSource ids) {
+    this.ids = ids;
+  }
 
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		this.accountsLedger = accountsLedger;
-	}
+  public void setAccountsLedger(
+      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+    this.accountsLedger = accountsLedger;
+  }
 
-	public void setHederaLedger(HederaLedger hederaLedger) {
-		this.hederaLedger = hederaLedger;
-	}
+  public void setHederaLedger(HederaLedger hederaLedger) {
+    this.hederaLedger = hederaLedger;
+  }
 
-	public void rollbackCreation() {
-		ids.reclaimLastId();
-	}
+  public void rollbackCreation() {
+    ids.reclaimLastId();
+  }
 
-	protected ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
-		final var validity = checkAccountUsability(aId);
+  protected ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
+    final var validity = checkAccountUsability(aId);
 
-		return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
-	}
+    return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK)
+        ? validity
+        : fallbackFailure;
+  }
 
-	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
-		if (!accountsLedger.exists(aId)) {
-			return INVALID_ACCOUNT_ID;
-		} else if (hederaLedger.isDeleted(aId)) {
-			return ACCOUNT_DELETED;
-		} else if (hederaLedger.isDetached(aId)) {
-			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		} else {
-			return OK;
-		}
-	}
+  protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
+    if (!accountsLedger.exists(aId)) {
+      return INVALID_ACCOUNT_ID;
+    } else if (hederaLedger.isDeleted(aId)) {
+      return ACCOUNT_DELETED;
+    } else if (hederaLedger.isDetached(aId)) {
+      return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+    } else {
+      return OK;
+    }
+  }
 }

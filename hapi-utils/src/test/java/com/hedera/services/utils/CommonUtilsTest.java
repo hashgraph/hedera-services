@@ -20,22 +20,21 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
+import java.io.File;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+
 class CommonUtilsTest {
-	@Test
-	void testNap() throws InterruptedException, IOException {
-		final String filePath = "./src/test/resources/test.txt";
-		CommonUtils.writeToFile(filePath, "TEST".getBytes());
-		CommonUtils.nap(1);
-		final var file = new File(filePath);
-		assertTrue(file.exists());
-		file.delete();
-	}
+  @Test
+  void testNap() throws InterruptedException, IOException {
+    final String filePath = "./src/test/resources/test.txt";
+    CommonUtils.writeToFile(filePath, "TEST".getBytes());
+    CommonUtils.nap(1);
+    final var file = new File(filePath);
+    assertTrue(file.exists());
+    file.delete();
+  }
 }

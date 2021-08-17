@@ -26,33 +26,32 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenBurnFactory extends SignedTxnFactory<TokenBurnFactory> {
-	private TokenBurnFactory() {}
+  private TokenBurnFactory() {}
 
-	private TokenID id;
+  private TokenID id;
 
-	public static TokenBurnFactory newSignedTokenBurn() {
-		return new TokenBurnFactory();
-	}
+  public static TokenBurnFactory newSignedTokenBurn() {
+    return new TokenBurnFactory();
+  }
 
-	public TokenBurnFactory burning(TokenID id) {
-		this.id = id;
-		return this;
-	}
+  public TokenBurnFactory burning(TokenID id) {
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenBurnFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenBurnFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenBurnTransactionBody.newBuilder()
-				.setToken(id);
-		txn.setTokenBurn(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenBurnTransactionBody.newBuilder().setToken(id);
+    txn.setTokenBurn(op);
+  }
 }

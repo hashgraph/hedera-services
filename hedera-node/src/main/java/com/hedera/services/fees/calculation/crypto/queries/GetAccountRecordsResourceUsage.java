@@ -20,6 +20,8 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -28,44 +30,40 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-
 import java.util.List;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-
 public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
-	private final AnswerFunctions answerFunctions;
-	private final CryptoFeeBuilder usageEstimator;
+  private final AnswerFunctions answerFunctions;
+  private final CryptoFeeBuilder usageEstimator;
 
-	public GetAccountRecordsResourceUsage(
-			AnswerFunctions answerFunctions,
-			CryptoFeeBuilder usageEstimator
-	) {
-		this.answerFunctions = answerFunctions;
-		this.usageEstimator = usageEstimator;
-	}
+  public GetAccountRecordsResourceUsage(
+      AnswerFunctions answerFunctions, CryptoFeeBuilder usageEstimator) {
+    this.answerFunctions = answerFunctions;
+    this.usageEstimator = usageEstimator;
+  }
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasCryptoGetAccountRecords();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasCryptoGetAccountRecords();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType());
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageGivenType(
+        query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType());
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var target = fromAccountId(query.getCryptoGetAccountRecords().getAccountID());
-		if (!view.accounts().containsKey(target)) {
-			/* Given the test in {@code GetAccountRecordsAnswer.checkValidity}, this can only be
-			 * missing under the extraordinary circumstance that the desired account expired
-			 * during the query answer flow (which will now fail downstream with an appropriate
-			 * status code); so just return the default {@code FeeData} here. */
-			return FeeData.getDefaultInstance();
-		}
-		List<TransactionRecord> records = answerFunctions.accountRecords(view, query);
-		return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, type);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    var target = fromAccountId(query.getCryptoGetAccountRecords().getAccountID());
+    if (!view.accounts().containsKey(target)) {
+      /* Given the test in {@code GetAccountRecordsAnswer.checkValidity}, this can only be
+       * missing under the extraordinary circumstance that the desired account expired
+       * during the query answer flow (which will now fail downstream with an appropriate
+       * status code); so just return the default {@code FeeData} here. */
+      return FeeData.getDefaultInstance();
+    }
+    List<TransactionRecord> records = answerFunctions.accountRecords(view, query);
+    return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, type);
+  }
 }

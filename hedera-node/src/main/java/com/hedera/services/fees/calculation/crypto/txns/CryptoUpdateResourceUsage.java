@@ -20,6 +20,8 @@ package com.hedera.services.fees.calculation.crypto.txns;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
@@ -31,48 +33,49 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-
 public class CryptoUpdateResourceUsage implements TxnResourceUsageEstimator {
-	private final CryptoOpsUsage cryptoOpsUsage;
+  private final CryptoOpsUsage cryptoOpsUsage;
 
-	public CryptoUpdateResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
-		this.cryptoOpsUsage = cryptoOpsUsage;
-	}
+  public CryptoUpdateResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
+    this.cryptoOpsUsage = cryptoOpsUsage;
+  }
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasCryptoUpdateAccount();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasCryptoUpdateAccount();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var op = txn.getCryptoUpdateAccount();
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var info = view.infoForAccount(op.getAccountIDToUpdate());
-		if (info.isPresent()) {
-			var details = info.get();
-			var ctx = ExtantCryptoContext.newBuilder()
-					.setCurrentKey(details.getKey())
-					.setCurrentMemo(details.getMemo())
-					.setCurrentExpiry(details.getExpirationTime().getSeconds())
-					.setCurrentlyHasProxy(details.hasProxyAccountID())
-					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
-					.build();
-			return cryptoOpsUsage.cryptoUpdateUsage(txn, sigUsage, ctx);
-		} else {
-			long now = txn.getTransactionID().getTransactionValidStart().getSeconds();
-			return cryptoOpsUsage.cryptoUpdateUsage(txn, sigUsage, missingCtx(now));
-		}
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var op = txn.getCryptoUpdateAccount();
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    var info = view.infoForAccount(op.getAccountIDToUpdate());
+    if (info.isPresent()) {
+      var details = info.get();
+      var ctx =
+          ExtantCryptoContext.newBuilder()
+              .setCurrentKey(details.getKey())
+              .setCurrentMemo(details.getMemo())
+              .setCurrentExpiry(details.getExpirationTime().getSeconds())
+              .setCurrentlyHasProxy(details.hasProxyAccountID())
+              .setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+              .build();
+      return cryptoOpsUsage.cryptoUpdateUsage(txn, sigUsage, ctx);
+    } else {
+      long now = txn.getTransactionID().getTransactionValidStart().getSeconds();
+      return cryptoOpsUsage.cryptoUpdateUsage(txn, sigUsage, missingCtx(now));
+    }
+  }
 
-	static ExtantCryptoContext missingCtx(long now) {
-		return ExtantCryptoContext.newBuilder()
-				.setCurrentExpiry(now)
-				.setCurrentMemo(DEFAULT_MEMO)
-				.setCurrentKey(Key.getDefaultInstance())
-				.setCurrentlyHasProxy(false)
-				.setCurrentNumTokenRels(0)
-				.build();
-	}
+  static ExtantCryptoContext missingCtx(long now) {
+    return ExtantCryptoContext.newBuilder()
+        .setCurrentExpiry(now)
+        .setCurrentMemo(DEFAULT_MEMO)
+        .setCurrentKey(Key.getDefaultInstance())
+        .setCurrentlyHasProxy(false)
+        .setCurrentNumTokenRels(0)
+        .build();
+  }
 }

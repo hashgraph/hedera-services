@@ -20,6 +20,12 @@ package com.hedera.services.store.tokens;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
@@ -31,15 +37,8 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-
 import java.util.List;
 import java.util.function.Consumer;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
  * Defines a type able to manage arbitrary tokens.
@@ -47,79 +46,80 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * @author Michael Tinker
  */
 public interface TokenStore extends Store<TokenID, MerkleToken> {
-	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
-	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
+  TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+  Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	boolean isKnownTreasury(AccountID id);
+  boolean isKnownTreasury(AccountID id);
 
-	void removeKnownTreasuryForToken(AccountID aId, TokenID tId);
+  void removeKnownTreasuryForToken(AccountID aId, TokenID tId);
 
-	boolean associationExists(AccountID aId, TokenID tId);
+  boolean associationExists(AccountID aId, TokenID tId);
 
-	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+  boolean isTreasuryForToken(AccountID aId, TokenID tId);
 
-	List<TokenID> listOfTokensServed(AccountID treasury);
+  List<TokenID> listOfTokensServed(AccountID treasury);
 
-	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
+  ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
+  ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
 
-	ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes);
+  ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes);
 
-	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
+  ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
+  ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+  ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+  ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
 
-	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
+  ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
+  ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
-	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
+  ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
 
-	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
+  CreationResult<TokenID> createProvisionally(
+      TokenCreateTransactionBody request, AccountID sponsor, long now);
 
-	default TokenID resolve(TokenID id) {
-		return exists(id) ? id : MISSING_TOKEN;
-	}
+  default TokenID resolve(TokenID id) {
+    return exists(id) ? id : MISSING_TOKEN;
+  }
 
-	default ResponseCodeEnum delete(TokenID id) {
-		var idRes = resolve(id);
-		if (idRes == MISSING_TOKEN) {
-			return INVALID_TOKEN_ID;
-		}
+  default ResponseCodeEnum delete(TokenID id) {
+    var idRes = resolve(id);
+    if (idRes == MISSING_TOKEN) {
+      return INVALID_TOKEN_ID;
+    }
 
-		var token = get(id);
-		if (token.adminKey().isEmpty()) {
-			return TOKEN_IS_IMMUTABLE;
-		}
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
-		}
+    var token = get(id);
+    if (token.adminKey().isEmpty()) {
+      return TOKEN_IS_IMMUTABLE;
+    }
+    if (token.isDeleted()) {
+      return TOKEN_WAS_DELETED;
+    }
 
-		apply(id, DELETION);
-		return OK;
-	}
+    apply(id, DELETION);
+    return OK;
+  }
 
-	default ResponseCodeEnum tryTokenChange(BalanceChange change) {
-		var validity = OK;
-		var tokenId = resolve(change.tokenId());
-		if (tokenId == MISSING_TOKEN) {
-			validity = INVALID_TOKEN_ID;
-		}
-		if (validity == OK) {
-			if (change.isForNft()) {
-				validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
-			} else {
-				validity = adjustBalance(change.accountId(), tokenId, change.units());
-				if (validity == INSUFFICIENT_TOKEN_BALANCE) {
-					validity = change.codeForInsufficientBalance();
-				}
-			}
-		}
-		return validity;
-	}
+  default ResponseCodeEnum tryTokenChange(BalanceChange change) {
+    var validity = OK;
+    var tokenId = resolve(change.tokenId());
+    if (tokenId == MISSING_TOKEN) {
+      validity = INVALID_TOKEN_ID;
+    }
+    if (validity == OK) {
+      if (change.isForNft()) {
+        validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
+      } else {
+        validity = adjustBalance(change.accountId(), tokenId, change.units());
+        if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+          validity = change.codeForInsufficientBalance();
+        }
+      }
+    }
+    return validity;
+  }
 }

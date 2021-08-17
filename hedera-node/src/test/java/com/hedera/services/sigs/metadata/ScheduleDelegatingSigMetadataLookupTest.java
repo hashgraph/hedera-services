@@ -20,6 +20,10 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -31,85 +35,82 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.Function;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-
 class ScheduleDelegatingSigMetadataLookupTest {
-    final int TX_BYTES_LENGTH = 64;
+  final int TX_BYTES_LENGTH = 64;
 
-    byte[] transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES_LENGTH);
-    EntityId schedulingAccount = new EntityId(1,2, 3);
-    RichInstant schedulingTXValidStart = new RichInstant(123, 456);
+  byte[] transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES_LENGTH);
+  EntityId schedulingAccount = new EntityId(1, 2, 3);
+  RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 
-    ScheduleID id = IdUtils.asSchedule("1.2.666");
+  ScheduleID id = IdUtils.asSchedule("1.2.666");
 
-    String memo = "Hey there!";
-    MerkleSchedule schedule;
-    ScheduleStore scheduleStore;
+  String memo = "Hey there!";
+  MerkleSchedule schedule;
+  ScheduleStore scheduleStore;
 
-    Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> subject;
+  Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> subject;
 
-    @BeforeEach
-    void setup() {
-        schedule = MerkleSchedule.from(MerkleScheduleTest.scheduleCreateTxnWith(
-                TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
-                memo,
-                IdUtils.asAccount("0.0.2"),
-                schedulingAccount.toGrpcAccountId(),
-                schedulingTXValidStart.toGrpc()).toByteArray(), 0L);
-        schedule.setPayer(new EntityId(0, 0, 2));
+  @BeforeEach
+  void setup() {
+    schedule =
+        MerkleSchedule.from(
+            MerkleScheduleTest.scheduleCreateTxnWith(
+                    TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
+                    memo,
+                    IdUtils.asAccount("0.0.2"),
+                    schedulingAccount.toGrpcAccountId(),
+                    schedulingTXValidStart.toGrpc())
+                .toByteArray(),
+            0L);
+    schedule.setPayer(new EntityId(0, 0, 2));
 
-        scheduleStore = mock(ScheduleStore.class);
+    scheduleStore = mock(ScheduleStore.class);
 
-        subject = SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore);
-    }
+    subject = SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore);
+  }
 
-    @Test
-    void returnsExpectedFailIfExplicitlyMissing() {
-        given(scheduleStore.resolve(id)).willReturn(ScheduleID.newBuilder()
-                .setShardNum(0L)
-                .setRealmNum(0L)
-                .setScheduleNum(0L)
-                .build());
+  @Test
+  void returnsExpectedFailIfExplicitlyMissing() {
+    given(scheduleStore.resolve(id))
+        .willReturn(
+            ScheduleID.newBuilder().setShardNum(0L).setRealmNum(0L).setScheduleNum(0L).build());
 
-        // when:
-        var result = subject.apply(id);
+    // when:
+    var result = subject.apply(id);
 
-        // then:
-        assertEquals(KeyOrderingFailure.MISSING_SCHEDULE, result.failureIfAny());
-    }
+    // then:
+    assertEquals(KeyOrderingFailure.MISSING_SCHEDULE, result.failureIfAny());
+  }
 
-    @Test
-    void returnsExpectedFailIfMissing() {
-        given(scheduleStore.resolve(id)).willReturn(ScheduleStore.MISSING_SCHEDULE);
+  @Test
+  void returnsExpectedFailIfMissing() {
+    given(scheduleStore.resolve(id)).willReturn(ScheduleStore.MISSING_SCHEDULE);
 
-        // when:
-        var result = subject.apply(id);
+    // when:
+    var result = subject.apply(id);
 
-        // then:
-        assertEquals(KeyOrderingFailure.MISSING_SCHEDULE, result.failureIfAny());
-    }
+    // then:
+    assertEquals(KeyOrderingFailure.MISSING_SCHEDULE, result.failureIfAny());
+  }
 
-    @Test
-    void returnsExpectedMetaIfPresent() {
-        // setup:
-        var expected = ScheduleSigningMetadata.from(schedule);
+  @Test
+  void returnsExpectedMetaIfPresent() {
+    // setup:
+    var expected = ScheduleSigningMetadata.from(schedule);
 
-        given(scheduleStore.resolve(id)).willReturn(id);
-        given(scheduleStore.get(id)).willReturn(schedule);
+    given(scheduleStore.resolve(id)).willReturn(id);
+    given(scheduleStore.get(id)).willReturn(schedule);
 
-        // when:
-        var result = subject.apply(id);
+    // when:
+    var result = subject.apply(id);
 
-        // then:
-        assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
-        // and:
-        assertEquals(expected.adminKey(), result.metadata().adminKey());
-    }
+    // then:
+    assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
+    // and:
+    assertEquals(expected.adminKey(), result.metadata().adminKey());
+  }
 }

@@ -24,18 +24,18 @@ import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsSpeedometer;
 
 public interface SpeedometerFactory {
-	default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {
-		return new StatEntry(
-				"app",
-				name,
-				desc,
-				"%,13.2f",
-				speedometer,
-				newHalfLife -> {
-					speedometer.reset(newHalfLife);
-					return speedometer;
-				},
-				speedometer::reset,
-				speedometer::getCyclesPerSecond);
-	}
+  default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {
+    return new StatEntry(
+        "app",
+        name,
+        desc,
+        "%,13.2f",
+        speedometer,
+        newHalfLife -> {
+          speedometer.reset(newHalfLife);
+          return speedometer;
+        },
+        speedometer::reset,
+        speedometer::getCyclesPerSecond);
+  }
 }

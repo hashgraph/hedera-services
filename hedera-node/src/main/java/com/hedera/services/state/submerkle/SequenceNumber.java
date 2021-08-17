@@ -22,39 +22,38 @@ package com.hedera.services.state.submerkle;
 
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-
 import java.io.IOException;
 
 public class SequenceNumber {
-	volatile long i;
+  volatile long i;
 
-	public SequenceNumber() { }
+  public SequenceNumber() {}
 
-	public SequenceNumber(long i) {
-		this.i = i;
-	}
+  public SequenceNumber(long i) {
+    this.i = i;
+  }
 
-	public synchronized long getAndIncrement() {
-		return i++;
-	}
+  public synchronized long getAndIncrement() {
+    return i++;
+  }
 
-	public synchronized void decrement() {
-		i--;
-	}
+  public synchronized void decrement() {
+    i--;
+  }
 
-	public long current() {
-		return i;
-	}
+  public long current() {
+    return i;
+  }
 
-	public synchronized SequenceNumber copy() {
-		return new SequenceNumber(this.i);
-	}
+  public synchronized SequenceNumber copy() {
+    return new SequenceNumber(this.i);
+  }
 
-	public void deserialize(SerializableDataInputStream in) throws IOException {
-		this.i = in.readLong();
-	}
+  public void deserialize(SerializableDataInputStream in) throws IOException {
+    this.i = in.readLong();
+  }
 
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLong(i);
-	}
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeLong(i);
+  }
 }

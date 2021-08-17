@@ -26,18 +26,18 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public final class TopicIDConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext)
-			throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.", "topic");
-		return TopicID.newBuilder()
-				.setShardNum(Long.valueOf(parts[0]))
-				.setRealmNum(Long.valueOf(parts[1]))
-				.setTopicNum(Long.valueOf(parts[2]))
-				.build();
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.", "topic");
+    return TopicID.newBuilder()
+        .setShardNum(Long.valueOf(parts[0]))
+        .setRealmNum(Long.valueOf(parts[1]))
+        .setTopicNum(Long.valueOf(parts[2]))
+        .build();
+  }
 }

@@ -20,39 +20,39 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import org.junit.jupiter.api.Test;
+
 class TokenRelPropertyTest {
-	long balance = 123, newBalance = 321;
-	boolean frozen = true;
-	boolean kycGranted = false;
+  long balance = 123, newBalance = 321;
+  boolean frozen = true;
+  boolean kycGranted = false;
 
-	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+  MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted);
 
-	@Test
-	void gettersWork() {
-		// expect:
-		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
-		assertEquals(frozen, IS_FROZEN.getter().apply(target));
-		assertEquals(kycGranted, IS_KYC_GRANTED.getter().apply(target));
-	}
+  @Test
+  void gettersWork() {
+    // expect:
+    assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
+    assertEquals(frozen, IS_FROZEN.getter().apply(target));
+    assertEquals(kycGranted, IS_KYC_GRANTED.getter().apply(target));
+  }
 
-	@Test
-	void settersWork() {
-		// when:
-		TOKEN_BALANCE.setter().accept(target, newBalance);
-		IS_FROZEN.setter().accept(target, !frozen);
-		IS_KYC_GRANTED.setter().accept(target, !kycGranted);
+  @Test
+  void settersWork() {
+    // when:
+    TOKEN_BALANCE.setter().accept(target, newBalance);
+    IS_FROZEN.setter().accept(target, !frozen);
+    IS_KYC_GRANTED.setter().accept(target, !kycGranted);
 
-		// expect:
-		assertEquals(newBalance, TOKEN_BALANCE.getter().apply(target));
-		assertEquals(!frozen, IS_FROZEN.getter().apply(target));
-		assertEquals(!kycGranted, IS_KYC_GRANTED.getter().apply(target));
-	}
+    // expect:
+    assertEquals(newBalance, TOKEN_BALANCE.getter().apply(target));
+    assertEquals(!frozen, IS_FROZEN.getter().apply(target));
+    assertEquals(!kycGranted, IS_KYC_GRANTED.getter().apply(target));
+  }
 }

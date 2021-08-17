@@ -20,24 +20,6 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.hedera.services.test.IdUtils;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-
-import java.util.List;
-
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -49,92 +31,110 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.services.test.IdUtils;
+import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+
 class TokenBurnUsageTest {
-	private long now = 1_234_567L;
-	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	private TokenID id = IdUtils.asToken("0.0.75231");
+  private long now = 1_234_567L;
+  private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+  private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+  private TokenID id = IdUtils.asToken("0.0.75231");
 
-	private TokenBurnTransactionBody op;
-	private TransactionBody txn;
+  private TokenBurnTransactionBody op;
+  private TransactionBody txn;
 
-	private EstimatorFactory factory;
-	private TxnUsageEstimator base;
-	private TokenBurnUsage subject;
+  private EstimatorFactory factory;
+  private TxnUsageEstimator base;
+  private TokenBurnUsage subject;
 
-	@BeforeEach
-	void setUp() throws Exception {
-		base = mock(TxnUsageEstimator.class);
-		given(base.get()).willReturn(A_USAGES_MATRIX);
+  @BeforeEach
+  void setUp() throws Exception {
+    base = mock(TxnUsageEstimator.class);
+    given(base.get()).willReturn(A_USAGES_MATRIX);
 
-		factory = mock(EstimatorFactory.class);
-		given(factory.get(any(), any(), any())).willReturn(base);
+    factory = mock(EstimatorFactory.class);
+    given(factory.get(any(), any(), any())).willReturn(base);
 
-		TxnUsage.estimatorFactory = factory;
-	}
+    TxnUsage.estimatorFactory = factory;
+  }
 
-	@Test
-	void createsExpectedDelta() {
-		givenOp();
-		// and:
-		subject = TokenBurnUsage.newEstimate(txn, sigUsage);
-		subject.givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
-		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
-		// when:
-		var actual = subject.get();
+  @Test
+  void createsExpectedDelta() {
+    givenOp();
+    // and:
+    subject = TokenBurnUsage.newEstimate(txn, sigUsage);
+    subject.givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
+    given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
+    // when:
+    var actual = subject.get();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base).addBpt(8);
-		verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
-		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
-						USAGE_PROPERTIES.legacyReceiptStorageSecs());
-	}
+    // then:
+    assertEquals(A_USAGES_MATRIX, actual);
+    // and:
+    verify(base).addBpt(8);
+    verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
+    verify(base)
+        .addRbs(
+            TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0)
+                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+  }
 
-	@Test
-	void createsExpectedDeltaForUnique() {
-		op = TokenBurnTransactionBody.newBuilder()
-				.setToken(id)
-				.addAllSerialNumbers(List.of(1L, 2L, 3L))
-				.build();
-		setTxn();
-		// and:
-		subject = TokenBurnUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
-		// when:
-		var actual = subject.get();
+  @Test
+  void createsExpectedDeltaForUnique() {
+    op =
+        TokenBurnTransactionBody.newBuilder()
+            .setToken(id)
+            .addAllSerialNumbers(List.of(1L, 2L, 3L))
+            .build();
+    setTxn();
+    // and:
+    subject =
+        TokenBurnUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+    given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
+    // when:
+    var actual = subject.get();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		InOrder inOrder = Mockito.inOrder(base);
-		inOrder.verify(base).addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
-		inOrder.verify(base)
-				.addBpt(BASIC_ENTITY_ID_SIZE);
-	}
+    // then:
+    assertEquals(A_USAGES_MATRIX, actual);
+    // and:
+    InOrder inOrder = Mockito.inOrder(base);
+    inOrder.verify(base).addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
+    inOrder.verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
+  }
 
-	@Test
-	void selfTest() {
-		subject = TokenBurnUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-		assertEquals(subject, subject.self());
-	}
+  @Test
+  void selfTest() {
+    subject =
+        TokenBurnUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+    assertEquals(subject, subject.self());
+  }
 
-	private void givenOp() {
-		op = TokenBurnTransactionBody.newBuilder()
-				.setToken(id)
-				.setAmount(10)
-				.build();
-		setTxn();
-	}
+  private void givenOp() {
+    op = TokenBurnTransactionBody.newBuilder().setToken(id).setAmount(10).build();
+    setTxn();
+  }
 
-	private void setTxn() {
-		txn = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(now)))
-				.setTokenBurn(op)
-				.build();
-	}
+  private void setTxn() {
+    txn =
+        TransactionBody.newBuilder()
+            .setTransactionID(
+                TransactionID.newBuilder()
+                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+            .setTokenBurn(op)
+            .build();
+  }
 }

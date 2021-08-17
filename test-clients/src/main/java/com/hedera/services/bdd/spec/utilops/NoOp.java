@@ -23,8 +23,8 @@ package com.hedera.services.bdd.spec.utilops;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
 public class NoOp extends UtilOp {
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) {
-		return false;
-	}
+  @Override
+  protected boolean submitOp(HapiApiSpec spec) {
+    return false;
+  }
 }

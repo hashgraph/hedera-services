@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,16 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
+import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.utils.MiscUtils;
@@ -35,6 +43,11 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.inject.Inject;
 import org.apache.commons.lang3.tuple.Triple;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -42,198 +55,192 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ExtendWith(LogCaptureExtension.class)
 class AutoRenewCalcsTest {
-	private final Instant preCutoff = Instant.ofEpochSecond(1_234_566L);
-	private final Instant cutoff = Instant.ofEpochSecond(1_234_567L);
+  private final Instant preCutoff = Instant.ofEpochSecond(1_234_566L);
+  private final Instant cutoff = Instant.ofEpochSecond(1_234_567L);
 
-	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoPrices;
-	private MerkleAccount expiredAccount;
-	private final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
-	private final ExchangeRate activeRates = ExchangeRate.newBuilder()
-			.setHbarEquiv(1)
-			.setCentEquiv(10)
-			.build();
+  private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoPrices;
+  private MerkleAccount expiredAccount;
+  private final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
+  private final ExchangeRate activeRates =
+      ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(10).build();
 
-	@Inject
-	private LogCaptor logCaptor;
+  @Inject private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private AutoRenewCalcs subject;
+  @LoggingSubject private AutoRenewCalcs subject;
 
-	@BeforeEach
-	void setUp() throws Exception {
-		cryptoPrices = frozenPricesFrom("fees/feeSchedules.json", CryptoAccountAutoRenew);
-		subject = new AutoRenewCalcs(cryptoOpsUsage);
-		subject.setCryptoAutoRenewPriceSeq(cryptoPrices);
-	}
+  @BeforeEach
+  void setUp() throws Exception {
+    cryptoPrices = frozenPricesFrom("fees/feeSchedules.json", CryptoAccountAutoRenew);
+    subject = new AutoRenewCalcs(cryptoOpsUsage);
+    subject.setCryptoAutoRenewPriceSeq(cryptoPrices);
+  }
 
-	@Test
-	void warnsOnMissingFeeData() {
-		// when:
-		subject.setCryptoAutoRenewPriceSeq(Triple.of(null, cutoff, null));
+  @Test
+  void warnsOnMissingFeeData() {
+    // when:
+    subject.setCryptoAutoRenewPriceSeq(Triple.of(null, cutoff, null));
 
-		// then:
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("No prices known for CryptoAccountAutoRenew, will charge zero fees!")));
-	}
+    // then:
+    assertThat(
+        logCaptor.warnLogs(),
+        contains(
+            Matchers.startsWith(
+                "No prices known for CryptoAccountAutoRenew, will charge zero fees!")));
+  }
 
-	@Test
-	void computesTinybarFromNominal() {
-		// given:
-		final long nominalFee = 1_234_567_000_000L;
-		final long tinybarFee = getTinybarsFromTinyCents(activeRates, nominalFee / FEE_DIVISOR_FACTOR);
+  @Test
+  void computesTinybarFromNominal() {
+    // given:
+    final long nominalFee = 1_234_567_000_000L;
+    final long tinybarFee = getTinybarsFromTinyCents(activeRates, nominalFee / FEE_DIVISOR_FACTOR);
 
-		// expect:
-		assertEquals(tinybarFee, subject.inTinybars(nominalFee, activeRates));
-	}
+    // expect:
+    assertEquals(tinybarFee, subject.inTinybars(nominalFee, activeRates));
+  }
 
-	@Test
-	void computesExpectedUsdPriceForThreeMonthRenewal() {
-		// setup:
-		long expectedFeeInTinycents = 2200000L;
-		long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
-		long threeMonthsInSeconds = 7776000L;
-		// and:
-		setupSuperStandardAccountWith(Long.MAX_VALUE);
+  @Test
+  void computesExpectedUsdPriceForThreeMonthRenewal() {
+    // setup:
+    long expectedFeeInTinycents = 2200000L;
+    long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+    long threeMonthsInSeconds = 7776000L;
+    // and:
+    setupSuperStandardAccountWith(Long.MAX_VALUE);
 
-		// when:
-		var maxRenewalAndFee = subject.maxRenewalAndFeeFor(expiredAccount, threeMonthsInSeconds, preCutoff, activeRates);
-		// and:
-		var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
+    // when:
+    var maxRenewalAndFee =
+        subject.maxRenewalAndFeeFor(expiredAccount, threeMonthsInSeconds, preCutoff, activeRates);
+    // and:
+    var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
 
-		// then:
-		assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
-		// and:
+    // then:
+    assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
+    // and:
 
-		assertEquals(100.0, percentageOfExpected, 5.0);
-	}
+    assertEquals(100.0, percentageOfExpected, 5.0);
+  }
 
-	@Test
-	void computesExpectedUsdPriceForSlightlyMoreThanThreeMonthRenewal() {
-		// setup:
-		long expectedFeeInTinycents = 2200000L;
-		long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
-		long threeMonthsInSeconds = 7776001L;
-		// and:
-		setupSuperStandardAccountWith(Long.MAX_VALUE);
+  @Test
+  void computesExpectedUsdPriceForSlightlyMoreThanThreeMonthRenewal() {
+    // setup:
+    long expectedFeeInTinycents = 2200000L;
+    long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+    long threeMonthsInSeconds = 7776001L;
+    // and:
+    setupSuperStandardAccountWith(Long.MAX_VALUE);
 
-		// when:
-		var maxRenewalAndFee = subject.maxRenewalAndFeeFor(expiredAccount, threeMonthsInSeconds, preCutoff, activeRates);
-		// and:
-		var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
+    // when:
+    var maxRenewalAndFee =
+        subject.maxRenewalAndFeeFor(expiredAccount, threeMonthsInSeconds, preCutoff, activeRates);
+    // and:
+    var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
 
-		// then:
-		assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
-		// and:
+    // then:
+    assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
+    // and:
 
-		assertEquals(100.0, percentageOfExpected, 5.0);
-	}
+    assertEquals(100.0, percentageOfExpected, 5.0);
+  }
 
-	@Test
-	void throwsIseIfUsedWithoutInitializedPrices() {
-		// given:
-		subject = new AutoRenewCalcs(cryptoOpsUsage);
+  @Test
+  void throwsIseIfUsedWithoutInitializedPrices() {
+    // given:
+    subject = new AutoRenewCalcs(cryptoOpsUsage);
 
-		// expect:
-		Assertions.assertThrows(IllegalStateException.class, () ->
-				subject.maxRenewalAndFeeFor(null, 0L, preCutoff, activeRates));
-	}
+    // expect:
+    Assertions.assertThrows(
+        IllegalStateException.class,
+        () -> subject.maxRenewalAndFeeFor(null, 0L, preCutoff, activeRates));
+  }
 
-	@Test
-	void returnsZeroZeroIfBalanceIsZero() {
-		setupAccountWith(0L);
+  @Test
+  void returnsZeroZeroIfBalanceIsZero() {
+    setupAccountWith(0L);
 
-		// when:
-		var maxRenewalAndFee = subject.maxRenewalAndFeeFor(expiredAccount, 7776000L, preCutoff, activeRates);
+    // when:
+    var maxRenewalAndFee =
+        subject.maxRenewalAndFeeFor(expiredAccount, 7776000L, preCutoff, activeRates);
 
-		// then:
-		assertEquals(0, maxRenewalAndFee.renewalPeriod());
-		assertEquals(0, maxRenewalAndFee.fee());
-	}
+    // then:
+    assertEquals(0, maxRenewalAndFee.renewalPeriod());
+    assertEquals(0, maxRenewalAndFee.fee());
+  }
 
+  @Test
+  void knowsHowToBuildCtx() {
+    setupAccountWith(0L);
 
-	@Test
-	void knowsHowToBuildCtx() {
-		setupAccountWith(0L);
+    // given:
+    var expectedCtx =
+        ExtantCryptoContext.newBuilder()
+            .setCurrentExpiry(0L)
+            .setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getKey()))
+            .setCurrentlyHasProxy(true)
+            .setCurrentMemo(expiredAccount.getMemo())
+            .setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
+            .build();
 
-		// given:
-		var expectedCtx = ExtantCryptoContext.newBuilder()
-				.setCurrentExpiry(0L)
-				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getKey()))
-				.setCurrentlyHasProxy(true)
-				.setCurrentMemo(expiredAccount.getMemo())
-				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
-				.build();
+    // expect:
+    assertEquals(cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
+  }
 
-		// expect:
-		assertEquals(cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
-	}
+  private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> frozenPricesFrom(
+      String resource, HederaFunctionality autoRenewFunction) throws Exception {
+    var schedules = FeesJsonToProtoSerde.loadFeeScheduleFromJson(resource);
+    var prePrices =
+        schedules.getCurrentFeeSchedule().getTransactionFeeScheduleList().stream()
+            .filter(
+                transactionFeeSchedule ->
+                    transactionFeeSchedule.getHederaFunctionality() == autoRenewFunction)
+            .findFirst()
+            .get()
+            .getFeesList();
+    var prePricesMap = toSubTypeMap(prePrices);
 
-	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> frozenPricesFrom(
-			String resource,
-			HederaFunctionality autoRenewFunction
-	) throws Exception {
-		var schedules = FeesJsonToProtoSerde.loadFeeScheduleFromJson(resource);
-		var prePrices = schedules.getCurrentFeeSchedule().getTransactionFeeScheduleList().stream()
-				.filter(transactionFeeSchedule -> transactionFeeSchedule.getHederaFunctionality() == autoRenewFunction)
-				.findFirst()
-				.get()
-				.getFeesList();
-		var prePricesMap = toSubTypeMap(prePrices);
+    var postPricesMap = toPostPrices(prePricesMap);
+    return Triple.of(prePricesMap, cutoff, postPricesMap);
+  }
 
-		var postPricesMap = toPostPrices(prePricesMap);
-		return Triple.of(prePricesMap, cutoff, postPricesMap);
-	}
+  private Map<SubType, FeeData> toSubTypeMap(List<FeeData> feesList) {
+    Map<SubType, FeeData> result = new HashMap<>();
+    for (FeeData feeData : feesList) {
+      result.put(feeData.getSubType(), feeData);
+    }
+    return result;
+  }
 
-	private Map<SubType, FeeData> toSubTypeMap(List<FeeData> feesList) {
-		Map<SubType, FeeData> result = new HashMap<>();
-		for (FeeData feeData : feesList) {
-			result.put(feeData.getSubType(), feeData);
-		}
-		return result;
-	}
+  private Map<SubType, FeeData> toPostPrices(Map<SubType, FeeData> feeDataMap) {
+    var changeableMap = new HashMap<>(feeDataMap);
+    for (FeeData feeData : feeDataMap.values()) {
+      var postPrices =
+          feeData.toBuilder()
+              .setServicedata(
+                  feeData.getServicedata().toBuilder()
+                      .setRbh(2 * feeData.getServicedata().getRbh()))
+              .build();
+      changeableMap.put(postPrices.getSubType(), postPrices);
+    }
+    return changeableMap;
+  }
 
-	private Map<SubType, FeeData> toPostPrices(Map<SubType, FeeData> feeDataMap) {
-		var changeableMap = new HashMap<>(feeDataMap);
-		for (FeeData feeData : feeDataMap.values()) {
-			var postPrices = feeData.toBuilder()
-					.setServicedata(feeData.getServicedata().toBuilder().setRbh(2 * feeData.getServicedata().getRbh()))
-					.build();
-			changeableMap.put(postPrices.getSubType(), postPrices);
-		}
-		return changeableMap;
-	}
+  private void setupAccountWith(long balance) {
+    expiredAccount =
+        MerkleAccountFactory.newAccount()
+            .accountKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked())
+            .balance(balance)
+            .tokens(asToken("1.2.3"), asToken("2.3.4"), asToken("3.4.5"))
+            .proxy(IdUtils.asAccount("0.0.12345"))
+            .memo("SHOCKED, I tell you!")
+            .get();
+  }
 
-	private void setupAccountWith(long balance) {
-		expiredAccount = MerkleAccountFactory.newAccount()
-				.accountKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked())
-				.balance(balance)
-				.tokens(asToken("1.2.3"), asToken("2.3.4"), asToken("3.4.5"))
-				.proxy(IdUtils.asAccount("0.0.12345"))
-				.memo("SHOCKED, I tell you!")
-				.get();
-	}
-
-	private void setupSuperStandardAccountWith(long balance) {
-		expiredAccount = MerkleAccountFactory.newAccount()
-				.accountKeys(TxnHandlingScenario.SIMPLE_NEW_ADMIN_KT.asJKeyUnchecked())
-				.balance(balance)
-				.get();
-	}
+  private void setupSuperStandardAccountWith(long balance) {
+    expiredAccount =
+        MerkleAccountFactory.newAccount()
+            .accountKeys(TxnHandlingScenario.SIMPLE_NEW_ADMIN_KT.asJKeyUnchecked())
+            .balance(balance)
+            .get();
+  }
 }

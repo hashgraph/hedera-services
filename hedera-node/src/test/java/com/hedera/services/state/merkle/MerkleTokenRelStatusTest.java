@@ -20,14 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -39,109 +31,119 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
 
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 class MerkleTokenRelStatusTest {
-	long balance = 666;
-	boolean frozen = true;
-	boolean kycGranted = true;
+  long balance = 666;
+  boolean frozen = true;
+  boolean kycGranted = true;
 
-	MerkleTokenRelStatus subject;
+  MerkleTokenRelStatus subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted);
-	}
+  @BeforeEach
+  private void setup() {
+    subject = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+  }
 
-	@Test
-	void objectContractMet() {
-		// given:
-		var one = new MerkleTokenRelStatus();
-		var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
-		var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted);
-		var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted);
-		var five = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+  @Test
+  void objectContractMet() {
+    // given:
+    var one = new MerkleTokenRelStatus();
+    var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
+    var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted);
+    var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted);
+    var five = new MerkleTokenRelStatus(balance, frozen, kycGranted);
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
-		assertNotEquals(subject, two);
-		assertNotEquals(subject, three);
-		assertNotEquals(subject, four);
-		assertEquals(subject, five);
-		// and:
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(subject.hashCode(), five.hashCode());
-	}
+    // then:
+    assertNotEquals(one, null);
+    assertNotEquals(one, new Object());
+    assertNotEquals(subject, two);
+    assertNotEquals(subject, three);
+    assertNotEquals(subject, four);
+    assertEquals(subject, five);
+    // and:
+    assertNotEquals(one.hashCode(), two.hashCode());
+    assertEquals(subject.hashCode(), five.hashCode());
+  }
 
-	@Test
-	void merkleMethodsWork() {
-		// expect;
-		assertEquals(MerkleTokenRelStatus.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleTokenRelStatus.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertTrue(subject.isLeaf());
-	}
+  @Test
+  void merkleMethodsWork() {
+    // expect;
+    assertEquals(MerkleTokenRelStatus.MERKLE_VERSION, subject.getVersion());
+    assertEquals(MerkleTokenRelStatus.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertTrue(subject.isLeaf());
+  }
 
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+  @Test
+  void serializeWorks() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = inOrder(out);
 
-		// when:
-		subject.serialize(out);
+    // when:
+    subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeLong(balance);
-		inOrder.verify(out, times(2)).writeBoolean(true);
-	}
+    // then:
+    inOrder.verify(out).writeLong(balance);
+    inOrder.verify(out, times(2)).writeBoolean(true);
+  }
 
-	@Test
-	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleTokenRelStatus();
+  @Test
+  void deserializeWorks() throws IOException {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
+    // and:
+    var defaultSubject = new MerkleTokenRelStatus();
 
-		given(in.readLong()).willReturn(balance);
-		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted);
+    given(in.readLong()).willReturn(balance);
+    given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted);
 
-		// when:
-		defaultSubject.deserialize(in, MerkleTokenRelStatus.MERKLE_VERSION);
+    // when:
+    defaultSubject.deserialize(in, MerkleTokenRelStatus.MERKLE_VERSION);
 
-		// then:
-		assertEquals(subject, defaultSubject);
-	}
+    // then:
+    assertEquals(subject, defaultSubject);
+  }
 
-	@Test
-	void toStringWorks() {
-		// expect:
-		assertEquals(
-				"MerkleTokenRelStatus{balance=" + balance
-						+ ", isFrozen=" + frozen
-						+ ", hasKycGranted=" + kycGranted
-						+ "}",
-				subject.toString());
-	}
+  @Test
+  void toStringWorks() {
+    // expect:
+    assertEquals(
+        "MerkleTokenRelStatus{balance="
+            + balance
+            + ", isFrozen="
+            + frozen
+            + ", hasKycGranted="
+            + kycGranted
+            + "}",
+        subject.toString());
+  }
 
-	@Test
-	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+  @Test
+  void copyWorks() {
+    // when:
+    var subjectCopy = subject.copy();
 
-		// then:
-		assertNotSame(subjectCopy, subject);
-		assertEquals(subject, subjectCopy);
-	}
+    // then:
+    assertNotSame(subjectCopy, subject);
+    assertEquals(subject, subjectCopy);
+  }
 
-	@Test
-	void deleteIsNoop() {
-		// expect:
-		assertDoesNotThrow(subject::release);
-	}
+  @Test
+  void deleteIsNoop() {
+    // expect:
+    assertDoesNotThrow(subject::release);
+  }
 
-	@Test
-	void throwsOnNegativeBalance() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.setBalance(-1));
-	}
+  @Test
+  void throwsOnNegativeBalance() {
+    // expect:
+    assertThrows(IllegalArgumentException.class, () -> subject.setBalance(-1));
+  }
 }

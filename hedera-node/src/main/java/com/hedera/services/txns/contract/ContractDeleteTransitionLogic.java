@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,9 @@ package com.hedera.services.txns.contract;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -30,82 +33,77 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ContractDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
+  private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
 
-	private final HederaLedger ledger;
-	private final LegacyDeleter delegate;
-	private final OptionValidator validator;
-	private final TransactionContext txnCtx;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
+  private final HederaLedger ledger;
+  private final LegacyDeleter delegate;
+  private final OptionValidator validator;
+  private final TransactionContext txnCtx;
+  private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	public ContractDeleteTransitionLogic(
-			HederaLedger ledger,
-			LegacyDeleter delegate,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
-	) {
-		this.ledger = ledger;
-		this.delegate = delegate;
-		this.validator = validator;
-		this.txnCtx = txnCtx;
-		this.contracts = contracts;
-	}
+  public ContractDeleteTransitionLogic(
+      HederaLedger ledger,
+      LegacyDeleter delegate,
+      OptionValidator validator,
+      TransactionContext txnCtx,
+      Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts) {
+    this.ledger = ledger;
+    this.delegate = delegate;
+    this.validator = validator;
+    this.txnCtx = txnCtx;
+    this.contracts = contracts;
+  }
 
-	@FunctionalInterface
-	public interface LegacyDeleter {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime);
-	}
+  @FunctionalInterface
+  public interface LegacyDeleter {
+    TransactionRecord perform(TransactionBody txn, Instant consensusTime);
+  }
 
-	@Override
-	public void doStateTransition() {
-		try {
-			final var contractDeleteTxn = txnCtx.accessor().getTxn();
-			final var op = contractDeleteTxn.getContractDeleteInstance();
+  @Override
+  public void doStateTransition() {
+    try {
+      final var contractDeleteTxn = txnCtx.accessor().getTxn();
+      final var op = contractDeleteTxn.getContractDeleteInstance();
 
-			if (op.hasTransferAccountID()) {
-				final var receiver = op.getTransferAccountID();
-				if (ledger.exists(receiver) && ledger.isDetached(receiver)) {
-					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-					return;
-				}
-			}
+      if (op.hasTransferAccountID()) {
+        final var receiver = op.getTransferAccountID();
+        if (ledger.exists(receiver) && ledger.isDetached(receiver)) {
+          txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+          return;
+        }
+      }
 
-			var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
+      var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
 
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+      txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
+    } catch (Exception e) {
+      log.warn("Avoidable exception!", e);
+      txnCtx.setStatus(FAIL_INVALID);
+    }
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasContractDeleteInstance;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasContractDeleteInstance;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {
-		var op = contractDeleteTxn.getContractDeleteInstance();
-		return validator.queryableContractStatus(op.getContractID(), contracts.get());
-	}
+  public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {
+    var op = contractDeleteTxn.getContractDeleteInstance();
+    return validator.queryableContractStatus(op.getContractID(), contracts.get());
+  }
 }

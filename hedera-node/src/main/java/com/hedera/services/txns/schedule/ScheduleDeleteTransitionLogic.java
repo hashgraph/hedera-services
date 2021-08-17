@@ -20,68 +20,66 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
+  private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	ScheduleStore store;
-	TransactionContext txnCtx;
+  ScheduleStore store;
+  TransactionContext txnCtx;
 
-	public ScheduleDeleteTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx) {
-		this.store = store;
-		this.txnCtx = txnCtx;
-	}
+  public ScheduleDeleteTransitionLogic(ScheduleStore store, TransactionContext txnCtx) {
+    this.store = store;
+    this.txnCtx = txnCtx;
+  }
 
-	@Override
-	public void doStateTransition() {
-		try {
-			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+  @Override
+  public void doStateTransition() {
+    try {
+      transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
+    } catch (Exception e) {
+      log.warn(
+          "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+      txnCtx.setStatus(FAIL_INVALID);
+    }
+  }
 
-	private void transitionFor(ScheduleDeleteTransactionBody op) {
-		var outcome = store.delete(op.getScheduleID());
-		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-	}
+  private void transitionFor(ScheduleDeleteTransactionBody op) {
+    var outcome = store.delete(op.getScheduleID());
+    txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasScheduleDelete;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasScheduleDelete;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
-		if (!op.hasScheduleID()) {
-			return INVALID_SCHEDULE_ID;
-		}
-		return OK;
-	}
+  public ResponseCodeEnum validate(TransactionBody txnBody) {
+    ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
+    if (!op.hasScheduleID()) {
+      return INVALID_SCHEDULE_ID;
+    }
+    return OK;
+  }
 }

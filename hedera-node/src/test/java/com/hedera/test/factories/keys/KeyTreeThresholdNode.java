@@ -9,9 +9,9 @@ package com.hedera.test.factories.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +20,22 @@ package com.hedera.test.factories.keys;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
-
-import java.util.List;
-
 import static java.util.stream.Collectors.toList;
 
+import com.hederahashgraph.api.proto.java.Key;
+import java.util.List;
+
 public class KeyTreeThresholdNode extends KeyTreeListNode {
-	private final int M;
+  private final int M;
 
-	public KeyTreeThresholdNode(List<KeyTreeNode> children, int M) {
-		super(children);
-		this.M = M;
-	}
+  public KeyTreeThresholdNode(List<KeyTreeNode> children, int M) {
+    super(children);
+    this.M = M;
+  }
 
-	@Override
-	public Key asKey(KeyFactory factory) {
-		return factory.newThreshold(children.stream().map(node -> node.asKey(factory)).collect(toList()), M);
-	}
+  @Override
+  public Key asKey(KeyFactory factory) {
+    return factory.newThreshold(
+        children.stream().map(node -> node.asKey(factory)).collect(toList()), M);
+  }
 }

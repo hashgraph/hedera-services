@@ -27,97 +27,89 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class DomainSerdes {
-	public JKey deserializeKey(DataInputStream in) throws IOException {
-		return JKeySerializer.deserialize(in);
-	}
+  public JKey deserializeKey(DataInputStream in) throws IOException {
+    return JKeySerializer.deserialize(in);
+  }
 
-	public void serializeKey(JKey key, DataOutputStream out) throws IOException {
-		out.write(key.serialize());
-	}
+  public void serializeKey(JKey key, DataOutputStream out) throws IOException {
+    out.write(key.serialize());
+  }
 
-	public void writeNullableInstant(RichInstant at, SerializableDataOutputStream out) throws IOException {
-		writeNullable(at, out, RichInstant::serialize);
-	}
+  public void writeNullableInstant(RichInstant at, SerializableDataOutputStream out)
+      throws IOException {
+    writeNullable(at, out, RichInstant::serialize);
+  }
 
-	public RichInstant readNullableInstant(SerializableDataInputStream in) throws IOException {
-		return readNullable(in, RichInstant::from);
-	}
+  public RichInstant readNullableInstant(SerializableDataInputStream in) throws IOException {
+    return readNullable(in, RichInstant::from);
+  }
 
-	public void writeNullableString(String msg, SerializableDataOutputStream out) throws IOException {
-		writeNullable(msg, out, (_msg, _out) -> _out.writeNormalisedString(_msg));
-	}
+  public void writeNullableString(String msg, SerializableDataOutputStream out) throws IOException {
+    writeNullable(msg, out, (_msg, _out) -> _out.writeNormalisedString(_msg));
+  }
 
-	public String readNullableString(SerializableDataInputStream in, int maxLen) throws IOException {
-		return readNullable(in, (_in) -> _in.readNormalisedString(maxLen));
-	}
+  public String readNullableString(SerializableDataInputStream in, int maxLen) throws IOException {
+    return readNullable(in, (_in) -> _in.readNormalisedString(maxLen));
+  }
 
-	public <T> void writeNullable(
-			T data,
-			SerializableDataOutputStream out,
-			IoWritingConsumer<T> writer
-	) throws IOException {
-		if (data == null) {
-			out.writeBoolean(false);
-		} else {
-			out.writeBoolean(true);
-			writer.write(data, out);
-		}
-	}
+  public <T> void writeNullable(
+      T data, SerializableDataOutputStream out, IoWritingConsumer<T> writer) throws IOException {
+    if (data == null) {
+      out.writeBoolean(false);
+    } else {
+      out.writeBoolean(true);
+      writer.write(data, out);
+    }
+  }
 
-	public <T> T readNullable(
-			SerializableDataInputStream in,
-			IoReadingFunction<T> reader
-	) throws IOException {
-		return in.readBoolean() ? reader.read(in) : null;
-	}
+  public <T> T readNullable(SerializableDataInputStream in, IoReadingFunction<T> reader)
+      throws IOException {
+    return in.readBoolean() ? reader.read(in) : null;
+  }
 
-	public <T extends SelfSerializable> void writeNullableSerializable(
-			T data,
-			SerializableDataOutputStream out
-	) throws IOException {
-		if (data == null) {
-			out.writeBoolean(false);
-		} else {
-			out.writeBoolean(true);
-			out.writeSerializable(data, true);
-		}
-	}
+  public <T extends SelfSerializable> void writeNullableSerializable(
+      T data, SerializableDataOutputStream out) throws IOException {
+    if (data == null) {
+      out.writeBoolean(false);
+    } else {
+      out.writeBoolean(true);
+      out.writeSerializable(data, true);
+    }
+  }
 
-	public <T extends SelfSerializable> T readNullableSerializable(
-			SerializableDataInputStream in
-	) throws IOException {
-		return in.readBoolean() ? in.readSerializable() : null;
-	}
+  public <T extends SelfSerializable> T readNullableSerializable(SerializableDataInputStream in)
+      throws IOException {
+    return in.readBoolean() ? in.readSerializable() : null;
+  }
 
-	@SuppressWarnings("unchecked")
-	public void serializeId(EntityId id, DataOutputStream _out) throws IOException {
-		var out = (SerializableDataOutputStream) _out;
-		out.writeSerializable(id, true);
-	}
+  @SuppressWarnings("unchecked")
+  public void serializeId(EntityId id, DataOutputStream _out) throws IOException {
+    var out = (SerializableDataOutputStream) _out;
+    out.writeSerializable(id, true);
+  }
 
-	public RichInstant deserializeLegacyTimestamp(DataInputStream in) throws IOException {
-		in.readLong();
-		in.readLong();
-		return new RichInstant(in.readLong(), in.readInt());
-	}
+  public RichInstant deserializeLegacyTimestamp(DataInputStream in) throws IOException {
+    in.readLong();
+    in.readLong();
+    return new RichInstant(in.readLong(), in.readInt());
+  }
 
-	public RichInstant deserializeTimestamp(DataInputStream in) throws IOException {
-		return RichInstant.from((SerializableDataInputStream) in);
-	}
+  public RichInstant deserializeTimestamp(DataInputStream in) throws IOException {
+    return RichInstant.from((SerializableDataInputStream) in);
+  }
 
-	@SuppressWarnings("unchecked")
-	public void serializeTimestamp(RichInstant ts, DataOutputStream out) throws IOException {
-		ts.serialize((SerializableDataOutputStream) out);
-	}
+  @SuppressWarnings("unchecked")
+  public void serializeTimestamp(RichInstant ts, DataOutputStream out) throws IOException {
+    ts.serialize((SerializableDataOutputStream) out);
+  }
 
-	public EntityId deserializeId(DataInputStream _in) throws IOException {
-		var in = (SerializableDataInputStream) _in;
-		return in.readSerializable();
-	}
+  public EntityId deserializeId(DataInputStream _in) throws IOException {
+    var in = (SerializableDataInputStream) _in;
+    return in.readSerializable();
+  }
 }

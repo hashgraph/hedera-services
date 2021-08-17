@@ -28,28 +28,29 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
 public class GetBytecodeResourceUsage implements QueryResourceUsageEstimator {
-	private static final byte[] EMPTY_BYTECODE = new byte[0];
+  private static final byte[] EMPTY_BYTECODE = new byte[0];
 
-	private final SmartContractFeeBuilder usageEstimator;
+  private final SmartContractFeeBuilder usageEstimator;
 
-	public GetBytecodeResourceUsage(SmartContractFeeBuilder usageEstimator) {
-		this.usageEstimator = usageEstimator;
-	}
+  public GetBytecodeResourceUsage(SmartContractFeeBuilder usageEstimator) {
+    this.usageEstimator = usageEstimator;
+  }
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasContractGetBytecode();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasContractGetBytecode();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getContractGetBytecode().getHeader().getResponseType());
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageGivenType(
+        query, view, query.getContractGetBytecode().getHeader().getResponseType());
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getContractGetBytecode();
-		var bytecode = view.bytecodeOf(op.getContractID()).orElse(EMPTY_BYTECODE);
-		return usageEstimator.getContractByteCodeQueryFeeMatrices(bytecode.length, type);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    var op = query.getContractGetBytecode();
+    var bytecode = view.bytecodeOf(op.getContractID()).orElse(EMPTY_BYTECODE);
+    return usageEstimator.getContractByteCodeQueryFeeMatrices(bytecode.length, type);
+  }
 }

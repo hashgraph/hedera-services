@@ -22,36 +22,35 @@ package com.hedera.services.grpc.marshalling;
 
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class CustomSchedulesManager {
-	private final CustomFeeSchedules customFeeSchedules;
-	private final List<CustomFeeMeta> allManagedMeta = new ArrayList<>();
+  private final CustomFeeSchedules customFeeSchedules;
+  private final List<CustomFeeMeta> allManagedMeta = new ArrayList<>();
 
-	public CustomSchedulesManager(CustomFeeSchedules customFeeSchedules) {
-		this.customFeeSchedules = customFeeSchedules;
-	}
+  public CustomSchedulesManager(CustomFeeSchedules customFeeSchedules) {
+    this.customFeeSchedules = customFeeSchedules;
+  }
 
-	public CustomFeeMeta managedSchedulesFor(Id token) {
-		CustomFeeMeta extantMeta = null;
-		if (!allManagedMeta.isEmpty()) {
-			for (var meta : allManagedMeta) {
-				if (token.equals(meta.getTokenId())) {
-					extantMeta = meta;
-					break;
-				}
-			}
-		}
-		if (extantMeta == null) {
-			extantMeta = customFeeSchedules.lookupMetaFor(token);
-			allManagedMeta.add(extantMeta);
-		}
-		return extantMeta;
-	}
+  public CustomFeeMeta managedSchedulesFor(Id token) {
+    CustomFeeMeta extantMeta = null;
+    if (!allManagedMeta.isEmpty()) {
+      for (var meta : allManagedMeta) {
+        if (token.equals(meta.getTokenId())) {
+          extantMeta = meta;
+          break;
+        }
+      }
+    }
+    if (extantMeta == null) {
+      extantMeta = customFeeSchedules.lookupMetaFor(token);
+      allManagedMeta.add(extantMeta);
+    }
+    return extantMeta;
+  }
 
-	public List<CustomFeeMeta> metaUsed() {
-		return allManagedMeta;
-	}
+  public List<CustomFeeMeta> metaUsed() {
+    return allManagedMeta;
+  }
 }

@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.contract.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,14 @@ package com.hedera.services.fees.calculation.contract.txns;
  * limitations under the License.
  * ‍
  */
+
+import static com.hedera.test.utils.IdUtils.asContract;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -34,75 +42,67 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.test.utils.IdUtils.asContract;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class ContractUpdateResourceUsageTest {
-	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
-	ContractID target = asContract("0.0.1234");
-	Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
-	StateView view;
-	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+  MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
+  ContractID target = asContract("0.0.1234");
+  Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+  StateView view;
+  MerkleAccount account;
+  FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	private SigValueObj sigUsage;
-	private SmartContractFeeBuilder usageEstimator;
-	private ContractUpdateResourceUsage subject;
+  private SigValueObj sigUsage;
+  private SmartContractFeeBuilder usageEstimator;
+  private ContractUpdateResourceUsage subject;
 
-	private TransactionBody nonContractUpdateTxn;
-	private TransactionBody contractUpdateTxn;
+  private TransactionBody nonContractUpdateTxn;
+  private TransactionBody contractUpdateTxn;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		contractUpdateTxn = mock(TransactionBody.class);
-		ContractUpdateTransactionBody update = mock(ContractUpdateTransactionBody.class);
-		given(update.getContractID()).willReturn(target);
-		given(contractUpdateTxn.hasContractUpdateInstance()).willReturn(true);
-		given(contractUpdateTxn.getContractUpdateInstance()).willReturn(update);
+  @BeforeEach
+  private void setup() throws Throwable {
+    contractUpdateTxn = mock(TransactionBody.class);
+    ContractUpdateTransactionBody update = mock(ContractUpdateTransactionBody.class);
+    given(update.getContractID()).willReturn(target);
+    given(contractUpdateTxn.hasContractUpdateInstance()).willReturn(true);
+    given(contractUpdateTxn.getContractUpdateInstance()).willReturn(update);
 
-		nonContractUpdateTxn = mock(TransactionBody.class);
-		given(nonContractUpdateTxn.hasContractUpdateInstance()).willReturn(false);
+    nonContractUpdateTxn = mock(TransactionBody.class);
+    given(nonContractUpdateTxn.hasContractUpdateInstance()).willReturn(false);
 
-		account = mock(MerkleAccount.class);
-		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
-		accounts = mock(FCMap.class);
-		given(accounts.get(accountKey)).willReturn(account);
-		view = mock(StateView.class);
-		given(view.accounts()).willReturn(accounts);
+    account = mock(MerkleAccount.class);
+    given(account.getExpiry()).willReturn(Long.MAX_VALUE);
+    accounts = mock(FCMap.class);
+    given(accounts.get(accountKey)).willReturn(account);
+    view = mock(StateView.class);
+    given(view.accounts()).willReturn(accounts);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(SmartContractFeeBuilder.class);
+    sigUsage = mock(SigValueObj.class);
+    usageEstimator = mock(SmartContractFeeBuilder.class);
 
-		subject = new ContractUpdateResourceUsage(usageEstimator);
-	}
+    subject = new ContractUpdateResourceUsage(usageEstimator);
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(contractUpdateTxn));
-		assertFalse(subject.applicableTo(nonContractUpdateTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(contractUpdateTxn));
+    assertFalse(subject.applicableTo(nonContractUpdateTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// when:
-		subject.usageGiven(contractUpdateTxn, sigUsage, view);
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    // when:
+    subject.usageGiven(contractUpdateTxn, sigUsage, view);
 
-		// then:
-		verify(usageEstimator).getContractUpdateTxFeeMatrices(contractUpdateTxn, expiry, sigUsage);
-	}
+    // then:
+    verify(usageEstimator).getContractUpdateTxFeeMatrices(contractUpdateTxn, expiry, sigUsage);
+  }
 
-	@Test
-	void returnsDefaultUsageOnException() throws Exception {
-		// when:
-		FeeData actual = subject.usageGiven(contractUpdateTxn, sigUsage, null);
+  @Test
+  void returnsDefaultUsageOnException() throws Exception {
+    // when:
+    FeeData actual = subject.usageGiven(contractUpdateTxn, sigUsage, null);
 
-		// then:
-		assertEquals(FeeData.getDefaultInstance(), actual);
-	}
+    // then:
+    assertEquals(FeeData.getDefaultInstance(), actual);
+  }
 }

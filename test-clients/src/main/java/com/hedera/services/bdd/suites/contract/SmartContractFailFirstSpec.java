@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,15 +19,6 @@ package com.hedera.services.bdd.suites.contract;
  * limitations under the License.
  * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -43,139 +34,157 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class SmartContractFailFirstSpec extends HapiApiSuite  {
-	private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-	public static void main(String... args) {
-		new org.ethereum.crypto.HashUtil();
+public class SmartContractFailFirstSpec extends HapiApiSuite {
+  private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);
 
-		new SmartContractFailFirstSpec().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new org.ethereum.crypto.HashUtil();
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				smartContractFailFirst(),
-		});
-	}
+    new SmartContractFailFirstSpec().runSuiteSync();
+  }
 
-	HapiApiSpec smartContractFailFirst() {
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          smartContractFailFirst(),
+        });
+  }
 
-		return defaultHapiSpec("smartContractFailFirst")
-				.given(
-						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
-						fileCreate("bytecode")
-								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
-				).when(
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore0", "payer");
+  HapiApiSpec smartContractFailFirst() {
 
-							var subop2 =
-									contractCreate("failInsufficientGas")
-											.balance(0)
-											.payingWith("payer")
-											.gas(1)
-											.bytecode("bytecode")
-											.hasKnownStatus(INSUFFICIENT_GAS)
-											.via("failInsufficientGas");
+    return defaultHapiSpec("smartContractFailFirst")
+        .given(
+            cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
+            fileCreate("bytecode").path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH))
+        .when(
+            withOpContext(
+                (spec, ignore) -> {
+                  var subop1 = balanceSnapshot("balanceBefore0", "payer");
 
-							var subop3 = getTxnRecord("failInsufficientGas");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+                  var subop2 =
+                      contractCreate("failInsufficientGas")
+                          .balance(0)
+                          .payingWith("payer")
+                          .gas(1)
+                          .bytecode("bytecode")
+                          .hasKnownStatus(INSUFFICIENT_GAS)
+                          .via("failInsufficientGas");
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
-							CustomSpecAssert.allRunFor(spec,  subop4);
+                  var subop3 = getTxnRecord("failInsufficientGas");
+                  CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+                  long delta = subop3.getResponseRecord().getTransactionFee();
 
-						}),
+                  var subop4 =
+                      getAccountBalance("payer")
+                          .hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
+                  CustomSpecAssert.allRunFor(spec, subop4);
+                }),
+            withOpContext(
+                (spec, ignore) -> {
+                  var subop1 = balanceSnapshot("balanceBefore1", "payer");
 
+                  var subop2 =
+                      contractCreate("failInvalidInitialBalance")
+                          .balance(100_000_000_000L)
+                          .payingWith("payer")
+                          .gas(250_000L)
+                          .bytecode("bytecode")
+                          .via("failInvalidInitialBalance")
+                          .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
+                  var subop3 = getTxnRecord("failInvalidInitialBalance");
+                  CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+                  long delta = subop3.getResponseRecord().getTransactionFee();
 
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore1", "payer");
+                  var subop4 =
+                      getAccountBalance("payer")
+                          .hasTinyBars(changeFromSnapshot("balanceBefore1", -delta));
+                  CustomSpecAssert.allRunFor(spec, subop4);
+                }),
+            withOpContext(
+                (spec, ignore) -> {
+                  var subop1 = balanceSnapshot("balanceBefore2", "payer");
 
-							var subop2 = contractCreate("failInvalidInitialBalance")
-									.balance(100_000_000_000L)
-									.payingWith("payer")
-									.gas(250_000L)
-									.bytecode("bytecode")
-									.via("failInvalidInitialBalance")
-									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                  var subop2 =
+                      contractCreate("successWithZeroInitialBalance")
+                          .balance(0L)
+                          .payingWith("payer")
+                          .gas(250_000L)
+                          .bytecode("bytecode")
+                          .hasKnownStatus(SUCCESS)
+                          .via("successWithZeroInitialBalance");
 
-							var subop3 = getTxnRecord("failInvalidInitialBalance");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+                  var subop3 = getTxnRecord("successWithZeroInitialBalance");
+                  CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+                  long delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore1", -delta));
-							CustomSpecAssert.allRunFor(spec,  subop4);
+                  var subop4 =
+                      getAccountBalance("payer")
+                          .hasTinyBars(changeFromSnapshot("balanceBefore2", -delta));
+                  CustomSpecAssert.allRunFor(spec, subop4);
+                }),
+            withOpContext(
+                (spec, ignore) -> {
+                  var subop1 = balanceSnapshot("balanceBefore3", "payer");
 
-						}),
+                  var subop2 =
+                      contractCall(
+                              "successWithZeroInitialBalance",
+                              ContractResources.SIMPLE_STORAGE_SETTER_ABI,
+                              999_999L)
+                          .payingWith("payer")
+                          .gas(300_000L)
+                          .hasKnownStatus(SUCCESS)
+                          .via("setValue");
 
+                  var subop3 = getTxnRecord("setValue");
+                  CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+                  long delta = subop3.getResponseRecord().getTransactionFee();
 
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore2", "payer");
+                  var subop4 =
+                      getAccountBalance("payer")
+                          .hasTinyBars(changeFromSnapshot("balanceBefore3", -delta));
+                  CustomSpecAssert.allRunFor(spec, subop4);
+                }),
+            withOpContext(
+                (spec, ignore) -> {
+                  var subop1 = balanceSnapshot("balanceBefore4", "payer");
 
-							var subop2 = contractCreate("successWithZeroInitialBalance")
-									.balance(0L)
-									.payingWith("payer")
-									.gas(250_000L)
-									.bytecode("bytecode")
-									.hasKnownStatus(SUCCESS)
-									.via("successWithZeroInitialBalance");
+                  var subop2 =
+                      contractCall(
+                              "successWithZeroInitialBalance",
+                              ContractResources.SIMPLE_STORAGE_GETTER_ABI)
+                          .payingWith("payer")
+                          .gas(300_000L)
+                          .hasKnownStatus(SUCCESS)
+                          .via("getValue");
 
-							var subop3 = getTxnRecord("successWithZeroInitialBalance");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+                  var subop3 = getTxnRecord("getValue");
+                  CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
+                  long delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore2", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
+                  var subop4 =
+                      getAccountBalance("payer")
+                          .hasTinyBars(changeFromSnapshot("balanceBefore4", -delta));
+                  CustomSpecAssert.allRunFor(spec, subop4);
+                }))
+        .then(
+            getTxnRecord("failInsufficientGas"),
+            getTxnRecord("successWithZeroInitialBalance"),
+            getTxnRecord("failInvalidInitialBalance"));
+  }
 
-						}),
-
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore3", "payer");
-
-							var subop2 = contractCall("successWithZeroInitialBalance", ContractResources.SIMPLE_STORAGE_SETTER_ABI, 999_999L )
-									.payingWith("payer")
-									.gas(300_000L)
-									.hasKnownStatus(SUCCESS)
-									.via("setValue");
-
-							var subop3 = getTxnRecord("setValue");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore3", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
-
-						}),
-
-
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore4", "payer");
-
-							var subop2 = contractCall("successWithZeroInitialBalance", ContractResources.SIMPLE_STORAGE_GETTER_ABI)
-									.payingWith("payer")
-									.gas(300_000L)
-									.hasKnownStatus(SUCCESS)
-									.via("getValue");
-
-							var subop3 = getTxnRecord("getValue");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore4", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
-
-						})
-						).then(
-						getTxnRecord("failInsufficientGas"),
-						getTxnRecord("successWithZeroInitialBalance"),
-						getTxnRecord("failInvalidInitialBalance")
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

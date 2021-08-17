@@ -20,40 +20,31 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleDeleteFactory.newSignedScheduleDelete;
 
+import com.hedera.services.utils.PlatformTxnAccessor;
+
 public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
-	SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedScheduleDelete()
-							.deleting(KNOWN_SCHEDULE_WITH_ADMIN)
-							.get()
-			));
-		}
-	},
-	SCHEDULE_DELETE_WITH_MISSING_SCHEDULE {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedScheduleDelete()
-							.deleting(UNKNOWN_SCHEDULE)
-							.get()
-			));
-		}
-	},
-	SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedScheduleDelete()
-							.deleting(KNOWN_SCHEDULE_IMMUTABLE)
-							.get()
-			));
-		}
-	}
+  SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_WITH_ADMIN).get()));
+    }
+  },
+  SCHEDULE_DELETE_WITH_MISSING_SCHEDULE {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(newSignedScheduleDelete().deleting(UNKNOWN_SCHEDULE).get()));
+    }
+  },
+  SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_IMMUTABLE).get()));
+    }
+  }
 }

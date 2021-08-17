@@ -20,6 +20,8 @@ package com.hedera.services.bdd.spec.utilops.inventory;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
@@ -29,81 +31,78 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
-
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
-
 public class NewSpecKey extends UtilOp {
-	static final Logger log = LogManager.getLogger(NewSpecKey.class);
+  static final Logger log = LogManager.getLogger(NewSpecKey.class);
 
-	private boolean verboseLoggingOn = false;
-	private final String name;
-	private Optional<KeyType> type = Optional.empty();
-	private Optional<SigControl> shape = Optional.empty();
-	private Optional<KeyLabel> labels = Optional.empty();
-	private Optional<KeyGenerator> generator = Optional.empty();
+  private boolean verboseLoggingOn = false;
+  private final String name;
+  private Optional<KeyType> type = Optional.empty();
+  private Optional<SigControl> shape = Optional.empty();
+  private Optional<KeyLabel> labels = Optional.empty();
+  private Optional<KeyGenerator> generator = Optional.empty();
 
-	public NewSpecKey(String name) {
-		this.name = name;
-	}
+  public NewSpecKey(String name) {
+    this.name = name;
+  }
 
-	public NewSpecKey logged() {
-		verboseLoggingOn = true;
-		return this;
-	}
+  public NewSpecKey logged() {
+    verboseLoggingOn = true;
+    return this;
+  }
 
-	public NewSpecKey type(KeyType toGen) {
-		type = Optional.of(toGen);
-		return this;
-	}
+  public NewSpecKey type(KeyType toGen) {
+    type = Optional.of(toGen);
+    return this;
+  }
 
-	public NewSpecKey shape(SigControl control) {
-		shape = Optional.of(control);
-		return this;
-	}
+  public NewSpecKey shape(SigControl control) {
+    shape = Optional.of(control);
+    return this;
+  }
 
-	public NewSpecKey labels(KeyLabel kl) {
-		labels = Optional.of(kl);
-		return this;
-	}
+  public NewSpecKey labels(KeyLabel kl) {
+    labels = Optional.of(kl);
+    return this;
+  }
 
-	public NewSpecKey generator(KeyGenerator gen) {
-		generator = Optional.of(gen);
-		return this;
-	}
+  public NewSpecKey generator(KeyGenerator gen) {
+    generator = Optional.of(gen);
+    return this;
+  }
 
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		final var keyGen = generator.orElse(KeyExpansion::genSingleEd25519Key);
-		Key key;
-		if (shape.isPresent()) {
-			if (labels.isPresent()) {
-				key = spec.keys().generateSubjectTo(shape.get(), keyGen, labels.get());
-			} else {
-				key = spec.keys().generateSubjectTo(shape.get(), keyGen);
-			}
-		} else {
-			key = spec.keys().generate(type.orElse(KeyType.SIMPLE), keyGen);
-		}
-		spec.registry().saveKey(name, key);
-		if (verboseLoggingOn) {
-			if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
-				log.info("Created simple '{}' w/ Ed25519 public key {}",
-						name,
-						CommonUtils.hex(key.getEd25519().toByteArray()));
-			} else {
-				log.info("Created a complex key...");
-			}
-		}
-		return false;
-	}
+  @Override
+  protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    final var keyGen = generator.orElse(KeyExpansion::genSingleEd25519Key);
+    Key key;
+    if (shape.isPresent()) {
+      if (labels.isPresent()) {
+        key = spec.keys().generateSubjectTo(shape.get(), keyGen, labels.get());
+      } else {
+        key = spec.keys().generateSubjectTo(shape.get(), keyGen);
+      }
+    } else {
+      key = spec.keys().generate(type.orElse(KeyType.SIMPLE), keyGen);
+    }
+    spec.registry().saveKey(name, key);
+    if (verboseLoggingOn) {
+      if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
+        log.info(
+            "Created simple '{}' w/ Ed25519 public key {}",
+            name,
+            CommonUtils.hex(key.getEd25519().toByteArray()));
+      } else {
+        log.info("Created a complex key...");
+      }
+    }
+    return false;
+  }
 
-
-	@Override
-	protected MoreObjects.ToStringHelper toStringHelper() {
-		return super.toStringHelper().add("name", name);
-	}
+  @Override
+  protected MoreObjects.ToStringHelper toStringHelper() {
+    return super.toStringHelper().add("name", name);
+  }
 }

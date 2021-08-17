@@ -20,6 +20,10 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -29,73 +33,71 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.function.BiFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.BiFunction;
-
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 class Expansion {
-	private static final Logger log = LogManager.getLogger(Expansion.class);
+  private static final Logger log = LogManager.getLogger(Expansion.class);
 
-	private final PubKeyToSigBytes pkToSigFn;
-	private final HederaSigningOrder keyOrderer;
-	private final PlatformTxnAccessor txnAccessor;
-	private final TxnScopedPlatformSigFactory sigFactory;
+  private final PubKeyToSigBytes pkToSigFn;
+  private final HederaSigningOrder keyOrderer;
+  private final PlatformTxnAccessor txnAccessor;
+  private final TxnScopedPlatformSigFactory sigFactory;
 
-	public Expansion(
-			PlatformTxnAccessor txnAccessor,
-			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytes pkToSigFn,
-			TxnScopedPlatformSigFactory sigFactory
-	) {
-		this.txnAccessor = txnAccessor;
-		this.sigFactory = sigFactory;
-		this.keyOrderer = keyOrderer;
-		this.pkToSigFn = pkToSigFn;
-	}
+  public Expansion(
+      PlatformTxnAccessor txnAccessor,
+      HederaSigningOrder keyOrderer,
+      PubKeyToSigBytes pkToSigFn,
+      TxnScopedPlatformSigFactory sigFactory) {
+    this.txnAccessor = txnAccessor;
+    this.sigFactory = sigFactory;
+    this.keyOrderer = keyOrderer;
+    this.pkToSigFn = pkToSigFn;
+  }
 
-	public ResponseCodeEnum execute() {
-		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxnWrapper);
-		final var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
-		if (payerStatus != OK) {
-			if (log.isDebugEnabled()) {
-				log.debug(
-						"Failed expanding Hedera payer sigs for txn {}: {}",
-						txnAccessor.getTxnId(),
-						payerStatus);
-			}
-			return payerStatus;
-		}
-		final var otherStatus = expand(pkToSigFn, keyOrderer::keysForOtherParties);
-		if (otherStatus != OK) {
-			if (log.isDebugEnabled()) {
-				log.debug(
-						"Failed expanding other Hedera sigs for txn {}: {}",
-						txnAccessor.getTxnId(),
-						otherStatus);
-			}
-		}
-		return otherStatus;
-	}
+  public ResponseCodeEnum execute() {
+    log.debug(
+        "Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxnWrapper);
+    final var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
+    if (payerStatus != OK) {
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Failed expanding Hedera payer sigs for txn {}: {}",
+            txnAccessor.getTxnId(),
+            payerStatus);
+      }
+      return payerStatus;
+    }
+    final var otherStatus = expand(pkToSigFn, keyOrderer::keysForOtherParties);
+    if (otherStatus != OK) {
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Failed expanding other Hedera sigs for txn {}: {}",
+            txnAccessor.getTxnId(),
+            otherStatus);
+      }
+    }
+    return otherStatus;
+  }
 
-	private ResponseCodeEnum expand(
-			PubKeyToSigBytes pkToSigFn,
-			BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
-	) {
-		var orderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
-		if (orderResult.hasErrorReport()) {
-			return orderResult.getErrorReport();
-		}
+  private ResponseCodeEnum expand(
+      PubKeyToSigBytes pkToSigFn,
+      BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>>
+          keysFn) {
+    var orderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
+    if (orderResult.hasErrorReport()) {
+      return orderResult.getErrorReport();
+    }
 
-		var creationResult = createEd25519PlatformSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
-		if (!creationResult.hasFailed()) {
-			txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
-		}
-		/* Ignore sig creation failures. */
-		return OK;
-	}
+    var creationResult =
+        createEd25519PlatformSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+    if (!creationResult.hasFailed()) {
+      txnAccessor
+          .getPlatformTxn()
+          .addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
+    }
+    /* Ignore sig creation failures. */
+    return OK;
+  }
 }

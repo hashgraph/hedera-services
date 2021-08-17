@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,11 @@ package com.hedera.services.sigs.metadata.lookups;
  * limitations under the License.
  * ‍
  */
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
@@ -31,65 +36,60 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class HfsSigMetaLookupTest {
-	HederaFs hfs;
+  HederaFs hfs;
 
-	FileID target = IdUtils.asFile("0.0.12345");
-	JKey wacl;
-	HFileMeta info;
-	HFileMeta immutableInfo;
-	HfsSigMetaLookup subject;
+  FileID target = IdUtils.asFile("0.0.12345");
+  JKey wacl;
+  HFileMeta info;
+  HFileMeta immutableInfo;
+  HfsSigMetaLookup subject;
 
-	@BeforeEach
-	private void setup() throws Exception {
-		wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		info = new HFileMeta(false, wacl, 1_234_567L);
-		immutableInfo = new HFileMeta(false, StateView.EMPTY_WACL, 1_234_567L);
+  @BeforeEach
+  private void setup() throws Exception {
+    wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
+    info = new HFileMeta(false, wacl, 1_234_567L);
+    immutableInfo = new HFileMeta(false, StateView.EMPTY_WACL, 1_234_567L);
 
-		hfs = mock(HederaFs.class);
+    hfs = mock(HederaFs.class);
 
-		subject = new HfsSigMetaLookup(hfs);
-	}
+    subject = new HfsSigMetaLookup(hfs);
+  }
 
-	@Test
-	void getsExpectedSigMeta() throws Exception {
-		given(hfs.exists(target)).willReturn(true);
-		given(hfs.getattr(target)).willReturn(info);
+  @Test
+  void getsExpectedSigMeta() throws Exception {
+    given(hfs.exists(target)).willReturn(true);
+    given(hfs.getattr(target)).willReturn(info);
 
-		// when:
-		var safeSigMeta = subject.safeLookup(target);
+    // when:
+    var safeSigMeta = subject.safeLookup(target);
 
-		// then:
-		assertTrue(safeSigMeta.succeeded());
-		assertEquals(wacl.toString(), safeSigMeta.metadata().getWacl().toString());
-	}
+    // then:
+    assertTrue(safeSigMeta.succeeded());
+    assertEquals(wacl.toString(), safeSigMeta.metadata().getWacl().toString());
+  }
 
-	@Test
-	void omitsKeysForImmutableFile() {
-		given(hfs.exists(target)).willReturn(true);
-		given(hfs.getattr(target)).willReturn(immutableInfo);
+  @Test
+  void omitsKeysForImmutableFile() {
+    given(hfs.exists(target)).willReturn(true);
+    given(hfs.getattr(target)).willReturn(immutableInfo);
 
-		// when:
-		var safeSigMeta = subject.safeLookup(target);
+    // when:
+    var safeSigMeta = subject.safeLookup(target);
 
-		// then:
-		assertTrue(safeSigMeta.succeeded());
-		assertTrue(safeSigMeta.metadata().getWacl().isEmpty());
-	}
+    // then:
+    assertTrue(safeSigMeta.succeeded());
+    assertTrue(safeSigMeta.metadata().getWacl().isEmpty());
+  }
 
-	@Test
-	void throwsExpectedType() {
-		given(hfs.getattr(target)).willReturn(null);
+  @Test
+  void throwsExpectedType() {
+    given(hfs.getattr(target)).willReturn(null);
 
-		// when:
-		var safeSigMeta = subject.safeLookup(target);
+    // when:
+    var safeSigMeta = subject.safeLookup(target);
 
-		// expect:
-		Assertions.assertFalse(safeSigMeta.succeeded());
-	}
+    // expect:
+    Assertions.assertFalse(safeSigMeta.succeeded());
+  }
 }

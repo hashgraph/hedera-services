@@ -28,21 +28,23 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-
 import java.util.function.BiFunction;
 
 public class TokenDeleteResourceUsage implements TxnResourceUsageEstimator {
-	static BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory = TokenDeleteUsage::newEstimate;
+  static BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory =
+      TokenDeleteUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasTokenDeletion();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasTokenDeletion();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var estimate = factory.apply(txn, sigUsage);
-		return estimate.get();
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    var estimate = factory.apply(txn, sigUsage);
+    return estimate.get();
+  }
 }

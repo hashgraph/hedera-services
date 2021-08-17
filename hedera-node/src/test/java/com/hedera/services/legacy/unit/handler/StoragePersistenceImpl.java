@@ -29,44 +29,49 @@ import com.swirlds.fcmap.FCMap;
 import org.ethereum.datasource.StoragePersistence;
 
 public class StoragePersistenceImpl implements StoragePersistence {
-	private static String ADDRESS_APENDED_PATH = "/{0}/d{1}";
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+  private static String ADDRESS_APENDED_PATH = "/{0}/d{1}";
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
 
-	public StoragePersistenceImpl(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
-		this.storageMap = storageMap;
-	}
+  public StoragePersistenceImpl(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
+    this.storageMap = storageMap;
+  }
 
-	@Override
-	public boolean storageExist(final byte[] key) {
-		final var storageWrapper = new FCStorageWrapper(storageMap);
-		final var filePath = getAddressAppendedPath(key);
-		return storageWrapper.fileExists(filePath);
+  @Override
+  public boolean storageExist(final byte[] key) {
+    final var storageWrapper = new FCStorageWrapper(storageMap);
+    final var filePath = getAddressAppendedPath(key);
+    return storageWrapper.fileExists(filePath);
+  }
 
-	}
+  @Override
+  public void persist(
+      final byte[] key,
+      final byte[] storageCache,
+      final long expirationTime,
+      final long currentTime) {
+    final var filePath = getAddressAppendedPath(key);
+    final var storageWrapper = new FCStorageWrapper(storageMap);
+    storageWrapper.fileCreate(filePath, storageCache);
+  }
 
-	@Override
-	public void persist(final byte[] key, final byte[] storageCache, final long expirationTime, final long currentTime) {
-		final var filePath = getAddressAppendedPath(key);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
-		storageWrapper.fileCreate(filePath, storageCache);
-	}
+  @Override
+  public byte[] get(final byte[] key) {
+    byte[] serializedCache = null;
+    final var storageWrapper = new FCStorageWrapper(storageMap);
+    if (storageExist(key)) {
+      final var filePath = getAddressAppendedPath(key);
+      serializedCache = storageWrapper.fileRead(filePath);
+    }
+    return serializedCache;
+  }
 
-	@Override
-	public byte[] get(final byte[] key) {
-		byte[] serializedCache = null;
-		final var storageWrapper = new FCStorageWrapper(storageMap);
-		if (storageExist(key)) {
-			final var filePath = getAddressAppendedPath(key);
-			serializedCache = storageWrapper.fileRead(filePath);
-		}
-		return serializedCache;
-	}
-
-	private String getAddressAppendedPath(final byte[] key) {
-		final var acctId = EntityIdUtils.accountParsedFromSolidityAddress(key);
-		final var path = FeeCalcUtilsTest.buildPath(
-				ADDRESS_APENDED_PATH, Long.toString(acctId.getRealmNum()),
-				Long.toString(acctId.getAccountNum()));//    /0/d2341/
-		return path;
-	}
+  private String getAddressAppendedPath(final byte[] key) {
+    final var acctId = EntityIdUtils.accountParsedFromSolidityAddress(key);
+    final var path =
+        FeeCalcUtilsTest.buildPath(
+            ADDRESS_APENDED_PATH,
+            Long.toString(acctId.getRealmNum()),
+            Long.toString(acctId.getAccountNum())); //    /0/d2341/
+    return path;
+  }
 }

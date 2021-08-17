@@ -24,49 +24,44 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-
 import java.time.Instant;
 import java.util.List;
 
 public enum NoopExpiringCreations implements EntityCreator {
-	NOOP_EXPIRING_CREATIONS;
+  NOOP_EXPIRING_CREATIONS;
 
-	@Override
-	public void setRecordCache(RecordCache recordCache) {
-		/* No-op */
-	}
+  @Override
+  public void setRecordCache(RecordCache recordCache) {
+    /* No-op */
+  }
 
-	@Override
-	public ExpirableTxnRecord saveExpiringRecord(
-			AccountID id,
-			ExpirableTxnRecord expiringRecord,
-			long consensusTime,
-			long submittingMember
-	) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ExpirableTxnRecord saveExpiringRecord(
+      AccountID id, ExpirableTxnRecord expiringRecord, long consensusTime, long submittingMember) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ExpirableTxnRecord.Builder buildExpiringRecord(
-			long otherNonThresholdFees,
-			byte[] hash,
-			TxnAccessor accessor,
-			Instant consensusTime,
-			TxnReceipt receipt,
-			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
-			List<FcAssessedCustomFee> customFeesCharged
-	) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ExpirableTxnRecord.Builder buildExpiringRecord(
+      long otherNonThresholdFees,
+      byte[] hash,
+      TxnAccessor accessor,
+      Instant consensusTime,
+      TxnReceipt receipt,
+      List<TokenTransferList> explicitTokenTransfers,
+      ServicesContext ctx,
+      List<FcAssessedCustomFee> customFeesCharged) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ExpirableTxnRecord.Builder buildFailedExpiringRecord(
+      TxnAccessor accessor, Instant consensusTimestamp) {
+    throw new UnsupportedOperationException();
+  }
 }

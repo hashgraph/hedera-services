@@ -20,96 +20,92 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
-
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-
 /**
- * Responsible for managing the properties in a {@link TxnAccessor#getSpanMap()}.
- * This management happens in two steps:
+ * Responsible for managing the properties in a {@link TxnAccessor#getSpanMap()}. This management
+ * happens in two steps:
+ *
  * <ol>
- * <li>In {@link SpanMapManager#expandSpan(TxnAccessor)}, the span map is
- * "expanded" to include the results of any work that can likely be reused
- * in {@code handleTransaction}.</li>
- * <li>In {@link SpanMapManager#rationalizeSpan(TxnAccessor)}, the span map
- * "rationalized" to be sure that any pre-computed work can still be reused
- * safely.</li>
+ *   <li>In {@link SpanMapManager#expandSpan(TxnAccessor)}, the span map is "expanded" to include
+ *       the results of any work that can likely be reused in {@code handleTransaction}.
+ *   <li>In {@link SpanMapManager#rationalizeSpan(TxnAccessor)}, the span map "rationalized" to be
+ *       sure that any pre-computed work can still be reused safely.
  * </ol>
  *
- * The only entry currently in the span map is the {@link com.hedera.services.grpc.marshalling.ImpliedTransfers}
- * produced by the {@link ImpliedTransfersMarshal}; this improves performance for
- * CrypoTransfers specifically.
+ * The only entry currently in the span map is the {@link
+ * com.hedera.services.grpc.marshalling.ImpliedTransfers} produced by the {@link
+ * ImpliedTransfersMarshal}; this improves performance for CrypoTransfers specifically.
  *
- * Other operations will certainly be able to benefit from the same infrastructure
- * over time.
+ * <p>Other operations will certainly be able to benefit from the same infrastructure over time.
  */
 public class SpanMapManager {
-	private final CustomFeeSchedules customFeeSchedules;
-	private final GlobalDynamicProperties dynamicProperties;
-	private final ImpliedTransfersMarshal impliedTransfersMarshal;
-	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
+  private final CustomFeeSchedules customFeeSchedules;
+  private final GlobalDynamicProperties dynamicProperties;
+  private final ImpliedTransfersMarshal impliedTransfersMarshal;
+  private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
-	public SpanMapManager(
-			ImpliedTransfersMarshal impliedTransfersMarshal,
-			GlobalDynamicProperties dynamicProperties,
-			CustomFeeSchedules customFeeSchedules
-	) {
-		this.impliedTransfersMarshal = impliedTransfersMarshal;
-		this.dynamicProperties = dynamicProperties;
-		this.customFeeSchedules = customFeeSchedules;
-	}
+  public SpanMapManager(
+      ImpliedTransfersMarshal impliedTransfersMarshal,
+      GlobalDynamicProperties dynamicProperties,
+      CustomFeeSchedules customFeeSchedules) {
+    this.impliedTransfersMarshal = impliedTransfersMarshal;
+    this.dynamicProperties = dynamicProperties;
+    this.customFeeSchedules = customFeeSchedules;
+  }
 
-	public void expandSpan(TxnAccessor accessor) {
-		final var function = accessor.getFunction();
-		if (function == CryptoTransfer) {
-			expandImpliedTransfers(accessor);
-		}
-	}
+  public void expandSpan(TxnAccessor accessor) {
+    final var function = accessor.getFunction();
+    if (function == CryptoTransfer) {
+      expandImpliedTransfers(accessor);
+    }
+  }
 
-	public void rationalizeSpan(TxnAccessor accessor) {
-		if (accessor.getFunction() == CryptoTransfer) {
-			rationalizeImpliedTransfers(accessor);
-		}
-	}
+  public void rationalizeSpan(TxnAccessor accessor) {
+    if (accessor.getFunction() == CryptoTransfer) {
+      rationalizeImpliedTransfers(accessor);
+    }
+  }
 
-	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
-		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
-			expandImpliedTransfers(accessor);
-		}
-	}
+  private void rationalizeImpliedTransfers(TxnAccessor accessor) {
+    final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+    if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
+      expandImpliedTransfers(accessor);
+    }
+  }
 
-	private void expandImpliedTransfers(TxnAccessor accessor) {
-		final var op = accessor.getTxn().getCryptoTransfer();
-		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
-		reCalculateXferMeta(accessor, impliedTransfers);
-		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
-	}
+  private void expandImpliedTransfers(TxnAccessor accessor) {
+    final var op = accessor.getTxn().getCryptoTransfer();
+    final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+    reCalculateXferMeta(accessor, impliedTransfers);
+    spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
+  }
 
-	private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
-		final var xferMeta = accessor.availXferUsageMeta();
+  private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+    final var xferMeta = accessor.availXferUsageMeta();
 
-		var customFeeTokenTransfers = 0;
-		var customFeeHbarTransfers = 0;
-		final Set<EntityId> involvedTokens = new HashSet<>();
-		for (var assessedFee : impliedTransfers.getAssessedCustomFees()) {
-			if (assessedFee.isForHbar()) {
-				customFeeHbarTransfers++;
-			} else {
-				customFeeTokenTransfers++;
-				involvedTokens.add(assessedFee.token());
-			}
-		}
-		xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
-		xferMeta.setCustomFeeTokensInvolved(involvedTokens.size());
-		xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
-	}
+    var customFeeTokenTransfers = 0;
+    var customFeeHbarTransfers = 0;
+    final Set<EntityId> involvedTokens = new HashSet<>();
+    for (var assessedFee : impliedTransfers.getAssessedCustomFees()) {
+      if (assessedFee.isForHbar()) {
+        customFeeHbarTransfers++;
+      } else {
+        customFeeTokenTransfers++;
+        involvedTokens.add(assessedFee.token());
+      }
+    }
+    xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
+    xferMeta.setCustomFeeTokensInvolved(involvedTokens.size());
+    xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
+  }
 }

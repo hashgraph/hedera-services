@@ -20,86 +20,84 @@ package com.hedera.services.txns.customfees;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.swirlds.fcmap.FCMap;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 @ExtendWith(MockitoExtension.class)
 class FcmCustomFeeSchedulesTest {
-	private FcmCustomFeeSchedules subject;
-	FCMap<MerkleEntityId, MerkleToken> tokenFCMap = new FCMap<>();
+  private FcmCustomFeeSchedules subject;
+  FCMap<MerkleEntityId, MerkleToken> tokenFCMap = new FCMap<>();
 
-	private final EntityId aTreasury = new EntityId(10, 11, 12);
-	private final EntityId bTreasury = new EntityId(11, 12, 13);
-	private final EntityId tokenA = new EntityId(0,0,1);
-	private final EntityId tokenB = new EntityId(0,0,2);
-	private final EntityId feeCollector = new EntityId(0,0,3);
-	private final EntityId missingToken = new EntityId(0,0,4);
-	private final MerkleToken aToken = new MerkleToken();
-	private final MerkleToken bToken = new MerkleToken();
+  private final EntityId aTreasury = new EntityId(10, 11, 12);
+  private final EntityId bTreasury = new EntityId(11, 12, 13);
+  private final EntityId tokenA = new EntityId(0, 0, 1);
+  private final EntityId tokenB = new EntityId(0, 0, 2);
+  private final EntityId feeCollector = new EntityId(0, 0, 3);
+  private final EntityId missingToken = new EntityId(0, 0, 4);
+  private final MerkleToken aToken = new MerkleToken();
+  private final MerkleToken bToken = new MerkleToken();
 
-	@BeforeEach
-	void setUp() {
-		// setup:
-		final var tokenAFees = List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
-		final var tokenBFees = List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
-		aToken.setFeeScheduleFrom(tokenAFees, null);
-		aToken.setTreasury(aTreasury);
-		bToken.setFeeScheduleFrom(tokenBFees, null);
-		bToken.setTreasury(bTreasury);
+  @BeforeEach
+  void setUp() {
+    // setup:
+    final var tokenAFees = List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
+    final var tokenBFees = List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
+    aToken.setFeeScheduleFrom(tokenAFees, null);
+    aToken.setTreasury(aTreasury);
+    bToken.setFeeScheduleFrom(tokenBFees, null);
+    bToken.setTreasury(bTreasury);
 
-		tokenFCMap.put(tokenA.asMerkle(), aToken);
-		tokenFCMap.put(tokenB.asMerkle(), bToken);
-		subject = new FcmCustomFeeSchedules(() -> tokenFCMap);
-	}
+    tokenFCMap.put(tokenA.asMerkle(), aToken);
+    tokenFCMap.put(tokenB.asMerkle(), bToken);
+    subject = new FcmCustomFeeSchedules(() -> tokenFCMap);
+  }
 
-	@Test
-	void validateLookUpScheduleFor() {
-		// then:
-		final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
-		final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
-		final var missingTokenFees = subject.lookupMetaFor(missingToken.asId());
+  @Test
+  void validateLookUpScheduleFor() {
+    // then:
+    final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
+    final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
+    final var missingTokenFees = subject.lookupMetaFor(missingToken.asId());
 
-		// expect:
-		assertEquals(aToken.customFeeSchedule(), tokenAFees.getCustomFees());
-		assertEquals(aTreasury, tokenAFees.getTreasuryId().asEntityId());
-		assertEquals(bToken.customFeeSchedule(), tokenBFees.getCustomFees());
-		assertEquals(bTreasury, tokenBFees.getTreasuryId().asEntityId());
-		assertSame(Collections.emptyList(), missingTokenFees.getCustomFees());
-	}
+    // expect:
+    assertEquals(aToken.customFeeSchedule(), tokenAFees.getCustomFees());
+    assertEquals(aTreasury, tokenAFees.getTreasuryId().asEntityId());
+    assertEquals(bToken.customFeeSchedule(), tokenBFees.getCustomFees());
+    assertEquals(bTreasury, tokenBFees.getTreasuryId().asEntityId());
+    assertSame(Collections.emptyList(), missingTokenFees.getCustomFees());
+  }
 
-	@Test
-	void getterWorks() {
-		assertEquals(tokenFCMap, subject.getTokens().get());
-	}
+  @Test
+  void getterWorks() {
+    assertEquals(tokenFCMap, subject.getTokens().get());
+  }
 
-	@Test
-	void testObjectContract() {
-		// given:
-		FCMap<MerkleEntityId, MerkleToken> secondFCMap = new FCMap<>();
-		MerkleToken token = new MerkleToken();
-		final var missingFees = List.of(
-				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
-		token.setFeeScheduleFrom(missingFees, null);
-		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
-		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
-		final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);
+  @Test
+  void testObjectContract() {
+    // given:
+    FCMap<MerkleEntityId, MerkleToken> secondFCMap = new FCMap<>();
+    MerkleToken token = new MerkleToken();
+    final var missingFees = List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
+    token.setFeeScheduleFrom(missingFees, null);
+    secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
+    final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
+    final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);
 
-		// expect:
-		assertNotEquals(fees1, fees2);
-		assertNotEquals(fees1.hashCode(), fees2.hashCode());
-	}
+    // expect:
+    assertNotEquals(fees1, fees2);
+    assertNotEquals(fees1.hashCode(), fees2.hashCode());
+  }
 }

@@ -21,42 +21,44 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
 
 public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T> {
-	List<Function<HapiApiSpec, Function<T, Optional<Throwable>>>> testProviders = new ArrayList<>();
+  List<Function<HapiApiSpec, Function<T, Optional<Throwable>>>> testProviders = new ArrayList<>();
 
-	protected void registerProvider(AssertUtils.ThrowingAssert throwing) {
-		testProviders.add(spec -> instance -> {
-			try {
-				throwing.assertThrowable(spec, instance);
-			} catch (Throwable t) {
-				return Optional.of(t);
-			}
-			return Optional.empty();
-		});
-	}
+  protected void registerProvider(AssertUtils.ThrowingAssert throwing) {
+    testProviders.add(
+        spec ->
+            instance -> {
+              try {
+                throwing.assertThrowable(spec, instance);
+              } catch (Throwable t) {
+                return Optional.of(t);
+              }
+              return Optional.empty();
+            });
+  }
 
-	/* Helper for asserting something about a ContractID, FileID, AccountID, etc. */
-	@SuppressWarnings("unchecked")
-	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
-		registerProvider((spec, o) -> {
-			R expected = spec.registry().getId(key, cls);
-			R actual = getActual.apply((T) o);
-			Assertions.assertEquals(expected, actual, err);
-		});
-	}
+  /* Helper for asserting something about a ContractID, FileID, AccountID, etc. */
+  @SuppressWarnings("unchecked")
+  protected <R> void registerIdLookupAssert(
+      String key, Function<T, R> getActual, Class<R> cls, String err) {
+    registerProvider(
+        (spec, o) -> {
+          R expected = spec.registry().getId(key, cls);
+          R actual = getActual.apply((T) o);
+          Assertions.assertEquals(expected, actual, err);
+        });
+  }
 
-	@Override
-	public ErroringAsserts<T> assertsFor(HapiApiSpec spec) {
-		return new BaseErroringAsserts<>(testProviders.stream()
-				.map(p -> p.apply(spec))
-				.collect(Collectors.toList()));
-	}
+  @Override
+  public ErroringAsserts<T> assertsFor(HapiApiSpec spec) {
+    return new BaseErroringAsserts<>(
+        testProviders.stream().map(p -> p.apply(spec)).collect(Collectors.toList()));
+  }
 }

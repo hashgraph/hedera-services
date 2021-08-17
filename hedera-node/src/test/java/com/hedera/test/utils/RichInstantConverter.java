@@ -25,18 +25,16 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
-/**
- * Converts string to JTimestamp. Format of string is "seconds_nanos".
- */
+/** Converts string to JTimestamp. Format of string is "seconds_nanos". */
 public final class RichInstantConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext)
-			throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		final var splits = ConverterUtils.getPartsIfValid(inputString, 0, "_", "Instant");
-		return new RichInstant(Long.parseLong(splits[0]), Integer.parseInt(splits[1]));
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    final var splits = ConverterUtils.getPartsIfValid(inputString, 0, "_", "Instant");
+    return new RichInstant(Long.parseLong(splits[0]), Integer.parseInt(splits[1]));
+  }
 }

@@ -20,124 +20,116 @@ package com.hedera.services.bdd.spec.keys;
  * ‍
  */
 
-import org.junit.jupiter.api.Assertions;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Assertions;
 
 public class KeyShape extends SigControl {
-	public static final KeyShape SIMPLE = new KeyShape(Nature.SIG_ON);
+  public static final KeyShape SIMPLE = new KeyShape(Nature.SIG_ON);
 
-	protected KeyShape(SigControl.Nature nature) {
-		super(nature);
-	}
+  protected KeyShape(SigControl.Nature nature) {
+    super(nature);
+  }
 
-	protected KeyShape(SigControl... childControls) {
-		super(childControls);
-	}
+  protected KeyShape(SigControl... childControls) {
+    super(childControls);
+  }
 
-	protected KeyShape(int threshold, SigControl... childControls) {
-		super(threshold, childControls);
-	}
+  protected KeyShape(int threshold, SigControl... childControls) {
+    super(threshold, childControls);
+  }
 
-	public static KeyShape listOf(int N) {
-		return listOf(IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
-	}
+  public static KeyShape listOf(int N) {
+    return listOf(IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
+  }
 
-	public static KeyShape listOf(KeyShape... childShapes) {
-		return new KeyShape(childShapes);
-	}
+  public static KeyShape listOf(KeyShape... childShapes) {
+    return new KeyShape(childShapes);
+  }
 
-	public static KeyShape threshOf(int M, int N) {
-		Assertions.assertTrue(M <= N, "A threshold key requires M <= N!");
-		return threshOf(M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
-	}
+  public static KeyShape threshOf(int M, int N) {
+    Assertions.assertTrue(M <= N, "A threshold key requires M <= N!");
+    return threshOf(
+        M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
+  }
 
-	public static KeyShape threshOf(int M, KeyShape... childShapes) {
-		return new KeyShape(M, childShapes);
-	}
+  public static KeyShape threshOf(int M, KeyShape... childShapes) {
+    return new KeyShape(M, childShapes);
+  }
 
-	public static KeyShape randomly(
-			int depthAtMost,
-			IntSupplier listSizeSupplier,
-			Supplier<KeyFactory.KeyType> typeSupplier,
-			Supplier<Map.Entry<Integer, Integer>> thresholdSizesSupplier
-	) {
-		KeyFactory.KeyType type = (depthAtMost == 1) ? KeyFactory.KeyType.SIMPLE : typeSupplier.get();
-		switch (type) {
-			case SIMPLE:
-				return SIMPLE;
-			case LIST:
-				int listSize = listSizeSupplier.getAsInt();
-				return listOf(randomlyListing(
-						listSize,
-						depthAtMost - 1,
-						listSizeSupplier,
-						typeSupplier,
-						thresholdSizesSupplier));
-			case THRESHOLD:
-				Map.Entry<Integer, Integer> mOfN = thresholdSizesSupplier.get();
-				int M = mOfN.getKey(), N = mOfN.getValue();
-				return threshOf(M, randomlyListing(
-						N,
-						depthAtMost - 1,
-						listSizeSupplier,
-						typeSupplier,
-						thresholdSizesSupplier));
+  public static KeyShape randomly(
+      int depthAtMost,
+      IntSupplier listSizeSupplier,
+      Supplier<KeyFactory.KeyType> typeSupplier,
+      Supplier<Map.Entry<Integer, Integer>> thresholdSizesSupplier) {
+    KeyFactory.KeyType type = (depthAtMost == 1) ? KeyFactory.KeyType.SIMPLE : typeSupplier.get();
+    switch (type) {
+      case SIMPLE:
+        return SIMPLE;
+      case LIST:
+        int listSize = listSizeSupplier.getAsInt();
+        return listOf(
+            randomlyListing(
+                listSize, depthAtMost - 1, listSizeSupplier, typeSupplier, thresholdSizesSupplier));
+      case THRESHOLD:
+        Map.Entry<Integer, Integer> mOfN = thresholdSizesSupplier.get();
+        int M = mOfN.getKey(), N = mOfN.getValue();
+        return threshOf(
+            M,
+            randomlyListing(
+                N, depthAtMost - 1, listSizeSupplier, typeSupplier, thresholdSizesSupplier));
+    }
+    throw new IllegalStateException("Unanticipated key type - " + type);
+  }
 
-		}
-		throw new IllegalStateException("Unanticipated key type - " + type);
-	}
+  private static KeyShape[] randomlyListing(
+      int N,
+      int depthAtMost,
+      IntSupplier listSizeSupplier,
+      Supplier<KeyFactory.KeyType> typeSupplier,
+      Supplier<Map.Entry<Integer, Integer>> thresholdSizesSupplier) {
+    return IntStream.range(0, N)
+        .mapToObj(
+            ignore -> randomly(depthAtMost, listSizeSupplier, typeSupplier, thresholdSizesSupplier))
+        .toArray(n -> new KeyShape[n]);
+  }
 
-	private static KeyShape[] randomlyListing(
-			int N,
-			int depthAtMost,
-			IntSupplier listSizeSupplier,
-			Supplier<KeyFactory.KeyType> typeSupplier,
-			Supplier<Map.Entry<Integer, Integer>> thresholdSizesSupplier
-	) {
-		return IntStream
-				.range(0, N)
-				.mapToObj(ignore ->
-						randomly(
-								depthAtMost,
-								listSizeSupplier,
-								typeSupplier,
-								thresholdSizesSupplier))
-				.toArray(n -> new KeyShape[n]);
-	}
+  public static List<Object> sigs(Object... controls) {
+    return List.of(controls);
+  }
 
-	public static List<Object> sigs(Object... controls) {
-		return List.of(controls);
-	}
-
-	public SigControl signedWith(Object control) {
-		if (SIMPLE.getNature().equals(this.getNature())) {
-			Assertions.assertTrue(
-					(control instanceof SigControl),
-					"Shape is simple but multiple controls given!");
-			return (SigControl) control;
-		} else {
-			KeyShape[] childShapes = (KeyShape[]) getChildControls();
-			int size = childShapes.length;
-			List<Object> controls = (List<Object>) control;
-			Assertions.assertEquals(
-					size, controls.size(),
-					"Shape is " + this.getNature() + "[n=" + size
-							+ (this.getNature().equals(Nature.THRESHOLD) ? ",m=" + this.getThreshold() : "")
-							+ "] but " + controls.size() + " controls given!");
-			SigControl[] childControls = IntStream
-					.range(0, size)
-					.mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
-					.toArray(n -> new SigControl[n]);
-			if (this.getNature() == Nature.LIST) {
-				return listSigs(childControls);
-			} else {
-				return threshSigs(this.getThreshold(), childControls);
-			}
-		}
-	}
+  public SigControl signedWith(Object control) {
+    if (SIMPLE.getNature().equals(this.getNature())) {
+      Assertions.assertTrue(
+          (control instanceof SigControl), "Shape is simple but multiple controls given!");
+      return (SigControl) control;
+    } else {
+      KeyShape[] childShapes = (KeyShape[]) getChildControls();
+      int size = childShapes.length;
+      List<Object> controls = (List<Object>) control;
+      Assertions.assertEquals(
+          size,
+          controls.size(),
+          "Shape is "
+              + this.getNature()
+              + "[n="
+              + size
+              + (this.getNature().equals(Nature.THRESHOLD) ? ",m=" + this.getThreshold() : "")
+              + "] but "
+              + controls.size()
+              + " controls given!");
+      SigControl[] childControls =
+          IntStream.range(0, size)
+              .mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
+              .toArray(n -> new SigControl[n]);
+      if (this.getNature() == Nature.LIST) {
+        return listSigs(childControls);
+      } else {
+        return threshSigs(this.getThreshold(), childControls);
+      }
+    }
+  }
 }

@@ -20,63 +20,58 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.fee.FeeBuilder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.fee.FeeBuilder;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class TokenGetNftInfosUsageTest {
-	private TokenGetNftInfosUsage subject;
-	private TokenID id;
-	private List<ByteString> metadata;
+  private TokenGetNftInfosUsage subject;
+  private TokenID id;
+  private List<ByteString> metadata;
 
-	@BeforeEach
-	void setup() {
-		metadata = List.of(ByteString.copyFromUtf8("some metadata"));
-		id = TokenID.newBuilder()
-				.setShardNum(0)
-				.setRealmNum(0)
-				.setTokenNum(1)
-				.build();
-		subject = TokenGetNftInfosUsage.newEstimate(tokenNftInfosQuery());
-	}
+  @BeforeEach
+  void setup() {
+    metadata = List.of(ByteString.copyFromUtf8("some metadata"));
+    id = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(1).build();
+    subject = TokenGetNftInfosUsage.newEstimate(tokenNftInfosQuery());
+  }
 
-	@Test
-	void assessesEverything() {
-		// given:
-		subject.givenMetadata(metadata);
+  @Test
+  void assessesEverything() {
+    // given:
+    subject.givenMetadata(metadata);
 
-		// when:
-		var usage = subject.get();
-		int additionalRb = 0;
-		for (ByteString m : metadata) {
-			additionalRb += m.size();
-		}
-		var expectedBytes = BASIC_QUERY_RES_HEADER
-				+ NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size()
-				+ additionalRb;
+    // when:
+    var usage = subject.get();
+    int additionalRb = 0;
+    for (ByteString m : metadata) {
+      additionalRb += m.size();
+    }
+    var expectedBytes =
+        BASIC_QUERY_RES_HEADER
+            + NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size()
+            + additionalRb;
 
-		// then:
-		var node = usage.getNodedata();
-		assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
-		assertEquals(expectedBytes, node.getBpr());
-	}
+    // then:
+    var node = usage.getNodedata();
+    assertEquals(
+        FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
+    assertEquals(expectedBytes, node.getBpr());
+  }
 
-	private Query tokenNftInfosQuery() {
-		var op = TokenGetNftInfosQuery.newBuilder()
-				.setTokenID(id)
-				.build();
-		return Query.newBuilder().setTokenGetNftInfos(op).build();
-	}
+  private Query tokenNftInfosQuery() {
+    var op = TokenGetNftInfosQuery.newBuilder().setTokenID(id).build();
+    return Query.newBuilder().setTokenGetNftInfos(op).build();
+  }
 }

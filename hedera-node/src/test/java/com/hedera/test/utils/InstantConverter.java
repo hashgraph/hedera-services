@@ -20,21 +20,20 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import java.time.Instant;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
-import java.time.Instant;
-
 public final class InstantConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext)
-			throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		var l = Long.valueOf(inputString);
-		return Instant.ofEpochSecond(l / 1_000_000_000L, (int) (l % 1_000_000_000L));
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    var l = Long.valueOf(inputString);
+    return Instant.ofEpochSecond(l / 1_000_000_000L, (int) (l % 1_000_000_000L));
+  }
 }

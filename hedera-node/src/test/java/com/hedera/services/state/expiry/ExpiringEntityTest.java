@@ -20,83 +20,81 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Consumer;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.services.state.submerkle.EntityId;
+import java.util.function.Consumer;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class ExpiringEntityTest {
 
-    Consumer<EntityId> consumer, otherConsumer;
-    long expiry = 1_234_567L, otherExpiry = 1_567_234L;
-    EntityId id, otherId;
+  Consumer<EntityId> consumer, otherConsumer;
+  long expiry = 1_234_567L, otherExpiry = 1_567_234L;
+  EntityId id, otherId;
+  ExpiringEntity subject, other;
 
-    ExpiringEntity subject, other;
+  @BeforeEach
+  void setup() {
+    consumer = mock(Consumer.class);
+    otherConsumer = mock(Consumer.class);
 
-    @BeforeEach
-    void setup() {
-        consumer = mock(Consumer.class);
-        otherConsumer = mock(Consumer.class);
+    id = new EntityId(0, 0, 123);
+    otherId = new EntityId(0, 0, 456);
 
-        id = new EntityId(0, 0, 123);
-        otherId = new EntityId(0, 0, 456);
+    subject = new ExpiringEntity(id, consumer, expiry);
+  }
 
-        subject = new ExpiringEntity(id, consumer, expiry);
-    }
+  @Test
+  void validGetters() {
+    assertEquals(id, subject.id());
+    assertEquals(consumer, subject.consumer());
+    assertEquals(expiry, subject.expiry());
+  }
 
-    @Test
-    void validGetters() {
-        assertEquals(id, subject.id());
-        assertEquals(consumer, subject.consumer());
-        assertEquals(expiry, subject.expiry());
-    }
+  @Test
+  void validEqualityChecks() {
+    // expect:
+    Assertions.assertEquals(subject, subject);
+    // and:
+    assertNotEquals(subject, null);
+    // and:
+    assertNotEquals(subject, new Object());
+  }
 
-    @Test
-    void validEqualityChecks() {
-        // expect:
-        Assertions.assertEquals(subject, subject);
-        // and:
-        assertNotEquals(subject, null);
-        // and:
-        assertNotEquals(subject, new Object());
-    }
+  @Test
+  void failDifferentExpiry() {
+    // given:
+    other = new ExpiringEntity(id, consumer, otherExpiry);
 
-    @Test
-    void failDifferentExpiry() {
-        // given:
-        other = new ExpiringEntity(id, consumer, otherExpiry);
+    // expect:
+    assertNotEquals(subject, other);
+    // and:
+    assertNotEquals(subject.hashCode(), other.hashCode());
+  }
 
-        // expect:
-        assertNotEquals(subject, other);
-        // and:
-        assertNotEquals(subject.hashCode(), other.hashCode());
-    }
+  @Test
+  void failDifferentConsumer() {
+    // given:
+    other = new ExpiringEntity(id, otherConsumer, expiry);
 
-    @Test
-    void failDifferentConsumer() {
-        // given:
-        other = new ExpiringEntity(id, otherConsumer, expiry);
+    // expect:
+    assertNotEquals(subject, other);
+    // and:
+    assertNotEquals(subject.hashCode(), other.hashCode());
+  }
 
-        // expect:
-        assertNotEquals(subject, other);
-        // and:
-        assertNotEquals(subject.hashCode(), other.hashCode());
-    }
+  @Test
+  void failDifferentId() {
+    // given:
+    other = new ExpiringEntity(otherId, consumer, expiry);
 
-    @Test
-    void failDifferentId() {
-        // given:
-        other = new ExpiringEntity(otherId, consumer, expiry);
-
-        // expect:
-        assertNotEquals(subject, other);
-        // and:
-        assertNotEquals(subject.hashCode(), other.hashCode());
-    }
+    // expect:
+    assertNotEquals(subject, other);
+    // and:
+    assertNotEquals(subject.hashCode(), other.hashCode());
+  }
 }

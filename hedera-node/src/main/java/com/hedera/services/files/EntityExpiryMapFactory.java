@@ -23,46 +23,43 @@ package com.hedera.services.files;
 import com.google.common.primitives.Longs;
 import com.hedera.services.files.store.BytesStoreAdapter;
 import com.hedera.services.state.submerkle.EntityId;
-
 import java.util.Map;
 import java.util.regex.Pattern;
 
 public final class EntityExpiryMapFactory {
-	private static final String LEGACY_PATH_TEMPLATE = "/%d/e%d";
-	private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/e(\\d+)");
-	private static final int REALM_INDEX = 1;
-	private static final int NUM_INDEX = 2;
+  private static final String LEGACY_PATH_TEMPLATE = "/%d/e%d";
+  private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/e(\\d+)");
+  private static final int REALM_INDEX = 1;
+  private static final int NUM_INDEX = 2;
 
-	EntityExpiryMapFactory() {
-		throw new IllegalStateException();
-	}
+  EntityExpiryMapFactory() {
+    throw new IllegalStateException();
+  }
 
-	public static Map<EntityId, Long> entityExpiryMapFrom(Map<String, byte[]> store) {
-		return new BytesStoreAdapter<>(
-				EntityId.class,
-				EntityExpiryMapFactory::toLong,
-				Longs::toByteArray,
-				EntityExpiryMapFactory::toEid,
-				EntityExpiryMapFactory::toKeyString,
-				store);
-	}
+  public static Map<EntityId, Long> entityExpiryMapFrom(Map<String, byte[]> store) {
+    return new BytesStoreAdapter<>(
+        EntityId.class,
+        EntityExpiryMapFactory::toLong,
+        Longs::toByteArray,
+        EntityExpiryMapFactory::toEid,
+        EntityExpiryMapFactory::toKeyString,
+        store);
+  }
 
-	static EntityId toEid(String key) {
-		var matcher = LEGACY_PATH_PATTERN.matcher(key);
-		var flag = matcher.matches();
-		assert flag;
+  static EntityId toEid(String key) {
+    var matcher = LEGACY_PATH_PATTERN.matcher(key);
+    var flag = matcher.matches();
+    assert flag;
 
-		return new EntityId(
-				0,
-				Long.parseLong(matcher.group(REALM_INDEX)),
-				Long.parseLong(matcher.group(NUM_INDEX)));
-	}
+    return new EntityId(
+        0, Long.parseLong(matcher.group(REALM_INDEX)), Long.parseLong(matcher.group(NUM_INDEX)));
+  }
 
-	static Long toLong(byte[] bytes) {
-		return (bytes == null) ? null : Longs.fromByteArray(bytes);
-	}
+  static Long toLong(byte[] bytes) {
+    return (bytes == null) ? null : Longs.fromByteArray(bytes);
+  }
 
-	static String toKeyString(EntityId id) {
-		return String.format(LEGACY_PATH_TEMPLATE, id.realm(), id.num());
-	}
+  static String toKeyString(EntityId id) {
+    return String.format(LEGACY_PATH_TEMPLATE, id.realm(), id.num());
+  }
 }

@@ -20,6 +20,14 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenBurnUsage;
@@ -30,89 +38,76 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-import java.util.function.BiFunction;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.verify;
-
 class TokenBurnResourceUsageTest {
-	private TokenBurnResourceUsage subject;
+  private TokenBurnResourceUsage subject;
 
-	private TransactionBody nonTokenBurnTxn;
-	private TransactionBody tokenBurnTxn;
+  private TransactionBody nonTokenBurnTxn;
+  private TransactionBody tokenBurnTxn;
 
-	private StateView view;
-	private int numSigs = 10, sigsSize = 100, numPayerKeys = 3, serialNumsCount = 1;
-	private SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	private SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	private FeeData expected;
+  private StateView view;
+  private int numSigs = 10, sigsSize = 100, numPayerKeys = 3, serialNumsCount = 1;
+  private SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+  private SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+  private FeeData expected;
 
-	private TokenBurnUsage usage;
-	private BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory;
-	private TokenID token;
-	private TokenBurnTransactionBody txBody;
+  private TokenBurnUsage usage;
+  private BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory;
+  private TokenID token;
+  private TokenBurnTransactionBody txBody;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
-		token = mock(TokenID.class);
+  @BeforeEach
+  void setup() throws Throwable {
+    expected = mock(FeeData.class);
+    view = mock(StateView.class);
+    token = mock(TokenID.class);
 
-		tokenBurnTxn = mock(TransactionBody.class);
-		given(tokenBurnTxn.hasTokenBurn()).willReturn(true);
+    tokenBurnTxn = mock(TransactionBody.class);
+    given(tokenBurnTxn.hasTokenBurn()).willReturn(true);
 
-		txBody = mock(TokenBurnTransactionBody.class);
-		given(tokenBurnTxn.getTokenBurn()).willReturn(txBody);
-		given(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()).willReturn(serialNumsCount);
-		given(txBody.getToken()).willReturn(token);
+    txBody = mock(TokenBurnTransactionBody.class);
+    given(tokenBurnTxn.getTokenBurn()).willReturn(txBody);
+    given(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()).willReturn(serialNumsCount);
+    given(txBody.getToken()).willReturn(token);
 
-		nonTokenBurnTxn = mock(TransactionBody.class);
-		given(nonTokenBurnTxn.hasTokenBurn()).willReturn(false);
+    nonTokenBurnTxn = mock(TransactionBody.class);
+    given(nonTokenBurnTxn.hasTokenBurn()).willReturn(false);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenBurnUsage>)mock(BiFunction.class);
-		given(factory.apply(tokenBurnTxn, sigUsage)).willReturn(usage);
+    factory = (BiFunction<TransactionBody, SigUsage, TokenBurnUsage>) mock(BiFunction.class);
+    given(factory.apply(tokenBurnTxn, sigUsage)).willReturn(usage);
 
-		usage = mock(TokenBurnUsage.class);
-		given(usage.get()).willReturn(expected);
+    usage = mock(TokenBurnUsage.class);
+    given(usage.get()).willReturn(expected);
 
-		TokenBurnResourceUsage.factory = factory;
-		given(factory.apply(tokenBurnTxn, sigUsage)).willReturn(usage);
+    TokenBurnResourceUsage.factory = factory;
+    given(factory.apply(tokenBurnTxn, sigUsage)).willReturn(usage);
 
-		subject = new TokenBurnResourceUsage();
-	}
+    subject = new TokenBurnResourceUsage();
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenBurnTxn));
-		assertFalse(subject.applicableTo(nonTokenBurnTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(tokenBurnTxn));
+    assertFalse(subject.applicableTo(nonTokenBurnTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
-		given(factory.apply(any(), any())).willReturn(usage);
-		given(usage.givenSubType(any())).willReturn(usage);
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    // expect:
+    given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
+    given(factory.apply(any(), any())).willReturn(usage);
+    given(usage.givenSubType(any())).willReturn(usage);
 
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenBurnTxn, obj, view));
-		verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
+    assertEquals(expected, subject.usageGiven(tokenBurnTxn, obj, view));
+    verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
 
-		given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenBurnTxn, obj, view));
-		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-	}
+    given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
+    assertEquals(expected, subject.usageGiven(tokenBurnTxn, obj, view));
+    verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+  }
 }

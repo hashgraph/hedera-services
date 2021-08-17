@@ -33,62 +33,80 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
-
 import java.util.Map;
 
 /**
- * Defines a type that gives access to several commonly referenced
- * parts of a Hedera Services gRPC {@link Transaction}.
+ * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC
+ * {@link Transaction}.
  */
 public interface TxnAccessor {
-    int sigMapSize();
-    int numSigPairs();
-    SignatureMap getSigMap();
-    default PubKeyToSigBytes getPkToSigsFn() {
-        throw new UnsupportedOperationException();
-    }
-    default void setSigMeta(RationalizedSigMeta sigMeta) {
-        throw new UnsupportedOperationException();
-    }
-    default RationalizedSigMeta getSigMeta() {
-        throw new UnsupportedOperationException();
-    }
+  int sigMapSize();
 
-    default BaseTransactionMeta baseUsageMeta() {
-        throw new UnsupportedOperationException();
-    }
-    default CryptoTransferMeta availXferUsageMeta() {
-        throw new UnsupportedOperationException();
-    }
-    default SubmitMessageMeta availSubmitUsageMeta() {
-        throw new UnsupportedOperationException();
-    }
+  int numSigPairs();
 
-    long getOfferedFee();
-    AccountID getPayer();
-    TransactionID getTxnId();
-    HederaFunctionality getFunction();
-    SubType getSubType();
+  SignatureMap getSigMap();
 
-    byte[] getMemoUtf8Bytes();
-    String getMemo();
-    boolean memoHasZeroByte();
+  default PubKeyToSigBytes getPkToSigsFn() {
+    throw new UnsupportedOperationException();
+  }
 
-    byte[] getHash();
-    byte[] getTxnBytes();
-    byte[] getSignedTxnWrapperBytes();
-    Transaction getSignedTxnWrapper();
-    TransactionBody getTxn();
+  default void setSigMeta(RationalizedSigMeta sigMeta) {
+    throw new UnsupportedOperationException();
+  }
 
-    boolean canTriggerTxn();
-    boolean isTriggeredTxn();
-    ScheduleID getScheduleRef();
+  default RationalizedSigMeta getSigMeta() {
+    throw new UnsupportedOperationException();
+  }
 
-    default SwirldTransaction getPlatformTxn() {
-        throw new UnsupportedOperationException();
-    }
+  default BaseTransactionMeta baseUsageMeta() {
+    throw new UnsupportedOperationException();
+  }
 
-    default Map<String, Object> getSpanMap() {
-        throw new UnsupportedOperationException();
-    }
+  default CryptoTransferMeta availXferUsageMeta() {
+    throw new UnsupportedOperationException();
+  }
+
+  default SubmitMessageMeta availSubmitUsageMeta() {
+    throw new UnsupportedOperationException();
+  }
+
+  long getOfferedFee();
+
+  AccountID getPayer();
+
+  TransactionID getTxnId();
+
+  HederaFunctionality getFunction();
+
+  SubType getSubType();
+
+  byte[] getMemoUtf8Bytes();
+
+  String getMemo();
+
+  boolean memoHasZeroByte();
+
+  byte[] getHash();
+
+  byte[] getTxnBytes();
+
+  byte[] getSignedTxnWrapperBytes();
+
+  Transaction getSignedTxnWrapper();
+
+  TransactionBody getTxn();
+
+  boolean canTriggerTxn();
+
+  boolean isTriggeredTxn();
+
+  ScheduleID getScheduleRef();
+
+  default SwirldTransaction getPlatformTxn() {
+    throw new UnsupportedOperationException();
+  }
+
+  default Map<String, Object> getSpanMap() {
+    throw new UnsupportedOperationException();
+  }
 }

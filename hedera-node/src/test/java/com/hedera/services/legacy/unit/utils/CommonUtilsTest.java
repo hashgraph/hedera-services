@@ -20,29 +20,28 @@ package com.hedera.services.legacy.unit.utils;
  * ‍
  */
 
-import com.hedera.services.state.logic.NetworkCtxManager;
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.state.logic.NetworkCtxManager;
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+
 class CommonUtilsTest {
-	@Test
-	void isSameDayUTCTest() {
-		Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
-		Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
-		Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");
-		Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
-		Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
+  @Test
+  void isSameDayUTCTest() {
+    Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
+    Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
+    Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");
+    Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
+    Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
 
-		assertTrue(NetworkCtxManager.inSameUtcDay(instant1_1, instant1_2));
+    assertTrue(NetworkCtxManager.inSameUtcDay(instant1_1, instant1_2));
 
-		assertFalse(NetworkCtxManager.inSameUtcDay(instant1_1, instant2_1));
-		assertFalse(NetworkCtxManager.inSameUtcDay(instant1_2, instant2_1));
+    assertFalse(NetworkCtxManager.inSameUtcDay(instant1_1, instant2_1));
+    assertFalse(NetworkCtxManager.inSameUtcDay(instant1_2, instant2_1));
 
-		assertTrue(NetworkCtxManager.inSameUtcDay(instant2_1, instant2_2));
-		assertTrue(NetworkCtxManager.inSameUtcDay(instant2_2, instant2_3));
-	}
+    assertTrue(NetworkCtxManager.inSameUtcDay(instant2_1, instant2_2));
+    assertTrue(NetworkCtxManager.inSameUtcDay(instant2_2, instant2_3));
+  }
 }

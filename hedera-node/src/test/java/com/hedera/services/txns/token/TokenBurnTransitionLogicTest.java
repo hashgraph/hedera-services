@@ -20,6 +20,21 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
@@ -36,257 +51,235 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class TokenBurnTransitionLogicTest {
-	private final long amount = 123L;
-	private final TokenID grpcId = IdUtils.asToken("1.2.3");
-	private final Id id = new Id(1, 2, 3);
-	private final Id treasuryId = new Id(2, 4, 6);
-	private final Account treasury = new Account(treasuryId);
+  private final long amount = 123L;
+  private final TokenID grpcId = IdUtils.asToken("1.2.3");
+  private final Id id = new Id(1, 2, 3);
+  private final Id treasuryId = new Id(2, 4, 6);
+  private final Account treasury = new Account(treasuryId);
 
-	@Mock
-	private Token token;
-	@Mock
-	private TypedTokenStore store;
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private PlatformTxnAccessor accessor;
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
+  @Mock private Token token;
+  @Mock private TypedTokenStore store;
+  @Mock private TransactionContext txnCtx;
+  @Mock private PlatformTxnAccessor accessor;
+  @Mock private OptionValidator validator;
+  @Mock private AccountStore accountStore;
+  @Mock private GlobalDynamicProperties dynamicProperties;
 
-	private TokenRelationship treasuryRel;
-	private TransactionBody tokenBurnTxn;
+  private TokenRelationship treasuryRel;
+  private TransactionBody tokenBurnTxn;
 
-	private TokenBurnTransitionLogic subject;
+  private TokenBurnTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new TokenBurnTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
-	}
+  @BeforeEach
+  private void setup() {
+    subject =
+        new TokenBurnTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
+  }
 
-	@Test
-	void followsHappyPathForCommon() {
-		// setup:
-		treasuryRel = new TokenRelationship(token, treasury);
+  @Test
+  void followsHappyPathForCommon() {
+    // setup:
+    treasuryRel = new TokenRelationship(token, treasury);
 
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenBurnTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getTreasury()).willReturn(treasury);
-		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		// when:
-		subject.doStateTransition();
+    givenValidTxnCtx();
+    given(accessor.getTxn()).willReturn(tokenBurnTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(store.loadToken(id)).willReturn(token);
+    given(token.getTreasury()).willReturn(treasury);
+    given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
+    given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(token).burn(treasuryRel, amount);
-		verify(store).persistToken(token);
-		verify(store).persistTokenRelationships(List.of(treasuryRel));
-	}
+    // then:
+    verify(token).burn(treasuryRel, amount);
+    verify(store).persistToken(token);
+    verify(store).persistTokenRelationships(List.of(treasuryRel));
+  }
 
-	@Test
-	void followsHappyPathForUnique() {
-		// setup:
-		treasuryRel = new TokenRelationship(token, treasury);
+  @Test
+  void followsHappyPathForUnique() {
+    // setup:
+    treasuryRel = new TokenRelationship(token, treasury);
 
-		givenValidUniqueTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenBurnTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getTreasury()).willReturn(treasury);
-		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		// when:
-		subject.doStateTransition();
+    givenValidUniqueTxnCtx();
+    given(accessor.getTxn()).willReturn(tokenBurnTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(store.loadToken(id)).willReturn(token);
+    given(token.getTreasury()).willReturn(treasury);
+    given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
+    given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(token).getType();
-		verify(store).loadUniqueTokens(token, tokenBurnTxn.getTokenBurn().getSerialNumbersList());
-		verify(token).burn(any(OwnershipTracker.class), eq(treasuryRel), any(List.class));
-		verify(store).persistToken(token);
-		verify(store).persistTokenRelationships(List.of(treasuryRel));
-		verify(store).persistTrackers(any(OwnershipTracker.class));
-		verify(accountStore).persistAccount(any(Account.class));
-	}
+    // then:
+    verify(token).getType();
+    verify(store).loadUniqueTokens(token, tokenBurnTxn.getTokenBurn().getSerialNumbersList());
+    verify(token).burn(any(OwnershipTracker.class), eq(treasuryRel), any(List.class));
+    verify(store).persistToken(token);
+    verify(store).persistTokenRelationships(List.of(treasuryRel));
+    verify(store).persistTrackers(any(OwnershipTracker.class));
+    verify(accountStore).persistAccount(any(Account.class));
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(tokenBurnTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(tokenBurnTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void acceptsValidTxn() {
-		givenValidTxnCtx();
+  @Test
+  void acceptsValidTxn() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-	@Test
-	void rejectsUniqueWhenNftsNotEnabled() {
-		givenValidUniqueTxnCtx();
-		given(dynamicProperties.areNftsEnabled()).willReturn(false);
+  @Test
+  void rejectsUniqueWhenNftsNotEnabled() {
+    givenValidUniqueTxnCtx();
+    given(dynamicProperties.areNftsEnabled()).willReturn(false);
 
-		// expect:
-		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+    // expect:
+    assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-	@Test
-	void rejectsMissingToken() {
-		givenMissingToken();
+  @Test
+  void rejectsMissingToken() {
+    givenMissingToken();
 
-		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+    // expect:
+    assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-	@Test
-	void rejectsInvalidNegativeAmount() {
-		givenInvalidNegativeAmount();
+  @Test
+  void rejectsInvalidNegativeAmount() {
+    givenInvalidNegativeAmount();
 
-		// expect:
-		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+    // expect:
+    assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-	@Test
-	void rejectsInvalidZeroAmount() {
-		givenInvalidZeroAmount();
+  @Test
+  void rejectsInvalidZeroAmount() {
+    givenInvalidZeroAmount();
 
-		// expect:
-		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+    // expect:
+    assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-	@Test
-	void rejectsInvalidTxnBodyWithBothProps() {
-		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+  @Test
+  void rejectsInvalidTxnBodyWithBothProps() {
+    given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.addAllSerialNumbers(List.of(1L))
-								.setAmount(1)
-								.setToken(grpcId))
-				.build();
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(
+                TokenBurnTransactionBody.newBuilder()
+                    .addAllSerialNumbers(List.of(1L))
+                    .setAmount(1)
+                    .setToken(grpcId))
+            .build();
 
-		assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+    assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
+  @Test
+  void rejectsInvalidTxnBodyWithNoProps() {
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(TokenBurnTransactionBody.newBuilder().setToken(grpcId))
+            .build();
 
-	@Test
-	void rejectsInvalidTxnBodyWithNoProps() {
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.setToken(grpcId))
-				.build();
+    assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+  @Test
+  void rejectsInvalidTxnBodyWithInvalidBatch() {
+    given(dynamicProperties.areNftsEnabled()).willReturn(true);
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(
+                TokenBurnTransactionBody.newBuilder()
+                    .addAllSerialNumbers(
+                        LongStream.range(-20L, 0L).boxed().collect(Collectors.toList()))
+                    .setToken(grpcId))
+            .build();
 
-	@Test
-	void rejectsInvalidTxnBodyWithInvalidBatch() {
-		given(dynamicProperties.areNftsEnabled()).willReturn(true);
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.addAllSerialNumbers(LongStream.range(-20L, 0L).boxed().collect(Collectors.toList()))
-								.setToken(grpcId))
-				.build();
+    given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()))
+        .willReturn(OK);
+    assertEquals(INVALID_NFT_ID, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(OK);
-		assertEquals(INVALID_NFT_ID, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+  @Test
+  void propagatesErrorOnBatchSizeExceeded() {
+    given(dynamicProperties.areNftsEnabled()).willReturn(true);
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(
+                TokenBurnTransactionBody.newBuilder()
+                    .addAllSerialNumbers(
+                        LongStream.range(1, 5).boxed().collect(Collectors.toList()))
+                    .setToken(grpcId))
+            .build();
 
-	@Test
-	void propagatesErrorOnBatchSizeExceeded() {
-		given(dynamicProperties.areNftsEnabled()).willReturn(true);
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.addAllSerialNumbers(LongStream.range(1, 5).boxed().collect(Collectors.toList()))
-								.setToken(grpcId))
-				.build();
+    given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()))
+        .willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+    assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenBurnTxn));
+  }
 
-		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(
-				BATCH_SIZE_LIMIT_EXCEEDED);
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenBurnTxn));
-	}
+  private void givenValidTxnCtx() {
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
+            .build();
+  }
 
-	private void givenValidTxnCtx() {
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
-						.setToken(grpcId)
-						.setAmount(amount))
-				.build();
-	}
+  private void givenValidUniqueTxnCtx() {
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(
+                TokenBurnTransactionBody.newBuilder()
+                    .setToken(grpcId)
+                    .addAllSerialNumbers(List.of(1L)))
+            .build();
+  }
 
-	private void givenValidUniqueTxnCtx() {
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
-						.setToken(grpcId)
-						.addAllSerialNumbers(List.of(1L)))
-				.build();
-	}
+  private void givenMissingToken() {
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(TokenBurnTransactionBody.newBuilder().build())
+            .build();
+  }
 
-	private void givenMissingToken() {
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.build()
-				).build();
-	}
+  private void givenInvalidNegativeAmount() {
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(
+                TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(-1).build())
+            .build();
+  }
 
-	private void givenInvalidNegativeAmount() {
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.setToken(grpcId)
-								.setAmount(-1)
-								.build()
-				).build();
-	}
-
-	private void givenInvalidZeroAmount() {
-		tokenBurnTxn = TransactionBody.newBuilder()
-				.setTokenBurn(
-						TokenBurnTransactionBody.newBuilder()
-								.setToken(grpcId)
-								.setAmount(0)
-								.build()
-				).build();
-	}
+  private void givenInvalidZeroAmount() {
+    tokenBurnTxn =
+        TransactionBody.newBuilder()
+            .setTokenBurn(
+                TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(0).build())
+            .build();
+  }
 }

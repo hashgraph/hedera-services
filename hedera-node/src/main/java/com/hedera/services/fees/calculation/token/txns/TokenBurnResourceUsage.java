@@ -31,27 +31,29 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-
 import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class TokenBurnResourceUsage implements TxnResourceUsageEstimator {
-	private static final ResourceUsageSubtypeHelper subtypeHelper = new ResourceUsageSubtypeHelper();
+  private static final ResourceUsageSubtypeHelper subtypeHelper = new ResourceUsageSubtypeHelper();
 
-	static BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory = TokenBurnUsage::newEstimate;
+  static BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory =
+      TokenBurnUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasTokenBurn();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasTokenBurn();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		final var target = txn.getTokenBurn().getToken();
-		Optional<TokenType> tokenType = view.tokenType(target);
-		SubType subType = subtypeHelper.determineTokenType(tokenType);
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
-		return estimate.get();
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    final var target = txn.getTokenBurn().getToken();
+    Optional<TokenType> tokenType = view.tokenType(target);
+    SubType subType = subtypeHelper.determineTokenType(tokenType);
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
+    return estimate.get();
+  }
 }

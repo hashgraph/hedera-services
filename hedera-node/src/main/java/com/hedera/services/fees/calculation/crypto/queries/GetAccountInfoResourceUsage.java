@@ -29,43 +29,44 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
 public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
-	private final CryptoOpsUsage cryptoOpsUsage;
+  private final CryptoOpsUsage cryptoOpsUsage;
 
-	public GetAccountInfoResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
-		this.cryptoOpsUsage = cryptoOpsUsage;
-	}
+  public GetAccountInfoResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
+    this.cryptoOpsUsage = cryptoOpsUsage;
+  }
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasCryptoGetInfo();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasCryptoGetInfo();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getCryptoGetInfo().getHeader().getResponseType());
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageGivenType(query, view, query.getCryptoGetInfo().getHeader().getResponseType());
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getCryptoGetInfo();
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    var op = query.getCryptoGetInfo();
 
-		var tgt = op.getAccountID();
-		var info = view.infoForAccount(tgt);
-		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
-		 * under the extraordinary circumstance that the desired account expired during the query
-		 * answer flow (which will now fail downstream with an appropriate status code); so
-		 * just return the default {@code FeeData} here. */
-		if (info.isEmpty()) {
-			return FeeData.getDefaultInstance();
-		}
-		var details = info.get();
-		var ctx = ExtantCryptoContext.newBuilder()
-				.setCurrentKey(details.getKey())
-				.setCurrentMemo(details.getMemo())
-				.setCurrentExpiry(details.getExpirationTime().getSeconds())
-				.setCurrentlyHasProxy(details.hasProxyAccountID())
-				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
-				.build();
-		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
-	}
+    var tgt = op.getAccountID();
+    var info = view.infoForAccount(tgt);
+    /* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
+     * under the extraordinary circumstance that the desired account expired during the query
+     * answer flow (which will now fail downstream with an appropriate status code); so
+     * just return the default {@code FeeData} here. */
+    if (info.isEmpty()) {
+      return FeeData.getDefaultInstance();
+    }
+    var details = info.get();
+    var ctx =
+        ExtantCryptoContext.newBuilder()
+            .setCurrentKey(details.getKey())
+            .setCurrentMemo(details.getMemo())
+            .setCurrentExpiry(details.getExpirationTime().getSeconds())
+            .setCurrentlyHasProxy(details.hasProxyAccountID())
+            .setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+            .build();
+    return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
+  }
 }

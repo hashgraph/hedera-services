@@ -20,6 +20,25 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -42,188 +61,174 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class GetAccountRecordsAnswerTest {
-	long fee = 1_234L;
-	StateView view;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	Transaction paymentTxn;
-	String node = "0.0.3";
-	String payer = "0.0.12345";
-	String target = payer;
-	MerkleAccount payerAccount;
-	OptionValidator optionValidator;
+  long fee = 1_234L;
+  StateView view;
+  FCMap<MerkleEntityId, MerkleAccount> accounts;
+  Transaction paymentTxn;
+  String node = "0.0.3";
+  String payer = "0.0.12345";
+  String target = payer;
+  MerkleAccount payerAccount;
+  OptionValidator optionValidator;
 
-	GetAccountRecordsAnswer subject;
+  GetAccountRecordsAnswer subject;
 
-	NodeLocalProperties nodeProps;
+  NodeLocalProperties nodeProps;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		payerAccount = MerkleAccountFactory.newAccount()
-				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
-				.proxy(asAccount("1.2.3"))
-				.senderThreshold(1_234L)
-				.receiverThreshold(4_321L)
-				.receiverSigRequired(true)
-				.balance(555L)
-				.autoRenewPeriod(1_000_000L)
-				.expirationTime(9_999_999L)
-				.get();
-		payerAccount.records().offer(recordOne());
-		payerAccount.records().offer(recordTwo());
+  @BeforeEach
+  private void setup() throws Throwable {
+    payerAccount =
+        MerkleAccountFactory.newAccount()
+            .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+            .proxy(asAccount("1.2.3"))
+            .senderThreshold(1_234L)
+            .receiverThreshold(4_321L)
+            .receiverSigRequired(true)
+            .balance(555L)
+            .autoRenewPeriod(1_000_000L)
+            .expirationTime(9_999_999L)
+            .get();
+    payerAccount.records().offer(recordOne());
+    payerAccount.records().offer(recordTwo());
 
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+    accounts = mock(FCMap.class);
+    given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
-		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
-		children.setAccounts(accounts);
-		view = new StateView(
-				null,
-				null,
-				nodeProps,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+    nodeProps = mock(NodeLocalProperties.class);
+    final StateChildren children = new StateChildren();
+    children.setAccounts(accounts);
+    view =
+        new StateView(
+            null,
+            null,
+            nodeProps,
+            children,
+            EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
-		optionValidator = mock(OptionValidator.class);
+    optionValidator = mock(OptionValidator.class);
 
-		subject = new GetAccountRecordsAnswer(new AnswerFunctions(), optionValidator);
-	}
+    subject = new GetAccountRecordsAnswer(new AnswerFunctions(), optionValidator);
+  }
 
-	@Test
-	void requiresAnswerOnlyCostAsExpected() throws Throwable {
-		// expect:
-		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
-		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
-	}
+  @Test
+  void requiresAnswerOnlyCostAsExpected() throws Throwable {
+    // expect:
+    assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
+    assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
+  }
 
-	@Test
-	void getsInvalidResponse() throws Throwable {
-		// setup:
-		Query query = validQuery(ANSWER_ONLY, fee, target);
+  @Test
+  void getsInvalidResponse() throws Throwable {
+    // setup:
+    Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		// when:
-		Response response = subject.responseGiven(query, view, ACCOUNT_DELETED, fee);
+    // when:
+    Response response = subject.responseGiven(query, view, ACCOUNT_DELETED, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetAccountRecords());
-		CryptoGetAccountRecordsResponse opResponse = response.getCryptoGetAccountRecords();
-		assertEquals(ACCOUNT_DELETED, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
-		assertEquals(fee, opResponse.getHeader().getCost());
-	}
+    // then:
+    assertTrue(response.hasCryptoGetAccountRecords());
+    CryptoGetAccountRecordsResponse opResponse = response.getCryptoGetAccountRecords();
+    assertEquals(ACCOUNT_DELETED, opResponse.getHeader().getNodeTransactionPrecheckCode());
+    assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
+    assertEquals(fee, opResponse.getHeader().getCost());
+  }
 
-	@Test
-	void getsCostAnswerResponse() throws Throwable {
-		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
+  @Test
+  void getsCostAnswerResponse() throws Throwable {
+    // setup:
+    Query query = validQuery(COST_ANSWER, fee, target);
 
-		// when:
-		Response response = subject.responseGiven(query, view, OK, fee);
+    // when:
+    Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetAccountRecords());
-		CryptoGetAccountRecordsResponse opResponse = response.getCryptoGetAccountRecords();
-		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, opResponse.getHeader().getResponseType());
-		assertEquals(fee, opResponse.getHeader().getCost());
-	}
+    // then:
+    assertTrue(response.hasCryptoGetAccountRecords());
+    CryptoGetAccountRecordsResponse opResponse = response.getCryptoGetAccountRecords();
+    assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+    assertEquals(COST_ANSWER, opResponse.getHeader().getResponseType());
+    assertEquals(fee, opResponse.getHeader().getCost());
+  }
 
-	@Test
-	void getsTheAccountRecords() throws Throwable {
-		// setup:
-		Query query = validQuery(ANSWER_ONLY, fee, target);
+  @Test
+  void getsTheAccountRecords() throws Throwable {
+    // setup:
+    Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		// when:
-		Response response = subject.responseGiven(query, view, OK, fee);
+    // when:
+    Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetAccountRecords());
-		CryptoGetAccountRecordsResponse opResponse = response.getCryptoGetAccountRecords();
-		assertTrue(opResponse.hasHeader(), "Missing response header!");
-		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
-		assertEquals(0, opResponse.getHeader().getCost());
-		// and:
-		assertEquals(ExpirableTxnRecord.allToGrpc(payerAccount.recordList()), opResponse.getRecordsList());
-	}
+    // then:
+    assertTrue(response.hasCryptoGetAccountRecords());
+    CryptoGetAccountRecordsResponse opResponse = response.getCryptoGetAccountRecords();
+    assertTrue(opResponse.hasHeader(), "Missing response header!");
+    assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+    assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
+    assertEquals(0, opResponse.getHeader().getCost());
+    // and:
+    assertEquals(
+        ExpirableTxnRecord.allToGrpc(payerAccount.recordList()), opResponse.getRecordsList());
+  }
 
-	@Test
-	void usesValidator() throws Throwable {
-		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
+  @Test
+  void usesValidator() throws Throwable {
+    // setup:
+    Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(ACCOUNT_DELETED);
+    given(optionValidator.queryableAccountStatus(asAccount(target), accounts))
+        .willReturn(ACCOUNT_DELETED);
 
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
+    // when:
+    ResponseCodeEnum validity = subject.checkValidity(query, view);
 
-		// then:
-		assertEquals(ACCOUNT_DELETED, validity);
-		// and:
-		verify(optionValidator).queryableAccountStatus(any(), any());
-	}
+    // then:
+    assertEquals(ACCOUNT_DELETED, validity);
+    // and:
+    verify(optionValidator).queryableAccountStatus(any(), any());
+  }
 
-	@Test
-	void getsExpectedPayment() throws Throwable {
-		// given:
-		Query query = validQuery(COST_ANSWER, fee, target);
+  @Test
+  void getsExpectedPayment() throws Throwable {
+    // given:
+    Query query = validQuery(COST_ANSWER, fee, target);
 
-		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
-	}
+    // expect:
+    assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
+  }
 
-	@Test
-	void recognizesFunction() {
-		// expect:
-		assertEquals(CryptoGetAccountRecords, subject.canonicalFunction());
-	}
+  @Test
+  void recognizesFunction() {
+    // expect:
+    assertEquals(CryptoGetAccountRecords, subject.canonicalFunction());
+  }
 
-	@Test
-	void requiresAnswerOnlyPayment() throws Throwable {
-		// expect:
-		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
-		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
-	}
+  @Test
+  void requiresAnswerOnlyPayment() throws Throwable {
+    // expect:
+    assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
+    assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
+  }
 
-	@Test
-	void getsValidity() {
-		// given:
-		Response response = Response.newBuilder().setCryptoGetAccountRecords(
-				CryptoGetAccountRecordsResponse.newBuilder()
-						.setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED))).build();
+  @Test
+  void getsValidity() {
+    // given:
+    Response response =
+        Response.newBuilder()
+            .setCryptoGetAccountRecords(
+                CryptoGetAccountRecordsResponse.newBuilder()
+                    .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+            .build();
 
-		// expect:
-		assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
-	}
+    // expect:
+    assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
+  }
 
-	private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {
-		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
-		QueryHeader.Builder header = QueryHeader.newBuilder()
-				.setPayment(this.paymentTxn)
-				.setResponseType(type);
-		CryptoGetAccountRecordsQuery.Builder op = CryptoGetAccountRecordsQuery.newBuilder()
-				.setHeader(header)
-				.setAccountID(asAccount(idLit));
-		return Query.newBuilder().setCryptoGetAccountRecords(op).build();
-	}
+  private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {
+    this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
+    QueryHeader.Builder header =
+        QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
+    CryptoGetAccountRecordsQuery.Builder op =
+        CryptoGetAccountRecordsQuery.newBuilder().setHeader(header).setAccountID(asAccount(idLit));
+    return Query.newBuilder().setCryptoGetAccountRecords(op).build();
+  }
 }

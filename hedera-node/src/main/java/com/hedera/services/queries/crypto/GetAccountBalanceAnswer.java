@@ -20,6 +20,12 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -37,99 +43,92 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
-
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 public class GetAccountBalanceAnswer implements AnswerService {
-	private final OptionValidator optionValidator;
+  private final OptionValidator optionValidator;
 
-	public GetAccountBalanceAnswer(OptionValidator optionValidator) {
-		this.optionValidator = optionValidator;
-	}
+  public GetAccountBalanceAnswer(OptionValidator optionValidator) {
+    this.optionValidator = optionValidator;
+  }
 
-	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
-		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
-		return validityOf(op, accounts);
-	}
+  @Override
+  public ResponseCodeEnum checkValidity(Query query, StateView view) {
+    FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
+    CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
+    return validityOf(op, accounts);
+  }
 
-	@Override
-	public boolean requiresNodePayment(Query query) {
-		return false;
-	}
+  @Override
+  public boolean requiresNodePayment(Query query) {
+    return false;
+  }
 
-	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
-		return false;
-	}
+  @Override
+  public boolean needsAnswerOnlyCost(Query query) {
+    return false;
+  }
 
-	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
-		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
+  @Override
+  public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
+    FCMap<MerkleEntityId, MerkleAccount> accounts = view.accounts();
+    CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
-		AccountID id = targetOf(op);
-		CryptoGetAccountBalanceResponse.Builder opAnswer = CryptoGetAccountBalanceResponse.newBuilder()
-				.setHeader(answerOnlyHeader(validity))
-				.setAccountID(id);
+    AccountID id = targetOf(op);
+    CryptoGetAccountBalanceResponse.Builder opAnswer =
+        CryptoGetAccountBalanceResponse.newBuilder()
+            .setHeader(answerOnlyHeader(validity))
+            .setAccountID(id);
 
-		if (validity == OK) {
-			var key = MerkleEntityId.fromAccountId(id);
-			var account = accounts.get(key);
-			opAnswer.setBalance(account.getBalance());
-			for (TokenID tId : account.tokens().asTokenIds()) {
-				var relKey = fromAccountTokenRel(id, tId);
-				var relationship = view.tokenAssociations().get(relKey);
-				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
-				opAnswer.addTokenBalances(TokenBalance.newBuilder()
-						.setTokenId(tId)
-						.setBalance(relationship.getBalance())
-						.setDecimals(decimals)
-						.build());
-			}
-		}
+    if (validity == OK) {
+      var key = MerkleEntityId.fromAccountId(id);
+      var account = accounts.get(key);
+      opAnswer.setBalance(account.getBalance());
+      for (TokenID tId : account.tokens().asTokenIds()) {
+        var relKey = fromAccountTokenRel(id, tId);
+        var relationship = view.tokenAssociations().get(relKey);
+        var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
+        opAnswer.addTokenBalances(
+            TokenBalance.newBuilder()
+                .setTokenId(tId)
+                .setBalance(relationship.getBalance())
+                .setDecimals(decimals)
+                .build());
+      }
+    }
 
-		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();
-	}
+    return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();
+  }
 
-	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		return Optional.empty();
-	}
+  @Override
+  public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    return Optional.empty();
+  }
 
-	private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
-		return op.hasAccountID()
-				? op.getAccountID()
-				: (op.hasContractID() ? asAccount(op.getContractID()) : AccountID.getDefaultInstance());
-	}
+  private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
+    return op.hasAccountID()
+        ? op.getAccountID()
+        : (op.hasContractID() ? asAccount(op.getContractID()) : AccountID.getDefaultInstance());
+  }
 
-	private ResponseCodeEnum validityOf(
-			CryptoGetAccountBalanceQuery op,
-			FCMap<MerkleEntityId, MerkleAccount> accounts
-	) {
-		if (op.hasContractID()) {
-			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
-		} else if (op.hasAccountID()) {
-			return optionValidator.queryableAccountStatus(op.getAccountID(), accounts);
-		} else {
-			return INVALID_ACCOUNT_ID;
-		}
-	}
+  private ResponseCodeEnum validityOf(
+      CryptoGetAccountBalanceQuery op, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+    if (op.hasContractID()) {
+      return optionValidator.queryableContractStatus(op.getContractID(), accounts);
+    } else if (op.hasAccountID()) {
+      return optionValidator.queryableAccountStatus(op.getAccountID(), accounts);
+    } else {
+      return INVALID_ACCOUNT_ID;
+    }
+  }
 
-	@Override
-	public ResponseCodeEnum extractValidityFrom(Response response) {
-		return response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
-	}
+  @Override
+  public ResponseCodeEnum extractValidityFrom(Response response) {
+    return response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
+  }
 
-	@Override
-	public HederaFunctionality canonicalFunction() {
-		return CryptoGetAccountBalance;
-	}
+  @Override
+  public HederaFunctionality canonicalFunction() {
+    return CryptoGetAccountBalance;
+  }
 }

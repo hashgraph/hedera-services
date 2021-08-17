@@ -26,63 +26,63 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class FCStorageWrapper {
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
 
-	public FCStorageWrapper(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
-		this.storageMap = storageMap;
-	}
+  public FCStorageWrapper(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
+    this.storageMap = storageMap;
+  }
 
-	public void fileCreate(final String path, final byte[] content) {
-		final var sKey = new MerkleBlobMeta(path);
-		final var sVal = new MerkleOptionalBlob(content);
-		storageMap.put(sKey, sVal);
-	}
+  public void fileCreate(final String path, final byte[] content) {
+    final var sKey = new MerkleBlobMeta(path);
+    final var sVal = new MerkleOptionalBlob(content);
+    storageMap.put(sKey, sVal);
+  }
 
-	public byte[] fileRead(final String path) {
-		MerkleBlobMeta sKey;
-		try {
-			sKey = validateStorageKey(path);
-		} catch (StorageKeyNotFoundException e) {
-			return new byte[0];
-		}
-		return storageMap.get(sKey).getData();
-	}
+  public byte[] fileRead(final String path) {
+    MerkleBlobMeta sKey;
+    try {
+      sKey = validateStorageKey(path);
+    } catch (StorageKeyNotFoundException e) {
+      return new byte[0];
+    }
+    return storageMap.get(sKey).getData();
+  }
 
-	public boolean fileExists(final String path) {
-		MerkleBlobMeta sKey;
-		try {
-			sKey = validateStorageKey(path);
-			return storageMap.containsKey(sKey);
-		} catch (StorageKeyNotFoundException ignore) {
-		}
-		return false;
-	}
+  public boolean fileExists(final String path) {
+    MerkleBlobMeta sKey;
+    try {
+      sKey = validateStorageKey(path);
+      return storageMap.containsKey(sKey);
+    } catch (StorageKeyNotFoundException ignore) {
+    }
+    return false;
+  }
 
-	public long getSize(final String path) {
-		MerkleBlobMeta sKey = new MerkleBlobMeta(path);
-		if (storageMap.containsKey(sKey)) {
-			return storageMap.get(sKey).getData().length;
-		} else {
-			return 0l;
-		}
-	}
+  public long getSize(final String path) {
+    MerkleBlobMeta sKey = new MerkleBlobMeta(path);
+    if (storageMap.containsKey(sKey)) {
+      return storageMap.get(sKey).getData().length;
+    } else {
+      return 0l;
+    }
+  }
 
-	void fileUpdate(final String path, final byte[] content) {
-		final var existingContent = fileRead(path);
-		final var appendedContent = ArrayUtils.addAll(existingContent, content);
-		fileCreate(path, appendedContent);
-	}
+  void fileUpdate(final String path, final byte[] content) {
+    final var existingContent = fileRead(path);
+    final var appendedContent = ArrayUtils.addAll(existingContent, content);
+    fileCreate(path, appendedContent);
+  }
 
-	private MerkleBlobMeta validateStorageKey(final String path) throws StorageKeyNotFoundException {
-		MerkleBlobMeta sKey = new MerkleBlobMeta(path);
-		if (!storageMap.containsKey(sKey)) {
-			throw new StorageKeyNotFoundException("Destination file does not exist: '" + path + "'");
-		}
-		return sKey;
-	}
+  private MerkleBlobMeta validateStorageKey(final String path) throws StorageKeyNotFoundException {
+    MerkleBlobMeta sKey = new MerkleBlobMeta(path);
+    if (!storageMap.containsKey(sKey)) {
+      throw new StorageKeyNotFoundException("Destination file does not exist: '" + path + "'");
+    }
+    return sKey;
+  }
 
-	public void delete(final String path) throws StorageKeyNotFoundException {
-		final var sKey = validateStorageKey(path);
-		storageMap.remove(sKey);
-	}
+  public void delete(final String path) throws StorageKeyNotFoundException {
+    final var sKey = validateStorageKey(path);
+    storageMap.remove(sKey);
+  }
 }

@@ -20,10 +20,6 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsSpeedometer;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
@@ -31,37 +27,41 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
+import com.swirlds.common.StatEntry;
+import com.swirlds.platform.StatsSpeedometer;
+import org.junit.jupiter.api.Test;
+
 class SpeedometerFactoryTest {
-	SpeedometerFactory subject = new SpeedometerFactory() { };
+  SpeedometerFactory subject = new SpeedometerFactory() {};
 
-	@Test
-	void constructsExpectedEntry() {
-		// setup:
-		var name = "MyOp";
-		var desc = "Happy thoughts";
-		double halfLife = 1.23;
-		double something = 3.21;
-		StatsSpeedometer speedometer = mock(StatsSpeedometer.class);
+  @Test
+  void constructsExpectedEntry() {
+    // setup:
+    var name = "MyOp";
+    var desc = "Happy thoughts";
+    double halfLife = 1.23;
+    double something = 3.21;
+    StatsSpeedometer speedometer = mock(StatsSpeedometer.class);
 
-		given(speedometer.getCyclesPerSecond()).willReturn(something);
+    given(speedometer.getCyclesPerSecond()).willReturn(something);
 
-		// when:
-		StatEntry entry = subject.from(name, desc, speedometer);
-		// and:
-		var resetSpeedometer = entry.init.apply(halfLife);
-		// and:
-		entry.reset.accept(halfLife);
+    // when:
+    StatEntry entry = subject.from(name, desc, speedometer);
+    // and:
+    var resetSpeedometer = entry.init.apply(halfLife);
+    // and:
+    entry.reset.accept(halfLife);
 
-		// then:
-		assertEquals("app", entry.category);
-		assertEquals(name, entry.name);
-		assertEquals(desc, entry.desc);
-		assertEquals("%,13.2f", entry.format);
-		assertSame(speedometer, entry.buffered);
-		// and:
-		assertSame(speedometer, resetSpeedometer);
-		verify(speedometer, times(2)).reset(halfLife);
-		// and:
-		assertEquals(something, entry.supplier.get());
-	}
+    // then:
+    assertEquals("app", entry.category);
+    assertEquals(name, entry.name);
+    assertEquals(desc, entry.desc);
+    assertEquals("%,13.2f", entry.format);
+    assertSame(speedometer, entry.buffered);
+    // and:
+    assertSame(speedometer, resetSpeedometer);
+    verify(speedometer, times(2)).reset(halfLife);
+    // and:
+    assertEquals(something, entry.supplier.get());
+  }
 }

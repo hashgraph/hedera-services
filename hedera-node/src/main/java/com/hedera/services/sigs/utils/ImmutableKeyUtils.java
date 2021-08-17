@@ -24,9 +24,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 
 public class ImmutableKeyUtils {
-	public static Key IMMUTABILITY_SENTINEL_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+  public static Key IMMUTABILITY_SENTINEL_KEY =
+      Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 
-	public static boolean signalsKeyRemoval(Key source) {
-		return IMMUTABILITY_SENTINEL_KEY.equals(source);
-	}
+  public static boolean signalsKeyRemoval(Key source) {
+    return IMMUTABILITY_SENTINEL_KEY.equals(source);
+  }
 }

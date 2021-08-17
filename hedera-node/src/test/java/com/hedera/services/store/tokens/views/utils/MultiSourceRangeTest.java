@@ -20,9 +20,6 @@ package com.hedera.services.store.tokens.views.utils;
  * ‍
  */
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.store.tokens.views.utils.MultiSourceRange.EMPTY_RANGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,117 +27,120 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Test;
+
 class MultiSourceRangeTest {
-	@Test
-	void threeRangeExampleAsExpected() {
-		// given:
-		final var subject = new MultiSourceRange(1, 9, 2);
+  @Test
+  void threeRangeExampleAsExpected() {
+    // given:
+    final var subject = new MultiSourceRange(1, 9, 2);
 
-		// when:
-		final var firstRange = subject.rangeForCurrentSource();
-		subject.moveToNewSource(3);
-		final var secondRange = subject.rangeForCurrentSource();
-		subject.moveToNewSource(5);
-		final var thirdRange = subject.rangeForCurrentSource();
+    // when:
+    final var firstRange = subject.rangeForCurrentSource();
+    subject.moveToNewSource(3);
+    final var secondRange = subject.rangeForCurrentSource();
+    subject.moveToNewSource(5);
+    final var thirdRange = subject.rangeForCurrentSource();
 
-		// then:
-		assertTrue(subject.isRequestedRangeExhausted());
-		// and:
-		assertEquals(Pair.of(1, 2), firstRange);
-		assertEquals(Pair.of(0, 3), secondRange);
-		assertEquals(Pair.of(0, 4), thirdRange);
-	}
+    // then:
+    assertTrue(subject.isRequestedRangeExhausted());
+    // and:
+    assertEquals(Pair.of(1, 2), firstRange);
+    assertEquals(Pair.of(0, 3), secondRange);
+    assertEquals(Pair.of(0, 4), thirdRange);
+  }
 
-	@Test
-	void satisfiesWithFirstRangeIfPossible() {
-		// given:
-		final var subject = new MultiSourceRange(2, 5, 10);
+  @Test
+  void satisfiesWithFirstRangeIfPossible() {
+    // given:
+    final var subject = new MultiSourceRange(2, 5, 10);
 
-		// when:
-		final var firstRange = subject.rangeForCurrentSource();
+    // when:
+    final var firstRange = subject.rangeForCurrentSource();
 
-		// then:
-		assertEquals(Pair.of(2, 5), firstRange);
-		// and:
-		assertTrue(subject.isRequestedRangeExhausted());
-		assertThrows(IllegalStateException.class, () -> subject.moveToNewSource(10));
-	}
+    // then:
+    assertEquals(Pair.of(2, 5), firstRange);
+    // and:
+    assertTrue(subject.isRequestedRangeExhausted());
+    assertThrows(IllegalStateException.class, () -> subject.moveToNewSource(10));
+  }
 
-	@Test
-	void canSatisfyUsingSingleElements() {
-		// setup:
-		final var zeroOneRange = Pair.of(0, 1);
+  @Test
+  void canSatisfyUsingSingleElements() {
+    // setup:
+    final var zeroOneRange = Pair.of(0, 1);
 
-		// given:
-		final var subject = new MultiSourceRange(3, 6, 1);
+    // given:
+    final var subject = new MultiSourceRange(3, 6, 1);
 
-		// then:
-		assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
-		subject.moveToNewSource(1);
-		assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
-		subject.moveToNewSource(1);
-		assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
-		subject.moveToNewSource(1);
-		assertEquals(zeroOneRange, subject.rangeForCurrentSource());
-		subject.moveToNewSource(1);
-		assertEquals(zeroOneRange, subject.rangeForCurrentSource());
-		subject.moveToNewSource(1);
-		assertEquals(zeroOneRange, subject.rangeForCurrentSource());
-		// and:
-		assertTrue(subject.isRequestedRangeExhausted());
-	}
+    // then:
+    assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
+    subject.moveToNewSource(1);
+    assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
+    subject.moveToNewSource(1);
+    assertSame(EMPTY_RANGE, subject.rangeForCurrentSource());
+    subject.moveToNewSource(1);
+    assertEquals(zeroOneRange, subject.rangeForCurrentSource());
+    subject.moveToNewSource(1);
+    assertEquals(zeroOneRange, subject.rangeForCurrentSource());
+    subject.moveToNewSource(1);
+    assertEquals(zeroOneRange, subject.rangeForCurrentSource());
+    // and:
+    assertTrue(subject.isRequestedRangeExhausted());
+  }
 
-	@Test
-	void recognizesWhenStartIsPastCurrentRange() {
-		// given:
-		final var subject = new MultiSourceRange(2, 21, 2);
+  @Test
+  void recognizesWhenStartIsPastCurrentRange() {
+    // given:
+    final var subject = new MultiSourceRange(2, 21, 2);
 
-		// when:
-		final var firstRange = subject.rangeForCurrentSource();
+    // when:
+    final var firstRange = subject.rangeForCurrentSource();
 
-		// then:
-		assertSame(EMPTY_RANGE, firstRange);
-		// and:
-		assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
-	}
+    // then:
+    assertSame(EMPTY_RANGE, firstRange);
+    // and:
+    assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
+  }
 
-	@Test
-	void throwsIseOnRepeatedRangeRequest() {
-		// given:
-		final var subject = new MultiSourceRange(2, 21, 8);
+  @Test
+  void throwsIseOnRepeatedRangeRequest() {
+    // given:
+    final var subject = new MultiSourceRange(2, 21, 8);
 
-		// when:
-		subject.rangeForCurrentSource();
+    // when:
+    subject.rangeForCurrentSource();
 
-		// then:
-		assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
-	}
+    // then:
+    assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
+  }
 
-	@Test
-	void satisfiesWithInitialRangesWhenPossible() {
-		// given: 19 requested elements, starting at position 2
-		final var subject = new MultiSourceRange(2, 21, 8);
+  @Test
+  void satisfiesWithInitialRangesWhenPossible() {
+    // given: 19 requested elements, starting at position 2
+    final var subject = new MultiSourceRange(2, 21, 8);
 
-		// when: Three sources are provided
-		final var firstRange = subject.rangeForCurrentSource();
-		assertFalse(subject.isRequestedRangeExhausted());
-		// and:
-		subject.moveToNewSource(3);
-		final var secondRange = subject.rangeForCurrentSource();
-		assertFalse(subject.isRequestedRangeExhausted());
-		// and:
-		subject.moveToNewSource(30);
-		final var thirdRange = subject.rangeForCurrentSource();
-		assertTrue(subject.isRequestedRangeExhausted());
+    // when: Three sources are provided
+    final var firstRange = subject.rangeForCurrentSource();
+    assertFalse(subject.isRequestedRangeExhausted());
+    // and:
+    subject.moveToNewSource(3);
+    final var secondRange = subject.rangeForCurrentSource();
+    assertFalse(subject.isRequestedRangeExhausted());
+    // and:
+    subject.moveToNewSource(30);
+    final var thirdRange = subject.rangeForCurrentSource();
+    assertTrue(subject.isRequestedRangeExhausted());
 
-		// then: Six elements are used from the first range
-		assertEquals(Pair.of(2, 8), firstRange);
-		// and: All three elements are used from the second range
-		assertEquals(Pair.of(0, 3), secondRange);
-		// and: The remaining 10 requested elements are used from the third range
-		assertEquals(Pair.of(0, 10), thirdRange);
-		// and:
-		assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
-		assertThrows(IllegalStateException.class, () -> subject.moveToNewSource(10));
-	}
+    // then: Six elements are used from the first range
+    assertEquals(Pair.of(2, 8), firstRange);
+    // and: All three elements are used from the second range
+    assertEquals(Pair.of(0, 3), secondRange);
+    // and: The remaining 10 requested elements are used from the third range
+    assertEquals(Pair.of(0, 10), thirdRange);
+    // and:
+    assertThrows(IllegalStateException.class, subject::rangeForCurrentSource);
+    assertThrows(IllegalStateException.class, () -> subject.moveToNewSource(10));
+  }
 }

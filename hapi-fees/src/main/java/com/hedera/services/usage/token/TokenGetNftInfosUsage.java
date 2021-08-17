@@ -20,36 +20,35 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.usage.QueryUsage;
-import com.hederahashgraph.api.proto.java.Query;
-
-import java.util.List;
-
 import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.usage.QueryUsage;
+import com.hederahashgraph.api.proto.java.Query;
+import java.util.List;
+
 public class TokenGetNftInfosUsage extends QueryUsage {
-	static final long INT_SIZE_AS_LONG = INT_SIZE;
+  static final long INT_SIZE_AS_LONG = INT_SIZE;
 
-	public TokenGetNftInfosUsage(Query query) {
-		super(query.getTokenGetNftInfos().getHeader().getResponseType());
-		addTb(BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE_AS_LONG);
-	}
+  public TokenGetNftInfosUsage(Query query) {
+    super(query.getTokenGetNftInfos().getHeader().getResponseType());
+    addTb(BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE_AS_LONG);
+  }
 
-	public static TokenGetNftInfosUsage newEstimate(Query query) {
-		return new TokenGetNftInfosUsage(query);
-	}
+  public static TokenGetNftInfosUsage newEstimate(Query query) {
+    return new TokenGetNftInfosUsage(query);
+  }
 
-	public TokenGetNftInfosUsage givenMetadata(List<ByteString> metadata) {
-		int additionalRb = 0;
-		for (ByteString m : metadata) {
-			additionalRb += m.size();
-		}
-		addRb(additionalRb);
-		addRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size());
+  public TokenGetNftInfosUsage givenMetadata(List<ByteString> metadata) {
+    int additionalRb = 0;
+    for (ByteString m : metadata) {
+      additionalRb += m.size();
+    }
+    addRb(additionalRb);
+    addRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size());
 
-		return this;
-	}
+    return this;
+  }
 }

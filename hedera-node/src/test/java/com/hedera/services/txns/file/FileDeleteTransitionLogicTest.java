@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,22 @@ package com.hedera.services.txns.file;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -36,200 +52,187 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.time.Instant;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
-
 class FileDeleteTransitionLogicTest {
-	enum TargetType { IMMUTABLE, VALID, MISSING, DELETED }
+  enum TargetType {
+    IMMUTABLE,
+    VALID,
+    MISSING,
+    DELETED
+  }
 
-	FileID tbd = IdUtils.asFile("0.0.13257");
-	FileID missing = IdUtils.asFile("0.0.75231");
-	FileID deleted = IdUtils.asFile("0.0.666");
-	FileID immutable = IdUtils.asFile("0.0.667");
+  FileID tbd = IdUtils.asFile("0.0.13257");
+  FileID missing = IdUtils.asFile("0.0.75231");
+  FileID deleted = IdUtils.asFile("0.0.666");
+  FileID immutable = IdUtils.asFile("0.0.667");
 
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
-			true,
-			true,
-			SUCCESS);
-	HederaFs.UpdateResult noAuth = new TieredHederaFs.SimpleUpdateResult(
-			true,
-			true,
-			ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
-	JKey wacl;
-	HFileMeta attr, deletedAttr, immutableAttr;
+  HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(true, true, SUCCESS);
+  HederaFs.UpdateResult noAuth =
+      new TieredHederaFs.SimpleUpdateResult(
+          true, true, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
+  JKey wacl;
+  HFileMeta attr, deletedAttr, immutableAttr;
 
-	TransactionID txnId;
-	TransactionBody fileDeleteTxn;
-	PlatformTxnAccessor accessor;
+  TransactionID txnId;
+  TransactionBody fileDeleteTxn;
+  PlatformTxnAccessor accessor;
 
-	HederaFs hfs;
-	TransactionContext txnCtx;
+  HederaFs hfs;
+  TransactionContext txnCtx;
 
-	FileDeleteTransitionLogic subject;
+  FileDeleteTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		attr = new HFileMeta(false, wacl, 2_000_000L);
-		deletedAttr = new HFileMeta(true, wacl, 2_000_000L);
-		immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, 2_000_000L);
+  @BeforeEach
+  private void setup() throws Throwable {
+    wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
+    attr = new HFileMeta(false, wacl, 2_000_000L);
+    deletedAttr = new HFileMeta(true, wacl, 2_000_000L);
+    immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, 2_000_000L);
 
-		accessor = mock(PlatformTxnAccessor.class);
-		txnCtx = mock(TransactionContext.class);
+    accessor = mock(PlatformTxnAccessor.class);
+    txnCtx = mock(TransactionContext.class);
 
-		hfs = mock(HederaFs.class);
-		given(hfs.exists(tbd)).willReturn(true);
-		given(hfs.exists(deleted)).willReturn(true);
-		given(hfs.exists(immutable)).willReturn(true);
-		given(hfs.exists(missing)).willReturn(false);
-		given(hfs.getattr(tbd)).willReturn(attr);
-		given(hfs.getattr(deleted)).willReturn(deletedAttr);
-		given(hfs.getattr(immutable)).willReturn(immutableAttr);
+    hfs = mock(HederaFs.class);
+    given(hfs.exists(tbd)).willReturn(true);
+    given(hfs.exists(deleted)).willReturn(true);
+    given(hfs.exists(immutable)).willReturn(true);
+    given(hfs.exists(missing)).willReturn(false);
+    given(hfs.getattr(tbd)).willReturn(attr);
+    given(hfs.getattr(deleted)).willReturn(deletedAttr);
+    given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-		subject = new FileDeleteTransitionLogic(hfs, txnCtx);
-	}
+    subject = new FileDeleteTransitionLogic(hfs, txnCtx);
+  }
 
-	@Test
-	void happyPathFlows() {
-		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx);
+  @Test
+  void happyPathFlows() {
+    // setup:
+    InOrder inOrder = inOrder(hfs, txnCtx);
 
-		givenTxnCtxDeleting(TargetType.VALID);
-		// and:
-		given(hfs.delete(any())).willReturn(success);
+    givenTxnCtxDeleting(TargetType.VALID);
+    // and:
+    given(hfs.delete(any())).willReturn(success);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		inOrder.verify(hfs).delete(tbd);
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
-	}
+    // then:
+    inOrder.verify(hfs).delete(tbd);
+    inOrder.verify(txnCtx).setStatus(SUCCESS);
+  }
 
-	@Test
-	void detectsDeleted() {
-		givenTxnCtxDeleting(TargetType.DELETED);
+  @Test
+  void detectsDeleted() {
+    givenTxnCtxDeleting(TargetType.DELETED);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(FILE_DELETED);
-	}
+    // then:
+    verify(txnCtx).setStatus(FILE_DELETED);
+  }
 
-	@Test
-	void detectsMissing() {
-		givenTxnCtxDeleting(TargetType.MISSING);
+  @Test
+  void detectsMissing() {
+    givenTxnCtxDeleting(TargetType.MISSING);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
-	}
+    // then:
+    verify(txnCtx).setStatus(INVALID_FILE_ID);
+  }
 
-	@Test
-	void setsFailInvalidOnException() {
-		givenTxnCtxDeleting(TargetType.VALID);
-		willThrow(new IllegalStateException("Hmm...")).given(hfs).delete(any());
+  @Test
+  void setsFailInvalidOnException() {
+    givenTxnCtxDeleting(TargetType.VALID);
+    willThrow(new IllegalStateException("Hmm...")).given(hfs).delete(any());
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
+    // then:
+    verify(txnCtx).setStatus(FAIL_INVALID);
+  }
 
-	@Test
-	void resultIsRespected() {
-		givenTxnCtxDeleting(TargetType.VALID);
-		// and:
-		given(hfs.delete(any())).willReturn(noAuth);
+  @Test
+  void resultIsRespected() {
+    givenTxnCtxDeleting(TargetType.VALID);
+    // and:
+    given(hfs.delete(any())).willReturn(noAuth);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(ENTITY_NOT_ALLOWED_TO_DELETE);
-	}
+    // then:
+    verify(txnCtx).setStatus(ENTITY_NOT_ALLOWED_TO_DELETE);
+  }
 
-	@Test
-	void rejectsImmutableTarget() {
-		givenTxnCtxDeleting(TargetType.IMMUTABLE);
-		// and:
-		given(hfs.delete(any())).willReturn(success);
+  @Test
+  void rejectsImmutableTarget() {
+    givenTxnCtxDeleting(TargetType.IMMUTABLE);
+    // and:
+    given(hfs.delete(any())).willReturn(success);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(UNAUTHORIZED);
-	}
+    // then:
+    verify(txnCtx).setStatus(UNAUTHORIZED);
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenTxnCtxDeleting(TargetType.VALID);
+  @Test
+  void hasCorrectApplicability() {
+    givenTxnCtxDeleting(TargetType.VALID);
 
-		// expect:
-		assertTrue(subject.applicability().test(fileDeleteTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(fileDeleteTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void syntaxCheckRubberstamps() {
-		// given:
-		var syntaxCheck = subject.semanticCheck();
+  @Test
+  void syntaxCheckRubberstamps() {
+    // given:
+    var syntaxCheck = subject.semanticCheck();
 
-		// expect:
-		assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
+  }
 
-	private void givenTxnCtxDeleting(TargetType type) {
-		FileDeleteTransactionBody.Builder op = FileDeleteTransactionBody.newBuilder();
+  private void givenTxnCtxDeleting(TargetType type) {
+    FileDeleteTransactionBody.Builder op = FileDeleteTransactionBody.newBuilder();
 
-		switch (type) {
-			case IMMUTABLE:
-				op.setFileID(immutable);
-				break;
-			case VALID:
-				op.setFileID(tbd);
-				break;
-			case MISSING:
-				op.setFileID(missing);
-				break;
-			case DELETED:
-				op.setFileID(deleted);
-				break;
-		}
+    switch (type) {
+      case IMMUTABLE:
+        op.setFileID(immutable);
+        break;
+      case VALID:
+        op.setFileID(tbd);
+        break;
+      case MISSING:
+        op.setFileID(missing);
+        break;
+      case DELETED:
+        op.setFileID(deleted);
+        break;
+    }
 
-		txnId = TransactionID.newBuilder()
-				.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-				.build();
-		fileDeleteTxn = TransactionBody.newBuilder()
-				.setTransactionID(txnId)
-				.setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-				.setFileDelete(op)
-				.build();
-		given(accessor.getTxn()).willReturn(fileDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-	}
+    txnId =
+        TransactionID.newBuilder()
+            .setTransactionValidStart(
+                MiscUtils.asTimestamp(Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+            .build();
+    fileDeleteTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(txnId)
+            .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+            .setFileDelete(op)
+            .build();
+    given(accessor.getTxn()).willReturn(fileDeleteTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+  }
 }

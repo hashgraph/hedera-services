@@ -25,46 +25,45 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class TokenDissociateFactory extends SignedTxnFactory<TokenDissociateFactory> {
-	private AccountID target;
-	private List<TokenID> dissociations = new ArrayList<>();
+  private AccountID target;
+  private List<TokenID> dissociations = new ArrayList<>();
 
-	private TokenDissociateFactory() {
-	}
+  private TokenDissociateFactory() {}
 
-	public static TokenDissociateFactory newSignedTokenDissociate() {
-		return new TokenDissociateFactory();
-	}
+  public static TokenDissociateFactory newSignedTokenDissociate() {
+    return new TokenDissociateFactory();
+  }
 
-	public TokenDissociateFactory targeting(AccountID target) {
-		this.target = target;
-		return this;
-	}
+  public TokenDissociateFactory targeting(AccountID target) {
+    this.target = target;
+    return this;
+  }
 
-	public TokenDissociateFactory dissociating(TokenID token) {
-		dissociations.add(token);
-		return this;
-	}
+  public TokenDissociateFactory dissociating(TokenID token) {
+    dissociations.add(token);
+    return this;
+  }
 
-	@Override
-	protected TokenDissociateFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenDissociateFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		txn.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
-				.setAccount(target)
-				.addAllTokens(dissociations))
-				.build();
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    txn.setTokenDissociate(
+            TokenDissociateTransactionBody.newBuilder()
+                .setAccount(target)
+                .addAllTokens(dissociations))
+        .build();
+  }
 }

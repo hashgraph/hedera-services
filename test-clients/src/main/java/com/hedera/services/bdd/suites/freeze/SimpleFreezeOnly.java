@@ -20,65 +20,56 @@ package com.hedera.services.bdd.suites.freeze;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class SimpleFreezeOnly extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SimpleFreezeOnly.class);
+  private static final Logger log = LogManager.getLogger(SimpleFreezeOnly.class);
 
-	public static void main(String... args) {
-		new SimpleFreezeOnly().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new SimpleFreezeOnly().runSuiteSync();
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return allOf(positiveTests());
+  }
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				// NOTE: we can't run the following tests at the same time now with dual SwirldsState.
-				// simpleFreezeWithHoursAndMins(),
-				simpleFreezeWithTimestamp()
-		);
-	}
+  private List<HapiApiSpec> positiveTests() {
+    return Arrays.asList(
+        // NOTE: we can't run the following tests at the same time now with dual SwirldsState.
+        // simpleFreezeWithHoursAndMins(),
+        simpleFreezeWithTimestamp());
+  }
 
-	private HapiApiSpec simpleFreezeWithHoursAndMins() {
-		return defaultHapiSpec("SimpleFreezeWithHoursAndMins")
-				.given(
-				).when(
-						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(10).minutes()
-				).then(
-				);
-	}
+  private HapiApiSpec simpleFreezeWithHoursAndMins() {
+    return defaultHapiSpec("SimpleFreezeWithHoursAndMins")
+        .given()
+        .when(freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(10).minutes())
+        .then();
+  }
 
-	private HapiApiSpec simpleFreezeWithTimestamp() {
-		return defaultHapiSpec("SimpleFreezeWithTimeStamp")
-				.given(
-						freeze().payingWith(GENESIS).startAt(Instant.now().plusSeconds(10))
-				).when(
-						sleepFor(11000)
-				).then(
-						cryptoCreate("not_going_to_happen").hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE)
-				);
-	}
+  private HapiApiSpec simpleFreezeWithTimestamp() {
+    return defaultHapiSpec("SimpleFreezeWithTimeStamp")
+        .given(freeze().payingWith(GENESIS).startAt(Instant.now().plusSeconds(10)))
+        .when(sleepFor(11000))
+        .then(
+            cryptoCreate("not_going_to_happen").hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
+  }
 }

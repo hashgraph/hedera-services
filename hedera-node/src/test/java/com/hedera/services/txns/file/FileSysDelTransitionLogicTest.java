@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,21 @@ package com.hedera.services.txns.file;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
@@ -37,227 +52,220 @@ import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.time.Instant;
-import java.util.Map;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
-
 class FileSysDelTransitionLogicTest {
-	enum TargetType { VALID, MISSING, DELETED }
-	enum NewExpiryType { NONE, FUTURE, PAST }
+  enum TargetType {
+    VALID,
+    MISSING,
+    DELETED
+  }
 
-	long now = Instant.now().getEpochSecond();
-	long lifetime = 1_000_000L;
-	long oldExpiry = now + lifetime;
-	long newExpiry = now + lifetime / 2;
+  enum NewExpiryType {
+    NONE,
+    FUTURE,
+    PAST
+  }
 
-	FileID tbd = IdUtils.asFile("0.0.13257");
-	FileID missing = IdUtils.asFile("0.0.75231");
-	FileID deleted = IdUtils.asFile("0.0.666");
+  long now = Instant.now().getEpochSecond();
+  long lifetime = 1_000_000L;
+  long oldExpiry = now + lifetime;
+  long newExpiry = now + lifetime / 2;
 
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
-			true,
-			false,
-			SUCCESS);
+  FileID tbd = IdUtils.asFile("0.0.13257");
+  FileID missing = IdUtils.asFile("0.0.75231");
+  FileID deleted = IdUtils.asFile("0.0.666");
 
-	JKey wacl;
-	HFileMeta attr, deletedAttr;
+  HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(true, false, SUCCESS);
 
-	TransactionID txnId;
-	TransactionBody fileSysDelTxn;
-	PlatformTxnAccessor accessor;
+  JKey wacl;
+  HFileMeta attr, deletedAttr;
 
-	HederaFs hfs;
-	Map<EntityId, Long> oldExpiries;
-	TransactionContext txnCtx;
+  TransactionID txnId;
+  TransactionBody fileSysDelTxn;
+  PlatformTxnAccessor accessor;
 
-	FileSysDelTransitionLogic subject;
+  HederaFs hfs;
+  Map<EntityId, Long> oldExpiries;
+  TransactionContext txnCtx;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		attr = new HFileMeta(false, wacl, oldExpiry);
-		deletedAttr = new HFileMeta(true, wacl, oldExpiry);
+  FileSysDelTransitionLogic subject;
 
-		accessor = mock(PlatformTxnAccessor.class);
-		txnCtx = mock(TransactionContext.class);
-		oldExpiries = mock(Map.class);
+  @BeforeEach
+  private void setup() throws Throwable {
+    wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
+    attr = new HFileMeta(false, wacl, oldExpiry);
+    deletedAttr = new HFileMeta(true, wacl, oldExpiry);
 
-		hfs = mock(HederaFs.class);
-		given(hfs.exists(tbd)).willReturn(true);
-		given(hfs.exists(deleted)).willReturn(true);
-		given(hfs.exists(missing)).willReturn(false);
-		given(hfs.getattr(tbd)).willReturn(attr);
-		given(hfs.getattr(deleted)).willReturn(deletedAttr);
+    accessor = mock(PlatformTxnAccessor.class);
+    txnCtx = mock(TransactionContext.class);
+    oldExpiries = mock(Map.class);
 
-		subject = new FileSysDelTransitionLogic(hfs, oldExpiries, txnCtx);
-	}
+    hfs = mock(HederaFs.class);
+    given(hfs.exists(tbd)).willReturn(true);
+    given(hfs.exists(deleted)).willReturn(true);
+    given(hfs.exists(missing)).willReturn(false);
+    given(hfs.getattr(tbd)).willReturn(attr);
+    given(hfs.getattr(deleted)).willReturn(deletedAttr);
 
-	@Test
-	void destroysIfNewExpiryIsPast() {
-		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
+    subject = new FileSysDelTransitionLogic(hfs, oldExpiries, txnCtx);
+  }
 
-		// when:
-		subject.doStateTransition();
+  @Test
+  void destroysIfNewExpiryIsPast() {
+    givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
 
-		// then:
-		verify(hfs).rm(tbd);
-		verify(oldExpiries, never()).put(any(), any());
-	}
+    // when:
+    subject.doStateTransition();
 
-	@Test
-	void leavesUnspecifiedExpiryUntouched() {
-		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
+    // then:
+    verify(hfs).rm(tbd);
+    verify(oldExpiries, never()).put(any(), any());
+  }
 
-		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.NONE);
-		// and:
-		given(hfs.setattr(any(), any())).willReturn(success);
+  @Test
+  void leavesUnspecifiedExpiryUntouched() {
+    // setup:
+    InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
-		// when:
-		subject.doStateTransition();
+    givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.NONE);
+    // and:
+    given(hfs.setattr(any(), any())).willReturn(success);
 
-		// then:
-		assertTrue(attr.isDeleted());;
-		assertEquals(oldExpiry, attr.getExpiry());
-		inOrder.verify(hfs).setattr(tbd, attr);
-		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
-	}
+    // when:
+    subject.doStateTransition();
 
-	@Test
-	void setsFailInvalidOnException() {
-		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
-		willThrow(new IllegalStateException("Hmm...")).given(hfs).rm(any());
+    // then:
+    assertTrue(attr.isDeleted());
+    ;
+    assertEquals(oldExpiry, attr.getExpiry());
+    inOrder.verify(hfs).setattr(tbd, attr);
+    inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
+    inOrder.verify(txnCtx).setStatus(SUCCESS);
+  }
 
-		// when:
-		subject.doStateTransition();
+  @Test
+  void setsFailInvalidOnException() {
+    givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.PAST);
+    willThrow(new IllegalStateException("Hmm...")).given(hfs).rm(any());
 
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
+    // when:
+    subject.doStateTransition();
 
-	@Test
-	void happyPathFlows() {
-		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
+    // then:
+    verify(txnCtx).setStatus(FAIL_INVALID);
+  }
 
-		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
-		// and:
-		given(hfs.setattr(any(), any())).willReturn(success);
+  @Test
+  void happyPathFlows() {
+    // setup:
+    InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
 
-		// when:
-		subject.doStateTransition();
+    givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
+    // and:
+    given(hfs.setattr(any(), any())).willReturn(success);
 
-		// then:
-		assertTrue(attr.isDeleted());;
-		assertEquals(newExpiry, attr.getExpiry());
-		inOrder.verify(hfs).setattr(tbd, attr);
-		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
-		inOrder.verify(txnCtx).setStatus(SUCCESS);
-	}
+    // when:
+    subject.doStateTransition();
 
-	@Test
-	void detectsDeleted() {
-		givenTxnCtxSysDeleting(TargetType.DELETED, NewExpiryType.FUTURE);
+    // then:
+    assertTrue(attr.isDeleted());
+    ;
+    assertEquals(newExpiry, attr.getExpiry());
+    inOrder.verify(hfs).setattr(tbd, attr);
+    inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
+    inOrder.verify(txnCtx).setStatus(SUCCESS);
+  }
 
-		// when:
-		subject.doStateTransition();
+  @Test
+  void detectsDeleted() {
+    givenTxnCtxSysDeleting(TargetType.DELETED, NewExpiryType.FUTURE);
 
-		// then:
-		verify(txnCtx).setStatus(FILE_DELETED);
-	}
+    // when:
+    subject.doStateTransition();
 
-	@Test
-	void detectsMissing() {
-		givenTxnCtxSysDeleting(TargetType.MISSING, NewExpiryType.FUTURE);
+    // then:
+    verify(txnCtx).setStatus(FILE_DELETED);
+  }
 
-		// when:
-		subject.doStateTransition();
+  @Test
+  void detectsMissing() {
+    givenTxnCtxSysDeleting(TargetType.MISSING, NewExpiryType.FUTURE);
 
-		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
-	}
+    // when:
+    subject.doStateTransition();
 
-	@Test
-	void hasCorrectApplicability() {
-		// setup:
-		SystemDeleteTransactionBody.Builder op = SystemDeleteTransactionBody.newBuilder()
-				.setContractID(IdUtils.asContract("0.0.1001"));
-		var contractSysdelTxn = TransactionBody.newBuilder()
-				.setSystemDelete(op)
-				.build();
+    // then:
+    verify(txnCtx).setStatus(INVALID_FILE_ID);
+  }
 
-		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
+  @Test
+  void hasCorrectApplicability() {
+    // setup:
+    SystemDeleteTransactionBody.Builder op =
+        SystemDeleteTransactionBody.newBuilder().setContractID(IdUtils.asContract("0.0.1001"));
+    var contractSysdelTxn = TransactionBody.newBuilder().setSystemDelete(op).build();
 
-		// expect:
-		assertTrue(subject.applicability().test(fileSysDelTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-		assertFalse(subject.applicability().test(contractSysdelTxn));
-	}
+    givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
 
-	@Test
-	void syntaxCheckRubberstamps() {
-		// given:
-		var syntaxCheck = subject.semanticCheck();
+    // expect:
+    assertTrue(subject.applicability().test(fileSysDelTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+    assertFalse(subject.applicability().test(contractSysdelTxn));
+  }
 
-		// expect:
-		assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
-	}
+  @Test
+  void syntaxCheckRubberstamps() {
+    // given:
+    var syntaxCheck = subject.semanticCheck();
 
-	private void givenTxnCtxSysDeleting(TargetType type, NewExpiryType expiryType) {
-		SystemDeleteTransactionBody.Builder op = SystemDeleteTransactionBody.newBuilder();
+    // expect:
+    assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
+  }
 
-		switch (type) {
-			case VALID:
-				op.setFileID(tbd);
-				break;
-			case MISSING:
-				op.setFileID(missing);
-				break;
-			case DELETED:
-				op.setFileID(deleted);
-				break;
-		}
+  private void givenTxnCtxSysDeleting(TargetType type, NewExpiryType expiryType) {
+    SystemDeleteTransactionBody.Builder op = SystemDeleteTransactionBody.newBuilder();
 
-		switch (expiryType) {
-			case NONE:
-				break;
-			case FUTURE:
-				op.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(newExpiry));
-				break;
-			case PAST:
-				op.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(now - 1));
-				break;
-		}
+    switch (type) {
+      case VALID:
+        op.setFileID(tbd);
+        break;
+      case MISSING:
+        op.setFileID(missing);
+        break;
+      case DELETED:
+        op.setFileID(deleted);
+        break;
+    }
 
-		txnId = TransactionID.newBuilder()
-				.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-				.build();
-		fileSysDelTxn = TransactionBody.newBuilder()
-				.setTransactionID(txnId)
-				.setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-				.setSystemDelete(op)
-				.build();
-		given(accessor.getTxn()).willReturn(fileSysDelTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
-	}
+    switch (expiryType) {
+      case NONE:
+        break;
+      case FUTURE:
+        op.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(newExpiry));
+        break;
+      case PAST:
+        op.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(now - 1));
+        break;
+    }
+
+    txnId =
+        TransactionID.newBuilder()
+            .setTransactionValidStart(
+                MiscUtils.asTimestamp(Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+            .build();
+    fileSysDelTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(txnId)
+            .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+            .setSystemDelete(op)
+            .build();
+    given(accessor.getTxn()).willReturn(fileSysDelTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+  }
 }

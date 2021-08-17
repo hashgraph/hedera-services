@@ -22,7 +22,6 @@ package com.hedera.services.legacy.proto.utils;
 
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.builder.RequestBuilder;
-
 import java.time.Clock;
 import java.time.Instant;
 
@@ -40,8 +39,8 @@ public class ProtoCommonUtils {
    */
   public static Timestamp getCurrentTimestampUTC(long sec_to_wind) {
     Timestamp timestamp = null;
-    timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(sec_to_wind));
+    timestamp =
+        RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(sec_to_wind));
     return timestamp;
   }
 
@@ -62,7 +61,9 @@ public class ProtoCommonUtils {
    * @return the timestamp plus the number of seconds
    */
   public static Timestamp addSecondsToTimestamp(Timestamp timestamp, long seconds) {
-    return Timestamp.newBuilder().setNanos(timestamp.getNanos())
-        .setSeconds(timestamp.getSeconds() + seconds).build();
+    return Timestamp.newBuilder()
+        .setNanos(timestamp.getNanos())
+        .setSeconds(timestamp.getSeconds() + seconds)
+        .build();
   }
 }

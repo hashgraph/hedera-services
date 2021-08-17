@@ -21,22 +21,22 @@ package com.hedera.services.config;
  */
 
 public class MockHederaNumbers extends HederaNumbers {
-	public MockHederaNumbers() {
-		super(null);
-	}
+  public MockHederaNumbers() {
+    super(null);
+  }
 
-	@Override
-	public long realm() {
-		return 0L;
-	}
+  @Override
+  public long realm() {
+    return 0L;
+  }
 
-	@Override
-	public long shard() {
-		return 0L;
-	}
+  @Override
+  public long shard() {
+    return 0L;
+  }
 
-	@Override
-	public long numReservedSystemEntities() {
-		return 1_000L;
-	}
+  @Override
+  public long numReservedSystemEntities() {
+    return 1_000L;
+  }
 }

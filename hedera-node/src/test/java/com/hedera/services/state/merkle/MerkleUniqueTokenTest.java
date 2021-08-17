@@ -20,23 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.Instant;
-import java.util.Arrays;
-
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,186 +32,205 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Arrays;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 class MerkleUniqueTokenTest {
-	private MerkleUniqueToken subject;
+  private MerkleUniqueToken subject;
 
-	private EntityId owner;
-	private EntityId otherOwner;
-	private byte[] metadata;
-	private byte[] otherMetadata;
-	private RichInstant timestamp;
-	private RichInstant otherTimestamp;
-	private RichInstant anotherTimestamp;
+  private EntityId owner;
+  private EntityId otherOwner;
+  private byte[] metadata;
+  private byte[] otherMetadata;
+  private RichInstant timestamp;
+  private RichInstant otherTimestamp;
+  private RichInstant anotherTimestamp;
 
-	private static long timestampL = 1_234_567L;
+  private static long timestampL = 1_234_567L;
 
-	@BeforeEach
-	void setup() {
-		owner = new EntityId(0, 0, 3);
-		otherOwner = new EntityId(0, 0, 4);
-		metadata = "Test NFT".getBytes();
-		otherMetadata = "Test NFT2".getBytes();
-		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
-		otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
-		anotherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL, 1));
+  @BeforeEach
+  void setup() {
+    owner = new EntityId(0, 0, 3);
+    otherOwner = new EntityId(0, 0, 4);
+    metadata = "Test NFT".getBytes();
+    otherMetadata = "Test NFT2".getBytes();
+    timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
+    otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
+    anotherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL, 1));
 
-		subject = new MerkleUniqueToken(owner, metadata, timestamp);
-	}
+    subject = new MerkleUniqueToken(owner, metadata, timestamp);
+  }
 
-	@Test
-	void equalsContractWorks() {
-		// given
-		var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
-		var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
-		var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
-		var other4 = new MerkleUniqueToken(owner, metadata, anotherTimestamp);
-		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
+  @Test
+  void equalsContractWorks() {
+    // given
+    var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
+    var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
+    var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
+    var other4 = new MerkleUniqueToken(owner, metadata, anotherTimestamp);
+    var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 
-		// expect
-		assertNotEquals(subject, other);
-		assertNotEquals(subject, other2);
-		assertNotEquals(subject, other3);
-		assertNotEquals(subject, other4);
-		assertEquals(subject, identical);
-	}
+    // expect
+    assertNotEquals(subject, other);
+    assertNotEquals(subject, other2);
+    assertNotEquals(subject, other3);
+    assertNotEquals(subject, other4);
+    assertEquals(subject, identical);
+  }
 
-	@Test
-	void hashCodeWorks() {
-		// given:
-		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
-		var other = new MerkleUniqueToken(otherOwner, otherMetadata, otherTimestamp);
+  @Test
+  void hashCodeWorks() {
+    // given:
+    var identical = new MerkleUniqueToken(owner, metadata, timestamp);
+    var other = new MerkleUniqueToken(otherOwner, otherMetadata, otherTimestamp);
 
-		// expect:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-		assertEquals(subject.hashCode(), identical.hashCode());
-	}
+    // expect:
+    assertNotEquals(subject.hashCode(), other.hashCode());
+    assertEquals(subject.hashCode(), identical.hashCode());
+  }
 
-	@Test
-	void toStringWorks() {
-		// given:
-		assertEquals("MerkleUniqueToken{" +
-						"owner=0.0.3, " +
-						"creationTime=1970-01-15T06:56:07Z, " +
-						"metadata=" + Arrays.toString(metadata) + "}",
-				subject.toString());
-	}
+  @Test
+  void toStringWorks() {
+    // given:
+    assertEquals(
+        "MerkleUniqueToken{"
+            + "owner=0.0.3, "
+            + "creationTime=1970-01-15T06:56:07Z, "
+            + "metadata="
+            + Arrays.toString(metadata)
+            + "}",
+        subject.toString());
+  }
 
-	@Test
-	void copyWorks() {
-		// given:
-		var copyNft = subject.copy();
-		var other = new Object();
+  @Test
+  void copyWorks() {
+    // given:
+    var copyNft = subject.copy();
+    var other = new Object();
 
-		// expect:
-		assertNotSame(copyNft, subject);
-		assertEquals(subject, copyNft);
-		assertNotEquals(subject, other);
-	}
+    // expect:
+    assertNotSame(copyNft, subject);
+    assertEquals(subject, copyNft);
+    assertNotEquals(subject, other);
+  }
 
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+  @Test
+  void serializeWorks() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = inOrder(out);
 
-		// when:
-		subject.serialize(out);
+    // when:
+    subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeInt(owner.identityCode());
-		inOrder.verify(out).writeLong(packedTime(timestamp.getSeconds(), timestamp.getNanos()));
-		inOrder.verify(out).writeByteArray(metadata);
-	}
+    // then:
+    inOrder.verify(out).writeInt(owner.identityCode());
+    inOrder.verify(out).writeLong(packedTime(timestamp.getSeconds(), timestamp.getNanos()));
+    inOrder.verify(out).writeByteArray(metadata);
+  }
 
-	@Test
-	void deserializeWorks() throws IOException {
-		// setup:
-		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
-		// and:
-		final var packedTime = packedTime(timestamp.getSeconds(), timestamp.getNanos());
+  @Test
+  void deserializeWorks() throws IOException {
+    // setup:
+    SerializableDataInputStream in = mock(SerializableDataInputStream.class);
+    // and:
+    final var packedTime = packedTime(timestamp.getSeconds(), timestamp.getNanos());
 
-		given(in.readByteArray(anyInt())).willReturn(metadata);
-		given(in.readLong()).willReturn(packedTime);
-		given(in.readInt()).willReturn(owner.identityCode());
+    given(in.readByteArray(anyInt())).willReturn(metadata);
+    given(in.readLong()).willReturn(packedTime);
+    given(in.readInt()).willReturn(owner.identityCode());
 
-		// and:
-		var read = new MerkleUniqueToken();
+    // and:
+    var read = new MerkleUniqueToken();
 
-		// when:
-		read.deserialize(in, MerkleUniqueToken.MERKLE_VERSION);
+    // when:
+    read.deserialize(in, MerkleUniqueToken.MERKLE_VERSION);
 
-		// then:
-		assertEquals(subject, read);
-	}
+    // then:
+    assertEquals(subject, read);
+  }
 
-	@Test
-	void liveFireSerdeWorks() throws IOException, ConstructableRegistryException {
-		// setup:
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		final var dos = new SerializableDataOutputStream(baos);
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleUniqueToken.class, MerkleUniqueToken::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
+  @Test
+  void liveFireSerdeWorks() throws IOException, ConstructableRegistryException {
+    // setup:
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    final var dos = new SerializableDataOutputStream(baos);
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerkleUniqueToken.class, MerkleUniqueToken::new));
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(EntityId.class, EntityId::new));
 
-		// given:
-		subject.serialize(dos);
-		dos.flush();
-		// and:
-		final var bytes = baos.toByteArray();
-		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-		final var din = new SerializableDataInputStream(bais);
+    // given:
+    subject.serialize(dos);
+    dos.flush();
+    // and:
+    final var bytes = baos.toByteArray();
+    final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+    final var din = new SerializableDataInputStream(bais);
 
-		// when:
-		final var newSubject = new MerkleUniqueToken();
-		newSubject.deserialize(din, MerkleToken.MERKLE_VERSION);
+    // when:
+    final var newSubject = new MerkleUniqueToken();
+    newSubject.deserialize(din, MerkleToken.MERKLE_VERSION);
 
-		// then:
-		assertEquals(subject, newSubject);
-	}
+    // then:
+    assertEquals(subject, newSubject);
+  }
 
-	@Test
-	void merkleMethodsWork() {
-		// expect;
-		assertEquals(MerkleUniqueToken.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleUniqueToken.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertTrue(subject.isLeaf());
-	}
+  @Test
+  void merkleMethodsWork() {
+    // expect;
+    assertEquals(MerkleUniqueToken.MERKLE_VERSION, subject.getVersion());
+    assertEquals(MerkleUniqueToken.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertTrue(subject.isLeaf());
+  }
 
-	@Test
-	void setsAndGetsOwner() {
-		// setup:
-		final var smallNumOwner = new EntityId(0, 0, 1);
-		final var largeNumOwner = new EntityId(0, 0, MAX_NUM_ALLOWED);
+  @Test
+  void setsAndGetsOwner() {
+    // setup:
+    final var smallNumOwner = new EntityId(0, 0, 1);
+    final var largeNumOwner = new EntityId(0, 0, MAX_NUM_ALLOWED);
 
-		// expect:
-		subject.setOwner(smallNumOwner);
-		assertEquals(smallNumOwner, subject.getOwner());
+    // expect:
+    subject.setOwner(smallNumOwner);
+    assertEquals(smallNumOwner, subject.getOwner());
 
-		// and expect:
-		subject.setOwner(largeNumOwner);
-		assertEquals(largeNumOwner, subject.getOwner());
-	}
+    // and expect:
+    subject.setOwner(largeNumOwner);
+    assertEquals(largeNumOwner, subject.getOwner());
+  }
 
-	@Test
-	void getsMetadata() {
-		assertEquals(metadata, subject.getMetadata());
-	}
+  @Test
+  void getsMetadata() {
+    assertEquals(metadata, subject.getMetadata());
+  }
 
-	@Test
-	void getsCreationTime() {
-		assertEquals(timestamp, subject.getCreationTime());
-	}
+  @Test
+  void getsCreationTime() {
+    assertEquals(timestamp, subject.getCreationTime());
+  }
 
-	@Test
-	void treasuryOwnershipCheckWorks() {
-		// expect:
-		assertFalse(subject.isTreasuryOwned());
+  @Test
+  void treasuryOwnershipCheckWorks() {
+    // expect:
+    assertFalse(subject.isTreasuryOwned());
 
-		// and:
-		subject.setOwner(EntityId.MISSING_ENTITY_ID);
-		// then:
-		assertTrue(subject.isTreasuryOwned());
-	}
+    // and:
+    subject.setOwner(EntityId.MISSING_ENTITY_ID);
+    // then:
+    assertTrue(subject.isTreasuryOwned());
+  }
 }

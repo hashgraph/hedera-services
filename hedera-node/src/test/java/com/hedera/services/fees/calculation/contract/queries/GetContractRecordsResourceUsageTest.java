@@ -20,6 +20,14 @@ package com.hedera.services.fees.calculation.contract.queries;
  * ‍
  */
 
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
@@ -33,81 +41,70 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class GetContractRecordsResourceUsageTest {
-	StateView view;
-	SmartContractFeeBuilder usageEstimator;
-	GetContractRecordsResourceUsage subject;
-	String a = "0.0.1234";
+  StateView view;
+  SmartContractFeeBuilder usageEstimator;
+  GetContractRecordsResourceUsage subject;
+  String a = "0.0.1234";
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		usageEstimator = mock(SmartContractFeeBuilder.class);
-		view = new StateView(
-				null,
-				null,
-				null,
-				null,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+  @BeforeEach
+  private void setup() throws Throwable {
+    usageEstimator = mock(SmartContractFeeBuilder.class);
+    view =
+        new StateView(
+            null, null, null, null, EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
-		subject = new GetContractRecordsResourceUsage(usageEstimator);
-	}
+    subject = new GetContractRecordsResourceUsage(usageEstimator);
+  }
 
-	@Test
-	void invokesEstimatorAsExpectedForType() {
-		// setup:
-		FeeData costAnswerUsage = mock(FeeData.class);
-		FeeData answerOnlyUsage = mock(FeeData.class);
+  @Test
+  void invokesEstimatorAsExpectedForType() {
+    // setup:
+    FeeData costAnswerUsage = mock(FeeData.class);
+    FeeData answerOnlyUsage = mock(FeeData.class);
 
-		// given:
-		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
-		Query costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
-		given(usageEstimator.getContractRecordsQueryFeeMatrices(
-				GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS,
-				COST_ANSWER)).willReturn(costAnswerUsage);
-		given(usageEstimator.getContractRecordsQueryFeeMatrices(
-				GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS,
-				ANSWER_ONLY)).willReturn(answerOnlyUsage);
+    // given:
+    Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
+    Query costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
+    given(
+            usageEstimator.getContractRecordsQueryFeeMatrices(
+                GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS, COST_ANSWER))
+        .willReturn(costAnswerUsage);
+    given(
+            usageEstimator.getContractRecordsQueryFeeMatrices(
+                GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS, ANSWER_ONLY))
+        .willReturn(answerOnlyUsage);
 
-		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
-		FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
+    // when:
+    FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
+    FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
 
-		// then:
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
-	}
+    // then:
+    assertTrue(costAnswerEstimate == costAnswerUsage);
+    assertTrue(answerOnlyEstimate == answerOnlyUsage);
+  }
 
+  @Test
+  void recognizesApplicableQuery() {
+    // given:
+    Query accountRecordsQuery = accountRecordsQuery(a, COST_ANSWER);
+    Query nonContractRecordsQuery = nonContractRecordsQuery();
 
-	@Test
-	void recognizesApplicableQuery() {
-		// given:
-		Query accountRecordsQuery = accountRecordsQuery(a, COST_ANSWER);
-		Query nonContractRecordsQuery = nonContractRecordsQuery();
+    // expect:
+    assertTrue(subject.applicableTo(accountRecordsQuery));
+    assertFalse(subject.applicableTo(nonContractRecordsQuery));
+  }
 
-		// expect:
-		assertTrue(subject.applicableTo(accountRecordsQuery));
-		assertFalse(subject.applicableTo(nonContractRecordsQuery));
-	}
+  private Query accountRecordsQuery(String target, ResponseType type) {
+    ContractID id = asContract(target);
+    ContractGetRecordsQuery.Builder op =
+        ContractGetRecordsQuery.newBuilder()
+            .setContractID(id)
+            .setHeader(QueryHeader.newBuilder().setResponseType(type));
+    return Query.newBuilder().setContractGetRecords(op).build();
+  }
 
-	private Query accountRecordsQuery(String target, ResponseType type) {
-		ContractID id = asContract(target);
-		ContractGetRecordsQuery.Builder op = ContractGetRecordsQuery.newBuilder()
-				.setContractID(id)
-				.setHeader(QueryHeader.newBuilder().setResponseType(type));
-		return Query.newBuilder()
-				.setContractGetRecords(op)
-				.build();
-	}
-
-	private Query nonContractRecordsQuery() {
-		return Query.newBuilder().build();
-	}
+  private Query nonContractRecordsQuery() {
+    return Query.newBuilder().build();
+  }
 }

@@ -20,45 +20,45 @@ package com.hedera.services.bdd.suites.misc;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class TogglePayerRecordUse extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(TogglePayerRecordUse.class);
+  private static final Logger log = LogManager.getLogger(TogglePayerRecordUse.class);
 
-	public static void main(String... args) throws Exception {
-		new TogglePayerRecordUse().runSuiteSync();
-	}
+  public static void main(String... args) throws Exception {
+    new TogglePayerRecordUse().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						changePayerRecordStateStorage(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          changePayerRecordStateStorage(),
+        });
+  }
 
-	private HapiApiSpec changePayerRecordStateStorage() {
-		final String NEW_VALUE = "false";
+  private HapiApiSpec changePayerRecordStateStorage() {
+    final String NEW_VALUE = "false";
 
-		return defaultHapiSpec("ChangePayerRecordStateStorage")
-				.given().when().then(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("ledger.createPayerRecords", NEW_VALUE))
-				);
-	}
+    return defaultHapiSpec("ChangePayerRecordStateStorage")
+        .given()
+        .when()
+        .then(
+            fileUpdate(APP_PROPERTIES)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(Map.of("ledger.createPayerRecords", NEW_VALUE)));
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

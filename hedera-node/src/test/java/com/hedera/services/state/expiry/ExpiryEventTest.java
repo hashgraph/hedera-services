@@ -20,31 +20,31 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+
 class ExpiryEventTest {
-	ExpiryEvent expiryEvent = new ExpiryEvent("something", 1_234_567L);
+  ExpiryEvent expiryEvent = new ExpiryEvent("something", 1_234_567L);
 
-	@Test
-	void expiryEventToStringWorks() {
-		var desired = "ExpiryEvent{id=something, expiry=1234567}";
+  @Test
+  void expiryEventToStringWorks() {
+    var desired = "ExpiryEvent{id=something, expiry=1234567}";
 
-		// when:
-		var actual = expiryEvent.toString();
+    // when:
+    var actual = expiryEvent.toString();
 
-		// then:
-		assertEquals(desired, actual);
-	}
+    // then:
+    assertEquals(desired, actual);
+  }
 
-	@Test
-	void expiryEventIsExpiredAt() {
-		// when:
-		boolean expected = false;
-		boolean actual = expiryEvent.isExpiredAt(1L);
+  @Test
+  void expiryEventIsExpiredAt() {
+    // when:
+    boolean expected = false;
+    boolean actual = expiryEvent.isExpiredAt(1L);
 
-		// then:
-		assertEquals(expected, actual);
-	}
+    // then:
+    assertEquals(expected, actual);
+  }
 }

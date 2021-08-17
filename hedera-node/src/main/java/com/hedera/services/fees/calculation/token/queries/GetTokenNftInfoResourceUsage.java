@@ -20,57 +20,52 @@ package com.hedera.services.fees.calculation.token.queries;
  * ‍
  */
 
+import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
+import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.token.TokenGetNftInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
-import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
-
 public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
+  static Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasTokenGetNftInfo();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasTokenGetNftInfo();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageFor(query, view, NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    return usageFor(query, view, NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				Optional.of(queryCtx));
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+    return usageFor(query, view, Optional.of(queryCtx));
+  }
 
-	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getTokenGetNftInfo();
-		var optionalInfo = view.infoForNft(op.getNftID());
-		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(NFT_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
-					.givenMetadata(info.getMetadata().toString());
-			return estimate.get();
-		} else {
-			return FeeData.getDefaultInstance();
-		}
-	}
+  private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
+    var op = query.getTokenGetNftInfo();
+    var optionalInfo = view.infoForNft(op.getNftID());
+    if (optionalInfo.isPresent()) {
+      var info = optionalInfo.get();
+      queryCtx.ifPresent(ctx -> ctx.put(NFT_INFO_CTX_KEY, info));
+      var estimate = factory.apply(query).givenMetadata(info.getMetadata().toString());
+      return estimate.get();
+    } else {
+      return FeeData.getDefaultInstance();
+    }
+  }
 }

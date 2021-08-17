@@ -27,38 +27,40 @@ import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum TokenEntitySizes {
-	TOKEN_ENTITY_SIZES;
+  TOKEN_ENTITY_SIZES;
 
-	/* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
-	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
-	/* { decimals, tokenType, supplyType } */
-	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
-	/* { expiry, maxSupply, totalSupply, autoRenewPeriod, currentSerialNum } */
-	static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 5;
-	/* { treasury } */
-	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
+  /* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
+  static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
+  /* { decimals, tokenType, supplyType } */
+  static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
+  /* { expiry, maxSupply, totalSupply, autoRenewPeriod, currentSerialNum } */
+  static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 5;
+  /* { treasury } */
+  static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
-	public int fixedBytesInTokenRepr() {
-		return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE
-				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * INT_SIZE
-				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
-	}
+  public int fixedBytesInTokenRepr() {
+    return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE
+        + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * INT_SIZE
+        + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * LONG_SIZE
+        + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
+  }
 
-	public int totalBytesInTokenReprGiven(String symbol, String name) {
-		return fixedBytesInTokenRepr() + symbol.length() + name.length();
-	}
+  public int totalBytesInTokenReprGiven(String symbol, String name) {
+    return fixedBytesInTokenRepr() + symbol.length() + name.length();
+  }
 
-	public int bytesUsedToRecordTokenTransfers(int numTokens, int fungibleNumTransfers, int uniqueNumTransfers) {
-		return numTokens * BASIC_ENTITY_ID_SIZE + fungibleNumTransfers * USAGE_PROPERTIES.accountAmountBytes()
-				+ uniqueNumTransfers * USAGE_PROPERTIES.nftTransferBytes();
-	}
+  public int bytesUsedToRecordTokenTransfers(
+      int numTokens, int fungibleNumTransfers, int uniqueNumTransfers) {
+    return numTokens * BASIC_ENTITY_ID_SIZE
+        + fungibleNumTransfers * USAGE_PROPERTIES.accountAmountBytes()
+        + uniqueNumTransfers * USAGE_PROPERTIES.nftTransferBytes();
+  }
 
-	public long bytesUsedForUniqueTokenTransfers(int numOwnershipChanges) {
-		return numOwnershipChanges * (2L * BASIC_ENTITY_ID_SIZE + LONG_SIZE);
-	}
+  public long bytesUsedForUniqueTokenTransfers(int numOwnershipChanges) {
+    return numOwnershipChanges * (2L * BASIC_ENTITY_ID_SIZE + LONG_SIZE);
+  }
 
-	public int bytesUsedPerAccountRelationship() {
-		return 3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * BOOL_SIZE;
-	}
+  public int bytesUsedPerAccountRelationship() {
+    return 3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * BOOL_SIZE;
+  }
 }

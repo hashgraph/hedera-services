@@ -28,33 +28,33 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.FileFeeBuilder;
 
 public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator {
-	private final FileFeeBuilder usageEstimator;
+  private final FileFeeBuilder usageEstimator;
 
-	public GetFileContentsResourceUsage(FileFeeBuilder usageEstimator) {
-		this.usageEstimator = usageEstimator;
-	}
+  public GetFileContentsResourceUsage(FileFeeBuilder usageEstimator) {
+    this.usageEstimator = usageEstimator;
+  }
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasFileGetContents();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasFileGetContents();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageGivenType(query, view, query.getFileGetContents().getHeader().getResponseType());
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageGivenType(query, view, query.getFileGetContents().getHeader().getResponseType());
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getFileGetContents();
-		var info = view.infoForFile(op.getFileID());
-		/* Given the test in {@code GetFileContentsAnswer.checkValidity}, this can only be empty
-		 * under the extraordinary circumstance that the desired file expired during the query
-		 * answer flow (which will now fail downstream with an appropriate status code); so
-		 * just return the default {@code FeeData} here. */
-		if (info.isEmpty()) {
-			return FeeData.getDefaultInstance();
-		}
-		return usageEstimator.getFileContentQueryFeeMatrices((int) info.get().getSize(), type);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    var op = query.getFileGetContents();
+    var info = view.infoForFile(op.getFileID());
+    /* Given the test in {@code GetFileContentsAnswer.checkValidity}, this can only be empty
+     * under the extraordinary circumstance that the desired file expired during the query
+     * answer flow (which will now fail downstream with an appropriate status code); so
+     * just return the default {@code FeeData} here. */
+    if (info.isEmpty()) {
+      return FeeData.getDefaultInstance();
+    }
+    return usageEstimator.getFileContentQueryFeeMatrices((int) info.get().getSize(), type);
+  }
 }

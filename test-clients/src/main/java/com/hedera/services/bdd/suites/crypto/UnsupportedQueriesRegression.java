@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,46 +20,46 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getBySolidityIdNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class UnsupportedQueriesRegression extends HapiApiSuite {
-	static final Logger log = LogManager.getLogger(UnsupportedQueriesRegression.class);
+  static final Logger log = LogManager.getLogger(UnsupportedQueriesRegression.class);
 
-	public static void main(String... args) {
-		new UnsupportedQueriesRegression().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new UnsupportedQueriesRegression().runSuiteSync();
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						verifyUnsupportedOps(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          verifyUnsupportedOps(),
+        });
+  }
 
-	private HapiApiSpec verifyUnsupportedOps() {
-		return defaultHapiSpec("VerifyUnsupportedOps")
-				.given( ).when( ).then(
-						getClaimNotSupported(),
-						getStakersNotSupported(),
-						getFastRecordNotSupported(),
-						getBySolidityIdNotSupported()
-				);
-	}
+  private HapiApiSpec verifyUnsupportedOps() {
+    return defaultHapiSpec("VerifyUnsupportedOps")
+        .given()
+        .when()
+        .then(
+            getClaimNotSupported(),
+            getStakersNotSupported(),
+            getFastRecordNotSupported(),
+            getBySolidityIdNotSupported());
+  }
 }

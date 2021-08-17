@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,77 +20,69 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.hederahashgraph.api.proto.java.FixedFee;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class FixedFeeSpecTest {
-	@Test
-	void factoryWorksForHbar() {
-		// setup:
-		final var hbarGrpc = FixedFee.newBuilder()
-				.setAmount(123)
-				.build();
-		final var expected = new FixedFeeSpec(123, null);
+  @Test
+  void factoryWorksForHbar() {
+    // setup:
+    final var hbarGrpc = FixedFee.newBuilder().setAmount(123).build();
+    final var expected = new FixedFeeSpec(123, null);
 
-		// when
-		final var actual = FixedFeeSpec.fromGrpc(hbarGrpc);
+    // when
+    final var actual = FixedFeeSpec.fromGrpc(hbarGrpc);
 
-		// then:
-		assertEquals(expected, actual);
-	}
+    // then:
+    assertEquals(expected, actual);
+  }
 
-	@Test
-	void factoryWorksForHts() {
-		// setup:
-		final var denom = new EntityId(1, 2, 3);
-		final var htsGrpc = FixedFee.newBuilder()
-				.setAmount(123)
-				.setDenominatingTokenId(denom.toGrpcTokenId())
-				.build();
-		final var expected = new FixedFeeSpec(123, denom);
+  @Test
+  void factoryWorksForHts() {
+    // setup:
+    final var denom = new EntityId(1, 2, 3);
+    final var htsGrpc =
+        FixedFee.newBuilder().setAmount(123).setDenominatingTokenId(denom.toGrpcTokenId()).build();
+    final var expected = new FixedFeeSpec(123, denom);
 
-		// when
-		final var actual = FixedFeeSpec.fromGrpc(htsGrpc);
+    // when
+    final var actual = FixedFeeSpec.fromGrpc(htsGrpc);
 
-		// then:
-		assertEquals(expected, actual);
-	}
+    // then:
+    assertEquals(expected, actual);
+  }
 
-	@Test
-	void reprWorksForHbar() {
-		// setup:
-		final var hbarGrpc = FixedFee.newBuilder()
-				.setAmount(123)
-				.build();
+  @Test
+  void reprWorksForHbar() {
+    // setup:
+    final var hbarGrpc = FixedFee.newBuilder().setAmount(123).build();
 
-		// given:
-		final var subject = new FixedFeeSpec(123, null);
+    // given:
+    final var subject = new FixedFeeSpec(123, null);
 
-		// when:
-		final var repr = subject.asGrpc();
+    // when:
+    final var repr = subject.asGrpc();
 
-		// then:
-		assertEquals(hbarGrpc, repr);
-	}
+    // then:
+    assertEquals(hbarGrpc, repr);
+  }
 
-	@Test
-	void reprWorksForHts() {
-		// setup:
-		final var denom = new EntityId(1, 2, 3);
-		final var htsGrpc = FixedFee.newBuilder()
-				.setAmount(123)
-				.setDenominatingTokenId(denom.toGrpcTokenId())
-				.build();
+  @Test
+  void reprWorksForHts() {
+    // setup:
+    final var denom = new EntityId(1, 2, 3);
+    final var htsGrpc =
+        FixedFee.newBuilder().setAmount(123).setDenominatingTokenId(denom.toGrpcTokenId()).build();
 
-		// given:
-		final var subject = new FixedFeeSpec(123, denom);
+    // given:
+    final var subject = new FixedFeeSpec(123, denom);
 
-		// when:
-		final var repr = subject.asGrpc();
+    // when:
+    final var repr = subject.asGrpc();
 
-		// then:
-		assertEquals(htsGrpc, repr);
-	}
+    // then:
+    assertEquals(htsGrpc, repr);
+  }
 }

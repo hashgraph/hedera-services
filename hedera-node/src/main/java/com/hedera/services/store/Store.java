@@ -26,29 +26,32 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
 import java.util.function.Consumer;
 
-/**
- * Defines a generic type able to manage arbitrary entities.
- *
- */
+/** Defines a generic type able to manage arbitrary entities. */
 public interface Store<T, K> {
-    K get(T id);
-    boolean exists(T id);
-    void apply(T id, Consumer<K> change);
+  K get(T id);
 
-    void setHederaLedger(HederaLedger ledger);
-    void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+  boolean exists(T id);
 
-    default void rebuildViews() {
-        /* No-op. */
-    }
+  void apply(T id, Consumer<K> change);
 
-    void commitCreation();
-    void rollbackCreation();
-    boolean isCreationPending();
+  void setHederaLedger(HederaLedger ledger);
 
-    T resolve(T id);
-    ResponseCodeEnum delete(T id);
+  void setAccountsLedger(
+      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+
+  default void rebuildViews() {
+    /* No-op. */
+  }
+
+  void commitCreation();
+
+  void rollbackCreation();
+
+  boolean isCreationPending();
+
+  T resolve(T id);
+
+  ResponseCodeEnum delete(T id);
 }

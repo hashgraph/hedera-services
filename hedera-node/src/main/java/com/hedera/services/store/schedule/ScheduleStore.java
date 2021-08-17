@@ -27,10 +27,9 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Defines a type able to manage Scheduled entities.
@@ -39,18 +38,22 @@ import java.util.function.Consumer;
  * @author Michael Tinker
  */
 public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
-	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
+  ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
 
-	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
-	ResponseCodeEnum delete(ScheduleID id);
+  void apply(ScheduleID id, Consumer<MerkleSchedule> change);
 
-	CreationResult<ScheduleID> createProvisionally(MerkleSchedule candidate, RichInstant consensusTime);
+  ResponseCodeEnum delete(ScheduleID id);
 
-	Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
-	ResponseCodeEnum markAsExecuted(ScheduleID id);
-	void expire(EntityId id);
+  CreationResult<ScheduleID> createProvisionally(
+      MerkleSchedule candidate, RichInstant consensusTime);
 
-	default ScheduleID resolve(ScheduleID id) {
-		return exists(id) ? id : MISSING_SCHEDULE;
-	}
+  Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
+
+  ResponseCodeEnum markAsExecuted(ScheduleID id);
+
+  void expire(EntityId id);
+
+  default ScheduleID resolve(ScheduleID id) {
+    return exists(id) ? id : MISSING_SCHEDULE;
+  }
 }

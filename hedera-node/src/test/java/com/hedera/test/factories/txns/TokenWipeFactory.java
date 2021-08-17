@@ -27,36 +27,34 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenWipeFactory extends SignedTxnFactory<TokenWipeFactory> {
-	private TokenWipeFactory() {}
+  private TokenWipeFactory() {}
 
-	private TokenID id;
-	private AccountID target;
+  private TokenID id;
+  private AccountID target;
 
-	public static TokenWipeFactory newSignedTokenWipe() {
-		return new TokenWipeFactory();
-	}
+  public static TokenWipeFactory newSignedTokenWipe() {
+    return new TokenWipeFactory();
+  }
 
-	public TokenWipeFactory wiping(TokenID id, AccountID to) {
-		this.target = to;
-		this.id = id;
-		return this;
-	}
+  public TokenWipeFactory wiping(TokenID id, AccountID to) {
+    this.target = to;
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenWipeFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenWipeFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenWipeAccountTransactionBody.newBuilder()
-				.setAccount(target)
-				.setToken(id);
-		txn.setTokenWipe(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenWipeAccountTransactionBody.newBuilder().setAccount(target).setToken(id);
+    txn.setTokenWipe(op);
+  }
 }

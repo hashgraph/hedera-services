@@ -20,45 +20,45 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
+
 class AccountBalanceTest {
-	@Test
-	void comparesAllIdParts() {
-		// setup:
-		var a = new AccountBalance(5, 4, 3, 5);
-		var b = new AccountBalance(15, 20, 1, 25);
-		var c = new AccountBalance(5, 20, 4, 25);
-		var d = new AccountBalance(5, 4, 3, 25);
+  @Test
+  void comparesAllIdParts() {
+    // setup:
+    var a = new AccountBalance(5, 4, 3, 5);
+    var b = new AccountBalance(15, 20, 1, 25);
+    var c = new AccountBalance(5, 20, 4, 25);
+    var d = new AccountBalance(5, 4, 3, 25);
 
-		// expect:
-		assertTrue(a.compareTo(b) < 0);
-		assertTrue(a.compareTo(c) < 0);
-		assertTrue(a.compareTo(d) == 0);
-	}
+    // expect:
+    assertTrue(a.compareTo(b) < 0);
+    assertTrue(a.compareTo(c) < 0);
+    assertTrue(a.compareTo(d) == 0);
+  }
 
-	@Test
-	void beanWorks() {
-		// setup:
-		var a = new AccountBalance(5, 4, 3, 6);
+  @Test
+  void beanWorks() {
+    // setup:
+    var a = new AccountBalance(5, 4, 3, 6);
 
-		// expect:
-		assertEquals(5, a.getShard());
-		assertEquals(4, a.getRealm());
-		assertEquals(3, a.getNum());
-		assertEquals(6, a.getBalance());
-	}
+    // expect:
+    assertEquals(5, a.getShard());
+    assertEquals(4, a.getRealm());
+    assertEquals(3, a.getNum());
+    assertEquals(6, a.getBalance());
+  }
 
-	@Test
-	void hashCodeWorks() {
-		// given:
-		AccountBalance acc = new AccountBalance(5, 4, 3, 6);
+  @Test
+  void hashCodeWorks() {
+    // given:
+    AccountBalance acc = new AccountBalance(5, 4, 3, 6);
 
-		// expect:
-		int expectedHashCode = 31552699;
-		assertEquals(expectedHashCode, acc.hashCode());
-	}
+    // expect:
+    int expectedHashCode = 31552699;
+    assertEquals(expectedHashCode, acc.hashCode());
+  }
 }

@@ -20,42 +20,39 @@ package com.hedera.services.bdd.suites.freeze;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class FreezeIntellijNetwork extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FreezeIntellijNetwork.class);
+  private static final Logger log = LogManager.getLogger(FreezeIntellijNetwork.class);
 
-	public static void main(String... args) {
-		new FreezeIntellijNetwork().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new FreezeIntellijNetwork().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				new HapiApiSpec[]{
-						justFreeze(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          justFreeze(),
+        });
+  }
 
-	private HapiApiSpec justFreeze() {
-		return defaultHapiSpec("JustFreeze")
-				.given( ).when(
-				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
-				);
-	}
+  private HapiApiSpec justFreeze() {
+    return defaultHapiSpec("JustFreeze")
+        .given()
+        .when()
+        .then(freeze().startingIn(60).seconds().andLasting(1).minutes());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

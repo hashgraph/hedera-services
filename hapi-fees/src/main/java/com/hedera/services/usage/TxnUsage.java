@@ -20,47 +20,46 @@ package com.hedera.services.usage;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 public abstract class TxnUsage {
-	protected static final int AMOUNT_REPR_BYTES = 8;
+  protected static final int AMOUNT_REPR_BYTES = 8;
 
-	public static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
-	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
+  public static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
+  protected static UsageProperties usageProperties = USAGE_PROPERTIES;
 
-	protected final TransactionBody op;
-	protected final TxnUsageEstimator usageEstimator;
+  protected final TransactionBody op;
+  protected final TxnUsageEstimator usageEstimator;
 
-	public TxnUsage(TransactionBody op, TxnUsageEstimator usageEstimator) {
-		this.op = op;
-		this.usageEstimator = usageEstimator;
-	}
+  public TxnUsage(TransactionBody op, TxnUsageEstimator usageEstimator) {
+    this.op = op;
+    this.usageEstimator = usageEstimator;
+  }
 
-	public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
-		return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
-	}
+  public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
+    return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
+  }
 
-	protected void addAmountBpt() {
-		usageEstimator.addBpt(AMOUNT_REPR_BYTES);
-	}
+  protected void addAmountBpt() {
+    usageEstimator.addBpt(AMOUNT_REPR_BYTES);
+  }
 
-	protected void addEntityBpt() {
-		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
-	}
+  protected void addEntityBpt() {
+    usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
+  }
 
-	protected void addNetworkRecordRb(long rb) {
-		usageEstimator.addNetworkRbs(rb * usageProperties.legacyReceiptStorageSecs());
-	}
+  protected void addNetworkRecordRb(long rb) {
+    usageEstimator.addNetworkRbs(rb * usageProperties.legacyReceiptStorageSecs());
+  }
 
-	protected void addRecordRb(long rb) {
-		usageEstimator.addRbs(rb * usageProperties.legacyReceiptStorageSecs());
-	}
+  protected void addRecordRb(long rb) {
+    usageEstimator.addRbs(rb * usageProperties.legacyReceiptStorageSecs());
+  }
 }

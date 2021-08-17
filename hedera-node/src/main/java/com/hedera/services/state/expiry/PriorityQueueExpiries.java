@@ -23,50 +23,49 @@ package com.hedera.services.state.expiry;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
-/**
- * Priority Queue of expiration events in which events are ordered based on expiry
- */
+/** Priority Queue of expiration events in which events are ordered based on expiry */
 public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
-	private long now = 0L;
-	private final PriorityQueue<ExpiryEvent<K>> allExpiries;
+  private long now = 0L;
+  private final PriorityQueue<ExpiryEvent<K>> allExpiries;
 
-	public PriorityQueueExpiries(Comparator<ExpiryEvent<K>> eventCmp) {
-		allExpiries = new PriorityQueue<>(eventCmp);
-	}
+  public PriorityQueueExpiries(Comparator<ExpiryEvent<K>> eventCmp) {
+    allExpiries = new PriorityQueue<>(eventCmp);
+  }
 
-	@Override
-	public void reset() {
-		now = 0L;
-		allExpiries.clear();
-	}
+  @Override
+  public void reset() {
+    now = 0L;
+    allExpiries.clear();
+  }
 
-	@Override
-	public void track(K id, long expiry) {
-		allExpiries.offer(new ExpiryEvent<>(id, expiry));
-		now = allExpiries.peek().getExpiry();
-	}
+  @Override
+  public void track(K id, long expiry) {
+    allExpiries.offer(new ExpiryEvent<>(id, expiry));
+    now = allExpiries.peek().getExpiry();
+  }
 
-	@Override
-	public boolean hasExpiringAt(long now) {
-		return !allExpiries.isEmpty() && allExpiries.peek().isExpiredAt(now);
-	}
+  @Override
+  public boolean hasExpiringAt(long now) {
+    return !allExpiries.isEmpty() && allExpiries.peek().isExpiredAt(now);
+  }
 
-	@Override
-	public K expireNextAt(long now) {
-		if (allExpiries.isEmpty()) {
-			throw new IllegalStateException("No ids are queued for expiration!");
-		}
-		if (!allExpiries.peek().isExpiredAt(now)) {
-			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!", now));
-		}
-		return allExpiries.remove().getId();
-	}
+  @Override
+  public K expireNextAt(long now) {
+    if (allExpiries.isEmpty()) {
+      throw new IllegalStateException("No ids are queued for expiration!");
+    }
+    if (!allExpiries.peek().isExpiredAt(now)) {
+      throw new IllegalArgumentException(
+          String.format("Argument 'now=%d' is earlier than the next expiry!", now));
+    }
+    return allExpiries.remove().getId();
+  }
 
-	PriorityQueue<ExpiryEvent<K>> getAllExpiries() {
-		return allExpiries;
-	}
+  PriorityQueue<ExpiryEvent<K>> getAllExpiries() {
+    return allExpiries;
+  }
 
-	long getNow() {
-		return now;
-	}
+  long getNow() {
+    return now;
+  }
 }

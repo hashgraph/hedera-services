@@ -20,21 +20,6 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-
-import java.io.IOException;
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,193 +32,204 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.IOException;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+
 class TxnIdTest {
-	private AccountID payer = IdUtils.asAccount("0.0.75231");
-	private EntityId fcPayer = EntityId.fromGrpcAccountId(payer);
-	private Timestamp validStart = Timestamp.newBuilder()
-			.setSeconds(1_234_567L)
-			.setNanos(89)
-			.build();
-	private ByteString nonce = ByteString.copyFrom("THIS_IS_NEW".getBytes());
-	private RichInstant fcValidStart = RichInstant.fromGrpc(validStart);
+  private AccountID payer = IdUtils.asAccount("0.0.75231");
+  private EntityId fcPayer = EntityId.fromGrpcAccountId(payer);
+  private Timestamp validStart = Timestamp.newBuilder().setSeconds(1_234_567L).setNanos(89).build();
+  private ByteString nonce = ByteString.copyFrom("THIS_IS_NEW".getBytes());
+  private RichInstant fcValidStart = RichInstant.fromGrpc(validStart);
 
-	DomainSerdes serdes;
-	SerializableDataInputStream din;
-	SerializableDataOutputStream dout;
+  DomainSerdes serdes;
+  SerializableDataInputStream din;
+  SerializableDataOutputStream dout;
 
-	TxnId subject;
+  TxnId subject;
 
-	@Test
-	void serializeWorksForScheduled() throws IOException {
-		// setup:
-		subject = scheduledSubject();
-		// and:
-		dout = mock(SerializableDataOutputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
+  @Test
+  void serializeWorksForScheduled() throws IOException {
+    // setup:
+    subject = scheduledSubject();
+    // and:
+    dout = mock(SerializableDataOutputStream.class);
+    serdes = mock(DomainSerdes.class);
+    TxnId.serdes = serdes;
 
-		// given:
-		InOrder inOrder = Mockito.inOrder(serdes, dout);
+    // given:
+    InOrder inOrder = Mockito.inOrder(serdes, dout);
 
-		// when:
-		subject.serialize(dout);
+    // when:
+    subject.serialize(dout);
 
-		// then:
-		inOrder.verify(dout).writeSerializable(fcPayer, Boolean.TRUE);
-		inOrder.verify(serdes).serializeTimestamp(fcValidStart, dout);
-		inOrder.verify(dout, times(1)).writeBoolean(anyBoolean());
+    // then:
+    inOrder.verify(dout).writeSerializable(fcPayer, Boolean.TRUE);
+    inOrder.verify(serdes).serializeTimestamp(fcValidStart, dout);
+    inOrder.verify(dout, times(1)).writeBoolean(anyBoolean());
 
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
-	}
+    // cleanup:
+    TxnId.serdes = new DomainSerdes();
+  }
 
-	@Test
-	void preV0120DeserializeWorks() throws IOException {
-		// setup:
-		subject = unscheduledSubject();
-		// and:
-		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
+  @Test
+  void preV0120DeserializeWorks() throws IOException {
+    // setup:
+    subject = unscheduledSubject();
+    // and:
+    din = mock(SerializableDataInputStream.class);
+    serdes = mock(DomainSerdes.class);
+    TxnId.serdes = serdes;
 
-		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
-		// and:
-		var deserializedId = new TxnId();
+    given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class)))
+        .willReturn(fcPayer);
+    given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+    // and:
+    var deserializedId = new TxnId();
 
-		// when:
-		deserializedId.deserialize(din, TxnId.PRE_RELEASE_0120_VERSION);
+    // when:
+    deserializedId.deserialize(din, TxnId.PRE_RELEASE_0120_VERSION);
 
-		// then:
-		assertEquals(subject, deserializedId);
-		verify(din, never()).readBoolean();
-		verify(din, never()).readByteArray(Integer.MAX_VALUE);
+    // then:
+    assertEquals(subject, deserializedId);
+    verify(din, never()).readBoolean();
+    verify(din, never()).readByteArray(Integer.MAX_VALUE);
 
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
-	}
+    // cleanup:
+    TxnId.serdes = new DomainSerdes();
+  }
 
-	@Test
-	void v0120DeserializeIgnoresNonce() throws IOException {
-		// setup:
-		subject = scheduledSubject();
-		// and:
-		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
+  @Test
+  void v0120DeserializeIgnoresNonce() throws IOException {
+    // setup:
+    subject = scheduledSubject();
+    // and:
+    din = mock(SerializableDataInputStream.class);
+    serdes = mock(DomainSerdes.class);
+    TxnId.serdes = serdes;
 
-		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
-		given(din.readBoolean()).willReturn(true).willReturn(true);
-		given(din.readByteArray(anyInt())).willReturn(nonce.toByteArray());
-		// and:
-		var deserializedId = new TxnId();
+    given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class)))
+        .willReturn(fcPayer);
+    given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+    given(din.readBoolean()).willReturn(true).willReturn(true);
+    given(din.readByteArray(anyInt())).willReturn(nonce.toByteArray());
+    // and:
+    var deserializedId = new TxnId();
 
-		// when:
-		deserializedId.deserialize(din, TxnId.RELEASE_0120_VERSION);
+    // when:
+    deserializedId.deserialize(din, TxnId.RELEASE_0120_VERSION);
 
-		// then:
-		assertEquals(subject, deserializedId);
-		// and:
-		verify(din, times(2)).readBoolean();
-		verify(din).readByteArray(Integer.MAX_VALUE);
+    // then:
+    assertEquals(subject, deserializedId);
+    // and:
+    verify(din, times(2)).readBoolean();
+    verify(din).readByteArray(Integer.MAX_VALUE);
 
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
-	}
+    // cleanup:
+    TxnId.serdes = new DomainSerdes();
+  }
 
-	@Test
-	void v0130DeserializeForgetsNonce() throws IOException {
-		// setup:
-		subject = scheduledSubject();
-		// and:
-		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
+  @Test
+  void v0130DeserializeForgetsNonce() throws IOException {
+    // setup:
+    subject = scheduledSubject();
+    // and:
+    din = mock(SerializableDataInputStream.class);
+    serdes = mock(DomainSerdes.class);
+    TxnId.serdes = serdes;
 
-		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
-		given(din.readBoolean()).willReturn(true);
-		// and:
-		var deserializedId = new TxnId();
+    given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class)))
+        .willReturn(fcPayer);
+    given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+    given(din.readBoolean()).willReturn(true);
+    // and:
+    var deserializedId = new TxnId();
 
-		// when:
-		deserializedId.deserialize(din, TxnId.RELEASE_0130_VERSION);
+    // when:
+    deserializedId.deserialize(din, TxnId.RELEASE_0130_VERSION);
 
-		// then:
-		assertEquals(subject, deserializedId);
-		// and:
-		verify(din, times(1)).readBoolean();
+    // then:
+    assertEquals(subject, deserializedId);
+    // and:
+    verify(din, times(1)).readBoolean();
 
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
-	}
+    // cleanup:
+    TxnId.serdes = new DomainSerdes();
+  }
 
-	@Test
-	void equalsWorks() {
-		// given:
-		subject = scheduledSubject();
+  @Test
+  void equalsWorks() {
+    // given:
+    subject = scheduledSubject();
 
-		// expect:
-		assertNotEquals(subject, unscheduledSubject());
-	}
+    // expect:
+    assertNotEquals(subject, unscheduledSubject());
+  }
 
-	@Test
-	void hashCodeWorks() {
-		// given:
-		subject = scheduledSubject();
+  @Test
+  void hashCodeWorks() {
+    // given:
+    subject = scheduledSubject();
 
-		// expect:
-		assertNotEquals(subject.hashCode(), unscheduledSubject().hashCode());
-	}
+    // expect:
+    assertNotEquals(subject.hashCode(), unscheduledSubject().hashCode());
+  }
 
-	@Test
-	void toStringWorks() {
-		// given:
-		subject = scheduledSubject();
-		// and:
-		String expRepr = "TxnId{payer=EntityId{shard=0, realm=0, num=75231}, " +
-				"validStart=RichInstant{seconds=1234567, nanos=89}, " +
-				"scheduled=true}";
+  @Test
+  void toStringWorks() {
+    // given:
+    subject = scheduledSubject();
+    // and:
+    String expRepr =
+        "TxnId{payer=EntityId{shard=0, realm=0, num=75231}, "
+            + "validStart=RichInstant{seconds=1234567, nanos=89}, "
+            + "scheduled=true}";
 
-		// expect:
-		assertEquals(expRepr, subject.toString());
-	}
+    // expect:
+    assertEquals(expRepr, subject.toString());
+  }
 
-	@Test
-	void toGrpcWorks() {
-		// given:
-		var subject = scheduledSubject();
-		// and:
-		var expected = base().setScheduled(true).build();
+  @Test
+  void toGrpcWorks() {
+    // given:
+    var subject = scheduledSubject();
+    // and:
+    var expected = base().setScheduled(true).build();
 
-		// expect:
-		assertEquals(expected, subject.toGrpc());
-	}
+    // expect:
+    assertEquals(expected, subject.toGrpc());
+  }
 
-	@Test
-	void merkleWorks() {
-		// given:
-		var subject = new TxnId();
+  @Test
+  void merkleWorks() {
+    // given:
+    var subject = new TxnId();
 
-		// expect:
-		assertEquals(TxnId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertEquals(TxnId.RELEASE_0130_VERSION, subject.getVersion());
-	}
+    // expect:
+    assertEquals(TxnId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertEquals(TxnId.RELEASE_0130_VERSION, subject.getVersion());
+  }
 
-	private TxnId unscheduledSubject() {
-		return TxnId.fromGrpc(base().build());
-	}
+  private TxnId unscheduledSubject() {
+    return TxnId.fromGrpc(base().build());
+  }
 
-	private TxnId scheduledSubject() {
-		return TxnId.fromGrpc(base()
-				.setScheduled(true)
-				.build());
-	}
+  private TxnId scheduledSubject() {
+    return TxnId.fromGrpc(base().setScheduled(true).build());
+  }
 
-	private TransactionID.Builder base() {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(validStart);
-	}
+  private TransactionID.Builder base() {
+    return TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(validStart);
+  }
 }

@@ -20,69 +20,68 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Implements a {@link PropertySources} that re-resolves every property
- * reference by delegating to a supplier.
+ * Implements a {@link PropertySources} that re-resolves every property reference by delegating to a
+ * supplier.
  *
  * @author Michael Tinker
  */
 public class StandardizedPropertySources implements PropertySources {
-	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
+  public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
 
-	static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
-	static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+  static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
+  static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
 
-	private static final int ISS_RESET_PERIOD_SECS = 30;
-	private static final int ISS_ROUNDS_TO_DUMP = 50;
+  private static final int ISS_RESET_PERIOD_SECS = 30;
+  private static final int ISS_ROUNDS_TO_DUMP = 50;
 
-	private final PropertySource bootstrapProps;
+  private final PropertySource bootstrapProps;
 
-	private final ScreenedSysFileProps dynamicGlobalProps;
-	private final ScreenedNodeFileProps nodeProps;
+  private final ScreenedSysFileProps dynamicGlobalProps;
+  private final ScreenedNodeFileProps nodeProps;
 
-	public StandardizedPropertySources(PropertySource bootstrapProps) {
-		this.bootstrapProps = bootstrapProps;
+  public StandardizedPropertySources(PropertySource bootstrapProps) {
+    this.bootstrapProps = bootstrapProps;
 
-		nodeProps = nodePropertiesSupplier.get();
-		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
-	}
+    nodeProps = nodePropertiesSupplier.get();
+    dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
+  }
 
-	public void reloadFrom(ServicesConfigurationList config) {
-		log.info("Reloading global dynamic properties from {} candidates", config.getNameValueCount());
-		dynamicGlobalProps.screenNew(config);
-	}
+  public void reloadFrom(ServicesConfigurationList config) {
+    log.info("Reloading global dynamic properties from {} candidates", config.getNameValueCount());
+    dynamicGlobalProps.screenNew(config);
+  }
 
-	@Override
-	public PropertySource asResolvingSource() {
-		final var bootstrap = new SupplierMapPropertySource(sourceMap());
-		final var bootstrapPlusNodeProps = new ChainedSources(nodeProps, bootstrap);
-		return new ChainedSources(dynamicGlobalProps, bootstrapPlusNodeProps);
-	}
+  @Override
+  public PropertySource asResolvingSource() {
+    final var bootstrap = new SupplierMapPropertySource(sourceMap());
+    final var bootstrapPlusNodeProps = new ChainedSources(nodeProps, bootstrap);
+    return new ChainedSources(dynamicGlobalProps, bootstrapPlusNodeProps);
+  }
 
-	private Map<String, Supplier<Object>> sourceMap() {
-		final Map<String, Supplier<Object>> source = new HashMap<>();
+  private Map<String, Supplier<Object>> sourceMap() {
+    final Map<String, Supplier<Object>> source = new HashMap<>();
 
-		/* Bootstrap properties, which must include defaults for every system property. */
-		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
+    /* Bootstrap properties, which must include defaults for every system property. */
+    BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
-		/* Node-local properties. */
-		source.put("iss.resetPeriod", () -> ISS_RESET_PERIOD_SECS);
-		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
+    /* Node-local properties. */
+    source.put("iss.resetPeriod", () -> ISS_RESET_PERIOD_SECS);
+    source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 
-		return source;
-	}
+    return source;
+  }
 
-	ScreenedNodeFileProps getNodeProps() {
-		return nodeProps;
-	}
+  ScreenedNodeFileProps getNodeProps() {
+    return nodeProps;
+  }
 }

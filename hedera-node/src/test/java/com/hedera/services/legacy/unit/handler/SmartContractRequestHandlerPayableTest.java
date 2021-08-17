@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,10 @@ package com.hedera.services.legacy.unit.handler;
  * limitations under the License.
  * ‍
  */
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -70,6 +74,14 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.security.KeyPair;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Date;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.ethereum.core.AccountState;
@@ -82,30 +94,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.security.KeyPair;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Date;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-
 /**
  * @author peter
  * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
  */
-
 class SmartContractRequestHandlerPayableTest {
 
   private static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
   private static final int DEPOSIT_AMOUNT = 12345;
   private static final long INITIAL_BALANCE = 10_000_000_000L;
-  private static final long EXCESSIVE_AMOUNT = INITIAL_BALANCE * 2L; // Too much to deposit or transfer
+  private static final long EXCESSIVE_AMOUNT =
+      INITIAL_BALANCE * 2L; // Too much to deposit or transfer
   // Unused account number 170
   private static final String INVALID_SOLIDITY_ADDRESS = "00000000000000000000000000000000000000aa";
   // Arbitrary account numbers.
@@ -137,12 +136,14 @@ class SmartContractRequestHandlerPayableTest {
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     backingAccounts = new BackingAccounts(() -> fcMap);
-    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate =
+        new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
             backingAccounts,
             new ChangeSummaryManager<>());
-    ledger = new HederaLedger(
+    ledger =
+        new HederaLedger(
             mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
@@ -160,16 +161,16 @@ class SmartContractRequestHandlerPayableTest {
   void setUp() throws Exception {
     // setup:
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(MerklePair.class, MerklePair::new));
+        new ClassConstructorPair(MerklePair.class, MerklePair::new));
     ConstructableRegistry.registerConstructable(
-            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
-    //Init FCMap
+    // Init FCMap
     fcMap = new FCMap<>();
     storageMap = new FCMap<>();
     // Create accounts
@@ -183,15 +184,12 @@ class SmartContractRequestHandlerPayableTest {
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
     long expiryTime = Long.MAX_VALUE;
-    ExchangeRateSet rates = RequestBuilder
-            .getExchangeRateSetBuilder(
-                    1, 12,
-                    expiryTime,
-                    1, 15,
-                    expiryTime);
+    ExchangeRateSet rates =
+        RequestBuilder.getExchangeRateSetBuilder(1, 12, expiryTime, 1, 15, expiryTime);
     given(exchange.activeRates()).willReturn(rates);
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
-    smartHandler = new SmartContractRequestHandler(
+    smartHandler =
+        new SmartContractRequestHandler(
             repository,
             ledger,
             () -> fcMap,
@@ -229,31 +227,42 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
 
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
     Assertions.assertTrue(record.hasContractCreateResult());
 
     ContractID newContractId = record.getReceipt().getContractID();
     checkContractArtifactsExist(newContractId);
   }
 
-  private TransactionBody getCallTransactionBody(ContractID newContractId,
-      ByteString functionData, long gas, long value) {
-    Timestamp startTime = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()));
+  private TransactionBody getCallTransactionBody(
+      ContractID newContractId, ByteString functionData, long gas, long value) {
+    Timestamp startTime = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()));
     Duration transactionDuration = RequestBuilder.getDuration(100);
 
-    Transaction txn = RequestBuilder.getContractCallRequest(payerAccount, 0L, 0L,
-        nodeAccount, 0L, 0L,
-        100L /* fee */, startTime,
-        transactionDuration, gas, newContractId,
-        functionData, value);
+    Transaction txn =
+        RequestBuilder.getContractCallRequest(
+            payerAccount,
+            0L,
+            0L,
+            nodeAccount,
+            0L,
+            0L,
+            100L /* fee */,
+            startTime,
+            transactionDuration,
+            gas,
+            newContractId,
+            functionData,
+            value);
 
     TransactionBody body = null;
     try {
@@ -273,7 +282,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -290,16 +300,23 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   private Query getCallLocalQuery(ContractID newContractId, ByteString functionData, long gas) {
-    Transaction transferTransaction = TestHelper.createTransferUnsigned(payerAccountId,
-        feeCollAccountId, payerAccountId, nodeAccountId, 100000L /* amount */);
+    Transaction transferTransaction =
+        TestHelper.createTransferUnsigned(
+            payerAccountId, feeCollAccountId, payerAccountId, nodeAccountId, 100000L /* amount */);
 
-    return RequestBuilder.getContractCallLocalQuery(newContractId, gas,
-        functionData, 0L /* value */, 5000L /* maxResultSize */,
-        transferTransaction, ResponseType.ANSWER_ONLY);
+    return RequestBuilder.getContractCallLocalQuery(
+        newContractId,
+        gas,
+        functionData,
+        0L /* value */,
+        5000L /* maxResultSize */,
+        transferTransaction,
+        ResponseType.ANSWER_ONLY);
   }
 
   @Test
@@ -311,7 +328,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -329,8 +347,10 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
-    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
@@ -342,7 +362,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -359,8 +380,10 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
-    Assertions.assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, record.getReceipt().getStatus());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
   }
 
   @Test
@@ -372,7 +395,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -387,10 +411,11 @@ class SmartContractRequestHandlerPayableTest {
 
     // Call the contract to get the balance
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeGetBalance());
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L)
-        .getContractCallLocal();
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
     seqNumber.getAndIncrement();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -410,7 +435,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -426,7 +452,8 @@ class SmartContractRequestHandlerPayableTest {
     // Create a receiver account
     AccountID receiverAccountId = RequestBuilder.getAccountIdBuild(receiverAccount, 0l, 0l);
     createAccount(receiverAccountId, INITIAL_BALANCE);
-    String receiverSolidityAddr = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
+    String receiverSolidityAddr =
+        CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
 
     // Save the "before" balances
     long receiverBefore = getBalance(receiverAccountId);
@@ -435,7 +462,8 @@ class SmartContractRequestHandlerPayableTest {
 
     // Call the contract to transfer funds
     int transferAmount = DEPOSIT_AMOUNT / 2;
-    ByteString dataToSend = ByteString.copyFrom(SCEncoding.encodeSendFunds(receiverSolidityAddr, transferAmount));
+    ByteString dataToSend =
+        ByteString.copyFrom(SCEncoding.encodeSendFunds(receiverSolidityAddr, transferAmount));
     body = getCallTransactionBody(newContractId, dataToSend, 250000L, 0L);
     consensusTime = new Date().toInstant();
     seqNumber.getAndIncrement();
@@ -446,7 +474,8 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
     Assertions.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     long receiverAfter = getBalance(receiverAccountId);
     long contractAfter = getBalance(newContractId);
@@ -467,7 +496,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -486,7 +516,8 @@ class SmartContractRequestHandlerPayableTest {
 
     // Call the contract to transfer funds
     int transferAmount = DEPOSIT_AMOUNT / 2;
-    ByteString dataToSend = ByteString.copyFrom(SCEncoding.encodeSendFunds(INVALID_SOLIDITY_ADDRESS, transferAmount));
+    ByteString dataToSend =
+        ByteString.copyFrom(SCEncoding.encodeSendFunds(INVALID_SOLIDITY_ADDRESS, transferAmount));
     body = getCallTransactionBody(newContractId, dataToSend, 250000L, 0L);
     consensusTime = new Date().toInstant();
     seqNumber.getAndIncrement();
@@ -496,9 +527,11 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
-    //invalid address should cause an exception
-    Assertions.assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    // invalid address should cause an exception
+    Assertions.assertEquals(
+        ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, record.getReceipt().getStatus());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     long contractAfter = getBalance(newContractId);
     long totalAfter = getTotalBalance();
@@ -517,7 +550,8 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
@@ -533,7 +567,8 @@ class SmartContractRequestHandlerPayableTest {
     // Create a receiver account
     AccountID receiverAccountId = RequestBuilder.getAccountIdBuild(receiverAccount, 0l, 0l);
     createAccount(receiverAccountId, INITIAL_BALANCE);
-    String receiverSolidityAddr = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
+    String receiverSolidityAddr =
+        CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
 
     // Save the "before" balances
     long receiverBefore = getBalance(receiverAccountId);
@@ -542,7 +577,8 @@ class SmartContractRequestHandlerPayableTest {
 
     // Call the contract to transfer funds
     int transferAmount = DEPOSIT_AMOUNT / 2;
-    ByteString dataToSend = ByteString.copyFrom(SCEncoding.encodeSendFunds(receiverSolidityAddr, transferAmount));
+    ByteString dataToSend =
+        ByteString.copyFrom(SCEncoding.encodeSendFunds(receiverSolidityAddr, transferAmount));
     body = getCallTransactionBody(newContractId, dataToSend, 250000L, 0L);
     consensusTime = new Date().toInstant();
     seqNumber.getAndIncrement();
@@ -552,8 +588,10 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(record);
     Assertions.assertNotNull(record.getTransactionID());
     Assertions.assertNotNull(record.getReceipt());
-    Assertions.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assertions.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assertions.assertEquals(
+        ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assertions.assertEquals(
+        contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
 
     long receiverAfter = getBalance(receiverAccountId);
     long contractAfter = getBalance(newContractId);
@@ -574,20 +612,24 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Create a new account
     AccountID receiverAccountId = RequestBuilder.getAccountIdBuild(receiverAccount, 0l, 0l);
     createAccount(receiverAccountId, INITIAL_BALANCE);
-    String receiverSolidityAddr = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
+    String receiverSolidityAddr =
+        CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
 
     // Call the contract to get the balance
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeGetBalanceOf(receiverSolidityAddr));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
     seqNumber.getAndIncrement();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -607,16 +649,20 @@ class SmartContractRequestHandlerPayableTest {
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    TransactionRecord record =
+        smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
 
     // Call the contract to get the balance
     // Note that this returns zero for an invalid account address.
-    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeGetBalanceOf(INVALID_SOLIDITY_ADDRESS));
-    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
+    ByteString dataToGet =
+        ByteString.copyFrom(SCEncoding.encodeGetBalanceOf(INVALID_SOLIDITY_ADDRESS));
+    ContractCallLocalQuery cCLQuery =
+        getCallLocalQuery(newContractId, dataToGet, 250000L).getContractCallLocal();
     seqNumber.getAndIncrement();
-    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    ContractCallLocalResponse response =
+        smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
     Assertions.assertNotNull(response);
     Assertions.assertNotNull(response.getFunctionResult().getContractCallResult());
 
@@ -669,15 +715,14 @@ class SmartContractRequestHandlerPayableTest {
 
       repository.close();
     } catch (Throwable tx) {
-      //do nothing now.
+      // do nothing now.
     } finally {
       repository = null;
-
     }
   }
 
   private void createAccount(AccountID payerAccount, long balance)
-          throws NegativeAccountBalanceException {
+      throws NegativeAccountBalanceException {
     MerkleEntityId mk = new MerkleEntityId();
     mk.setNum(payerAccount.getAccountNum());
     mk.setRealm(0);
@@ -700,18 +745,29 @@ class SmartContractRequestHandlerPayableTest {
     }
     ByteString fileData = ByteString.copyFrom(fileBytes);
 
-    Timestamp startTime = RequestBuilder
-            .getTimestamp(Instant.now(Clock.systemUTC()));
-    Timestamp expTime = RequestBuilder
-            .getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(130));
+    Timestamp startTime = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()));
+    Timestamp expTime =
+        RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(130));
     Duration transactionDuration = RequestBuilder.getDuration(100);
     boolean generateRecord = true;
     String memo = "SmartContractFile";
 
-    Transaction txn = RequestBuilder.getFileCreateBuilder(payerAccount, 0L, 0L,
-            nodeAccount, 0L, 0L,
-            100L, startTime, transactionDuration, generateRecord,
-            memo, fileData, expTime, Collections.emptyList());
+    Transaction txn =
+        RequestBuilder.getFileCreateBuilder(
+            payerAccount,
+            0L,
+            0L,
+            nodeAccount,
+            0L,
+            0L,
+            100L,
+            startTime,
+            transactionDuration,
+            generateRecord,
+            memo,
+            fileData,
+            expTime,
+            Collections.emptyList());
 
     TransactionBody body = null;
     try {
@@ -736,19 +792,33 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private TransactionBody getCreateTransactionBody(long initialBalance, long gas, Key adminKey) {
-    Timestamp startTime = RequestBuilder
-            .getTimestamp(Instant.now(Clock.systemUTC()));
+    Timestamp startTime = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()));
     Duration transactionDuration = RequestBuilder.getDuration(100);
     Duration renewalDuration = RequestBuilder.getDuration(3600 * 24);
     boolean generateRecord = true;
     String memo = "SmartContract";
     String sCMemo = "SmartContractMemo";
 
-    Transaction txn = RequestBuilder.getCreateContractRequest(payerAccount, 0L, 0L,
-            nodeAccount, 0L, 0L,
-            100L, startTime, transactionDuration, generateRecord,
-            memo, gas, contractFileId, ByteString.EMPTY, initialBalance,
-            renewalDuration, sCMemo, adminKey);
+    Transaction txn =
+        RequestBuilder.getCreateContractRequest(
+            payerAccount,
+            0L,
+            0L,
+            nodeAccount,
+            0L,
+            0L,
+            100L,
+            startTime,
+            transactionDuration,
+            generateRecord,
+            memo,
+            gas,
+            contractFileId,
+            ByteString.EMPTY,
+            initialBalance,
+            renewalDuration,
+            sCMemo,
+            adminKey);
 
     TransactionBody body = null;
     try {
@@ -770,12 +840,14 @@ class SmartContractRequestHandlerPayableTest {
     Assertions.assertNotNull(mv.getKey());
     long mapValueExpiration = mv.getExpiry();
     Assertions.assertNotEquals(0, mapValueExpiration);
-    String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
+    String bytesPath =
+        String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
-    String sCMetaDataPath = String
-            .format("/%d/m%d", contractId.getRealmNum(), contractId.getContractNum());
+    String sCMetaDataPath =
+        String.format("/%d/m%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertFalse(storageWrapper.fileExists(sCMetaDataPath));
-    String sCAdminKeyPath = String.format("/%d/a%d", contractId.getRealmNum(), contractId.getContractNum());
+    String sCAdminKeyPath =
+        String.format("/%d/a%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertFalse(storageWrapper.fileExists(sCAdminKeyPath));
   }
 }

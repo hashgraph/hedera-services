@@ -20,18 +20,6 @@ package com.hedera.services.bdd.suites.perf.contract;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
-import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -46,72 +34,89 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ContractBigArrayLoadTest extends LoadTest {
-	private static final Logger log = LogManager.getLogger(ContractBigArrayLoadTest.class);
-	private static int sizeInKb = 4;
+  private static final Logger log = LogManager.getLogger(ContractBigArrayLoadTest.class);
+  private static int sizeInKb = 4;
 
-	public static void main(String... args) {
-		int usedArgs = parseArgs(args);
+  public static void main(String... args) {
+    int usedArgs = parseArgs(args);
 
-		// parsing local argument specific to this test
-		if (args.length > usedArgs) {
-			sizeInKb = Integer.parseInt(args[usedArgs]);
-			log.info("Set sizeInKb as " + sizeInKb);
-		}
+    // parsing local argument specific to this test
+    if (args.length > usedArgs) {
+      sizeInKb = Integer.parseInt(args[usedArgs]);
+      log.info("Set sizeInKb as " + sizeInKb);
+    }
 
-		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-		new org.ethereum.crypto.HashUtil();
+    /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
+    new org.ethereum.crypto.HashUtil();
 
-		ContractBigArrayLoadTest suite = new ContractBigArrayLoadTest();
-		suite.runSuiteSync();
-	}
+    ContractBigArrayLoadTest suite = new ContractBigArrayLoadTest();
+    suite.runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runContractCalls());
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(runContractCalls());
+  }
 
-	private HapiApiSpec runContractCalls() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-		long setValue = 0x1234abdeL;
-		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
-				contractCall("perf", ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI, setValue)
-						.noLogging()
-						.payingWith("sender")
-						.suppressStats(true)
-						.hasKnownStatusFrom(UNKNOWN, SUCCESS)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						.deferStatusResolution()
-		};
+  private HapiApiSpec runContractCalls() {
+    PerfTestLoadSettings settings = new PerfTestLoadSettings();
+    final AtomicInteger submittedSoFar = new AtomicInteger(0);
+    long setValue = 0x1234abdeL;
+    Supplier<HapiSpecOperation[]> callBurst =
+        () ->
+            new HapiSpecOperation[] {
+              contractCall("perf", ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI, setValue)
+                  .noLogging()
+                  .payingWith("sender")
+                  .suppressStats(true)
+                  .hasKnownStatusFrom(UNKNOWN, SUCCESS)
+                  .hasRetryPrecheckFrom(
+                      BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                  .deferStatusResolution()
+            };
 
-		return defaultHapiSpec("runContractCalls")
-				.given(
-						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-						logIt(ignore -> settings.toString())
-				).when(
-						cryptoCreate("sender").balance(initialBalance.getAsLong())
-								.withRecharging()
-								.rechargeWindow(3)
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						fileCreate("contractBytecode").path(ContractResources.BIG_ARRAY_BYTECODE_PATH)
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						contractCreate("perf").bytecode("contractBytecode")
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						getContractInfo("perf").hasExpectedInfo().logged(),
+    return defaultHapiSpec("runContractCalls")
+        .given(
+            withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+            logIt(ignore -> settings.toString()))
+        .when(
+            cryptoCreate("sender")
+                .balance(initialBalance.getAsLong())
+                .withRecharging()
+                .rechargeWindow(3)
+                .hasRetryPrecheckFrom(
+                    BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+            fileCreate("contractBytecode")
+                .path(ContractResources.BIG_ARRAY_BYTECODE_PATH)
+                .hasRetryPrecheckFrom(
+                    BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+            contractCreate("perf")
+                .bytecode("contractBytecode")
+                .hasRetryPrecheckFrom(
+                    BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+            getContractInfo("perf").hasExpectedInfo().logged(),
 
-						// Initialize storage size
-						contractCall("perf", ContractResources.BIG_ARRAY_SET_SIZE_IN_KB_ABI, sizeInKb)
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-								.gas(600000)
+            // Initialize storage size
+            contractCall("perf", ContractResources.BIG_ARRAY_SET_SIZE_IN_KB_ABI, sizeInKb)
+                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                .gas(600000))
+        .then(defaultLoadTest(callBurst, settings));
+  }
 
-				).then(
-						defaultLoadTest(callBurst, settings)
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

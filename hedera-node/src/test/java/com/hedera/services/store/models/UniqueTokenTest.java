@@ -20,32 +20,33 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.services.state.submerkle.RichInstant;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class UniqueTokenTest {
-	@Test
-	void objectContractWorks() {
-		var subj = new UniqueToken(Id.DEFAULT, 1);
-		assertEquals(1, subj.getSerialNumber());
-		assertEquals(Id.DEFAULT, subj.getTokenId());
+  @Test
+  void objectContractWorks() {
+    var subj = new UniqueToken(Id.DEFAULT, 1);
+    assertEquals(1, subj.getSerialNumber());
+    assertEquals(Id.DEFAULT, subj.getTokenId());
 
-		var metadata = new byte[] { 107, 117, 114 };
-		subj = new UniqueToken(Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, new Id(1, 2, 3), new byte[] { 111, 23, 85 });
-		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
-		assertEquals(new Id(1, 2, 3), subj.getOwner());
-		subj.setSerialNumber(2);
-		assertEquals(2, subj.getSerialNumber());
+    var metadata = new byte[] {107, 117, 114};
+    subj =
+        new UniqueToken(
+            Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, new Id(1, 2, 3), new byte[] {111, 23, 85});
+    assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
+    assertEquals(new Id(1, 2, 3), subj.getOwner());
+    subj.setSerialNumber(2);
+    assertEquals(2, subj.getSerialNumber());
 
-		metadata = new byte[] { 1, 2, 3 };
-		subj.setMetadata(metadata);
-		assertEquals(metadata, subj.getMetadata());
-		subj.setTokenId(Id.DEFAULT);
-		assertEquals(Id.DEFAULT, subj.getTokenId());
-		subj.setCreationTime(RichInstant.MISSING_INSTANT);
-		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
-	}
-
+    metadata = new byte[] {1, 2, 3};
+    subj.setMetadata(metadata);
+    assertEquals(metadata, subj.getMetadata());
+    subj.setTokenId(Id.DEFAULT);
+    assertEquals(Id.DEFAULT, subj.getTokenId());
+    subj.setCreationTime(RichInstant.MISSING_INSTANT);
+    assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
+  }
 }

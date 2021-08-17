@@ -20,6 +20,8 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
+import static com.hedera.services.store.tokens.views.EmptyUniqueTokenView.EMPTY_UNIQUE_TOKEN_VIEW;
+
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -28,26 +30,20 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.EmptyUniqueTokenView.EMPTY_UNIQUE_TOKEN_VIEW;
-
-/**
- * A {@link UniqTokenViewFactory} that constructs an always-empty {@link UniqTokenView}.
- */
+/** A {@link UniqTokenViewFactory} that constructs an always-empty {@link UniqTokenView}. */
 public enum EmptyUniqTokenViewFactory implements UniqTokenViewFactory {
-	EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
+  EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 
-	@Override
-	public UniqTokenView viewFor(
-			TokenStore tokenStore,
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType
-	) {
-		return EMPTY_UNIQUE_TOKEN_VIEW;
-	}
+  @Override
+  public UniqTokenView viewFor(
+      TokenStore tokenStore,
+      Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+      Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType) {
+    return EMPTY_UNIQUE_TOKEN_VIEW;
+  }
 }

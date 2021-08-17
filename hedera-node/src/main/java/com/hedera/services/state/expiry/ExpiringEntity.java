@@ -21,29 +21,28 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.state.submerkle.EntityId;
-
 import java.util.function.Consumer;
 
 public class ExpiringEntity {
-    private final Consumer<EntityId> consumer;
-    private final EntityId id;
-    private final long expiry;
+  private final Consumer<EntityId> consumer;
+  private final EntityId id;
+  private final long expiry;
 
-    public ExpiringEntity(EntityId id, Consumer<EntityId> consumer, long expiry) {
-        this.consumer = consumer;
-        this.id = id;
-        this.expiry = expiry;
-    }
+  public ExpiringEntity(EntityId id, Consumer<EntityId> consumer, long expiry) {
+    this.consumer = consumer;
+    this.id = id;
+    this.expiry = expiry;
+  }
 
-    public long expiry() {
-        return expiry;
-    }
+  public long expiry() {
+    return expiry;
+  }
 
-    public EntityId id() {
-        return id;
-    }
+  public EntityId id() {
+    return id;
+  }
 
-    public Consumer<EntityId> consumer() {
-        return consumer;
-    }
+  public Consumer<EntityId> consumer() {
+    return consumer;
+  }
 }

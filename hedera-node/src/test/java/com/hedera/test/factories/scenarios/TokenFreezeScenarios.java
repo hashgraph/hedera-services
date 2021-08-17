@@ -20,21 +20,21 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenFreezeFactory.newSignedTokenFreeze;
 
+import com.hedera.services.utils.PlatformTxnAccessor;
+
 public enum TokenFreezeScenarios implements TxnHandlingScenario {
-	VALID_FREEZE_WITH_EXTANT_TOKEN {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenFreeze()
-							.freezing(KNOWN_TOKEN_WITH_FREEZE)
-							.nonPayerKts(TOKEN_FREEZE_KT)
-							.get()
-			));
-		}
-	},
+  VALID_FREEZE_WITH_EXTANT_TOKEN {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(
+              newSignedTokenFreeze()
+                  .freezing(KNOWN_TOKEN_WITH_FREEZE)
+                  .nonPayerKts(TOKEN_FREEZE_KT)
+                  .get()));
+    }
+  },
 }

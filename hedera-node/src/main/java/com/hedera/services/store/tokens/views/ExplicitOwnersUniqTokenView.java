@@ -30,32 +30,30 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-
-import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 /**
- * A {@link UniqTokenView} that answers requests for an account's unique tokens
- * using only a {@code nftsByOwner} {@link FCOneToManyRelation}.
+ * A {@link UniqTokenView} that answers requests for an account's unique tokens using only a {@code
+ * nftsByOwner} {@link FCOneToManyRelation}.
  */
 public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
+  private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
 
-	public ExplicitOwnersUniqTokenView(
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner
-	) {
-		super(tokens, nfts, nftsByType);
+  public ExplicitOwnersUniqTokenView(
+      Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+      Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner) {
+    super(tokens, nfts, nftsByType);
 
-		this.nftsByOwner = nftsByOwner;
-	}
+    this.nftsByOwner = nftsByOwner;
+  }
 
-	@Override
-	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
-		final var accountId = EntityId.fromGrpcAccountId(owner);
-		return accumulatedInfo(nftsByOwner.get(), accountId, (int) start, (int) end, null, owner);
-	}
+  @Override
+  public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
+    final var accountId = EntityId.fromGrpcAccountId(owner);
+    return accumulatedInfo(nftsByOwner.get(), accountId, (int) start, (int) end, null, owner);
+  }
 }

@@ -9,9 +9,9 @@ package com.hedera.services.state.forensics;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,15 @@ package com.hedera.services.state.forensics;
  * limitations under the License.
  * ‍
  */
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -36,134 +45,115 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.fcmap.FCMap;
+import java.io.File;
+import java.io.IOException;
+import java.util.function.Function;
+import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
-import java.io.File;
-import java.io.IOException;
-import java.util.function.Function;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.times;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
-
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class FcmDumpTest {
-	long selfId = 1, round = 1_234_567;
-	NodeId self = new NodeId(false, selfId);
+  long selfId = 1, round = 1_234_567;
+  NodeId self = new NodeId(false, selfId);
 
-	@Mock
-	ServicesState state;
-	@Mock
-	MerkleDataOutputStream out;
-	@Mock
-	Function<String, MerkleDataOutputStream> merkleOutFn;
-	@Mock
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	@Mock
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	@Mock
-	FCMap<MerkleEntityId, MerkleTopic> topics;
-	@Mock
-	FCMap<MerkleEntityId, MerkleToken> tokens;
-	@Mock
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	@Mock
-	FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
+  @Mock ServicesState state;
+  @Mock MerkleDataOutputStream out;
+  @Mock Function<String, MerkleDataOutputStream> merkleOutFn;
+  @Mock FCMap<MerkleEntityId, MerkleAccount> accounts;
+  @Mock FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+  @Mock FCMap<MerkleEntityId, MerkleTopic> topics;
+  @Mock FCMap<MerkleEntityId, MerkleToken> tokens;
+  @Mock FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+  @Mock FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
 
-	@Inject
-	private LogCaptor logCaptor;
+  @Inject private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private FcmDump subject = new FcmDump();
+  @LoggingSubject private FcmDump subject = new FcmDump();
 
-	@Test
-	void dumpsAllFcms() throws IOException {
-		// setup:
-		FcmDump.merkleOutFn = merkleOutFn;
+  @Test
+  void dumpsAllFcms() throws IOException {
+    // setup:
+    FcmDump.merkleOutFn = merkleOutFn;
 
-		given(merkleOutFn.apply(any())).willReturn(out);
-		// and:
-		given(state.accounts()).willReturn(accounts);
-		given(state.storage()).willReturn(storage);
-		given(state.topics()).willReturn(topics);
-		given(state.tokens()).willReturn(tokens);
-		given(state.tokenAssociations()).willReturn(tokenAssociations);
-		given(state.scheduleTxs()).willReturn(scheduleTxs);
-//		// and:
-//		willThrow(IOException.class).given(out).writeMerkleTree(scheduleTxs);
+    given(merkleOutFn.apply(any())).willReturn(out);
+    // and:
+    given(state.accounts()).willReturn(accounts);
+    given(state.storage()).willReturn(storage);
+    given(state.topics()).willReturn(topics);
+    given(state.tokens()).willReturn(tokens);
+    given(state.tokenAssociations()).willReturn(tokenAssociations);
+    given(state.scheduleTxs()).willReturn(scheduleTxs);
+    //		// and:
+    //		willThrow(IOException.class).given(out).writeMerkleTree(scheduleTxs);
 
-		// when:
-		subject.dumpFrom(state, self, round);
+    // when:
+    subject.dumpFrom(state, self, round);
 
-		// then:
-		verify(out).writeMerkleTree(accounts);
-		verify(out).writeMerkleTree(storage);
-		verify(out).writeMerkleTree(topics);
-		verify(out).writeMerkleTree(tokens);
-		verify(out).writeMerkleTree(tokenAssociations);
-		verify(out).writeMerkleTree(scheduleTxs);
-		// and:
-		verify(out, times(6)).close();
-	}
+    // then:
+    verify(out).writeMerkleTree(accounts);
+    verify(out).writeMerkleTree(storage);
+    verify(out).writeMerkleTree(topics);
+    verify(out).writeMerkleTree(tokens);
+    verify(out).writeMerkleTree(tokenAssociations);
+    verify(out).writeMerkleTree(scheduleTxs);
+    // and:
+    verify(out, times(6)).close();
+  }
 
-	@Test
-	void recoversToKeepTryingDumps() throws IOException {
-		// setup:
-		FcmDump.merkleOutFn = merkleOutFn;
+  @Test
+  void recoversToKeepTryingDumps() throws IOException {
+    // setup:
+    FcmDump.merkleOutFn = merkleOutFn;
 
-		given(merkleOutFn.apply(any())).willReturn(out);
-		// and:
-		given(state.accounts()).willReturn(accounts);
-		given(state.storage()).willReturn(storage);
-		given(state.topics()).willReturn(topics);
-		given(state.tokens()).willReturn(tokens);
-		given(state.tokenAssociations()).willReturn(tokenAssociations);
-		given(state.scheduleTxs()).willReturn(scheduleTxs);
-		// and:
-		willThrow(IOException.class).given(out).writeMerkleTree(any());
+    given(merkleOutFn.apply(any())).willReturn(out);
+    // and:
+    given(state.accounts()).willReturn(accounts);
+    given(state.storage()).willReturn(storage);
+    given(state.topics()).willReturn(topics);
+    given(state.tokens()).willReturn(tokens);
+    given(state.tokenAssociations()).willReturn(tokenAssociations);
+    given(state.scheduleTxs()).willReturn(scheduleTxs);
+    // and:
+    willThrow(IOException.class).given(out).writeMerkleTree(any());
 
-		// when:
-		subject.dumpFrom(state, self, round);
+    // when:
+    subject.dumpFrom(state, self, round);
 
-		// then:
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(FcmDump.DUMP_IO_WARNING, "accounts"),
-				String.format(FcmDump.DUMP_IO_WARNING, "storage"),
-				String.format(FcmDump.DUMP_IO_WARNING, "topics"),
-				String.format(FcmDump.DUMP_IO_WARNING, "tokens"),
-				String.format(FcmDump.DUMP_IO_WARNING, "tokenAssociations"),
-				String.format(FcmDump.DUMP_IO_WARNING, "scheduleTxs")));
-	}
+    // then:
+    assertThat(
+        logCaptor.warnLogs(),
+        contains(
+            String.format(FcmDump.DUMP_IO_WARNING, "accounts"),
+            String.format(FcmDump.DUMP_IO_WARNING, "storage"),
+            String.format(FcmDump.DUMP_IO_WARNING, "topics"),
+            String.format(FcmDump.DUMP_IO_WARNING, "tokens"),
+            String.format(FcmDump.DUMP_IO_WARNING, "tokenAssociations"),
+            String.format(FcmDump.DUMP_IO_WARNING, "scheduleTxs")));
+  }
 
-	@Test
-	void merkleSupplierWorks() {
-		// given:
-		var okPath = "src/test/resources/tmp.nothing";
+  @Test
+  void merkleSupplierWorks() {
+    // given:
+    var okPath = "src/test/resources/tmp.nothing";
 
-		// when:
-		var fout = FcmDump.merkleOutFn.apply(okPath);
-		// and:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
+    // when:
+    var fout = FcmDump.merkleOutFn.apply(okPath);
+    // and:
+    assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
 
-		// cleanup:
-		(new File(okPath)).delete();
-	}
+    // cleanup:
+    (new File(okPath)).delete();
+  }
 
-	@Test
-	void merkleSupplierFnDoesntBlowUp() {
-		// given:
-		var badPath = "/impermissible/path";
+  @Test
+  void merkleSupplierFnDoesntBlowUp() {
+    // given:
+    var badPath = "/impermissible/path";
 
-		// then:
-		assertDoesNotThrow(() -> FcmDump.merkleOutFn.apply(badPath));
-	}
+    // then:
+    assertDoesNotThrow(() -> FcmDump.merkleOutFn.apply(badPath));
+  }
 }

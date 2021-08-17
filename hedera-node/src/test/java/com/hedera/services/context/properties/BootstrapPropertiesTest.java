@@ -9,9 +9,9 @@ package com.hedera.services.context.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,17 +19,6 @@ package com.hedera.services.context.properties;
  * limitations under the License.
  * ‍
  */
-
-import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -41,250 +30,264 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class BootstrapPropertiesTest {
-	BootstrapProperties subject = new BootstrapProperties();
+  BootstrapProperties subject = new BootstrapProperties();
 
-	private String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
-	private String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
-	private String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
-	private String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
+  private String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
+  private String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
+  private String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
+  private String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
 
-	private String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
-	private String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
+  private String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
+  private String EMPTY_OVERRIDE_PROPS_LOC =
+      "src/test/resources/bootstrap/empty-override.properties";
 
-	private static final Map<String, Object> expectedProps = Map.ofEntries(
-			entry("bootstrap.feeSchedulesJson.resource", "feeSchedules.json"),
-			entry("bootstrap.genesisB64Keystore.keyName", "START_ACCOUNT"),
-			entry("bootstrap.genesisB64Keystore.path", "data/onboard/StartUpAccount.txt"),
-			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
-			entry("bootstrap.genesisPem.path", "TBD"),
-			entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
-			entry("bootstrap.networkProperties.path", "data/config/application.properties"),
-			entry("bootstrap.rates.currentHbarEquiv", 1),
-			entry("bootstrap.rates.currentCentEquiv", 12),
-			entry("bootstrap.rates.currentExpiry", 4102444800L),
-			entry("bootstrap.rates.nextHbarEquiv", 1),
-			entry("bootstrap.rates.nextCentEquiv", 15),
-			entry("bootstrap.rates.nextExpiry", 4102444800L),
-			entry("bootstrap.system.entityExpiry", 4102444800L),
-			entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
-			entry("accounts.addressBookAdmin", 55L),
-			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
-			entry("balances.exportEnabled", true),
-			entry("balances.exportPeriodSecs", 900),
-			entry("balances.exportTokenBalances", true),
-			entry("balances.nodeBalanceWarningThreshold", 0L),
-			entry("accounts.exchangeRatesAdmin", 57L),
-			entry("accounts.feeSchedulesAdmin", 56L),
-			entry("accounts.freezeAdmin", 58L),
-			entry("accounts.systemAdmin", 50L),
-			entry("accounts.systemDeleteAdmin", 59L),
-			entry("accounts.systemUndeleteAdmin", 60L),
-			entry("accounts.treasury", 2L),
-			entry("contracts.defaultLifetime", 7890000L),
-			entry("contracts.localCall.estRetBytes", 32),
-			entry("contracts.maxGas", 300000),
-			entry("contracts.maxStorageKb", 1024),
-			entry("dev.onlyDefaultNodeListens", true),
-			entry("dev.defaultListeningNodeAccount", "0.0.3"),
-			entry("entities.maxLifetime", 3153600000L),
-			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
-			entry("fees.minCongestionPeriod", 60),
-			entry("files.addressBook", 101L),
-			entry("files.networkProperties", 121L),
-			entry("files.exchangeRates", 112L),
-			entry("files.feeSchedules", 111L),
-			entry("files.hapiPermissions", 122L),
-			entry("files.throttleDefinitions", 123L),
-			entry("files.nodeDetails", 102L),
-			entry("files.softwareUpdateZip", 150L),
-			entry("grpc.port", 50211),
-			entry("grpc.tlsPort", 50212),
-			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
-			entry("hedera.exportAccountsOnStartup", false),
-			entry("hedera.numReservedSystemEntities", 1_000L),
-			entry("hedera.profiles.active", Profile.PROD),
-			entry("hedera.realm", 0L),
-			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
-			entry("hedera.recordStream.logPeriod", 2L),
-			entry("hedera.recordStream.isEnabled", true),
-			entry("hedera.recordStream.queueCapacity", 5000),
-			entry("hedera.shard", 0L),
-			entry("hedera.transaction.maxMemoUtf8Bytes", 100),
-			entry("hedera.transaction.minValidDuration", 15L),
-			entry("hedera.transaction.maxValidDuration", 180L),
-			entry("hedera.transaction.minValidityBufferSecs", 10),
-			entry("ledger.fundingAccount", 98L),
-			entry("ledger.keepRecordsInState", false),
-			entry("ledger.maxAccountNum", 100_000_000L),
-			entry("ledger.numSystemAccounts", 100),
-			entry("ledger.transfers.maxLen", 10),
-			entry("ledger.tokenTransfers.maxLen", 10),
-			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
-			entry("autorenew.isEnabled", false),
-			entry("autorenew.numberOfEntitiesToScan", 100),
-			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
-			entry("autorenew.gracePeriod", 604800L),
-			entry("ledger.autoRenewPeriod.maxDuration", 8000001L),
-			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
-			entry("ledger.schedule.txExpiryTimeSecs", 1800),
-			entry("iss.dumpFcms", false),
-			entry("netty.mode", Profile.PROD),
-			entry("netty.prod.flowControlWindow", 10240),
-			entry("netty.prod.maxConcurrentCalls", 10),
-			entry("netty.prod.maxConnectionAge", 15L),
-			entry("netty.prod.maxConnectionAgeGrace", 5L),
-			entry("netty.prod.maxConnectionIdle", 10L),
-			entry("netty.prod.keepAliveTime", 10L),
-			entry("netty.prod.keepAliveTimeout", 3L),
-			entry("netty.startRetries", 90),
-			entry("netty.startRetryIntervalMs", 1_000L),
-			entry("netty.tlsCrt.path", "hedera.crt"),
-			entry("netty.tlsKey.path", "hedera.key"),
-			entry("precheck.account.maxLookupRetries", 10),
-			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
-			entry("queries.blob.lookupRetries", 3),
-			entry("tokens.maxPerAccount", 1_000),
-			entry("tokens.maxSymbolUtf8Bytes", 100),
-			entry("tokens.maxTokenNameUtf8Bytes",100),
-			entry("tokens.maxCustomFeesAllowed", 10),
-			entry("tokens.maxCustomFeeDepth", 2),
-			entry("files.maxSizeKb", 1024),
-			entry("fees.tokenTransferUsageMultiplier", 380),
-			entry("cache.records.ttl", 180),
-			entry("rates.intradayChangeLimitPercent", 25),
-			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage)),
-			entry("stats.runningAvgHalfLifeSecs", 10.0),
-			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
-			entry("stats.speedometerHalfLifeSecs", 10.0),
-			entry("consensus.message.maxBytesAllowed", 1024),
-			entry("ledger.nftTransfers.maxLen", 10),
-			entry("ledger.xferBalanceChanges.maxLen", 20),
-			entry("tokens.nfts.areEnabled", true),
-			entry("tokens.nfts.useTreasuryWildcards", true),
-			entry("tokens.nfts.maxQueryRange", 100L),
-			entry("tokens.nfts.maxBatchSizeWipe", 10),
-			entry("tokens.nfts.maxBatchSizeMint", 10),
-			entry("tokens.nfts.maxBatchSizeBurn", 10),
-			entry("tokens.nfts.maxMetadataBytes", 100),
-			entry("tokens.nfts.maxAllowedMints", 5000000L),
-			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2"))
-	);
+  private static final Map<String, Object> expectedProps =
+      Map.ofEntries(
+          entry("bootstrap.feeSchedulesJson.resource", "feeSchedules.json"),
+          entry("bootstrap.genesisB64Keystore.keyName", "START_ACCOUNT"),
+          entry("bootstrap.genesisB64Keystore.path", "data/onboard/StartUpAccount.txt"),
+          entry("bootstrap.genesisPemPassphrase.path", "TBD"),
+          entry("bootstrap.genesisPem.path", "TBD"),
+          entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
+          entry("bootstrap.networkProperties.path", "data/config/application.properties"),
+          entry("bootstrap.rates.currentHbarEquiv", 1),
+          entry("bootstrap.rates.currentCentEquiv", 12),
+          entry("bootstrap.rates.currentExpiry", 4102444800L),
+          entry("bootstrap.rates.nextHbarEquiv", 1),
+          entry("bootstrap.rates.nextCentEquiv", 15),
+          entry("bootstrap.rates.nextExpiry", 4102444800L),
+          entry("bootstrap.system.entityExpiry", 4102444800L),
+          entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
+          entry("accounts.addressBookAdmin", 55L),
+          entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
+          entry("balances.exportEnabled", true),
+          entry("balances.exportPeriodSecs", 900),
+          entry("balances.exportTokenBalances", true),
+          entry("balances.nodeBalanceWarningThreshold", 0L),
+          entry("accounts.exchangeRatesAdmin", 57L),
+          entry("accounts.feeSchedulesAdmin", 56L),
+          entry("accounts.freezeAdmin", 58L),
+          entry("accounts.systemAdmin", 50L),
+          entry("accounts.systemDeleteAdmin", 59L),
+          entry("accounts.systemUndeleteAdmin", 60L),
+          entry("accounts.treasury", 2L),
+          entry("contracts.defaultLifetime", 7890000L),
+          entry("contracts.localCall.estRetBytes", 32),
+          entry("contracts.maxGas", 300000),
+          entry("contracts.maxStorageKb", 1024),
+          entry("dev.onlyDefaultNodeListens", true),
+          entry("dev.defaultListeningNodeAccount", "0.0.3"),
+          entry("entities.maxLifetime", 3153600000L),
+          entry(
+              "fees.percentCongestionMultipliers",
+              CongestionMultipliers.from("90,10x,95,25x,99,100x")),
+          entry("fees.minCongestionPeriod", 60),
+          entry("files.addressBook", 101L),
+          entry("files.networkProperties", 121L),
+          entry("files.exchangeRates", 112L),
+          entry("files.feeSchedules", 111L),
+          entry("files.hapiPermissions", 122L),
+          entry("files.throttleDefinitions", 123L),
+          entry("files.nodeDetails", 102L),
+          entry("files.softwareUpdateZip", 150L),
+          entry("grpc.port", 50211),
+          entry("grpc.tlsPort", 50212),
+          entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
+          entry("hedera.exportAccountsOnStartup", false),
+          entry("hedera.numReservedSystemEntities", 1_000L),
+          entry("hedera.profiles.active", Profile.PROD),
+          entry("hedera.realm", 0L),
+          entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
+          entry("hedera.recordStream.logPeriod", 2L),
+          entry("hedera.recordStream.isEnabled", true),
+          entry("hedera.recordStream.queueCapacity", 5000),
+          entry("hedera.shard", 0L),
+          entry("hedera.transaction.maxMemoUtf8Bytes", 100),
+          entry("hedera.transaction.minValidDuration", 15L),
+          entry("hedera.transaction.maxValidDuration", 180L),
+          entry("hedera.transaction.minValidityBufferSecs", 10),
+          entry("ledger.fundingAccount", 98L),
+          entry("ledger.keepRecordsInState", false),
+          entry("ledger.maxAccountNum", 100_000_000L),
+          entry("ledger.numSystemAccounts", 100),
+          entry("ledger.transfers.maxLen", 10),
+          entry("ledger.tokenTransfers.maxLen", 10),
+          entry("ledger.totalTinyBarFloat", 5000000000000000000L),
+          entry("autorenew.isEnabled", false),
+          entry("autorenew.numberOfEntitiesToScan", 100),
+          entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
+          entry("autorenew.gracePeriod", 604800L),
+          entry("ledger.autoRenewPeriod.maxDuration", 8000001L),
+          entry("ledger.autoRenewPeriod.minDuration", 6999999L),
+          entry("ledger.schedule.txExpiryTimeSecs", 1800),
+          entry("iss.dumpFcms", false),
+          entry("netty.mode", Profile.PROD),
+          entry("netty.prod.flowControlWindow", 10240),
+          entry("netty.prod.maxConcurrentCalls", 10),
+          entry("netty.prod.maxConnectionAge", 15L),
+          entry("netty.prod.maxConnectionAgeGrace", 5L),
+          entry("netty.prod.maxConnectionIdle", 10L),
+          entry("netty.prod.keepAliveTime", 10L),
+          entry("netty.prod.keepAliveTimeout", 3L),
+          entry("netty.startRetries", 90),
+          entry("netty.startRetryIntervalMs", 1_000L),
+          entry("netty.tlsCrt.path", "hedera.crt"),
+          entry("netty.tlsKey.path", "hedera.key"),
+          entry("precheck.account.maxLookupRetries", 10),
+          entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
+          entry("queries.blob.lookupRetries", 3),
+          entry("tokens.maxPerAccount", 1_000),
+          entry("tokens.maxSymbolUtf8Bytes", 100),
+          entry("tokens.maxTokenNameUtf8Bytes", 100),
+          entry("tokens.maxCustomFeesAllowed", 10),
+          entry("tokens.maxCustomFeeDepth", 2),
+          entry("files.maxSizeKb", 1024),
+          entry("fees.tokenTransferUsageMultiplier", 380),
+          entry("cache.records.ttl", 180),
+          entry("rates.intradayChangeLimitPercent", 25),
+          entry("rates.midnightCheckInterval", 1L),
+          entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage)),
+          entry("stats.runningAvgHalfLifeSecs", 10.0),
+          entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
+          entry("stats.speedometerHalfLifeSecs", 10.0),
+          entry("consensus.message.maxBytesAllowed", 1024),
+          entry("ledger.nftTransfers.maxLen", 10),
+          entry("ledger.xferBalanceChanges.maxLen", 20),
+          entry("tokens.nfts.areEnabled", true),
+          entry("tokens.nfts.useTreasuryWildcards", true),
+          entry("tokens.nfts.maxQueryRange", 100L),
+          entry("tokens.nfts.maxBatchSizeWipe", 10),
+          entry("tokens.nfts.maxBatchSizeMint", 10),
+          entry("tokens.nfts.maxBatchSizeBurn", 10),
+          entry("tokens.nfts.maxMetadataBytes", 100),
+          entry("tokens.nfts.maxAllowedMints", 5000000L),
+          entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")));
 
-	@BeforeEach
-	void setUp() {
-		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = EMPTY_OVERRIDE_PROPS_LOC;
-	}
+  @BeforeEach
+  void setUp() {
+    subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = EMPTY_OVERRIDE_PROPS_LOC;
+  }
 
-	@Test
-	void throwsIseIfUnreadable() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = UNREADABLE_PROPS_RESOURCE;
+  @Test
+  void throwsIseIfUnreadable() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = UNREADABLE_PROPS_RESOURCE;
 
-		// expect:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
-	}
+    // expect:
+    assertThrows(IllegalStateException.class, subject::ensureProps);
+  }
 
-	@Test
-	void throwsIseIfIoExceptionOccurs() {
-		// setup:
-		var bkup = BootstrapProperties.resourceStreamProvider;
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		// and:
-		BootstrapProperties.resourceStreamProvider = ignore -> {
-			throw new IOException("Oops!");
-		};
+  @Test
+  void throwsIseIfIoExceptionOccurs() {
+    // setup:
+    var bkup = BootstrapProperties.resourceStreamProvider;
+    subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+    // and:
+    BootstrapProperties.resourceStreamProvider =
+        ignore -> {
+          throw new IOException("Oops!");
+        };
 
-		// expect:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
+    // expect:
+    assertThrows(IllegalStateException.class, subject::ensureProps);
 
-		// cleanup:
-		BootstrapProperties.resourceStreamProvider = bkup;
-	}
+    // cleanup:
+    BootstrapProperties.resourceStreamProvider = bkup;
+  }
 
-	@Test
-	void throwsIseIfInvalid() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = INVALID_PROPS_RESOURCE;
+  @Test
+  void throwsIseIfInvalid() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = INVALID_PROPS_RESOURCE;
 
-		// expect:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
-	}
+    // expect:
+    assertThrows(IllegalStateException.class, subject::ensureProps);
+  }
 
-	@Test
-	void ensuresFilePropsFromExtant() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+  @Test
+  void ensuresFilePropsFromExtant() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
 
-		// when:
-		subject.ensureProps();
+    // when:
+    subject.ensureProps();
 
-		// then:
-		for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
-			assertEquals(expectedProps.get(name), subject.getProperty(name), name + " has the wrong value!");
-		}
-		// and:
-		assertEquals(expectedProps, subject.bootstrapProps);
-	}
+    // then:
+    for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
+      assertEquals(
+          expectedProps.get(name), subject.getProperty(name), name + " has the wrong value!");
+    }
+    // and:
+    assertEquals(expectedProps, subject.bootstrapProps);
+  }
 
-	@Test
-	void includesOverrides() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = OVERRIDE_PROPS_LOC;
+  @Test
+  void includesOverrides() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+    subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = OVERRIDE_PROPS_LOC;
 
-		// when:
-		subject.ensureProps();
+    // when:
+    subject.ensureProps();
 
-		// then:
-		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
-	}
+    // then:
+    assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
+  }
 
-	@Test
-	void doesntThrowOnMissingOverridesFile() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = "im-not-here";
+  @Test
+  void doesntThrowOnMissingOverridesFile() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+    subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = "im-not-here";
 
-		// expect:
-		assertDoesNotThrow(subject::ensureProps);
-	}
+    // expect:
+    assertDoesNotThrow(subject::ensureProps);
+  }
 
-	@Test
-	void throwsIaeOnMissingPropRequest() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		// and:
-		subject.ensureProps();
+  @Test
+  void throwsIaeOnMissingPropRequest() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+    // and:
+    subject.ensureProps();
 
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.getProperty("not-a-real-prop"));
-	}
+    // expect:
+    assertThrows(IllegalArgumentException.class, () -> subject.getProperty("not-a-real-prop"));
+  }
 
-	@Test
-	void throwsIseIfMissingProps() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = INCOMPLETE_STD_PROPS_RESOURCE;
+  @Test
+  void throwsIseIfMissingProps() {
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = INCOMPLETE_STD_PROPS_RESOURCE;
 
-		// when:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
-	}
+    // when:
+    assertThrows(IllegalStateException.class, subject::ensureProps);
+  }
 
-	@Test
-	void logsLoadedPropsOnInit() {
-		// setup:
-		BootstrapProperties.log = mock(Logger.class);
+  @Test
+  void logsLoadedPropsOnInit() {
+    // setup:
+    BootstrapProperties.log = mock(Logger.class);
 
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		// and:
-		subject.getProperty("bootstrap.feeSchedulesJson.resource");
+    // given:
+    subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+    // and:
+    subject.getProperty("bootstrap.feeSchedulesJson.resource");
 
-		// expect:
-		verify(BootstrapProperties.log).info(
-				argThat((String s) -> s.startsWith("Resolved bootstrap")));
-		// cleanup:
-		BootstrapProperties.log = LogManager.getLogger(BootstrapProperties.class);
-	}
+    // expect:
+    verify(BootstrapProperties.log).info(argThat((String s) -> s.startsWith("Resolved bootstrap")));
+    // cleanup:
+    BootstrapProperties.log = LogManager.getLogger(BootstrapProperties.class);
+  }
 }

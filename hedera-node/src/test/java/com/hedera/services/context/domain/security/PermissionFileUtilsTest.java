@@ -20,6 +20,10 @@ package com.hedera.services.context.domain.security;
  * ‍
  */
 
+import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
+import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -65,509 +69,423 @@ import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
-import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class PermissionFileUtilsTest {
-	@Test
-	void returnsEmptyKeyForBlankTxn() {
-		assertEquals("", permissionFileKeyForTxn(TransactionBody.getDefaultInstance()));
-	}
+  @Test
+  void returnsEmptyKeyForBlankTxn() {
+    assertEquals("", permissionFileKeyForTxn(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void returnsEmptyKeyForBlankQuery() {
-		assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
-	}
+  @Test
+  void returnsEmptyKeyForBlankQuery() {
+    assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
+  }
 
-	@Test
-	void worksForScheduleCreate() {
-		var op = ScheduleCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setScheduleCreate(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForScheduleCreate() {
+    var op = ScheduleCreateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setScheduleCreate(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForScheduleDelete() {
-		var op = ScheduleDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setScheduleDelete(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForScheduleDelete() {
+    var op = ScheduleDeleteTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setScheduleDelete(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForScheduleSign() {
-		var op = ScheduleSignTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setScheduleSign(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForScheduleSign() {
+    var op = ScheduleSignTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setScheduleSign(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForCryptoCreateAccount() {
-		var op = CryptoCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setCryptoCreateAccount(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForCryptoCreateAccount() {
+    var op = CryptoCreateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setCryptoCreateAccount(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForCryptoTransfer() {
-		var op = CryptoTransferTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setCryptoTransfer(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForCryptoTransfer() {
+    var op = CryptoTransferTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setCryptoTransfer(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForCryptoUpdateAccount() {
-		var op = CryptoUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setCryptoUpdateAccount(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForCryptoUpdateAccount() {
+    var op = CryptoUpdateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setCryptoUpdateAccount(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForCryptoDelete() {
-		var op = CryptoDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setCryptoDelete(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForCryptoDelete() {
+    var op = CryptoDeleteTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setCryptoDelete(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForCryptoAddLiveHash() {
-		var op = CryptoAddLiveHashTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setCryptoAddLiveHash(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForCryptoAddLiveHash() {
+    var op = CryptoAddLiveHashTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setCryptoAddLiveHash(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForCryptoDeleteLiveHash() {
-		var op = CryptoDeleteLiveHashTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setCryptoDeleteLiveHash(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForCryptoDeleteLiveHash() {
+    var op = CryptoDeleteLiveHashTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setCryptoDeleteLiveHash(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForFileCreate() {
-		var op = FileCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setFileCreate(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForFileCreate() {
+    var op = FileCreateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setFileCreate(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForFileUpdate() {
-		var op = FileUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setFileUpdate(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForFileUpdate() {
+    var op = FileUpdateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setFileUpdate(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForFileDelete() {
-		var op = FileDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setFileDelete(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForFileDelete() {
+    var op = FileDeleteTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setFileDelete(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForFileAppend() {
-		var op = FileAppendTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setFileAppend(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForFileAppend() {
+    var op = FileAppendTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setFileAppend(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForContractCreateInstance() {
-		var op = ContractCreateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setContractCreateInstance(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForContractCreateInstance() {
+    var op = ContractCreateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setContractCreateInstance(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForContractUpdateInstance() {
-		var op = ContractUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setContractUpdateInstance(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForContractUpdateInstance() {
+    var op = ContractUpdateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setContractUpdateInstance(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForContractCall() {
-		var op = ContractCallTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setContractCall(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForContractCall() {
+    var op = ContractCallTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setContractCall(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForTokenFeeScheduleUpdate() {
-		var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setTokenFeeScheduleUpdate(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForTokenFeeScheduleUpdate() {
+    var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setTokenFeeScheduleUpdate(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForSystemDelete() {
-		var op = SystemDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setSystemDelete(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForSystemDelete() {
+    var op = SystemDeleteTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setSystemDelete(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForSystemUndelete() {
-		var op = SystemUndeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setSystemUndelete(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForSystemUndelete() {
+    var op = SystemUndeleteTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setSystemUndelete(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForContractDeleteInstance() {
-		var op = ContractDeleteTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setContractDeleteInstance(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForContractDeleteInstance() {
+    var op = ContractDeleteTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setContractDeleteInstance(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForFreeze() {
-		var op = FreezeTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setFreeze(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForFreeze() {
+    var op = FreezeTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setFreeze(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForConsensusCreateTopic() {
-		var op = ConsensusCreateTopicTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setConsensusCreateTopic(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForConsensusCreateTopic() {
+    var op = ConsensusCreateTopicTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setConsensusCreateTopic(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForConsensusUpdateTopic() {
-		var op = ConsensusUpdateTopicTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setConsensusUpdateTopic(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForConsensusUpdateTopic() {
+    var op = ConsensusUpdateTopicTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setConsensusUpdateTopic(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForConsensusDeleteTopic() {
-		var op = ConsensusDeleteTopicTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setConsensusDeleteTopic(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForConsensusDeleteTopic() {
+    var op = ConsensusDeleteTopicTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setConsensusDeleteTopic(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForConsensusSubmitMessage() {
-		var op = ConsensusSubmitMessageTransactionBody.getDefaultInstance();
-		var txn = TransactionBody.newBuilder()
-				.setConsensusSubmitMessage(op)
-				.build();
-		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
-	}
+  @Test
+  void worksForConsensusSubmitMessage() {
+    var op = ConsensusSubmitMessageTransactionBody.getDefaultInstance();
+    var txn = TransactionBody.newBuilder().setConsensusSubmitMessage(op).build();
+    assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+  }
 
-	@Test
-	void worksForGetTopicInfo() {
-		var op = ConsensusGetTopicInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setConsensusGetTopicInfo(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetTopicInfo() {
+    var op = ConsensusGetTopicInfoQuery.getDefaultInstance();
+    var query = Query.newBuilder().setConsensusGetTopicInfo(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetVersionInfo() {
-		var op = NetworkGetVersionInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setNetworkGetVersionInfo(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetVersionInfo() {
+    var op = NetworkGetVersionInfoQuery.getDefaultInstance();
+    var query = Query.newBuilder().setNetworkGetVersionInfo(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetSolidityId() {
-		var op = GetBySolidityIDQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setGetBySolidityID(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetSolidityId() {
+    var op = GetBySolidityIDQuery.getDefaultInstance();
+    var query = Query.newBuilder().setGetBySolidityID(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetContractCallLocal() {
-		var op = ContractCallLocalQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setContractCallLocal(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetContractCallLocal() {
+    var op = ContractCallLocalQuery.getDefaultInstance();
+    var query = Query.newBuilder().setContractCallLocal(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetContractInfo() {
-		var op = ContractGetInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setContractGetInfo(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetContractInfo() {
+    var op = ContractGetInfoQuery.getDefaultInstance();
+    var query = Query.newBuilder().setContractGetInfo(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetContractBytecode() {
-		var op = ContractGetBytecodeQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setContractGetBytecode(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetContractBytecode() {
+    var op = ContractGetBytecodeQuery.getDefaultInstance();
+    var query = Query.newBuilder().setContractGetBytecode(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetContractRecords() {
-		var op = ContractGetRecordsQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setContractGetRecords(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetContractRecords() {
+    var op = ContractGetRecordsQuery.getDefaultInstance();
+    var query = Query.newBuilder().setContractGetRecords(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetCryptoBalance() {
-		var op = CryptoGetAccountBalanceQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setCryptogetAccountBalance(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetCryptoBalance() {
+    var op = CryptoGetAccountBalanceQuery.getDefaultInstance();
+    var query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetCryptoRecords() {
-		var op = CryptoGetAccountRecordsQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setCryptoGetAccountRecords(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetCryptoRecords() {
+    var op = CryptoGetAccountRecordsQuery.getDefaultInstance();
+    var query = Query.newBuilder().setCryptoGetAccountRecords(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetCryptoInfo() {
-		var op = CryptoGetInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setCryptoGetInfo(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetCryptoInfo() {
+    var op = CryptoGetInfoQuery.getDefaultInstance();
+    var query = Query.newBuilder().setCryptoGetInfo(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetLiveHash() {
-		var op = CryptoGetLiveHashQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setCryptoGetLiveHash(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetLiveHash() {
+    var op = CryptoGetLiveHashQuery.getDefaultInstance();
+    var query = Query.newBuilder().setCryptoGetLiveHash(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetFileContents() {
-		var op = FileGetContentsQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setFileGetContents(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetFileContents() {
+    var op = FileGetContentsQuery.getDefaultInstance();
+    var query = Query.newBuilder().setFileGetContents(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForGetFileinfo() {
-		var op = FileGetInfoQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setFileGetInfo(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForGetFileinfo() {
+    var op = FileGetInfoQuery.getDefaultInstance();
+    var query = Query.newBuilder().setFileGetInfo(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForReceipt() {
-		var op = TransactionGetReceiptQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setTransactionGetReceipt(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForReceipt() {
+    var op = TransactionGetReceiptQuery.getDefaultInstance();
+    var query = Query.newBuilder().setTransactionGetReceipt(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForRecord() {
-		var op = TransactionGetRecordQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setTransactionGetRecord(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForRecord() {
+    var op = TransactionGetRecordQuery.getDefaultInstance();
+    var query = Query.newBuilder().setTransactionGetRecord(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	@Test
-	void worksForFastRecord() {
-		var op = TransactionGetFastRecordQuery.getDefaultInstance();
-		var query = Query.newBuilder()
-				.setTransactionGetFastRecord(op)
-				.build();
-		assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
-	}
+  @Test
+  void worksForFastRecord() {
+    var op = TransactionGetFastRecordQuery.getDefaultInstance();
+    var query = Query.newBuilder().setTransactionGetFastRecord(op).build();
+    assertEquals(legacyKeyForQuery(query), permissionFileKeyForQuery(query));
+  }
 
-	private String legacyKeyForQuery(Query request) {
-		String queryBody = null;
-		switch (request.getQueryCase()) {
-			case NETWORKGETVERSIONINFO:
-				queryBody = "getVersionInfo";
-				break;
-			case GETBYKEY:
-				break;
-			case CONSENSUSGETTOPICINFO:
-				queryBody = "getTopicInfo";
-				break;
-			case GETBYSOLIDITYID:
-				queryBody = "getBySolidityID";
-				break;
-			case CONTRACTCALLLOCAL:
-				queryBody = "contractCallLocalMethod";
-				break;
-			case CONTRACTGETINFO:
-				queryBody = "getContractInfo";
-				break;
-			case SCHEDULEGETINFO:
-				queryBody = "getScheduleInfo";
-				break;
-			case CONTRACTGETBYTECODE:
-				queryBody = "contractGetBytecode";
-				break;
-			case CONTRACTGETRECORDS:
-				queryBody = "getTxRecordByContractID";
-				break;
-			case CRYPTOGETACCOUNTBALANCE:
-				queryBody = "cryptoGetBalance";
-				break;
-			case CRYPTOGETACCOUNTRECORDS:
-				queryBody = "getAccountRecords";
-				break;
-			case CRYPTOGETINFO:
-				queryBody = "getAccountInfo";
-				break;
-			case CRYPTOGETLIVEHASH:
-				queryBody = "getLiveHash";
-				break;
-			case CRYPTOGETPROXYSTAKERS:
-				break;
-			case FILEGETCONTENTS:
-				queryBody = "getFileContent";
-				break;
-			case FILEGETINFO:
-				queryBody = "getFileInfo";
-				break;
-			case TRANSACTIONGETRECEIPT:
-				queryBody = "getTransactionReceipts";
-				break;
-			case TRANSACTIONGETRECORD:
-				queryBody = "getTxRecordByTxID";
-				break;
-			case TRANSACTIONGETFASTRECORD:
-				queryBody = "getFastTransactionRecord";
-				break;
-			case QUERY_NOT_SET:
-				break;
-			default:
-				queryBody = null;
-		}
-		return queryBody;
-	}
+  private String legacyKeyForQuery(Query request) {
+    String queryBody = null;
+    switch (request.getQueryCase()) {
+      case NETWORKGETVERSIONINFO:
+        queryBody = "getVersionInfo";
+        break;
+      case GETBYKEY:
+        break;
+      case CONSENSUSGETTOPICINFO:
+        queryBody = "getTopicInfo";
+        break;
+      case GETBYSOLIDITYID:
+        queryBody = "getBySolidityID";
+        break;
+      case CONTRACTCALLLOCAL:
+        queryBody = "contractCallLocalMethod";
+        break;
+      case CONTRACTGETINFO:
+        queryBody = "getContractInfo";
+        break;
+      case SCHEDULEGETINFO:
+        queryBody = "getScheduleInfo";
+        break;
+      case CONTRACTGETBYTECODE:
+        queryBody = "contractGetBytecode";
+        break;
+      case CONTRACTGETRECORDS:
+        queryBody = "getTxRecordByContractID";
+        break;
+      case CRYPTOGETACCOUNTBALANCE:
+        queryBody = "cryptoGetBalance";
+        break;
+      case CRYPTOGETACCOUNTRECORDS:
+        queryBody = "getAccountRecords";
+        break;
+      case CRYPTOGETINFO:
+        queryBody = "getAccountInfo";
+        break;
+      case CRYPTOGETLIVEHASH:
+        queryBody = "getLiveHash";
+        break;
+      case CRYPTOGETPROXYSTAKERS:
+        break;
+      case FILEGETCONTENTS:
+        queryBody = "getFileContent";
+        break;
+      case FILEGETINFO:
+        queryBody = "getFileInfo";
+        break;
+      case TRANSACTIONGETRECEIPT:
+        queryBody = "getTransactionReceipts";
+        break;
+      case TRANSACTIONGETRECORD:
+        queryBody = "getTxRecordByTxID";
+        break;
+      case TRANSACTIONGETFASTRECORD:
+        queryBody = "getFastTransactionRecord";
+        break;
+      case QUERY_NOT_SET:
+        break;
+      default:
+        queryBody = null;
+    }
+    return queryBody;
+  }
 
-	private String legacyKeyForTxn(TransactionBody txn) {
-		String key = "";
-		if (txn.hasCryptoCreateAccount()) {
-			key = "createAccount";
-		} else if (txn.hasCryptoTransfer()) {
-			key = "cryptoTransfer";
-		} else if (txn.hasCryptoUpdateAccount()) {
-			key = "updateAccount";
-		} else if (txn.hasCryptoDelete()) {
-			key = "cryptoDelete";
-		} else if (txn.hasCryptoAddLiveHash()) {
-			key = "addLiveHash";
-		} else if (txn.hasCryptoDeleteLiveHash()) {
-			key = "deleteLiveHash";
-		} else if (txn.hasFileCreate()) {
-			key = "createFile";
-		} else if (txn.hasFileUpdate()) {
-			key = "updateFile";
-		} else if (txn.hasFileDelete()) {
-			key = "deleteFile";
-		} else if (txn.hasFileAppend()) {
-			key = "appendContent";
-		} else if (txn.hasContractCreateInstance()) {
-			key = "createContract";
-		} else if (txn.hasContractUpdateInstance()) {
-			key = "updateContract";
-		} else if (txn.hasContractCall()) {
-			key = "contractCallMethod";
-		} else if (txn.hasSystemDelete()) {
-			key = "systemDelete";
-		} else if (txn.hasSystemUndelete()) {
-			key = "systemUndelete";
-		} else if (txn.hasContractDeleteInstance()) {
-			key = "deleteContract";
-		} else if (txn.hasFreeze()) {
-			key = "freeze";
-		} else if (txn.hasConsensusCreateTopic()) {
-			key = "createTopic";
-		} else if (txn.hasConsensusUpdateTopic()) {
-			key = "updateTopic";
-		} else if (txn.hasConsensusDeleteTopic()) {
-			key = "deleteTopic";
-		} else if (txn.hasScheduleCreate()) {
-			key = "scheduleCreate";
-		} else if (txn.hasScheduleDelete()) {
-			key = "scheduleDelete";
-		} else if (txn.hasScheduleSign()) {
-			key = "scheduleSign";
-		} else if (txn.hasConsensusSubmitMessage()) {
-			key = "submitMessage";
-		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			key = "tokenFeeScheduleUpdate";
-		}
-		return key;
-	}
+  private String legacyKeyForTxn(TransactionBody txn) {
+    String key = "";
+    if (txn.hasCryptoCreateAccount()) {
+      key = "createAccount";
+    } else if (txn.hasCryptoTransfer()) {
+      key = "cryptoTransfer";
+    } else if (txn.hasCryptoUpdateAccount()) {
+      key = "updateAccount";
+    } else if (txn.hasCryptoDelete()) {
+      key = "cryptoDelete";
+    } else if (txn.hasCryptoAddLiveHash()) {
+      key = "addLiveHash";
+    } else if (txn.hasCryptoDeleteLiveHash()) {
+      key = "deleteLiveHash";
+    } else if (txn.hasFileCreate()) {
+      key = "createFile";
+    } else if (txn.hasFileUpdate()) {
+      key = "updateFile";
+    } else if (txn.hasFileDelete()) {
+      key = "deleteFile";
+    } else if (txn.hasFileAppend()) {
+      key = "appendContent";
+    } else if (txn.hasContractCreateInstance()) {
+      key = "createContract";
+    } else if (txn.hasContractUpdateInstance()) {
+      key = "updateContract";
+    } else if (txn.hasContractCall()) {
+      key = "contractCallMethod";
+    } else if (txn.hasSystemDelete()) {
+      key = "systemDelete";
+    } else if (txn.hasSystemUndelete()) {
+      key = "systemUndelete";
+    } else if (txn.hasContractDeleteInstance()) {
+      key = "deleteContract";
+    } else if (txn.hasFreeze()) {
+      key = "freeze";
+    } else if (txn.hasConsensusCreateTopic()) {
+      key = "createTopic";
+    } else if (txn.hasConsensusUpdateTopic()) {
+      key = "updateTopic";
+    } else if (txn.hasConsensusDeleteTopic()) {
+      key = "deleteTopic";
+    } else if (txn.hasScheduleCreate()) {
+      key = "scheduleCreate";
+    } else if (txn.hasScheduleDelete()) {
+      key = "scheduleDelete";
+    } else if (txn.hasScheduleSign()) {
+      key = "scheduleSign";
+    } else if (txn.hasConsensusSubmitMessage()) {
+      key = "submitMessage";
+    } else if (txn.hasTokenFeeScheduleUpdate()) {
+      key = "tokenFeeScheduleUpdate";
+    }
+    return key;
+  }
 }

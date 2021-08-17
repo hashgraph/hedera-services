@@ -24,126 +24,125 @@ import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import java.io.IOException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.io.IOException;
-
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
-	static final int RELEASE_090_VERSION = 1;
+  static final int RELEASE_090_VERSION = 1;
 
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
+  static final int MERKLE_VERSION = RELEASE_090_VERSION;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
-	private long balance;
-	private boolean frozen;
-	private boolean kycGranted;
+  private long balance;
+  private boolean frozen;
+  private boolean kycGranted;
 
-	public MerkleTokenRelStatus() {
-	}
+  public MerkleTokenRelStatus() {}
 
-	public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted) {
-		this.balance = balance;
-		this.frozen = frozen;
-		this.kycGranted = kycGranted;
-	}
+  public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted) {
+    this.balance = balance;
+    this.frozen = frozen;
+    this.kycGranted = kycGranted;
+  }
 
-	/* --- MerkleLeaf --- */
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  /* --- MerkleLeaf --- */
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		balance = in.readLong();
-		frozen = in.readBoolean();
-		kycGranted = in.readBoolean();
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    balance = in.readLong();
+    frozen = in.readBoolean();
+    kycGranted = in.readBoolean();
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLong(balance);
-		out.writeBoolean(frozen);
-		out.writeBoolean(kycGranted);
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeLong(balance);
+    out.writeBoolean(frozen);
+    out.writeBoolean(kycGranted);
+  }
 
-	/* --- Object --- */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || MerkleTokenRelStatus.class != o.getClass()) {
-			return false;
-		}
+  /* --- Object --- */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || MerkleTokenRelStatus.class != o.getClass()) {
+      return false;
+    }
 
-		var that = (MerkleTokenRelStatus) o;
-		return new EqualsBuilder()
-				.append(balance, that.balance)
-				.append(frozen, that.frozen)
-				.append(kycGranted, that.kycGranted)
-				.isEquals();
-	}
+    var that = (MerkleTokenRelStatus) o;
+    return new EqualsBuilder()
+        .append(balance, that.balance)
+        .append(frozen, that.frozen)
+        .append(kycGranted, that.kycGranted)
+        .isEquals();
+  }
 
-	@Override
-	public int hashCode() {
-		return new HashCodeBuilder(17, 37)
-				.append(balance)
-				.append(frozen)
-				.append(kycGranted)
-				.toHashCode();
-	}
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(balance)
+        .append(frozen)
+        .append(kycGranted)
+        .toHashCode();
+  }
 
-	/* --- Bean --- */
-	public long getBalance() {
-		return balance;
-	}
+  /* --- Bean --- */
+  public long getBalance() {
+    return balance;
+  }
 
-	public void setBalance(long balance) {
-		throwIfImmutable("Cannot change this token relation's balance if it's immutable.");
-		if (balance < 0) {
-			throw new IllegalArgumentException(String.format("Argument 'balance=%d' would negate %s!", balance, this));
-		}
-		this.balance = balance;
-	}
+  public void setBalance(long balance) {
+    throwIfImmutable("Cannot change this token relation's balance if it's immutable.");
+    if (balance < 0) {
+      throw new IllegalArgumentException(
+          String.format("Argument 'balance=%d' would negate %s!", balance, this));
+    }
+    this.balance = balance;
+  }
 
-	public boolean isFrozen() {
-		return frozen;
-	}
+  public boolean isFrozen() {
+    return frozen;
+  }
 
-	public void setFrozen(boolean frozen) {
-		throwIfImmutable("Cannot change this token relation's frozen status if it's immutable.");
-		this.frozen = frozen;
-	}
+  public void setFrozen(boolean frozen) {
+    throwIfImmutable("Cannot change this token relation's frozen status if it's immutable.");
+    this.frozen = frozen;
+  }
 
-	public boolean isKycGranted() {
-		return kycGranted;
-	}
+  public boolean isKycGranted() {
+    return kycGranted;
+  }
 
-	public void setKycGranted(boolean kycGranted) {
-		throwIfImmutable("Cannot change this token relation's grant kyc if it's immutable.");
-		this.kycGranted = kycGranted;
-	}
+  public void setKycGranted(boolean kycGranted) {
+    throwIfImmutable("Cannot change this token relation's grant kyc if it's immutable.");
+    this.kycGranted = kycGranted;
+  }
 
-	/* --- FastCopyable --- */
-	@Override
-	public MerkleTokenRelStatus copy() {
-		setImmutable(true);
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted);
-	}
+  /* --- FastCopyable --- */
+  @Override
+  public MerkleTokenRelStatus copy() {
+    setImmutable(true);
+    return new MerkleTokenRelStatus(balance, frozen, kycGranted);
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("balance", balance)
-				.add("isFrozen", frozen)
-				.add("hasKycGranted", kycGranted)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("balance", balance)
+        .add("isFrozen", frozen)
+        .add("hasKycGranted", kycGranted)
+        .toString();
+  }
 }

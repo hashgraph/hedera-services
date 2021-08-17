@@ -20,49 +20,46 @@ package com.hedera.services.bdd.suites.misc;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class PersistenceDevSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(PersistenceDevSuite.class);
+  private static final Logger log = LogManager.getLogger(PersistenceDevSuite.class);
 
+  public static void main(String... args) throws Exception {
+    new PersistenceDevSuite().runSuiteSync();
+  }
 
-	public static void main(String... args) throws Exception {
-		new PersistenceDevSuite().runSuiteSync();
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          testEntityLoading(),
+        });
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						testEntityLoading(),
-				}
-		);
-	}
+  private HapiApiSpec testEntityLoading() {
+    return customHapiSpec("TestEntityLoading")
+        .withProperties(Map.of("persistentEntities.dir.path", "persistent-entities/"))
+        .given(
+            getTokenInfo("knownToken").logged(),
+            getTopicInfo("knownTopic").logged(),
+            getAccountInfo("knownAccount").logged())
+        .when()
+        .then();
+  }
 
-	private HapiApiSpec testEntityLoading() {
-		return customHapiSpec("TestEntityLoading").withProperties(Map.of(
-				"persistentEntities.dir.path", "persistent-entities/"
-		)).given(
-				getTokenInfo("knownToken").logged(),
-				getTopicInfo("knownTopic").logged(),
-				getAccountInfo("knownAccount").logged()
-		).when(
-		).then(
-		);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

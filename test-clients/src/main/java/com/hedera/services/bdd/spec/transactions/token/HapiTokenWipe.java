@@ -20,6 +20,8 @@ package com.hedera.services.bdd.spec.transactions.token;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -34,99 +36,98 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
-	static final Logger log = LogManager.getLogger(HapiTokenWipe.class);
+  static final Logger log = LogManager.getLogger(HapiTokenWipe.class);
 
-	private String account;
-	private String token;
-	private long amount;
-	private List<Long> serialNumbers;
-	private SubType subType;
+  private String account;
+  private String token;
+  private long amount;
+  private List<Long> serialNumbers;
+  private SubType subType;
 
-	@Override
-	public HederaFunctionality type() {
-		return HederaFunctionality.TokenAccountWipe;
-	}
+  @Override
+  public HederaFunctionality type() {
+    return HederaFunctionality.TokenAccountWipe;
+  }
 
-	public HapiTokenWipe(String token, String account, long amount) {
-		this.token = token;
-		this.account = account;
-		this.amount = amount;
-		this.serialNumbers = new ArrayList<>();
-		this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
-	}
+  public HapiTokenWipe(String token, String account, long amount) {
+    this.token = token;
+    this.account = account;
+    this.amount = amount;
+    this.serialNumbers = new ArrayList<>();
+    this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
+  }
 
-	public HapiTokenWipe(String token, String account, List<Long> serialNumbers) {
-		this.token = token;
-		this.account = account;
-		this.serialNumbers = serialNumbers;
-		this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-	}
+  public HapiTokenWipe(String token, String account, List<Long> serialNumbers) {
+    this.token = token;
+    this.account = account;
+    this.serialNumbers = serialNumbers;
+    this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+  }
 
-	@Override
-	protected HapiTokenWipe self() {
-		return this;
-	}
+  @Override
+  protected HapiTokenWipe self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenAccountWipe, subType, this::wipeUsage, txn, numPayerKeys);
-	}
+  @Override
+  protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    return spec.fees()
+        .forActivityBasedOp(
+            HederaFunctionality.TokenAccountWipe, subType, this::wipeUsage, txn, numPayerKeys);
+  }
 
-	private FeeData wipeUsage(TransactionBody txn, SigValueObj svo) {
-		return TokenWipeUsage.newEstimate(txn, suFrom(svo)).givenSubType(subType).get();
-	}
+  private FeeData wipeUsage(TransactionBody txn, SigValueObj svo) {
+    return TokenWipeUsage.newEstimate(txn, suFrom(svo)).givenSubType(subType).get();
+  }
 
-	@Override
-	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var tId = TxnUtils.asTokenId(token, spec);
-		var aId = TxnUtils.asId(account, spec);
-		TokenWipeAccountTransactionBody opBody = spec
-				.txns()
-				.<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(
-						TokenWipeAccountTransactionBody.class, b -> {
-							b.setToken(tId);
-							b.setAccount(aId);
-							b.setAmount(amount);
-							b.addAllSerialNumbers(serialNumbers);
-						});
-		return b -> b.setTokenWipe(opBody);
-	}
+  @Override
+  protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    var tId = TxnUtils.asTokenId(token, spec);
+    var aId = TxnUtils.asId(account, spec);
+    TokenWipeAccountTransactionBody opBody =
+        spec.txns()
+            .<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(
+                TokenWipeAccountTransactionBody.class,
+                b -> {
+                  b.setToken(tId);
+                  b.setAccount(aId);
+                  b.setAmount(amount);
+                  b.addAllSerialNumbers(serialNumbers);
+                });
+    return b -> b.setTokenWipe(opBody);
+  }
 
-	@Override
-	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec)),
-				spec -> spec.registry().getWipeKey(token));
-	}
+  @Override
+  protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    return List.of(
+        spec -> spec.registry().getKey(effectivePayer(spec)),
+        spec -> spec.registry().getWipeKey(token));
+  }
 
-	@Override
-	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::wipeTokenAccount;
-	}
+  @Override
+  protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::wipeTokenAccount;
+  }
 
-	@Override
-	protected void updateStateOf(HapiApiSpec spec) {
-	}
+  @Override
+  protected void updateStateOf(HapiApiSpec spec) {}
 
-	@Override
-	protected MoreObjects.ToStringHelper toStringHelper() {
-		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("token", token)
-				.add("account", account)
-				.add("amount", amount)
-				.add("serialNumbers", serialNumbers);
-		return helper;
-	}
+  @Override
+  protected MoreObjects.ToStringHelper toStringHelper() {
+    MoreObjects.ToStringHelper helper =
+        super.toStringHelper()
+            .add("token", token)
+            .add("account", account)
+            .add("amount", amount)
+            .add("serialNumbers", serialNumbers);
+    return helper;
+  }
 }

@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.crypto.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,20 +30,22 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
 public class CryptoCreateResourceUsage implements TxnResourceUsageEstimator {
-	private final CryptoOpsUsage cryptoOpsUsage;
+  private final CryptoOpsUsage cryptoOpsUsage;
 
-	public CryptoCreateResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
-		this.cryptoOpsUsage = cryptoOpsUsage;
-	}
+  public CryptoCreateResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
+    this.cryptoOpsUsage = cryptoOpsUsage;
+  }
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasCryptoCreateAccount();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasCryptoCreateAccount();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		return cryptoOpsUsage.cryptoCreateUsage(txn, sigUsage);
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    return cryptoOpsUsage.cryptoCreateUsage(txn, sigUsage);
+  }
 }

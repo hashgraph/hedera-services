@@ -20,11 +20,9 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
 import java.util.Map;
 
-public interface LedgerCheck<A, P>  {
-	ResponseCodeEnum checkUsing(A account, Map<P, Object> changeSet);
+public interface LedgerCheck<A, P> {
+  ResponseCodeEnum checkUsing(A account, Map<P, Object> changeSet);
 }

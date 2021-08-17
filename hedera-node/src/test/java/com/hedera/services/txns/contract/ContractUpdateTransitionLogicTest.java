@@ -20,6 +20,22 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
+
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -37,201 +53,190 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
+import java.time.Instant;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.util.Optional;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
-
 class ContractUpdateTransitionLogicTest {
-	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-	final private AccountID targetId = AccountID.newBuilder().setAccountNum(9_999L).build();
-	final private String memo = "Who, me?";
+  private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
+  private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+  private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+  private final AccountID targetId = AccountID.newBuilder().setAccountNum(9_999L).build();
+  private final String memo = "Who, me?";
 
-	private long customAutoRenewPeriod = 100_001L;
+  private long customAutoRenewPeriod = 100_001L;
 
-	private Instant consensusTime;
-	private HederaLedger ledger;
-	private MerkleAccount contract = new MerkleAccount();
-	private OptionValidator validator;
-	private HederaAccountCustomizer customizer;
-	private UpdateCustomizerFactory customizerFactory;
-	private TransactionBody contractUpdateTxn;
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	private FCMap<MerkleEntityId, MerkleAccount> contracts;
-	private ContractUpdateTransitionLogic subject;
+  private Instant consensusTime;
+  private HederaLedger ledger;
+  private MerkleAccount contract = new MerkleAccount();
+  private OptionValidator validator;
+  private HederaAccountCustomizer customizer;
+  private UpdateCustomizerFactory customizerFactory;
+  private TransactionBody contractUpdateTxn;
+  private TransactionContext txnCtx;
+  private PlatformTxnAccessor accessor;
+  private FCMap<MerkleEntityId, MerkleAccount> contracts;
+  private ContractUpdateTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		consensusTime = Instant.now();
+  @BeforeEach
+  private void setup() {
+    consensusTime = Instant.now();
 
-		ledger = mock(HederaLedger.class);
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
-		customizerFactory = mock(UpdateCustomizerFactory.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
-		validator = mock(OptionValidator.class);
-		withRubberstampingValidator();
+    ledger = mock(HederaLedger.class);
+    contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+    customizerFactory = mock(UpdateCustomizerFactory.class);
+    txnCtx = mock(TransactionContext.class);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    accessor = mock(PlatformTxnAccessor.class);
+    validator = mock(OptionValidator.class);
+    withRubberstampingValidator();
 
-		subject = new ContractUpdateTransitionLogic(ledger, validator, txnCtx, customizerFactory, () -> contracts);
-	}
+    subject =
+        new ContractUpdateTransitionLogic(
+            ledger, validator, txnCtx, customizerFactory, () -> contracts);
+  }
 
-	@Test
-	void abortsIfCustomizerUnhappy() {
-		// setup:
-		customizer = mock(HederaAccountCustomizer.class);
+  @Test
+  void abortsIfCustomizerUnhappy() {
+    // setup:
+    customizer = mock(HederaAccountCustomizer.class);
 
-		givenValidTxnCtx();
-		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
-				.willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
+    givenValidTxnCtx();
+    given(
+            customizerFactory.customizerFor(
+                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        .willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(ledger, never()).customize(targetId, customizer);
-		verify(txnCtx).setStatus(MODIFYING_IMMUTABLE_CONTRACT);
-	}
+    // then:
+    verify(ledger, never()).customize(targetId, customizer);
+    verify(txnCtx).setStatus(MODIFYING_IMMUTABLE_CONTRACT);
+  }
 
-	@Test
-	void runsHappyPath() {
-		// setup:
-		customizer = mock(HederaAccountCustomizer.class);
+  @Test
+  void runsHappyPath() {
+    // setup:
+    customizer = mock(HederaAccountCustomizer.class);
 
-		givenValidTxnCtx();
-		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
-				.willReturn(Pair.of(Optional.of(customizer), OK));
+    givenValidTxnCtx();
+    given(
+            customizerFactory.customizerFor(
+                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        .willReturn(Pair.of(Optional.of(customizer), OK));
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(ledger).customize(targetId, customizer);
-		verify(txnCtx).setStatus(SUCCESS);
-	}
+    // then:
+    verify(ledger).customize(targetId, customizer);
+    verify(txnCtx).setStatus(SUCCESS);
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(contractUpdateTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(contractUpdateTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void rejectsInvalidMemoInSyntaxCheck() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
+  @Test
+  void rejectsInvalidMemoInSyntaxCheck() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
-		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(contractUpdateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(contractUpdateTxn));
+  }
 
-	@Test
-	void acceptsOkSyntax() {
-		givenValidTxnCtx();
+  @Test
+  void acceptsOkSyntax() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+  }
 
-	@Test
-	void acceptsOmittedAutoRenew() {
-		givenValidTxnCtx(false);
+  @Test
+  void acceptsOmittedAutoRenew() {
+    givenValidTxnCtx(false);
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+  }
 
-	@Test
-	void rejectsInvalidCid() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
+  @Test
+  void rejectsInvalidCid() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
-		// expect:
-		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
-	}
+    // expect:
+    assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
+  }
 
-	@Test
-	void rejectsInvalidAutoRenew() {
-		// setup:
-		customAutoRenewPeriod = -1;
+  @Test
+  void rejectsInvalidAutoRenew() {
+    // setup:
+    customAutoRenewPeriod = -1;
 
-		givenValidTxnCtx();
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractUpdateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractUpdateTxn));
+  }
 
-	@Test
-	void rejectsOutOfRangeAutoRenew() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
+  @Test
+  void rejectsOutOfRangeAutoRenew() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		// expect:
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
-	}
+    // expect:
+    assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
+  }
 
-	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
-	}
+  private void givenValidTxnCtx() {
+    givenValidTxnCtx(true);
+  }
 
-	private void givenValidTxnCtx(boolean useAutoRenew) {
-		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
-		var op = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setContractUpdateInstance(
-						ContractUpdateTransactionBody.newBuilder()
-								.setMemo(memo)
-								.setContractID(target)
-								.setProxyAccountID(proxy));
-		if (useAutoRenew) {
-			op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
-			op.getContractUpdateInstanceBuilder().setMemoWrapper(StringValue.newBuilder().setValue(memo));
-		}
-		contractUpdateTxn = op.build();
-		given(accessor.getTxn()).willReturn(contractUpdateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(contracts.get(MerkleEntityId.fromContractId(target))).willReturn(contract);
-	}
+  private void givenValidTxnCtx(boolean useAutoRenew) {
+    Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+    var op =
+        TransactionBody.newBuilder()
+            .setTransactionID(ourTxnId())
+            .setContractUpdateInstance(
+                ContractUpdateTransactionBody.newBuilder()
+                    .setMemo(memo)
+                    .setContractID(target)
+                    .setProxyAccountID(proxy));
+    if (useAutoRenew) {
+      op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
+      op.getContractUpdateInstanceBuilder().setMemoWrapper(StringValue.newBuilder().setValue(memo));
+    }
+    contractUpdateTxn = op.build();
+    given(accessor.getTxn()).willReturn(contractUpdateTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(contracts.get(MerkleEntityId.fromContractId(target))).willReturn(contract);
+  }
 
-	private TransactionID ourTxnId() {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
-				.build();
-	}
+  private TransactionID ourTxnId() {
+    return TransactionID.newBuilder()
+        .setAccountID(payer)
+        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+        .build();
+  }
 
-	private void withRubberstampingValidator() {
-		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
-		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
-		given(validator.isValidAutoRenewPeriod(autoRenewDuration)).willReturn(true);
-		given(validator.memoCheck(memo)).willReturn(OK);
-	}
+  private void withRubberstampingValidator() {
+    Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+    given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
+    given(validator.isValidAutoRenewPeriod(autoRenewDuration)).willReturn(true);
+    given(validator.memoCheck(memo)).willReturn(OK);
+  }
 }

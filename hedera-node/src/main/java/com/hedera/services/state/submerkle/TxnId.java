@@ -20,139 +20,129 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-
 public class TxnId implements SelfSerializable {
-	static final int PRE_RELEASE_0120_VERSION = 1;
-	static final int RELEASE_0120_VERSION = 2;
-	static final int RELEASE_0130_VERSION = 3;
-	private static final int MERKLE_VERSION = RELEASE_0130_VERSION;
+  static final int PRE_RELEASE_0120_VERSION = 1;
+  static final int RELEASE_0120_VERSION = 2;
+  static final int RELEASE_0130_VERSION = 3;
+  private static final int MERKLE_VERSION = RELEASE_0130_VERSION;
 
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
-	static DomainSerdes serdes = new DomainSerdes();
+  static DomainSerdes serdes = new DomainSerdes();
 
-	private boolean scheduled = false;
-	private EntityId payerAccount = MISSING_ENTITY_ID;
-	private RichInstant validStart = MISSING_INSTANT;
+  private boolean scheduled = false;
+  private EntityId payerAccount = MISSING_ENTITY_ID;
+  private RichInstant validStart = MISSING_INSTANT;
 
-	public TxnId() {
-	}
+  public TxnId() {}
 
-	public TxnId(
-			EntityId payerAccount,
-			RichInstant validStart,
-			boolean scheduled
-	) {
-		this.scheduled = scheduled;
-		this.validStart = validStart;
-		this.payerAccount = payerAccount;
-	}
+  public TxnId(EntityId payerAccount, RichInstant validStart, boolean scheduled) {
+    this.scheduled = scheduled;
+    this.validStart = validStart;
+    this.payerAccount = payerAccount;
+  }
 
-	public EntityId getPayerAccount() {
-		return payerAccount;
-	}
+  public EntityId getPayerAccount() {
+    return payerAccount;
+  }
 
-	public RichInstant getValidStart() {
-		return validStart;
-	}
+  public RichInstant getValidStart() {
+    return validStart;
+  }
 
-	/* --- SelfSerializable --- */
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  /* --- SelfSerializable --- */
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		payerAccount = in.readSerializable(true, EntityId::new);
-		validStart = serdes.deserializeTimestamp(in);
-		if (version >= RELEASE_0120_VERSION) {
-			scheduled = in.readBoolean();
-		}
-		if (version == RELEASE_0120_VERSION) {
-			var hasNonce = in.readBoolean();
-			if (hasNonce) {
-				/* The 0.12.0 release only included a nonce field in the transaction id */
-				in.readByteArray(Integer.MAX_VALUE);
-			}
-		}
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    payerAccount = in.readSerializable(true, EntityId::new);
+    validStart = serdes.deserializeTimestamp(in);
+    if (version >= RELEASE_0120_VERSION) {
+      scheduled = in.readBoolean();
+    }
+    if (version == RELEASE_0120_VERSION) {
+      var hasNonce = in.readBoolean();
+      if (hasNonce) {
+        /* The 0.12.0 release only included a nonce field in the transaction id */
+        in.readByteArray(Integer.MAX_VALUE);
+      }
+    }
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializable(payerAccount, true);
-		serdes.serializeTimestamp(validStart, out);
-		out.writeBoolean(scheduled);
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeSerializable(payerAccount, true);
+    serdes.serializeTimestamp(validStart, out);
+    out.writeBoolean(scheduled);
+  }
 
-	/* --- Objects --- */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || TxnId.class != o.getClass()) {
-			return false;
-		}
-		var that = (TxnId) o;
-		return this.scheduled == that.scheduled &&
-				Objects.equals(payerAccount, that.payerAccount) &&
-				Objects.equals(validStart, that.validStart);
-	}
+  /* --- Objects --- */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || TxnId.class != o.getClass()) {
+      return false;
+    }
+    var that = (TxnId) o;
+    return this.scheduled == that.scheduled
+        && Objects.equals(payerAccount, that.payerAccount)
+        && Objects.equals(validStart, that.validStart);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-				MERKLE_VERSION,
-				RUNTIME_CONSTRUCTABLE_ID,
-				payerAccount,
-				validStart,
-				scheduled);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        MERKLE_VERSION, RUNTIME_CONSTRUCTABLE_ID, payerAccount, validStart, scheduled);
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("payer", payerAccount)
-				.add("validStart", validStart)
-				.add("scheduled", scheduled)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("payer", payerAccount)
+        .add("validStart", validStart)
+        .add("scheduled", scheduled)
+        .toString();
+  }
 
-	/* --- Helpers --- */
-	public static TxnId fromGrpc(final TransactionID grpc) {
-		return new TxnId(
-				EntityId.fromGrpcAccountId(grpc.getAccountID()),
-				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
-				grpc.getScheduled());
-	}
+  /* --- Helpers --- */
+  public static TxnId fromGrpc(final TransactionID grpc) {
+    return new TxnId(
+        EntityId.fromGrpcAccountId(grpc.getAccountID()),
+        RichInstant.fromGrpc(grpc.getTransactionValidStart()),
+        grpc.getScheduled());
+  }
 
-	public TransactionID toGrpc() {
-		var grpc = TransactionID.newBuilder().setAccountID(asAccount(payerAccount));
+  public TransactionID toGrpc() {
+    var grpc = TransactionID.newBuilder().setAccountID(asAccount(payerAccount));
 
-		if (!validStart.isMissing()) {
-			grpc.setTransactionValidStart(validStart.toGrpc());
-		}
-		grpc.setScheduled(scheduled);
+    if (!validStart.isMissing()) {
+      grpc.setTransactionValidStart(validStart.toGrpc());
+    }
+    grpc.setScheduled(scheduled);
 
-		return grpc.build();
-	}
+    return grpc.build();
+  }
 }

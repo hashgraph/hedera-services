@@ -20,38 +20,42 @@ package com.hedera.services.context.domain.process;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+
 class TxnValidityAndFeeReqTest {
-	@Test
-	void defaultFeeReqIsZero() {
-		// expect:
-		assertEquals(0, new TxnValidityAndFeeReq(INVALID_ACCOUNT_AMOUNTS).getRequiredFee());
-	}
+  @Test
+  void defaultFeeReqIsZero() {
+    // expect:
+    assertEquals(0, new TxnValidityAndFeeReq(INVALID_ACCOUNT_AMOUNTS).getRequiredFee());
+  }
 
-	@Test
-	void beanWorks() {
-		// given:
-		var subject = new TxnValidityAndFeeReq(OK, 123L);
+  @Test
+  void beanWorks() {
+    // given:
+    var subject = new TxnValidityAndFeeReq(OK, 123L);
 
-		// expect:
-		assertEquals(OK, subject.getValidity());
-		assertEquals(123L, subject.getRequiredFee());
-	}
+    // expect:
+    assertEquals(OK, subject.getValidity());
+    assertEquals(123L, subject.getRequiredFee());
+  }
 
-	@Test
-	void toStringWorks() {
-		// given:
-		var subject = new TxnValidityAndFeeReq(OK, 123L);
+  @Test
+  void toStringWorks() {
+    // given:
+    var subject = new TxnValidityAndFeeReq(OK, 123L);
 
-		// expect:
-		assertEquals(
-				TxnValidityAndFeeReq.class.getSimpleName()
-						+ "{validity=" + OK + ", requiredFee=" + 123 + "}",
-				subject.toString());
-	}
+    // expect:
+    assertEquals(
+        TxnValidityAndFeeReq.class.getSimpleName()
+            + "{validity="
+            + OK
+            + ", requiredFee="
+            + 123
+            + "}",
+        subject.toString());
+  }
 }

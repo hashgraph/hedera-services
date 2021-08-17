@@ -20,17 +20,6 @@ package com.hedera.services.grpc.controllers;
  * ‍
  */
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.token.TokenAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import io.grpc.stub.StreamObserver;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -51,180 +40,191 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.services.queries.answering.QueryResponseHelper;
+import com.hedera.services.queries.token.TokenAnswers;
+import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
+import io.grpc.stub.StreamObserver;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class TokenControllerTest {
-	Query query = Query.getDefaultInstance();
-	Transaction txn = Transaction.getDefaultInstance();
+  Query query = Query.getDefaultInstance();
+  Transaction txn = Transaction.getDefaultInstance();
 
-	TokenAnswers answers;
-	TxnResponseHelper txnResponseHelper;
-	QueryResponseHelper queryResponseHelper;
-	StreamObserver<Response> queryObserver;
-	StreamObserver<TransactionResponse> txnObserver;
+  TokenAnswers answers;
+  TxnResponseHelper txnResponseHelper;
+  QueryResponseHelper queryResponseHelper;
+  StreamObserver<Response> queryObserver;
+  StreamObserver<TransactionResponse> txnObserver;
 
-	TokenController subject;
+  TokenController subject;
 
-	@BeforeEach
-	private void setup() {
-		answers = mock(TokenAnswers.class);
-		txnObserver = mock(StreamObserver.class);
-		queryObserver = mock(StreamObserver.class);
+  @BeforeEach
+  private void setup() {
+    answers = mock(TokenAnswers.class);
+    txnObserver = mock(StreamObserver.class);
+    queryObserver = mock(StreamObserver.class);
 
-		txnResponseHelper = mock(TxnResponseHelper.class);
-		queryResponseHelper = mock(QueryResponseHelper.class);
+    txnResponseHelper = mock(TxnResponseHelper.class);
+    queryResponseHelper = mock(QueryResponseHelper.class);
 
-		subject = new TokenController(answers, txnResponseHelper, queryResponseHelper);
-	}
+    subject = new TokenController(answers, txnResponseHelper, queryResponseHelper);
+  }
 
-	@Test
-	void forwardTokenCreateAsExpected() {
-		// when:
-		subject.createToken(txn, txnObserver);
+  @Test
+  void forwardTokenCreateAsExpected() {
+    // when:
+    subject.createToken(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenCreate);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenCreate);
+  }
 
-	@Test
-	void forwardTokenFreezeAsExpected() {
-		// when:
-		subject.freezeTokenAccount(txn, txnObserver);
+  @Test
+  void forwardTokenFreezeAsExpected() {
+    // when:
+    subject.freezeTokenAccount(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenFreezeAccount);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenFreezeAccount);
+  }
 
-	@Test
-	void forwardTokenUnfreezeAsExpected() {
-		// when:
-		subject.unfreezeTokenAccount(txn, txnObserver);
+  @Test
+  void forwardTokenUnfreezeAsExpected() {
+    // when:
+    subject.unfreezeTokenAccount(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenUnfreezeAccount);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenUnfreezeAccount);
+  }
 
-	@Test
-	void forwardGrantKyc() {
-		// when:
-		subject.grantKycToTokenAccount(txn, txnObserver);
+  @Test
+  void forwardGrantKyc() {
+    // when:
+    subject.grantKycToTokenAccount(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenGrantKycToAccount);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenGrantKycToAccount);
+  }
 
-	@Test
-	void forwardRevokeKyc() {
-		// when:
-		subject.revokeKycFromTokenAccount(txn, txnObserver);
+  @Test
+  void forwardRevokeKyc() {
+    // when:
+    subject.revokeKycFromTokenAccount(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenRevokeKycFromAccount);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenRevokeKycFromAccount);
+  }
 
-	@Test
-	void forwardDelete() {
-		// when:
-		subject.deleteToken(txn, txnObserver);
+  @Test
+  void forwardDelete() {
+    // when:
+    subject.deleteToken(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenDelete);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenDelete);
+  }
 
-	@Test
-	void forwardUpdate() {
-		// when:
-		subject.updateToken(txn, txnObserver);
+  @Test
+  void forwardUpdate() {
+    // when:
+    subject.updateToken(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenUpdate);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenUpdate);
+  }
 
-	@Test
-	void forwardMint() {
-		// when:
-		subject.mintToken(txn, txnObserver);
+  @Test
+  void forwardMint() {
+    // when:
+    subject.mintToken(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenMint);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenMint);
+  }
 
-	@Test
-	void forwardBurn() {
-		// when:
-		subject.burnToken(txn, txnObserver);
+  @Test
+  void forwardBurn() {
+    // when:
+    subject.burnToken(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenBurn);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenBurn);
+  }
 
-	@Test
-	void forwardWipe() {
-		// when:
-		subject.wipeTokenAccount(txn, txnObserver);
+  @Test
+  void forwardWipe() {
+    // when:
+    subject.wipeTokenAccount(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenAccountWipe);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenAccountWipe);
+  }
 
-	@Test
-	void forwardDissociate() {
-		// when:
-		subject.dissociateTokens(txn, txnObserver);
+  @Test
+  void forwardDissociate() {
+    // when:
+    subject.dissociateTokens(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenDissociateFromAccount);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenDissociateFromAccount);
+  }
 
-	@Test
-	void forwardAssociate() {
-		// when:
-		subject.associateTokens(txn, txnObserver);
+  @Test
+  void forwardAssociate() {
+    // when:
+    subject.associateTokens(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenAssociateToAccount);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenAssociateToAccount);
+  }
 
-	@Test
-	void forwardsTokenInfoAsExpected() {
-		// when:
-		subject.getTokenInfo(query, queryObserver);
+  @Test
+  void forwardsTokenInfoAsExpected() {
+    // when:
+    subject.getTokenInfo(query, queryObserver);
 
-		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetInfo);
-	}
+    // expect:
+    verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetInfo);
+  }
 
-	@Test
-	void forwardsTokenNftInfosAsExpected() {
-		// when:
-		subject.getTokenNftInfos(query, queryObserver);
+  @Test
+  void forwardsTokenNftInfosAsExpected() {
+    // when:
+    subject.getTokenNftInfos(query, queryObserver);
 
-		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfos);
-	}
+    // expect:
+    verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfos);
+  }
 
-	@Test
-	void forwardsTokenNftInfoAsExpected() {
-		// when:
-		subject.getTokenNftInfo(query, queryObserver);
+  @Test
+  void forwardsTokenNftInfoAsExpected() {
+    // when:
+    subject.getTokenNftInfo(query, queryObserver);
 
-		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfo);
-	}
+    // expect:
+    verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfo);
+  }
 
-	@Test
-	void forwardsAccountNftInfosAsExpected() {
-		// when:
-		subject.getAccountNftInfos(query, queryObserver);
+  @Test
+  void forwardsAccountNftInfosAsExpected() {
+    // when:
+    subject.getAccountNftInfos(query, queryObserver);
 
-		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetAccountNftInfos);
-	}
+    // expect:
+    verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetAccountNftInfos);
+  }
 
-	@Test
-	void forwardsFeeScheduleUpdate() {
-		// when:
-		subject.updateTokenFeeSchedule(txn, txnObserver);
+  @Test
+  void forwardsFeeScheduleUpdate() {
+    // when:
+    subject.updateTokenFeeSchedule(txn, txnObserver);
 
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenFeeScheduleUpdate);
-	}
+    // expect:
+    verify(txnResponseHelper).submit(txn, txnObserver, TokenFeeScheduleUpdate);
+  }
 }

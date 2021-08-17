@@ -25,72 +25,74 @@ import com.hedera.services.state.submerkle.RichInstant;
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
  *
- * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
- * with response code capturing the failure when one occurs.
+ * <p>Operations are validated, and throw a {@link
+ * com.hedera.services.exceptions.InvalidTransactionException} with response code capturing the
+ * failure when one occurs.
  */
 public class UniqueToken {
-	private Id tokenId;
-	private long serialNumber;
-	private RichInstant creationTime;
-	private Id owner;
-	private byte[] metadata;
+  private Id tokenId;
+  private long serialNumber;
+  private RichInstant creationTime;
+  private Id owner;
+  private byte[] metadata;
 
-	public UniqueToken(Id tokenId, long serialNumber) {
-		this.tokenId = tokenId;
-		this.serialNumber = serialNumber;
-	}
+  public UniqueToken(Id tokenId, long serialNumber) {
+    this.tokenId = tokenId;
+    this.serialNumber = serialNumber;
+  }
 
-	public UniqueToken(Id tokenId, long serialNumber, Id owner) {
-		this.tokenId = tokenId;
-		this.serialNumber = serialNumber;
-		this.owner = owner;
-	}
+  public UniqueToken(Id tokenId, long serialNumber, Id owner) {
+    this.tokenId = tokenId;
+    this.serialNumber = serialNumber;
+    this.owner = owner;
+  }
 
-	public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
-		this.tokenId = tokenId;
-		this.serialNumber = serialNumber;
-		this.creationTime = creationTime;
-		this.owner = owner;
-		this.metadata = metadata;
-	}
+  public UniqueToken(
+      Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
+    this.tokenId = tokenId;
+    this.serialNumber = serialNumber;
+    this.creationTime = creationTime;
+    this.owner = owner;
+    this.metadata = metadata;
+  }
 
-	public Id getTokenId() {
-		return tokenId;
-	}
+  public Id getTokenId() {
+    return tokenId;
+  }
 
-	public void setTokenId(Id tokenId) {
-		this.tokenId = tokenId;
-	}
+  public void setTokenId(Id tokenId) {
+    this.tokenId = tokenId;
+  }
 
-	public long getSerialNumber() {
-		return serialNumber;
-	}
+  public long getSerialNumber() {
+    return serialNumber;
+  }
 
-	public void setSerialNumber(long serialNumber) {
-		this.serialNumber = serialNumber;
-	}
+  public void setSerialNumber(long serialNumber) {
+    this.serialNumber = serialNumber;
+  }
 
-	public RichInstant getCreationTime() {
-		return creationTime;
-	}
+  public RichInstant getCreationTime() {
+    return creationTime;
+  }
 
-	public void setCreationTime(RichInstant creationTime) {
-		this.creationTime = creationTime;
-	}
+  public void setCreationTime(RichInstant creationTime) {
+    this.creationTime = creationTime;
+  }
 
-	public Id getOwner() {
-		return owner;
-	}
+  public Id getOwner() {
+    return owner;
+  }
 
-	public void setOwner(Id owner) {
-		this.owner = owner;
-	}
+  public void setOwner(Id owner) {
+    this.owner = owner;
+  }
 
-	public byte[] getMetadata() {
-		return metadata;
-	}
+  public byte[] getMetadata() {
+    return metadata;
+  }
 
-	public void setMetadata(byte[] metadata) {
-		this.metadata = metadata;
-	}
+  public void setMetadata(byte[] metadata) {
+    this.metadata = metadata;
+  }
 }

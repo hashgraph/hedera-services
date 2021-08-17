@@ -9,9 +9,9 @@ package com.hederahashgraph.fee;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,11 +31,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-
 
 /**
  * This class includes methods for generating Fee Matrices and calculating Fee for File related
@@ -49,12 +47,12 @@ public class FileFeeBuilder extends FeeBuilder {
    * @param txBody transaction body
    * @param expirationTimeStamp expiration timestamp
    * @param sigValObj signature value object
-   *
    * @return fee data
    * @throws InvalidTxBodyException when transaction body is invalid
    */
-  public FeeData getFileAppendTxFeeMatrices(TransactionBody txBody, Timestamp expirationTimeStamp,
-      SigValueObj sigValObj) throws InvalidTxBodyException {
+  public FeeData getFileAppendTxFeeMatrices(
+      TransactionBody txBody, Timestamp expirationTimeStamp, SigValueObj sigValObj)
+      throws InvalidTxBodyException {
 
     if (txBody == null || !txBody.hasFileAppend()) {
       throw new InvalidTxBodyException("FileAppend Tx Body not available for Fee Calculation");
@@ -86,7 +84,8 @@ public class FileFeeBuilder extends FeeBuilder {
 
     // sbs - Storage bytes seconds
     int sbsStorageSize = fileContentSize;
-    if ((sbsStorageSize != 0) && (expirationTimeStamp != null && expirationTimeStamp.getSeconds() > 0)) {
+    if ((sbsStorageSize != 0)
+        && (expirationTimeStamp != null && expirationTimeStamp.getSeconds() > 0)) {
       Instant expirationTime = RequestBuilder.convertProtoTimeStamp(expirationTimeStamp);
       Timestamp txValidStartTimestamp = txBody.getTransactionID().getTransactionValidStart();
       Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
@@ -94,14 +93,22 @@ public class FileFeeBuilder extends FeeBuilder {
       long seconds = duration.getSeconds();
       sbs = sbsStorageSize * seconds;
     }
-    rbs =  calculateRBS(txBody);
+    rbs = calculateRBS(txBody);
     long rbsNetwork = getDefaultRBHNetworkSize();
 
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-    
-    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(),rbsNetwork);
+    FeeComponents feeMatricesForTx =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
+    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
   }
 
   /**
@@ -109,7 +116,6 @@ public class FileFeeBuilder extends FeeBuilder {
    *
    * @param keys keys
    * @param responseType response type
-   *
    * @return fee data
    */
   public FeeData getFileInfoQueryFeeMatrices(KeyList keys, ResponseType responseType) {
@@ -123,7 +129,6 @@ public class FileFeeBuilder extends FeeBuilder {
     long tv = 0;
     long bpr = 0;
     long sbpr = 0;
-
 
     /*
      * FileGetContentsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
@@ -148,18 +153,24 @@ public class FileFeeBuilder extends FeeBuilder {
         keySize += getAccountKeyStorageSize(key);
       }
     }
-    
-    
+
     bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
     sbpr = (long) BASE_FILEINFO_SIZE + keySize;
 
-
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatrices =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
     return getQueryFeeDataMatrices(feeMatrices);
-
   }
 
   /**
@@ -167,7 +178,6 @@ public class FileFeeBuilder extends FeeBuilder {
    *
    * @param contentSize content size
    * @param responseType response type
-   *
    * @return fee data
    */
   public FeeData getFileContentQueryFeeMatrices(int contentSize, ResponseType responseType) {
@@ -182,13 +192,12 @@ public class FileFeeBuilder extends FeeBuilder {
     long bpr = 0;
     long sbpr = 0;
 
-
     /*
      * FileGetContentsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
      * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITY_ID_SIZE
      */
 
-    bpt =  calculateBPT();
+    bpt = calculateBPT();
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -198,21 +207,26 @@ public class FileFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpr =  BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
+    bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
     sbpr = (long) BASIC_ENTITY_ID_SIZE + contentSize;
 
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatrices =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
     return getQueryFeeDataMatrices(feeMatrices);
-
   }
 
-
-  /**
-   * This method returns total bytes in File Create Transaction
-   */
+  /** This method returns total bytes in File Create Transaction */
   private int getFileCreateTxSize(TransactionBody txBody) {
     /*
      * Timestamp expirationTime - (LONG_SIZE + INT_SIZE) KeyList keys - calculated value bytes
@@ -238,10 +252,10 @@ public class FileFeeBuilder extends FeeBuilder {
       fileContentsSize = fileCreateTxBody.getContents().size();
     }
 
-    int cryptoFileCreateSize = (LONG_SIZE) + keySize + fileContentsSize + (BASIC_ENTITY_ID_SIZE)   + newRealmAdminKeySize;
+    int cryptoFileCreateSize =
+        (LONG_SIZE) + keySize + fileContentsSize + (BASIC_ENTITY_ID_SIZE) + newRealmAdminKeySize;
 
     return cryptoFileCreateSize;
-
   }
 
   public FeeData getSystemDeleteFileTxFeeMatrices(TransactionBody txBody, SigValueObj numSignatures)
@@ -263,22 +277,31 @@ public class FileFeeBuilder extends FeeBuilder {
     bpt = getCommonTransactionBodyBytes(txBody);
     bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     vpt = numSignatures.getTotalSigCount();
-    
-    rbs =  calculateRBS(txBody);
-    
+
+    rbs = calculateRBS(txBody);
+
     long rbsNetwork = getDefaultRBHNetworkSize();
 
-    // sbs should not be charged as the fee for storage was already paid. What if expiration is changed though?
+    // sbs should not be charged as the fee for storage was already paid. What if expiration is
+    // changed though?
 
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatricesForTx =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
-    return getFeeDataMatrices(feeMatricesForTx, numSignatures.getPayerAcctSigCount(),rbsNetwork);
+    return getFeeDataMatrices(feeMatricesForTx, numSignatures.getPayerAcctSigCount(), rbsNetwork);
   }
 
-  public FeeData getSystemUnDeleteFileTxFeeMatrices(TransactionBody txBody,
-      SigValueObj numSignatures)
-      throws InvalidTxBodyException {
+  public FeeData getSystemUnDeleteFileTxFeeMatrices(
+      TransactionBody txBody, SigValueObj numSignatures) throws InvalidTxBodyException {
 
     if (txBody == null || !txBody.hasSystemUndelete()) {
       throw new InvalidTxBodyException("System UnDelete Tx Body not available for Fee Calculation");
@@ -296,18 +319,29 @@ public class FileFeeBuilder extends FeeBuilder {
     bpt = getCommonTransactionBodyBytes(txBody);
     bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     vpt = numSignatures.getTotalSigCount();
-    rbs =  calculateRBS(txBody);
+    rbs = calculateRBS(txBody);
     long rbsNetwork = getDefaultRBHNetworkSize();
 
-    // sbs should not be charged as the fee for storage was already paid. What if expiration is changed though?
+    // sbs should not be charged as the fee for storage was already paid. What if expiration is
+    // changed though?
 
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
+    FeeComponents feeMatricesForTx =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
-    return getFeeDataMatrices(feeMatricesForTx, numSignatures.getPayerAcctSigCount(),rbsNetwork);
+    return getFeeDataMatrices(feeMatricesForTx, numSignatures.getPayerAcctSigCount(), rbsNetwork);
   }
 
-  public FeeData getFileDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) throws InvalidTxBodyException {
+  public FeeData getFileDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
+      throws InvalidTxBodyException {
 
     if (txBody == null || !txBody.hasFileDelete()) {
       throw new InvalidTxBodyException("FileDelete Tx Body not available for Fee Calculation");
@@ -332,17 +366,22 @@ public class FileFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
 
-   
-    rbs =  calculateRBS(txBody);
+    rbs = calculateRBS(txBody);
 
     long rbsNetwork = getDefaultRBHNetworkSize();
 
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-    
-    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(),rbsNetwork);
+    FeeComponents feeMatricesForTx =
+        FeeComponents.newBuilder()
+            .setBpt(bpt)
+            .setVpt(vpt)
+            .setRbh(rbs)
+            .setSbh(sbs)
+            .setGas(gas)
+            .setTv(tv)
+            .setBpr(bpr)
+            .setSbpr(sbpr)
+            .build();
 
+    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
   }
-
-
 }

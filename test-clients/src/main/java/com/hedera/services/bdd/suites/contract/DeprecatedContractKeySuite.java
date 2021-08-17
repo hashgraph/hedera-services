@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,15 +19,6 @@ package com.hedera.services.bdd.suites.contract;
  * limitations under the License.
  * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -38,51 +29,51 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class DeprecatedContractKeySuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(DeprecatedContractKeySuite.class);
+  private static final Logger log = LogManager.getLogger(DeprecatedContractKeySuite.class);
 
-	public static void main(String... args) {
-		new DeprecatedContractKeySuite().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new DeprecatedContractKeySuite().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return Arrays.asList(
-				new HapiApiSpec[] {
-						createWithDeprecatedKeyCreatesImmutableContract(),
-						givenAdminKeyMustBeValid(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return Arrays.asList(
+        new HapiApiSpec[] {
+          createWithDeprecatedKeyCreatesImmutableContract(), givenAdminKeyMustBeValid(),
+        });
+  }
 
-	private HapiApiSpec createWithDeprecatedKeyCreatesImmutableContract() {
-		return defaultHapiSpec("CreateWithDeprecatedKeyCreatesImmutableContract")
-				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH)
-				).when(
-						contractCreate("target").bytecode("bytecode").useDeprecatedAdminKey()
-				).then(
-						contractDelete("target").hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
-				);
-	}
+  private HapiApiSpec createWithDeprecatedKeyCreatesImmutableContract() {
+    return defaultHapiSpec("CreateWithDeprecatedKeyCreatesImmutableContract")
+        .given(fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH))
+        .when(contractCreate("target").bytecode("bytecode").useDeprecatedAdminKey())
+        .then(contractDelete("target").hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+  }
 
-	private HapiApiSpec givenAdminKeyMustBeValid() {
-		return defaultHapiSpec("GivenAdminKeyMustBeValid")
-				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("target").bytecode("bytecode")
-				).when(
-						getContractInfo("target").logged()
-				).then(
-						contractUpdate("target")
-								.useDeprecatedAdminKey()
-								.signedBy(GENESIS, "target")
-								.hasKnownStatus(INVALID_ADMIN_KEY)
-				);
-	}
+  private HapiApiSpec givenAdminKeyMustBeValid() {
+    return defaultHapiSpec("GivenAdminKeyMustBeValid")
+        .given(
+            fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
+            contractCreate("target").bytecode("bytecode"))
+        .when(getContractInfo("target").logged())
+        .then(
+            contractUpdate("target")
+                .useDeprecatedAdminKey()
+                .signedBy(GENESIS, "target")
+                .hasKnownStatus(INVALID_ADMIN_KEY));
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

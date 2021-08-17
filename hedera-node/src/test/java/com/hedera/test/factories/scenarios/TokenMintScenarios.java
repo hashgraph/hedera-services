@@ -20,41 +20,34 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 
+import com.hedera.services.utils.PlatformTxnAccessor;
+
 public enum TokenMintScenarios implements TxnHandlingScenario {
-	MINT_WITH_SUPPLY_KEYED_TOKEN {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenMint()
-							.minting(KNOWN_TOKEN_WITH_SUPPLY)
-							.nonPayerKts(TOKEN_SUPPLY_KT)
-							.get()
-			));
-		}
-	},
-	MINT_WITH_MISSING_TOKEN {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenMint()
-							.minting(MISSING_TOKEN)
-							.get()
-			));
-		}
-	},
-	MINT_FOR_TOKEN_WITHOUT_SUPPLY {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenMint()
-							.minting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-							.get()
-			));
-		}
-	},
+  MINT_WITH_SUPPLY_KEYED_TOKEN {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(
+              newSignedTokenMint()
+                  .minting(KNOWN_TOKEN_WITH_SUPPLY)
+                  .nonPayerKts(TOKEN_SUPPLY_KT)
+                  .get()));
+    }
+  },
+  MINT_WITH_MISSING_TOKEN {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(from(newSignedTokenMint().minting(MISSING_TOKEN).get()));
+    }
+  },
+  MINT_FOR_TOKEN_WITHOUT_SUPPLY {
+    @Override
+    public PlatformTxnAccessor platformTxn() throws Throwable {
+      return new PlatformTxnAccessor(
+          from(newSignedTokenMint().minting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get()));
+    }
+  },
 }

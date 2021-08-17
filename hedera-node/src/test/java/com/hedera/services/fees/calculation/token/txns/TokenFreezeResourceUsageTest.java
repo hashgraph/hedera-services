@@ -20,73 +20,70 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.token.TokenFreezeUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.SigValueObj;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.BiFunction;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenFreezeUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.SigValueObj;
+import java.util.function.BiFunction;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class TokenFreezeResourceUsageTest {
-	private TokenFreezeResourceUsage subject;
+  private TokenFreezeResourceUsage subject;
 
-	private TransactionBody nonTokenFreezeTxn;
-	private TransactionBody tokenFreezeTxn;
+  private TransactionBody nonTokenFreezeTxn;
+  private TransactionBody tokenFreezeTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+  StateView view;
+  int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+  SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+  SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+  FeeData expected;
 
-	TokenFreezeUsage usage;
+  TokenFreezeUsage usage;
 
-	BiFunction<TransactionBody, SigUsage, TokenFreezeUsage> factory;
+  BiFunction<TransactionBody, SigUsage, TokenFreezeUsage> factory;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
+  @BeforeEach
+  private void setup() throws Throwable {
+    expected = mock(FeeData.class);
+    view = mock(StateView.class);
 
-		tokenFreezeTxn = mock(TransactionBody.class);
-		given(tokenFreezeTxn.hasTokenFreeze()).willReturn(true);
+    tokenFreezeTxn = mock(TransactionBody.class);
+    given(tokenFreezeTxn.hasTokenFreeze()).willReturn(true);
 
-		nonTokenFreezeTxn = mock(TransactionBody.class);
-		given(nonTokenFreezeTxn.hasTokenFreeze()).willReturn(false);
+    nonTokenFreezeTxn = mock(TransactionBody.class);
+    given(nonTokenFreezeTxn.hasTokenFreeze()).willReturn(false);
 
-		usage = mock(TokenFreezeUsage.class);
-		given(usage.get()).willReturn(expected);
+    usage = mock(TokenFreezeUsage.class);
+    given(usage.get()).willReturn(expected);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenFreezeUsage>)mock(BiFunction.class);
-		given(factory.apply(tokenFreezeTxn, sigUsage)).willReturn(usage);
+    factory = (BiFunction<TransactionBody, SigUsage, TokenFreezeUsage>) mock(BiFunction.class);
+    given(factory.apply(tokenFreezeTxn, sigUsage)).willReturn(usage);
 
-		TokenFreezeResourceUsage.factory = factory;
+    TokenFreezeResourceUsage.factory = factory;
 
-		subject = new TokenFreezeResourceUsage();
-	}
+    subject = new TokenFreezeResourceUsage();
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenFreezeTxn));
-		assertFalse(subject.applicableTo(nonTokenFreezeTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(tokenFreezeTxn));
+    assertFalse(subject.applicableTo(nonTokenFreezeTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenFreezeTxn, obj, view));
-	}
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    // expect:
+    assertEquals(expected, subject.usageGiven(tokenFreezeTxn, obj, view));
+  }
 }

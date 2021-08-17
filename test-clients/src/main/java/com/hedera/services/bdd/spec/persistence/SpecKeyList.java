@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SpecKeyList {
-	List<SpecKey> listOf = new ArrayList<>();
+  List<SpecKey> listOf = new ArrayList<>();
 
-	public List<SpecKey> getListOf() {
-		return listOf;
-	}
+  public List<SpecKey> getListOf() {
+    return listOf;
+  }
 
-	public void setListOf(List<SpecKey> listOf) {
-		this.listOf = listOf;
-	}
+  public void setListOf(List<SpecKey> listOf) {
+    this.listOf = listOf;
+  }
 }

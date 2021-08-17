@@ -20,14 +20,6 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -35,45 +27,49 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class BigRecordSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(BigRecordSpec.class);
+  private static final Logger log = LogManager.getLogger(BigRecordSpec.class);
 
-	public static void main(String... args) {
-		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-		new org.ethereum.crypto.HashUtil();
+  public static void main(String... args) {
+    /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
+    new org.ethereum.crypto.HashUtil();
 
-		new BigRecordSpec().runSuiteSync();
-	}
+    new BigRecordSpec().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				bigCall(),
-		});
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          bigCall(),
+        });
+  }
 
-	HapiApiSpec bigCall() {
-		int byteArraySize = (int)(87.5 * 1_024);
+  HapiApiSpec bigCall() {
+    int byteArraySize = (int) (87.5 * 1_024);
 
-		return defaultHapiSpec("BigRecord")
-				.given(
-						cryptoCreate("payer").balance( 10 * ONE_HUNDRED_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.BIG_BIG_BYTECODE_PATH),
-						contractCreate("bigBig")
-								.bytecode("bytecode")
-				).when(
-						contractCall("bigBig", ContractResources.PICK_A_BIG_RESULT_ABI, byteArraySize)
-								.payingWith("payer")
-								.gas(300_000L)
-								.via("bigCall")
-				).then(
-						getTxnRecord("bigCall").logged()
-				);
-	}
+    return defaultHapiSpec("BigRecord")
+        .given(
+            cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+            fileCreate("bytecode").path(ContractResources.BIG_BIG_BYTECODE_PATH),
+            contractCreate("bigBig").bytecode("bytecode"))
+        .when(
+            contractCall("bigBig", ContractResources.PICK_A_BIG_RESULT_ABI, byteArraySize)
+                .payingWith("payer")
+                .gas(300_000L)
+                .via("bigCall"))
+        .then(getTxnRecord("bigCall").logged());
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

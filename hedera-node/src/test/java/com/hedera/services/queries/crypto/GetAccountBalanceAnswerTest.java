@@ -20,6 +20,25 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -48,263 +67,239 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class GetAccountBalanceAnswerTest {
-	private FCMap accounts;
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
-	private StateView view;
-	private OptionValidator optionValidator;
-	private String accountIdLit = "0.0.12345";
-	private AccountID target = asAccount(accountIdLit);
-	private String contractIdLit = "0.0.12346";
-	private long balance = 1_234L;
-	private long aBalance = 345;
-	private long bBalance = 456;
-	private long cBalance = 567;
-	private long dBalance = 678;
-	private TokenID aToken = IdUtils.asToken("0.0.3");
-	private TokenID bToken = IdUtils.asToken("0.0.4");
-	private TokenID cToken = IdUtils.asToken("0.0.5");
-	private TokenID dToken = IdUtils.asToken("0.0.6");
-	TokenStore tokenStore;
-	ScheduleStore scheduleStore;
+  private FCMap accounts;
+  private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+  private StateView view;
+  private OptionValidator optionValidator;
+  private String accountIdLit = "0.0.12345";
+  private AccountID target = asAccount(accountIdLit);
+  private String contractIdLit = "0.0.12346";
+  private long balance = 1_234L;
+  private long aBalance = 345;
+  private long bBalance = 456;
+  private long cBalance = 567;
+  private long dBalance = 678;
+  private TokenID aToken = IdUtils.asToken("0.0.3");
+  private TokenID bToken = IdUtils.asToken("0.0.4");
+  private TokenID cToken = IdUtils.asToken("0.0.5");
+  private TokenID dToken = IdUtils.asToken("0.0.6");
+  TokenStore tokenStore;
+  ScheduleStore scheduleStore;
 
-	MerkleToken notDeleted, deleted;
-	private MerkleAccount accountV = MerkleAccountFactory.newAccount()
-			.balance(balance)
-			.tokens(aToken, bToken, cToken, dToken)
-			.get();
-	private MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
+  MerkleToken notDeleted, deleted;
+  private MerkleAccount accountV =
+      MerkleAccountFactory.newAccount()
+          .balance(balance)
+          .tokens(aToken, bToken, cToken, dToken)
+          .get();
+  private MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
 
-	private GetAccountBalanceAnswer subject;
-	private NodeLocalProperties nodeProps;
+  private GetAccountBalanceAnswer subject;
+  private NodeLocalProperties nodeProps;
 
-	@BeforeEach
-	private void setup() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
+  @BeforeEach
+  private void setup() throws ConstructableRegistryException {
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
-		deleted = mock(MerkleToken.class);
-		given(deleted.isDeleted()).willReturn(true);
-		given(deleted.decimals()).willReturn(123);
-		notDeleted = mock(MerkleToken.class);
-		given(notDeleted.isDeleted()).willReturn(false);
-		given(notDeleted.decimals()).willReturn(1).willReturn(2);
+    deleted = mock(MerkleToken.class);
+    given(deleted.isDeleted()).willReturn(true);
+    given(deleted.decimals()).willReturn(123);
+    notDeleted = mock(MerkleToken.class);
+    given(notDeleted.isDeleted()).willReturn(false);
+    given(notDeleted.decimals()).willReturn(1).willReturn(2);
 
-		tokenRels = new FCMap<>();
-		tokenRels.put(
-				fromAccountTokenRel(target, aToken),
-				new MerkleTokenRelStatus(aBalance, true, true));
-		tokenRels.put(
-				fromAccountTokenRel(target, bToken),
-				new MerkleTokenRelStatus(bBalance, false, false));
-		tokenRels.put(
-				fromAccountTokenRel(target, cToken),
-				new MerkleTokenRelStatus(cBalance, false, false));
-		tokenRels.put(
-				fromAccountTokenRel(target, dToken),
-				new MerkleTokenRelStatus(dBalance, false, false));
+    tokenRels = new FCMap<>();
+    tokenRels.put(
+        fromAccountTokenRel(target, aToken), new MerkleTokenRelStatus(aBalance, true, true));
+    tokenRels.put(
+        fromAccountTokenRel(target, bToken), new MerkleTokenRelStatus(bBalance, false, false));
+    tokenRels.put(
+        fromAccountTokenRel(target, cToken), new MerkleTokenRelStatus(cBalance, false, false));
+    tokenRels.put(
+        fromAccountTokenRel(target, dToken), new MerkleTokenRelStatus(dBalance, false, false));
 
-		accounts = mock(FCMap.class);
-		nodeProps = mock(NodeLocalProperties.class);
-		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
-		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
+    accounts = mock(FCMap.class);
+    nodeProps = mock(NodeLocalProperties.class);
+    given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
+    given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
-		tokenStore = mock(TokenStore.class);
-		given(tokenStore.exists(aToken)).willReturn(true);
-		given(tokenStore.exists(bToken)).willReturn(true);
-		given(tokenStore.exists(cToken)).willReturn(true);
-		given(tokenStore.exists(dToken)).willReturn(false);
-		given(tokenStore.get(aToken)).willReturn(notDeleted);
-		given(tokenStore.get(bToken)).willReturn(notDeleted);
-		given(tokenStore.get(cToken)).willReturn(deleted);
+    tokenStore = mock(TokenStore.class);
+    given(tokenStore.exists(aToken)).willReturn(true);
+    given(tokenStore.exists(bToken)).willReturn(true);
+    given(tokenStore.exists(cToken)).willReturn(true);
+    given(tokenStore.exists(dToken)).willReturn(false);
+    given(tokenStore.get(aToken)).willReturn(notDeleted);
+    given(tokenStore.get(bToken)).willReturn(notDeleted);
+    given(tokenStore.get(cToken)).willReturn(deleted);
 
-		scheduleStore = mock(ScheduleStore.class);
+    scheduleStore = mock(ScheduleStore.class);
 
-		final StateChildren children = new StateChildren();
-		children.setAccounts(accounts);
-		children.setTokenAssociations(tokenRels);
-		view = new StateView(
-				tokenStore,
-				scheduleStore,
-				nodeProps,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+    final StateChildren children = new StateChildren();
+    children.setAccounts(accounts);
+    children.setTokenAssociations(tokenRels);
+    view =
+        new StateView(
+            tokenStore,
+            scheduleStore,
+            nodeProps,
+            children,
+            EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
-		optionValidator = mock(OptionValidator.class);
-		subject = new GetAccountBalanceAnswer(optionValidator);
-	}
+    optionValidator = mock(OptionValidator.class);
+    subject = new GetAccountBalanceAnswer(optionValidator);
+  }
 
-	@Test
-	void requiresNothing() {
-		// setup:
-		CryptoGetAccountBalanceQuery costAnswerOp = CryptoGetAccountBalanceQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
-				.build();
-		Query costAnswerQuery = Query.newBuilder().setCryptogetAccountBalance(costAnswerOp).build();
-		CryptoGetAccountBalanceQuery answerOnlyOp = CryptoGetAccountBalanceQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_ONLY))
-				.build();
-		Query answerOnlyQuery = Query.newBuilder().setCryptogetAccountBalance(answerOnlyOp).build();
+  @Test
+  void requiresNothing() {
+    // setup:
+    CryptoGetAccountBalanceQuery costAnswerOp =
+        CryptoGetAccountBalanceQuery.newBuilder()
+            .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
+            .build();
+    Query costAnswerQuery = Query.newBuilder().setCryptogetAccountBalance(costAnswerOp).build();
+    CryptoGetAccountBalanceQuery answerOnlyOp =
+        CryptoGetAccountBalanceQuery.newBuilder()
+            .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_ONLY))
+            .build();
+    Query answerOnlyQuery = Query.newBuilder().setCryptogetAccountBalance(answerOnlyOp).build();
 
-		// expect:
-		assertFalse(subject.requiresNodePayment(costAnswerQuery));
-		assertFalse(subject.requiresNodePayment(answerOnlyQuery));
-		assertFalse(subject.needsAnswerOnlyCost(answerOnlyQuery));
-		assertFalse(subject.needsAnswerOnlyCost(costAnswerQuery));
-	}
+    // expect:
+    assertFalse(subject.requiresNodePayment(costAnswerQuery));
+    assertFalse(subject.requiresNodePayment(answerOnlyQuery));
+    assertFalse(subject.needsAnswerOnlyCost(answerOnlyQuery));
+    assertFalse(subject.needsAnswerOnlyCost(costAnswerQuery));
+  }
 
-	@Test
-	void hasNoPayment() {
-		// expect:
-		assertFalse(subject.extractPaymentFrom(mock(Query.class)).isPresent());
-	}
+  @Test
+  void hasNoPayment() {
+    // expect:
+    assertFalse(subject.extractPaymentFrom(mock(Query.class)).isPresent());
+  }
 
-	@Test
-	void syntaxCheckRequiresId() {
-		// given:
-		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder().build();
-		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+  @Test
+  void syntaxCheckRequiresId() {
+    // given:
+    CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder().build();
+    Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
-		// when:
-		ResponseCodeEnum status = subject.checkValidity(query, view);
+    // when:
+    ResponseCodeEnum status = subject.checkValidity(query, view);
 
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
+    // expect:
+    assertEquals(INVALID_ACCOUNT_ID, status);
+  }
 
-	@Test
-	void syntaxCheckValidatesCidIfPresent() {
-		// setup:
-		ContractID cid = asContract(contractIdLit);
+  @Test
+  void syntaxCheckValidatesCidIfPresent() {
+    // setup:
+    ContractID cid = asContract(contractIdLit);
 
-		// given:
-		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setContractID(cid)
-				.build();
-		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		// and:
-		given(optionValidator.queryableContractStatus(cid, accounts)).willReturn(CONTRACT_DELETED);
+    // given:
+    CryptoGetAccountBalanceQuery op =
+        CryptoGetAccountBalanceQuery.newBuilder().setContractID(cid).build();
+    Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+    // and:
+    given(optionValidator.queryableContractStatus(cid, accounts)).willReturn(CONTRACT_DELETED);
 
-		// when:
-		ResponseCodeEnum status = subject.checkValidity(query, view);
+    // when:
+    ResponseCodeEnum status = subject.checkValidity(query, view);
 
-		// expect:
-		assertEquals(CONTRACT_DELETED, status);
-	}
+    // expect:
+    assertEquals(CONTRACT_DELETED, status);
+  }
 
-	@Test
-	void getsValidity() {
-		// given:
-		Response response = Response.newBuilder().setCryptogetAccountBalance(
-				CryptoGetAccountBalanceResponse.newBuilder()
-						.setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED))).build();
+  @Test
+  void getsValidity() {
+    // given:
+    Response response =
+        Response.newBuilder()
+            .setCryptogetAccountBalance(
+                CryptoGetAccountBalanceResponse.newBuilder()
+                    .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+            .build();
 
-		// expect:
-		assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
-	}
+    // expect:
+    assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
+  }
 
-	@Test
-	void requiresOkMetaValidity() {
-		// setup:
-		AccountID id = asAccount(accountIdLit);
+  @Test
+  void requiresOkMetaValidity() {
+    // setup:
+    AccountID id = asAccount(accountIdLit);
 
-		// given:
-		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setAccountID(id)
-				.build();
-		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+    // given:
+    CryptoGetAccountBalanceQuery op =
+        CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
+    Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
-		// when:
-		Response response = subject.responseGiven(query, view, PLATFORM_NOT_ACTIVE);
-		ResponseCodeEnum status = response.getCryptogetAccountBalance()
-				.getHeader()
-				.getNodeTransactionPrecheckCode();
+    // when:
+    Response response = subject.responseGiven(query, view, PLATFORM_NOT_ACTIVE);
+    ResponseCodeEnum status =
+        response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
 
-		// expect:
-		assertEquals(PLATFORM_NOT_ACTIVE, status);
-		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
-	}
+    // expect:
+    assertEquals(PLATFORM_NOT_ACTIVE, status);
+    assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+  }
 
-	@Test
-	void syntaxCheckValidatesIdIfPresent() {
-		// setup:
-		AccountID id = asAccount(accountIdLit);
+  @Test
+  void syntaxCheckValidatesIdIfPresent() {
+    // setup:
+    AccountID id = asAccount(accountIdLit);
 
-		// given:
-		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setAccountID(id)
-				.build();
-		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		// and:
-		given(optionValidator.queryableAccountStatus(id, accounts))
-				.willReturn(ACCOUNT_DELETED);
+    // given:
+    CryptoGetAccountBalanceQuery op =
+        CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
+    Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+    // and:
+    given(optionValidator.queryableAccountStatus(id, accounts)).willReturn(ACCOUNT_DELETED);
 
-		// when:
-		ResponseCodeEnum status = subject.checkValidity(query, view);
+    // when:
+    ResponseCodeEnum status = subject.checkValidity(query, view);
 
-		// expect:
-		assertEquals(ACCOUNT_DELETED, status);
-	}
+    // expect:
+    assertEquals(ACCOUNT_DELETED, status);
+  }
 
-	@Test
-	void answersWithAccountBalance() {
-		// setup:
-		AccountID id = asAccount(accountIdLit);
+  @Test
+  void answersWithAccountBalance() {
+    // setup:
+    AccountID id = asAccount(accountIdLit);
 
-		// given:
-		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setAccountID(id)
-				.build();
-		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+    // given:
+    CryptoGetAccountBalanceQuery op =
+        CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
+    Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
-		// when:
-		Response response = subject.responseGiven(query, view, OK);
-		ResponseCodeEnum status = response.getCryptogetAccountBalance()
-				.getHeader()
-				.getNodeTransactionPrecheckCode();
-		long answer = response.getCryptogetAccountBalance().getBalance();
+    // when:
+    Response response = subject.responseGiven(query, view, OK);
+    ResponseCodeEnum status =
+        response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
+    long answer = response.getCryptogetAccountBalance().getBalance();
 
-		// expect:
-		assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
-		assertEquals(
-				List.of(tokenBalanceWith(aToken, aBalance, 1),
-						tokenBalanceWith(bToken, bBalance, 2),
-						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
-				),
-				response.getCryptogetAccountBalance().getTokenBalancesList());
-		assertEquals(OK, status);
-		assertEquals(balance, answer);
-		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
-	}
+    // expect:
+    assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
+    assertEquals(
+        List.of(
+            tokenBalanceWith(aToken, aBalance, 1),
+            tokenBalanceWith(bToken, bBalance, 2),
+            tokenBalanceWith(cToken, cBalance, 123),
+            tokenBalanceWith(dToken, dBalance, 0)),
+        response.getCryptogetAccountBalance().getTokenBalancesList());
+    assertEquals(OK, status);
+    assertEquals(balance, answer);
+    assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+  }
 
-	@Test
-	void recognizesFunction() {
-		// expect:
-		assertEquals(CryptoGetAccountBalance, subject.canonicalFunction());
-	}
+  @Test
+  void recognizesFunction() {
+    // expect:
+    assertEquals(CryptoGetAccountBalance, subject.canonicalFunction());
+  }
 }

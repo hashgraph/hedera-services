@@ -20,27 +20,28 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
+
 class ExceptionalScheduleStoreTest {
-    @Test
-    void allButSetAreUse() {
-        // expect:
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.exists(null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.get(null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.delete(null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.apply(null, null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.markAsExecuted(null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.expire(null));
-        assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::commitCreation);
-        assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::rollbackCreation);
-        assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::isCreationPending);
-        // and:
-        assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setAccountsLedger(null));
-        assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setHederaLedger(null));
-    }
+  @Test
+  void allButSetAreUse() {
+    // expect:
+    assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.exists(null));
+    assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.get(null));
+    assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.delete(null));
+    assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.apply(null, null));
+    assertThrows(
+        UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.markAsExecuted(null));
+    assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.expire(null));
+    assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::commitCreation);
+    assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::rollbackCreation);
+    assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::isCreationPending);
+    // and:
+    assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setAccountsLedger(null));
+    assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setHederaLedger(null));
+  }
 }

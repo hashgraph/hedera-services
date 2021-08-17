@@ -31,78 +31,77 @@ import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.tuple.Pair;
 
 public enum ExceptionalScheduleStore implements ScheduleStore {
-	NOOP_SCHEDULE_STORE;
+  NOOP_SCHEDULE_STORE;
 
-	@Override
-	public MerkleSchedule get(ScheduleID sID) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public MerkleSchedule get(ScheduleID sID) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean exists(ScheduleID id) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public boolean exists(ScheduleID id) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		/* No-op */
-	}
+  @Override
+  public void setHederaLedger(HederaLedger ledger) {
+    /* No-op */
+  }
 
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		/* No-op */
-	}
+  @Override
+  public void setAccountsLedger(
+      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+    /* No-op */
+  }
 
-	@Override
-	public void apply(ScheduleID id, Consumer<MerkleSchedule> change) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void apply(ScheduleID id, Consumer<MerkleSchedule> change) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public CreationResult<ScheduleID> createProvisionally(MerkleSchedule candidate, RichInstant consensusTime) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public CreationResult<ScheduleID> createProvisionally(
+      MerkleSchedule candidate, RichInstant consensusTime) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum markAsExecuted(ScheduleID id) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum markAsExecuted(ScheduleID id) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void expire(EntityId id) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void expire(EntityId id) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public ResponseCodeEnum delete(ScheduleID id) {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public ResponseCodeEnum delete(ScheduleID id) {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void commitCreation() {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void commitCreation() {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public void rollbackCreation() {
-		throw new UnsupportedOperationException();
-	}
+  @Override
+  public void rollbackCreation() {
+    throw new UnsupportedOperationException();
+  }
 
-	@Override
-	public boolean isCreationPending() {
-		throw new UnsupportedOperationException();
-	}
-
-
+  @Override
+  public boolean isCreationPending() {
+    throw new UnsupportedOperationException();
+  }
 }

@@ -20,51 +20,53 @@ package com.hedera.services.yahcli.commands.files;
  * ‍
  */
 
-import com.hedera.services.yahcli.suites.SysFileUploadSuite;
-import picocli.CommandLine;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
+import com.hedera.services.yahcli.suites.SysFileUploadSuite;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
+import picocli.CommandLine;
+
 @CommandLine.Command(
-		name = "upload",
-		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Upload a system file")
+    name = "upload",
+    subcommands = {picocli.CommandLine.HelpCommand.class},
+    description = "Upload a system file")
 public class SysFileUploadCommand implements Callable<Integer> {
-	public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
+  public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
 
-	@CommandLine.ParentCommand
-	private SysFilesCommand sysFilesCommand;
+  @CommandLine.ParentCommand private SysFilesCommand sysFilesCommand;
 
-	@CommandLine.Option(names = { "-s", "--source-dir" },
-			paramLabel = "source directory",
-			defaultValue = "{network}/sysfiles/")
-	private String srcDir;
+  @CommandLine.Option(
+      names = {"-s", "--source-dir"},
+      paramLabel = "source directory",
+      defaultValue = "{network}/sysfiles/")
+  private String srcDir;
 
-	@CommandLine.Option(names = { "--dry-run" },
-			description = "only write the serialized form of the system file to disk, do not send a FileUpdate")
-	private boolean dryRun;
+  @CommandLine.Option(
+      names = {"--dry-run"},
+      description =
+          "only write the serialized form of the system file to disk, do not send a FileUpdate")
+  private boolean dryRun;
 
-	@CommandLine.Parameters(
-			arity = "1",
-			paramLabel = "<sysfile>",
-			description = "one of " +
-					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
-					"{ 101, 102, 111, 112, 121, 122, 123 })")
-	private String sysFile;
+  @CommandLine.Parameters(
+      arity = "1",
+      paramLabel = "<sysfile>",
+      description =
+          "one of "
+              + "{ address-book, node-details, fees, rates, props, permissions, throttles } (or "
+              + "{ 101, 102, 111, 112, 121, 122, 123 })")
+  private String sysFile;
 
-	@Override
-	public Integer call() throws Exception {
-		var config = configFrom(sysFilesCommand.getYahcli());
-		srcDir = resolvedDir(srcDir, config);
-		activeSrcDir.set(srcDir);
+  @Override
+  public Integer call() throws Exception {
+    var config = configFrom(sysFilesCommand.getYahcli());
+    srcDir = resolvedDir(srcDir, config);
+    activeSrcDir.set(srcDir);
 
-		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
-		delegate.runSuiteSync();
+    var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
+    delegate.runSuiteSync();
 
-		return 0;
-	}
+    return 0;
+  }
 }

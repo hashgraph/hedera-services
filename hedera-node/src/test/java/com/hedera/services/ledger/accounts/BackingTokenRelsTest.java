@@ -20,21 +20,6 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.readableTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -51,160 +36,174 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkletree.MerklePair;
+import java.util.Collections;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class BackingTokenRelsTest {
-	private long aBalance = 100, bBalance = 200, cBalance = 300;
-	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
-	private boolean aKyc = false, bKyc = true, cKyc = false;
-	private AccountID a = asAccount("1.2.3");
-	private AccountID b = asAccount("3.2.1");
-	private AccountID c = asAccount("4.3.0");
-	private TokenID at = asToken("9.8.7");
-	private TokenID bt = asToken("9.8.6");
-	private TokenID ct = asToken("9.8.5");
+  private long aBalance = 100, bBalance = 200, cBalance = 300;
+  private boolean aFrozen = true, bFrozen = false, cFrozen = true;
+  private boolean aKyc = false, bKyc = true, cKyc = false;
+  private AccountID a = asAccount("1.2.3");
+  private AccountID b = asAccount("3.2.1");
+  private AccountID c = asAccount("4.3.0");
+  private TokenID at = asToken("9.8.7");
+  private TokenID bt = asToken("9.8.6");
+  private TokenID ct = asToken("9.8.5");
 
-	private MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
-	private MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
-	private MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
-	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
-	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
-	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
+  private MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
+  private MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
+  private MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
+  private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
+  private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
+  private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
 
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> rels;
+  private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> rels;
 
-	private BackingTokenRels subject;
+  private BackingTokenRels subject;
 
-	@BeforeEach
-	private void setup() {
-		rels = new FCMap<>();
-		rels.put(aKey, aValue);
-		rels.put(bKey, bValue);
+  @BeforeEach
+  private void setup() {
+    rels = new FCMap<>();
+    rels.put(aKey, aValue);
+    rels.put(bKey, bValue);
 
-		subject = new BackingTokenRels(() -> rels);
-	}
+    subject = new BackingTokenRels(() -> rels);
+  }
 
-	@Test
-	void manualAddToExistingWorks() {
-		// given:
-		final var aNewPair = Pair.of(c, ct);
+  @Test
+  void manualAddToExistingWorks() {
+    // given:
+    final var aNewPair = Pair.of(c, ct);
 
-		// when:
-		subject.addToExistingRels(aNewPair);
+    // when:
+    subject.addToExistingRels(aNewPair);
 
-		// then:
-		assertTrue(subject.contains(aNewPair));
-	}
+    // then:
+    assertTrue(subject.contains(aNewPair));
+  }
 
-	@Test
-	void manualRemoveFromExistingWorks() {
-		// given:
-		final var destroyedPair = Pair.of(a, at);
+  @Test
+  void manualRemoveFromExistingWorks() {
+    // given:
+    final var destroyedPair = Pair.of(a, at);
 
-		// when:
-		subject.removeFromExistingRels(destroyedPair);
+    // when:
+    subject.removeFromExistingRels(destroyedPair);
 
-		// then:
-		assertFalse(subject.contains(destroyedPair));
-	}
+    // then:
+    assertFalse(subject.contains(destroyedPair));
+  }
 
-	@Test
-	void relToStringWorks() {
-		// expect:
-		assertEquals("1.2.3 <-> 9.8.7", readableTokenRel(asTokenRel(a, at)));
-	}
+  @Test
+  void relToStringWorks() {
+    // expect:
+    assertEquals("1.2.3 <-> 9.8.7", readableTokenRel(asTokenRel(a, at)));
+  }
 
-	@Test
-	void delegatesPutForNewRelIfMissing() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
+  @Test
+  void delegatesPutForNewRelIfMissing() throws ConstructableRegistryException {
+    ConstructableRegistry.registerConstructable(
+        new ClassConstructorPair(MerklePair.class, MerklePair::new));
 
-		// when:
-		subject.put(asTokenRel(c, ct), cValue);
+    // when:
+    subject.put(asTokenRel(c, ct), cValue);
 
-		// then:
-		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
-		// and:
-		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
-	}
+    // then:
+    assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
+    // and:
+    assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
+  }
 
-	@Test
-	void delegatesPutForNewRel() {
-		// when:
-		subject.put(asTokenRel(c, ct), cValue);
+  @Test
+  void delegatesPutForNewRel() {
+    // when:
+    subject.put(asTokenRel(c, ct), cValue);
 
-		// then:
-		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
-	}
+    // then:
+    assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
+  }
 
-	@Test
-	void removeUpdatesBothCacheAndDelegate() {
-		// when:
-		subject.remove(asTokenRel(a, at));
+  @Test
+  void removeUpdatesBothCacheAndDelegate() {
+    // when:
+    subject.remove(asTokenRel(a, at));
 
-		// then:
-		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
-		// and:
-		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
-	}
+    // then:
+    assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
+    // and:
+    assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
+  }
 
-	@Test
-	void syncsFromInjectedMap() {
-		// expect:
-		assertTrue(subject.existingRels.contains(asTokenRel(a, at)));
-		assertTrue(subject.existingRels.contains(asTokenRel(b, bt)));
-	}
+  @Test
+  void syncsFromInjectedMap() {
+    // expect:
+    assertTrue(subject.existingRels.contains(asTokenRel(a, at)));
+    assertTrue(subject.existingRels.contains(asTokenRel(b, bt)));
+  }
 
-	@Test
-	void rebuildsFromChangedSources() {
-		// when:
-		rels.clear();
-		rels.put(cKey, cValue);
-		// and:
-		subject.rebuildFromSources();
+  @Test
+  void rebuildsFromChangedSources() {
+    // when:
+    rels.clear();
+    rels.put(cKey, cValue);
+    // and:
+    subject.rebuildFromSources();
 
-		// then:
-		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
-		assertFalse(subject.existingRels.contains(asTokenRel(b, bt)));
-		// and:
-		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
-	}
+    // then:
+    assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
+    assertFalse(subject.existingRels.contains(asTokenRel(b, bt)));
+    // and:
+    assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
+  }
 
-	@Test
-	void containsWorks() {
-		// expect:
-		assertTrue(subject.contains(asTokenRel(a, at)));
-		assertTrue(subject.contains(asTokenRel(b, bt)));
-	}
+  @Test
+  void containsWorks() {
+    // expect:
+    assertTrue(subject.contains(asTokenRel(a, at)));
+    assertTrue(subject.contains(asTokenRel(b, bt)));
+  }
 
-	@Test
-	void getIsReadThrough() {
-		setupMocked();
+  @Test
+  void getIsReadThrough() {
+    setupMocked();
 
-		given(rels.getForModify(aKey)).willReturn(aValue);
-		given(rels.get(bKey)).willReturn(bValue);
+    given(rels.getForModify(aKey)).willReturn(aValue);
+    given(rels.get(bKey)).willReturn(bValue);
 
-		// when:
-		var firstStatus = subject.getRef(asTokenRel(a, at));
-		var secondStatus = subject.getRef(asTokenRel(a, at));
+    // when:
+    var firstStatus = subject.getRef(asTokenRel(a, at));
+    var secondStatus = subject.getRef(asTokenRel(a, at));
 
-		// then:
-		assertSame(aValue, firstStatus);
-		assertSame(aValue, secondStatus);
-		assertSame(bValue, subject.getImmutableRef(asTokenRel(b, bt)));
-		// and:
-		verify(rels, times(2)).getForModify(any());
-		verify(rels, times(1)).get(any());
-	}
+    // then:
+    assertSame(aValue, firstStatus);
+    assertSame(aValue, secondStatus);
+    assertSame(bValue, subject.getImmutableRef(asTokenRel(b, bt)));
+    // and:
+    verify(rels, times(2)).getForModify(any());
+    verify(rels, times(1)).get(any());
+  }
 
-	@Test
-	void irrelevantMethodsNotSupported() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, subject::idSet);
-	}
+  @Test
+  void irrelevantMethodsNotSupported() {
+    // expect:
+    assertThrows(UnsupportedOperationException.class, subject::idSet);
+  }
 
-	private void setupMocked() {
-		rels = mock(FCMap.class);
-		given(rels.keySet()).willReturn(Collections.emptySet());
-		given(rels.entrySet()).willReturn(Collections.emptySet());
-		subject = new BackingTokenRels(() -> rels);
-	}
+  private void setupMocked() {
+    rels = mock(FCMap.class);
+    given(rels.keySet()).willReturn(Collections.emptySet());
+    given(rels.entrySet()).willReturn(Collections.emptySet());
+    subject = new BackingTokenRels(() -> rels);
+  }
 }

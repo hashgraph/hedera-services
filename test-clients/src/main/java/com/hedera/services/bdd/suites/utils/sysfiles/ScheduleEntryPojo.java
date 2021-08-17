@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,54 +23,53 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScheduleEntryPojo {
-	String hederaFunctionality;
-	List<ScopedResourcePricesPojo> feesList;
+  String hederaFunctionality;
+  List<ScopedResourcePricesPojo> feesList;
 
-	public static ScheduleEntryPojo from(TransactionFeeSchedule grpc) {
-		var pojo = new ScheduleEntryPojo();
+  public static ScheduleEntryPojo from(TransactionFeeSchedule grpc) {
+    var pojo = new ScheduleEntryPojo();
 
-		pojo.setHederaFunctionality(grpc.getHederaFunctionality().toString());
+    pojo.setHederaFunctionality(grpc.getHederaFunctionality().toString());
 
-		List<ScopedResourcePricesPojo> feesList = new ArrayList<>();
+    List<ScopedResourcePricesPojo> feesList = new ArrayList<>();
 
-		for (FeeData feeData : grpc.getFeesList()) {
-			var subType = feeData.getSubType();
-			var nodePrices = ResourcePricesPojo.from(feeData.getNodedata());
-			var servicePrices = ResourcePricesPojo.from(feeData.getServicedata());
-			var networkPrices = ResourcePricesPojo.from(feeData.getNetworkdata());
+    for (FeeData feeData : grpc.getFeesList()) {
+      var subType = feeData.getSubType();
+      var nodePrices = ResourcePricesPojo.from(feeData.getNodedata());
+      var servicePrices = ResourcePricesPojo.from(feeData.getServicedata());
+      var networkPrices = ResourcePricesPojo.from(feeData.getNetworkdata());
 
-			var scopedPrices = new ScopedResourcePricesPojo();
-			scopedPrices.setNodedata(nodePrices);
-			scopedPrices.setNetworkdata(networkPrices);
-			scopedPrices.setServicedata(servicePrices);
-			scopedPrices.setSubType(subType);
+      var scopedPrices = new ScopedResourcePricesPojo();
+      scopedPrices.setNodedata(nodePrices);
+      scopedPrices.setNetworkdata(networkPrices);
+      scopedPrices.setServicedata(servicePrices);
+      scopedPrices.setSubType(subType);
 
-			feesList.add(scopedPrices);
-		}
+      feesList.add(scopedPrices);
+    }
 
-		pojo.setFeesList(feesList);
-		return pojo;
-	}
+    pojo.setFeesList(feesList);
+    return pojo;
+  }
 
-	public String getHederaFunctionality() {
-		return hederaFunctionality;
-	}
+  public String getHederaFunctionality() {
+    return hederaFunctionality;
+  }
 
-	public void setHederaFunctionality(String hederaFunctionality) {
-		this.hederaFunctionality = hederaFunctionality;
-	}
+  public void setHederaFunctionality(String hederaFunctionality) {
+    this.hederaFunctionality = hederaFunctionality;
+  }
 
-	public List<ScopedResourcePricesPojo> getFeesList() {
-		return feesList;
-	}
+  public List<ScopedResourcePricesPojo> getFeesList() {
+    return feesList;
+  }
 
-	public void setFeesList(List<ScopedResourcePricesPojo> feeData) {
-		this.feesList = feeData;
-	}
+  public void setFeesList(List<ScopedResourcePricesPojo> feeData) {
+    this.feesList = feeData;
+  }
 }

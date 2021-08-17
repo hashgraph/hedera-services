@@ -20,6 +20,26 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -37,267 +57,244 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
-
 class ContractCreateTransitionLogicTest {
-	private long gas = 33_333L;
-	private long customAutoRenewPeriod = 100_001L;
-	private Long balance = 1_234L;
-	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private ContractID created = ContractID.newBuilder().setContractNum(9_999L).build();
-	final private FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
-	final private byte[] bytecode = "NotReallyEvmBytecode".getBytes();
+  private long gas = 33_333L;
+  private long customAutoRenewPeriod = 100_001L;
+  private Long balance = 1_234L;
+  private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
+  private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+  private final ContractID created = ContractID.newBuilder().setContractNum(9_999L).build();
+  private final FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
+  private final byte[] bytecode = "NotReallyEvmBytecode".getBytes();
 
-	private Instant consensusTime;
-	private HederaFs hfs;
-	private SequenceNumber seqNo;
-	private OptionValidator validator;
-	private ContractCreateTransitionLogic.LegacyCreator delegate;
-	private TransactionBody contractCreateTxn;
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	private ContractCreateTransitionLogic subject;
+  private Instant consensusTime;
+  private HederaFs hfs;
+  private SequenceNumber seqNo;
+  private OptionValidator validator;
+  private ContractCreateTransitionLogic.LegacyCreator delegate;
+  private TransactionBody contractCreateTxn;
+  private TransactionContext txnCtx;
+  private PlatformTxnAccessor accessor;
+  private ContractCreateTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		consensusTime = Instant.now();
+  @BeforeEach
+  private void setup() {
+    consensusTime = Instant.now();
 
-		delegate = mock(ContractCreateTransitionLogic.LegacyCreator.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		hfs = mock(HederaFs.class);
-		accessor = mock(PlatformTxnAccessor.class);
-		validator = mock(OptionValidator.class);
-		withRubberstampingValidator();
-		seqNo = mock(SequenceNumber.class);
+    delegate = mock(ContractCreateTransitionLogic.LegacyCreator.class);
+    txnCtx = mock(TransactionContext.class);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    hfs = mock(HederaFs.class);
+    accessor = mock(PlatformTxnAccessor.class);
+    validator = mock(OptionValidator.class);
+    withRubberstampingValidator();
+    seqNo = mock(SequenceNumber.class);
 
-		subject = new ContractCreateTransitionLogic(hfs, delegate, () -> seqNo, validator, txnCtx);
-	}
+    subject = new ContractCreateTransitionLogic(hfs, delegate, () -> seqNo, validator, txnCtx);
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(contractCreateTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(contractCreateTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void acceptsOkSyntax() {
-		givenValidTxnCtx();
+  @Test
+  void acceptsOkSyntax() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false);
+  @Test
+  void rejectsInvalidAutoRenew() {
+    givenValidTxnCtx(false);
 
-		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void rejectsNegativeBalance() {
-		// setup:
-		balance = -1L;
+  @Test
+  void rejectsNegativeBalance() {
+    // setup:
+    balance = -1L;
 
-		givenValidTxnCtx();
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(CONTRACT_NEGATIVE_VALUE, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void rejectsNegativeGas() {
-		// setup:
-		gas = -1L;
+  @Test
+  void rejectsNegativeGas() {
+    // setup:
+    gas = -1L;
 
-		givenValidTxnCtx();
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void rejectsNegativeAutoRenew() {
-		// setup:
-		customAutoRenewPeriod = -1L;
+  @Test
+  void rejectsNegativeAutoRenew() {
+    // setup:
+    customAutoRenewPeriod = -1L;
 
-		givenValidTxnCtx();
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void rejectsOutOfRangeAutoRenew() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
+  @Test
+  void rejectsOutOfRangeAutoRenew() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		// expect:
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void capturesUnsuccessfulCreate() {
-		// setup:
-		TransactionRecord creation = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(CONTRACT_EXECUTION_EXCEPTION)
-						.build())
-				.setContractCreateResult(ContractFunctionResult.newBuilder().setGasUsed(555))
-				.build();
+  @Test
+  void capturesUnsuccessfulCreate() {
+    // setup:
+    TransactionRecord creation =
+        TransactionRecord.newBuilder()
+            .setReceipt(
+                TransactionReceipt.newBuilder().setStatus(CONTRACT_EXECUTION_EXCEPTION).build())
+            .setContractCreateResult(ContractFunctionResult.newBuilder().setGasUsed(555))
+            .build();
 
-		givenValidTxnCtx();
-		// and:
-		given(hfs.exists(bytecodeSrc)).willReturn(true);
-		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		given(delegate.perform(contractCreateTxn, consensusTime, bytecode, seqNo)).willReturn(creation);
+    givenValidTxnCtx();
+    // and:
+    given(hfs.exists(bytecodeSrc)).willReturn(true);
+    given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+    given(delegate.perform(contractCreateTxn, consensusTime, bytecode, seqNo)).willReturn(creation);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setCreateResult(creation.getContractCreateResult());
-		verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
-		verify(txnCtx, never()).setCreated(any(ContractID.class));
-	}
+    // then:
+    verify(txnCtx).setCreateResult(creation.getContractCreateResult());
+    verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
+    verify(txnCtx, never()).setCreated(any(ContractID.class));
+  }
 
-	@Test
-	void followsHappyPathWithOverrides() {
-		// setup:
-		TransactionRecord creation = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.setContractID(created)
-						.build())
-				.setContractCreateResult(ContractFunctionResult.newBuilder().setGasUsed(555))
-				.build();
+  @Test
+  void followsHappyPathWithOverrides() {
+    // setup:
+    TransactionRecord creation =
+        TransactionRecord.newBuilder()
+            .setReceipt(
+                TransactionReceipt.newBuilder().setStatus(SUCCESS).setContractID(created).build())
+            .setContractCreateResult(ContractFunctionResult.newBuilder().setGasUsed(555))
+            .build();
 
-		givenValidTxnCtx();
-		// and:
-		given(hfs.exists(bytecodeSrc)).willReturn(true);
-		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		given(delegate.perform(contractCreateTxn, consensusTime, bytecode, seqNo)).willReturn(creation);
+    givenValidTxnCtx();
+    // and:
+    given(hfs.exists(bytecodeSrc)).willReturn(true);
+    given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+    given(delegate.perform(contractCreateTxn, consensusTime, bytecode, seqNo)).willReturn(creation);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setCreateResult(creation.getContractCreateResult());
-		verify(txnCtx).setCreated(created);
-		verify(txnCtx).setStatus(SUCCESS);
-	}
+    // then:
+    verify(txnCtx).setCreateResult(creation.getContractCreateResult());
+    verify(txnCtx).setCreated(created);
+    verify(txnCtx).setStatus(SUCCESS);
+  }
 
-	@Test
-	void rejectsInvalidMemoInSyntaxCheck() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
+  @Test
+  void rejectsInvalidMemoInSyntaxCheck() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 
-		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));
-	}
+    // expect:
+    assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));
+  }
 
-	@Test
-	void rejectsMissingBytecodeFile() {
-		givenValidTxnCtx();
-		given(hfs.exists(bytecodeSrc)).willReturn(false);
+  @Test
+  void rejectsMissingBytecodeFile() {
+    givenValidTxnCtx();
+    given(hfs.exists(bytecodeSrc)).willReturn(false);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(INVALID_FILE_ID);
-	}
+    // then:
+    verify(txnCtx).setStatus(INVALID_FILE_ID);
+  }
 
-	@Test
-	void rejectsEmptyBytecodeFile() {
-		givenValidTxnCtx();
-		given(hfs.exists(bytecodeSrc)).willReturn(true);
-		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
+  @Test
+  void rejectsEmptyBytecodeFile() {
+    givenValidTxnCtx();
+    given(hfs.exists(bytecodeSrc)).willReturn(true);
+    given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(CONTRACT_FILE_EMPTY);
-	}
+    // then:
+    verify(txnCtx).setStatus(CONTRACT_FILE_EMPTY);
+  }
 
-	@Test
-	void translatesUnknownException() {
-		givenValidTxnCtx();
-		given(hfs.exists(bytecodeSrc)).willReturn(true);
-		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		given(delegate.perform(any(), any(), any(), any())).willThrow(IllegalStateException.class);
+  @Test
+  void translatesUnknownException() {
+    givenValidTxnCtx();
+    given(hfs.exists(bytecodeSrc)).willReturn(true);
+    given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+    given(delegate.perform(any(), any(), any(), any())).willThrow(IllegalStateException.class);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
+    // then:
+    verify(txnCtx).setStatus(FAIL_INVALID);
+  }
 
-	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
-	}
+  private void givenValidTxnCtx() {
+    givenValidTxnCtx(true);
+  }
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew) {
-		var op = ContractCreateTransactionBody.newBuilder()
-				.setFileID(bytecodeSrc)
-				.setInitialBalance(balance)
-				.setGas(gas)
-				.setProxyAccountID(proxy);
-		if (rememberAutoRenew) {
-			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
-		}
-		var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setContractCreateInstance(op);
-		contractCreateTxn = txn.build();
-		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-	}
+  private void givenValidTxnCtx(boolean rememberAutoRenew) {
+    var op =
+        ContractCreateTransactionBody.newBuilder()
+            .setFileID(bytecodeSrc)
+            .setInitialBalance(balance)
+            .setGas(gas)
+            .setProxyAccountID(proxy);
+    if (rememberAutoRenew) {
+      op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
+    }
+    var txn =
+        TransactionBody.newBuilder().setTransactionID(ourTxnId()).setContractCreateInstance(op);
+    contractCreateTxn = txn.build();
+    given(accessor.getTxn()).willReturn(contractCreateTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+  }
 
-	private TransactionID ourTxnId() {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
-				.build();
-	}
+  private TransactionID ourTxnId() {
+    return TransactionID.newBuilder()
+        .setAccountID(payer)
+        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+        .build();
+  }
 
-	private void withRubberstampingValidator() {
-		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(validator.hasGoodEncoding(any())).willReturn(true);
-		given(validator.memoCheck(any())).willReturn(OK);
-	}
+  private void withRubberstampingValidator() {
+    given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+    given(validator.hasGoodEncoding(any())).willReturn(true);
+    given(validator.memoCheck(any())).willReturn(OK);
+  }
 }

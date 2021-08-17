@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,18 +19,6 @@ package com.hedera.services.ledger;
  * limitations under the License.
  * ‍
  */
-
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-
-import java.util.Collections;
-import java.util.List;
 
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withOwnershipChanges;
@@ -54,339 +42,396 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import java.util.Collections;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+
 class PureTransferSemanticChecksTest {
-	final private int maxHbarAdjusts = 5;
-	final private int maxTokenAdjusts = 10;
-	final private int maxOwnershipChanges = 3;
-	private final boolean areNftsEnabled = true;
-	private final int maxFeeNesting = 20;
-	private final int maxBalanceChanges = 20;
-	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
-	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
-	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
-	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
-	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
-	final private TokenID aTId = TokenID.newBuilder().setTokenNum(1_234L).build();
-	final private TokenID bTId = TokenID.newBuilder().setTokenNum(2_345L).build();
-	final private TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
-	final private TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
+  private final int maxHbarAdjusts = 5;
+  private final int maxTokenAdjusts = 10;
+  private final int maxOwnershipChanges = 3;
+  private final boolean areNftsEnabled = true;
+  private final int maxFeeNesting = 20;
+  private final int maxBalanceChanges = 20;
+  final ImpliedTransfersMeta.ValidationProps validationProps =
+      new ImpliedTransfersMeta.ValidationProps(
+          maxHbarAdjusts,
+          maxTokenAdjusts,
+          maxOwnershipChanges,
+          maxFeeNesting,
+          maxBalanceChanges,
+          areNftsEnabled);
+  private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
+  private final AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
+  private final AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
+  private final AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
+  private final TokenID aTId = TokenID.newBuilder().setTokenNum(1_234L).build();
+  private final TokenID bTId = TokenID.newBuilder().setTokenNum(2_345L).build();
+  private final TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
+  private final TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
 
-	PureTransferSemanticChecks subject = new PureTransferSemanticChecks();
+  PureTransferSemanticChecks subject = new PureTransferSemanticChecks();
 
-	@Test
-	void preservesTraditionalResponseCodePriority() {
-		// setup:
-		final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
-		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-		// and:
-		subject = mock(PureTransferSemanticChecks.class);
-		InOrder inOrder = Mockito.inOrder(subject);
+  @Test
+  void preservesTraditionalResponseCodePriority() {
+    // setup:
+    final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
+    final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+    // and:
+    subject = mock(PureTransferSemanticChecks.class);
+    InOrder inOrder = Mockito.inOrder(subject);
 
-		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
-		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
-		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
-		// and:
-		doCallRealMethod().when(subject)
-				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+    given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
+    given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts))
+        .willReturn(true);
+    given(
+            subject.validateTokenTransferSizes(
+                tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
+        .willReturn(OK);
+    given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
+    // and:
+    doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
-		// when:
-		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+    // when:
+    final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
-		// then:
-		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
-		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
-		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
-		inOrder.verify(subject).validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
-		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
-		// and:
-		assertEquals(OK, result);
-	}
+    // then:
+    inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
+    inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
+    inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
+    inOrder
+        .verify(subject)
+        .validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
+    inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
+    // and:
+    assertEquals(OK, result);
+  }
 
-	@Test
-	void rejectsInvalidTokenSizes() {
-		// setup:
-		final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
-		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-		// and:
-		subject = mock(PureTransferSemanticChecks.class);
+  @Test
+  void rejectsInvalidTokenSizes() {
+    // setup:
+    final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
+    final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+    // and:
+    subject = mock(PureTransferSemanticChecks.class);
 
-		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
-		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
-				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
-		// and:
-		doCallRealMethod().when(subject)
-				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+    given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
+    given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts))
+        .willReturn(true);
+    given(
+            subject.validateTokenTransferSizes(
+                tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
+        .willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+    // and:
+    doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
-		// when:
-		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+    // when:
+    final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
-		// then:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
-	}
+    // then:
+    assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
+  }
 
-	@Test
-	void rejectsInvalidTokenSemantics() {
-		// setup:
-		final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
-		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-		// and:
-		subject = mock(PureTransferSemanticChecks.class);
+  @Test
+  void rejectsInvalidTokenSemantics() {
+    // setup:
+    final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
+    final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+    // and:
+    subject = mock(PureTransferSemanticChecks.class);
 
-		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
-		// and:
-		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
-		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
-		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
-		// and:
-		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+    final var validationProps =
+        new ImpliedTransfersMeta.ValidationProps(
+            maxHbarAdjusts,
+            maxTokenAdjusts,
+            maxOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled);
+    // and:
+    given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
+    given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts))
+        .willReturn(true);
+    given(
+            subject.validateTokenTransferSizes(
+                tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
+        .willReturn(OK);
+    given(subject.validateTokenTransferSemantics(tokenAdjusts))
+        .willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+    // and:
+    doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
-		// when:
-		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+    // when:
+    final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
-		// then:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, result);
-	}
+    // then:
+    assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, result);
+  }
 
-	@Test
-	void rejectsNonNetZeroAccounts() {
-		// setup:
-		final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +3L);
-		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+  @Test
+  void rejectsNonNetZeroAccounts() {
+    // setup:
+    final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +3L);
+    final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
-		// expect:
-		assertEquals(
-				INVALID_ACCOUNT_AMOUNTS,
-				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps));
-	}
+    // expect:
+    assertEquals(
+        INVALID_ACCOUNT_AMOUNTS,
+        subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps));
+  }
 
-	@Test
-	void rejectsRepeatedAccounts() {
-		// setup:
-		final var hbarAdjusts = withAdjustments(a, -4L, a, +2L, c, +2L);
-		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+  @Test
+  void rejectsRepeatedAccounts() {
+    // setup:
+    final var hbarAdjusts = withAdjustments(a, -4L, a, +2L, c, +2L);
+    final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
-		// expect:
-		assertEquals(
-				ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
-				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps));
-	}
+    // expect:
+    assertEquals(
+        ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
+        subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps));
+  }
 
-	@Test
-	void rejectsOversizeTransfers() {
-		// setup:
-		final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
-		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-		// and:
-		final var strictValProps = new ImpliedTransfersMeta.ValidationProps(
-				1, 1, 1, 1, 1, areNftsEnabled);
+  @Test
+  void rejectsOversizeTransfers() {
+    // setup:
+    final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
+    final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+    // and:
+    final var strictValProps =
+        new ImpliedTransfersMeta.ValidationProps(1, 1, 1, 1, 1, areNftsEnabled);
 
-		// expect:
-		assertEquals(
-				TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
-				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, strictValProps));
-	}
+    // expect:
+    assertEquals(
+        TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
+        subject.fullPureValidation(hbarAdjusts, tokenAdjusts, strictValProps));
+  }
 
-	@Test
-	void recognizesNetZeroAdjusts() {
-		// expect:
-		assertTrue(subject.isNetZeroAdjustment(
-				withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
-		assertFalse(subject.isNetZeroAdjustment(
-				withAdjustments(a, -5L, b, +2L, c, +2L).getAccountAmountsList()));
-	}
+  @Test
+  void recognizesNetZeroAdjusts() {
+    // expect:
+    assertTrue(
+        subject.isNetZeroAdjustment(
+            withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
+    assertFalse(
+        subject.isNetZeroAdjustment(
+            withAdjustments(a, -5L, b, +2L, c, +2L).getAccountAmountsList()));
+  }
 
-	@Test
-	void acceptsReasonableTokenTransfersLength() {
-		// given:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+  @Test
+  void acceptsReasonableTokenTransfersLength() {
+    // given:
+    List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
-		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2, true);
+    // when:
+    final var result = subject.validateTokenTransferSizes(wrapper, 4, 2, true);
 
-		// expect:
-		assertEquals(OK, result);
-	}
+    // expect:
+    assertEquals(OK, result);
+  }
 
-	@Test
-	void acceptsNoTokenTransfers() {
-		// given:
-		final var result = subject.validateTokenTransferSizes(Collections.emptyList(), 10, 2, true);
+  @Test
+  void acceptsNoTokenTransfers() {
+    // given:
+    final var result = subject.validateTokenTransferSizes(Collections.emptyList(), 10, 2, true);
 
-		// expect:
-		assertEquals(OK, result);
-	}
+    // expect:
+    assertEquals(OK, result);
+  }
 
-	@Test
-	void tokenSemanticsOkForEmpty() {
-		// expect:
-		assertEquals(OK, subject.validateTokenTransferSemantics(Collections.emptyList()));
-	}
+  @Test
+  void tokenSemanticsOkForEmpty() {
+    // expect:
+    assertEquals(OK, subject.validateTokenTransferSemantics(Collections.emptyList()));
+  }
 
-	@Test
-	void rejectsMissingTokenId() {
-		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-				.build()
-		)));
-	}
+  @Test
+  void rejectsMissingTokenId() {
+    // expect:
+    assertEquals(
+        INVALID_TOKEN_ID,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .addAllTransfers(
+                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                    .build())));
+  }
 
-	@Test
-	void rejectsMissingAccountId() {
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addTransfers(AccountAmount.newBuilder().setAmount(123).build())
-						.build()
-		)));
-	}
+  @Test
+  void rejectsMissingAccountId() {
+    // expect:
+    assertEquals(
+        INVALID_ACCOUNT_ID,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addTransfers(AccountAmount.newBuilder().setAmount(123).build())
+                    .build())));
+  }
 
-	@Test
-	void rejectsZeroAccountAmount() {
-		// expect:
-		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(0).build())
-						.build()
-		)));
-	}
+  @Test
+  void rejectsZeroAccountAmount() {
+    // expect:
+    assertEquals(
+        INVALID_ACCOUNT_AMOUNTS,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(0).build())
+                    .build())));
+  }
 
-	@Test
-	void rejectsNonNetZeroScopedAccountAmounts() {
-		// expect:
-		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
-						.addTransfers(AccountAmount.newBuilder().setAccountID(b).setAmount(2).build())
-						.build()
-		)));
-	}
+  @Test
+  void rejectsNonNetZeroScopedAccountAmounts() {
+    // expect:
+    assertEquals(
+        TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
+                    .addTransfers(AccountAmount.newBuilder().setAccountID(b).setAmount(2).build())
+                    .build())));
+  }
 
-	@Test
-	void rejectsRepeatedAccountInScopedAdjusts() {
-		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
-						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(1).build())
-						.build()
-		)));
-	}
+  @Test
+  void rejectsRepeatedAccountInScopedAdjusts() {
+    // expect:
+    assertEquals(
+        ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
+                    .addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(1).build())
+                    .build())));
+  }
 
-	@Test
-	void rejectsRepeatedTokens() {
-		// expect:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build(),
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build()
-		)));
-	}
+  @Test
+  void rejectsRepeatedTokens() {
+    // expect:
+    assertEquals(
+        TOKEN_ID_REPEATED_IN_TOKEN_LIST,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addAllTransfers(
+                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                    .build(),
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addAllTransfers(
+                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                    .build())));
+  }
 
-	@Test
-	void oksSaneTokenExchange() {
-		// expect:
-		assertEquals(OK, subject.validateTokenTransferSemantics(List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTId)
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build(),
-				TokenTransferList.newBuilder()
-						.setToken(bTId)
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build()
-		)));
-	}
+  @Test
+  void oksSaneTokenExchange() {
+    // expect:
+    assertEquals(
+        OK,
+        subject.validateTokenTransferSemantics(
+            List.of(
+                TokenTransferList.newBuilder()
+                    .setToken(aTId)
+                    .addAllTransfers(
+                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                    .build(),
+                TokenTransferList.newBuilder()
+                    .setToken(bTId)
+                    .addAllTransfers(
+                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                    .build())));
+  }
 
-	@Test
-	void rejectsOwnershipChangesIfNftsNotEnabled() {
-		// given:
-		List<TokenTransferList> wrapper = withOwnershipChanges(
-				aTId, a, a, 123,
-				bTId, b, c, 234,
-				cTId, c, a, 345);
+  @Test
+  void rejectsOwnershipChangesIfNftsNotEnabled() {
+    // given:
+    List<TokenTransferList> wrapper =
+        withOwnershipChanges(aTId, a, a, 123, bTId, b, c, 234, cTId, c, a, 345);
 
-		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 20, 1, false);
+    // when:
+    final var result = subject.validateTokenTransferSizes(wrapper, 20, 1, false);
 
-		// then:
-		assertEquals(NOT_SUPPORTED, result);
-	}
+    // then:
+    assertEquals(NOT_SUPPORTED, result);
+  }
 
-	@Test
-	void rejectsExceedingMaxOwnershipChanges() {
-		// given:
-		List<TokenTransferList> wrapper = withOwnershipChanges(
-				aTId, a, a, 123,
-				bTId, b, c, 234,
-				cTId, c, a, 345);
+  @Test
+  void rejectsExceedingMaxOwnershipChanges() {
+    // given:
+    List<TokenTransferList> wrapper =
+        withOwnershipChanges(aTId, a, a, 123, bTId, b, c, 234, cTId, c, a, 345);
 
-		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 20, 1, true);
+    // when:
+    final var result = subject.validateTokenTransferSizes(wrapper, 20, 1, true);
 
-		// then:
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, result);
-	}
+    // then:
+    assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, result);
+  }
 
-	@Test
-	void rejectsExceedingTokenTransfersAccountAmountsLength() {
-		// given:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
+  @Test
+  void rejectsExceedingTokenTransfersAccountAmountsLength() {
+    // given:
+    List<TokenTransferList> wrapper =
+        withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
 
-		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2, true);
+    // when:
+    final var result = subject.validateTokenTransferSizes(wrapper, 4, 2, true);
 
-		// then:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
-	}
+    // then:
+    assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
+  }
 
-	@Test
-	void rejectsEmptyTokenTransferAmounts() {
-		// given:
-		List<TokenTransferList> wrapper = List.of(TokenTransferList.newBuilder()
-				.setToken(aTId)
-				.build());
+  @Test
+  void rejectsEmptyTokenTransferAmounts() {
+    // given:
+    List<TokenTransferList> wrapper =
+        List.of(TokenTransferList.newBuilder().setToken(aTId).build());
 
-		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 10, 2, true);
+    // when:
+    final var result = subject.validateTokenTransferSizes(wrapper, 10, 2, true);
 
-		// then:
-		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, result);
-	}
+    // then:
+    assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, result);
+  }
 
-	@Test
-	void acceptsDegenerateCases() {
-		// expect:
-		assertFalse(subject.hasRepeatedAccount(Collections.emptyList()));
-		assertFalse(subject.hasRepeatedAccount(List.of(
-				AccountAmount.newBuilder().setAccountID(a).setAmount(123).build())));
-	}
+  @Test
+  void acceptsDegenerateCases() {
+    // expect:
+    assertFalse(subject.hasRepeatedAccount(Collections.emptyList()));
+    assertFalse(
+        subject.hasRepeatedAccount(
+            List.of(AccountAmount.newBuilder().setAccountID(a).setAmount(123).build())));
+  }
 
-	@Test
-	void distinguishesRepeated() {
-		// expect:
-		assertFalse(subject.hasRepeatedAccount(
-				withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
-		assertTrue(subject.hasRepeatedAccount(
-				withAdjustments(a, -4L, b, +2L, a, +2L).getAccountAmountsList()));
-		assertTrue(subject.hasRepeatedAccount(
-				withAdjustments(a, -4L, b, +2L, b, +2L).getAccountAmountsList()));
-		assertTrue(subject.hasRepeatedAccount(
-				withAdjustments(a, -4L, a, +2L, b, +2L).getAccountAmountsList()));
-	}
+  @Test
+  void distinguishesRepeated() {
+    // expect:
+    assertFalse(
+        subject.hasRepeatedAccount(
+            withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
+    assertTrue(
+        subject.hasRepeatedAccount(
+            withAdjustments(a, -4L, b, +2L, a, +2L).getAccountAmountsList()));
+    assertTrue(
+        subject.hasRepeatedAccount(
+            withAdjustments(a, -4L, b, +2L, b, +2L).getAccountAmountsList()));
+    assertTrue(
+        subject.hasRepeatedAccount(
+            withAdjustments(a, -4L, a, +2L, b, +2L).getAccountAmountsList()));
+  }
 }

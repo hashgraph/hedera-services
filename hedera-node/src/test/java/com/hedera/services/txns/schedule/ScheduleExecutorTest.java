@@ -20,6 +20,13 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -35,70 +42,57 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class ScheduleExecutorTest {
-	private ScheduleID id = IdUtils.asSchedule("0.0.1234");
+  private ScheduleID id = IdUtils.asSchedule("0.0.1234");
 
-	@Mock
-	private ScheduleStore store;
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private MerkleSchedule schedule;
+  @Mock private ScheduleStore store;
+  @Mock private TransactionContext txnCtx;
+  @Mock private MerkleSchedule schedule;
 
-	private ScheduleExecutor subject;
+  private ScheduleExecutor subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new ScheduleExecutor();
-	}
+  @BeforeEach
+  void setUp() {
+    subject = new ScheduleExecutor();
+  }
 
-	@Test
-	void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException {
-		given(store.markAsExecuted(id)).willReturn(OK);
-		given(store.get(id)).willReturn(schedule);
-		given(schedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
-		given(schedule.effectivePayer()).willReturn(new EntityId(0, 0, 4321));
+  @Test
+  void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException {
+    given(store.markAsExecuted(id)).willReturn(OK);
+    given(store.get(id)).willReturn(schedule);
+    given(schedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
+    given(schedule.effectivePayer()).willReturn(new EntityId(0, 0, 4321));
 
-		// when:
-		var result = subject.processExecution(id, store, txnCtx);
+    // when:
+    var result = subject.processExecution(id, store, txnCtx);
 
-		// then:
-		verify(txnCtx).trigger(any());
-		// and:
-		Assertions.assertEquals(OK, result);
-	}
+    // then:
+    verify(txnCtx).trigger(any());
+    // and:
+    Assertions.assertEquals(OK, result);
+  }
 
-	@Test
-	void nullArgumentsThrow() {
-		Assertions.assertThrows(
-				RuntimeException.class, () ->
-						subject.processExecution(null, store, txnCtx));
-		Assertions.assertThrows(
-				RuntimeException.class, () ->
-						subject.processExecution(id, null, txnCtx));
-		Assertions.assertThrows(
-				RuntimeException.class, () ->
-						subject.processExecution(id, store, null));
-	}
+  @Test
+  void nullArgumentsThrow() {
+    Assertions.assertThrows(
+        RuntimeException.class, () -> subject.processExecution(null, store, txnCtx));
+    Assertions.assertThrows(
+        RuntimeException.class, () -> subject.processExecution(id, null, txnCtx));
+    Assertions.assertThrows(
+        RuntimeException.class, () -> subject.processExecution(id, store, null));
+  }
 
-	@Test
-	void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException {
-		given(store.markAsExecuted(id)).willReturn(SCHEDULE_ALREADY_EXECUTED);
+  @Test
+  void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException {
+    given(store.markAsExecuted(id)).willReturn(SCHEDULE_ALREADY_EXECUTED);
 
-		// when:
-		var result = subject.processExecution(id, store, txnCtx);
+    // when:
+    var result = subject.processExecution(id, store, txnCtx);
 
-		// then:
-		verify(txnCtx, never()).trigger(any());
-		// and:
-		Assertions.assertEquals(SCHEDULE_ALREADY_EXECUTED, result);
-	}
+    // then:
+    verify(txnCtx, never()).trigger(any());
+    // and:
+    Assertions.assertEquals(SCHEDULE_ALREADY_EXECUTED, result);
+  }
 }

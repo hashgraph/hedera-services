@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,27 +21,28 @@ package com.hedera.services.sigs.sourcing;
  */
 
 /**
- * Defines a type that is a source of the cryptographic signatures associated to
- * given public keys. It is useful to define an explicit type for this simple behavior,
- * because to create a {@link com.swirlds.common.crypto.Signature}, you must have:
+ * Defines a type that is a source of the cryptographic signatures associated to given public keys.
+ * It is useful to define an explicit type for this simple behavior, because to create a {@link
+ * com.swirlds.common.crypto.Signature}, you must have:
+ *
  * <ol>
- *     <li>The raw data that was signed.</li>
- *     <li>The public key matching the private key used to sign the data.</li>
- *     <li>The cryptographic signature that resulted.</li>
+ *   <li>The raw data that was signed.
+ *   <li>The public key matching the private key used to sign the data.
+ *   <li>The cryptographic signature that resulted.
  * </ol>
- * A {@code PubKeyToSigBytes} implementation lets us obtain the third ingredient
- * given the second.
+ *
+ * A {@code PubKeyToSigBytes} implementation lets us obtain the third ingredient given the second.
  */
 public interface PubKeyToSigBytes {
-	byte[] EMPTY_SIG = {};
+  byte[] EMPTY_SIG = {};
 
-	/**
-	 * Return the cryptographic signature associated to a given public key in some
-	 * context (presumably the creation of a {@link com.swirlds.common.crypto.Signature}).
-	 *
- 	 * @param pubKey a public key whose private key was used to sign some data.
-	 * @return the cryptographic signature that resulted.
-	 * @throws Exception if the desired cryptographic signature is unavailable.
-	 */
-	byte[] sigBytesFor(byte[] pubKey) throws Exception;
+  /**
+   * Return the cryptographic signature associated to a given public key in some context (presumably
+   * the creation of a {@link com.swirlds.common.crypto.Signature}).
+   *
+   * @param pubKey a public key whose private key was used to sign some data.
+   * @return the cryptographic signature that resulted.
+   * @throws Exception if the desired cryptographic signature is unavailable.
+   */
+  byte[] sigBytesFor(byte[] pubKey) throws Exception;
 }

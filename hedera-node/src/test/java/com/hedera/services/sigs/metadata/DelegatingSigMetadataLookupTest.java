@@ -20,6 +20,10 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
@@ -29,84 +33,85 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.Function;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class DelegatingSigMetadataLookupTest {
-	private JKey freezeKey;
-	private String symbol = "NotAnHbar";
-	private String tokenName = "TokenName";
-	private int decimals = 2;
-	private long totalSupply = 1_000_000;
-	private boolean freezeDefault = true;
-	private boolean accountsKycGrantedByDefault = true;
-	private EntityId treasury = new EntityId(1,2, 3);
-	private TokenID id = IdUtils.asToken("1.2.666");
+  private JKey freezeKey;
+  private String symbol = "NotAnHbar";
+  private String tokenName = "TokenName";
+  private int decimals = 2;
+  private long totalSupply = 1_000_000;
+  private boolean freezeDefault = true;
+  private boolean accountsKycGrantedByDefault = true;
+  private EntityId treasury = new EntityId(1, 2, 3);
+  private TokenID id = IdUtils.asToken("1.2.666");
 
-	private MerkleToken token;
-	private TokenStore tokenStore;
+  private MerkleToken token;
+  private TokenStore tokenStore;
 
-	private Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
+  private Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
 
-	@BeforeEach
-	void setup() {
-		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
+  @BeforeEach
+  void setup() {
+    freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
 
-		token = new MerkleToken(Long.MAX_VALUE, totalSupply, decimals, symbol, tokenName,  freezeDefault, accountsKycGrantedByDefault, treasury);
+    token =
+        new MerkleToken(
+            Long.MAX_VALUE,
+            totalSupply,
+            decimals,
+            symbol,
+            tokenName,
+            freezeDefault,
+            accountsKycGrantedByDefault,
+            treasury);
 
-		tokenStore = mock(TokenStore.class);
+    tokenStore = mock(TokenStore.class);
 
-		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
-	}
+    subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
+  }
 
-	@Test
-	void returnsExpectedFailIfExplicitlyMissing() {
-		given(tokenStore.resolve(id)).willReturn(TokenID.newBuilder()
-				.setShardNum(0L)
-				.setRealmNum(0L)
-				.setTokenNum(0L)
-				.build());
+  @Test
+  void returnsExpectedFailIfExplicitlyMissing() {
+    given(tokenStore.resolve(id))
+        .willReturn(TokenID.newBuilder().setShardNum(0L).setRealmNum(0L).setTokenNum(0L).build());
 
-		// when:
-		var result = subject.apply(id);
+    // when:
+    var result = subject.apply(id);
 
-		// then:
-		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
-	}
+    // then:
+    assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
+  }
 
-	@Test
-	void returnsExpectedFailIfMissing() {
-		given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
+  @Test
+  void returnsExpectedFailIfMissing() {
+    given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
 
-		// when:
-		var result = subject.apply(id);
+    // when:
+    var result = subject.apply(id);
 
-		// then:
-		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
-	}
+    // then:
+    assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
+  }
 
-	@Test
-	void returnsExpectedMetaIfPresent() {
-		// setup:
-		token.setFreezeKey(freezeKey);
-		var expected = TokenSigningMetadata.from(token);
+  @Test
+  void returnsExpectedMetaIfPresent() {
+    // setup:
+    token.setFreezeKey(freezeKey);
+    var expected = TokenSigningMetadata.from(token);
 
-		given(tokenStore.resolve(id)).willReturn(id);
-		given(tokenStore.get(id)).willReturn(token);
+    given(tokenStore.resolve(id)).willReturn(id);
+    given(tokenStore.get(id)).willReturn(token);
 
-		// when:
-		var result = subject.apply(id);
+    // when:
+    var result = subject.apply(id);
 
-		// then:
-		assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
-		// and:
-		assertEquals(expected.adminKey(), result.metadata().adminKey());
-		assertEquals(expected.optionalFreezeKey(), result.metadata().optionalFreezeKey());
-	}
+    // then:
+    assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
+    // and:
+    assertEquals(expected.adminKey(), result.metadata().adminKey());
+    assertEquals(expected.optionalFreezeKey(), result.metadata().optionalFreezeKey());
+  }
 }

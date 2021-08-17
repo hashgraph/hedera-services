@@ -28,35 +28,33 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-
 import java.util.function.Supplier;
 
 /**
- * A {@link UniqTokenViewFactory} able to construct an appropriate implementation
- * of {@link UniqTokenView} depending on the injected value of the global/static
- * {@code tokens.nfts.useTreasuryWildcards} property.
+ * A {@link UniqTokenViewFactory} able to construct an appropriate implementation of {@link
+ * UniqTokenView} depending on the injected value of the global/static {@code
+ * tokens.nfts.useTreasuryWildcards} property.
  */
 public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
-	private final boolean shouldUseTreasuryWildcards;
+  private final boolean shouldUseTreasuryWildcards;
 
-	public ConfigDrivenUniqTokenViewFactory(boolean shouldUseTreasuryWildcards) {
-		this.shouldUseTreasuryWildcards = shouldUseTreasuryWildcards;
-	}
+  public ConfigDrivenUniqTokenViewFactory(boolean shouldUseTreasuryWildcards) {
+    this.shouldUseTreasuryWildcards = shouldUseTreasuryWildcards;
+  }
 
-	@Override
-	public UniqTokenView viewFor(
-			TokenStore tokenStore,
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType
-	) {
-		if (shouldUseTreasuryWildcards) {
-			return new TreasuryWildcardsUniqTokenView(
-					tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
-		} else {
-			return new ExplicitOwnersUniqTokenView(tokens, nfts, nftsByType, nftsByOwner);
-		}
-	}
+  @Override
+  public UniqTokenView viewFor(
+      TokenStore tokenStore,
+      Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+      Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
+      Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType) {
+    if (shouldUseTreasuryWildcards) {
+      return new TreasuryWildcardsUniqTokenView(
+          tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
+    } else {
+      return new ExplicitOwnersUniqTokenView(tokens, nfts, nftsByType, nftsByOwner);
+    }
+  }
 }

@@ -20,14 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import java.io.IOException;
-
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -39,126 +31,141 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 class MerkleEntityAssociationTest {
-	long fromShard = 13;
-	long fromRealm = 25;
-	long fromNum = 7;
-	long toShard = 31;
-	long toRealm = 52;
-	long toNum = 0;
+  long fromShard = 13;
+  long fromRealm = 25;
+  long fromNum = 7;
+  long toShard = 31;
+  long toRealm = 52;
+  long toNum = 0;
 
-	MerkleEntityAssociation subject;
+  MerkleEntityAssociation subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new MerkleEntityAssociation(
-				fromShard, fromRealm, fromNum,
-				toShard, toRealm, toNum);
-	}
+  @BeforeEach
+  private void setup() {
+    subject = new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
+  }
 
-	@Test
-	void toAbbrevStringWorks() {
-		// expect:
-		assertEquals("13.25.7 <-> 31.52.0", subject.toAbbrevString());
-	}
+  @Test
+  void toAbbrevStringWorks() {
+    // expect:
+    assertEquals("13.25.7 <-> 31.52.0", subject.toAbbrevString());
+  }
 
-	@Test
-	void objectContractMet() {
-		// given:
-		var one = new MerkleEntityAssociation();
-		var two = new MerkleEntityAssociation(toShard, toRealm, toNum, fromShard, fromRealm, fromNum);
-		var three = new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
+  @Test
+  void objectContractMet() {
+    // given:
+    var one = new MerkleEntityAssociation();
+    var two = new MerkleEntityAssociation(toShard, toRealm, toNum, fromShard, fromRealm, fromNum);
+    var three = new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
-		assertNotEquals(two, one);
-		assertEquals(subject, three);
-		// and:
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(subject.hashCode(), three.hashCode());
-	}
+    // then:
+    assertNotEquals(one, null);
+    assertNotEquals(one, new Object());
+    assertNotEquals(two, one);
+    assertEquals(subject, three);
+    // and:
+    assertNotEquals(one.hashCode(), two.hashCode());
+    assertEquals(subject.hashCode(), three.hashCode());
+  }
 
-	@Test
-	void factoryWorks() {
-		// expect:
-		assertEquals(
-				subject,
-				MerkleEntityAssociation.fromAccountTokenRel(asAccount("13.25.7"), asToken("31.52.0")));
-	}
+  @Test
+  void factoryWorks() {
+    // expect:
+    assertEquals(
+        subject,
+        MerkleEntityAssociation.fromAccountTokenRel(asAccount("13.25.7"), asToken("31.52.0")));
+  }
 
-	@Test
-	void merkleMethodsWork() {
-		// expect;
-		assertEquals(MerkleEntityAssociation.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleEntityAssociation.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertTrue(subject.isLeaf());
-	}
+  @Test
+  void merkleMethodsWork() {
+    // expect;
+    assertEquals(MerkleEntityAssociation.MERKLE_VERSION, subject.getVersion());
+    assertEquals(MerkleEntityAssociation.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertTrue(subject.isLeaf());
+  }
 
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+  @Test
+  void serializeWorks() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = inOrder(out);
 
-		// when:
-		subject.serialize(out);
+    // when:
+    subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeLong(fromShard);
-		inOrder.verify(out).writeLong(fromRealm);
-		inOrder.verify(out).writeLong(fromNum);
-		inOrder.verify(out).writeLong(toShard);
-		inOrder.verify(out).writeLong(toRealm);
-		inOrder.verify(out).writeLong(toNum);
-	}
+    // then:
+    inOrder.verify(out).writeLong(fromShard);
+    inOrder.verify(out).writeLong(fromRealm);
+    inOrder.verify(out).writeLong(fromNum);
+    inOrder.verify(out).writeLong(toShard);
+    inOrder.verify(out).writeLong(toRealm);
+    inOrder.verify(out).writeLong(toNum);
+  }
 
-	@Test
-	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleEntityAssociation();
+  @Test
+  void deserializeWorks() throws IOException {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
+    // and:
+    var defaultSubject = new MerkleEntityAssociation();
 
-		given(in.readLong())
-				.willReturn(fromShard).willReturn(fromRealm).willReturn(fromNum)
-				.willReturn(toShard).willReturn(toRealm).willReturn(toNum);
+    given(in.readLong())
+        .willReturn(fromShard)
+        .willReturn(fromRealm)
+        .willReturn(fromNum)
+        .willReturn(toShard)
+        .willReturn(toRealm)
+        .willReturn(toNum);
 
-		// when:
-		defaultSubject.deserialize(in, MerkleEntityAssociation.MERKLE_VERSION);
+    // when:
+    defaultSubject.deserialize(in, MerkleEntityAssociation.MERKLE_VERSION);
 
-		// then:
-		assertEquals(subject, defaultSubject);
-	}
+    // then:
+    assertEquals(subject, defaultSubject);
+  }
 
-	@Test
-	void toStringWorks() {
-		// expect:
-		assertEquals(
-				"MerkleEntityAssociation{fromShard=" + fromShard
-						+ ", fromRealm=" + fromRealm
-						+ ", fromNum=" + fromNum
-						+ ", toShard=" + toShard
-						+ ", toRealm=" + toRealm
-						+ ", toNum=" + toNum
-						+ "}",
-				subject.toString());
-	}
+  @Test
+  void toStringWorks() {
+    // expect:
+    assertEquals(
+        "MerkleEntityAssociation{fromShard="
+            + fromShard
+            + ", fromRealm="
+            + fromRealm
+            + ", fromNum="
+            + fromNum
+            + ", toShard="
+            + toShard
+            + ", toRealm="
+            + toRealm
+            + ", toNum="
+            + toNum
+            + "}",
+        subject.toString());
+  }
 
-	@Test
-	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+  @Test
+  void copyWorks() {
+    // when:
+    var subjectCopy = subject.copy();
 
-		// then:
-		assertNotSame(subjectCopy, subject);
-		assertEquals(subject, subjectCopy);
-	}
+    // then:
+    assertNotSame(subjectCopy, subject);
+    assertEquals(subject, subjectCopy);
+  }
 
-	@Test
-	void deleteIsNoop() {
-		// expect:
-		assertDoesNotThrow(subject::release);
-	}
+  @Test
+  void deleteIsNoop() {
+    // expect:
+    assertDoesNotThrow(subject::release);
+  }
 }

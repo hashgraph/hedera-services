@@ -20,57 +20,61 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import static java.util.Arrays.copyOfRange;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import java.nio.charset.Charset;
 import org.ethereum.util.ByteUtil;
 import org.junit.jupiter.api.Assertions;
 
-import java.nio.charset.Charset;
-
-import static java.util.Arrays.copyOfRange;
-
 public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLoginfo> {
-	public static ContractLogAsserts logWith() {
-		return new ContractLogAsserts();
-	}
+  public static ContractLogAsserts logWith() {
+    return new ContractLogAsserts();
+  }
 
-	public ContractLogAsserts utf8data(String data) {
-		registerProvider((spec, o) -> {
-			String actual = new String(dataFrom(o), Charset.forName("UTF-8"));
-			Assertions.assertEquals(data, actual, "Wrong UTF-8 data!");
-		});
-		return this;
-	}
+  public ContractLogAsserts utf8data(String data) {
+    registerProvider(
+        (spec, o) -> {
+          String actual = new String(dataFrom(o), Charset.forName("UTF-8"));
+          Assertions.assertEquals(data, actual, "Wrong UTF-8 data!");
+        });
+    return this;
+  }
 
-	public ContractLogAsserts accountAtBytes(String account, int start) {
-		registerProvider((spec, o) -> {
-			byte[] data = dataFrom(o);
-			System.out.println("Length of event: " + data.length);
-			AccountID expected = spec.registry().getAccountID(account);
-			AccountID actual = accountFromBytes(data, start);
-			Assertions.assertEquals(expected, actual, "Bad account in log data, starting at byte " + start);
-		});
-		return this;
-	}
+  public ContractLogAsserts accountAtBytes(String account, int start) {
+    registerProvider(
+        (spec, o) -> {
+          byte[] data = dataFrom(o);
+          System.out.println("Length of event: " + data.length);
+          AccountID expected = spec.registry().getAccountID(account);
+          AccountID actual = accountFromBytes(data, start);
+          Assertions.assertEquals(
+              expected, actual, "Bad account in log data, starting at byte " + start);
+        });
+    return this;
+  }
 
-	public ContractLogAsserts longAtBytes(long expected, int start) {
-		registerProvider((spec, o) -> {
-			byte[] data = dataFrom(o);
-			long actual = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 8));
-			Assertions.assertEquals(expected, actual, "Bad long value in log data, starting at byte " + start);
-		});
-		return this;
-	}
+  public ContractLogAsserts longAtBytes(long expected, int start) {
+    registerProvider(
+        (spec, o) -> {
+          byte[] data = dataFrom(o);
+          long actual = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 8));
+          Assertions.assertEquals(
+              expected, actual, "Bad long value in log data, starting at byte " + start);
+        });
+    return this;
+  }
 
-	static AccountID accountFromBytes(byte[] data, int start) {
-		long shard = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 4));
-		long realm = ByteUtil.byteArrayToLong(copyOfRange(data, start + 4, start + 12));
-		long seq = ByteUtil.byteArrayToLong(copyOfRange(data, start + 12, start + 20));
-		return AccountID.newBuilder().setAccountNum(seq).setRealmNum(realm).setShardNum(shard).build();
-	}
+  static AccountID accountFromBytes(byte[] data, int start) {
+    long shard = ByteUtil.byteArrayToLong(copyOfRange(data, start, start + 4));
+    long realm = ByteUtil.byteArrayToLong(copyOfRange(data, start + 4, start + 12));
+    long seq = ByteUtil.byteArrayToLong(copyOfRange(data, start + 12, start + 20));
+    return AccountID.newBuilder().setAccountNum(seq).setRealmNum(realm).setShardNum(shard).build();
+  }
 
-	static byte[] dataFrom(Object o) {
-		ContractLoginfo entry = (ContractLoginfo) o;
-		return entry.getData().toByteArray();
-	}
+  static byte[] dataFrom(Object o) {
+    ContractLoginfo entry = (ContractLoginfo) o;
+    return entry.getData().toByteArray();
+  }
 }

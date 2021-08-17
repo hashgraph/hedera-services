@@ -20,6 +20,14 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
+
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
@@ -34,66 +42,57 @@ import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.times;
-
 class TokenGrantKycUsageTest {
-	private long now = 1_234_567L;
-	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	private TokenID id = IdUtils.asToken("0.0.75231");
+  private long now = 1_234_567L;
+  private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+  private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+  private TokenID id = IdUtils.asToken("0.0.75231");
 
-	private TokenGrantKycTransactionBody op;
-	private TransactionBody txn;
+  private TokenGrantKycTransactionBody op;
+  private TransactionBody txn;
 
-	private EstimatorFactory factory;
-	private TxnUsageEstimator base;
-	private TokenGrantKycUsage subject;
+  private EstimatorFactory factory;
+  private TxnUsageEstimator base;
+  private TokenGrantKycUsage subject;
 
-	@BeforeEach
-	void setUp() throws Exception {
-		base = mock(TxnUsageEstimator.class);
-		given(base.get()).willReturn(A_USAGES_MATRIX);
+  @BeforeEach
+  void setUp() throws Exception {
+    base = mock(TxnUsageEstimator.class);
+    given(base.get()).willReturn(A_USAGES_MATRIX);
 
-		factory = mock(EstimatorFactory.class);
-		given(factory.get(any(), any(), any())).willReturn(base);
+    factory = mock(EstimatorFactory.class);
+    given(factory.get(any(), any(), any())).willReturn(base);
 
-		TxnUsage.estimatorFactory = factory;
-	}
+    TxnUsage.estimatorFactory = factory;
+  }
 
-	@Test
-	void createsExpectedDelta() {
-		givenOp();
-		// and:
-		subject = TokenGrantKycUsage.newEstimate(txn, sigUsage);
+  @Test
+  void createsExpectedDelta() {
+    givenOp();
+    // and:
+    subject = TokenGrantKycUsage.newEstimate(txn, sigUsage);
 
-		// when:
-		var actual = subject.get();
+    // when:
+    var actual = subject.get();
 
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
-	}
+    // then:
+    assertEquals(A_USAGES_MATRIX, actual);
+    // and:
+    verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
+  }
 
-	private void givenOp() {
-		op = TokenGrantKycTransactionBody.newBuilder()
-				.setToken(id)
-				.build();
-		setTxn();
-	}
+  private void givenOp() {
+    op = TokenGrantKycTransactionBody.newBuilder().setToken(id).build();
+    setTxn();
+  }
 
-	private void setTxn() {
-		txn = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(now)))
-				.setTokenGrantKyc(op)
-				.build();
-	}
+  private void setTxn() {
+    txn =
+        TransactionBody.newBuilder()
+            .setTransactionID(
+                TransactionID.newBuilder()
+                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+            .setTokenGrantKyc(op)
+            .build();
+  }
 }

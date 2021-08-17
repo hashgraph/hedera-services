@@ -20,16 +20,6 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -40,58 +30,53 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ValidateFeeScheduleStateAfterReconnect.class);
+  private static final Logger log =
+      LogManager.getLogger(ValidateFeeScheduleStateAfterReconnect.class);
 
+  public static void main(String... args) {
+    new ValidateFeeScheduleStateAfterReconnect().runSuiteSync();
+  }
 
-	public static void main(String... args) {
-		new ValidateFeeScheduleStateAfterReconnect().runSuiteSync();
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(validateFeeScheduleStateAfterReconnect());
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				validateFeeScheduleStateAfterReconnect()
-		);
-	}
+  private HapiApiSpec validateFeeScheduleStateAfterReconnect() {
+    return customHapiSpec("validateFeeScheduleStateAfterReconnect")
+        .withProperties(Map.of("txn.start.offset.secs", "-5"))
+        .given(
+            sleepFor(Duration.ofSeconds(25).toMillis()),
+            getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+        .when(
+            getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode(),
+            makeFree(CryptoGetInfo),
+            getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+        .then(
+            withLiveNode("0.0.6")
+                .within(180, TimeUnit.SECONDS)
+                .loggingAvailabilityEvery(30)
+                .sleepingBetweenRetriesFor(10),
+            cryptoCreate("civilian").setNode("0.0.6"),
+            getAccountInfo("0.0.2")
+                .payingWith("civilian")
+                .nodePayment(0L)
+                .setNode("0.0.6")
+                .hasAnswerOnlyPrecheck(OK));
+  }
 
-	private HapiApiSpec validateFeeScheduleStateAfterReconnect() {
-		return customHapiSpec("validateFeeScheduleStateAfterReconnect")
-				.withProperties(Map.of(
-						"txn.start.offset.secs", "-5")
-				)
-				.given(
-						sleepFor(Duration.ofSeconds(25).toMillis()),
-						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
-								.unavailableNode()
-				)
-				.when(
-						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
-								.unavailableNode(),
-						makeFree(CryptoGetInfo),
-						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
-								.unavailableNode()
-				)
-				.then(
-						withLiveNode("0.0.6")
-								.within(180, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
-								.sleepingBetweenRetriesFor(10),
-						cryptoCreate("civilian")
-								.setNode("0.0.6"),
-						getAccountInfo("0.0.2")
-								.payingWith("civilian")
-								.nodePayment(0L)
-								.setNode("0.0.6")
-								.hasAnswerOnlyPrecheck(OK)
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

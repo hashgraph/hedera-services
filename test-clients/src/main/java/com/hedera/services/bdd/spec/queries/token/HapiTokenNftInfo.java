@@ -21,55 +21,51 @@ package com.hedera.services.bdd.spec.queries.token;
  */
 
 import com.google.protobuf.ByteString;
-
 import java.util.Optional;
 import java.util.OptionalLong;
 
 public class HapiTokenNftInfo {
-    private OptionalLong expectedSerialNum;
-    private Optional<ByteString> expectedMetadata;
-    private Optional<String> expectedTokenID;
-    private Optional<String> expectedAccountID;
+  private OptionalLong expectedSerialNum;
+  private Optional<ByteString> expectedMetadata;
+  private Optional<String> expectedTokenID;
+  private Optional<String> expectedAccountID;
 
-    private HapiTokenNftInfo(
-            Optional<String> tokenId,
-            OptionalLong serialNum,
-            Optional<String> accountId,
-            Optional<ByteString> metadata
-    ) {
-        this.expectedSerialNum = serialNum;
-        this.expectedMetadata = metadata;
-        this.expectedTokenID = tokenId;
-        this.expectedAccountID = accountId;
-    }
+  private HapiTokenNftInfo(
+      Optional<String> tokenId,
+      OptionalLong serialNum,
+      Optional<String> accountId,
+      Optional<ByteString> metadata) {
+    this.expectedSerialNum = serialNum;
+    this.expectedMetadata = metadata;
+    this.expectedTokenID = tokenId;
+    this.expectedAccountID = accountId;
+  }
 
-    public static HapiTokenNftInfo newTokenNftInfo(
-            final String tokenId,
-            final long serialNum,
-            final String accountId,
-            final ByteString metadata
-    ) {
-        return new HapiTokenNftInfo(
-                Optional.of(tokenId),
-                OptionalLong.of(serialNum),
-                Optional.of(accountId),
-                Optional.of(metadata)
-        );
-    }
+  public static HapiTokenNftInfo newTokenNftInfo(
+      final String tokenId,
+      final long serialNum,
+      final String accountId,
+      final ByteString metadata) {
+    return new HapiTokenNftInfo(
+        Optional.of(tokenId),
+        OptionalLong.of(serialNum),
+        Optional.of(accountId),
+        Optional.of(metadata));
+  }
 
-    public OptionalLong getExpectedSerialNum() {
-        return expectedSerialNum;
-    }
+  public OptionalLong getExpectedSerialNum() {
+    return expectedSerialNum;
+  }
 
-    public Optional<ByteString> getExpectedMetadata() {
-        return expectedMetadata;
-    }
+  public Optional<ByteString> getExpectedMetadata() {
+    return expectedMetadata;
+  }
 
-    public Optional<String> getExpectedTokenID() {
-        return expectedTokenID;
-    }
+  public Optional<String> getExpectedTokenID() {
+    return expectedTokenID;
+  }
 
-    public Optional<String> getExpectedAccountID() {
-        return expectedAccountID;
-    }
+  public Optional<String> getExpectedAccountID() {
+    return expectedAccountID;
+  }
 }

@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeObject;
-
 import java.time.Instant;
 import java.util.Map;
 
@@ -41,49 +40,41 @@ import java.util.Map;
  * @author Michael Tinker
  */
 public interface FeeCalculator {
-	void init();
+  void init();
 
-	long activeGasPriceInTinybars();
+  long activeGasPriceInTinybars();
 
-	long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
+  long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-	long estimatedNonFeePayerAdjustments(TxnAccessor accessor, Timestamp at);
+  long estimatedNonFeePayerAdjustments(TxnAccessor accessor, Timestamp at);
 
-	FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view);
+  FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view);
 
-	FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
+  FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 
-	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
+  FeeObject estimatePayment(
+      Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
 
-	FeeObject computePayment(
-			Query query,
-			FeeData usagePrices,
-			StateView view,
-			Timestamp at,
-			Map<String, Object> queryCtx);
+  FeeObject computePayment(
+      Query query, FeeData usagePrices, StateView view, Timestamp at, Map<String, Object> queryCtx);
 
-	/**
-	 * Assesses the longest period for which the expired account can afford to renew itself,
-	 * up to the requested period; as well as the service fee to be charged for
-	 * renewing the account for that period.
-	 *
-	 * <b>Important:</b> The fee charged will always be <i>calculated</i> for a period that is
-	 * a multiple of 3600 seconds, because the fee schedule uses hours as the units to price
-	 * memory consumption.
-	 *
-	 * However, the assessed renewal period will still be (up to) the requested renewal, even if
-	 * it is not an exact multiple of 3600. Fees are rounded <i>up</i> to the nearest hour.
-	 *
-	 * @param expiredAccount
-	 * 		the expired account
-	 * @param requestedRenewal
-	 * 		the desired renewal period
-	 * @param now
-	 * 		the consensus time of expiration
-	 * @return the corresponding RenewAssessment
-	 */
-	AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
-			MerkleAccount expiredAccount,
-			long requestedRenewal,
-			Instant now);
+  /**
+   * Assesses the longest period for which the expired account can afford to renew itself, up to the
+   * requested period; as well as the service fee to be charged for renewing the account for that
+   * period.
+   *
+   * <p><b>Important:</b> The fee charged will always be <i>calculated</i> for a period that is a
+   * multiple of 3600 seconds, because the fee schedule uses hours as the units to price memory
+   * consumption.
+   *
+   * <p>However, the assessed renewal period will still be (up to) the requested renewal, even if it
+   * is not an exact multiple of 3600. Fees are rounded <i>up</i> to the nearest hour.
+   *
+   * @param expiredAccount the expired account
+   * @param requestedRenewal the desired renewal period
+   * @param now the consensus time of expiration
+   * @return the corresponding RenewAssessment
+   */
+  AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
+      MerkleAccount expiredAccount, long requestedRenewal, Instant now);
 }

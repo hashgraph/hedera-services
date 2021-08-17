@@ -26,33 +26,32 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenFreezeFactory extends SignedTxnFactory<TokenFreezeFactory> {
-	private TokenFreezeFactory() {}
+  private TokenFreezeFactory() {}
 
-	private TokenID id;
+  private TokenID id;
 
-	public static TokenFreezeFactory newSignedTokenFreeze() {
-		return new TokenFreezeFactory();
-	}
+  public static TokenFreezeFactory newSignedTokenFreeze() {
+    return new TokenFreezeFactory();
+  }
 
-	public TokenFreezeFactory freezing(TokenID id) {
-		this.id = id;
-		return this;
-	}
+  public TokenFreezeFactory freezing(TokenID id) {
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenFreezeFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenFreezeFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenFreezeAccountTransactionBody.newBuilder()
-				.setToken(id);
-		txn.setTokenFreeze(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenFreezeAccountTransactionBody.newBuilder().setToken(id);
+    txn.setTokenFreeze(op);
+  }
 }

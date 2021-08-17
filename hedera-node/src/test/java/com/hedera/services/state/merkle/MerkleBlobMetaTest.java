@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,14 +19,6 @@ package com.hedera.services.state.merkle;
  * limitations under the License.
  * ‍
  */
-
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,94 +28,99 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
 
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 class MerkleBlobMetaTest {
-	String path = "/a/b/c123";
+  String path = "/a/b/c123";
 
-	MerkleBlobMeta subject;
+  MerkleBlobMeta subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new MerkleBlobMeta(path);
-	}
+  @BeforeEach
+  private void setup() {
+    subject = new MerkleBlobMeta(path);
+  }
 
-	@Test
-	void merkleMethodsWork() {
-		// expect;
-		assertEquals(MerkleBlobMeta.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleBlobMeta.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertTrue(subject.isLeaf());
-	}
+  @Test
+  void merkleMethodsWork() {
+    // expect;
+    assertEquals(MerkleBlobMeta.MERKLE_VERSION, subject.getVersion());
+    assertEquals(MerkleBlobMeta.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertTrue(subject.isLeaf());
+  }
 
-	@Test
-	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleBlobMeta();
+  @Test
+  void deserializeWorks() throws IOException {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
+    // and:
+    var defaultSubject = new MerkleBlobMeta();
 
-		given(in.readNormalisedString(MerkleBlobMeta.MAX_PATH_LEN)).willReturn(path);
+    given(in.readNormalisedString(MerkleBlobMeta.MAX_PATH_LEN)).willReturn(path);
 
-		// when:
-		defaultSubject.deserialize(in, MerkleBlobMeta.MERKLE_VERSION);
+    // when:
+    defaultSubject.deserialize(in, MerkleBlobMeta.MERKLE_VERSION);
 
-		// then:
-		assertEquals(subject, defaultSubject);
-	}
+    // then:
+    assertEquals(subject, defaultSubject);
+  }
 
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+  @Test
+  void serializeWorks() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = inOrder(out);
 
-		// when:
-		subject.serialize(out);
+    // when:
+    subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeNormalisedString(path);
-	}
+    // then:
+    inOrder.verify(out).writeNormalisedString(path);
+  }
 
-	@Test
-	void objectContractMet() {
-		// given:
-		var one = new MerkleBlobMeta();
-		var two = new MerkleBlobMeta(path);
-		var three = new MerkleBlobMeta();
+  @Test
+  void objectContractMet() {
+    // given:
+    var one = new MerkleBlobMeta();
+    var two = new MerkleBlobMeta(path);
+    var three = new MerkleBlobMeta();
 
-		// when:
-		three.setPath(path);
+    // when:
+    three.setPath(path);
 
-		// then:
-		assertNotEquals(null, one);
-		assertNotEquals(two, one);
-		assertEquals(two, three);
-		// and:
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(two.hashCode(), three.hashCode());
-	}
+    // then:
+    assertNotEquals(null, one);
+    assertNotEquals(two, one);
+    assertEquals(two, three);
+    // and:
+    assertNotEquals(one.hashCode(), two.hashCode());
+    assertEquals(two.hashCode(), three.hashCode());
+  }
 
-	@Test
-	void toStringWorks() {
-		// expect:
-		assertEquals(
-				"MerkleBlobMeta{path=" + path + "}",
-				subject.toString());
-	}
+  @Test
+  void toStringWorks() {
+    // expect:
+    assertEquals("MerkleBlobMeta{path=" + path + "}", subject.toString());
+  }
 
-	@Test
-	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+  @Test
+  void copyWorks() {
+    // when:
+    var subjectCopy = subject.copy();
 
-		// then:
-		assertTrue(subjectCopy != subject);
-		assertEquals(subject, subjectCopy);
-	}
+    // then:
+    assertTrue(subjectCopy != subject);
+    assertEquals(subject, subjectCopy);
+  }
 
-	@Test
-	void deleteIsNoop() {
-		// expect:
-		assertDoesNotThrow(subject::release);
-	}
+  @Test
+  void deleteIsNoop() {
+    // expect:
+    assertDoesNotThrow(subject::release);
+  }
 }

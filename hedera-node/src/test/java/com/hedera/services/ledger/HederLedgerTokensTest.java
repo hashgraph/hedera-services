@@ -20,18 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.utils.IdUtils.tokenWith;
@@ -49,235 +37,245 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TransferList;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
-	@BeforeEach
-	private void setup() {
-		commonSetup();
-		setupWithMockLedger();
-	}
+  @BeforeEach
+  private void setup() {
+    commonSetup();
+    setupWithMockLedger();
+  }
 
-	@Test
-	void delegatesToSetTokens() {
-		// setup:
-		var tokens = new MerkleAccountTokens();
+  @Test
+  void delegatesToSetTokens() {
+    // setup:
+    var tokens = new MerkleAccountTokens();
 
-		// when:
-		subject.setAssociatedTokens(genesis, tokens);
+    // when:
+    subject.setAssociatedTokens(genesis, tokens);
 
-		// then:
-		verify(accountsLedger).set(genesis, TOKENS, tokens);
-	}
+    // then:
+    verify(accountsLedger).set(genesis, TOKENS, tokens);
+  }
 
-	@Test
-	void getsTokenBalance() {
-		// given:
-		var balance = subject.getTokenBalance(misc, frozenId);
+  @Test
+  void getsTokenBalance() {
+    // given:
+    var balance = subject.getTokenBalance(misc, frozenId);
 
-		// expect:
-		assertEquals(miscFrozenTokenBalance, balance);
-	}
+    // expect:
+    assertEquals(miscFrozenTokenBalance, balance);
+  }
 
-	@Test
-	void recognizesAccountWithNonZeroTokenBalances() {
-		// expect:
-		assertFalse(subject.allTokenBalancesVanish(misc));
-	}
+  @Test
+  void recognizesAccountWithNonZeroTokenBalances() {
+    // expect:
+    assertFalse(subject.allTokenBalancesVanish(misc));
+  }
 
-	@Test
-	void ignoresNonZeroBalanceOfDeletedToken() {
-		given(frozenToken.isDeleted()).willReturn(true);
-		
-		// expect:
-		assertTrue(subject.allTokenBalancesVanish(misc));
-	}
+  @Test
+  void ignoresNonZeroBalanceOfDeletedToken() {
+    given(frozenToken.isDeleted()).willReturn(true);
 
-	@Test
-	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
-		subject.setTokenRelsLedger(null);
+    // expect:
+    assertTrue(subject.allTokenBalancesVanish(misc));
+  }
 
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
-	}
+  @Test
+  void throwsIfSubjectHasNoUsableTokenRelsLedger() {
+    subject.setTokenRelsLedger(null);
 
-	@Test
-	void recognizesAccountWithZeroTokenBalances() {
-		// expect:
-		assertTrue(subject.allTokenBalancesVanish(deletable));
-	}
+    // expect:
+    assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
+  }
 
-	@Test
-	void refusesToAdjustWrongly() {
-		given(tokenStore.adjustBalance(misc, tokenId, 555))
-				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+  @Test
+  void recognizesAccountWithZeroTokenBalances() {
+    // expect:
+    assertTrue(subject.allTokenBalancesVanish(deletable));
+  }
 
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+  @Test
+  void refusesToAdjustWrongly() {
+    given(tokenStore.adjustBalance(misc, tokenId, 555))
+        .willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
-		// expect:
-		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		// and:
-		assertEquals(0, subject.numTouches);
-	}
+    // given:
+    var status = subject.adjustTokenBalance(misc, tokenId, 555);
 
-	@Test
-	void adjustsIfValid() {
-		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
+    // expect:
+    assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+    // and:
+    assertEquals(0, subject.numTouches);
+  }
 
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+  @Test
+  void adjustsIfValid() {
+    givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		assertEquals(
-				AccountAmount.newBuilder().setAccountID(misc).setAmount(555).build(),
-				subject.netTokenTransfers.get(tokenId).getAccountAmounts(0));
-	}
+    // given:
+    var status = subject.adjustTokenBalance(misc, tokenId, 555);
 
-	@Test
-	void injectsLedgerToTokenStore() {
-		// expect:
-		verify(tokenStore).setAccountsLedger(accountsLedger);
-		verify(tokenStore).setHederaLedger(subject);
-	}
+    // expect:
+    assertEquals(OK, status);
+    // and:
+    assertEquals(
+        AccountAmount.newBuilder().setAccountID(misc).setAmount(555).build(),
+        subject.netTokenTransfers.get(tokenId).getAccountAmounts(0));
+  }
 
-	@Test
-	void delegatesToGetTokens() {
-		// setup:
-		var tokens = new MerkleAccountTokens();
+  @Test
+  void injectsLedgerToTokenStore() {
+    // expect:
+    verify(tokenStore).setAccountsLedger(accountsLedger);
+    verify(tokenStore).setHederaLedger(subject);
+  }
 
-		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
+  @Test
+  void delegatesToGetTokens() {
+    // setup:
+    var tokens = new MerkleAccountTokens();
 
-		// when:
-		var actual = subject.getAssociatedTokens(genesis);
+    given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
 
-		// then:
-		Assertions.assertSame(actual, tokens);
-	}
+    // when:
+    var actual = subject.getAssociatedTokens(genesis);
 
-	@Test
-	void delegatesFreezeOps() {
-		// when:
-		subject.freeze(misc, frozenId);
+    // then:
+    Assertions.assertSame(actual, tokens);
+  }
 
-		// then:
-		verify(tokenStore).freeze(misc, frozenId);
+  @Test
+  void delegatesFreezeOps() {
+    // when:
+    subject.freeze(misc, frozenId);
 
-		// and when:
-		subject.unfreeze(misc, frozenId);
+    // then:
+    verify(tokenStore).freeze(misc, frozenId);
 
-		// then:
-		verify(tokenStore).unfreeze(misc, frozenId);
-	}
+    // and when:
+    subject.unfreeze(misc, frozenId);
 
-	@Test
-	void delegatesKnowingOps() {
-		// when:
-		subject.grantKyc(misc, frozenId);
+    // then:
+    verify(tokenStore).unfreeze(misc, frozenId);
+  }
 
-		// then:
-		verify(tokenStore).grantKyc(misc, frozenId);
+  @Test
+  void delegatesKnowingOps() {
+    // when:
+    subject.grantKyc(misc, frozenId);
 
-		// and when:
-		subject.revokeKyc(misc, frozenId);
+    // then:
+    verify(tokenStore).grantKyc(misc, frozenId);
 
-		// then:
-		verify(tokenStore).revokeKyc(misc, frozenId);
-	}
+    // and when:
+    subject.revokeKyc(misc, frozenId);
 
-	@Test
-	void delegatesTokenChangeDrop() {
-		// setup:
-		final var manager = mock(UniqTokenViewsManager.class);
-		subject.setTokenViewsManager(manager);
+    // then:
+    verify(tokenStore).revokeKyc(misc, frozenId);
+  }
 
-		subject.numTouches = 2;
-		subject.tokensTouched[0] = tokenWith(111);
-		subject.tokensTouched[1] = tokenWith(222);
-		// and:
-		subject.netTokenTransfers.put(
-				tokenWith(111),
-				TransferList.newBuilder()
-						.addAccountAmounts(
-								AccountAmount.newBuilder()
-										.setAccountID(IdUtils.asAccount("0.0.2"))));
-		subject.netTokenTransfers.put(
-				tokenWith(222),
-				TransferList.newBuilder()
-						.addAccountAmounts(
-								AccountAmount.newBuilder()
-										.setAccountID(IdUtils.asAccount("0.0.3"))));
-		// and:
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(nftsLedger.isInTransaction()).willReturn(true);
-		given(manager.isInTransaction()).willReturn(true);
+  @Test
+  void delegatesTokenChangeDrop() {
+    // setup:
+    final var manager = mock(UniqTokenViewsManager.class);
+    subject.setTokenViewsManager(manager);
 
-		// when:
-		subject.dropPendingTokenChanges();
+    subject.numTouches = 2;
+    subject.tokensTouched[0] = tokenWith(111);
+    subject.tokensTouched[1] = tokenWith(222);
+    // and:
+    subject.netTokenTransfers.put(
+        tokenWith(111),
+        TransferList.newBuilder()
+            .addAccountAmounts(
+                AccountAmount.newBuilder().setAccountID(IdUtils.asAccount("0.0.2"))));
+    subject.netTokenTransfers.put(
+        tokenWith(222),
+        TransferList.newBuilder()
+            .addAccountAmounts(
+                AccountAmount.newBuilder().setAccountID(IdUtils.asAccount("0.0.3"))));
+    // and:
+    given(tokenStore.get(tokenId)).willReturn(token);
+    given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+    given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+    given(nftsLedger.isInTransaction()).willReturn(true);
+    given(manager.isInTransaction()).willReturn(true);
 
-		// then:
-		verify(tokenRelsLedger).rollback();
-		verify(nftsLedger).rollback();
-		verify(manager).rollback();
-		verify(accountsLedger).undoChangesOfType(NUM_NFTS_OWNED);
-		// and;
-		assertEquals(0, subject.numTouches);
-		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
-		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
-	}
+    // when:
+    subject.dropPendingTokenChanges();
 
-	@Test
-	void onlyRollsbackIfTokenRelsLedgerInTxn() {
-		given(tokenRelsLedger.isInTransaction()).willReturn(false);
-		// and:
-		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
+    // then:
+    verify(tokenRelsLedger).rollback();
+    verify(nftsLedger).rollback();
+    verify(manager).rollback();
+    verify(accountsLedger).undoChangesOfType(NUM_NFTS_OWNED);
+    // and;
+    assertEquals(0, subject.numTouches);
+    assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
+    assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
+  }
 
-		// when:
-		subject.dropPendingTokenChanges();
+  @Test
+  void onlyRollsbackIfTokenRelsLedgerInTxn() {
+    given(tokenRelsLedger.isInTransaction()).willReturn(false);
+    // and:
+    subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
 
-		verify(tokenRelsLedger, never()).rollback();
-	}
+    // when:
+    subject.dropPendingTokenChanges();
 
-	@Test
-	void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
-		// setup:
-		UniqTokenViewsManager manager = mock(UniqTokenViewsManager.class);
+    verify(tokenRelsLedger, never()).rollback();
+  }
 
-		InOrder inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
+  @Test
+  void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
+    // setup:
+    UniqTokenViewsManager manager = mock(UniqTokenViewsManager.class);
 
-		given(tokenRelsLedger.isInTransaction()).willReturn(true);
-		given(nftsLedger.isInTransaction()).willReturn(true);
-		given(manager.isInTransaction()).willReturn(true);
-		// and:
-		subject.setTokenViewsManager(manager);
+    InOrder inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
 
-		// when:
-		subject.begin();
-		subject.commit();
-		subject.begin();
-		subject.rollback();
+    given(tokenRelsLedger.isInTransaction()).willReturn(true);
+    given(nftsLedger.isInTransaction()).willReturn(true);
+    given(manager.isInTransaction()).willReturn(true);
+    // and:
+    subject.setTokenViewsManager(manager);
 
-		// then:
-		inOrder.verify(tokenRelsLedger).begin();
-		inOrder.verify(nftsLedger).begin();
-		inOrder.verify(manager).begin();
-		inOrder.verify(tokenRelsLedger).isInTransaction();
-		inOrder.verify(tokenRelsLedger).commit();
-		inOrder.verify(nftsLedger).isInTransaction();
-		inOrder.verify(nftsLedger).commit();
-		inOrder.verify(manager).isInTransaction();
-		inOrder.verify(manager).commit();
-		// and:
-		inOrder.verify(tokenRelsLedger).begin();
-		inOrder.verify(nftsLedger).begin();
-		inOrder.verify(manager).begin();
-		inOrder.verify(tokenRelsLedger).isInTransaction();
-		inOrder.verify(tokenRelsLedger).rollback();
-		inOrder.verify(nftsLedger).isInTransaction();
-		inOrder.verify(nftsLedger).rollback();
-		inOrder.verify(manager).isInTransaction();
-		inOrder.verify(manager).rollback();
-	}
+    // when:
+    subject.begin();
+    subject.commit();
+    subject.begin();
+    subject.rollback();
+
+    // then:
+    inOrder.verify(tokenRelsLedger).begin();
+    inOrder.verify(nftsLedger).begin();
+    inOrder.verify(manager).begin();
+    inOrder.verify(tokenRelsLedger).isInTransaction();
+    inOrder.verify(tokenRelsLedger).commit();
+    inOrder.verify(nftsLedger).isInTransaction();
+    inOrder.verify(nftsLedger).commit();
+    inOrder.verify(manager).isInTransaction();
+    inOrder.verify(manager).commit();
+    // and:
+    inOrder.verify(tokenRelsLedger).begin();
+    inOrder.verify(nftsLedger).begin();
+    inOrder.verify(manager).begin();
+    inOrder.verify(tokenRelsLedger).isInTransaction();
+    inOrder.verify(tokenRelsLedger).rollback();
+    inOrder.verify(nftsLedger).isInTransaction();
+    inOrder.verify(nftsLedger).rollback();
+    inOrder.verify(manager).isInTransaction();
+    inOrder.verify(manager).rollback();
+  }
 }

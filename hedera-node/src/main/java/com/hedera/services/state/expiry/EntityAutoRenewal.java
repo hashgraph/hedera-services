@@ -26,88 +26,94 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import java.time.Instant;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
-import java.util.function.Supplier;
-
 public class EntityAutoRenewal {
-	private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
+  private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
 
-	private final long firstEntityToScan;
-	private final RenewalProcess renewalProcess;
-	private final ServicesContext ctx;
-	private final NetworkCtxManager networkCtxManager;
-	private final GlobalDynamicProperties dynamicProps;
-	private final Supplier<MerkleNetworkContext> networkCtx;
+  private final long firstEntityToScan;
+  private final RenewalProcess renewalProcess;
+  private final ServicesContext ctx;
+  private final NetworkCtxManager networkCtxManager;
+  private final GlobalDynamicProperties dynamicProps;
+  private final Supplier<MerkleNetworkContext> networkCtx;
 
-	public EntityAutoRenewal(
-			HederaNumbers hederaNumbers,
-			RenewalProcess renewalProcess,
-			ServicesContext ctx,
-			GlobalDynamicProperties dynamicProps,
-			NetworkCtxManager networkCtxManager,
-			Supplier<MerkleNetworkContext> networkCtx
-	) {
-		this.ctx = ctx;
-		this.networkCtx = networkCtx;
-		this.networkCtxManager = networkCtxManager;
-		this.renewalProcess = renewalProcess;
-		this.dynamicProps = dynamicProps;
+  public EntityAutoRenewal(
+      HederaNumbers hederaNumbers,
+      RenewalProcess renewalProcess,
+      ServicesContext ctx,
+      GlobalDynamicProperties dynamicProps,
+      NetworkCtxManager networkCtxManager,
+      Supplier<MerkleNetworkContext> networkCtx) {
+    this.ctx = ctx;
+    this.networkCtx = networkCtx;
+    this.networkCtxManager = networkCtxManager;
+    this.renewalProcess = renewalProcess;
+    this.dynamicProps = dynamicProps;
 
-		this.firstEntityToScan = hederaNumbers.numReservedSystemEntities() + 1;
-	}
+    this.firstEntityToScan = hederaNumbers.numReservedSystemEntities() + 1;
+  }
 
-	public void execute(Instant instantNow) {
-		if (!dynamicProps.autoRenewEnabled()) {
-			return;
-		}
+  public void execute(Instant instantNow) {
+    if (!dynamicProps.autoRenewEnabled()) {
+      return;
+    }
 
-		final long wrapNum = ctx.seqNo().current();
-		if (wrapNum == firstEntityToScan) {
-			/* No non-system entities in the system, can abort */
-			return;
-		}
+    final long wrapNum = ctx.seqNo().current();
+    if (wrapNum == firstEntityToScan) {
+      /* No non-system entities in the system, can abort */
+      return;
+    }
 
-		final var curNetworkCtx = networkCtx.get();
-		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
-		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
-		if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
-			curNetworkCtx.clearAutoRenewSummaryCounts();
-		}
+    final var curNetworkCtx = networkCtx.get();
+    final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
+    final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
+    if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
+      curNetworkCtx.clearAutoRenewSummaryCounts();
+    }
 
-		renewalProcess.beginRenewalCycle(instantNow);
+    renewalProcess.beginRenewalCycle(instantNow);
 
-		int i = 1, entitiesTouched = 0;
-		long scanNum = ctx.lastScannedEntity();
+    int i = 1, entitiesTouched = 0;
+    long scanNum = ctx.lastScannedEntity();
 
-		log.debug("Auto-renew scan beginning at {}, wrapping at {}", scanNum, wrapNum);
-		log.debug("BEFORE #'s are (accounts={}, tokenRels={})",
-				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
-		for (; i <= maxEntitiesToScan; i++) {
-			scanNum++;
-			if (scanNum >= wrapNum) {
-				scanNum = firstEntityToScan;
-			}
-			if (renewalProcess.process(scanNum)) {
-				entitiesTouched++;
-			}
-			if (entitiesTouched >= maxEntitiesToTouch) {
-				/* Allow consistent calculation of num scanned below. */
-				i++;
-				break;
-			}
-		}
-		renewalProcess.endRenewalCycle();
-		curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
+    log.debug("Auto-renew scan beginning at {}, wrapping at {}", scanNum, wrapNum);
+    log.debug(
+        "BEFORE #'s are (accounts={}, tokenRels={})",
+        () -> ctx.accounts().size(),
+        () -> ctx.tokenAssociations().size());
+    for (; i <= maxEntitiesToScan; i++) {
+      scanNum++;
+      if (scanNum >= wrapNum) {
+        scanNum = firstEntityToScan;
+      }
+      if (renewalProcess.process(scanNum)) {
+        entitiesTouched++;
+      }
+      if (entitiesTouched >= maxEntitiesToTouch) {
+        /* Allow consistent calculation of num scanned below. */
+        i++;
+        break;
+      }
+    }
+    renewalProcess.endRenewalCycle();
+    curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
 
-		log.debug("Auto-renew scan finished at {} with {}/{} scanned/touched (Total this second: {}/{})",
-				scanNum, i - 1, entitiesTouched,
-				curNetworkCtx.getEntitiesScannedThisSecond(), curNetworkCtx.getEntitiesTouchedThisSecond());
-		log.debug("AFTER #'s are (accounts={}, tokenRels={})",
-				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
+    log.debug(
+        "Auto-renew scan finished at {} with {}/{} scanned/touched (Total this second: {}/{})",
+        scanNum,
+        i - 1,
+        entitiesTouched,
+        curNetworkCtx.getEntitiesScannedThisSecond(),
+        curNetworkCtx.getEntitiesTouchedThisSecond());
+    log.debug(
+        "AFTER #'s are (accounts={}, tokenRels={})",
+        () -> ctx.accounts().size(),
+        () -> ctx.tokenAssociations().size());
 
-		ctx.updateLastScannedEntity(scanNum);
-	}
+    ctx.updateLastScannedEntity(scanNum);
+  }
 }

@@ -20,25 +20,6 @@ package com.hedera.services.fees.calculation.token.queries;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.token.TokenGetNftInfosUsage;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
 import static com.hedera.services.queries.token.GetTokenNftInfosAnswer.TOKEN_NFT_INFOS_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -51,125 +32,142 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.token.TokenGetNftInfosUsage;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class GetTokenNftInfosResourceUsageTest {
-	private ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
-	private List<ByteString> metadatas = List.of(m1, m2);
-	private TokenGetNftInfosUsage estimator;
-	private Function<Query, TokenGetNftInfosUsage> factory;
-	private FeeData expected;
-	private TokenID target = IdUtils.asToken("0.0.123");
-	private int start = 0, end = 1;
+  private ByteString m1 = ByteString.copyFromUtf8("metadata1"),
+      m2 = ByteString.copyFromUtf8("metadata2");
+  private List<ByteString> metadatas = List.of(m1, m2);
+  private TokenGetNftInfosUsage estimator;
+  private Function<Query, TokenGetNftInfosUsage> factory;
+  private FeeData expected;
+  private TokenID target = IdUtils.asToken("0.0.123");
+  private int start = 0, end = 1;
 
-	private StateView view;
-	private List<TokenNftInfo> info = List.of(TokenNftInfo.newBuilder()
-					.setMetadata(m1)
-					.build(),
-			TokenNftInfo.newBuilder()
-					.setMetadata(m2)
-					.build());
+  private StateView view;
+  private List<TokenNftInfo> info =
+      List.of(
+          TokenNftInfo.newBuilder().setMetadata(m1).build(),
+          TokenNftInfo.newBuilder().setMetadata(m2).build());
 
-	private Query satisfiableAnswerOnly = tokenGetNftInfosQuery(target, start, end, ResponseType.ANSWER_ONLY);
+  private Query satisfiableAnswerOnly =
+      tokenGetNftInfosQuery(target, start, end, ResponseType.ANSWER_ONLY);
 
-	private GetTokenNftInfosResourceUsage subject;
+  private GetTokenNftInfosResourceUsage subject;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
-		estimator = mock(TokenGetNftInfosUsage.class);
-		factory = mock(Function.class);
-		given(factory.apply(any())).willReturn(estimator);
+  @BeforeEach
+  private void setup() throws Throwable {
+    expected = mock(FeeData.class);
+    view = mock(StateView.class);
+    estimator = mock(TokenGetNftInfosUsage.class);
+    factory = mock(Function.class);
+    given(factory.apply(any())).willReturn(estimator);
 
-		GetTokenNftInfosResourceUsage.factory = factory;
+    GetTokenNftInfosResourceUsage.factory = factory;
 
-		given(estimator.givenMetadata(any())).willReturn(estimator);
-		given(estimator.get()).willReturn(expected);
+    given(estimator.givenMetadata(any())).willReturn(estimator);
+    given(estimator.get()).willReturn(expected);
 
-		given(view.infosForTokenNfts(target, start, end)).willReturn(Optional.of(info));
+    given(view.infosForTokenNfts(target, start, end)).willReturn(Optional.of(info));
 
-		subject = new GetTokenNftInfosResourceUsage();
-	}
+    subject = new GetTokenNftInfosResourceUsage();
+  }
 
-	@Test
-	void recognizesApplicableQuery() {
-		// given:
-		final var applicable = tokenGetNftInfosQuery(target, start, end, COST_ANSWER);
-		final var inapplicable = Query.getDefaultInstance();
+  @Test
+  void recognizesApplicableQuery() {
+    // given:
+    final var applicable = tokenGetNftInfosQuery(target, start, end, COST_ANSWER);
+    final var inapplicable = Query.getDefaultInstance();
 
-		// expect:
-		assertTrue(subject.applicableTo(applicable));
-		assertFalse(subject.applicableTo(inapplicable));
-	}
+    // expect:
+    assertTrue(subject.applicableTo(applicable));
+    assertFalse(subject.applicableTo(inapplicable));
+  }
 
-	@Test
-	void setsNftInfosInQueryCxtIfPresent() {
-		// setup:
-		final var queryCtx = new HashMap<String, Object>();
+  @Test
+  void setsNftInfosInQueryCxtIfPresent() {
+    // setup:
+    final var queryCtx = new HashMap<String, Object>();
 
-		// when:
-		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+    // when:
+    final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
-		assertSame(info, queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
-		assertSame(expected, usage);
-		// and:
-		verify(estimator).givenMetadata(metadatas);
-	}
+    // then:
+    assertSame(info, queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
+    assertSame(expected, usage);
+    // and:
+    verify(estimator).givenMetadata(metadatas);
+  }
 
-	@Test
-	void setsNftInfosInQueryCxtNotPresent() {
-		// setup:
-		final var queryCtx = new HashMap<String, Object>();
+  @Test
+  void setsNftInfosInQueryCxtNotPresent() {
+    // setup:
+    final var queryCtx = new HashMap<String, Object>();
 
-		// when:
-		final var usage = subject.usageGiven(satisfiableAnswerOnly, view);
+    // when:
+    final var usage = subject.usageGiven(satisfiableAnswerOnly, view);
 
-		// then:
-		assertNull(queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
-		assertSame(expected, usage);
-		// and:
-		verify(estimator).givenMetadata(metadatas);
-	}
+    // then:
+    assertNull(queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
+    assertSame(expected, usage);
+    // and:
+    verify(estimator).givenMetadata(metadatas);
+  }
 
-	@Test
-	void setsNftInfosInQueryCxtNotPresentWithType() {
-		// setup:
-		final var queryCtx = new HashMap<String, Object>();
+  @Test
+  void setsNftInfosInQueryCxtNotPresentWithType() {
+    // setup:
+    final var queryCtx = new HashMap<String, Object>();
 
-		// when:
-		final var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+    // when:
+    final var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
 
-		// then:
-		assertNull(queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
-		assertSame(expected, usage);
-		// and:
-		verify(estimator).givenMetadata(metadatas);
-	}
+    // then:
+    assertNull(queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
+    assertSame(expected, usage);
+    // and:
+    verify(estimator).givenMetadata(metadatas);
+  }
 
-	@Test
-	void onlySetsTokenNftInfosInQueryCxtIfFound() {
-		// setup:
-		final var queryCtx = new HashMap<String, Object>();
+  @Test
+  void onlySetsTokenNftInfosInQueryCxtIfFound() {
+    // setup:
+    final var queryCtx = new HashMap<String, Object>();
 
-		given(view.infosForTokenNfts(target, start, end)).willReturn(Optional.empty());
+    given(view.infosForTokenNfts(target, start, end)).willReturn(Optional.empty());
 
-		// when:
-		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+    // when:
+    final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		// then:
-		assertFalse(queryCtx.containsKey(TOKEN_NFT_INFOS_CTX_KEY));
-		// and:
-		assertSame(FeeData.getDefaultInstance(), usage);
-	}
+    // then:
+    assertFalse(queryCtx.containsKey(TOKEN_NFT_INFOS_CTX_KEY));
+    // and:
+    assertSame(FeeData.getDefaultInstance(), usage);
+  }
 
-	private Query tokenGetNftInfosQuery(TokenID id, long start, long end, ResponseType type) {
-		TokenGetNftInfosQuery.Builder op = TokenGetNftInfosQuery.newBuilder()
-				.setTokenID(id)
-				.setStart(start)
-				.setEnd(end)
-				.setHeader(QueryHeader.newBuilder().setResponseType(type));
-		return Query.newBuilder()
-				.setTokenGetNftInfos(op)
-				.build();
-	}
+  private Query tokenGetNftInfosQuery(TokenID id, long start, long end, ResponseType type) {
+    TokenGetNftInfosQuery.Builder op =
+        TokenGetNftInfosQuery.newBuilder()
+            .setTokenID(id)
+            .setStart(start)
+            .setEnd(end)
+            .setHeader(QueryHeader.newBuilder().setResponseType(type));
+    return Query.newBuilder().setTokenGetNftInfos(op).build();
+  }
 }

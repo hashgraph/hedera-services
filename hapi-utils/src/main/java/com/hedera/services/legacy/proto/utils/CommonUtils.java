@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,24 +64,21 @@ public class CommonUtils {
    * Sleep given seconds.
    *
    * @param timeInSec time to sleep in seconds
-   *
    * @throws InterruptedException when thread sleep interruption
    */
-  public static void nap(int timeInSec)  throws InterruptedException {
+  public static void nap(int timeInSec) throws InterruptedException {
     Thread.sleep(timeInSec * 1000L);
-   }
-
-  public static void nap(double timeInSec)  throws InterruptedException {
-    Thread.sleep((long) timeInSec * 1000);
   }
 
+  public static void nap(double timeInSec) throws InterruptedException {
+    Thread.sleep((long) timeInSec * 1000);
+  }
 
   /**
    * Write bytes to a file.
    *
    * @param path the file path to write bytes
    * @param data the byte array data
-   *
    * @throws IOException when error with IO
    */
   public static void writeToFile(String path, byte[] data) throws IOException {
@@ -95,7 +91,6 @@ public class CommonUtils {
    * @param path file write path
    * @param data byte array representation of data to write
    * @param append append to existing file if true
-   *
    * @throws IOException when error with IO
    */
   public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
@@ -158,7 +153,7 @@ public class CommonUtils {
    */
   public static byte[] convertToBytes(Object object) throws IOException {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-         ObjectOutput out = new ObjectOutputStream(bos)) {
+        ObjectOutput out = new ObjectOutputStream(bos)) {
       out.writeObject(object);
       return bos.toByteArray();
     }
@@ -170,7 +165,6 @@ public class CommonUtils {
    * @param start from position
    * @param length number of bytes to copy
    * @param bytes source byte array
-   *
    * @return copied byte array
    */
   public static byte[] copyBytes(int start, int length, byte[] bytes) {
@@ -187,7 +181,6 @@ public class CommonUtils {
    * @param filePath the resource file to be read
    * @param myClass the calling class
    * @param <T> type to read binary into
-   *
    * @return type T from the binary input
    * @throws IOException when error with IO
    * @throws URISyntaxException when invalid URI syntax
@@ -202,15 +195,18 @@ public class CommonUtils {
    * Generates a human readable string for grpc transaction.
    *
    * @param grpcTransaction GRPC transaction
-   *
    * @return generated readable string
    * @throws InvalidProtocolBufferException when protocol buffer is invalid
    */
-  public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
+  public static String toReadableString(Transaction grpcTransaction)
+      throws InvalidProtocolBufferException {
     String rv = null;
     try {
       TransactionBody body = extractTransactionBody(grpcTransaction);
-      rv = "body=" + TextFormat.shortDebugString(body) + "; sigs="
+      rv =
+          "body="
+              + TextFormat.shortDebugString(body)
+              + "; sigs="
               + TextFormat.shortDebugString(extractSignatureMap(grpcTransaction));
     } catch (InvalidProtocolBufferException e) {
       throw e;
@@ -222,12 +218,11 @@ public class CommonUtils {
    * Generates a short human readable string for grpc transaction.
    *
    * @param grpcTransaction GRPC transaction
-   *
    * @return generated readable string
    * @throws InvalidProtocolBufferException when protocol buffer is invalid
    */
-  public static String toReadableTransactionID(
-          Transaction grpcTransaction) throws InvalidProtocolBufferException {
+  public static String toReadableTransactionID(Transaction grpcTransaction)
+      throws InvalidProtocolBufferException {
     TransactionBody body = extractTransactionBody(grpcTransaction);
     String rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
     return rv;
@@ -244,17 +239,17 @@ public class CommonUtils {
   }
 
   public static byte[] extractTransactionBodyBytes(TransactionOrBuilder transaction)
-          throws InvalidProtocolBufferException {
+      throws InvalidProtocolBufferException {
     return extractTransactionBodyByteString(transaction).toByteArray();
   }
 
   public static TransactionBody extractTransactionBody(TransactionOrBuilder transaction)
-          throws InvalidProtocolBufferException {
+      throws InvalidProtocolBufferException {
     return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));
   }
 
   public static SignatureMap extractSignatureMap(TransactionOrBuilder transaction)
-          throws InvalidProtocolBufferException {
+      throws InvalidProtocolBufferException {
     ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
     if (!signedTransactionBytes.isEmpty()) {
       return SignedTransaction.parseFrom(signedTransactionBytes).getSigMap();
@@ -266,11 +261,13 @@ public class CommonUtils {
   public static SignatureMap extractSignatureMapOrUseDefault(TransactionOrBuilder transaction) {
     try {
       return extractSignatureMap(transaction);
-    } catch (InvalidProtocolBufferException ignoreToReturnDefault) { }
+    } catch (InvalidProtocolBufferException ignoreToReturnDefault) {
+    }
     return SignatureMap.getDefaultInstance();
   }
 
-  public static Transaction.Builder toTransactionBuilder(TransactionOrBuilder transactionOrBuilder) {
+  public static Transaction.Builder toTransactionBuilder(
+      TransactionOrBuilder transactionOrBuilder) {
     if (transactionOrBuilder instanceof Transaction) {
       return ((Transaction) transactionOrBuilder).toBuilder();
     }
@@ -285,7 +282,8 @@ public class CommonUtils {
   public static byte[] noThrowSha384HashOf(byte[] byteArray) {
     try {
       return getSha384Hash().digest(byteArray);
-    } catch (NoSuchAlgorithmException ignoreToReturnEmptyByteArray) { }
+    } catch (NoSuchAlgorithmException ignoreToReturnEmptyByteArray) {
+    }
     return new byte[0];
   }
 
@@ -302,6 +300,9 @@ public class CommonUtils {
   }
 
   public static void writeTxId2File(String txIdString) throws IOException {
-    writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
+    writeToFileUTF8(
+        "output/txIds.txt",
+        ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n",
+        true);
   }
 }

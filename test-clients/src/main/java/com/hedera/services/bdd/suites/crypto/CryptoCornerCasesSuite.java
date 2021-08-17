@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,20 +19,6 @@ package com.hedera.services.bdd.suites.crypto;
  * limitations under the License.
  * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -43,165 +29,171 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Transaction;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CryptoCornerCasesSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
+  private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
 
-	public static void main(String... args) {
-		new CryptoCornerCasesSuite().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new CryptoCornerCasesSuite().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return allOf(positiveTests(), negativeTests());
+  }
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
-	private List<HapiApiSpec> negativeTests() {
-		return List.of(
-				invalidNodeAccount(),
-				invalidTransactionBody(),
-				invalidTransactionPayerAccountNotFound(),
-				invalidTransactionMemoTooLong(),
-				invalidTransactionDuration(),
-				invalidTransactionStartTime()
+  private List<HapiApiSpec> positiveTests() {
+    return Arrays.asList();
+  }
 
-//				invalidSigsCountMismatchingKey(),
-//				invalidKeyPrefixMismatch()
-		);
-	}
+  private List<HapiApiSpec> negativeTests() {
+    return List.of(
+        invalidNodeAccount(),
+        invalidTransactionBody(),
+        invalidTransactionPayerAccountNotFound(),
+        invalidTransactionMemoTooLong(),
+        invalidTransactionDuration(),
+        invalidTransactionStartTime()
 
+        //				invalidSigsCountMismatchingKey(),
+        //				invalidKeyPrefixMismatch()
+        );
+  }
 
-	private static Transaction removeTransactionBody(Transaction txn) {
-		return txn.toBuilder().setBodyBytes(Transaction.getDefaultInstance().getBodyBytes()).build();
-	}
+  private static Transaction removeTransactionBody(Transaction txn) {
+    return txn.toBuilder().setBodyBytes(Transaction.getDefaultInstance().getBodyBytes()).build();
+  }
 
-	public static HapiApiSpec invalidTransactionBody() {
-		return defaultHapiSpec("InvalidTransactionBody")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
-								.hasPrecheckFrom(INVALID_TRANSACTION_BODY)
-				);
-	}
+  public static HapiApiSpec invalidTransactionBody() {
+    return defaultHapiSpec("InvalidTransactionBody")
+        .given()
+        .when()
+        .then(
+            cryptoCreate("newPayee")
+                .balance(10000L)
+                .scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
+                .hasPrecheckFrom(INVALID_TRANSACTION_BODY));
+  }
 
+  private static Transaction replaceTxnNodeAccount(Transaction txn) {
+    AccountID badNodeAccount =
+        AccountID.newBuilder().setAccountNum(2000).setRealmNum(0).setShardNum(0).build();
+    return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
+  }
 
-	private static Transaction replaceTxnNodeAccount(Transaction txn) {
-		AccountID badNodeAccount = AccountID.newBuilder().setAccountNum(2000).setRealmNum(0).setShardNum(0).build();
-		return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
-	}
+  public static HapiApiSpec invalidNodeAccount() {
+    return defaultHapiSpec("InvalidNodeAccount")
+        .given()
+        .when()
+        .then(
+            cryptoCreate("newPayee")
+                .balance(10000L)
+                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
+                .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
+  }
 
-	public static HapiApiSpec invalidNodeAccount() {
-		return defaultHapiSpec("InvalidNodeAccount")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
-								.hasPrecheckFrom(INVALID_NODE_ACCOUNT)
-				);
-	}
+  private static Transaction replaceTxnDuration(Transaction txn) {
+    return TxnUtils.replaceTxnDuration(txn, -1L);
+  }
 
-	private static Transaction replaceTxnDuration(Transaction txn) {
-		return TxnUtils.replaceTxnDuration(txn, -1L);
-	}
+  public static HapiApiSpec invalidTransactionDuration() {
+    return defaultHapiSpec("InvalidTransactionDuration")
+        .given()
+        .when()
+        .then(
+            cryptoCreate("newPayee")
+                .balance(10000L)
+                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
+                .hasPrecheckFrom(INVALID_TRANSACTION_DURATION));
+  }
 
-	public static HapiApiSpec invalidTransactionDuration() {
-		return defaultHapiSpec("InvalidTransactionDuration")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
-								.hasPrecheckFrom(INVALID_TRANSACTION_DURATION)
-				);
-	}
+  private static Transaction replaceTxnMemo(Transaction txn) {
+    String newMemo = RandomStringUtils.randomAlphanumeric(120);
+    return TxnUtils.replaceTxnMemo(txn, newMemo);
+  }
 
-	private static Transaction replaceTxnMemo(Transaction txn) {
-		String newMemo = RandomStringUtils.randomAlphanumeric(120);
-		return TxnUtils.replaceTxnMemo(txn, newMemo);
-	}
+  public static HapiApiSpec invalidTransactionMemoTooLong() {
+    return defaultHapiSpec("InvalidTransactionMemoTooLong")
+        .given()
+        .when()
+        .then(
+            cryptoCreate("newPayee")
+                .balance(10000L)
+                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
+                .hasPrecheckFrom(MEMO_TOO_LONG));
+  }
 
-	public static HapiApiSpec invalidTransactionMemoTooLong() {
-		return defaultHapiSpec("InvalidTransactionMemoTooLong")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
-								.hasPrecheckFrom(MEMO_TOO_LONG)
-				);
-	}
+  private static Transaction replaceTxnPayerAccount(Transaction txn) {
+    AccountID badPayerAccount =
+        AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(999999).build();
+    return TxnUtils.replaceTxnPayerAccount(txn, badPayerAccount);
+  }
 
+  public static HapiApiSpec invalidTransactionPayerAccountNotFound() {
+    return defaultHapiSpec("InvalidTransactionDuration")
+        .given()
+        .when()
+        .then(
+            cryptoCreate("newPayee")
+                .balance(10000L)
+                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
+                .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND));
+  }
 
-	private static Transaction replaceTxnPayerAccount(Transaction txn) {
-		AccountID badPayerAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(999999).build();
-		return TxnUtils.replaceTxnPayerAccount(txn, badPayerAccount);
-	}
+  private static Transaction replaceTxnStartTtime(Transaction txn) {
+    long newStartTimeSecs = Instant.now(Clock.systemUTC()).getEpochSecond() + 100L;
+    return TxnUtils.replaceTxnStartTime(txn, newStartTimeSecs, 0);
+  }
 
-	public static HapiApiSpec invalidTransactionPayerAccountNotFound() {
-		return defaultHapiSpec("InvalidTransactionDuration")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
-								.hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND)
-				);
-	}
+  public static HapiApiSpec invalidTransactionStartTime() {
+    return defaultHapiSpec("InvalidTransactionStartTime")
+        .given()
+        .when()
+        .then(
+            cryptoCreate("newPayee")
+                .balance(10000L)
+                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
+                .hasPrecheckFrom(INVALID_TRANSACTION_START));
+  }
 
-	private static Transaction replaceTxnStartTtime(Transaction txn) {
-		long newStartTimeSecs = Instant.now(Clock.systemUTC()).getEpochSecond() + 100L;
-		return TxnUtils.replaceTxnStartTime(txn, newStartTimeSecs, 0);
-	}
+  // These two scenarios still don't work.
 
-	public static HapiApiSpec invalidTransactionStartTime() {
-		return defaultHapiSpec("InvalidTransactionStartTime")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
-								.hasPrecheckFrom(INVALID_TRANSACTION_START)
-				);
-	}
+  //	public static HapiApiSpec invalidSigsCountMismatchingKey() {
+  //		return defaultHapiSpec("invalidSigsCountMismatchingKey")
+  //				.given(
+  //				).when(
+  //				).then(
+  //						cryptoCreate("newPayee").balance(10000L)
+  //								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
+  //								.hasPrecheckFrom(INVALID_SIGNATURE_COUNT_MISMATCHING_KEY)
+  //				);
+  //	}
+  //
+  //	public static HapiApiSpec invalidKeyPrefixMismatch() {
+  //		return defaultHapiSpec("invalidKeyPrefixMismatch")
+  //				.given(
+  //				).when(
+  //				).then(
+  //						cryptoCreate("newPayee").balance(10000L)
+  //								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
+  //								.hasPrecheckFrom(KEY_PREFIX_MISMATCH)
+  //				);
+  //	}
 
-
-	// These two scenarios still don't work.
-
-//	public static HapiApiSpec invalidSigsCountMismatchingKey() {
-//		return defaultHapiSpec("invalidSigsCountMismatchingKey")
-//				.given(
-//				).when(
-//				).then(
-//						cryptoCreate("newPayee").balance(10000L)
-//								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
-//								.hasPrecheckFrom(INVALID_SIGNATURE_COUNT_MISMATCHING_KEY)
-//				);
-//	}
-//
-//	public static HapiApiSpec invalidKeyPrefixMismatch() {
-//		return defaultHapiSpec("invalidKeyPrefixMismatch")
-//				.given(
-//				).when(
-//				).then(
-//						cryptoCreate("newPayee").balance(10000L)
-//								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
-//								.hasPrecheckFrom(KEY_PREFIX_MISMATCH)
-//				);
-//	}
-
-
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

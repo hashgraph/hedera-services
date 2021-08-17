@@ -30,36 +30,35 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-
 import java.util.List;
 import java.util.Optional;
 
 public class AnswerFunctions {
-	public List<TransactionRecord> accountRecords(StateView view, Query query) {
-		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
-		MerkleEntityId key = MerkleEntityId.fromAccountId(op.getAccountID());
-		MerkleAccount account = view.accounts().get(key);
-		return ExpirableTxnRecord.allToGrpc(account.recordList());
-	}
+  public List<TransactionRecord> accountRecords(StateView view, Query query) {
+    CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
+    MerkleEntityId key = MerkleEntityId.fromAccountId(op.getAccountID());
+    MerkleAccount account = view.accounts().get(key);
+    return ExpirableTxnRecord.allToGrpc(account.recordList());
+  }
 
-	public Optional<TransactionRecord> txnRecord(RecordCache recordCache, StateView view, Query query) {
-		var txnId = query.getTransactionGetRecord().getTransactionID();
-		var record = recordCache.getPriorityRecord(txnId);
-		if (record != null) {
-			return Optional.of(record.asGrpc());
-		} else {
-			try {
-				AccountID id = txnId.getAccountID();
-				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
-				TxnId searchableId = TxnId.fromGrpc(txnId);
-				return account.recordList()
-						.stream()
-						.filter(r -> r.getTxnId().equals(searchableId))
-						.findAny()
-						.map(ExpirableTxnRecord::asGrpc);
-			} catch (Exception ignore) {
-				return Optional.empty();
-			}
-		}
-	}
+  public Optional<TransactionRecord> txnRecord(
+      RecordCache recordCache, StateView view, Query query) {
+    var txnId = query.getTransactionGetRecord().getTransactionID();
+    var record = recordCache.getPriorityRecord(txnId);
+    if (record != null) {
+      return Optional.of(record.asGrpc());
+    } else {
+      try {
+        AccountID id = txnId.getAccountID();
+        MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
+        TxnId searchableId = TxnId.fromGrpc(txnId);
+        return account.recordList().stream()
+            .filter(r -> r.getTxnId().equals(searchableId))
+            .findAny()
+            .map(ExpirableTxnRecord::asGrpc);
+      } catch (Exception ignore) {
+        return Optional.empty();
+      }
+    }
+  }
 }

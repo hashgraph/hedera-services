@@ -26,14 +26,14 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public final class EntityIdConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext)
-			throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.", "account");
-		return new EntityId(Long.valueOf(parts[0]), Long.valueOf(parts[1]), Long.valueOf(parts[2]));
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.", "account");
+    return new EntityId(Long.valueOf(parts[0]), Long.valueOf(parts[1]), Long.valueOf(parts[2]));
+  }
 }

@@ -20,6 +20,19 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -34,161 +47,143 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class ContractSysDelTransitionLogicTest {
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+  private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+  private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 
-	private Instant consensusTime;
-	private OptionValidator validator;
-	private ContractSysDelTransitionLogic.LegacySystemDeleter delegate;
-	private TransactionBody contractSysDelTxn;
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
-	ContractSysDelTransitionLogic subject;
+  private Instant consensusTime;
+  private OptionValidator validator;
+  private ContractSysDelTransitionLogic.LegacySystemDeleter delegate;
+  private TransactionBody contractSysDelTxn;
+  private TransactionContext txnCtx;
+  private PlatformTxnAccessor accessor;
+  FCMap<MerkleEntityId, MerkleAccount> contracts;
+  ContractSysDelTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		consensusTime = Instant.now();
+  @BeforeEach
+  private void setup() {
+    consensusTime = Instant.now();
 
-		delegate = mock(ContractSysDelTransitionLogic.LegacySystemDeleter.class);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
-		validator = mock(OptionValidator.class);
-		withRubberstampingValidator();
+    delegate = mock(ContractSysDelTransitionLogic.LegacySystemDeleter.class);
+    txnCtx = mock(TransactionContext.class);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    accessor = mock(PlatformTxnAccessor.class);
+    validator = mock(OptionValidator.class);
+    withRubberstampingValidator();
 
-		subject = new ContractSysDelTransitionLogic(validator, txnCtx, delegate, () -> contracts);
-	}
+    subject = new ContractSysDelTransitionLogic(validator, txnCtx, delegate, () -> contracts);
+  }
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(contractSysDelTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+    // expect:
+    assertTrue(subject.applicability().test(contractSysDelTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
-	@Test
-	void capturesBadDelete() {
-		// setup:
-		TransactionRecord sysDelRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_CONTRACT_ID)
-						.build())
-				.build();
+  @Test
+  void capturesBadDelete() {
+    // setup:
+    TransactionRecord sysDelRec =
+        TransactionRecord.newBuilder()
+            .setReceipt(TransactionReceipt.newBuilder().setStatus(INVALID_CONTRACT_ID).build())
+            .build();
 
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractSysDelTxn, consensusTime)).willReturn(sysDelRec);
+    givenValidTxnCtx();
+    // and:
+    given(delegate.perform(contractSysDelTxn, consensusTime)).willReturn(sysDelRec);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(INVALID_CONTRACT_ID);
-	}
+    // then:
+    verify(txnCtx).setStatus(INVALID_CONTRACT_ID);
+  }
 
-	@Test
-	void followsHappyPathWithOverrides() {
-		// setup:
-		TransactionRecord updateRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.build();
+  @Test
+  void followsHappyPathWithOverrides() {
+    // setup:
+    TransactionRecord updateRec =
+        TransactionRecord.newBuilder()
+            .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
+            .build();
 
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractSysDelTxn, consensusTime)).willReturn(updateRec);
+    givenValidTxnCtx();
+    // and:
+    given(delegate.perform(contractSysDelTxn, consensusTime)).willReturn(updateRec);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(SUCCESS);
-	}
+    // then:
+    verify(txnCtx).setStatus(SUCCESS);
+  }
 
-	@Test
-	void acceptsOkSyntax() {
-		givenValidTxnCtx();
+  @Test
+  void acceptsOkSyntax() {
+    givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(contractSysDelTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(contractSysDelTxn));
+  }
 
-	@Test
-	void acceptsDeletedContract() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
+  @Test
+  void acceptsDeletedContract() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(contractSysDelTxn));
-	}
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(contractSysDelTxn));
+  }
 
-	@Test
-	void rejectsInvalidCid() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(INVALID_CONTRACT_ID);
+  @Test
+  void rejectsInvalidCid() {
+    givenValidTxnCtx();
+    // and:
+    given(validator.queryableContractStatus(target, contracts)).willReturn(INVALID_CONTRACT_ID);
 
-		// expect:
-		assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractSysDelTxn));
-	}
+    // expect:
+    assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractSysDelTxn));
+  }
 
-	@Test
-	void translatesUnknownException() {
-		givenValidTxnCtx();
+  @Test
+  void translatesUnknownException() {
+    givenValidTxnCtx();
 
-		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
+    given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
 
-		// when:
-		subject.doStateTransition();
+    // when:
+    subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
+    // then:
+    verify(txnCtx).setStatus(FAIL_INVALID);
+  }
 
-	private void givenValidTxnCtx() {
-		var op = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setSystemDelete(
-						SystemDeleteTransactionBody.newBuilder()
-								.setContractID(target));
-		contractSysDelTxn = op.build();
-		given(accessor.getTxn()).willReturn(contractSysDelTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-	}
+  private void givenValidTxnCtx() {
+    var op =
+        TransactionBody.newBuilder()
+            .setTransactionID(ourTxnId())
+            .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(target));
+    contractSysDelTxn = op.build();
+    given(accessor.getTxn()).willReturn(contractSysDelTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+  }
 
-	private TransactionID ourTxnId() {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
-				.build();
-	}
+  private TransactionID ourTxnId() {
+    return TransactionID.newBuilder()
+        .setAccountID(payer)
+        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+        .build();
+  }
 
-	private void withRubberstampingValidator() {
-		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
-	}
+  private void withRubberstampingValidator() {
+    given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
+  }
 }

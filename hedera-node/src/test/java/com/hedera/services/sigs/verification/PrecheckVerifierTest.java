@@ -20,6 +20,19 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
+import static com.hedera.test.factories.sigs.SyncVerifiers.NEVER_VALID;
+import static java.util.Collections.EMPTY_LIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.PlatformSigOps;
@@ -34,162 +47,163 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-
-import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
-import static com.hedera.test.factories.keys.NodeFactory.ed25519;
-import static com.hedera.test.factories.keys.NodeFactory.list;
-import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
-import static com.hedera.test.factories.sigs.SyncVerifiers.NEVER_VALID;
-import static java.util.Collections.EMPTY_LIST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class PrecheckVerifierTest {
-	private static List<JKey> reqKeys;
-	private static final TransactionBody txnBody = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
-			.build();
-	private static final Transaction txn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-	private static final PlatformTxnAccessor accessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn));
+  private static List<JKey> reqKeys;
+  private static final TransactionBody txnBody =
+      TransactionBody.newBuilder()
+          .setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
+          .build();
+  private static final Transaction txn =
+      Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+  private static final PlatformTxnAccessor accessor =
+      uncheckedAccessorFor(PlatformTxnFactory.from(txn));
 
-	private final static byte[][] VALID_SIG_BYTES = {
-			"firstSig".getBytes(),
-			"secondSig".getBytes(),
-			"thirdSig".getBytes(),
-			"fourthSig".getBytes()
-	};
-	private final static Supplier<PubKeyToSigBytes> VALID_PROVIDER_FACTORY = () -> new PubKeyToSigBytes() {
-		private int i = 0;
+  private static final byte[][] VALID_SIG_BYTES = {
+    "firstSig".getBytes(), "secondSig".getBytes(), "thirdSig".getBytes(), "fourthSig".getBytes()
+  };
+  private static final Supplier<PubKeyToSigBytes> VALID_PROVIDER_FACTORY =
+      () ->
+          new PubKeyToSigBytes() {
+            private int i = 0;
 
-		@Override
-		public byte[] sigBytesFor(byte[] pubKey) {
-			return VALID_SIG_BYTES[i++];
-		}
-	};
-	private static List<TransactionSignature> expectedSigs = EMPTY_LIST;
+            @Override
+            public byte[] sigBytesFor(byte[] pubKey) {
+              return VALID_SIG_BYTES[i++];
+            }
+          };
+  private static List<TransactionSignature> expectedSigs = EMPTY_LIST;
 
-	private PrecheckKeyReqs precheckKeyReqs;
-	private PrecheckVerifier subject;
+  private PrecheckKeyReqs precheckKeyReqs;
+  private PrecheckVerifier subject;
 
-	@BeforeAll
-	static void setupAll() throws Throwable {
-		reqKeys = List.of(
-				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
-				KeyTree.withRoot(ed25519()).asJKey());
-		expectedSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor)
-		).getPlatformSigs();
-	}
+  @BeforeAll
+  static void setupAll() throws Throwable {
+    reqKeys =
+        List.of(
+            KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
+            KeyTree.withRoot(ed25519()).asJKey());
+    expectedSigs =
+        PlatformSigOps.createEd25519PlatformSigsFrom(
+                reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor))
+            .getPlatformSigs();
+  }
 
-	@BeforeEach
-	void setup() {
-		precheckKeyReqs = mock(PrecheckKeyReqs.class);
-	}
+  @BeforeEach
+  void setup() {
+    precheckKeyReqs = mock(PrecheckKeyReqs.class);
+  }
 
-	@Test
-	void affirmsValidSignatures() throws Exception {
-		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
-		givenImpliedSubject(sigs -> {
-			actualSigsVerified.set(sigs);
-			ALWAYS_VALID.verifySync(sigs);
-		});
+  @Test
+  void affirmsValidSignatures() throws Exception {
+    given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
+    AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
+    givenImpliedSubject(
+        sigs -> {
+          actualSigsVerified.set(sigs);
+          ALWAYS_VALID.verifySync(sigs);
+        });
 
-		// when:
-		boolean hasPrechekSigs = subject.hasNecessarySignatures(accessor);
+    // when:
+    boolean hasPrechekSigs = subject.hasNecessarySignatures(accessor);
 
-		// then:
-		assertEquals(expectedSigs, actualSigsVerified.get());
-		assertTrue(hasPrechekSigs);
-	}
+    // then:
+    assertEquals(expectedSigs, actualSigsVerified.get());
+    assertTrue(hasPrechekSigs);
+  }
 
-	@Test
-	void rejectsInvalidSignatures() throws Exception {
-		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
-		givenImpliedSubject(sigs -> {
-			actualSigsVerified.set(sigs);
-			NEVER_VALID.verifySync(sigs);
-		});
+  @Test
+  void rejectsInvalidSignatures() throws Exception {
+    given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
+    AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
+    givenImpliedSubject(
+        sigs -> {
+          actualSigsVerified.set(sigs);
+          NEVER_VALID.verifySync(sigs);
+        });
 
-		// when:
-		boolean hasPrechekSigs = subject.hasNecessarySignatures(accessor);
+    // when:
+    boolean hasPrechekSigs = subject.hasNecessarySignatures(accessor);
 
-		// then:
-		assertEquals(expectedSigs, actualSigsVerified.get());
-		assertFalse(hasPrechekSigs);
-	}
+    // then:
+    assertEquals(expectedSigs, actualSigsVerified.get());
+    assertFalse(hasPrechekSigs);
+  }
 
-	@Test
-	void propagatesSigCreationFailure() throws Exception {
-		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		subject = new PrecheckVerifier(
-				ALWAYS_VALID,
-				precheckKeyReqs,
-				ignore -> bytes -> {
-					throw new KeyPrefixMismatchException("Oops!");
-				});
+  @Test
+  void propagatesSigCreationFailure() throws Exception {
+    given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
+    subject =
+        new PrecheckVerifier(
+            ALWAYS_VALID,
+            precheckKeyReqs,
+            ignore ->
+                bytes -> {
+                  throw new KeyPrefixMismatchException("Oops!");
+                });
 
-		// expect:
-		assertThrows(KeyPrefixMismatchException.class, () -> subject.hasNecessarySignatures(accessor));
-	}
+    // expect:
+    assertThrows(KeyPrefixMismatchException.class, () -> subject.hasNecessarySignatures(accessor));
+  }
 
-	@Test
-	void rejectsGivenInvalidPayerException() throws Exception {
-		given(precheckKeyReqs.getRequiredKeys(txnBody)).willThrow(new InvalidPayerAccountException());
-		givenImpliedSubject(ALWAYS_VALID);
+  @Test
+  void rejectsGivenInvalidPayerException() throws Exception {
+    given(precheckKeyReqs.getRequiredKeys(txnBody)).willThrow(new InvalidPayerAccountException());
+    givenImpliedSubject(ALWAYS_VALID);
 
-		// expect:
-		assertFalse(subject.hasNecessarySignatures(accessor));
-	}
+    // expect:
+    assertFalse(subject.hasNecessarySignatures(accessor));
+  }
 
-	@Test
-	void propagatesOtherKeyLookupExceptions() throws Exception {
-		given(precheckKeyReqs.getRequiredKeys(txnBody)).willThrow(new IllegalStateException());
-		givenImpliedSubject(ALWAYS_VALID);
+  @Test
+  void propagatesOtherKeyLookupExceptions() throws Exception {
+    given(precheckKeyReqs.getRequiredKeys(txnBody)).willThrow(new IllegalStateException());
+    givenImpliedSubject(ALWAYS_VALID);
 
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.hasNecessarySignatures(accessor));
-	}
+    // expect:
+    assertThrows(IllegalStateException.class, () -> subject.hasNecessarySignatures(accessor));
+  }
 
-	@Test
-	void affirmsValidSignaturesInSignedTxn() throws Exception {
-		//setUp
-		SignedTransaction signedTransaction = SignedTransaction.newBuilder().setBodyBytes(
-				txnBody.toByteString()).build();
-		final Transaction signedTxn = Transaction.newBuilder().setSignedTransactionBytes(
-				signedTransaction.toByteString()).build();
-		PlatformTxnAccessor signedTxnAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(signedTxn));
+  @Test
+  void affirmsValidSignaturesInSignedTxn() throws Exception {
+    // setUp
+    SignedTransaction signedTransaction =
+        SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+    final Transaction signedTxn =
+        Transaction.newBuilder()
+            .setSignedTransactionBytes(signedTransaction.toByteString())
+            .build();
+    PlatformTxnAccessor signedTxnAccessor =
+        uncheckedAccessorFor(PlatformTxnFactory.from(signedTxn));
 
-		//given
-		given(precheckKeyReqs.getRequiredKeys(TransactionBody.parseFrom(signedTransaction.getBodyBytes()))).
-				willReturn(reqKeys);
-		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
-		givenImpliedSubject(sigs -> {
-			actualSigsVerified.set(sigs);
-			ALWAYS_VALID.verifySync(sigs);
-		});
+    // given
+    given(
+            precheckKeyReqs.getRequiredKeys(
+                TransactionBody.parseFrom(signedTransaction.getBodyBytes())))
+        .willReturn(reqKeys);
+    AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
+    givenImpliedSubject(
+        sigs -> {
+          actualSigsVerified.set(sigs);
+          ALWAYS_VALID.verifySync(sigs);
+        });
 
-		// when:
-		boolean hasPrechekSigs = subject.hasNecessarySignatures(signedTxnAccessor);
+    // when:
+    boolean hasPrechekSigs = subject.hasNecessarySignatures(signedTxnAccessor);
 
-		// then:
-		assertEquals(expectedSigs, actualSigsVerified.get());
-		assertTrue(hasPrechekSigs);
-	}
+    // then:
+    assertEquals(expectedSigs, actualSigsVerified.get());
+    assertTrue(hasPrechekSigs);
+  }
 
-	private void givenImpliedSubject(SyncVerifier syncVerifier) {
-		subject = new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> VALID_PROVIDER_FACTORY.get());
-	}
+  private void givenImpliedSubject(SyncVerifier syncVerifier) {
+    subject =
+        new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> VALID_PROVIDER_FACTORY.get());
+  }
 }

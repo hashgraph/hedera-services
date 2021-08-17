@@ -20,18 +20,6 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.KeyLabel;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Instant;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -51,240 +39,225 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.KeyLabel;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.time.Instant;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CryptoUpdateSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
+  private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
 
-	private static final long defaultMaxLifetime =
-			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+  private static final long defaultMaxLifetime =
+      Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
-	public static void main(String... args) {
-		new CryptoUpdateSuite().runSuiteAsync();
-	}
+  public static void main(String... args) {
+    new CryptoUpdateSuite().runSuiteAsync();
+  }
 
-	private final SigControl TWO_LEVEL_THRESH = KeyShape.threshSigs(2,
-			KeyShape.threshSigs(1, ANY, ANY, ANY, ANY, ANY, ANY, ANY),
-			KeyShape.threshSigs(3, ANY, ANY, ANY, ANY, ANY, ANY, ANY));
-	private final KeyLabel OVERLAPPING_KEYS = complex(
-			complex("A", "B", "C", "D", "E", "F", "G"),
-			complex("H", "I", "J", "K", "L", "M", "A"));
+  private final SigControl TWO_LEVEL_THRESH =
+      KeyShape.threshSigs(
+          2,
+          KeyShape.threshSigs(1, ANY, ANY, ANY, ANY, ANY, ANY, ANY),
+          KeyShape.threshSigs(3, ANY, ANY, ANY, ANY, ANY, ANY, ANY));
+  private final KeyLabel OVERLAPPING_KEYS =
+      complex(
+          complex("A", "B", "C", "D", "E", "F", "G"), complex("H", "I", "J", "K", "L", "M", "A"));
 
-	private final SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(2,
-			KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
-			KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
-	private final SigControl NOT_ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(2,
-			KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
-			KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
-	private final SigControl ENOUGH_OVERLAPPING_SIGS = KeyShape.threshSigs(2,
-			KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
-			KeyShape.threshSigs(3, ON, ON, OFF, OFF, OFF, OFF, ON));
+  private final SigControl ENOUGH_UNIQUE_SIGS =
+      KeyShape.threshSigs(
+          2,
+          KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
+          KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
+  private final SigControl NOT_ENOUGH_UNIQUE_SIGS =
+      KeyShape.threshSigs(
+          2,
+          KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
+          KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
+  private final SigControl ENOUGH_OVERLAPPING_SIGS =
+      KeyShape.threshSigs(
+          2,
+          KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
+          KeyShape.threshSigs(3, ON, ON, OFF, OFF, OFF, OFF, ON));
 
-	private final String TARGET_KEY = "twoLevelThreshWithOverlap";
-	private final String TARGET_ACCOUNT = "complexKeyAccount";
+  private final String TARGET_KEY = "twoLevelThreshWithOverlap";
+  private final String TARGET_ACCOUNT = "complexKeyAccount";
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						updateWithUniqueSigs(),
-						updateWithOverlappingSigs(),
-						updateWithOneEffectiveSig(),
-						canUpdateMemo(),
-						updateFailsWithInsufficientSigs(),
-						cannotSetThresholdNegative(),
-						updateWithEmptyKeyFails(),
-						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateFailsWithContractKey(),
-						updateFailsWithOverlyLongLifetime(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          updateWithUniqueSigs(),
+          updateWithOverlappingSigs(),
+          updateWithOneEffectiveSig(),
+          canUpdateMemo(),
+          updateFailsWithInsufficientSigs(),
+          cannotSetThresholdNegative(),
+          updateWithEmptyKeyFails(),
+          updateFailsIfMissingSigs(),
+          sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+          updateFailsWithContractKey(),
+          updateFailsWithOverlyLongLifetime(),
+        });
+  }
 
-	private HapiApiSpec updateFailsWithOverlyLongLifetime() {
-		final var smallBuffer = 12_345L;
-		final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-		return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
-				.given(
-						cryptoCreate(TARGET_ACCOUNT)
-				).when().then(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.expiring(excessiveExpiry)
-								.hasKnownStatus(INVALID_EXPIRATION_TIME)
-				);
-	}
+  private HapiApiSpec updateFailsWithOverlyLongLifetime() {
+    final var smallBuffer = 12_345L;
+    final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+    return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
+        .given(cryptoCreate(TARGET_ACCOUNT))
+        .when()
+        .then(
+            cryptoUpdate(TARGET_ACCOUNT)
+                .expiring(excessiveExpiry)
+                .hasKnownStatus(INVALID_EXPIRATION_TIME));
+  }
 
-	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-		String sysAccount = "0.0.977";
-		String randomAccount = "randomAccount";
-		String firstKey = "firstKey";
-		String secondKey = "secondKey";
+  private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    String sysAccount = "0.0.977";
+    String randomAccount = "randomAccount";
+    String firstKey = "firstKey";
+    String secondKey = "secondKey";
 
-		return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
-				.given(
-						newKeyNamed(firstKey).shape(SIMPLE),
-						newKeyNamed(secondKey).shape(SIMPLE)
-				)
-				.when(
-						cryptoCreate(randomAccount)
-								.key(firstKey)
-				)
-				.then(
-						cryptoUpdate(sysAccount)
-								.key(secondKey)
-								.signedBy(GENESIS)
-								.payingWith(GENESIS)
-								.hasKnownStatus(SUCCESS)
-								.logged(),
-						cryptoUpdate(randomAccount)
-								.key(secondKey)
-								.signedBy(firstKey)
-								.payingWith(GENESIS)
-								.hasPrecheck(INVALID_SIGNATURE)
-				);
-	}
+    return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
+        .given(newKeyNamed(firstKey).shape(SIMPLE), newKeyNamed(secondKey).shape(SIMPLE))
+        .when(cryptoCreate(randomAccount).key(firstKey))
+        .then(
+            cryptoUpdate(sysAccount)
+                .key(secondKey)
+                .signedBy(GENESIS)
+                .payingWith(GENESIS)
+                .hasKnownStatus(SUCCESS)
+                .logged(),
+            cryptoUpdate(randomAccount)
+                .key(secondKey)
+                .signedBy(firstKey)
+                .payingWith(GENESIS)
+                .hasPrecheck(INVALID_SIGNATURE));
+  }
 
-	private HapiApiSpec canUpdateMemo() {
-		String firstMemo = "First";
-		String secondMemo = "Second";
-		return defaultHapiSpec("CanUpdateMemo")
-				.given(
-						cryptoCreate(TARGET_ACCOUNT)
-								.balance(0L)
-								.entityMemo(firstMemo)
-				).when(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.entityMemo(ZERO_BYTE_MEMO)
-								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-						cryptoUpdate(TARGET_ACCOUNT)
-								.entityMemo(secondMemo)
-				).then(
-						getAccountInfo(TARGET_ACCOUNT)
-								.has(accountWith().memo(secondMemo))
-				);
-	}
+  private HapiApiSpec canUpdateMemo() {
+    String firstMemo = "First";
+    String secondMemo = "Second";
+    return defaultHapiSpec("CanUpdateMemo")
+        .given(cryptoCreate(TARGET_ACCOUNT).balance(0L).entityMemo(firstMemo))
+        .when(
+            cryptoUpdate(TARGET_ACCOUNT)
+                .entityMemo(ZERO_BYTE_MEMO)
+                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+            cryptoUpdate(TARGET_ACCOUNT).entityMemo(secondMemo))
+        .then(getAccountInfo(TARGET_ACCOUNT).has(accountWith().memo(secondMemo)));
+  }
 
-	private HapiApiSpec updateWithUniqueSigs() {
-		return defaultHapiSpec("UpdateWithUniqueSigs")
-				.given(
-						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
-				).when().then(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
-								.receiverSigRequired(true)
-				);
-	}
+  private HapiApiSpec updateWithUniqueSigs() {
+    return defaultHapiSpec("UpdateWithUniqueSigs")
+        .given(
+            newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+            cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
+        .when()
+        .then(
+            cryptoUpdate(TARGET_ACCOUNT)
+                .sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
+                .receiverSigRequired(true));
+  }
 
-	private HapiApiSpec updateWithOneEffectiveSig() {
-		KeyLabel ONE_UNIQUE_KEY = complex(
-				complex("X", "X", "X", "X", "X", "X", "X"),
-				complex("X", "X", "X", "X", "X", "X", "X"));
-		SigControl SINGLE_SIG = KeyShape.threshSigs(2,
-				KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
-				KeyShape.threshSigs(3, OFF, OFF, OFF, ON, OFF, OFF, OFF));
+  private HapiApiSpec updateWithOneEffectiveSig() {
+    KeyLabel ONE_UNIQUE_KEY =
+        complex(
+            complex("X", "X", "X", "X", "X", "X", "X"), complex("X", "X", "X", "X", "X", "X", "X"));
+    SigControl SINGLE_SIG =
+        KeyShape.threshSigs(
+            2,
+            KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
+            KeyShape.threshSigs(3, OFF, OFF, OFF, ON, OFF, OFF, OFF));
 
-		return defaultHapiSpec("UpdateWithOneEffectiveSig")
-				.given(
-						newKeyNamed("repeatingKey").shape(TWO_LEVEL_THRESH).labels(ONE_UNIQUE_KEY),
-						cryptoCreate(TARGET_ACCOUNT).key("repeatingKey").balance(1_000_000_000L)
-				).when().then(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.sigControl(forKey("repeatingKey", SINGLE_SIG))
-								.receiverSigRequired(true)
-								.hasKnownStatus(SUCCESS)
-				);
-	}
+    return defaultHapiSpec("UpdateWithOneEffectiveSig")
+        .given(
+            newKeyNamed("repeatingKey").shape(TWO_LEVEL_THRESH).labels(ONE_UNIQUE_KEY),
+            cryptoCreate(TARGET_ACCOUNT).key("repeatingKey").balance(1_000_000_000L))
+        .when()
+        .then(
+            cryptoUpdate(TARGET_ACCOUNT)
+                .sigControl(forKey("repeatingKey", SINGLE_SIG))
+                .receiverSigRequired(true)
+                .hasKnownStatus(SUCCESS));
+  }
 
-	private HapiApiSpec updateWithOverlappingSigs() {
-		return defaultHapiSpec("UpdateWithOverlappingSigs")
-				.given(
-						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
-				).when().then(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
-								.receiverSigRequired(true)
-								.hasKnownStatus(SUCCESS)
-				);
-	}
+  private HapiApiSpec updateWithOverlappingSigs() {
+    return defaultHapiSpec("UpdateWithOverlappingSigs")
+        .given(
+            newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+            cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
+        .when()
+        .then(
+            cryptoUpdate(TARGET_ACCOUNT)
+                .sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
+                .receiverSigRequired(true)
+                .hasKnownStatus(SUCCESS));
+  }
 
-	private HapiApiSpec updateFailsWithContractKey() {
-		return defaultHapiSpec("UpdateFailsWithContractKey")
-				.given(
-						cryptoCreate(TARGET_ACCOUNT)
-				).when().then(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.usingContractKey()
-								.hasKnownStatus(INVALID_SIGNATURE)
-				);
-	}
+  private HapiApiSpec updateFailsWithContractKey() {
+    return defaultHapiSpec("UpdateFailsWithContractKey")
+        .given(cryptoCreate(TARGET_ACCOUNT))
+        .when()
+        .then(cryptoUpdate(TARGET_ACCOUNT).usingContractKey().hasKnownStatus(INVALID_SIGNATURE));
+  }
 
-	private HapiApiSpec updateFailsWithInsufficientSigs() {
-		return defaultHapiSpec("UpdateFailsWithInsufficientSigs")
-				.given(
-						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
-				).when().then(
-						cryptoUpdate(TARGET_ACCOUNT)
-								.sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
-								.receiverSigRequired(true)
-								.hasKnownStatus(INVALID_SIGNATURE)
-				);
-	}
+  private HapiApiSpec updateFailsWithInsufficientSigs() {
+    return defaultHapiSpec("UpdateFailsWithInsufficientSigs")
+        .given(
+            newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+            cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
+        .when()
+        .then(
+            cryptoUpdate(TARGET_ACCOUNT)
+                .sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
+                .receiverSigRequired(true)
+                .hasKnownStatus(INVALID_SIGNATURE));
+  }
 
+  private HapiApiSpec cannotSetThresholdNegative() {
+    return defaultHapiSpec("CannotSetThresholdNegative")
+        .given(cryptoCreate("testAccount"))
+        .when()
+        .then(cryptoUpdate("testAccount").sendThreshold(-1L));
+  }
 
-	private HapiApiSpec cannotSetThresholdNegative() {
-		return defaultHapiSpec("CannotSetThresholdNegative")
-				.given(
-						cryptoCreate("testAccount")
-				).when().then(
-						cryptoUpdate("testAccount")
-								.sendThreshold(-1L)
-				);
-	}
+  private HapiApiSpec updateFailsIfMissingSigs() {
+    SigControl origKeySigs = KeyShape.threshSigs(3, ON, ON, KeyShape.threshSigs(1, OFF, ON));
+    SigControl updKeySigs = KeyShape.listSigs(ON, OFF, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));
 
-	private HapiApiSpec updateFailsIfMissingSigs() {
-		SigControl origKeySigs = KeyShape.threshSigs(3, ON, ON, KeyShape.threshSigs(1, OFF, ON));
-		SigControl updKeySigs = KeyShape.listSigs(ON, OFF, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));
+    return defaultHapiSpec("UpdateFailsIfMissingSigs")
+        .given(newKeyNamed("origKey").shape(origKeySigs), newKeyNamed("updKey").shape(updKeySigs))
+        .when(
+            cryptoCreate("testAccount")
+                .receiverSigRequired(true)
+                .key("origKey")
+                .sigControl(forKey("origKey", origKeySigs)))
+        .then(
+            cryptoUpdate("testAccount")
+                .key("updKey")
+                .sigControl(forKey("testAccount", origKeySigs), forKey("updKey", updKeySigs))
+                .hasKnownStatus(INVALID_SIGNATURE));
+  }
 
-		return defaultHapiSpec("UpdateFailsIfMissingSigs")
-				.given(
-						newKeyNamed("origKey").shape(origKeySigs),
-						newKeyNamed("updKey").shape(updKeySigs)
-				).when(
-						cryptoCreate("testAccount")
-								.receiverSigRequired(true)
-								.key("origKey")
-								.sigControl(forKey("origKey", origKeySigs))
-				).then(
-						cryptoUpdate("testAccount")
-								.key("updKey")
-								.sigControl(
-										forKey("testAccount", origKeySigs),
-										forKey("updKey", updKeySigs))
-								.hasKnownStatus(INVALID_SIGNATURE)
-				);
-	}
+  private HapiApiSpec updateWithEmptyKeyFails() {
+    SigControl origKeySigs = KeyShape.SIMPLE;
+    SigControl updKeySigs = threshOf(0, 0);
 
-	private HapiApiSpec updateWithEmptyKeyFails() {
-		SigControl origKeySigs = KeyShape.SIMPLE;
-		SigControl updKeySigs = threshOf(0, 0);
+    return defaultHapiSpec("UpdateWithEmptyKey")
+        .given(newKeyNamed("origKey").shape(origKeySigs), newKeyNamed("updKey").shape(updKeySigs))
+        .when(cryptoCreate("testAccount").key("origKey"))
+        .then(cryptoUpdate("testAccount").key("updKey").hasPrecheck(BAD_ENCODING));
+  }
 
-		return defaultHapiSpec("UpdateWithEmptyKey")
-				.given(
-						newKeyNamed("origKey").shape(origKeySigs),
-						newKeyNamed("updKey").shape(updKeySigs)
-				).when(
-						cryptoCreate("testAccount")
-								.key("origKey")
-				).then(
-						cryptoUpdate("testAccount")
-								.key("updKey")
-								.hasPrecheck(BAD_ENCODING)
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

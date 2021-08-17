@@ -20,9 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
@@ -32,133 +29,141 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class NodeLocalPropertiesTest {
-	private PropertySource properties;
+  private PropertySource properties;
 
-	private NodeLocalProperties subject;
+  private NodeLocalProperties subject;
 
-	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
+  private static final Profile[] LEGACY_ENV_ORDER = {DEV, PROD, TEST};
 
-	@BeforeEach
-	void setup() {
-		properties = mock(PropertySource.class);
-	}
+  @BeforeEach
+  void setup() {
+    properties = mock(PropertySource.class);
+  }
 
-	@Test
-	void constructsAsExpected() {
-		givenPropsWithSeed(1);
+  @Test
+  void constructsAsExpected() {
+    givenPropsWithSeed(1);
 
-		// when:
-		subject = new NodeLocalProperties(properties);
+    // when:
+    subject = new NodeLocalProperties(properties);
 
-		// expect:
-		assertEquals(1, subject.port());
-		assertEquals(2, subject.tlsPort());
-		assertEquals(3, subject.precheckLookupRetries());
-		assertEquals(4, subject.precheckLookupRetryBackoffMs());
-		assertEquals(TEST, subject.activeProfile());
-		assertEquals(6L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
-		assertEquals(7.0, subject.statsSpeedometerHalfLifeSecs());
-		assertEquals(8.0, subject.statsRunningAvgHalfLifeSecs());
-		assertEquals(logDir(9), subject.recordLogDir());
-		assertEquals(10L, subject.recordLogPeriod());
-		assertTrue(subject.isRecordStreamEnabled());
-		assertEquals(12, subject.recordStreamQueueCapacity());
-		assertEquals(13, subject.queryBlobLookupRetries());
-		assertEquals(14L, subject.nettyProdKeepAliveTime());
-		assertEquals("hedera1.crt", subject.nettyTlsCrtPath());
-		assertEquals("hedera2.key", subject.nettyTlsKeyPath());
-		assertEquals(15L, subject.nettyProdKeepAliveTimeout());
-		assertEquals(16L, subject.nettyMaxConnectionAge());
-		assertEquals(17L, subject.nettyMaxConnectionAgeGrace());
-		assertEquals(18L, subject.nettyMaxConnectionIdle());
-		assertEquals(19, subject.nettyMaxConcurrentCalls());
-		assertEquals(20, subject.nettyFlowControlWindow());
-		assertEquals("0.0.4", subject.devListeningAccount());
-		assertFalse(subject.devOnlyDefaultNodeListens());
-		assertEquals("B", subject.accountsExportPath());
-		assertFalse(subject.exportAccountsOnStartup());
-		assertEquals(Profile.PROD, subject.nettyMode());
-		assertEquals(23, subject.nettyStartRetries());
-		assertEquals(24L, subject.nettyStartRetryIntervalMs());
-		assertTrue(subject.shouldDumpFcmsOnIss());
-	}
+    // expect:
+    assertEquals(1, subject.port());
+    assertEquals(2, subject.tlsPort());
+    assertEquals(3, subject.precheckLookupRetries());
+    assertEquals(4, subject.precheckLookupRetryBackoffMs());
+    assertEquals(TEST, subject.activeProfile());
+    assertEquals(6L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
+    assertEquals(7.0, subject.statsSpeedometerHalfLifeSecs());
+    assertEquals(8.0, subject.statsRunningAvgHalfLifeSecs());
+    assertEquals(logDir(9), subject.recordLogDir());
+    assertEquals(10L, subject.recordLogPeriod());
+    assertTrue(subject.isRecordStreamEnabled());
+    assertEquals(12, subject.recordStreamQueueCapacity());
+    assertEquals(13, subject.queryBlobLookupRetries());
+    assertEquals(14L, subject.nettyProdKeepAliveTime());
+    assertEquals("hedera1.crt", subject.nettyTlsCrtPath());
+    assertEquals("hedera2.key", subject.nettyTlsKeyPath());
+    assertEquals(15L, subject.nettyProdKeepAliveTimeout());
+    assertEquals(16L, subject.nettyMaxConnectionAge());
+    assertEquals(17L, subject.nettyMaxConnectionAgeGrace());
+    assertEquals(18L, subject.nettyMaxConnectionIdle());
+    assertEquals(19, subject.nettyMaxConcurrentCalls());
+    assertEquals(20, subject.nettyFlowControlWindow());
+    assertEquals("0.0.4", subject.devListeningAccount());
+    assertFalse(subject.devOnlyDefaultNodeListens());
+    assertEquals("B", subject.accountsExportPath());
+    assertFalse(subject.exportAccountsOnStartup());
+    assertEquals(Profile.PROD, subject.nettyMode());
+    assertEquals(23, subject.nettyStartRetries());
+    assertEquals(24L, subject.nettyStartRetryIntervalMs());
+    assertTrue(subject.shouldDumpFcmsOnIss());
+  }
 
-	@Test
-	void reloadWorksAsExpected() {
-		givenPropsWithSeed(2);
+  @Test
+  void reloadWorksAsExpected() {
+    givenPropsWithSeed(2);
 
-		// when:
-		subject = new NodeLocalProperties(properties);
+    // when:
+    subject = new NodeLocalProperties(properties);
 
-		// expect:
-		assertEquals(2, subject.port());
-		assertEquals(3, subject.tlsPort());
-		assertEquals(4, subject.precheckLookupRetries());
-		assertEquals(5, subject.precheckLookupRetryBackoffMs());
-		assertEquals(DEV, subject.activeProfile());
-		assertEquals(7L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
-		assertEquals(8.0, subject.statsSpeedometerHalfLifeSecs());
-		assertEquals(9.0, subject.statsRunningAvgHalfLifeSecs());
-		assertEquals(logDir(10), subject.recordLogDir());
-		assertEquals(11L, subject.recordLogPeriod());
-		assertFalse(subject.isRecordStreamEnabled());
-		assertEquals(13, subject.recordStreamQueueCapacity());
-		assertEquals(14, subject.queryBlobLookupRetries());
-		assertEquals(15L, subject.nettyProdKeepAliveTime());
-		assertEquals("hedera2.crt", subject.nettyTlsCrtPath());
-		assertEquals("hedera3.key", subject.nettyTlsKeyPath());
-		assertEquals(16L, subject.nettyProdKeepAliveTimeout());
-		assertEquals(17L, subject.nettyMaxConnectionAge());
-		assertEquals(18L, subject.nettyMaxConnectionAgeGrace());
-		assertEquals(19L, subject.nettyMaxConnectionIdle());
-		assertEquals(20, subject.nettyMaxConcurrentCalls());
-		assertEquals(21, subject.nettyFlowControlWindow());
-		assertEquals("0.0.3", subject.devListeningAccount());
-		assertTrue(subject.devOnlyDefaultNodeListens());
-		assertEquals("A", subject.accountsExportPath());
-		assertTrue(subject.exportAccountsOnStartup());
-		assertEquals(Profile.TEST, subject.nettyMode());
-		assertEquals(24, subject.nettyStartRetries());
-		assertEquals(25L, subject.nettyStartRetryIntervalMs());
-		assertFalse(subject.shouldDumpFcmsOnIss());
-	}
+    // expect:
+    assertEquals(2, subject.port());
+    assertEquals(3, subject.tlsPort());
+    assertEquals(4, subject.precheckLookupRetries());
+    assertEquals(5, subject.precheckLookupRetryBackoffMs());
+    assertEquals(DEV, subject.activeProfile());
+    assertEquals(7L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
+    assertEquals(8.0, subject.statsSpeedometerHalfLifeSecs());
+    assertEquals(9.0, subject.statsRunningAvgHalfLifeSecs());
+    assertEquals(logDir(10), subject.recordLogDir());
+    assertEquals(11L, subject.recordLogPeriod());
+    assertFalse(subject.isRecordStreamEnabled());
+    assertEquals(13, subject.recordStreamQueueCapacity());
+    assertEquals(14, subject.queryBlobLookupRetries());
+    assertEquals(15L, subject.nettyProdKeepAliveTime());
+    assertEquals("hedera2.crt", subject.nettyTlsCrtPath());
+    assertEquals("hedera3.key", subject.nettyTlsKeyPath());
+    assertEquals(16L, subject.nettyProdKeepAliveTimeout());
+    assertEquals(17L, subject.nettyMaxConnectionAge());
+    assertEquals(18L, subject.nettyMaxConnectionAgeGrace());
+    assertEquals(19L, subject.nettyMaxConnectionIdle());
+    assertEquals(20, subject.nettyMaxConcurrentCalls());
+    assertEquals(21, subject.nettyFlowControlWindow());
+    assertEquals("0.0.3", subject.devListeningAccount());
+    assertTrue(subject.devOnlyDefaultNodeListens());
+    assertEquals("A", subject.accountsExportPath());
+    assertTrue(subject.exportAccountsOnStartup());
+    assertEquals(Profile.TEST, subject.nettyMode());
+    assertEquals(24, subject.nettyStartRetries());
+    assertEquals(25L, subject.nettyStartRetryIntervalMs());
+    assertFalse(subject.shouldDumpFcmsOnIss());
+  }
 
-	private void givenPropsWithSeed(int i) {
-		given(properties.getIntProperty("grpc.port")).willReturn(i);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(i + 1);
-		given(properties.getIntProperty("precheck.account.maxLookupRetries")).willReturn(i + 2);
-		given(properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs")).willReturn(i + 3);
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
-		given(properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs")).willReturn(i + 5L);
-		given(properties.getDoubleProperty("stats.speedometerHalfLifeSecs")).willReturn(i + 6.0);
-		given(properties.getDoubleProperty("stats.runningAvgHalfLifeSecs")).willReturn(i + 7.0);
-		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(logDir(i + 8));
-		given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(i + 9L);
-		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(i % 2 == 1);
-		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(i + 11);
-		given(properties.getIntProperty("queries.blob.lookupRetries")).willReturn(i + 12);
-		given(properties.getLongProperty("netty.prod.keepAliveTime")).willReturn(i + 13L);
-		given(properties.getStringProperty("netty.tlsCrt.path")).willReturn("hedera" + i + ".crt");
-		given(properties.getStringProperty("netty.tlsKey.path")).willReturn("hedera" + (i + 1) + ".key");
-		given(properties.getLongProperty("netty.prod.keepAliveTimeout")).willReturn(i + 14L);
-		given(properties.getLongProperty("netty.prod.maxConnectionAge")).willReturn(i + 15L);
-		given(properties.getLongProperty("netty.prod.maxConnectionAgeGrace")).willReturn(i + 16L);
-		given(properties.getLongProperty("netty.prod.maxConnectionIdle")).willReturn(i + 17L);
-		given(properties.getIntProperty("netty.prod.maxConcurrentCalls")).willReturn(i + 18);
-		given(properties.getIntProperty("netty.prod.flowControlWindow")).willReturn(i + 19);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount"))
-				.willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(i % 2 == 0);
-		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(i % 2 == 0 ? "A" : "B");
-		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(i % 2 == 0);
-		given(properties.getProfileProperty("netty.mode")).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
-		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
-		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
-		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
-	}
+  private void givenPropsWithSeed(int i) {
+    given(properties.getIntProperty("grpc.port")).willReturn(i);
+    given(properties.getIntProperty("grpc.tlsPort")).willReturn(i + 1);
+    given(properties.getIntProperty("precheck.account.maxLookupRetries")).willReturn(i + 2);
+    given(properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs"))
+        .willReturn(i + 3);
+    given(properties.getProfileProperty("hedera.profiles.active"))
+        .willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
+    given(properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs"))
+        .willReturn(i + 5L);
+    given(properties.getDoubleProperty("stats.speedometerHalfLifeSecs")).willReturn(i + 6.0);
+    given(properties.getDoubleProperty("stats.runningAvgHalfLifeSecs")).willReturn(i + 7.0);
+    given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(logDir(i + 8));
+    given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(i + 9L);
+    given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(i % 2 == 1);
+    given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(i + 11);
+    given(properties.getIntProperty("queries.blob.lookupRetries")).willReturn(i + 12);
+    given(properties.getLongProperty("netty.prod.keepAliveTime")).willReturn(i + 13L);
+    given(properties.getStringProperty("netty.tlsCrt.path")).willReturn("hedera" + i + ".crt");
+    given(properties.getStringProperty("netty.tlsKey.path"))
+        .willReturn("hedera" + (i + 1) + ".key");
+    given(properties.getLongProperty("netty.prod.keepAliveTimeout")).willReturn(i + 14L);
+    given(properties.getLongProperty("netty.prod.maxConnectionAge")).willReturn(i + 15L);
+    given(properties.getLongProperty("netty.prod.maxConnectionAgeGrace")).willReturn(i + 16L);
+    given(properties.getLongProperty("netty.prod.maxConnectionIdle")).willReturn(i + 17L);
+    given(properties.getIntProperty("netty.prod.maxConcurrentCalls")).willReturn(i + 18);
+    given(properties.getIntProperty("netty.prod.flowControlWindow")).willReturn(i + 19);
+    given(properties.getStringProperty("dev.defaultListeningNodeAccount"))
+        .willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
+    given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(i % 2 == 0);
+    given(properties.getStringProperty("hedera.accountsExportPath"))
+        .willReturn(i % 2 == 0 ? "A" : "B");
+    given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(i % 2 == 0);
+    given(properties.getProfileProperty("netty.mode")).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
+    given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
+    given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
+    given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
+  }
 
-	static String logDir(int num) {
-		return "myRecords/dir" + num;
-	}
+  static String logDir(int num) {
+    return "myRecords/dir" + num;
+  }
 }

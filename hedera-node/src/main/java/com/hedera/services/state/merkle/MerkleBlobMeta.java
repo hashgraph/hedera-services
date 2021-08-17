@@ -20,93 +20,89 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import static com.swirlds.common.CommonUtils.getNormalisedStringBytes;
+
 import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.swirlds.common.CommonUtils.getNormalisedStringBytes;
-
 public class MerkleBlobMeta extends AbstractMerkleLeaf {
-	static final int MERKLE_VERSION = 1;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x9c19df177063b4caL;
+  static final int MERKLE_VERSION = 1;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0x9c19df177063b4caL;
 
-	public static final int MAX_PATH_LEN = 4_096;
+  public static final int MAX_PATH_LEN = 4_096;
 
-	private String path;
+  private String path;
 
-	public MerkleBlobMeta() {
-	}
+  public MerkleBlobMeta() {}
 
-	public MerkleBlobMeta(String path) {
-		this.path = path;
-	}
+  public MerkleBlobMeta(String path) {
+    this.path = path;
+  }
 
-	/* --- MerkleLeaf --- */
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  /* --- MerkleLeaf --- */
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeNormalisedString(path);
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    out.writeNormalisedString(path);
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		path = in.readNormalisedString(MAX_PATH_LEN);
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    path = in.readNormalisedString(MAX_PATH_LEN);
+  }
 
-	/* --- FastCopyable --- */
-	@Override
-	public MerkleBlobMeta copy() {
-		setImmutable(true);
-		return new MerkleBlobMeta(path);
-	}
+  /* --- FastCopyable --- */
+  @Override
+  public MerkleBlobMeta copy() {
+    setImmutable(true);
+    return new MerkleBlobMeta(path);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || MerkleBlobMeta.class != o.getClass()) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || MerkleBlobMeta.class != o.getClass()) {
+      return false;
+    }
 
-		var that = (MerkleBlobMeta) o;
+    var that = (MerkleBlobMeta) o;
 
-		return Objects.equals(this.path, that.path);
-	}
+    return Objects.equals(this.path, that.path);
+  }
 
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(getNormalisedStringBytes(path));
-	}
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(getNormalisedStringBytes(path));
+  }
 
-	/* --- Bean --- */
-	public String getPath() {
-		return path;
-	}
+  /* --- Bean --- */
+  public String getPath() {
+    return path;
+  }
 
-	public void setPath(String path) {
-		throwIfImmutable("Cannot change this blob's path if it's immutable.");
-		this.path = path;
-	}
+  public void setPath(String path) {
+    throwIfImmutable("Cannot change this blob's path if it's immutable.");
+    this.path = path;
+  }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("path", path)
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("path", path).toString();
+  }
 }

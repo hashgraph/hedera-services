@@ -20,73 +20,70 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.token.TokenRevokeKycUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.SigValueObj;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.BiFunction;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenRevokeKycUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.SigValueObj;
+import java.util.function.BiFunction;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class TokenRevokeKycResourceUsageTest {
-	private TokenRevokeKycResourceUsage subject;
+  private TokenRevokeKycResourceUsage subject;
 
-	private TransactionBody nonTokenRevokeKycTxn;
-	private TransactionBody tokenRevokeKycTxn;
+  private TransactionBody nonTokenRevokeKycTxn;
+  private TransactionBody tokenRevokeKycTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+  StateView view;
+  int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+  SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+  SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+  FeeData expected;
 
-	TokenRevokeKycUsage usage;
-	BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage> factory;
+  TokenRevokeKycUsage usage;
+  BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage> factory;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
+  @BeforeEach
+  private void setup() throws Throwable {
+    expected = mock(FeeData.class);
+    view = mock(StateView.class);
 
-		tokenRevokeKycTxn = mock(TransactionBody.class);
-		given(tokenRevokeKycTxn.hasTokenRevokeKyc()).willReturn(true);
+    tokenRevokeKycTxn = mock(TransactionBody.class);
+    given(tokenRevokeKycTxn.hasTokenRevokeKyc()).willReturn(true);
 
-		nonTokenRevokeKycTxn = mock(TransactionBody.class);
-		given(nonTokenRevokeKycTxn.hasTokenRevokeKyc()).willReturn(false);
+    nonTokenRevokeKycTxn = mock(TransactionBody.class);
+    given(nonTokenRevokeKycTxn.hasTokenRevokeKyc()).willReturn(false);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage>)mock(BiFunction.class);
-		given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
+    factory = (BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage>) mock(BiFunction.class);
+    given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
 
-		usage = mock(TokenRevokeKycUsage.class);
-		given(usage.get()).willReturn(expected);
+    usage = mock(TokenRevokeKycUsage.class);
+    given(usage.get()).willReturn(expected);
 
-		TokenRevokeKycResourceUsage.factory = factory;
-		given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
+    TokenRevokeKycResourceUsage.factory = factory;
+    given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
 
-		subject = new TokenRevokeKycResourceUsage();
-	}
+    subject = new TokenRevokeKycResourceUsage();
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenRevokeKycTxn));
-		assertFalse(subject.applicableTo(nonTokenRevokeKycTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(tokenRevokeKycTxn));
+    assertFalse(subject.applicableTo(nonTokenRevokeKycTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenRevokeKycTxn, obj, view));
-	}
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    // expect:
+    assertEquals(expected, subject.usageGiven(tokenRevokeKycTxn, obj, view));
+  }
 }

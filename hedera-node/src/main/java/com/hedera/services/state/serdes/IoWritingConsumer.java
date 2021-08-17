@@ -21,10 +21,9 @@ package com.hedera.services.state.serdes;
  */
 
 import com.swirlds.common.io.SerializableDataOutputStream;
-
 import java.io.IOException;
 
 @FunctionalInterface
 public interface IoWritingConsumer<T> {
-	void write(T data, SerializableDataOutputStream out) throws IOException;
+  void write(T data, SerializableDataOutputStream out) throws IOException;
 }

@@ -26,5 +26,5 @@ import com.hedera.services.store.models.Id;
 
 @FunctionalInterface
 public interface DissociationFactory {
-	Dissociation loadFrom(TypedTokenStore tokenStore, Account account, Id tokenId);
+  Dissociation loadFrom(TypedTokenStore tokenStore, Account account, Id tokenId);
 }

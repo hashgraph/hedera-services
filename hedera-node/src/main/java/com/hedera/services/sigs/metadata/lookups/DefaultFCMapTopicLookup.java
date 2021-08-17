@@ -20,32 +20,31 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
+
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
-
 import java.util.function.Supplier;
 
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
-
 public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+  private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 
-	public DefaultFCMapTopicLookup(Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics) {
-		this.topics = topics;
-	}
+  public DefaultFCMapTopicLookup(Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics) {
+    this.topics = topics;
+  }
 
-	@Override
-	public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
-		var topic = topics.get().get(fromTopicId(id));
-		return (topic == null || topic.isDeleted())
-				? SafeLookupResult.failure(INVALID_TOPIC)
-				: new SafeLookupResult<>(
-				new TopicSigningMetadata(
-						topic.hasAdminKey() ? topic.getAdminKey() : null,
-						topic.hasSubmitKey() ? topic.getSubmitKey() : null));
-	}
+  @Override
+  public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
+    var topic = topics.get().get(fromTopicId(id));
+    return (topic == null || topic.isDeleted())
+        ? SafeLookupResult.failure(INVALID_TOPIC)
+        : new SafeLookupResult<>(
+            new TopicSigningMetadata(
+                topic.hasAdminKey() ? topic.getAdminKey() : null,
+                topic.hasSubmitKey() ? topic.getSubmitKey() : null));
+  }
 }

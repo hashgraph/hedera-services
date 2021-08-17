@@ -20,6 +20,10 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.swirlds.common.CommonUtils.hex;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -34,8 +38,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-
-import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -43,358 +45,351 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
-import static com.swirlds.common.CommonUtils.hex;
+import javax.annotation.Nullable;
 
 /**
- * A consensus service topic's memo, adminKey, submitKey, autoRenew duration and account, sequenceNumber and runningHash
- * expiration and deleted status.
+ * A consensus service topic's memo, adminKey, submitKey, autoRenew duration and account,
+ * sequenceNumber and runningHash expiration and deleted status.
  *
- * Optimize for small memory and serialized footprint.
+ * <p>Optimize for small memory and serialized footprint.
  *
- * FastCopyable implemented, but there is no internally managed copy-on-write functionality, which is impractical
- * given JKey/JAccountID/JTimestamp mutability.
+ * <p>FastCopyable implemented, but there is no internally managed copy-on-write functionality,
+ * which is impractical given JKey/JAccountID/JTimestamp mutability.
  *
- * Accessor interfaces follow the protobuf-paradigm. hasXyz() and getXyz() returning the default (non-null) value
- * if !hasXyz().
+ * <p>Accessor interfaces follow the protobuf-paradigm. hasXyz() and getXyz() returning the default
+ * (non-null) value if !hasXyz().
  *
- * Caller is expected to:
+ * <p>Caller is expected to:
+ *
  * <ul>
- *   <li>not modify Topic (or its mutable child objects) once it's been used in an FCMap</li>
- *   <li>to edit a Topic in an FCMap - use copy constructor, <b>replace</b> fields requiring modification and then
- *   replace the Topic in the map.</li>
+ *   <li>not modify Topic (or its mutable child objects) once it's been used in an FCMap
+ *   <li>to edit a Topic in an FCMap - use copy constructor, <b>replace</b> fields requiring
+ *       modification and then replace the Topic in the map.
  * </ul>
  */
 public final class MerkleTopic extends AbstractMerkleLeaf {
-	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
-	public static final long RUNNING_HASH_VERSION = 3L;
+  public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
+  public static final long RUNNING_HASH_VERSION = 3L;
 
-	static final int MERKLE_VERSION = 1;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
+  static final int MERKLE_VERSION = 1;
+  static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
 
-	static TopicSerde topicSerde = new TopicSerde();
-	static DomainSerdes serdes = new DomainSerdes();
+  static TopicSerde topicSerde = new TopicSerde();
+  static DomainSerdes serdes = new DomainSerdes();
 
-	private String memo;
-	private JKey adminKey;
-	private JKey submitKey;
-	private long autoRenewDurationSeconds;
-	private EntityId autoRenewAccountId;
-	private RichInstant expirationTimestamp;
-	private boolean deleted;
+  private String memo;
+  private JKey adminKey;
+  private JKey submitKey;
+  private long autoRenewDurationSeconds;
+  private EntityId autoRenewAccountId;
+  private RichInstant expirationTimestamp;
+  private boolean deleted;
 
-	// Before the first message is submitted to this topic, its sequenceNumber is 0 and runningHash is 48 bytes of '\0'
-	private long sequenceNumber;
-	private byte[] runningHash;
+  // Before the first message is submitted to this topic, its sequenceNumber is 0 and runningHash is
+  // 48 bytes of '\0'
+  private long sequenceNumber;
+  private byte[] runningHash;
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("memo", memo)
-				.add("expiry",
-						String.format("%d.%d", expirationTimestamp.getSeconds(), expirationTimestamp.getNanos()))
-				.add("deleted", deleted)
-				.add("adminKey", MiscUtils.describe(adminKey))
-				.add("submitKey", MiscUtils.describe(submitKey))
-				.add("runningHash", (runningHash != null) ? hex(runningHash) : "<N/A>")
-				.add("sequenceNumber", sequenceNumber)
-				.add("autoRenewSecs", autoRenewDurationSeconds)
-				.add("autoRenewAccount", asLiteralString(asAccount(autoRenewAccountId)))
-				.toString();
-	}
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("memo", memo)
+        .add(
+            "expiry",
+            String.format(
+                "%d.%d", expirationTimestamp.getSeconds(), expirationTimestamp.getNanos()))
+        .add("deleted", deleted)
+        .add("adminKey", MiscUtils.describe(adminKey))
+        .add("submitKey", MiscUtils.describe(submitKey))
+        .add("runningHash", (runningHash != null) ? hex(runningHash) : "<N/A>")
+        .add("sequenceNumber", sequenceNumber)
+        .add("autoRenewSecs", autoRenewDurationSeconds)
+        .add("autoRenewAccount", asLiteralString(asAccount(autoRenewAccountId)))
+        .toString();
+  }
 
-	public MerkleTopic() {
-	}
+  public MerkleTopic() {}
 
-	/**
-	 * Create a new topic.
-	 *
-	 * @param memo
-	 * 		short non-unique memo
-	 * @param adminKey
-	 * 		the key to perform updateTopic/deleteTopic functions
-	 * @param submitKey
-	 * 		the key (if any) to be able to submitMessage
-	 * @param autoRenewDurationSeconds
-	 * 		the auto-renew duration in seconds
-	 * @param autoRenewAccountId
-	 * 		the account id that pays for auto-renew
-	 * @param expirationTimestamp
-	 * 		when submitMessage will start failing
-	 */
-	public MerkleTopic(
-			@Nullable String memo,
-			@Nullable JKey adminKey,
-			@Nullable JKey submitKey,
-			long autoRenewDurationSeconds,
-			@Nullable EntityId autoRenewAccountId,
-			@Nullable RichInstant expirationTimestamp
-	) {
-		setMemo(memo);
-		setAdminKey(adminKey);
-		setSubmitKey(submitKey);
-		setAutoRenewDurationSeconds(autoRenewDurationSeconds);
-		setAutoRenewAccountId(autoRenewAccountId);
-		setExpirationTimestamp(expirationTimestamp);
-	}
+  /**
+   * Create a new topic.
+   *
+   * @param memo short non-unique memo
+   * @param adminKey the key to perform updateTopic/deleteTopic functions
+   * @param submitKey the key (if any) to be able to submitMessage
+   * @param autoRenewDurationSeconds the auto-renew duration in seconds
+   * @param autoRenewAccountId the account id that pays for auto-renew
+   * @param expirationTimestamp when submitMessage will start failing
+   */
+  public MerkleTopic(
+      @Nullable String memo,
+      @Nullable JKey adminKey,
+      @Nullable JKey submitKey,
+      long autoRenewDurationSeconds,
+      @Nullable EntityId autoRenewAccountId,
+      @Nullable RichInstant expirationTimestamp) {
+    setMemo(memo);
+    setAdminKey(adminKey);
+    setSubmitKey(submitKey);
+    setAutoRenewDurationSeconds(autoRenewDurationSeconds);
+    setAutoRenewAccountId(autoRenewAccountId);
+    setExpirationTimestamp(expirationTimestamp);
+  }
 
-	public MerkleTopic(final MerkleTopic other) {
-		this.memo = other.memo;
-		this.adminKey = other.hasAdminKey() ? other.getAdminKey() : null;
-		this.submitKey = other.hasSubmitKey() ? other.getSubmitKey() : null;
-		this.autoRenewDurationSeconds = other.autoRenewDurationSeconds;
-		this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
-		this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
-		this.deleted = other.deleted;
+  public MerkleTopic(final MerkleTopic other) {
+    this.memo = other.memo;
+    this.adminKey = other.hasAdminKey() ? other.getAdminKey() : null;
+    this.submitKey = other.hasSubmitKey() ? other.getSubmitKey() : null;
+    this.autoRenewDurationSeconds = other.autoRenewDurationSeconds;
+    this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
+    this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
+    this.deleted = other.deleted;
 
-		this.sequenceNumber = other.sequenceNumber;
-		this.runningHash = (null != other.runningHash)
-				? Arrays.copyOf(other.runningHash, other.runningHash.length)
-				: null;
-	}
+    this.sequenceNumber = other.sequenceNumber;
+    this.runningHash =
+        (null != other.runningHash)
+            ? Arrays.copyOf(other.runningHash, other.runningHash.length)
+            : null;
+  }
 
-	/* --- MerkleLeaf --- */
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+  /* --- MerkleLeaf --- */
+  @Override
+  public long getClassId() {
+    return RUNTIME_CONSTRUCTABLE_ID;
+  }
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+  @Override
+  public int getVersion() {
+    return MERKLE_VERSION;
+  }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		topicSerde.deserializeV1(in, this);
-	}
+  @Override
+  public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    topicSerde.deserializeV1(in, this);
+  }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		topicSerde.serialize(this, out);
-	}
+  @Override
+  public void serialize(SerializableDataOutputStream out) throws IOException {
+    topicSerde.serialize(this, out);
+  }
 
-	/* --- FastCopyable --- */
+  /* --- FastCopyable --- */
 
-	@Override
-	public MerkleTopic copy() {
-		setImmutable(true);
-		return new MerkleTopic(this);
-	}
+  @Override
+  public MerkleTopic copy() {
+    setImmutable(true);
+    return new MerkleTopic(this);
+  }
 
-	@Override
-	public boolean equals(@Nullable Object o) {
-		if (this == o) {
-			return true;
-		}
-		if ((null == o) || !MerkleTopic.class.equals(o.getClass())) {
-			return false;
-		}
-		MerkleTopic that = (MerkleTopic) o;
-		try {
-			return Objects.equals(this.memo, that.memo)
-					&& Arrays.equals(getAdminKey().serialize(), that.getAdminKey().serialize())
-					&& Arrays.equals(getSubmitKey().serialize(), that.getSubmitKey().serialize())
-					&& Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
-					&& Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
-					&& Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
-					&& (this.deleted == that.deleted)
-					&& (this.sequenceNumber == that.sequenceNumber)
-					&& Arrays.equals(this.runningHash, that.runningHash);
-		} catch (IOException ex) {
-			throw new KeySerializationException(ex.getMessage());
-		}
-	}
+  @Override
+  public boolean equals(@Nullable Object o) {
+    if (this == o) {
+      return true;
+    }
+    if ((null == o) || !MerkleTopic.class.equals(o.getClass())) {
+      return false;
+    }
+    MerkleTopic that = (MerkleTopic) o;
+    try {
+      return Objects.equals(this.memo, that.memo)
+          && Arrays.equals(getAdminKey().serialize(), that.getAdminKey().serialize())
+          && Arrays.equals(getSubmitKey().serialize(), that.getSubmitKey().serialize())
+          && Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
+          && Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
+          && Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
+          && (this.deleted == that.deleted)
+          && (this.sequenceNumber == that.sequenceNumber)
+          && Arrays.equals(this.runningHash, that.runningHash);
+    } catch (IOException ex) {
+      throw new KeySerializationException(ex.getMessage());
+    }
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-				memo,
-				adminKey,
-				submitKey,
-				autoRenewDurationSeconds,
-				autoRenewAccountId,
-				expirationTimestamp,
-				deleted,
-				sequenceNumber,
-				runningHash);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        memo,
+        adminKey,
+        submitKey,
+        autoRenewDurationSeconds,
+        autoRenewAccountId,
+        expirationTimestamp,
+        deleted,
+        sequenceNumber,
+        runningHash);
+  }
 
-	/* --- Helpers --- */
+  /* --- Helpers --- */
 
-	private JKey getDefaultJKey() {
-		return new JKeyList(new ArrayList<>());
-	}
+  private JKey getDefaultJKey() {
+    return new JKeyList(new ArrayList<>());
+  }
 
-	/**
-	 * Increment the sequence number if this is not the initial transaction on the topic (the create), and update the
-	 * running hash of the Transactions on this topic (submitted messages and modifications of the topic).
-	 *
-	 * @param payer
-	 * 		the account id to pay for the transaction
-	 * @param message
-	 * 		the message submitted to the topic
-	 * @param topicId
-	 * 		the topic id to receive the message
-	 * @param consensusTimestamp
-	 * 		the consensus timestamp
-	 * @throws IOException
-	 * 		when any component fails to write to a temporary stream for computing the running hash
-	 */
-	public void updateRunningHashAndSequenceNumber(
-			AccountID payer,
-			@Nullable byte[] message,
-			@Nullable TopicID topicId,
-			@Nullable Instant consensusTimestamp
-	) throws IOException {
-		throwIfImmutable("Cannot change this topic's running hash or sequence number if it's immutable.");
-		if (null == message) {
-			message = new byte[0];
-		}
-		if (null == topicId) {
-			topicId = TopicID.newBuilder().build();
-		}
-		if (null == consensusTimestamp) {
-			consensusTimestamp = Instant.ofEpochSecond(0);
-		}
+  /**
+   * Increment the sequence number if this is not the initial transaction on the topic (the create),
+   * and update the running hash of the Transactions on this topic (submitted messages and
+   * modifications of the topic).
+   *
+   * @param payer the account id to pay for the transaction
+   * @param message the message submitted to the topic
+   * @param topicId the topic id to receive the message
+   * @param consensusTimestamp the consensus timestamp
+   * @throws IOException when any component fails to write to a temporary stream for computing the
+   *     running hash
+   */
+  public void updateRunningHashAndSequenceNumber(
+      AccountID payer,
+      @Nullable byte[] message,
+      @Nullable TopicID topicId,
+      @Nullable Instant consensusTimestamp)
+      throws IOException {
+    throwIfImmutable(
+        "Cannot change this topic's running hash or sequence number if it's immutable.");
+    if (null == message) {
+      message = new byte[0];
+    }
+    if (null == topicId) {
+      topicId = TopicID.newBuilder().build();
+    }
+    if (null == consensusTimestamp) {
+      consensusTimestamp = Instant.ofEpochSecond(0);
+    }
 
-		var boas = new ByteArrayOutputStream();
-		try (var out = new ObjectOutputStream(boas)) {
-			out.writeObject(getRunningHash());
-			out.writeLong(RUNNING_HASH_VERSION);
-			out.writeLong(payer.getShardNum());
-			out.writeLong(payer.getRealmNum());
-			out.writeLong(payer.getAccountNum());
-			out.writeLong(topicId.getShardNum());
-			out.writeLong(topicId.getRealmNum());
-			out.writeLong(topicId.getTopicNum());
-			out.writeLong(consensusTimestamp.getEpochSecond());
-			out.writeInt(consensusTimestamp.getNano());
-			++sequenceNumber;
-			out.writeLong(sequenceNumber);
-			out.writeObject(CommonUtils.noThrowSha384HashOf(message));
-			out.flush();
-			runningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
-		}
-	}
+    var boas = new ByteArrayOutputStream();
+    try (var out = new ObjectOutputStream(boas)) {
+      out.writeObject(getRunningHash());
+      out.writeLong(RUNNING_HASH_VERSION);
+      out.writeLong(payer.getShardNum());
+      out.writeLong(payer.getRealmNum());
+      out.writeLong(payer.getAccountNum());
+      out.writeLong(topicId.getShardNum());
+      out.writeLong(topicId.getRealmNum());
+      out.writeLong(topicId.getTopicNum());
+      out.writeLong(consensusTimestamp.getEpochSecond());
+      out.writeInt(consensusTimestamp.getNano());
+      ++sequenceNumber;
+      out.writeLong(sequenceNumber);
+      out.writeObject(CommonUtils.noThrowSha384HashOf(message));
+      out.flush();
+      runningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
+    }
+  }
 
-	public static class KeySerializationException extends RuntimeException {
-		public KeySerializationException(String message) {
-			super(message);
-		}
-	}
+  public static class KeySerializationException extends RuntimeException {
+    public KeySerializationException(String message) {
+      super(message);
+    }
+  }
 
-	/* --- Bean --- */
-	public boolean hasMemo() {
-		return memo != null;
-	}
+  /* --- Bean --- */
+  public boolean hasMemo() {
+    return memo != null;
+  }
 
-	public String getMemo() {
-		return hasMemo() ? memo : "";
-	}
+  public String getMemo() {
+    return hasMemo() ? memo : "";
+  }
 
-	public void setMemo(@Nullable String memo) {
-		throwIfImmutable("Cannot change this topic's memo if it's immutable.");
-		this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
-	}
+  public void setMemo(@Nullable String memo) {
+    throwIfImmutable("Cannot change this topic's memo if it's immutable.");
+    this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
+  }
 
-	public boolean hasAdminKey() {
-		return adminKey != null;
-	}
+  public boolean hasAdminKey() {
+    return adminKey != null;
+  }
 
-	public JKey getAdminKey() {
-		return hasAdminKey() ? adminKey : getDefaultJKey();
-	}
+  public JKey getAdminKey() {
+    return hasAdminKey() ? adminKey : getDefaultJKey();
+  }
 
-	public void setAdminKey(@Nullable JKey adminKey) {
-		throwIfImmutable("Cannot change this topic's admin key if it's immutable.");
-		this.adminKey = ((null != adminKey) && !adminKey.isEmpty()) ? adminKey : null;
-	}
+  public void setAdminKey(@Nullable JKey adminKey) {
+    throwIfImmutable("Cannot change this topic's admin key if it's immutable.");
+    this.adminKey = ((null != adminKey) && !adminKey.isEmpty()) ? adminKey : null;
+  }
 
-	public boolean hasSubmitKey() {
-		return submitKey != null;
-	}
+  public boolean hasSubmitKey() {
+    return submitKey != null;
+  }
 
-	public JKey getSubmitKey() {
-		return hasSubmitKey() ? submitKey : getDefaultJKey();
-	}
+  public JKey getSubmitKey() {
+    return hasSubmitKey() ? submitKey : getDefaultJKey();
+  }
 
-	public void setSubmitKey(@Nullable JKey submitKey) {
-		throwIfImmutable("Cannot change this topic's memo if it's immutable.");
-		this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
-	}
+  public void setSubmitKey(@Nullable JKey submitKey) {
+    throwIfImmutable("Cannot change this topic's memo if it's immutable.");
+    this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
+  }
 
-	public long getAutoRenewDurationSeconds() {
-		return autoRenewDurationSeconds;
-	}
+  public long getAutoRenewDurationSeconds() {
+    return autoRenewDurationSeconds;
+  }
 
-	public void setAutoRenewDurationSeconds(long autoRenewDurationSeconds) {
-		throwIfImmutable("Cannot change this topic's auto renewal duration seconds if it's immutable.");
-		this.autoRenewDurationSeconds = autoRenewDurationSeconds;
-	}
+  public void setAutoRenewDurationSeconds(long autoRenewDurationSeconds) {
+    throwIfImmutable("Cannot change this topic's auto renewal duration seconds if it's immutable.");
+    this.autoRenewDurationSeconds = autoRenewDurationSeconds;
+  }
 
-	public boolean hasAutoRenewAccountId() {
-		return autoRenewAccountId != null;
-	}
+  public boolean hasAutoRenewAccountId() {
+    return autoRenewAccountId != null;
+  }
 
-	public EntityId getAutoRenewAccountId() {
-		return hasAutoRenewAccountId() ? autoRenewAccountId : new EntityId();
-	}
+  public EntityId getAutoRenewAccountId() {
+    return hasAutoRenewAccountId() ? autoRenewAccountId : new EntityId();
+  }
 
-	public void setAutoRenewAccountId(@Nullable EntityId autoRenewAccountId) {
-		throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
-		this.autoRenewAccountId = ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
-				? autoRenewAccountId
-				: null;
-	}
+  public void setAutoRenewAccountId(@Nullable EntityId autoRenewAccountId) {
+    throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
+    this.autoRenewAccountId =
+        ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
+            ? autoRenewAccountId
+            : null;
+  }
 
-	public boolean hasExpirationTimestamp() {
-		return expirationTimestamp != null;
-	}
+  public boolean hasExpirationTimestamp() {
+    return expirationTimestamp != null;
+  }
 
-	public RichInstant getExpirationTimestamp() {
-		return hasExpirationTimestamp() ? expirationTimestamp : new RichInstant();
-	}
+  public RichInstant getExpirationTimestamp() {
+    return hasExpirationTimestamp() ? expirationTimestamp : new RichInstant();
+  }
 
-	public void setExpirationTimestamp(@Nullable RichInstant expiry) {
-		throwIfImmutable("Cannot change this topic's expiration timestamp if it's immutable.");
-		if ((null != expiry) && ((0 != expiry.getSeconds()) || (0 != expiry.getNanos()))) {
-			this.expirationTimestamp = expiry;
-		} else {
-			this.expirationTimestamp = null;
-		}
-	}
+  public void setExpirationTimestamp(@Nullable RichInstant expiry) {
+    throwIfImmutable("Cannot change this topic's expiration timestamp if it's immutable.");
+    if ((null != expiry) && ((0 != expiry.getSeconds()) || (0 != expiry.getNanos()))) {
+      this.expirationTimestamp = expiry;
+    } else {
+      this.expirationTimestamp = null;
+    }
+  }
 
-	public boolean isDeleted() {
-		return deleted;
-	}
+  public boolean isDeleted() {
+    return deleted;
+  }
 
-	public void setDeleted(boolean deleted) {
-		throwIfImmutable("Cannot change this topic's status to be deleted if it's immutable.");
-		this.deleted = deleted;
-	}
+  public void setDeleted(boolean deleted) {
+    throwIfImmutable("Cannot change this topic's status to be deleted if it's immutable.");
+    this.deleted = deleted;
+  }
 
-	public long getSequenceNumber() {
-		return sequenceNumber;
-	}
+  public long getSequenceNumber() {
+    return sequenceNumber;
+  }
 
-	public void setSequenceNumber(long sequenceNumber) {
-		throwIfImmutable("Cannot change this topic's sequence number if it's immutable.");
-		this.sequenceNumber = sequenceNumber;
-	}
+  public void setSequenceNumber(long sequenceNumber) {
+    throwIfImmutable("Cannot change this topic's sequence number if it's immutable.");
+    this.sequenceNumber = sequenceNumber;
+  }
 
-	public boolean hasRunningHash() {
-		return runningHash != null;
-	}
+  public boolean hasRunningHash() {
+    return runningHash != null;
+  }
 
-	public byte[] getRunningHash() {
-		return (runningHash != null) ? runningHash : new byte[RUNNING_HASH_BYTE_ARRAY_SIZE];
-	}
+  public byte[] getRunningHash() {
+    return (runningHash != null) ? runningHash : new byte[RUNNING_HASH_BYTE_ARRAY_SIZE];
+  }
 
-	public void setRunningHash(@Nullable byte[] runningHash) {
-		throwIfImmutable("Cannot change this topic's running hash if it's immutable.");
-		this.runningHash = ((null != runningHash) && (0 != runningHash.length)) ? runningHash : null;
-	}
+  public void setRunningHash(@Nullable byte[] runningHash) {
+    throwIfImmutable("Cannot change this topic's running hash if it's immutable.");
+    this.runningHash = ((null != runningHash) && (0 != runningHash.length)) ? runningHash : null;
+  }
 }

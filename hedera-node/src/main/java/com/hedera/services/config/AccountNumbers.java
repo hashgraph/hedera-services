@@ -20,83 +20,83 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
-
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
+import com.hedera.services.context.properties.PropertySource;
+
 public class AccountNumbers {
-	private final PropertySource properties;
+  private final PropertySource properties;
 
-	private long treasury = UNKNOWN_NUMBER;
-	private long systemAdmin = UNKNOWN_NUMBER;
-	private long freezeAdmin = UNKNOWN_NUMBER;
-	private long addressBookAdmin = UNKNOWN_NUMBER;
-	private long systemDeleteAdmin = UNKNOWN_NUMBER;
-	private long feeSchedulesAdmin = UNKNOWN_NUMBER;
-	private long exchangeRatesAdmin = UNKNOWN_NUMBER;
-	private long systemUndeleteAdmin = UNKNOWN_NUMBER;
+  private long treasury = UNKNOWN_NUMBER;
+  private long systemAdmin = UNKNOWN_NUMBER;
+  private long freezeAdmin = UNKNOWN_NUMBER;
+  private long addressBookAdmin = UNKNOWN_NUMBER;
+  private long systemDeleteAdmin = UNKNOWN_NUMBER;
+  private long feeSchedulesAdmin = UNKNOWN_NUMBER;
+  private long exchangeRatesAdmin = UNKNOWN_NUMBER;
+  private long systemUndeleteAdmin = UNKNOWN_NUMBER;
 
-	public AccountNumbers(PropertySource properties) {
-		this.properties = properties;
-	}
+  public AccountNumbers(PropertySource properties) {
+    this.properties = properties;
+  }
 
-	public long treasury() {
-		if (treasury == UNKNOWN_NUMBER) {
-			treasury = properties.getLongProperty("accounts.treasury");
-		}
-		return treasury;
-	}
+  public long treasury() {
+    if (treasury == UNKNOWN_NUMBER) {
+      treasury = properties.getLongProperty("accounts.treasury");
+    }
+    return treasury;
+  }
 
-	public long freezeAdmin() {
-		if (freezeAdmin == UNKNOWN_NUMBER) {
-			freezeAdmin = properties.getLongProperty("accounts.freezeAdmin");
-		}
-		return freezeAdmin;
-	}
+  public long freezeAdmin() {
+    if (freezeAdmin == UNKNOWN_NUMBER) {
+      freezeAdmin = properties.getLongProperty("accounts.freezeAdmin");
+    }
+    return freezeAdmin;
+  }
 
-	public long systemAdmin() {
-		if (systemAdmin == UNKNOWN_NUMBER) {
-			systemAdmin = properties.getLongProperty("accounts.systemAdmin");
-		}
-		return systemAdmin;
-	}
+  public long systemAdmin() {
+    if (systemAdmin == UNKNOWN_NUMBER) {
+      systemAdmin = properties.getLongProperty("accounts.systemAdmin");
+    }
+    return systemAdmin;
+  }
 
-	public long addressBookAdmin() {
-		if (addressBookAdmin == UNKNOWN_NUMBER) {
-			addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
-		}
-		return addressBookAdmin;
-	}
+  public long addressBookAdmin() {
+    if (addressBookAdmin == UNKNOWN_NUMBER) {
+      addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
+    }
+    return addressBookAdmin;
+  }
 
-	public long feeSchedulesAdmin() {
-		if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
-			feeSchedulesAdmin = properties.getLongProperty("accounts.feeSchedulesAdmin");
-		}
-		return feeSchedulesAdmin;
-	}
+  public long feeSchedulesAdmin() {
+    if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
+      feeSchedulesAdmin = properties.getLongProperty("accounts.feeSchedulesAdmin");
+    }
+    return feeSchedulesAdmin;
+  }
 
-	public long exchangeRatesAdmin() {
-		if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
-			exchangeRatesAdmin = properties.getLongProperty("accounts.exchangeRatesAdmin");
-		}
-		return exchangeRatesAdmin;
-	}
+  public long exchangeRatesAdmin() {
+    if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
+      exchangeRatesAdmin = properties.getLongProperty("accounts.exchangeRatesAdmin");
+    }
+    return exchangeRatesAdmin;
+  }
 
-	public long systemDeleteAdmin() {
-		if (systemDeleteAdmin == UNKNOWN_NUMBER) {
-			systemDeleteAdmin = properties.getLongProperty("accounts.systemDeleteAdmin");
-		}
-		return systemDeleteAdmin;
-	}
+  public long systemDeleteAdmin() {
+    if (systemDeleteAdmin == UNKNOWN_NUMBER) {
+      systemDeleteAdmin = properties.getLongProperty("accounts.systemDeleteAdmin");
+    }
+    return systemDeleteAdmin;
+  }
 
-	public long systemUndeleteAdmin() {
-		if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
-			systemUndeleteAdmin = properties.getLongProperty("accounts.systemUndeleteAdmin");
-		}
-		return systemUndeleteAdmin;
-	}
+  public long systemUndeleteAdmin() {
+    if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
+      systemUndeleteAdmin = properties.getLongProperty("accounts.systemUndeleteAdmin");
+    }
+    return systemUndeleteAdmin;
+  }
 
-	public boolean isSuperuser(long num) {
-		return num == treasury() || num == systemAdmin();
-	}
+  public boolean isSuperuser(long num) {
+    return num == treasury() || num == systemAdmin();
+  }
 }

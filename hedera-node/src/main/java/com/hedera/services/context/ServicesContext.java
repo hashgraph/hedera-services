@@ -20,6 +20,63 @@ package com.hedera.services.context;
  * ‍
  */
 
+import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
+import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
+import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
+import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultAccountRetryingLookupsFor;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
+import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
+import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.txns.submission.StructuralPrecheck.HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+import static java.util.Map.entry;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.ServicesState;
 import com.hedera.services.calc.OverflowCheckingCalc;
@@ -254,7 +311,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
@@ -378,14 +434,6 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.ethereum.core.AccountState;
-import org.ethereum.datasource.Source;
-import org.ethereum.datasource.StoragePersistence;
-import org.ethereum.db.ServicesRepositoryRoot;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -402,2052 +450,2136 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
-import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
-import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultAccountRetryingLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
-import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
-import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
-import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
-import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.txns.submission.StructuralPrecheck.HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
-import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
-import static java.util.Map.entry;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.core.AccountState;
+import org.ethereum.datasource.Source;
+import org.ethereum.datasource.StoragePersistence;
+import org.ethereum.db.ServicesRepositoryRoot;
 
 /**
- * Provide a trivial implementation of the inversion-of-control pattern,
- * isolating secondary responsibilities of dependency creation and
- * injection in a single component.
+ * Provide a trivial implementation of the inversion-of-control pattern, isolating secondary
+ * responsibilities of dependency creation and injection in a single component.
  *
  * @author Michael Tinker
  */
 public class ServicesContext {
-	private static final Logger log = LogManager.getLogger(ServicesContext.class);
-
-	/* Injected dependencies. */
-	ServicesState state;
-
-	private final NodeId id;
-	private final Platform platform;
-	private final PropertySources propertySources;
-
-	/* Context-sensitive singletons. */
-	/** the directory to which we writes .rcd and .rcd_sig files */
-	private String recordStreamDir;
-	/** the initialHash of RecordStreamManager */
-	private Hash recordsInitialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
-	private Address address;
-	private Console console;
-	private HederaFs hfs;
-	private NodeInfo nodeInfo;
-	private StateView currentView;
-	private TokenStore tokenStore;
-	private AnswerFlow answerFlow;
-	private HcsAnswers hcsAnswers;
-	private FileNumbers fileNums;
-	private FileAnswers fileAnswers;
-	private MetaAnswers metaAnswers;
-	private RecordCache recordCache;
-	private BackingNfts backingNfts;
-	private AccountStore accountStore;
-	private TokenAnswers tokenAnswers;
-	private HederaLedger ledger;
-	private SyncVerifier syncVerifier;
-	private IssEventInfo issEventInfo;
-	private ProcessLogic logic;
-	private QueryFeeCheck queryFeeCheck;
-	private HederaNumbers hederaNums;
-	private ExpiryManager expiries;
-	private FeeCalculator fees;
-	private FeeExemptions exemptions;
-	private EntityNumbers entityNums;
-	private FreezeHandler freeze;
-	private CryptoAnswers cryptoAnswers;
-	private ScheduleStore scheduleStore;
-	private SyntaxPrecheck syntaxPrecheck;
-	private AccountNumbers accountNums;
-	private SubmissionFlow submissionFlow;
-	private PropertySource properties;
-	private EntityIdSource ids;
-	private FileController fileGrpc;
-	private HapiOpCounters opCounters;
-	private SpanMapManager spanMapManager;
-	private AnswerFunctions answerFunctions;
-	private ContractAnswers contractAnswers;
-	private SwirldDualState dualState;
-	private OptionValidator validator;
-	private LedgerValidator ledgerValidator;
-	private BackingAccounts backingAccounts;
-	private TokenController tokenGrpc;
-	private MiscRunningAvgs runningAvgs;
-	private ScheduleAnswers scheduleAnswers;
-	private InvariantChecks invariantChecks;
-	private TypedTokenStore typedTokenStore;
-	private SignatureWaivers signatureWaivers;
-	private MiscSpeedometers speedometers;
-	private ScheduleExecutor scheduleExecutor;
-	private ServicesNodeType nodeType;
-	private SystemOpPolicies systemOpPolicies;
-	private CryptoController cryptoGrpc;
-	private HbarCentExchange exchange;
-	private TransitionRunner transitionRunner;
-	private SemanticVersions semVers;
-	private PrecheckVerifier precheckVerifier;
-	private BackingTokenRels backingTokenRels;
-	private FreezeController freezeGrpc;
-	private ExpandHandleSpan expandHandleSpan;
-	private BalancesExporter balancesExporter;
-	private SysFileCallbacks sysFileCallbacks;
-	private NarratedCharging narratedCharging;
-	private NetworkCtxManager networkCtxManager;
-	private SolidityLifecycle solidityLifecycle;
-	private ExpiringCreations creator;
-	private NetworkController networkGrpc;
-	private GrpcServerManager grpc;
-	private FeeChargingPolicy txnChargingPolicy;
-	private TxnResponseHelper txnResponseHelper;
-	private BlobStorageSource bytecodeDb;
-	private HapiOpPermissions hapiOpPermissions;
-	private EntityAutoRenewal entityAutoRenewal;
-	private TransactionContext txnCtx;
-	private ContractController contractsGrpc;
-	private HederaSigningOrder keyOrder;
-	private HederaSigningOrder backedKeyOrder;
-	private HederaSigningOrder lookupRetryingKeyOrder;
-	private StoragePersistence storagePersistence;
-	private ScheduleController scheduleGrpc;
-	private NonBlockingHandoff nonBlockingHandoff;
-	private AccessorBasedUsages accessorBasedUsages;
-	private ConsensusController consensusGrpc;
-	private QueryResponseHelper queryResponseHelper;
-	private UsagePricesProvider usagePrices;
-	private Supplier<StateView> stateViews;
-	private FeeSchedulesManager feeSchedulesManager;
-	private RecordStreamManager recordStreamManager;
-	private ThrottleDefsManager throttleDefsManager;
-	private QueryHeaderValidity queryHeaderValidity;
-	private Map<String, byte[]> blobStore;
-	private Map<EntityId, Long> entityExpiries;
-	private TransactionPrecheck transactionPrecheck;
-	private FeeMultiplierSource feeMultiplierSource;
-	private NodeLocalProperties nodeLocalProperties;
-	private UniqTokenViewFactory uniqTokenViewFactory;
-	private TxnAwareRatesManager exchangeRatesManager;
-	private ServicesStatsManager statsManager;
-	private LedgerAccountsSource accountSource;
-	private TransitionLogicLookup transitionLogic;
-	private FcmCustomFeeSchedules activeCustomFeeSchedules;
-	private PricedUsageCalculator pricedUsageCalculator;
-	private TransactionThrottling txnThrottling;
-	private ConsensusStatusCounts statusCounts;
-	private UniqTokenViewsManager uniqTokenViewsManager;
-	private HfsSystemFilesManager systemFilesManager;
-	private CurrentPlatformStatus platformStatus;
-	private SystemAccountsCreator systemAccountsCreator;
-	private TxnChargingPolicyAgent chargingPolicyAgent;
-	private ServicesRepositoryRoot repository;
-	private CharacteristicsFactory characteristics;
-	private AccountRecordsHistorian recordsHistorian;
-	private GlobalDynamicProperties globalDynamicProperties;
-	private FunctionalityThrottling hapiThrottling;
-	private FunctionalityThrottling handleThrottling;
-	private ImpliedTransfersMarshal impliedTransfersMarshal;
-	private AwareNodeDiligenceScreen nodeDiligenceScreen;
-	private InHandleActivationHelper activationHelper;
-	private PlatformSubmissionManager submissionManager;
-	private PureTransferSemanticChecks transferSemanticChecks;
-	private SmartContractRequestHandler contracts;
-	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
-	private ValidatingCallbackInterceptor apiPermissionsReloading;
-	private ValidatingCallbackInterceptor applicationPropertiesReloading;
-	private Supplier<ServicesRepositoryRoot> newPureRepo;
-	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private BiPredicate<JKey, TransactionSignature> validityTest;
-
-	private final StateChildren workingState = new StateChildren();
-	private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
-
-	/* Context-free infrastructure. */
-	private static final Pause pause;
-	private static final AccountsExporter accountsExporter;
-	private static final LegacyEd25519KeyReader b64KeyReader;
-
-	static {
-		pause = SleepingPause.SLEEPING_PAUSE;
-		b64KeyReader = new LegacyEd25519KeyReader();
-		accountsExporter = new ToStringAccountsExporter();
-	}
-
-	public ServicesContext(
-			NodeId id,
-			Platform platform,
-			ServicesState state,
-			PropertySources propertySources
-	) {
-		this.id = id;
-		this.platform = platform;
-		this.state = state;
-		this.propertySources = propertySources;
-	}
-
-	/**
-	 * Update the state and working state based on the provided service state
-	 *
-	 * @param state
-	 * 		latest state from the services
-	 */
-	public void update(ServicesState state) {
-		this.state = state;
-
-		updateWorkingState(state);
-		updateQueryableState(state);
-	}
-
-	/**
-	 * Update the queryable state
-	 */
-	private void updateQueryableState(ServicesState state) {
-		final StateChildren newQueryableStateChildren = new StateChildren();
-
-		newQueryableStateChildren.setAccounts(state.accounts());
-		newQueryableStateChildren.setTopics(state.topics());
-		newQueryableStateChildren.setStorage(state.storage());
-		newQueryableStateChildren.setTokens(state.tokens());
-		newQueryableStateChildren.setTokenAssociations(state.tokenAssociations());
-		newQueryableStateChildren.setSchedules(state.scheduleTxs());
-		newQueryableStateChildren.setUniqueTokens(state.uniqueTokens());
-		newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		newQueryableStateChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
-		newQueryableStateChildren.setDiskFs(state.diskFs());
-
-		queryableState.set(newQueryableStateChildren);
-	}
-
-	/**
-	 * Update the working state when given the state
-	 *
-	 * @param state
-	 * 		to set for the working state
-	 */
-	private void updateWorkingState(ServicesState state) {
-		workingState.setAccounts(state.accounts());
-		workingState.setTopics(state.topics());
-		workingState.setStorage(state.storage());
-		workingState.setTokens(state.tokens());
-		workingState.setTokenAssociations(state.tokenAssociations());
-		workingState.setSchedules(state.scheduleTxs());
-		workingState.setNetworkCtx(state.networkCtx());
-		workingState.setAddressBook(state.addressBook());
-		workingState.setDiskFs(state.diskFs());
-		workingState.setUniqueTokens(state.uniqueTokens());
-		workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		workingState.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
-	}
-
-	public SwirldDualState getDualState() {
-		return dualState;
-	}
-
-	public void setDualState(SwirldDualState dualState) {
-		this.dualState = dualState;
-	}
-
-	public void rebuildBackingStoresIfPresent() {
-		if (backingTokenRels != null) {
-			backingTokenRels.rebuildFromSources();
-		}
-		if (backingAccounts != null) {
-			backingAccounts.rebuildFromSources();
-		}
-		if (backingNfts != null) {
-			backingNfts.rebuildFromSources();
-		}
-	}
-
-	public void rebuildStoreViewsIfPresent() {
-		if (scheduleStore != null) {
-			scheduleStore.rebuildViews();
-		}
-		if (tokenStore != null) {
-			tokenStore.rebuildViews();
-		}
-	}
-
-	public NonBlockingHandoff nonBlockingHandoff() {
-		if (nonBlockingHandoff == null) {
-			nonBlockingHandoff = new NonBlockingHandoff(recordStreamManager(), nodeLocalProperties());
-		}
-		return nonBlockingHandoff;
-	}
-
-	public TransitionRunner transitionRunner() {
-		if (transitionRunner == null) {
-			transitionRunner = new TransitionRunner(txnCtx(), transitionLogic());
-		}
-		return transitionRunner;
-	}
-
-	public HapiOpCounters opCounters() {
-		if (opCounters == null) {
-			opCounters = new HapiOpCounters(new CounterFactory() {
-			}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
-		}
-		return opCounters;
-	}
-
-	public QueryHeaderValidity queryHeaderValidity() {
-		if (queryHeaderValidity == null) {
-			queryHeaderValidity = new QueryHeaderValidity();
-		}
-		return queryHeaderValidity;
-	}
-
-	public MiscRunningAvgs runningAvgs() {
-		if (runningAvgs == null) {
-			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {
-			}, nodeLocalProperties());
-		}
-		return runningAvgs;
-	}
-
-	public TransactionPrecheck transactionPrecheck() {
-		if (transactionPrecheck == null) {
-			final var structure = new StructuralPrecheck(
-					Platform.getTransactionMaxBytes(), HISTORICAL_MAX_PROTO_MESSAGE_DEPTH);
-			final var semantics = new SemanticPrecheck(
-					transitionLogic());
-			final var solvency = new SolvencyPrecheck(
-					exemptions(), fees(), validator(),
-					precheckVerifier(), stateViews(), globalDynamicProperties(), this::accounts);
-			final var system = new SystemPrecheck(
-					systemOpPolicies(), hapiOpPermissions(), txnThrottling());
-			final var stagedChecks = new StagedPrechecks(
-					syntaxPrecheck(), system, semantics, solvency, structure);
-			transactionPrecheck = new TransactionPrecheck(queryFeeCheck(), stagedChecks, platformStatus());
-		}
-		return transactionPrecheck;
-	}
-
-	public PricedUsageCalculator pricedUsageCalculator() {
-		if (pricedUsageCalculator == null) {
-			pricedUsageCalculator = new PricedUsageCalculator(
-					accessorBasedUsages(),
-					feeMultiplierSource(),
-					new OverflowCheckingCalc());
-		}
-		return pricedUsageCalculator;
-	}
-
-	public FeeMultiplierSource feeMultiplierSource() {
-		if (feeMultiplierSource == null) {
-			feeMultiplierSource = new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
-		}
-		return feeMultiplierSource;
-	}
-
-	public SignatureWaivers signatureWaivers() {
-		if (signatureWaivers == null) {
-			signatureWaivers = new PolicyBasedSigWaivers(entityNums(), systemOpPolicies());
-		}
-		return signatureWaivers;
-	}
-
-	public MiscSpeedometers speedometers() {
-		if (speedometers == null) {
-			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
-			}, nodeLocalProperties());
-		}
-		return speedometers;
-	}
-
-	public FunctionalityThrottling hapiThrottling() {
-		if (hapiThrottling == null) {
-			final var delegate = new DeterministicThrottling(() -> addressBook().getSize(), globalDynamicProperties());
-			hapiThrottling = new HapiThrottling(delegate);
-		}
-		return hapiThrottling;
-	}
-
-	public FunctionalityThrottling handleThrottling() {
-		if (handleThrottling == null) {
-			final var delegate = new DeterministicThrottling(() -> 1, globalDynamicProperties());
-			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), delegate);
-		}
-		return handleThrottling;
-	}
-
-	public ImpliedTransfersMarshal impliedTransfersMarshal() {
-		if (impliedTransfersMarshal == null) {
-			final var htsAssessor = new HtsFeeAssessor();
-			final var hbarAssessor = new HbarFeeAssessor();
-			final var fixedFeeAssessor = new FixedFeeAssessor(htsAssessor, hbarAssessor);
-			final var royaltyAssessor = new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange);
-			final var fractionalAssessor = new FractionalFeeAssessor(fixedFeeAssessor);
-			final var feeAssessor = new FeeAssessor(fixedFeeAssessor, royaltyAssessor, fractionalAssessor);
-			impliedTransfersMarshal = new ImpliedTransfersMarshal(
-					feeAssessor,
-					customFeeSchedules(),
-					globalDynamicProperties(),
-					transferSemanticChecks(),
-					BalanceChangeManager::new,
-					CustomSchedulesManager::new);
-		}
-		return impliedTransfersMarshal;
-	}
-
-	private CustomFeeSchedules customFeeSchedules() {
-		if (activeCustomFeeSchedules == null) {
-			activeCustomFeeSchedules = new FcmCustomFeeSchedules(this::tokens);
-		}
-		return activeCustomFeeSchedules;
-	}
-
-	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
-		if (nodeDiligenceScreen == null) {
-			nodeDiligenceScreen = new AwareNodeDiligenceScreen(validator(), txnCtx(), backingAccounts());
-		}
-		return nodeDiligenceScreen;
-	}
-
-	public SemanticVersions semVers() {
-		if (semVers == null) {
-			semVers = new SemanticVersions();
-		}
-		return semVers;
-	}
-
-	public ServicesStatsManager statsManager() {
-		if (statsManager == null) {
-			var opSpeedometers = new HapiOpSpeedometers(
-					opCounters(),
-					new SpeedometerFactory() {
-					},
-					nodeLocalProperties(),
-					MiscUtils::baseStatNameOf);
-			statsManager = new ServicesStatsManager(
-					opCounters(),
-					runningAvgs(),
-					speedometers(),
-					opSpeedometers,
-					nodeLocalProperties());
-		}
-		return statsManager;
-	}
-
-	public CurrentPlatformStatus platformStatus() {
-		if (platformStatus == null) {
-			platformStatus = new ContextPlatformStatus();
-		}
-		return platformStatus;
-	}
-
-	public LedgerValidator ledgerValidator() {
-		if (ledgerValidator == null) {
-			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties(), globalDynamicProperties());
-		}
-		return ledgerValidator;
-	}
-
-	public InHandleActivationHelper activationHelper() {
-		if (activationHelper == null) {
-			activationHelper = new InHandleActivationHelper(characteristics(), txnCtx()::accessor);
-		}
-		return activationHelper;
-	}
-
-	public NodeInfo nodeInfo() {
-		if (nodeInfo == null) {
-			nodeInfo = new NodeInfo(id.getId(), this::addressBook);
-		}
-		return nodeInfo;
-	}
-
-	public InvariantChecks invariants() {
-		if (invariantChecks == null) {
-			invariantChecks = new InvariantChecks(nodeInfo(), this::networkCtx);
-		}
-		return invariantChecks;
-	}
-
-	public ScheduleExecutor scheduleExecutor() {
-		if (scheduleExecutor == null) {
-			scheduleExecutor = new ScheduleExecutor();
-		}
-		return scheduleExecutor;
-	}
-
-	public IssEventInfo issEventInfo() {
-		if (issEventInfo == null) {
-			issEventInfo = new IssEventInfo(properties());
-		}
-		return issEventInfo;
-	}
-
-	public Map<String, byte[]> blobStore() {
-		if (blobStore == null) {
-			blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, this::storage);
-		}
-		return blobStore;
-	}
-
-	public Supplier<StateView> stateViews() {
-		if (stateViews == null) {
-			stateViews = () -> new StateView(
-					tokenStore(),
-					scheduleStore(),
-					nodeLocalProperties(),
-					queryableState.get(),
-					uniqTokenViewFactory());
-		}
-		return stateViews;
-	}
-
-	public StateView currentView() {
-		if (currentView == null) {
-			currentView = new StateView(
-					tokenStore(),
-					scheduleStore(),
-					nodeLocalProperties(),
-					workingState,
-					uniqTokenViewFactory());
-		}
-		return currentView;
-	}
-
-	public UniqTokenViewsManager uniqTokenViewsManager() {
-		if (uniqTokenViewsManager == null) {
-			if (shouldUseTreasuryWildcards()) {
-				uniqTokenViewsManager = new UniqTokenViewsManager(
-						this::uniqueTokenAssociations,
-						this::uniqueOwnershipAssociations,
-						this::uniqueOwnershipTreasuryAssociations);
-			} else {
-				uniqTokenViewsManager = new UniqTokenViewsManager(
-						this::uniqueTokenAssociations,
-						this::uniqueOwnershipAssociations);
-			}
-		}
-		return uniqTokenViewsManager;
-	}
-
-	private boolean shouldUseTreasuryWildcards() {
-		return properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
-	}
-
-	public HederaNumbers hederaNums() {
-		if (hederaNums == null) {
-			hederaNums = new HederaNumbers(properties());
-		}
-		return hederaNums;
-	}
-
-	public FileNumbers fileNums() {
-		if (fileNums == null) {
-			fileNums = new FileNumbers(hederaNums(), properties());
-		}
-		return fileNums;
-	}
-
-	public AccountNumbers accountNums() {
-		if (accountNums == null) {
-			accountNums = new AccountNumbers(properties());
-		}
-		return accountNums;
-	}
-
-	public TxnResponseHelper txnResponseHelper() {
-		if (txnResponseHelper == null) {
-			txnResponseHelper = new TxnResponseHelper(submissionFlow(), opCounters());
-		}
-		return txnResponseHelper;
-	}
-
-	public TransactionThrottling txnThrottling() {
-		if (txnThrottling == null) {
-			txnThrottling = new TransactionThrottling(hapiThrottling());
-		}
-		return txnThrottling;
-	}
-
-	public SubmissionFlow submissionFlow() {
-		if (submissionFlow == null) {
-			submissionFlow = new BasicSubmissionFlow(nodeType(), transactionPrecheck(), submissionManager());
-		}
-		return submissionFlow;
-	}
-
-	public QueryResponseHelper queryResponseHelper() {
-		if (queryResponseHelper == null) {
-			queryResponseHelper = new QueryResponseHelper(answerFlow(), opCounters());
-		}
-		return queryResponseHelper;
-	}
-
-	public FileAnswers fileAnswers() {
-		if (fileAnswers == null) {
-			fileAnswers = new FileAnswers(
-					new GetFileInfoAnswer(validator()),
-					new GetFileContentsAnswer(validator())
-			);
-		}
-		return fileAnswers;
-	}
-
-	public ContractAnswers contractAnswers() {
-		if (contractAnswers == null) {
-			contractAnswers = new ContractAnswers(
-					new GetBytecodeAnswer(validator()),
-					new GetContractInfoAnswer(validator()),
-					new GetBySolidityIdAnswer(),
-					new GetContractRecordsAnswer(validator()),
-					new ContractCallLocalAnswer(contracts()::contractCallLocal, validator())
-			);
-		}
-		return contractAnswers;
-	}
-
-	public HcsAnswers hcsAnswers() {
-		if (hcsAnswers == null) {
-			hcsAnswers = new HcsAnswers(
-					new GetTopicInfoAnswer(validator())
-			);
-		}
-		return hcsAnswers;
-	}
-
-	/**
-	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
-	 * Instant, Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds
-	 * application state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
-	 *
-	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
-	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
-	 *
-	 * Hence we inject the {@code typedTokenStore} with method references to {@link ServicesContext#tokens()} and
-	 * {@link ServicesContext#tokenAssociations()} so it can always access the children of the mutable
-	 * {@link ServicesState}.
-	 *
-	 * @return the singleton TypedTokenStore
-	 */
-	public TypedTokenStore typedTokenStore() {
-		if (typedTokenStore == null) {
-			typedTokenStore = new TypedTokenStore(
-					accountStore(),
-					new TransactionRecordService(txnCtx()),
-					this::tokens,
-					this::uniqueTokens,
-					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels(),
-					uniqTokenViewsManager(),
-					tokenStore()::removeKnownTreasuryForToken);
-		}
-		return typedTokenStore;
-	}
-
-	/**
-	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application
-	 * state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
-	 *
-	 * @return the singleton accounts store
-	 */
-	public AccountStore accountStore() {
-		if (accountStore == null) {
-			accountStore = new AccountStore(validator(), globalDynamicProperties(), this::accounts);
-		}
-		return accountStore;
-	}
-
-	public MetaAnswers metaAnswers() {
-		if (metaAnswers == null) {
-			metaAnswers = new MetaAnswers(
-					new GetTxnRecordAnswer(recordCache(), validator(), answerFunctions()),
-					new GetTxnReceiptAnswer(recordCache()),
-					new GetVersionInfoAnswer(semVers()),
-					new GetFastTxnRecordAnswer()
-			);
-		}
-		return metaAnswers;
-	}
-
-	public EntityNumbers entityNums() {
-		if (entityNums == null) {
-			entityNums = new EntityNumbers(fileNums(), hederaNums(), accountNums());
-		}
-		return entityNums;
-	}
-
-	public TokenAnswers tokenAnswers() {
-		if (tokenAnswers == null) {
-			tokenAnswers = new TokenAnswers(
-					new GetTokenInfoAnswer(),
-					new GetTokenNftInfoAnswer(),
-					new GetTokenNftInfosAnswer(validator()),
-					new GetAccountNftInfosAnswer(validator())
-			);
-		}
-		return tokenAnswers;
-	}
-
-	public ScheduleAnswers scheduleAnswers() {
-		if (scheduleAnswers == null) {
-			scheduleAnswers = new ScheduleAnswers(
-					new GetScheduleInfoAnswer()
-			);
-		}
-		return scheduleAnswers;
-	}
-
-	public CryptoAnswers cryptoAnswers() {
-		if (cryptoAnswers == null) {
-			cryptoAnswers = new CryptoAnswers(
-					new GetLiveHashAnswer(),
-					new GetStakersAnswer(),
-					new GetAccountInfoAnswer(validator()),
-					new GetAccountBalanceAnswer(validator()),
-					new GetAccountRecordsAnswer(answerFunctions(), validator())
-			);
-		}
-		return cryptoAnswers;
-	}
-
-	public AnswerFunctions answerFunctions() {
-		if (answerFunctions == null) {
-			answerFunctions = new AnswerFunctions();
-		}
-		return answerFunctions;
-	}
-
-	public QueryFeeCheck queryFeeCheck() {
-		if (queryFeeCheck == null) {
-			queryFeeCheck = new QueryFeeCheck(validator(), globalDynamicProperties(), this::accounts);
-		}
-		return queryFeeCheck;
-	}
-
-	public FeeCalculator fees() {
-		if (fees == null) {
-			FileOpsUsage fileOpsUsage = new FileOpsUsage();
-			CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
-			FileFeeBuilder fileFees = new FileFeeBuilder();
-			CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
-			ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
-			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
-
-			fees = new UsageBasedFeeCalculator(
-					new AutoRenewCalcs(cryptoOpsUsage),
-					exchange(),
-					usagePrices(),
-					feeMultiplierSource(),
-					pricedUsageCalculator(),
-					List.of(
-							/* Meta */
-							new GetVersionInfoResourceUsage(),
-							new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
-							/* Crypto */
-							new GetAccountInfoResourceUsage(cryptoOpsUsage),
-							new GetAccountRecordsResourceUsage(answerFunctions(), cryptoFees),
-							/* File */
-							new GetFileInfoResourceUsage(fileOpsUsage),
-							new GetFileContentsResourceUsage(fileFees),
-							/* Consensus */
-							new GetTopicInfoResourceUsage(),
-							/* Smart Contract */
-							new GetBytecodeResourceUsage(contractFees),
-							new GetContractInfoResourceUsage(),
-							new GetContractRecordsResourceUsage(contractFees),
-							new ContractCallLocalResourceUsage(
-									contracts()::contractCallLocal, contractFees, globalDynamicProperties()),
-							/* Token */
-							new GetTokenInfoResourceUsage(),
-							/* Schedule */
-							new GetScheduleInfoResourceUsage(scheduleOpsUsage),
-							/* NftInfo */
-							new GetTokenNftInfoResourceUsage(),
-							new GetTokenNftInfosResourceUsage(),
-							new GetAccountNftInfosResourceUsage()
-					),
-					txnUsageEstimators(
-							cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees, scheduleOpsUsage)
-			);
-		}
-		return fees;
-	}
-
-	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
-			CryptoOpsUsage cryptoOpsUsage,
-			FileOpsUsage fileOpsUsage,
-			FileFeeBuilder fileFees,
-			CryptoFeeBuilder cryptoFees,
-			SmartContractFeeBuilder contractFees,
-			ScheduleOpsUsage scheduleOpsUsage
-	) {
-		var props = globalDynamicProperties();
-
-		Map<HederaFunctionality, List<TxnResourceUsageEstimator>> estimatorsMap = Map.ofEntries(
-				/* Crypto */
-				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
-				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
-				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoOpsUsage))),
-				/* Contract */
-				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),
-				entry(ContractCreate, List.of(new ContractCreateResourceUsage(contractFees))),
-				entry(ContractDelete, List.of(new ContractDeleteResourceUsage(contractFees))),
-				entry(ContractUpdate, List.of(new ContractUpdateResourceUsage(contractFees))),
-				/* File */
-				entry(FileCreate, List.of(new FileCreateResourceUsage(fileOpsUsage))),
-				entry(FileDelete, List.of(new FileDeleteResourceUsage(fileFees))),
-				entry(FileUpdate, List.of(new FileUpdateResourceUsage(fileOpsUsage))),
-				entry(FileAppend, List.of(new FileAppendResourceUsage(fileFees))),
-				/* Consensus */
-				entry(ConsensusCreateTopic, List.of(new CreateTopicResourceUsage())),
-				entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
-				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
-				/* Token */
-				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
-				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
-				// TODO: add resourceUsage of TokenFeeScheduleUpdate to estimatorsMap
-				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
-				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
-				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
-				entry(TokenRevokeKycFromAccount, List.of(new TokenRevokeKycResourceUsage())),
-				entry(TokenDelete, List.of(new TokenDeleteResourceUsage())),
-				entry(TokenMint, List.of(new TokenMintResourceUsage())),
-				entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
-				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
-				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
-				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
-				/* Schedule */
-				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(scheduleOpsUsage, props))),
-				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage(scheduleOpsUsage, props))),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(scheduleOpsUsage, props))),
-				/* System */
-				entry(Freeze, List.of(new FreezeResourceUsage())),
-				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
-				entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees)))
-		);
-
-		return estimatorsMap::get;
-	}
-
-	public AnswerFlow answerFlow() {
-		if (answerFlow == null) {
-			if (nodeType() == STAKED_NODE) {
-				answerFlow = new StakedAnswerFlow(
-						fees(),
-						stateViews(),
-						usagePrices(),
-						hapiThrottling(),
-						submissionManager(),
-						queryHeaderValidity(),
-						transactionPrecheck(),
-						hapiOpPermissions(),
-						queryFeeCheck());
-			} else {
-				answerFlow = new ZeroStakeAnswerFlow(queryHeaderValidity(), stateViews(), hapiThrottling());
-			}
-		}
-		return answerFlow;
-	}
-
-	public HederaSigningOrder keyOrder() {
-		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(
-					hfs(),
-					this::accounts,
-					this::topics,
-					REF_LOOKUP_FACTORY.apply(tokenStore()),
-					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
-			keyOrder = keyOrderWith(lookups);
-		}
-		return keyOrder;
-	}
-
-	public HederaSigningOrder backedKeyOrder() {
-		if (backedKeyOrder == null) {
-			var lookups = backedLookupsFor(
-					hfs(),
-					backingAccounts(),
-					this::topics,
-					this::accounts,
-					REF_LOOKUP_FACTORY.apply(tokenStore()),
-					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
-			backedKeyOrder = keyOrderWith(lookups);
-		}
-		return backedKeyOrder;
-	}
-
-	public HederaSigningOrder lookupRetryingKeyOrder() {
-		if (lookupRetryingKeyOrder == null) {
-			var lookups = defaultAccountRetryingLookupsFor(
-					hfs(),
-					nodeLocalProperties(),
-					this::accounts,
-					this::topics,
-					REF_LOOKUP_FACTORY.apply(tokenStore()),
-					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()),
-					runningAvgs(),
-					speedometers());
-			lookupRetryingKeyOrder = keyOrderWith(lookups);
-		}
-		return lookupRetryingKeyOrder;
-	}
-
-	public ServicesNodeType nodeType() {
-		if (nodeType == null) {
-			nodeType = (address().getStake() > 0) ? STAKED_NODE : ZERO_STAKE_NODE;
-		}
-		return nodeType;
-	}
-
-	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
-		return new HederaSigningOrder(lookups, globalDynamicProperties(), signatureWaivers());
-	}
-
-	public StoragePersistence storagePersistence() {
-		if (storagePersistence == null) {
-			storagePersistence = new BlobStoragePersistence(storageMapFrom(blobStore()));
-		}
-		return storagePersistence;
-	}
-
-	public SyncVerifier syncVerifier() {
-		if (syncVerifier == null) {
-			syncVerifier = platform().getCryptography()::verifySync;
-		}
-		return syncVerifier;
-	}
-
-	public BiPredicate<JKey, TransactionSignature> validityTest() {
-		if (validityTest == null) {
-			validityTest = new OnlyIfSigVerifiableValid(syncVerifier());
-		}
-		return validityTest;
-	}
-
-	public PrecheckVerifier precheckVerifier() {
-		if (precheckVerifier == null) {
-			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
-			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
-			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, TxnAccessor::getPkToSigsFn);
-		}
-		return precheckVerifier;
-	}
-
-	public PrintStream consoleOut() {
-		return Optional.ofNullable(console()).map(c -> c.out).orElse(null);
-	}
-
-	public BalancesExporter balancesExporter() {
-		if (balancesExporter == null) {
-			balancesExporter = new SignedStateBalancesExporter(
-					properties(),
-					platform()::sign,
-					globalDynamicProperties());
-		}
-		return balancesExporter;
-	}
-
-	public Map<EntityId, Long> entityExpiries() {
-		if (entityExpiries == null) {
-			entityExpiries = EntityExpiryMapFactory.entityExpiryMapFrom(blobStore());
-		}
-		return entityExpiries;
-	}
-
-	public HederaFs hfs() {
-		if (hfs == null) {
-			hfs = new TieredHederaFs(
-					ids(),
-					globalDynamicProperties(),
-					txnCtx()::consensusTime,
-					DataMapFactory.dataMapFrom(blobStore()),
-					MetadataMapFactory.metaMapFrom(blobStore()),
-					this::getCurrentSpecialFileSystem);
-			hfs.register(feeSchedulesManager());
-			hfs.register(exchangeRatesManager());
-			hfs.register(apiPermissionsReloading());
-			hfs.register(applicationPropertiesReloading());
-			hfs.register(throttleDefsManager());
-		}
-		return hfs;
-	}
-
-	public UniqTokenViewFactory uniqTokenViewFactory() {
-		if (uniqTokenViewFactory == null) {
-			uniqTokenViewFactory = new ConfigDrivenUniqTokenViewFactory(shouldUseTreasuryWildcards());
-		}
-		return uniqTokenViewFactory;
-	}
-
-	/**
-	 * Get the current special file system from working state disk fs
-	 *
-	 * @return current working state disk fs
-	 */
-	MerkleDiskFs getCurrentSpecialFileSystem() {
-		return this.workingState.getDiskFs();
-	}
-
-	public SoliditySigsVerifier soliditySigsVerifier() {
-		if (soliditySigsVerifier == null) {
-			soliditySigsVerifier = new TxnAwareSoliditySigsVerifier(
-					syncVerifier(),
-					txnCtx(),
-					StandardSyncActivationCheck::allKeysAreActive,
-					this::accounts);
-		}
-		return soliditySigsVerifier;
-	}
-
-	public FileUpdateInterceptor applicationPropertiesReloading() {
-		if (applicationPropertiesReloading == null) {
-			var propertiesCb = sysFileCallbacks().propertiesCb();
-			applicationPropertiesReloading = new ValidatingCallbackInterceptor(
-					0,
-					"files.networkProperties",
-					properties(),
-					contents -> propertiesCb.accept(uncheckedParse(contents)),
-					ConfigListUtils::isConfigList
-			);
-		}
-		return applicationPropertiesReloading;
-	}
-
-	public FileUpdateInterceptor apiPermissionsReloading() {
-		if (apiPermissionsReloading == null) {
-			var permissionsCb = sysFileCallbacks().permissionsCb();
-			apiPermissionsReloading = new ValidatingCallbackInterceptor(
-					0,
-					"files.hapiPermissions",
-					properties(),
-					contents -> permissionsCb.accept(uncheckedParse(contents)),
-					ConfigListUtils::isConfigList
-			);
-		}
-		return apiPermissionsReloading;
-	}
-
-	public TransitionLogicLookup transitionLogic() {
-		if (transitionLogic == null) {
-			transitionLogic = new TransitionLogicLookup(transitions());
-		}
-		return transitionLogic;
-	}
-
-	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
-		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
-
-		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
-				/* Crypto */
-				entry(CryptoCreate,
-						List.of(new CryptoCreateTransitionLogic(ledger(), validator(), txnCtx()))),
-				entry(CryptoUpdate,
-						List.of(new CryptoUpdateTransitionLogic(ledger(), validator(), txnCtx()))),
-				entry(CryptoDelete,
-						List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
-				entry(CryptoTransfer,
-						List.of(new CryptoTransferTransitionLogic(
-								ledger(),
-								txnCtx(),
-								globalDynamicProperties(),
-								impliedTransfersMarshal(),
-								transferSemanticChecks(),
-								spanMapAccessor))),
-				/* File */
-				entry(FileUpdate,
-						List.of(new FileUpdateTransitionLogic(hfs(), entityNums(), validator(), txnCtx()))),
-				entry(FileCreate,
-						List.of(new FileCreateTransitionLogic(hfs(), validator(), txnCtx()))),
-				entry(FileDelete,
-						List.of(new FileDeleteTransitionLogic(hfs(), txnCtx()))),
-				entry(FileAppend,
-						List.of(new FileAppendTransitionLogic(hfs(), txnCtx()))),
-				/* Contract */
-				entry(ContractCreate,
-						List.of(new ContractCreateTransitionLogic(
-								hfs(), contracts()::createContract, this::seqNo, validator(), txnCtx()))),
-				entry(ContractUpdate,
-						List.of(new ContractUpdateTransitionLogic(
-								ledger(), validator(), txnCtx(), new UpdateCustomizerFactory(), this::accounts))),
-				entry(ContractDelete,
-						List.of(new ContractDeleteTransitionLogic(
-								ledger(), contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
-				entry(ContractCall,
-						List.of(new ContractCallTransitionLogic(
-								contracts()::contractCall, validator(), txnCtx(), this::seqNo, this::accounts))),
-				/* Consensus */
-				entry(ConsensusCreateTopic,
-						List.of(new TopicCreateTransitionLogic(
-								this::accounts, this::topics, ids(), validator(), txnCtx(), ledger()))),
-				entry(ConsensusUpdateTopic,
-						List.of(new TopicUpdateTransitionLogic(
-								this::accounts, this::topics, validator(), txnCtx(), ledger()))),
-				entry(ConsensusDeleteTopic,
-						List.of(new TopicDeleteTransitionLogic(
-								this::topics, validator(), txnCtx()))),
-				entry(ConsensusSubmitMessage,
-						List.of(new SubmitMessageTransitionLogic(
-								this::topics, validator(), txnCtx(), globalDynamicProperties()))),
-				/* Token */
-				entry(TokenCreate,
-						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(),
-								txnCtx(), globalDynamicProperties()))),
-				entry(TokenUpdate,
-						List.of(new TokenUpdateTransitionLogic(
-								shouldUseTreasuryWildcards(), validator(), tokenStore(),
-								ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
-				entry(TokenFeeScheduleUpdate,
-						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
-				entry(TokenFreezeAccount,
-						List.of(new TokenFreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
-				entry(TokenUnfreezeAccount,
-						List.of(new TokenUnfreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
-				entry(TokenGrantKycToAccount,
-						List.of(new TokenGrantKycTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
-				entry(TokenRevokeKycFromAccount,
-						List.of(new TokenRevokeKycTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
-				entry(TokenDelete,
-						List.of(new TokenDeleteTransitionLogic(txnCtx(), typedTokenStore()))),
-				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(validator(), accountStore(), typedTokenStore(),
-								txnCtx(), globalDynamicProperties()))),
-				entry(TokenBurn,
-						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(),
-								txnCtx(), globalDynamicProperties()))),
-				entry(TokenAccountWipe,
-						List.of(new TokenWipeTransitionLogic(validator(), typedTokenStore(), accountStore(),
-								txnCtx(), globalDynamicProperties()))),
-				entry(TokenAssociateToAccount,
-						List.of(new TokenAssociateTransitionLogic(
-								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
-				entry(TokenDissociateFromAccount,
-						List.of(new TokenDissociateTransitionLogic(
-								typedTokenStore(), accountStore(), txnCtx(), validator(), Dissociation::loadFrom))),
-				/* Schedule */
-				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(
-								scheduleStore(), txnCtx(), activationHelper(), validator(), scheduleExecutor()))),
-				entry(ScheduleSign,
-						List.of(new ScheduleSignTransitionLogic(
-								scheduleStore(), txnCtx(), activationHelper(), scheduleExecutor()))),
-				entry(ScheduleDelete,
-						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
-				/* System */
-				entry(SystemDelete,
-						List.of(
-								new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
-								new ContractSysDelTransitionLogic(
-										validator(), txnCtx(), contracts()::systemDelete, this::accounts))),
-				entry(SystemUndelete,
-						List.of(
-								new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
-								new ContractSysUndelTransitionLogic(
-										validator(), txnCtx(), contracts()::systemUndelete, this::accounts))),
-				/* Network */
-				entry(Freeze,
-						List.of(new FreezeTransitionLogic(fileNums(), freeze()::freeze, txnCtx()))),
-				entry(UncheckedSubmit,
-						List.of(new UncheckedSubmitTransitionLogic()))
-		);
-		return transitionsMap::get;
-	}
-
-	public EntityIdSource ids() {
-		if (ids == null) {
-			ids = new SeqNoEntityIdSource(this::seqNo);
-		}
-		return ids;
-	}
-
-	public TransactionContext txnCtx() {
-		if (txnCtx == null) {
-			txnCtx = new AwareTransactionContext(this);
-		}
-		return txnCtx;
-	}
-
-	public Map<TransactionID, TxnIdRecentHistory> txnHistories() {
-		if (txnHistories == null) {
-			txnHistories = new ConcurrentHashMap<>();
-		}
-		return txnHistories;
-	}
-
-	public RecordCache recordCache() {
-		if (recordCache == null) {
-			recordCache = new RecordCache(
-					this,
-					new RecordCacheFactory(properties()).getRecordCache(),
-					txnHistories());
-		}
-		return recordCache;
-	}
-
-	public CharacteristicsFactory characteristics() {
-		if (characteristics == null) {
-			characteristics = new CharacteristicsFactory(hfs());
-		}
-		return characteristics;
-	}
-
-	public AccountRecordsHistorian recordsHistorian() {
-		if (recordsHistorian == null) {
-			recordsHistorian = new TxnAwareRecordsHistorian(recordCache(), txnCtx(), expiries());
-		}
-		return recordsHistorian;
-	}
-
-	public FeeExemptions exemptions() {
-		if (exemptions == null) {
-			exemptions = new StandardExemptions(accountNums(), systemOpPolicies());
-		}
-		return exemptions;
-	}
-
-	public HbarCentExchange exchange() {
-		if (exchange == null) {
-			exchange = new AwareHbarCentExchange(txnCtx());
-		}
-		return exchange;
-	}
-
-	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
-		if (backingTokenRels == null) {
-			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
-		}
-		return backingTokenRels;
-	}
-
-	public BackingStore<AccountID, MerkleAccount> backingAccounts() {
-		if (backingAccounts == null) {
-			backingAccounts = new BackingAccounts(this::accounts);
-		}
-		return backingAccounts;
-	}
-
-	public NodeLocalProperties nodeLocalProperties() {
-		if (nodeLocalProperties == null) {
-			nodeLocalProperties = new NodeLocalProperties(properties());
-		}
-		return nodeLocalProperties;
-	}
-
-	public GlobalDynamicProperties globalDynamicProperties() {
-		if (globalDynamicProperties == null) {
-			globalDynamicProperties = new GlobalDynamicProperties(hederaNums(), properties());
-		}
-		return globalDynamicProperties;
-	}
-
-	public BackingNfts backingNfts() {
-		if (backingNfts == null) {
-			backingNfts = new BackingNfts(this::uniqueTokens);
-		}
-		return backingNfts;
-	}
-
-	public TokenStore tokenStore() {
-		if (tokenStore == null) {
-			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger =
-					new TransactionalLedger<>(
-							NftProperty.class,
-							MerkleUniqueToken::new,
-							backingNfts(),
-							new ChangeSummaryManager<>());
-			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
-					new TransactionalLedger<>(
-							TokenRelProperty.class,
-							MerkleTokenRelStatus::new,
-							backingTokenRels(),
-							new ChangeSummaryManager<>());
-			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-			tokenStore = new HederaTokenStore(
-					ids(),
-					validator(),
-					uniqTokenViewsManager(),
-					globalDynamicProperties(),
-					this::tokens,
-					tokenRelsLedger,
-					nftsLedger);
-		}
-		return tokenStore;
-	}
-
-	public ScheduleStore scheduleStore() {
-		if (scheduleStore == null) {
-			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), txnCtx(), this::schedules);
-		}
-		return scheduleStore;
-	}
-
-	public HederaLedger ledger() {
-		if (ledger == null) {
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
-					new TransactionalLedger<>(
-							AccountProperty.class,
-							MerkleAccount::new,
-							backingAccounts(),
-							new ChangeSummaryManager<>());
-			ledger = new HederaLedger(
-					tokenStore(),
-					ids(),
-					creator(),
-					validator(),
-					recordsHistorian(),
-					globalDynamicProperties(),
-					accountsLedger);
-			ledger.setTokenViewsManager(uniqTokenViewsManager());
-			scheduleStore().setAccountsLedger(accountsLedger);
-			scheduleStore().setHederaLedger(ledger);
-		}
-		return ledger;
-	}
-
-	public EntityAutoRenewal entityAutoRenewal() {
-		if (entityAutoRenewal == null) {
-			final var helper = new RenewalHelper(
-					tokenStore(), hederaNums(), globalDynamicProperties(),
-					this::tokens, this::accounts, this::tokenAssociations, backingAccounts());
-			final var recordHelper = new RenewalRecordsHelper(
-					this, recordStreamManager(), globalDynamicProperties());
-			final var renewalProcess = new RenewalProcess(
-					fees(), hederaNums(), helper, recordHelper);
-			entityAutoRenewal = new EntityAutoRenewal(
-					hederaNums(), renewalProcess, this,
-					globalDynamicProperties(), networkCtxManager(), this::networkCtx);
-		}
-		return entityAutoRenewal;
-	}
-
-	public NarratedCharging narratedCharging() {
-		if (narratedCharging == null) {
-			narratedCharging = new NarratedLedgerCharging(
-					nodeInfo(), ledger(), exemptions(), globalDynamicProperties(), this::accounts);
-		}
-		return narratedCharging;
-	}
-
-	public ExpiryManager expiries() {
-		if (expiries == null) {
-			var histories = txnHistories();
-			expiries = new ExpiryManager(
-					recordCache(), scheduleStore(), hederaNums(), histories, this::accounts, this::schedules);
-		}
-		return expiries;
-	}
-
-	public ExpiringCreations creator() {
-		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), globalDynamicProperties(), this::accounts);
-			creator.setRecordCache(recordCache());
-		}
-		return creator;
-	}
-
-	public OptionValidator validator() {
-		if (validator == null) {
-			validator = new ContextOptionValidator(
-					effectiveNodeAccount(),
-					properties(),
-					txnCtx(),
-					globalDynamicProperties());
-		}
-		return validator;
-	}
-
-	public ProcessLogic logic() {
-		if (logic == null) {
-			final var rationalization = new Rationalization();
-			final var bodySigningFactory = new ReusableBodySigningFactory();
-			logic = new AwareProcessLogic(this, rationalization, bodySigningFactory, validityTest());
-		}
-		return logic;
-	}
-
-	public FreezeHandler freeze() {
-		if (freeze == null) {
-			freeze = new FreezeHandler(hfs(), platform(), exchange(), this::getDualState);
-		}
-		return freeze;
-	}
-
-	public void updateFeature() {
-		if (freeze != null) {
-			String os = System.getProperty("os.name").toLowerCase();
-			if (os.contains("mac")) {
-				if (platform.getSelfId().getId() == 0) {
-					freeze.handleUpdateFeature();
-				}
-			} else {
-				freeze.handleUpdateFeature();
-			}
-		}
-	}
-
-	public NetworkCtxManager networkCtxManager() {
-		if (networkCtxManager == null) {
-			networkCtxManager = new NetworkCtxManager(
-					issEventInfo(),
-					properties(),
-					opCounters(),
-					exchange(),
-					systemFilesManager(),
-					feeMultiplierSource(),
-					globalDynamicProperties(),
-					handleThrottling(),
-					this::networkCtx);
-		}
-		return networkCtxManager;
-	}
-
-	public ThrottleDefsManager throttleDefsManager() {
-		if (throttleDefsManager == null) {
-			throttleDefsManager = new ThrottleDefsManager(
-					fileNums(), this::addressBook, sysFileCallbacks().throttlesCb());
-		}
-		return throttleDefsManager;
-	}
-
-	public RecordStreamManager recordStreamManager() {
-		return recordStreamManager;
-	}
-
-	/**
-	 * RecordStreamManager should only be initialized after system files have been loaded,
-	 * which means enableRecordStreaming has been read from file
-	 */
-	public void initRecordStreamManager() {
-		try {
-			var nodeLocalProps = nodeLocalProperties();
-			var nodeScopedRecordLogDir = getRecordStreamDirectory(nodeLocalProps);
-			recordStreamManager = new RecordStreamManager(
-					platform,
-					runningAvgs(),
-					nodeLocalProps,
-					nodeScopedRecordLogDir,
-					getRecordsInitialHash());
-		} catch (IOException | NoSuchAlgorithmException ex) {
-			log.error("Fail to initialize RecordStreamManager.", ex);
-		}
-	}
-
-	public FileUpdateInterceptor exchangeRatesManager() {
-		if (exchangeRatesManager == null) {
-			exchangeRatesManager = new TxnAwareRatesManager(
-					fileNums(),
-					accountNums(),
-					globalDynamicProperties(),
-					txnCtx(),
-					this::midnightRates,
-					exchange()::updateRates,
-					limitPercent -> (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent));
-		}
-		return exchangeRatesManager;
-	}
-
-	public FileUpdateInterceptor feeSchedulesManager() {
-		if (feeSchedulesManager == null) {
-			feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
-		}
-		return feeSchedulesManager;
-	}
-
-	public ExpandHandleSpan expandHandleSpan() {
-		if (expandHandleSpan == null) {
-			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager());
-		}
-		return expandHandleSpan;
-	}
-
-	public SpanMapManager spanMapManager() {
-		if (spanMapManager == null) {
-			spanMapManager = new SpanMapManager(
-					impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules());
-		}
-		return spanMapManager;
-	}
-
-	public FreezeController freezeGrpc() {
-		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeController(txnResponseHelper());
-		}
-		return freezeGrpc;
-	}
-
-	public NetworkController networkGrpc() {
-		if (networkGrpc == null) {
-			networkGrpc = new NetworkController(metaAnswers(), txnResponseHelper(), queryResponseHelper());
-		}
-		return networkGrpc;
-	}
-
-	public FileController filesGrpc() {
-		if (fileGrpc == null) {
-			fileGrpc = new FileController(fileAnswers(), txnResponseHelper(), queryResponseHelper());
-		}
-		return fileGrpc;
-	}
-
-	public SystemOpPolicies systemOpPolicies() {
-		if (systemOpPolicies == null) {
-			systemOpPolicies = new SystemOpPolicies(entityNums());
-		}
-		return systemOpPolicies;
-	}
-
-	public TokenController tokenGrpc() {
-		if (tokenGrpc == null) {
-			tokenGrpc = new TokenController(tokenAnswers(), txnResponseHelper(), queryResponseHelper());
-		}
-		return tokenGrpc;
-	}
-
-	public ScheduleController scheduleGrpc() {
-		if (scheduleGrpc == null) {
-			scheduleGrpc = new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper());
-		}
-		return scheduleGrpc;
-	}
-
-	public CryptoController cryptoGrpc() {
-		if (cryptoGrpc == null) {
-			cryptoGrpc = new CryptoController(
-					metaAnswers(),
-					cryptoAnswers(),
-					txnResponseHelper(),
-					queryResponseHelper());
-		}
-		return cryptoGrpc;
-	}
-
-	public ContractController contractsGrpc() {
-		if (contractsGrpc == null) {
-			contractsGrpc = new ContractController(contractAnswers(), txnResponseHelper(), queryResponseHelper());
-		}
-		return contractsGrpc;
-	}
-
-	public PlatformSubmissionManager submissionManager() {
-		if (submissionManager == null) {
-			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
-		}
-		return submissionManager;
-	}
-
-	public AccessorBasedUsages accessorBasedUsages() {
-		if (accessorBasedUsages == null) {
-			final var opUsageCtxHelper = new OpUsageCtxHelper(this::tokens);
-			accessorBasedUsages = new AccessorBasedUsages(
-					new TokenOpsUsage(),
-					new CryptoOpsUsage(),
-					opUsageCtxHelper,
-					new ConsensusOpsUsage(),
-					globalDynamicProperties());
-		}
-		return accessorBasedUsages;
-	}
-
-	public ConsensusController consensusGrpc() {
-		if (null == consensusGrpc) {
-			consensusGrpc = new ConsensusController(hcsAnswers(), txnResponseHelper(), queryResponseHelper());
-		}
-		return consensusGrpc;
-	}
-
-	public GrpcServerManager grpc() {
-		if (grpc == null) {
-			grpc = new NettyGrpcServerManager(
-					Runtime.getRuntime()::addShutdownHook,
-					nodeLocalProperties(),
-					List.of(
-							cryptoGrpc(),
-							filesGrpc(),
-							freezeGrpc(),
-							contractsGrpc(),
-							consensusGrpc(),
-							networkGrpc(),
-							tokenGrpc(),
-							scheduleGrpc()),
-					new ConfigDrivenNettyFactory(nodeLocalProperties()),
-					Collections.emptyList());
-		}
-		return grpc;
-	}
-
-	public PureTransferSemanticChecks transferSemanticChecks() {
-		if (transferSemanticChecks == null) {
-			transferSemanticChecks = new PureTransferSemanticChecks();
-		}
-		return transferSemanticChecks;
-	}
-
-	public SmartContractRequestHandler contracts() {
-		if (contracts == null) {
-			contracts = new SmartContractRequestHandler(
-					repository(),
-					ledger(),
-					this::accounts,
-					txnCtx(),
-					exchange(),
-					usagePrices(),
-					newPureRepo(),
-					solidityLifecycle(),
-					soliditySigsVerifier(),
-					entityExpiries(),
-					globalDynamicProperties());
-		}
-		return contracts;
-	}
-
-	public SysFileCallbacks sysFileCallbacks() {
-		if (sysFileCallbacks == null) {
-			var configCallbacks = new ConfigCallbacks(
-					hapiOpPermissions(),
-					globalDynamicProperties(),
-					(StandardizedPropertySources) propertySources());
-			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
-			var throttlesCallback = new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
-			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
-		}
-		return sysFileCallbacks;
-	}
-
-	public SolidityLifecycle solidityLifecycle() {
-		if (solidityLifecycle == null) {
-			solidityLifecycle = new SolidityLifecycle(globalDynamicProperties());
-		}
-		return solidityLifecycle;
-	}
-
-	public PropertySource properties() {
-		if (properties == null) {
-			properties = propertySources().asResolvingSource();
-		}
-		return properties;
-	}
-
-	public SystemFilesManager systemFilesManager() {
-		if (systemFilesManager == null) {
-			systemFilesManager = new HfsSystemFilesManager(
-					addressBook(),
-					fileNums(),
-					properties(),
-					(TieredHederaFs) hfs(),
-					() -> lookupInCustomStore(
-							b64KeyReader(),
-							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
-							properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
-					sysFileCallbacks());
-		}
-		return systemFilesManager;
-	}
-
-	public HapiOpPermissions hapiOpPermissions() {
-		if (hapiOpPermissions == null) {
-			hapiOpPermissions = new HapiOpPermissions(accountNums());
-		}
-		return hapiOpPermissions;
-	}
-
-	public ServicesRepositoryRoot repository() {
-		if (repository == null) {
-			repository = new ServicesRepositoryRoot(accountSource(), bytecodeDb());
-			repository.setStoragePersistence(storagePersistence());
-		}
-		return repository;
-	}
-
-	public Supplier<ServicesRepositoryRoot> newPureRepo() {
-		if (newPureRepo == null) {
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
-					AccountProperty.class,
-					MerkleAccount::new,
-					new PureBackingAccounts(this::accounts),
-					new ChangeSummaryManager<>());
-			HederaLedger pureLedger = new HederaLedger(
-					NOOP_TOKEN_STORE,
-					NOOP_ID_SOURCE,
-					NOOP_EXPIRING_CREATIONS,
-					validator(),
-					NOOP_RECORDS_HISTORIAN,
-					globalDynamicProperties(),
-					pureDelegate);
-			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger);
-			newPureRepo = () -> {
-				var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeDb());
-				pureRepository.setStoragePersistence(storagePersistence());
-				return pureRepository;
-			};
-		}
-		return newPureRepo;
-	}
-
-	public ConsensusStatusCounts statusCounts() {
-		if (statusCounts == null) {
-			statusCounts = new ConsensusStatusCounts(new ObjectMapper());
-		}
-		return statusCounts;
-	}
-
-	public LedgerAccountsSource accountSource() {
-		if (accountSource == null) {
-			accountSource = new LedgerAccountsSource(ledger());
-		}
-		return accountSource;
-	}
-
-	public BlobStorageSource bytecodeDb() {
-		if (bytecodeDb == null) {
-			bytecodeDb = new BlobStorageSource(bytecodeMapFrom(blobStore()));
-		}
-		return bytecodeDb;
-	}
-
-	public SyntaxPrecheck syntaxPrecheck() {
-		if (syntaxPrecheck == null) {
-			syntaxPrecheck = new SyntaxPrecheck(recordCache(), validator(), globalDynamicProperties());
-		}
-		return syntaxPrecheck;
-	}
-
-	public Console console() {
-		if (console == null) {
-			console = platform().createConsole(true);
-		}
-		return console;
-	}
-
-	public Address address() {
-		if (address == null) {
-			address = addressBook().getAddress(id.getId());
-		}
-		return address;
-	}
-
-	public UsagePricesProvider usagePrices() {
-		if (usagePrices == null) {
-			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
-		}
-		return usagePrices;
-	}
-
-	public FeeChargingPolicy txnChargingPolicy() {
-		if (txnChargingPolicy == null) {
-			txnChargingPolicy = new FeeChargingPolicy(narratedCharging());
-		}
-		return txnChargingPolicy;
-	}
-
-	public TxnChargingPolicyAgent chargingPolicyAgent() {
-		if (chargingPolicyAgent == null) {
-			chargingPolicyAgent = new TxnChargingPolicyAgent(
-					fees(), txnChargingPolicy(), txnCtx(), this::currentView, nodeDiligenceScreen(), txnHistories());
-		}
-		return chargingPolicyAgent;
-	}
-
-	public SystemAccountsCreator systemAccountsCreator() {
-		if (systemAccountsCreator == null) {
-			systemAccountsCreator = new BackedSystemAccountsCreator(
-					hederaNums(),
-					accountNums(),
-					properties(),
-					b64KeyReader());
-		}
-		return systemAccountsCreator;
-	}
-
-	/* Context-free infrastructure. */
-	public LegacyEd25519KeyReader b64KeyReader() {
-		return b64KeyReader;
-	}
-
-	public Pause pause() {
-		return pause;
-	}
-
-	public AccountsExporter accountsExporter() {
-		return accountsExporter;
-	}
-
-	/* Injected dependencies. */
-	public NodeId id() {
-		return id;
-	}
-
-	public Platform platform() {
-		return platform;
-	}
-
-	public PropertySources propertySources() {
-		return propertySources;
-	}
-
-	/**
-	 * Get consensus time of last handled transaction
-	 *
-	 * @return instant representing last handled transaction from working state
-	 */
-	public Instant consensusTimeOfLastHandledTxn() {
-		return workingState.getNetworkCtx().consensusTimeOfLastHandledTxn();
-	}
-
-	public void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
-		state.networkCtx().setConsensusTimeOfLastHandledTxn(dataDrivenNow);
-	}
-
-	/**
-	 * Get the working state of address book
-	 *
-	 * @return current working state address book
-	 */
-	public AddressBook addressBook() {
-		return workingState.getAddressBook();
-	}
-
-	/**
-	 * Get the working state network ctx and extract sequence number
-	 *
-	 * @return sequence number from the current working state network ctx
-	 */
-	public SequenceNumber seqNo() {
-		return workingState.getNetworkCtx().seqNo();
-	}
-
-	/**
-	 * Get the working state network ctx and extract the last scanned entity
-	 *
-	 * @return last scanned entity from the current working state network ctx
-	 */
-	public long lastScannedEntity() {
-		return workingState.getNetworkCtx().lastScannedEntity();
-	}
-
-	public void updateLastScannedEntity(long lastScannedEntity) {
-		state.networkCtx().updateLastScannedEntity(lastScannedEntity);
-	}
-
-	/**
-	 * Gets the working state of network ctx and extracts midnight rates
-	 *
-	 * @return current working state network ctx midnight rates
-	 */
-	public ExchangeRates midnightRates() {
-		return workingState.getNetworkCtx().midnightRates();
-	}
-
-	/**
-	 * Gets the working state of the accounts
-	 *
-	 * @return current working state of accounts
-	 */
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return workingState.getAccounts();
-	}
-
-	/**
-	 * Gets the working state of the topics
-	 *
-	 * @return current working state of topics
-	 */
-	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return workingState.getTopics();
-	}
-
-	/**
-	 * Gets the working state of storage
-	 *
-	 * @return current working state of storage
-	 */
-	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		return workingState.getStorage();
-	}
-
-	/**
-	 * Gets the working state of tokens
-	 *
-	 * @return current working state of tokens
-	 */
-	public FCMap<MerkleEntityId, MerkleToken> tokens() {
-		return workingState.getTokens();
-	}
-
-	/**
-	 * Gets the working state of token associations
-	 *
-	 * @return current working state of token associations
-	 */
-	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
-		return workingState.getTokenAssociations();
-	}
-
-	/**
-	 * Gets the working state of schedules
-	 *
-	 * @return current working state of schedules
-	 */
-	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
-		return workingState.getSchedules();
-	}
-
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
-		return state.uniqueTokens();
-	}
-
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
-		return state.uniqueTokenAssociations();
-	}
-
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
-		return state.uniqueOwnershipAssociations();
-	}
-
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations() {
-		return state.uniqueTreasuryOwnershipAssociations();
-	}
-
-	/**
-	 * Get the working state of disk fs
-	 *
-	 * @return current working state of disk fs
-	 */
-	public MerkleDiskFs diskFs() {
-		return workingState.getDiskFs();
-	}
-
-	/**
-	 * Get the working state of network ctx
-	 *
-	 * @return current working state of network ctx
-	 */
-	public MerkleNetworkContext networkCtx() {
-		return workingState.getNetworkCtx();
-	}
-
-	/**
-	 * return the directory to which record stream files should be write
-	 *
-	 * @param source
-	 * 		the node local properties that contain the record logging directory
-	 * @return the direct file folder for writing record stream files
-	 */
-	public String getRecordStreamDirectory(NodeLocalProperties source) {
-		if (recordStreamDir == null) {
-			final String nodeAccountString = asLiteralString(effectiveNodeAccount());
-			String parentDir = source.recordLogDir();
-			if (!parentDir.endsWith(File.separator)) {
-				parentDir += File.separator;
-			}
-			recordStreamDir = parentDir + "record" + nodeAccountString;
-		}
-		return recordStreamDir;
-	}
-
-	/**
-	 * update the runningHash instance saved in runningHashLeaf
-	 *
-	 * @param runningHash
-	 * 		new runningHash instance
-	 */
-	public void updateRecordRunningHash(final RunningHash runningHash) {
-		state.runningHashLeaf().setRunningHash(runningHash);
-	}
-
-	/**
-	 * set recordsInitialHash, which will be set to RecordStreamManager as initialHash.
-	 * recordsInitialHash is read at restart, either from the state's runningHashLeaf,
-	 * or from the last old .rcd_sig file in migration.
-	 * When recordsInitialHash is read, the RecordStreamManager might not be initialized yet,
-	 * because RecordStreamManager can only be initialized after system files are loaded so that enableRecordStream
-	 * setting is read.
-	 * Thus we save the initialHash in the context, and use it when initializing RecordStreamManager
-	 *
-	 * @param recordsInitialHash
-	 * 		initial running Hash of records
-	 */
-	public void setRecordsInitialHash(final Hash recordsInitialHash) {
-		this.recordsInitialHash = recordsInitialHash;
-		if (recordStreamManager() != null) {
-			recordStreamManager().setInitialHash(recordsInitialHash);
-		}
-	}
-
-	Hash getRecordsInitialHash() {
-		return recordsInitialHash;
-	}
-
-	void setBackingTokenRels(BackingTokenRels backingTokenRels) {
-		this.backingTokenRels = backingTokenRels;
-	}
-
-	public void setBackingNfts(BackingNfts backingNfts) {
-		this.backingNfts = backingNfts;
-	}
-
-	void setBackingAccounts(BackingAccounts backingAccounts) {
-		this.backingAccounts = backingAccounts;
-	}
-
-	public void setTokenStore(TokenStore tokenStore) {
-		this.tokenStore = tokenStore;
-	}
-
-	public void setScheduleStore(ScheduleStore scheduleStore) {
-		this.scheduleStore = scheduleStore;
-	}
-
-	private AccountID effectiveNodeAccount() {
-		final var info = nodeInfo();
-		/* If we do not have a self account, we must be zero-stake and will never process a query payment. */
-		return info.hasSelfAccount() ? info.selfAccount() : AccountID.getDefaultInstance();
-	}
+  private static final Logger log = LogManager.getLogger(ServicesContext.class);
+
+  /* Injected dependencies. */
+  ServicesState state;
+
+  private final NodeId id;
+  private final Platform platform;
+  private final PropertySources propertySources;
+
+  /* Context-sensitive singletons. */
+  /** the directory to which we writes .rcd and .rcd_sig files */
+  private String recordStreamDir;
+  /** the initialHash of RecordStreamManager */
+  private Hash recordsInitialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+
+  private Address address;
+  private Console console;
+  private HederaFs hfs;
+  private NodeInfo nodeInfo;
+  private StateView currentView;
+  private TokenStore tokenStore;
+  private AnswerFlow answerFlow;
+  private HcsAnswers hcsAnswers;
+  private FileNumbers fileNums;
+  private FileAnswers fileAnswers;
+  private MetaAnswers metaAnswers;
+  private RecordCache recordCache;
+  private BackingNfts backingNfts;
+  private AccountStore accountStore;
+  private TokenAnswers tokenAnswers;
+  private HederaLedger ledger;
+  private SyncVerifier syncVerifier;
+  private IssEventInfo issEventInfo;
+  private ProcessLogic logic;
+  private QueryFeeCheck queryFeeCheck;
+  private HederaNumbers hederaNums;
+  private ExpiryManager expiries;
+  private FeeCalculator fees;
+  private FeeExemptions exemptions;
+  private EntityNumbers entityNums;
+  private FreezeHandler freeze;
+  private CryptoAnswers cryptoAnswers;
+  private ScheduleStore scheduleStore;
+  private SyntaxPrecheck syntaxPrecheck;
+  private AccountNumbers accountNums;
+  private SubmissionFlow submissionFlow;
+  private PropertySource properties;
+  private EntityIdSource ids;
+  private FileController fileGrpc;
+  private HapiOpCounters opCounters;
+  private SpanMapManager spanMapManager;
+  private AnswerFunctions answerFunctions;
+  private ContractAnswers contractAnswers;
+  private SwirldDualState dualState;
+  private OptionValidator validator;
+  private LedgerValidator ledgerValidator;
+  private BackingAccounts backingAccounts;
+  private TokenController tokenGrpc;
+  private MiscRunningAvgs runningAvgs;
+  private ScheduleAnswers scheduleAnswers;
+  private InvariantChecks invariantChecks;
+  private TypedTokenStore typedTokenStore;
+  private SignatureWaivers signatureWaivers;
+  private MiscSpeedometers speedometers;
+  private ScheduleExecutor scheduleExecutor;
+  private ServicesNodeType nodeType;
+  private SystemOpPolicies systemOpPolicies;
+  private CryptoController cryptoGrpc;
+  private HbarCentExchange exchange;
+  private TransitionRunner transitionRunner;
+  private SemanticVersions semVers;
+  private PrecheckVerifier precheckVerifier;
+  private BackingTokenRels backingTokenRels;
+  private FreezeController freezeGrpc;
+  private ExpandHandleSpan expandHandleSpan;
+  private BalancesExporter balancesExporter;
+  private SysFileCallbacks sysFileCallbacks;
+  private NarratedCharging narratedCharging;
+  private NetworkCtxManager networkCtxManager;
+  private SolidityLifecycle solidityLifecycle;
+  private ExpiringCreations creator;
+  private NetworkController networkGrpc;
+  private GrpcServerManager grpc;
+  private FeeChargingPolicy txnChargingPolicy;
+  private TxnResponseHelper txnResponseHelper;
+  private BlobStorageSource bytecodeDb;
+  private HapiOpPermissions hapiOpPermissions;
+  private EntityAutoRenewal entityAutoRenewal;
+  private TransactionContext txnCtx;
+  private ContractController contractsGrpc;
+  private HederaSigningOrder keyOrder;
+  private HederaSigningOrder backedKeyOrder;
+  private HederaSigningOrder lookupRetryingKeyOrder;
+  private StoragePersistence storagePersistence;
+  private ScheduleController scheduleGrpc;
+  private NonBlockingHandoff nonBlockingHandoff;
+  private AccessorBasedUsages accessorBasedUsages;
+  private ConsensusController consensusGrpc;
+  private QueryResponseHelper queryResponseHelper;
+  private UsagePricesProvider usagePrices;
+  private Supplier<StateView> stateViews;
+  private FeeSchedulesManager feeSchedulesManager;
+  private RecordStreamManager recordStreamManager;
+  private ThrottleDefsManager throttleDefsManager;
+  private QueryHeaderValidity queryHeaderValidity;
+  private Map<String, byte[]> blobStore;
+  private Map<EntityId, Long> entityExpiries;
+  private TransactionPrecheck transactionPrecheck;
+  private FeeMultiplierSource feeMultiplierSource;
+  private NodeLocalProperties nodeLocalProperties;
+  private UniqTokenViewFactory uniqTokenViewFactory;
+  private TxnAwareRatesManager exchangeRatesManager;
+  private ServicesStatsManager statsManager;
+  private LedgerAccountsSource accountSource;
+  private TransitionLogicLookup transitionLogic;
+  private FcmCustomFeeSchedules activeCustomFeeSchedules;
+  private PricedUsageCalculator pricedUsageCalculator;
+  private TransactionThrottling txnThrottling;
+  private ConsensusStatusCounts statusCounts;
+  private UniqTokenViewsManager uniqTokenViewsManager;
+  private HfsSystemFilesManager systemFilesManager;
+  private CurrentPlatformStatus platformStatus;
+  private SystemAccountsCreator systemAccountsCreator;
+  private TxnChargingPolicyAgent chargingPolicyAgent;
+  private ServicesRepositoryRoot repository;
+  private CharacteristicsFactory characteristics;
+  private AccountRecordsHistorian recordsHistorian;
+  private GlobalDynamicProperties globalDynamicProperties;
+  private FunctionalityThrottling hapiThrottling;
+  private FunctionalityThrottling handleThrottling;
+  private ImpliedTransfersMarshal impliedTransfersMarshal;
+  private AwareNodeDiligenceScreen nodeDiligenceScreen;
+  private InHandleActivationHelper activationHelper;
+  private PlatformSubmissionManager submissionManager;
+  private PureTransferSemanticChecks transferSemanticChecks;
+  private SmartContractRequestHandler contracts;
+  private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
+  private ValidatingCallbackInterceptor apiPermissionsReloading;
+  private ValidatingCallbackInterceptor applicationPropertiesReloading;
+  private Supplier<ServicesRepositoryRoot> newPureRepo;
+  private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+  private BiPredicate<JKey, TransactionSignature> validityTest;
+
+  private final StateChildren workingState = new StateChildren();
+  private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
+
+  /* Context-free infrastructure. */
+  private static final Pause pause;
+  private static final AccountsExporter accountsExporter;
+  private static final LegacyEd25519KeyReader b64KeyReader;
+
+  static {
+    pause = SleepingPause.SLEEPING_PAUSE;
+    b64KeyReader = new LegacyEd25519KeyReader();
+    accountsExporter = new ToStringAccountsExporter();
+  }
+
+  public ServicesContext(
+      NodeId id, Platform platform, ServicesState state, PropertySources propertySources) {
+    this.id = id;
+    this.platform = platform;
+    this.state = state;
+    this.propertySources = propertySources;
+  }
+
+  /**
+   * Update the state and working state based on the provided service state
+   *
+   * @param state latest state from the services
+   */
+  public void update(ServicesState state) {
+    this.state = state;
+
+    updateWorkingState(state);
+    updateQueryableState(state);
+  }
+
+  /** Update the queryable state */
+  private void updateQueryableState(ServicesState state) {
+    final StateChildren newQueryableStateChildren = new StateChildren();
+
+    newQueryableStateChildren.setAccounts(state.accounts());
+    newQueryableStateChildren.setTopics(state.topics());
+    newQueryableStateChildren.setStorage(state.storage());
+    newQueryableStateChildren.setTokens(state.tokens());
+    newQueryableStateChildren.setTokenAssociations(state.tokenAssociations());
+    newQueryableStateChildren.setSchedules(state.scheduleTxs());
+    newQueryableStateChildren.setUniqueTokens(state.uniqueTokens());
+    newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+    newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+    newQueryableStateChildren.setUniqueOwnershipTreasuryAssociations(
+        state.uniqueTreasuryOwnershipAssociations());
+    newQueryableStateChildren.setDiskFs(state.diskFs());
+
+    queryableState.set(newQueryableStateChildren);
+  }
+
+  /**
+   * Update the working state when given the state
+   *
+   * @param state to set for the working state
+   */
+  private void updateWorkingState(ServicesState state) {
+    workingState.setAccounts(state.accounts());
+    workingState.setTopics(state.topics());
+    workingState.setStorage(state.storage());
+    workingState.setTokens(state.tokens());
+    workingState.setTokenAssociations(state.tokenAssociations());
+    workingState.setSchedules(state.scheduleTxs());
+    workingState.setNetworkCtx(state.networkCtx());
+    workingState.setAddressBook(state.addressBook());
+    workingState.setDiskFs(state.diskFs());
+    workingState.setUniqueTokens(state.uniqueTokens());
+    workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+    workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+    workingState.setUniqueOwnershipTreasuryAssociations(
+        state.uniqueTreasuryOwnershipAssociations());
+  }
+
+  public SwirldDualState getDualState() {
+    return dualState;
+  }
+
+  public void setDualState(SwirldDualState dualState) {
+    this.dualState = dualState;
+  }
+
+  public void rebuildBackingStoresIfPresent() {
+    if (backingTokenRels != null) {
+      backingTokenRels.rebuildFromSources();
+    }
+    if (backingAccounts != null) {
+      backingAccounts.rebuildFromSources();
+    }
+    if (backingNfts != null) {
+      backingNfts.rebuildFromSources();
+    }
+  }
+
+  public void rebuildStoreViewsIfPresent() {
+    if (scheduleStore != null) {
+      scheduleStore.rebuildViews();
+    }
+    if (tokenStore != null) {
+      tokenStore.rebuildViews();
+    }
+  }
+
+  public NonBlockingHandoff nonBlockingHandoff() {
+    if (nonBlockingHandoff == null) {
+      nonBlockingHandoff = new NonBlockingHandoff(recordStreamManager(), nodeLocalProperties());
+    }
+    return nonBlockingHandoff;
+  }
+
+  public TransitionRunner transitionRunner() {
+    if (transitionRunner == null) {
+      transitionRunner = new TransitionRunner(txnCtx(), transitionLogic());
+    }
+    return transitionRunner;
+  }
+
+  public HapiOpCounters opCounters() {
+    if (opCounters == null) {
+      opCounters =
+          new HapiOpCounters(
+              new CounterFactory() {}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
+    }
+    return opCounters;
+  }
+
+  public QueryHeaderValidity queryHeaderValidity() {
+    if (queryHeaderValidity == null) {
+      queryHeaderValidity = new QueryHeaderValidity();
+    }
+    return queryHeaderValidity;
+  }
+
+  public MiscRunningAvgs runningAvgs() {
+    if (runningAvgs == null) {
+      runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {}, nodeLocalProperties());
+    }
+    return runningAvgs;
+  }
+
+  public TransactionPrecheck transactionPrecheck() {
+    if (transactionPrecheck == null) {
+      final var structure =
+          new StructuralPrecheck(
+              Platform.getTransactionMaxBytes(), HISTORICAL_MAX_PROTO_MESSAGE_DEPTH);
+      final var semantics = new SemanticPrecheck(transitionLogic());
+      final var solvency =
+          new SolvencyPrecheck(
+              exemptions(),
+              fees(),
+              validator(),
+              precheckVerifier(),
+              stateViews(),
+              globalDynamicProperties(),
+              this::accounts);
+      final var system =
+          new SystemPrecheck(systemOpPolicies(), hapiOpPermissions(), txnThrottling());
+      final var stagedChecks =
+          new StagedPrechecks(syntaxPrecheck(), system, semantics, solvency, structure);
+      transactionPrecheck =
+          new TransactionPrecheck(queryFeeCheck(), stagedChecks, platformStatus());
+    }
+    return transactionPrecheck;
+  }
+
+  public PricedUsageCalculator pricedUsageCalculator() {
+    if (pricedUsageCalculator == null) {
+      pricedUsageCalculator =
+          new PricedUsageCalculator(
+              accessorBasedUsages(), feeMultiplierSource(), new OverflowCheckingCalc());
+    }
+    return pricedUsageCalculator;
+  }
+
+  public FeeMultiplierSource feeMultiplierSource() {
+    if (feeMultiplierSource == null) {
+      feeMultiplierSource =
+          new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
+    }
+    return feeMultiplierSource;
+  }
+
+  public SignatureWaivers signatureWaivers() {
+    if (signatureWaivers == null) {
+      signatureWaivers = new PolicyBasedSigWaivers(entityNums(), systemOpPolicies());
+    }
+    return signatureWaivers;
+  }
+
+  public MiscSpeedometers speedometers() {
+    if (speedometers == null) {
+      speedometers = new MiscSpeedometers(new SpeedometerFactory() {}, nodeLocalProperties());
+    }
+    return speedometers;
+  }
+
+  public FunctionalityThrottling hapiThrottling() {
+    if (hapiThrottling == null) {
+      final var delegate =
+          new DeterministicThrottling(() -> addressBook().getSize(), globalDynamicProperties());
+      hapiThrottling = new HapiThrottling(delegate);
+    }
+    return hapiThrottling;
+  }
+
+  public FunctionalityThrottling handleThrottling() {
+    if (handleThrottling == null) {
+      final var delegate = new DeterministicThrottling(() -> 1, globalDynamicProperties());
+      handleThrottling = new TxnAwareHandleThrottling(txnCtx(), delegate);
+    }
+    return handleThrottling;
+  }
+
+  public ImpliedTransfersMarshal impliedTransfersMarshal() {
+    if (impliedTransfersMarshal == null) {
+      final var htsAssessor = new HtsFeeAssessor();
+      final var hbarAssessor = new HbarFeeAssessor();
+      final var fixedFeeAssessor = new FixedFeeAssessor(htsAssessor, hbarAssessor);
+      final var royaltyAssessor =
+          new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange);
+      final var fractionalAssessor = new FractionalFeeAssessor(fixedFeeAssessor);
+      final var feeAssessor =
+          new FeeAssessor(fixedFeeAssessor, royaltyAssessor, fractionalAssessor);
+      impliedTransfersMarshal =
+          new ImpliedTransfersMarshal(
+              feeAssessor,
+              customFeeSchedules(),
+              globalDynamicProperties(),
+              transferSemanticChecks(),
+              BalanceChangeManager::new,
+              CustomSchedulesManager::new);
+    }
+    return impliedTransfersMarshal;
+  }
+
+  private CustomFeeSchedules customFeeSchedules() {
+    if (activeCustomFeeSchedules == null) {
+      activeCustomFeeSchedules = new FcmCustomFeeSchedules(this::tokens);
+    }
+    return activeCustomFeeSchedules;
+  }
+
+  public AwareNodeDiligenceScreen nodeDiligenceScreen() {
+    if (nodeDiligenceScreen == null) {
+      nodeDiligenceScreen = new AwareNodeDiligenceScreen(validator(), txnCtx(), backingAccounts());
+    }
+    return nodeDiligenceScreen;
+  }
+
+  public SemanticVersions semVers() {
+    if (semVers == null) {
+      semVers = new SemanticVersions();
+    }
+    return semVers;
+  }
+
+  public ServicesStatsManager statsManager() {
+    if (statsManager == null) {
+      var opSpeedometers =
+          new HapiOpSpeedometers(
+              opCounters(),
+              new SpeedometerFactory() {},
+              nodeLocalProperties(),
+              MiscUtils::baseStatNameOf);
+      statsManager =
+          new ServicesStatsManager(
+              opCounters(), runningAvgs(), speedometers(), opSpeedometers, nodeLocalProperties());
+    }
+    return statsManager;
+  }
+
+  public CurrentPlatformStatus platformStatus() {
+    if (platformStatus == null) {
+      platformStatus = new ContextPlatformStatus();
+    }
+    return platformStatus;
+  }
+
+  public LedgerValidator ledgerValidator() {
+    if (ledgerValidator == null) {
+      ledgerValidator =
+          new BasedLedgerValidator(hederaNums(), properties(), globalDynamicProperties());
+    }
+    return ledgerValidator;
+  }
+
+  public InHandleActivationHelper activationHelper() {
+    if (activationHelper == null) {
+      activationHelper = new InHandleActivationHelper(characteristics(), txnCtx()::accessor);
+    }
+    return activationHelper;
+  }
+
+  public NodeInfo nodeInfo() {
+    if (nodeInfo == null) {
+      nodeInfo = new NodeInfo(id.getId(), this::addressBook);
+    }
+    return nodeInfo;
+  }
+
+  public InvariantChecks invariants() {
+    if (invariantChecks == null) {
+      invariantChecks = new InvariantChecks(nodeInfo(), this::networkCtx);
+    }
+    return invariantChecks;
+  }
+
+  public ScheduleExecutor scheduleExecutor() {
+    if (scheduleExecutor == null) {
+      scheduleExecutor = new ScheduleExecutor();
+    }
+    return scheduleExecutor;
+  }
+
+  public IssEventInfo issEventInfo() {
+    if (issEventInfo == null) {
+      issEventInfo = new IssEventInfo(properties());
+    }
+    return issEventInfo;
+  }
+
+  public Map<String, byte[]> blobStore() {
+    if (blobStore == null) {
+      blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, this::storage);
+    }
+    return blobStore;
+  }
+
+  public Supplier<StateView> stateViews() {
+    if (stateViews == null) {
+      stateViews =
+          () ->
+              new StateView(
+                  tokenStore(),
+                  scheduleStore(),
+                  nodeLocalProperties(),
+                  queryableState.get(),
+                  uniqTokenViewFactory());
+    }
+    return stateViews;
+  }
+
+  public StateView currentView() {
+    if (currentView == null) {
+      currentView =
+          new StateView(
+              tokenStore(),
+              scheduleStore(),
+              nodeLocalProperties(),
+              workingState,
+              uniqTokenViewFactory());
+    }
+    return currentView;
+  }
+
+  public UniqTokenViewsManager uniqTokenViewsManager() {
+    if (uniqTokenViewsManager == null) {
+      if (shouldUseTreasuryWildcards()) {
+        uniqTokenViewsManager =
+            new UniqTokenViewsManager(
+                this::uniqueTokenAssociations,
+                this::uniqueOwnershipAssociations,
+                this::uniqueOwnershipTreasuryAssociations);
+      } else {
+        uniqTokenViewsManager =
+            new UniqTokenViewsManager(
+                this::uniqueTokenAssociations, this::uniqueOwnershipAssociations);
+      }
+    }
+    return uniqTokenViewsManager;
+  }
+
+  private boolean shouldUseTreasuryWildcards() {
+    return properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+  }
+
+  public HederaNumbers hederaNums() {
+    if (hederaNums == null) {
+      hederaNums = new HederaNumbers(properties());
+    }
+    return hederaNums;
+  }
+
+  public FileNumbers fileNums() {
+    if (fileNums == null) {
+      fileNums = new FileNumbers(hederaNums(), properties());
+    }
+    return fileNums;
+  }
+
+  public AccountNumbers accountNums() {
+    if (accountNums == null) {
+      accountNums = new AccountNumbers(properties());
+    }
+    return accountNums;
+  }
+
+  public TxnResponseHelper txnResponseHelper() {
+    if (txnResponseHelper == null) {
+      txnResponseHelper = new TxnResponseHelper(submissionFlow(), opCounters());
+    }
+    return txnResponseHelper;
+  }
+
+  public TransactionThrottling txnThrottling() {
+    if (txnThrottling == null) {
+      txnThrottling = new TransactionThrottling(hapiThrottling());
+    }
+    return txnThrottling;
+  }
+
+  public SubmissionFlow submissionFlow() {
+    if (submissionFlow == null) {
+      submissionFlow =
+          new BasicSubmissionFlow(nodeType(), transactionPrecheck(), submissionManager());
+    }
+    return submissionFlow;
+  }
+
+  public QueryResponseHelper queryResponseHelper() {
+    if (queryResponseHelper == null) {
+      queryResponseHelper = new QueryResponseHelper(answerFlow(), opCounters());
+    }
+    return queryResponseHelper;
+  }
+
+  public FileAnswers fileAnswers() {
+    if (fileAnswers == null) {
+      fileAnswers =
+          new FileAnswers(
+              new GetFileInfoAnswer(validator()), new GetFileContentsAnswer(validator()));
+    }
+    return fileAnswers;
+  }
+
+  public ContractAnswers contractAnswers() {
+    if (contractAnswers == null) {
+      contractAnswers =
+          new ContractAnswers(
+              new GetBytecodeAnswer(validator()),
+              new GetContractInfoAnswer(validator()),
+              new GetBySolidityIdAnswer(),
+              new GetContractRecordsAnswer(validator()),
+              new ContractCallLocalAnswer(contracts()::contractCallLocal, validator()));
+    }
+    return contractAnswers;
+  }
+
+  public HcsAnswers hcsAnswers() {
+    if (hcsAnswers == null) {
+      hcsAnswers = new HcsAnswers(new GetTopicInfoAnswer(validator()));
+    }
+    return hcsAnswers;
+  }
+
+  /**
+   * Returns the singleton {@link TypedTokenStore} used in {@link
+   * ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction,
+   * SwirldDualState)} to load, save, and create tokens in the Swirlds application state. It
+   * decouples the {@code handleTransaction} logic from the details of the Merkle state.
+   *
+   * <p>Here "singleton" means that, no matter how many fast-copies are made of the {@link
+   * ServicesState}, the mutable instance receiving the {@code handleTransaction} call will always
+   * use the same {@code typedTokenStore} instance.
+   *
+   * <p>Hence we inject the {@code typedTokenStore} with method references to {@link
+   * ServicesContext#tokens()} and {@link ServicesContext#tokenAssociations()} so it can always
+   * access the children of the mutable {@link ServicesState}.
+   *
+   * @return the singleton TypedTokenStore
+   */
+  public TypedTokenStore typedTokenStore() {
+    if (typedTokenStore == null) {
+      typedTokenStore =
+          new TypedTokenStore(
+              accountStore(),
+              new TransactionRecordService(txnCtx()),
+              this::tokens,
+              this::uniqueTokens,
+              this::tokenAssociations,
+              (BackingTokenRels) backingTokenRels(),
+              uniqTokenViewsManager(),
+              tokenStore()::removeKnownTreasuryForToken);
+    }
+    return typedTokenStore;
+  }
+
+  /**
+   * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long,
+   * boolean, Instant, Instant, SwirldTransaction, SwirldDualState)} to load, save, and create
+   * accounts from the Swirlds application state. It decouples the {@code handleTransaction} logic
+   * from the details of the Merkle state.
+   *
+   * @return the singleton accounts store
+   */
+  public AccountStore accountStore() {
+    if (accountStore == null) {
+      accountStore = new AccountStore(validator(), globalDynamicProperties(), this::accounts);
+    }
+    return accountStore;
+  }
+
+  public MetaAnswers metaAnswers() {
+    if (metaAnswers == null) {
+      metaAnswers =
+          new MetaAnswers(
+              new GetTxnRecordAnswer(recordCache(), validator(), answerFunctions()),
+              new GetTxnReceiptAnswer(recordCache()),
+              new GetVersionInfoAnswer(semVers()),
+              new GetFastTxnRecordAnswer());
+    }
+    return metaAnswers;
+  }
+
+  public EntityNumbers entityNums() {
+    if (entityNums == null) {
+      entityNums = new EntityNumbers(fileNums(), hederaNums(), accountNums());
+    }
+    return entityNums;
+  }
+
+  public TokenAnswers tokenAnswers() {
+    if (tokenAnswers == null) {
+      tokenAnswers =
+          new TokenAnswers(
+              new GetTokenInfoAnswer(),
+              new GetTokenNftInfoAnswer(),
+              new GetTokenNftInfosAnswer(validator()),
+              new GetAccountNftInfosAnswer(validator()));
+    }
+    return tokenAnswers;
+  }
+
+  public ScheduleAnswers scheduleAnswers() {
+    if (scheduleAnswers == null) {
+      scheduleAnswers = new ScheduleAnswers(new GetScheduleInfoAnswer());
+    }
+    return scheduleAnswers;
+  }
+
+  public CryptoAnswers cryptoAnswers() {
+    if (cryptoAnswers == null) {
+      cryptoAnswers =
+          new CryptoAnswers(
+              new GetLiveHashAnswer(),
+              new GetStakersAnswer(),
+              new GetAccountInfoAnswer(validator()),
+              new GetAccountBalanceAnswer(validator()),
+              new GetAccountRecordsAnswer(answerFunctions(), validator()));
+    }
+    return cryptoAnswers;
+  }
+
+  public AnswerFunctions answerFunctions() {
+    if (answerFunctions == null) {
+      answerFunctions = new AnswerFunctions();
+    }
+    return answerFunctions;
+  }
+
+  public QueryFeeCheck queryFeeCheck() {
+    if (queryFeeCheck == null) {
+      queryFeeCheck = new QueryFeeCheck(validator(), globalDynamicProperties(), this::accounts);
+    }
+    return queryFeeCheck;
+  }
+
+  public FeeCalculator fees() {
+    if (fees == null) {
+      FileOpsUsage fileOpsUsage = new FileOpsUsage();
+      CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
+      FileFeeBuilder fileFees = new FileFeeBuilder();
+      CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
+      ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
+      SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
+
+      fees =
+          new UsageBasedFeeCalculator(
+              new AutoRenewCalcs(cryptoOpsUsage),
+              exchange(),
+              usagePrices(),
+              feeMultiplierSource(),
+              pricedUsageCalculator(),
+              List.of(
+                  /* Meta */
+                  new GetVersionInfoResourceUsage(),
+                  new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
+                  /* Crypto */
+                  new GetAccountInfoResourceUsage(cryptoOpsUsage),
+                  new GetAccountRecordsResourceUsage(answerFunctions(), cryptoFees),
+                  /* File */
+                  new GetFileInfoResourceUsage(fileOpsUsage),
+                  new GetFileContentsResourceUsage(fileFees),
+                  /* Consensus */
+                  new GetTopicInfoResourceUsage(),
+                  /* Smart Contract */
+                  new GetBytecodeResourceUsage(contractFees),
+                  new GetContractInfoResourceUsage(),
+                  new GetContractRecordsResourceUsage(contractFees),
+                  new ContractCallLocalResourceUsage(
+                      contracts()::contractCallLocal, contractFees, globalDynamicProperties()),
+                  /* Token */
+                  new GetTokenInfoResourceUsage(),
+                  /* Schedule */
+                  new GetScheduleInfoResourceUsage(scheduleOpsUsage),
+                  /* NftInfo */
+                  new GetTokenNftInfoResourceUsage(),
+                  new GetTokenNftInfosResourceUsage(),
+                  new GetAccountNftInfosResourceUsage()),
+              txnUsageEstimators(
+                  cryptoOpsUsage,
+                  fileOpsUsage,
+                  fileFees,
+                  cryptoFees,
+                  contractFees,
+                  scheduleOpsUsage));
+    }
+    return fees;
+  }
+
+  private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
+      CryptoOpsUsage cryptoOpsUsage,
+      FileOpsUsage fileOpsUsage,
+      FileFeeBuilder fileFees,
+      CryptoFeeBuilder cryptoFees,
+      SmartContractFeeBuilder contractFees,
+      ScheduleOpsUsage scheduleOpsUsage) {
+    var props = globalDynamicProperties();
+
+    Map<HederaFunctionality, List<TxnResourceUsageEstimator>> estimatorsMap =
+        Map.ofEntries(
+            /* Crypto */
+            entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
+            entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
+            entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoOpsUsage))),
+            /* Contract */
+            entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),
+            entry(ContractCreate, List.of(new ContractCreateResourceUsage(contractFees))),
+            entry(ContractDelete, List.of(new ContractDeleteResourceUsage(contractFees))),
+            entry(ContractUpdate, List.of(new ContractUpdateResourceUsage(contractFees))),
+            /* File */
+            entry(FileCreate, List.of(new FileCreateResourceUsage(fileOpsUsage))),
+            entry(FileDelete, List.of(new FileDeleteResourceUsage(fileFees))),
+            entry(FileUpdate, List.of(new FileUpdateResourceUsage(fileOpsUsage))),
+            entry(FileAppend, List.of(new FileAppendResourceUsage(fileFees))),
+            /* Consensus */
+            entry(ConsensusCreateTopic, List.of(new CreateTopicResourceUsage())),
+            entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
+            entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
+            /* Token */
+            entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
+            entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
+            // TODO: add resourceUsage of TokenFeeScheduleUpdate to estimatorsMap
+            entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
+            entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
+            entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
+            entry(TokenRevokeKycFromAccount, List.of(new TokenRevokeKycResourceUsage())),
+            entry(TokenDelete, List.of(new TokenDeleteResourceUsage())),
+            entry(TokenMint, List.of(new TokenMintResourceUsage())),
+            entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
+            entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
+            entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
+            entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
+            /* Schedule */
+            entry(
+                ScheduleCreate, List.of(new ScheduleCreateResourceUsage(scheduleOpsUsage, props))),
+            entry(
+                ScheduleDelete, List.of(new ScheduleDeleteResourceUsage(scheduleOpsUsage, props))),
+            entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(scheduleOpsUsage, props))),
+            /* System */
+            entry(Freeze, List.of(new FreezeResourceUsage())),
+            entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
+            entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees))));
+
+    return estimatorsMap::get;
+  }
+
+  public AnswerFlow answerFlow() {
+    if (answerFlow == null) {
+      if (nodeType() == STAKED_NODE) {
+        answerFlow =
+            new StakedAnswerFlow(
+                fees(),
+                stateViews(),
+                usagePrices(),
+                hapiThrottling(),
+                submissionManager(),
+                queryHeaderValidity(),
+                transactionPrecheck(),
+                hapiOpPermissions(),
+                queryFeeCheck());
+      } else {
+        answerFlow = new ZeroStakeAnswerFlow(queryHeaderValidity(), stateViews(), hapiThrottling());
+      }
+    }
+    return answerFlow;
+  }
+
+  public HederaSigningOrder keyOrder() {
+    if (keyOrder == null) {
+      var lookups =
+          defaultLookupsFor(
+              hfs(),
+              this::accounts,
+              this::topics,
+              REF_LOOKUP_FACTORY.apply(tokenStore()),
+              SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
+      keyOrder = keyOrderWith(lookups);
+    }
+    return keyOrder;
+  }
+
+  public HederaSigningOrder backedKeyOrder() {
+    if (backedKeyOrder == null) {
+      var lookups =
+          backedLookupsFor(
+              hfs(),
+              backingAccounts(),
+              this::topics,
+              this::accounts,
+              REF_LOOKUP_FACTORY.apply(tokenStore()),
+              SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
+      backedKeyOrder = keyOrderWith(lookups);
+    }
+    return backedKeyOrder;
+  }
+
+  public HederaSigningOrder lookupRetryingKeyOrder() {
+    if (lookupRetryingKeyOrder == null) {
+      var lookups =
+          defaultAccountRetryingLookupsFor(
+              hfs(),
+              nodeLocalProperties(),
+              this::accounts,
+              this::topics,
+              REF_LOOKUP_FACTORY.apply(tokenStore()),
+              SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()),
+              runningAvgs(),
+              speedometers());
+      lookupRetryingKeyOrder = keyOrderWith(lookups);
+    }
+    return lookupRetryingKeyOrder;
+  }
+
+  public ServicesNodeType nodeType() {
+    if (nodeType == null) {
+      nodeType = (address().getStake() > 0) ? STAKED_NODE : ZERO_STAKE_NODE;
+    }
+    return nodeType;
+  }
+
+  private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
+    return new HederaSigningOrder(lookups, globalDynamicProperties(), signatureWaivers());
+  }
+
+  public StoragePersistence storagePersistence() {
+    if (storagePersistence == null) {
+      storagePersistence = new BlobStoragePersistence(storageMapFrom(blobStore()));
+    }
+    return storagePersistence;
+  }
+
+  public SyncVerifier syncVerifier() {
+    if (syncVerifier == null) {
+      syncVerifier = platform().getCryptography()::verifySync;
+    }
+    return syncVerifier;
+  }
+
+  public BiPredicate<JKey, TransactionSignature> validityTest() {
+    if (validityTest == null) {
+      validityTest = new OnlyIfSigVerifiableValid(syncVerifier());
+    }
+    return validityTest;
+  }
+
+  public PrecheckVerifier precheckVerifier() {
+    if (precheckVerifier == null) {
+      Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
+      PrecheckKeyReqs reqs =
+          new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
+      precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, TxnAccessor::getPkToSigsFn);
+    }
+    return precheckVerifier;
+  }
+
+  public PrintStream consoleOut() {
+    return Optional.ofNullable(console()).map(c -> c.out).orElse(null);
+  }
+
+  public BalancesExporter balancesExporter() {
+    if (balancesExporter == null) {
+      balancesExporter =
+          new SignedStateBalancesExporter(
+              properties(), platform()::sign, globalDynamicProperties());
+    }
+    return balancesExporter;
+  }
+
+  public Map<EntityId, Long> entityExpiries() {
+    if (entityExpiries == null) {
+      entityExpiries = EntityExpiryMapFactory.entityExpiryMapFrom(blobStore());
+    }
+    return entityExpiries;
+  }
+
+  public HederaFs hfs() {
+    if (hfs == null) {
+      hfs =
+          new TieredHederaFs(
+              ids(),
+              globalDynamicProperties(),
+              txnCtx()::consensusTime,
+              DataMapFactory.dataMapFrom(blobStore()),
+              MetadataMapFactory.metaMapFrom(blobStore()),
+              this::getCurrentSpecialFileSystem);
+      hfs.register(feeSchedulesManager());
+      hfs.register(exchangeRatesManager());
+      hfs.register(apiPermissionsReloading());
+      hfs.register(applicationPropertiesReloading());
+      hfs.register(throttleDefsManager());
+    }
+    return hfs;
+  }
+
+  public UniqTokenViewFactory uniqTokenViewFactory() {
+    if (uniqTokenViewFactory == null) {
+      uniqTokenViewFactory = new ConfigDrivenUniqTokenViewFactory(shouldUseTreasuryWildcards());
+    }
+    return uniqTokenViewFactory;
+  }
+
+  /**
+   * Get the current special file system from working state disk fs
+   *
+   * @return current working state disk fs
+   */
+  MerkleDiskFs getCurrentSpecialFileSystem() {
+    return this.workingState.getDiskFs();
+  }
+
+  public SoliditySigsVerifier soliditySigsVerifier() {
+    if (soliditySigsVerifier == null) {
+      soliditySigsVerifier =
+          new TxnAwareSoliditySigsVerifier(
+              syncVerifier(),
+              txnCtx(),
+              StandardSyncActivationCheck::allKeysAreActive,
+              this::accounts);
+    }
+    return soliditySigsVerifier;
+  }
+
+  public FileUpdateInterceptor applicationPropertiesReloading() {
+    if (applicationPropertiesReloading == null) {
+      var propertiesCb = sysFileCallbacks().propertiesCb();
+      applicationPropertiesReloading =
+          new ValidatingCallbackInterceptor(
+              0,
+              "files.networkProperties",
+              properties(),
+              contents -> propertiesCb.accept(uncheckedParse(contents)),
+              ConfigListUtils::isConfigList);
+    }
+    return applicationPropertiesReloading;
+  }
+
+  public FileUpdateInterceptor apiPermissionsReloading() {
+    if (apiPermissionsReloading == null) {
+      var permissionsCb = sysFileCallbacks().permissionsCb();
+      apiPermissionsReloading =
+          new ValidatingCallbackInterceptor(
+              0,
+              "files.hapiPermissions",
+              properties(),
+              contents -> permissionsCb.accept(uncheckedParse(contents)),
+              ConfigListUtils::isConfigList);
+    }
+    return apiPermissionsReloading;
+  }
+
+  public TransitionLogicLookup transitionLogic() {
+    if (transitionLogic == null) {
+      transitionLogic = new TransitionLogicLookup(transitions());
+    }
+    return transitionLogic;
+  }
+
+  private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
+    final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
+
+    Map<HederaFunctionality, List<TransitionLogic>> transitionsMap =
+        Map.ofEntries(
+            /* Crypto */
+            entry(
+                CryptoCreate,
+                List.of(new CryptoCreateTransitionLogic(ledger(), validator(), txnCtx()))),
+            entry(
+                CryptoUpdate,
+                List.of(new CryptoUpdateTransitionLogic(ledger(), validator(), txnCtx()))),
+            entry(CryptoDelete, List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
+            entry(
+                CryptoTransfer,
+                List.of(
+                    new CryptoTransferTransitionLogic(
+                        ledger(),
+                        txnCtx(),
+                        globalDynamicProperties(),
+                        impliedTransfersMarshal(),
+                        transferSemanticChecks(),
+                        spanMapAccessor))),
+            /* File */
+            entry(
+                FileUpdate,
+                List.of(new FileUpdateTransitionLogic(hfs(), entityNums(), validator(), txnCtx()))),
+            entry(FileCreate, List.of(new FileCreateTransitionLogic(hfs(), validator(), txnCtx()))),
+            entry(FileDelete, List.of(new FileDeleteTransitionLogic(hfs(), txnCtx()))),
+            entry(FileAppend, List.of(new FileAppendTransitionLogic(hfs(), txnCtx()))),
+            /* Contract */
+            entry(
+                ContractCreate,
+                List.of(
+                    new ContractCreateTransitionLogic(
+                        hfs(), contracts()::createContract, this::seqNo, validator(), txnCtx()))),
+            entry(
+                ContractUpdate,
+                List.of(
+                    new ContractUpdateTransitionLogic(
+                        ledger(),
+                        validator(),
+                        txnCtx(),
+                        new UpdateCustomizerFactory(),
+                        this::accounts))),
+            entry(
+                ContractDelete,
+                List.of(
+                    new ContractDeleteTransitionLogic(
+                        ledger(),
+                        contracts()::deleteContract,
+                        validator(),
+                        txnCtx(),
+                        this::accounts))),
+            entry(
+                ContractCall,
+                List.of(
+                    new ContractCallTransitionLogic(
+                        contracts()::contractCall,
+                        validator(),
+                        txnCtx(),
+                        this::seqNo,
+                        this::accounts))),
+            /* Consensus */
+            entry(
+                ConsensusCreateTopic,
+                List.of(
+                    new TopicCreateTransitionLogic(
+                        this::accounts, this::topics, ids(), validator(), txnCtx(), ledger()))),
+            entry(
+                ConsensusUpdateTopic,
+                List.of(
+                    new TopicUpdateTransitionLogic(
+                        this::accounts, this::topics, validator(), txnCtx(), ledger()))),
+            entry(
+                ConsensusDeleteTopic,
+                List.of(new TopicDeleteTransitionLogic(this::topics, validator(), txnCtx()))),
+            entry(
+                ConsensusSubmitMessage,
+                List.of(
+                    new SubmitMessageTransitionLogic(
+                        this::topics, validator(), txnCtx(), globalDynamicProperties()))),
+            /* Token */
+            entry(
+                TokenCreate,
+                List.of(
+                    new TokenCreateTransitionLogic(
+                        validator(), tokenStore(), ledger(), txnCtx(), globalDynamicProperties()))),
+            entry(
+                TokenUpdate,
+                List.of(
+                    new TokenUpdateTransitionLogic(
+                        shouldUseTreasuryWildcards(),
+                        validator(),
+                        tokenStore(),
+                        ledger(),
+                        txnCtx(),
+                        HederaTokenStore::affectsExpiryAtMost))),
+            entry(
+                TokenFeeScheduleUpdate,
+                List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
+            entry(
+                TokenFreezeAccount,
+                List.of(
+                    new TokenFreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
+            entry(
+                TokenUnfreezeAccount,
+                List.of(
+                    new TokenUnfreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
+            entry(
+                TokenGrantKycToAccount,
+                List.of(
+                    new TokenGrantKycTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
+            entry(
+                TokenRevokeKycFromAccount,
+                List.of(
+                    new TokenRevokeKycTransitionLogic(
+                        txnCtx(), typedTokenStore(), accountStore()))),
+            entry(
+                TokenDelete, List.of(new TokenDeleteTransitionLogic(txnCtx(), typedTokenStore()))),
+            entry(
+                TokenMint,
+                List.of(
+                    new TokenMintTransitionLogic(
+                        validator(),
+                        accountStore(),
+                        typedTokenStore(),
+                        txnCtx(),
+                        globalDynamicProperties()))),
+            entry(
+                TokenBurn,
+                List.of(
+                    new TokenBurnTransitionLogic(
+                        validator(),
+                        accountStore(),
+                        typedTokenStore(),
+                        txnCtx(),
+                        globalDynamicProperties()))),
+            entry(
+                TokenAccountWipe,
+                List.of(
+                    new TokenWipeTransitionLogic(
+                        validator(),
+                        typedTokenStore(),
+                        accountStore(),
+                        txnCtx(),
+                        globalDynamicProperties()))),
+            entry(
+                TokenAssociateToAccount,
+                List.of(
+                    new TokenAssociateTransitionLogic(
+                        accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
+            entry(
+                TokenDissociateFromAccount,
+                List.of(
+                    new TokenDissociateTransitionLogic(
+                        typedTokenStore(),
+                        accountStore(),
+                        txnCtx(),
+                        validator(),
+                        Dissociation::loadFrom))),
+            /* Schedule */
+            entry(
+                ScheduleCreate,
+                List.of(
+                    new ScheduleCreateTransitionLogic(
+                        scheduleStore(),
+                        txnCtx(),
+                        activationHelper(),
+                        validator(),
+                        scheduleExecutor()))),
+            entry(
+                ScheduleSign,
+                List.of(
+                    new ScheduleSignTransitionLogic(
+                        scheduleStore(), txnCtx(), activationHelper(), scheduleExecutor()))),
+            entry(
+                ScheduleDelete,
+                List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
+            /* System */
+            entry(
+                SystemDelete,
+                List.of(
+                    new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
+                    new ContractSysDelTransitionLogic(
+                        validator(), txnCtx(), contracts()::systemDelete, this::accounts))),
+            entry(
+                SystemUndelete,
+                List.of(
+                    new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
+                    new ContractSysUndelTransitionLogic(
+                        validator(), txnCtx(), contracts()::systemUndelete, this::accounts))),
+            /* Network */
+            entry(
+                Freeze, List.of(new FreezeTransitionLogic(fileNums(), freeze()::freeze, txnCtx()))),
+            entry(UncheckedSubmit, List.of(new UncheckedSubmitTransitionLogic())));
+    return transitionsMap::get;
+  }
+
+  public EntityIdSource ids() {
+    if (ids == null) {
+      ids = new SeqNoEntityIdSource(this::seqNo);
+    }
+    return ids;
+  }
+
+  public TransactionContext txnCtx() {
+    if (txnCtx == null) {
+      txnCtx = new AwareTransactionContext(this);
+    }
+    return txnCtx;
+  }
+
+  public Map<TransactionID, TxnIdRecentHistory> txnHistories() {
+    if (txnHistories == null) {
+      txnHistories = new ConcurrentHashMap<>();
+    }
+    return txnHistories;
+  }
+
+  public RecordCache recordCache() {
+    if (recordCache == null) {
+      recordCache =
+          new RecordCache(
+              this, new RecordCacheFactory(properties()).getRecordCache(), txnHistories());
+    }
+    return recordCache;
+  }
+
+  public CharacteristicsFactory characteristics() {
+    if (characteristics == null) {
+      characteristics = new CharacteristicsFactory(hfs());
+    }
+    return characteristics;
+  }
+
+  public AccountRecordsHistorian recordsHistorian() {
+    if (recordsHistorian == null) {
+      recordsHistorian = new TxnAwareRecordsHistorian(recordCache(), txnCtx(), expiries());
+    }
+    return recordsHistorian;
+  }
+
+  public FeeExemptions exemptions() {
+    if (exemptions == null) {
+      exemptions = new StandardExemptions(accountNums(), systemOpPolicies());
+    }
+    return exemptions;
+  }
+
+  public HbarCentExchange exchange() {
+    if (exchange == null) {
+      exchange = new AwareHbarCentExchange(txnCtx());
+    }
+    return exchange;
+  }
+
+  public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
+    if (backingTokenRels == null) {
+      backingTokenRels = new BackingTokenRels(this::tokenAssociations);
+    }
+    return backingTokenRels;
+  }
+
+  public BackingStore<AccountID, MerkleAccount> backingAccounts() {
+    if (backingAccounts == null) {
+      backingAccounts = new BackingAccounts(this::accounts);
+    }
+    return backingAccounts;
+  }
+
+  public NodeLocalProperties nodeLocalProperties() {
+    if (nodeLocalProperties == null) {
+      nodeLocalProperties = new NodeLocalProperties(properties());
+    }
+    return nodeLocalProperties;
+  }
+
+  public GlobalDynamicProperties globalDynamicProperties() {
+    if (globalDynamicProperties == null) {
+      globalDynamicProperties = new GlobalDynamicProperties(hederaNums(), properties());
+    }
+    return globalDynamicProperties;
+  }
+
+  public BackingNfts backingNfts() {
+    if (backingNfts == null) {
+      backingNfts = new BackingNfts(this::uniqueTokens);
+    }
+    return backingNfts;
+  }
+
+  public TokenStore tokenStore() {
+    if (tokenStore == null) {
+      TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger =
+          new TransactionalLedger<>(
+              NftProperty.class,
+              MerkleUniqueToken::new,
+              backingNfts(),
+              new ChangeSummaryManager<>());
+      TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+          tokenRelsLedger =
+              new TransactionalLedger<>(
+                  TokenRelProperty.class,
+                  MerkleTokenRelStatus::new,
+                  backingTokenRels(),
+                  new ChangeSummaryManager<>());
+      tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+      tokenStore =
+          new HederaTokenStore(
+              ids(),
+              validator(),
+              uniqTokenViewsManager(),
+              globalDynamicProperties(),
+              this::tokens,
+              tokenRelsLedger,
+              nftsLedger);
+    }
+    return tokenStore;
+  }
+
+  public ScheduleStore scheduleStore() {
+    if (scheduleStore == null) {
+      scheduleStore =
+          new HederaScheduleStore(globalDynamicProperties(), ids(), txnCtx(), this::schedules);
+    }
+    return scheduleStore;
+  }
+
+  public HederaLedger ledger() {
+    if (ledger == null) {
+      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
+          new TransactionalLedger<>(
+              AccountProperty.class,
+              MerkleAccount::new,
+              backingAccounts(),
+              new ChangeSummaryManager<>());
+      ledger =
+          new HederaLedger(
+              tokenStore(),
+              ids(),
+              creator(),
+              validator(),
+              recordsHistorian(),
+              globalDynamicProperties(),
+              accountsLedger);
+      ledger.setTokenViewsManager(uniqTokenViewsManager());
+      scheduleStore().setAccountsLedger(accountsLedger);
+      scheduleStore().setHederaLedger(ledger);
+    }
+    return ledger;
+  }
+
+  public EntityAutoRenewal entityAutoRenewal() {
+    if (entityAutoRenewal == null) {
+      final var helper =
+          new RenewalHelper(
+              tokenStore(),
+              hederaNums(),
+              globalDynamicProperties(),
+              this::tokens,
+              this::accounts,
+              this::tokenAssociations,
+              backingAccounts());
+      final var recordHelper =
+          new RenewalRecordsHelper(this, recordStreamManager(), globalDynamicProperties());
+      final var renewalProcess = new RenewalProcess(fees(), hederaNums(), helper, recordHelper);
+      entityAutoRenewal =
+          new EntityAutoRenewal(
+              hederaNums(),
+              renewalProcess,
+              this,
+              globalDynamicProperties(),
+              networkCtxManager(),
+              this::networkCtx);
+    }
+    return entityAutoRenewal;
+  }
+
+  public NarratedCharging narratedCharging() {
+    if (narratedCharging == null) {
+      narratedCharging =
+          new NarratedLedgerCharging(
+              nodeInfo(), ledger(), exemptions(), globalDynamicProperties(), this::accounts);
+    }
+    return narratedCharging;
+  }
+
+  public ExpiryManager expiries() {
+    if (expiries == null) {
+      var histories = txnHistories();
+      expiries =
+          new ExpiryManager(
+              recordCache(),
+              scheduleStore(),
+              hederaNums(),
+              histories,
+              this::accounts,
+              this::schedules);
+    }
+    return expiries;
+  }
+
+  public ExpiringCreations creator() {
+    if (creator == null) {
+      creator = new ExpiringCreations(expiries(), globalDynamicProperties(), this::accounts);
+      creator.setRecordCache(recordCache());
+    }
+    return creator;
+  }
+
+  public OptionValidator validator() {
+    if (validator == null) {
+      validator =
+          new ContextOptionValidator(
+              effectiveNodeAccount(), properties(), txnCtx(), globalDynamicProperties());
+    }
+    return validator;
+  }
+
+  public ProcessLogic logic() {
+    if (logic == null) {
+      final var rationalization = new Rationalization();
+      final var bodySigningFactory = new ReusableBodySigningFactory();
+      logic = new AwareProcessLogic(this, rationalization, bodySigningFactory, validityTest());
+    }
+    return logic;
+  }
+
+  public FreezeHandler freeze() {
+    if (freeze == null) {
+      freeze = new FreezeHandler(hfs(), platform(), exchange(), this::getDualState);
+    }
+    return freeze;
+  }
+
+  public void updateFeature() {
+    if (freeze != null) {
+      String os = System.getProperty("os.name").toLowerCase();
+      if (os.contains("mac")) {
+        if (platform.getSelfId().getId() == 0) {
+          freeze.handleUpdateFeature();
+        }
+      } else {
+        freeze.handleUpdateFeature();
+      }
+    }
+  }
+
+  public NetworkCtxManager networkCtxManager() {
+    if (networkCtxManager == null) {
+      networkCtxManager =
+          new NetworkCtxManager(
+              issEventInfo(),
+              properties(),
+              opCounters(),
+              exchange(),
+              systemFilesManager(),
+              feeMultiplierSource(),
+              globalDynamicProperties(),
+              handleThrottling(),
+              this::networkCtx);
+    }
+    return networkCtxManager;
+  }
+
+  public ThrottleDefsManager throttleDefsManager() {
+    if (throttleDefsManager == null) {
+      throttleDefsManager =
+          new ThrottleDefsManager(fileNums(), this::addressBook, sysFileCallbacks().throttlesCb());
+    }
+    return throttleDefsManager;
+  }
+
+  public RecordStreamManager recordStreamManager() {
+    return recordStreamManager;
+  }
+
+  /**
+   * RecordStreamManager should only be initialized after system files have been loaded, which means
+   * enableRecordStreaming has been read from file
+   */
+  public void initRecordStreamManager() {
+    try {
+      var nodeLocalProps = nodeLocalProperties();
+      var nodeScopedRecordLogDir = getRecordStreamDirectory(nodeLocalProps);
+      recordStreamManager =
+          new RecordStreamManager(
+              platform,
+              runningAvgs(),
+              nodeLocalProps,
+              nodeScopedRecordLogDir,
+              getRecordsInitialHash());
+    } catch (IOException | NoSuchAlgorithmException ex) {
+      log.error("Fail to initialize RecordStreamManager.", ex);
+    }
+  }
+
+  public FileUpdateInterceptor exchangeRatesManager() {
+    if (exchangeRatesManager == null) {
+      exchangeRatesManager =
+          new TxnAwareRatesManager(
+              fileNums(),
+              accountNums(),
+              globalDynamicProperties(),
+              txnCtx(),
+              this::midnightRates,
+              exchange()::updateRates,
+              limitPercent ->
+                  (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent));
+    }
+    return exchangeRatesManager;
+  }
+
+  public FileUpdateInterceptor feeSchedulesManager() {
+    if (feeSchedulesManager == null) {
+      feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
+    }
+    return feeSchedulesManager;
+  }
+
+  public ExpandHandleSpan expandHandleSpan() {
+    if (expandHandleSpan == null) {
+      expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager());
+    }
+    return expandHandleSpan;
+  }
+
+  public SpanMapManager spanMapManager() {
+    if (spanMapManager == null) {
+      spanMapManager =
+          new SpanMapManager(
+              impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules());
+    }
+    return spanMapManager;
+  }
+
+  public FreezeController freezeGrpc() {
+    if (freezeGrpc == null) {
+      freezeGrpc = new FreezeController(txnResponseHelper());
+    }
+    return freezeGrpc;
+  }
+
+  public NetworkController networkGrpc() {
+    if (networkGrpc == null) {
+      networkGrpc =
+          new NetworkController(metaAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return networkGrpc;
+  }
+
+  public FileController filesGrpc() {
+    if (fileGrpc == null) {
+      fileGrpc = new FileController(fileAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return fileGrpc;
+  }
+
+  public SystemOpPolicies systemOpPolicies() {
+    if (systemOpPolicies == null) {
+      systemOpPolicies = new SystemOpPolicies(entityNums());
+    }
+    return systemOpPolicies;
+  }
+
+  public TokenController tokenGrpc() {
+    if (tokenGrpc == null) {
+      tokenGrpc = new TokenController(tokenAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return tokenGrpc;
+  }
+
+  public ScheduleController scheduleGrpc() {
+    if (scheduleGrpc == null) {
+      scheduleGrpc =
+          new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return scheduleGrpc;
+  }
+
+  public CryptoController cryptoGrpc() {
+    if (cryptoGrpc == null) {
+      cryptoGrpc =
+          new CryptoController(
+              metaAnswers(), cryptoAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return cryptoGrpc;
+  }
+
+  public ContractController contractsGrpc() {
+    if (contractsGrpc == null) {
+      contractsGrpc =
+          new ContractController(contractAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return contractsGrpc;
+  }
+
+  public PlatformSubmissionManager submissionManager() {
+    if (submissionManager == null) {
+      submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
+    }
+    return submissionManager;
+  }
+
+  public AccessorBasedUsages accessorBasedUsages() {
+    if (accessorBasedUsages == null) {
+      final var opUsageCtxHelper = new OpUsageCtxHelper(this::tokens);
+      accessorBasedUsages =
+          new AccessorBasedUsages(
+              new TokenOpsUsage(),
+              new CryptoOpsUsage(),
+              opUsageCtxHelper,
+              new ConsensusOpsUsage(),
+              globalDynamicProperties());
+    }
+    return accessorBasedUsages;
+  }
+
+  public ConsensusController consensusGrpc() {
+    if (null == consensusGrpc) {
+      consensusGrpc =
+          new ConsensusController(hcsAnswers(), txnResponseHelper(), queryResponseHelper());
+    }
+    return consensusGrpc;
+  }
+
+  public GrpcServerManager grpc() {
+    if (grpc == null) {
+      grpc =
+          new NettyGrpcServerManager(
+              Runtime.getRuntime()::addShutdownHook,
+              nodeLocalProperties(),
+              List.of(
+                  cryptoGrpc(),
+                  filesGrpc(),
+                  freezeGrpc(),
+                  contractsGrpc(),
+                  consensusGrpc(),
+                  networkGrpc(),
+                  tokenGrpc(),
+                  scheduleGrpc()),
+              new ConfigDrivenNettyFactory(nodeLocalProperties()),
+              Collections.emptyList());
+    }
+    return grpc;
+  }
+
+  public PureTransferSemanticChecks transferSemanticChecks() {
+    if (transferSemanticChecks == null) {
+      transferSemanticChecks = new PureTransferSemanticChecks();
+    }
+    return transferSemanticChecks;
+  }
+
+  public SmartContractRequestHandler contracts() {
+    if (contracts == null) {
+      contracts =
+          new SmartContractRequestHandler(
+              repository(),
+              ledger(),
+              this::accounts,
+              txnCtx(),
+              exchange(),
+              usagePrices(),
+              newPureRepo(),
+              solidityLifecycle(),
+              soliditySigsVerifier(),
+              entityExpiries(),
+              globalDynamicProperties());
+    }
+    return contracts;
+  }
+
+  public SysFileCallbacks sysFileCallbacks() {
+    if (sysFileCallbacks == null) {
+      var configCallbacks =
+          new ConfigCallbacks(
+              hapiOpPermissions(),
+              globalDynamicProperties(),
+              (StandardizedPropertySources) propertySources());
+      var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
+      var throttlesCallback =
+          new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
+      sysFileCallbacks =
+          new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
+    }
+    return sysFileCallbacks;
+  }
+
+  public SolidityLifecycle solidityLifecycle() {
+    if (solidityLifecycle == null) {
+      solidityLifecycle = new SolidityLifecycle(globalDynamicProperties());
+    }
+    return solidityLifecycle;
+  }
+
+  public PropertySource properties() {
+    if (properties == null) {
+      properties = propertySources().asResolvingSource();
+    }
+    return properties;
+  }
+
+  public SystemFilesManager systemFilesManager() {
+    if (systemFilesManager == null) {
+      systemFilesManager =
+          new HfsSystemFilesManager(
+              addressBook(),
+              fileNums(),
+              properties(),
+              (TieredHederaFs) hfs(),
+              () ->
+                  lookupInCustomStore(
+                      b64KeyReader(),
+                      properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
+                      properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
+              sysFileCallbacks());
+    }
+    return systemFilesManager;
+  }
+
+  public HapiOpPermissions hapiOpPermissions() {
+    if (hapiOpPermissions == null) {
+      hapiOpPermissions = new HapiOpPermissions(accountNums());
+    }
+    return hapiOpPermissions;
+  }
+
+  public ServicesRepositoryRoot repository() {
+    if (repository == null) {
+      repository = new ServicesRepositoryRoot(accountSource(), bytecodeDb());
+      repository.setStoragePersistence(storagePersistence());
+    }
+    return repository;
+  }
+
+  public Supplier<ServicesRepositoryRoot> newPureRepo() {
+    if (newPureRepo == null) {
+      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate =
+          new TransactionalLedger<>(
+              AccountProperty.class,
+              MerkleAccount::new,
+              new PureBackingAccounts(this::accounts),
+              new ChangeSummaryManager<>());
+      HederaLedger pureLedger =
+          new HederaLedger(
+              NOOP_TOKEN_STORE,
+              NOOP_ID_SOURCE,
+              NOOP_EXPIRING_CREATIONS,
+              validator(),
+              NOOP_RECORDS_HISTORIAN,
+              globalDynamicProperties(),
+              pureDelegate);
+      Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger);
+      newPureRepo =
+          () -> {
+            var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeDb());
+            pureRepository.setStoragePersistence(storagePersistence());
+            return pureRepository;
+          };
+    }
+    return newPureRepo;
+  }
+
+  public ConsensusStatusCounts statusCounts() {
+    if (statusCounts == null) {
+      statusCounts = new ConsensusStatusCounts(new ObjectMapper());
+    }
+    return statusCounts;
+  }
+
+  public LedgerAccountsSource accountSource() {
+    if (accountSource == null) {
+      accountSource = new LedgerAccountsSource(ledger());
+    }
+    return accountSource;
+  }
+
+  public BlobStorageSource bytecodeDb() {
+    if (bytecodeDb == null) {
+      bytecodeDb = new BlobStorageSource(bytecodeMapFrom(blobStore()));
+    }
+    return bytecodeDb;
+  }
+
+  public SyntaxPrecheck syntaxPrecheck() {
+    if (syntaxPrecheck == null) {
+      syntaxPrecheck = new SyntaxPrecheck(recordCache(), validator(), globalDynamicProperties());
+    }
+    return syntaxPrecheck;
+  }
+
+  public Console console() {
+    if (console == null) {
+      console = platform().createConsole(true);
+    }
+    return console;
+  }
+
+  public Address address() {
+    if (address == null) {
+      address = addressBook().getAddress(id.getId());
+    }
+    return address;
+  }
+
+  public UsagePricesProvider usagePrices() {
+    if (usagePrices == null) {
+      usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
+    }
+    return usagePrices;
+  }
+
+  public FeeChargingPolicy txnChargingPolicy() {
+    if (txnChargingPolicy == null) {
+      txnChargingPolicy = new FeeChargingPolicy(narratedCharging());
+    }
+    return txnChargingPolicy;
+  }
+
+  public TxnChargingPolicyAgent chargingPolicyAgent() {
+    if (chargingPolicyAgent == null) {
+      chargingPolicyAgent =
+          new TxnChargingPolicyAgent(
+              fees(),
+              txnChargingPolicy(),
+              txnCtx(),
+              this::currentView,
+              nodeDiligenceScreen(),
+              txnHistories());
+    }
+    return chargingPolicyAgent;
+  }
+
+  public SystemAccountsCreator systemAccountsCreator() {
+    if (systemAccountsCreator == null) {
+      systemAccountsCreator =
+          new BackedSystemAccountsCreator(
+              hederaNums(), accountNums(), properties(), b64KeyReader());
+    }
+    return systemAccountsCreator;
+  }
+
+  /* Context-free infrastructure. */
+  public LegacyEd25519KeyReader b64KeyReader() {
+    return b64KeyReader;
+  }
+
+  public Pause pause() {
+    return pause;
+  }
+
+  public AccountsExporter accountsExporter() {
+    return accountsExporter;
+  }
+
+  /* Injected dependencies. */
+  public NodeId id() {
+    return id;
+  }
+
+  public Platform platform() {
+    return platform;
+  }
+
+  public PropertySources propertySources() {
+    return propertySources;
+  }
+
+  /**
+   * Get consensus time of last handled transaction
+   *
+   * @return instant representing last handled transaction from working state
+   */
+  public Instant consensusTimeOfLastHandledTxn() {
+    return workingState.getNetworkCtx().consensusTimeOfLastHandledTxn();
+  }
+
+  public void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
+    state.networkCtx().setConsensusTimeOfLastHandledTxn(dataDrivenNow);
+  }
+
+  /**
+   * Get the working state of address book
+   *
+   * @return current working state address book
+   */
+  public AddressBook addressBook() {
+    return workingState.getAddressBook();
+  }
+
+  /**
+   * Get the working state network ctx and extract sequence number
+   *
+   * @return sequence number from the current working state network ctx
+   */
+  public SequenceNumber seqNo() {
+    return workingState.getNetworkCtx().seqNo();
+  }
+
+  /**
+   * Get the working state network ctx and extract the last scanned entity
+   *
+   * @return last scanned entity from the current working state network ctx
+   */
+  public long lastScannedEntity() {
+    return workingState.getNetworkCtx().lastScannedEntity();
+  }
+
+  public void updateLastScannedEntity(long lastScannedEntity) {
+    state.networkCtx().updateLastScannedEntity(lastScannedEntity);
+  }
+
+  /**
+   * Gets the working state of network ctx and extracts midnight rates
+   *
+   * @return current working state network ctx midnight rates
+   */
+  public ExchangeRates midnightRates() {
+    return workingState.getNetworkCtx().midnightRates();
+  }
+
+  /**
+   * Gets the working state of the accounts
+   *
+   * @return current working state of accounts
+   */
+  public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+    return workingState.getAccounts();
+  }
+
+  /**
+   * Gets the working state of the topics
+   *
+   * @return current working state of topics
+   */
+  public FCMap<MerkleEntityId, MerkleTopic> topics() {
+    return workingState.getTopics();
+  }
+
+  /**
+   * Gets the working state of storage
+   *
+   * @return current working state of storage
+   */
+  public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
+    return workingState.getStorage();
+  }
+
+  /**
+   * Gets the working state of tokens
+   *
+   * @return current working state of tokens
+   */
+  public FCMap<MerkleEntityId, MerkleToken> tokens() {
+    return workingState.getTokens();
+  }
+
+  /**
+   * Gets the working state of token associations
+   *
+   * @return current working state of token associations
+   */
+  public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+    return workingState.getTokenAssociations();
+  }
+
+  /**
+   * Gets the working state of schedules
+   *
+   * @return current working state of schedules
+   */
+  public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
+    return workingState.getSchedules();
+  }
+
+  public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+    return state.uniqueTokens();
+  }
+
+  public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
+    return state.uniqueTokenAssociations();
+  }
+
+  public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
+    return state.uniqueOwnershipAssociations();
+  }
+
+  public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations() {
+    return state.uniqueTreasuryOwnershipAssociations();
+  }
+
+  /**
+   * Get the working state of disk fs
+   *
+   * @return current working state of disk fs
+   */
+  public MerkleDiskFs diskFs() {
+    return workingState.getDiskFs();
+  }
+
+  /**
+   * Get the working state of network ctx
+   *
+   * @return current working state of network ctx
+   */
+  public MerkleNetworkContext networkCtx() {
+    return workingState.getNetworkCtx();
+  }
+
+  /**
+   * return the directory to which record stream files should be write
+   *
+   * @param source the node local properties that contain the record logging directory
+   * @return the direct file folder for writing record stream files
+   */
+  public String getRecordStreamDirectory(NodeLocalProperties source) {
+    if (recordStreamDir == null) {
+      final String nodeAccountString = asLiteralString(effectiveNodeAccount());
+      String parentDir = source.recordLogDir();
+      if (!parentDir.endsWith(File.separator)) {
+        parentDir += File.separator;
+      }
+      recordStreamDir = parentDir + "record" + nodeAccountString;
+    }
+    return recordStreamDir;
+  }
+
+  /**
+   * update the runningHash instance saved in runningHashLeaf
+   *
+   * @param runningHash new runningHash instance
+   */
+  public void updateRecordRunningHash(final RunningHash runningHash) {
+    state.runningHashLeaf().setRunningHash(runningHash);
+  }
+
+  /**
+   * set recordsInitialHash, which will be set to RecordStreamManager as initialHash.
+   * recordsInitialHash is read at restart, either from the state's runningHashLeaf, or from the
+   * last old .rcd_sig file in migration. When recordsInitialHash is read, the RecordStreamManager
+   * might not be initialized yet, because RecordStreamManager can only be initialized after system
+   * files are loaded so that enableRecordStream setting is read. Thus we save the initialHash in
+   * the context, and use it when initializing RecordStreamManager
+   *
+   * @param recordsInitialHash initial running Hash of records
+   */
+  public void setRecordsInitialHash(final Hash recordsInitialHash) {
+    this.recordsInitialHash = recordsInitialHash;
+    if (recordStreamManager() != null) {
+      recordStreamManager().setInitialHash(recordsInitialHash);
+    }
+  }
+
+  Hash getRecordsInitialHash() {
+    return recordsInitialHash;
+  }
+
+  void setBackingTokenRels(BackingTokenRels backingTokenRels) {
+    this.backingTokenRels = backingTokenRels;
+  }
+
+  public void setBackingNfts(BackingNfts backingNfts) {
+    this.backingNfts = backingNfts;
+  }
+
+  void setBackingAccounts(BackingAccounts backingAccounts) {
+    this.backingAccounts = backingAccounts;
+  }
+
+  public void setTokenStore(TokenStore tokenStore) {
+    this.tokenStore = tokenStore;
+  }
+
+  public void setScheduleStore(ScheduleStore scheduleStore) {
+    this.scheduleStore = scheduleStore;
+  }
+
+  private AccountID effectiveNodeAccount() {
+    final var info = nodeInfo();
+    /* If we do not have a self account, we must be zero-stake and will never process a query payment. */
+    return info.hasSelfAccount() ? info.selfAccount() : AccountID.getDefaultInstance();
+  }
 }

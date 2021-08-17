@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,6 @@ package com.hedera.services.throttling;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Transaction;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.List;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,59 +27,73 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Transaction;
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class TxnAwareHandleThrottlingTest {
-	private Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 123);
+  private Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 123);
 
-	@Mock
-	private TimedFunctionalityThrottling delegate;
-	@Mock
-	private TransactionContext txnCtx;
+  @Mock private TimedFunctionalityThrottling delegate;
+  @Mock private TransactionContext txnCtx;
 
-	private TxnAwareHandleThrottling subject;
+  private TxnAwareHandleThrottling subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new TxnAwareHandleThrottling(txnCtx, delegate);
-	}
+  @BeforeEach
+  void setUp() {
+    subject = new TxnAwareHandleThrottling(txnCtx, delegate);
+  }
 
-	@Test
-	void txnHandlingDoesntSupportQueries() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance));
-	}
+  @Test
+  void txnHandlingDoesntSupportQueries() {
+    // expect:
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> subject.shouldThrottleQuery(CryptoGetAccountBalance));
+  }
 
-	@Test
-	void delegatesThrottlingDecisionsWithConsensusTime() {
-		// setup:
-		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+  @Test
+  void delegatesThrottlingDecisionsWithConsensusTime() {
+    // setup:
+    final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 
-		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(delegate.shouldThrottleTxn(accessor, consensusTime)).willReturn(true);
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    given(delegate.shouldThrottleTxn(accessor, consensusTime)).willReturn(true);
 
-		// expect:
-		assertTrue(subject.shouldThrottleTxn(accessor));
-		// and:
-		verify(delegate).shouldThrottleTxn(accessor, consensusTime);
-	}
+    // expect:
+    assertTrue(subject.shouldThrottleTxn(accessor));
+    // and:
+    verify(delegate).shouldThrottleTxn(accessor, consensusTime);
+  }
 
-	@Test
-	void otherMethodsPassThrough() {
-		// setup:
-		ThrottleDefinitions defs = new ThrottleDefinitions();
-		List<DeterministicThrottle> whatever = List.of(DeterministicThrottle.withTps(1));
+  @Test
+  void otherMethodsPassThrough() {
+    // setup:
+    ThrottleDefinitions defs = new ThrottleDefinitions();
+    List<DeterministicThrottle> whatever = List.of(DeterministicThrottle.withTps(1));
 
-		given(delegate.allActiveThrottles()).willReturn(whatever);
-		given(delegate.activeThrottlesFor(HederaFunctionality.CryptoTransfer)).willReturn(whatever);
+    given(delegate.allActiveThrottles()).willReturn(whatever);
+    given(delegate.activeThrottlesFor(HederaFunctionality.CryptoTransfer)).willReturn(whatever);
 
-		// when:
-		var all = subject.allActiveThrottles();
-		var onlyXfer = subject.activeThrottlesFor(HederaFunctionality.CryptoTransfer);
-		subject.rebuildFor(defs);
+    // when:
+    var all = subject.allActiveThrottles();
+    var onlyXfer = subject.activeThrottlesFor(HederaFunctionality.CryptoTransfer);
+    subject.rebuildFor(defs);
 
-		// then:
-		verify(delegate).rebuildFor(defs);
-		assertSame(whatever, all);
-		assertSame(whatever, onlyXfer);
-	}
+    // then:
+    verify(delegate).rebuildFor(defs);
+    assertSame(whatever, all);
+    assertSame(whatever, onlyXfer);
+  }
 }

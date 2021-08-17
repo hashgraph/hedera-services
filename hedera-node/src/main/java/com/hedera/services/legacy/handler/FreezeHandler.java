@@ -20,6 +20,12 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
+import static com.swirlds.common.CommonUtils.hex;
+import static java.util.Calendar.HOUR_OF_DAY;
+import static java.util.Calendar.MINUTE;
+
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.utils.UnzipUtility;
@@ -32,9 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -52,218 +55,224 @@ import java.util.Calendar;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.function.Supplier;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
-import static com.swirlds.common.CommonUtils.hex;
-import static java.util.Calendar.HOUR_OF_DAY;
-import static java.util.Calendar.MINUTE;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * @author Qian
- * 		FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
- * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
+ * @author Qian FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
+ *     transactions. Documentation available at index.html#proto.FreezeTransactionBody
  */
 public class FreezeHandler {
-	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
+  private static final Logger log = LogManager.getLogger(FreezeHandler.class);
 
-	private final Platform platform;
-	private final HederaFs hfs;
-	private final HbarCentExchange exchange;
-	private final Supplier<SwirldDualState> dualState;
+  private final Platform platform;
+  private final HederaFs hfs;
+  private final HbarCentExchange exchange;
+  private final Supplier<SwirldDualState> dualState;
 
-	private static String TARGET_DIR = "./";
-	private static String TEMP_DIR = "./temp";
-	private static String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
-	private static String CMD_SCRIPT = "exec.sh";
-	private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
-	private String LOG_PREFIX;
-	private static String ABORT_UDPATE_MESSAGE = "ABORT UPDATE PROCRESS";
+  private static String TARGET_DIR = "./";
+  private static String TEMP_DIR = "./temp";
+  private static String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
+  private static String CMD_SCRIPT = "exec.sh";
+  private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
+  private String LOG_PREFIX;
+  private static String ABORT_UDPATE_MESSAGE = "ABORT UPDATE PROCRESS";
 
-	private FileID updateFeatureFile;
-	private byte[] updateFileHash;
+  private FileID updateFeatureFile;
+  private byte[] updateFileHash;
 
-	public FreezeHandler(
-			HederaFs hfs,
-			Platform platform,
-			HbarCentExchange exchange,
-			Supplier<SwirldDualState> dualState
-	) {
-		this.hfs = hfs;
-		this.exchange = exchange;
-		this.platform = platform;
-		this.dualState = dualState;
-		LOG_PREFIX = "NETWORK_UPDATE Node " + platform.getSelfId();
-	}
+  public FreezeHandler(
+      HederaFs hfs,
+      Platform platform,
+      HbarCentExchange exchange,
+      Supplier<SwirldDualState> dualState) {
+    this.hfs = hfs;
+    this.exchange = exchange;
+    this.platform = platform;
+    this.dualState = dualState;
+    LOG_PREFIX = "NETWORK_UPDATE Node " + platform.getSelfId();
+  }
 
-	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
-		log.debug("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
-		FreezeTransactionBody op = transactionBody.getFreeze();
-		TransactionReceipt receipt;
-		if (transactionBody.getFreeze().hasUpdateFile()) {
-			//save the file ID and will be used after platform goes into maintenance mode
-			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
-			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
-		}
-		Instant naturalFreezeStart;
-		if (op.hasStartTime()) {
-			final var ts = op.getStartTime();
-			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
-		} else {
-			naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
-		}
-		try {
-			final var dual = dualState.get();
-			dual.setFreezeTime(naturalFreezeStart);
-			receipt = getTransactionReceipt(ResponseCodeEnum.SUCCESS, exchange.activeRates());
-			log.info("Dual state freeze time set to {} (now is {})", naturalFreezeStart, consensusTime);
-		} catch (Exception e) {
-			log.warn("Could not set dual state freeze time to {} (now is {})", naturalFreezeStart, consensusTime, e);
-			receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, exchange.activeRates());
-		}
+  public TransactionRecord freeze(
+      final TransactionBody transactionBody, final Instant consensusTime) {
+    log.debug("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
+    FreezeTransactionBody op = transactionBody.getFreeze();
+    TransactionReceipt receipt;
+    if (transactionBody.getFreeze().hasUpdateFile()) {
+      // save the file ID and will be used after platform goes into maintenance mode
+      updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
+      updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
+    }
+    Instant naturalFreezeStart;
+    if (op.hasStartTime()) {
+      final var ts = op.getStartTime();
+      naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+    } else {
+      naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
+    }
+    try {
+      final var dual = dualState.get();
+      dual.setFreezeTime(naturalFreezeStart);
+      receipt = getTransactionReceipt(ResponseCodeEnum.SUCCESS, exchange.activeRates());
+      log.info("Dual state freeze time set to {} (now is {})", naturalFreezeStart, consensusTime);
+    } catch (Exception e) {
+      log.warn(
+          "Could not set dual state freeze time to {} (now is {})",
+          naturalFreezeStart,
+          consensusTime,
+          e);
+      receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, exchange.activeRates());
+    }
 
-		TransactionRecord.Builder transactionRecord = RequestBuilder.getTransactionRecord(
-				transactionBody.getTransactionFee(),
-				transactionBody.getMemo(),
-				transactionBody.getTransactionID(),
-				RequestBuilder.getTimestamp(consensusTime), receipt);
-		return transactionRecord.build();
-	}
+    TransactionRecord.Builder transactionRecord =
+        RequestBuilder.getTransactionRecord(
+            transactionBody.getTransactionFee(),
+            transactionBody.getMemo(),
+            transactionBody.getTransactionID(),
+            RequestBuilder.getTimestamp(consensusTime),
+            receipt);
+    return transactionRecord.build();
+  }
 
-	private Instant nextNaturalInstant(Instant now, int nominalHour, int nominalMin) {
-		final int minsSinceMidnightNow = minutesSinceMidnight(now);
-		final int nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
-		int diffMins = nominalMinsSinceMidnight - minsSinceMidnightNow;
-		if (diffMins < 0) {
-			/* Can't go back in time, so add a day's worth of minutes to hit the nominal time tomorrow */
-			diffMins += 24 * 60;
-		}
-		return now.plusSeconds(diffMins * 60L);
-	}
+  private Instant nextNaturalInstant(Instant now, int nominalHour, int nominalMin) {
+    final int minsSinceMidnightNow = minutesSinceMidnight(now);
+    final int nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
+    int diffMins = nominalMinsSinceMidnight - minsSinceMidnightNow;
+    if (diffMins < 0) {
+      /* Can't go back in time, so add a day's worth of minutes to hit the nominal time tomorrow */
+      diffMins += 24 * 60;
+    }
+    return now.plusSeconds(diffMins * 60L);
+  }
 
-	public int minutesSinceMidnight(Instant now) {
-		final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-		calendar.setTimeInMillis(now.getEpochSecond() * 1_000);
-		return calendar.get(HOUR_OF_DAY) * 60 + calendar.get(MINUTE);
-	}
+  public int minutesSinceMidnight(Instant now) {
+    final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTimeInMillis(now.getEpochSecond() * 1_000);
+    return calendar.get(HOUR_OF_DAY) * 60 + calendar.get(MINUTE);
+  }
 
-	public void handleUpdateFeature() {
-		if (updateFeatureFile == null) {
-			log.info(String.format("%s Update file id is not defined, no update will be conducted", LOG_PREFIX));
-			return;
-		}
-		log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);
+  public void handleUpdateFeature() {
+    if (updateFeatureFile == null) {
+      log.info(
+          String.format(
+              "%s Update file id is not defined, no update will be conducted", LOG_PREFIX));
+      return;
+    }
+    log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);
 
-		FileID fileIDtoUse = updateFeatureFile;
-		updateFeatureFile = null; // reset to null since next freeze may not need file update
-		if (hfs.exists(fileIDtoUse)) {
-			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
-			byte[] fileBytes = hfs.cat(fileIDtoUse);
-			if (fileBytes == null || fileBytes.length == 0) {
-				log.error(String.format("%s Update file is empty", LOG_PREFIX));
-				log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
-				return;
-			}
-			try {
-				byte[] readFileHash = MessageDigest.getInstance("SHA-384").digest(fileBytes);
-				if (Arrays.equals(readFileHash, updateFileHash)) {
-					updateFeatureWithFileContents(fileBytes);
-				} else {
-					log.error(String.format("%s File hash mismatch", LOG_PREFIX));
-					log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
-					log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
-					log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
-				}
-			} catch (NoSuchAlgorithmException e) {
-				log.error("{} Exception {}", LOG_PREFIX, e);
-			}
-		} else {
-			log.error(String.format("%s File ID %s not found in file system ", LOG_PREFIX, fileIDtoUse));
-		}
-	}
+    FileID fileIDtoUse = updateFeatureFile;
+    updateFeatureFile = null; // reset to null since next freeze may not need file update
+    if (hfs.exists(fileIDtoUse)) {
+      log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
+      byte[] fileBytes = hfs.cat(fileIDtoUse);
+      if (fileBytes == null || fileBytes.length == 0) {
+        log.error(String.format("%s Update file is empty", LOG_PREFIX));
+        log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+        return;
+      }
+      try {
+        byte[] readFileHash = MessageDigest.getInstance("SHA-384").digest(fileBytes);
+        if (Arrays.equals(readFileHash, updateFileHash)) {
+          updateFeatureWithFileContents(fileBytes);
+        } else {
+          log.error(String.format("%s File hash mismatch", LOG_PREFIX));
+          log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
+          log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
+          log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+        }
+      } catch (NoSuchAlgorithmException e) {
+        log.error("{} Exception {}", LOG_PREFIX, e);
+      }
+    } else {
+      log.error(String.format("%s File ID %s not found in file system ", LOG_PREFIX, fileIDtoUse));
+    }
+  }
 
-	private void updateFeatureWithFileContents(final byte[] fileBytes) {
-		log.info("{} current directory {}", LOG_PREFIX, System.getProperty("user.dir"));
-		File directory = new File(TEMP_DIR);
-		try {
-			if (directory.exists()) {
-				log.info("{} clean directory {}", LOG_PREFIX, directory);
-				// delete everything in it recursively
-				try (final var walk = Files.walk(directory.toPath())) {
-					walk.sorted(Comparator.reverseOrder())
-							.map(Path::toFile)
-							.forEach(File::delete);
-				}
-			} else {
-				log.info("{} create directory {}", LOG_PREFIX, directory);
-				directory.mkdir();
-			}
-			log.info("{} has read file content {} bytes", LOG_PREFIX, fileBytes.length);
+  private void updateFeatureWithFileContents(final byte[] fileBytes) {
+    log.info("{} current directory {}", LOG_PREFIX, System.getProperty("user.dir"));
+    File directory = new File(TEMP_DIR);
+    try {
+      if (directory.exists()) {
+        log.info("{} clean directory {}", LOG_PREFIX, directory);
+        // delete everything in it recursively
+        try (final var walk = Files.walk(directory.toPath())) {
+          walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        }
+      } else {
+        log.info("{} create directory {}", LOG_PREFIX, directory);
+        directory.mkdir();
+      }
+      log.info("{} has read file content {} bytes", LOG_PREFIX, fileBytes.length);
 
-			log.info("{} unzipping file to directory {} ", LOG_PREFIX, TEMP_DIR);
-			//unzip bytes stream to target directory
-			UnzipUtility.unzip(fileBytes, TEMP_DIR);
+      log.info("{} unzipping file to directory {} ", LOG_PREFIX, TEMP_DIR);
+      // unzip bytes stream to target directory
+      UnzipUtility.unzip(fileBytes, TEMP_DIR);
 
-			File deleteTxt = new File(DELETE_FILE);
-			if (deleteTxt.exists()) {
-				log.info("{} executing delete file list {}", LOG_PREFIX, DELETE_FILE);
-				deleteFileFromList(DELETE_FILE);
+      File deleteTxt = new File(DELETE_FILE);
+      if (deleteTxt.exists()) {
+        log.info("{} executing delete file list {}", LOG_PREFIX, DELETE_FILE);
+        deleteFileFromList(DELETE_FILE);
 
-				log.info("{} deleting file {}", LOG_PREFIX, DELETE_FILE);
-				try {
-					Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
-				} catch (IOException ex) {
-					log.warn("{} File could not be deleted {}", DELETE_FILE, ex);
-				}
-			}
+        log.info("{} deleting file {}", LOG_PREFIX, DELETE_FILE);
+        try {
+          Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
+        } catch (IOException ex) {
+          log.warn("{} File could not be deleted {}", DELETE_FILE, ex);
+        }
+      }
 
-			File script = new File(FULL_SCRIPT_PATH);
-			if (script.exists()) {
-				if (script.setExecutable(true)) {
-					log.info("{} ready to execute script {}", LOG_PREFIX, FULL_SCRIPT_PATH);
-					runScript(FULL_SCRIPT_PATH);
-				} else {
-					log.error("{} could not change to executable permission for file {}", LOG_PREFIX, FULL_SCRIPT_PATH);
-				}
-			}
-		} catch (SecurityException | IOException e) {
-			log.error("Exception during handleUpdateFeature ", e);
-		}
-	}
+      File script = new File(FULL_SCRIPT_PATH);
+      if (script.exists()) {
+        if (script.setExecutable(true)) {
+          log.info("{} ready to execute script {}", LOG_PREFIX, FULL_SCRIPT_PATH);
+          runScript(FULL_SCRIPT_PATH);
+        } else {
+          log.error(
+              "{} could not change to executable permission for file {}",
+              LOG_PREFIX,
+              FULL_SCRIPT_PATH);
+        }
+      }
+    } catch (SecurityException | IOException e) {
+      log.error("Exception during handleUpdateFeature ", e);
+    }
+  }
 
-	private void deleteFileFromList(String deleteFileListName) {
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				new FileInputStream(deleteFileListName), StandardCharsets.UTF_8));) {
-			String line;
-			// each line of the input stream is a file name to be deleted
-			while ((line = br.readLine()) != null) {
+  private void deleteFileFromList(String deleteFileListName) {
+    try (BufferedReader br =
+        new BufferedReader(
+            new InputStreamReader(
+                new FileInputStream(deleteFileListName), StandardCharsets.UTF_8)); ) {
+      String line;
+      // each line of the input stream is a file name to be deleted
+      while ((line = br.readLine()) != null) {
 
-				if (line.contains("..")) {
-					log.warn("{} skip delete file {} located in parent directory ", LOG_PREFIX, line);
-				} else {
-					String fullPath = TARGET_DIR + File.separator + line;
-					File file = new File(fullPath);
-					log.info("{} deleting file  {}", LOG_PREFIX, fullPath);
-					if (file.exists()) {
-						if (file.delete()) {
-							log.info("{} successfully deleted file {}", LOG_PREFIX, fullPath);
-						} else {
-							log.error("{} could not delete file {}", LOG_PREFIX, fullPath);
-						}
-					}
-				}
-			}
-		} catch (SecurityException | IOException e) {
-			log.error("Delete file exception ", e);
-		}
-	}
+        if (line.contains("..")) {
+          log.warn("{} skip delete file {} located in parent directory ", LOG_PREFIX, line);
+        } else {
+          String fullPath = TARGET_DIR + File.separator + line;
+          File file = new File(fullPath);
+          log.info("{} deleting file  {}", LOG_PREFIX, fullPath);
+          if (file.exists()) {
+            if (file.delete()) {
+              log.info("{} successfully deleted file {}", LOG_PREFIX, fullPath);
+            } else {
+              log.error("{} could not delete file {}", LOG_PREFIX, fullPath);
+            }
+          }
+        }
+      }
+    } catch (SecurityException | IOException e) {
+      log.error("Delete file exception ", e);
+    }
+  }
 
-	private void runScript(String scriptFullPath) {
-		try {
-			log.info("{} start running script: {}", LOG_PREFIX, scriptFullPath);
-			Runtime.getRuntime().exec(" nohup " + scriptFullPath + " " + platform.getSelfId().getId());
-		} catch (SecurityException | NullPointerException | IllegalArgumentException | IOException e) {
-			log.error("{} run script exception ", LOG_PREFIX, e);
-		}
-	}
+  private void runScript(String scriptFullPath) {
+    try {
+      log.info("{} start running script: {}", LOG_PREFIX, scriptFullPath);
+      Runtime.getRuntime().exec(" nohup " + scriptFullPath + " " + platform.getSelfId().getId());
+    } catch (SecurityException | NullPointerException | IllegalArgumentException | IOException e) {
+      log.error("{} run script exception ", LOG_PREFIX, e);
+    }
+  }
 }

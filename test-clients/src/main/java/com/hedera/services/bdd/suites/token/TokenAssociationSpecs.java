@@ -20,23 +20,6 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
-import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -77,439 +60,412 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class TokenAssociationSpecs extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
+  private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
 
-	private static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
-	private static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
-	private static final String KNOWABLE_TOKEN = "TokenC";
-	private static final String VANILLA_TOKEN = "TokenD";
+  private static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
+  private static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
+  private static final String KNOWABLE_TOKEN = "TokenC";
+  private static final String VANILLA_TOKEN = "TokenD";
 
-	public static void main(String... args) {
-		new TokenAssociationSpecs().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new TokenAssociationSpecs().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						treasuryAssociationIsAutomatic(),
-						dissociateHasExpectedSemantics(),
-						associateHasExpectedSemantics(),
-						associatedContractsMustHaveAdminKeys(),
-						dissociateHasExpectedSemanticsForDeletedTokens(),
-						expiredAndDeletedTokensStillAppearInContractInfo(),
-						dissociationFromExpiredTokensAsExpected(),
-						accountInfoQueriesAsExpected(),
-						handlesUseOfDefaultTokenId(),
-						contractInfoQueriesAsExpected(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          treasuryAssociationIsAutomatic(),
+          dissociateHasExpectedSemantics(),
+          associateHasExpectedSemantics(),
+          associatedContractsMustHaveAdminKeys(),
+          dissociateHasExpectedSemanticsForDeletedTokens(),
+          expiredAndDeletedTokensStillAppearInContractInfo(),
+          dissociationFromExpiredTokensAsExpected(),
+          accountInfoQueriesAsExpected(),
+          handlesUseOfDefaultTokenId(),
+          contractInfoQueriesAsExpected(),
+        });
+  }
 
-	public HapiApiSpec handlesUseOfDefaultTokenId() {
-		return defaultHapiSpec("HandlesUseOfDefaultTokenId")
-				.given().when().then(
-						tokenAssociate(DEFAULT_PAYER, "0.0.0")
-								.hasKnownStatus(INVALID_TOKEN_ID)
-				);
-	}
+  public HapiApiSpec handlesUseOfDefaultTokenId() {
+    return defaultHapiSpec("HandlesUseOfDefaultTokenId")
+        .given()
+        .when()
+        .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
+  }
 
-	public HapiApiSpec associatedContractsMustHaveAdminKeys() {
-		String misc = "someToken";
-		String contract = "defaultContract";
+  public HapiApiSpec associatedContractsMustHaveAdminKeys() {
+    String misc = "someToken";
+    String contract = "defaultContract";
 
-		return defaultHapiSpec("AssociatedContractsMustHaveAdminKeys")
-				.given(
-						tokenCreate(misc)
-				).when(
-						contractCreate(contract).omitAdminKey()
-				).then(
-						tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE)
-				);
-	}
+    return defaultHapiSpec("AssociatedContractsMustHaveAdminKeys")
+        .given(tokenCreate(misc))
+        .when(contractCreate(contract).omitAdminKey())
+        .then(tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE));
+  }
 
-	public HapiApiSpec contractInfoQueriesAsExpected() {
-		return defaultHapiSpec("ContractInfoQueriesAsExpected")
-				.given(
-						newKeyNamed("simple"),
-						tokenCreate("a"),
-						tokenCreate("b"),
-						tokenCreate("c"),
-						tokenCreate("tbd").adminKey("simple"),
-						contractCreate("contract")
-				).when(
-						tokenAssociate("contract", "a", "b", "c", "tbd"),
-						getContractInfo("contract")
-								.hasToken(relationshipWith("a"))
-								.hasToken(relationshipWith("b"))
-								.hasToken(relationshipWith("c"))
-								.hasToken(relationshipWith("tbd")),
-						tokenDissociate("contract", "b"),
-						tokenDelete("tbd")
-				).then(
-						getContractInfo("contract")
-								.hasToken(relationshipWith("a"))
-								.hasNoTokenRelationship("b")
-								.hasToken(relationshipWith("c"))
-								.hasToken(relationshipWith("tbd"))
-								.logged()
-				);
-	}
+  public HapiApiSpec contractInfoQueriesAsExpected() {
+    return defaultHapiSpec("ContractInfoQueriesAsExpected")
+        .given(
+            newKeyNamed("simple"),
+            tokenCreate("a"),
+            tokenCreate("b"),
+            tokenCreate("c"),
+            tokenCreate("tbd").adminKey("simple"),
+            contractCreate("contract"))
+        .when(
+            tokenAssociate("contract", "a", "b", "c", "tbd"),
+            getContractInfo("contract")
+                .hasToken(relationshipWith("a"))
+                .hasToken(relationshipWith("b"))
+                .hasToken(relationshipWith("c"))
+                .hasToken(relationshipWith("tbd")),
+            tokenDissociate("contract", "b"),
+            tokenDelete("tbd"))
+        .then(
+            getContractInfo("contract")
+                .hasToken(relationshipWith("a"))
+                .hasNoTokenRelationship("b")
+                .hasToken(relationshipWith("c"))
+                .hasToken(relationshipWith("tbd"))
+                .logged());
+  }
 
-	public HapiApiSpec accountInfoQueriesAsExpected() {
-		return defaultHapiSpec("InfoQueriesAsExpected")
-				.given(
-						newKeyNamed("simple"),
-						tokenCreate("a").decimals(1),
-						tokenCreate("b").decimals(2),
-						tokenCreate("c").decimals(3),
-						tokenCreate("tbd").adminKey("simple").decimals(4),
-						cryptoCreate("account").balance(0L)
-				).when(
-						tokenAssociate("account", "a", "b", "c", "tbd"),
-						getAccountInfo("account")
-								.hasToken(relationshipWith("a").decimals(1))
-								.hasToken(relationshipWith("b").decimals(2))
-								.hasToken(relationshipWith("c").decimals(3))
-								.hasToken(relationshipWith("tbd").decimals(4)),
-						tokenDissociate("account", "b"),
-						tokenDelete("tbd")
-				).then(
-						getAccountInfo("account")
-								.hasToken(relationshipWith("a").decimals(1))
-								.hasNoTokenRelationship("b")
-								.hasToken(relationshipWith("c").decimals(3))
-								.hasToken(relationshipWith("tbd").decimals(4))
-								.logged()
-				);
-	}
+  public HapiApiSpec accountInfoQueriesAsExpected() {
+    return defaultHapiSpec("InfoQueriesAsExpected")
+        .given(
+            newKeyNamed("simple"),
+            tokenCreate("a").decimals(1),
+            tokenCreate("b").decimals(2),
+            tokenCreate("c").decimals(3),
+            tokenCreate("tbd").adminKey("simple").decimals(4),
+            cryptoCreate("account").balance(0L))
+        .when(
+            tokenAssociate("account", "a", "b", "c", "tbd"),
+            getAccountInfo("account")
+                .hasToken(relationshipWith("a").decimals(1))
+                .hasToken(relationshipWith("b").decimals(2))
+                .hasToken(relationshipWith("c").decimals(3))
+                .hasToken(relationshipWith("tbd").decimals(4)),
+            tokenDissociate("account", "b"),
+            tokenDelete("tbd"))
+        .then(
+            getAccountInfo("account")
+                .hasToken(relationshipWith("a").decimals(1))
+                .hasNoTokenRelationship("b")
+                .hasToken(relationshipWith("c").decimals(3))
+                .hasToken(relationshipWith("tbd").decimals(4))
+                .logged());
+  }
 
-	public HapiApiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
-		String contract = "nothingMattersAnymore";
-		String treasury = "something";
-		String expiringToken = "expiringToken";
-		long lifetimeSecs = 10;
-		long xfer = 123L;
-		AtomicLong now = new AtomicLong();
-		return defaultHapiSpec("ExpiredAndDeletedTokensStillAppearInContractInfo")
-				.given(
-						newKeyNamed("admin"),
-						cryptoCreate(treasury),
-						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate(contract).bytecode("bytecode").via("creation"),
-						withOpContext((spec, opLog) -> {
-							var subOp = getTxnRecord("creation");
-							allRunFor(spec, subOp);
-							var record = subOp.getResponseRecord();
-							now.set(record.getConsensusTimestamp().getSeconds());
-						}),
-						sourcing(() ->
-								tokenCreate(expiringToken)
-										.decimals(666)
-										.adminKey("admin")
-										.treasury(treasury)
-										.expiry(now.get() + lifetimeSecs))
-				).when(
-						tokenAssociate(contract, expiringToken),
-						cryptoTransfer(
-								moving(xfer, expiringToken)
-										.between(treasury, contract))
-				).then(
-						getAccountBalance(contract)
-								.hasTokenBalance(expiringToken, xfer),
-						getContractInfo(contract)
-								.hasToken(relationshipWith(expiringToken)
-										.freeze(FreezeNotApplicable)),
-						sleepFor(lifetimeSecs * 1_000L),
-						getAccountBalance(contract)
-								.hasTokenBalance(expiringToken, xfer, 666),
-						getContractInfo(contract)
-								.hasToken(relationshipWith(expiringToken)
-										.freeze(FreezeNotApplicable)),
-						tokenDelete(expiringToken),
-						getAccountBalance(contract)
-								.hasTokenBalance(expiringToken, xfer),
-						getContractInfo(contract)
-								.hasToken(relationshipWith(expiringToken)
-										.decimals(666)
-										.freeze(FreezeNotApplicable))
-				);
-	}
+  public HapiApiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
+    String contract = "nothingMattersAnymore";
+    String treasury = "something";
+    String expiringToken = "expiringToken";
+    long lifetimeSecs = 10;
+    long xfer = 123L;
+    AtomicLong now = new AtomicLong();
+    return defaultHapiSpec("ExpiredAndDeletedTokensStillAppearInContractInfo")
+        .given(
+            newKeyNamed("admin"),
+            cryptoCreate(treasury),
+            fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
+            contractCreate(contract).bytecode("bytecode").via("creation"),
+            withOpContext(
+                (spec, opLog) -> {
+                  var subOp = getTxnRecord("creation");
+                  allRunFor(spec, subOp);
+                  var record = subOp.getResponseRecord();
+                  now.set(record.getConsensusTimestamp().getSeconds());
+                }),
+            sourcing(
+                () ->
+                    tokenCreate(expiringToken)
+                        .decimals(666)
+                        .adminKey("admin")
+                        .treasury(treasury)
+                        .expiry(now.get() + lifetimeSecs)))
+        .when(
+            tokenAssociate(contract, expiringToken),
+            cryptoTransfer(moving(xfer, expiringToken).between(treasury, contract)))
+        .then(
+            getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
+            getContractInfo(contract)
+                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
+            sleepFor(lifetimeSecs * 1_000L),
+            getAccountBalance(contract).hasTokenBalance(expiringToken, xfer, 666),
+            getContractInfo(contract)
+                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
+            tokenDelete(expiringToken),
+            getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
+            getContractInfo(contract)
+                .hasToken(
+                    relationshipWith(expiringToken).decimals(666).freeze(FreezeNotApplicable)));
+  }
 
-	public HapiApiSpec dissociationFromExpiredTokensAsExpected() {
-		String treasury = "accountA";
-		String frozenAccount = "frozen";
-		String unfrozenAccount = "unfrozen";
-		String expiringToken = "expiringToken";
-		long lifetimeSecs = 10;
+  public HapiApiSpec dissociationFromExpiredTokensAsExpected() {
+    String treasury = "accountA";
+    String frozenAccount = "frozen";
+    String unfrozenAccount = "unfrozen";
+    String expiringToken = "expiringToken";
+    long lifetimeSecs = 10;
 
-		AtomicLong now = new AtomicLong();
-		return defaultHapiSpec("DissociationFromExpiredTokensAsExpected")
-				.given(
-						newKeyNamed("freezeKey"),
-						cryptoCreate(treasury),
-						cryptoCreate(frozenAccount).via("creation"),
-						cryptoCreate(unfrozenAccount).via("creation"),
-						withOpContext((spec, opLog) -> {
-							var subOp = getTxnRecord("creation");
-							allRunFor(spec, subOp);
-							var record = subOp.getResponseRecord();
-							now.set(record.getConsensusTimestamp().getSeconds());
-						}),
-						sourcing(() ->
-								tokenCreate(expiringToken)
-										.freezeKey("freezeKey")
-										.freezeDefault(true)
-										.treasury(treasury)
-										.initialSupply(1000L)
-										.expiry(now.get() + lifetimeSecs))
-				).when(
-						tokenAssociate(unfrozenAccount, expiringToken),
-						tokenAssociate(frozenAccount, expiringToken),
-						tokenUnfreeze(expiringToken, unfrozenAccount),
-						cryptoTransfer(
-								moving(100L, expiringToken)
-										.between(treasury, unfrozenAccount))
-				).then(
-						getAccountBalance(treasury)
-								.hasTokenBalance(expiringToken, 900L),
-						sleepFor(lifetimeSecs * 1_000L),
-						tokenDissociate(treasury, expiringToken)
-								.hasKnownStatus(ACCOUNT_IS_TREASURY),
-						tokenDissociate(unfrozenAccount, expiringToken)
-								.via("dissociateTxn"),
-						getTxnRecord("dissociateTxn")
-								.hasPriority(TransactionRecordAsserts
-										.recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
-											@Override
-											public ErroringAsserts<List<TokenTransferList>> assertsFor(
-													HapiApiSpec spec) {
-												return tokenXfers -> {
-													try {
-														assertEquals(
-																1,
-																tokenXfers.size(),
-																"Wrong number of tokens transferred!");
-														TokenTransferList xfers = tokenXfers.get(0);
-														assertEquals(
-																spec.registry().getTokenID(expiringToken),
-																xfers.getToken(),
-																"Wrong token transferred!");
-														AccountAmount toTreasury = xfers.getTransfers(0);
-														assertEquals(
-																spec.registry().getAccountID(treasury),
-																toTreasury.getAccountID(),
-																"Treasury should come first!");
-														assertEquals(
-																100L,
-																toTreasury.getAmount(),
-																"Treasury should get 100 tokens back!");
-														AccountAmount fromAccount = xfers.getTransfers(1);
-														assertEquals(
-																spec.registry().getAccountID(unfrozenAccount),
-																fromAccount.getAccountID(),
-																"Account should come second!");
-														assertEquals(
-																-100L,
-																fromAccount.getAmount(),
-																"Account should send 100 tokens back!");
-													} catch (Throwable error) {
-														return List.of(error);
-													}
-													return Collections.emptyList();
-												};
-											}
-										})),
-						getAccountBalance(treasury)
-								.hasTokenBalance(expiringToken, 1000L),
-						getAccountInfo(frozenAccount)
-								.hasToken(relationshipWith(expiringToken)
-										.freeze(Frozen)),
-						tokenDissociate(frozenAccount, expiringToken)
-								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
-				);
-	}
+    AtomicLong now = new AtomicLong();
+    return defaultHapiSpec("DissociationFromExpiredTokensAsExpected")
+        .given(
+            newKeyNamed("freezeKey"),
+            cryptoCreate(treasury),
+            cryptoCreate(frozenAccount).via("creation"),
+            cryptoCreate(unfrozenAccount).via("creation"),
+            withOpContext(
+                (spec, opLog) -> {
+                  var subOp = getTxnRecord("creation");
+                  allRunFor(spec, subOp);
+                  var record = subOp.getResponseRecord();
+                  now.set(record.getConsensusTimestamp().getSeconds());
+                }),
+            sourcing(
+                () ->
+                    tokenCreate(expiringToken)
+                        .freezeKey("freezeKey")
+                        .freezeDefault(true)
+                        .treasury(treasury)
+                        .initialSupply(1000L)
+                        .expiry(now.get() + lifetimeSecs)))
+        .when(
+            tokenAssociate(unfrozenAccount, expiringToken),
+            tokenAssociate(frozenAccount, expiringToken),
+            tokenUnfreeze(expiringToken, unfrozenAccount),
+            cryptoTransfer(moving(100L, expiringToken).between(treasury, unfrozenAccount)))
+        .then(
+            getAccountBalance(treasury).hasTokenBalance(expiringToken, 900L),
+            sleepFor(lifetimeSecs * 1_000L),
+            tokenDissociate(treasury, expiringToken).hasKnownStatus(ACCOUNT_IS_TREASURY),
+            tokenDissociate(unfrozenAccount, expiringToken).via("dissociateTxn"),
+            getTxnRecord("dissociateTxn")
+                .hasPriority(
+                    TransactionRecordAsserts.recordWith()
+                        .tokenTransfers(
+                            new BaseErroringAssertsProvider<>() {
+                              @Override
+                              public ErroringAsserts<List<TokenTransferList>> assertsFor(
+                                  HapiApiSpec spec) {
+                                return tokenXfers -> {
+                                  try {
+                                    assertEquals(
+                                        1,
+                                        tokenXfers.size(),
+                                        "Wrong number of tokens transferred!");
+                                    TokenTransferList xfers = tokenXfers.get(0);
+                                    assertEquals(
+                                        spec.registry().getTokenID(expiringToken),
+                                        xfers.getToken(),
+                                        "Wrong token transferred!");
+                                    AccountAmount toTreasury = xfers.getTransfers(0);
+                                    assertEquals(
+                                        spec.registry().getAccountID(treasury),
+                                        toTreasury.getAccountID(),
+                                        "Treasury should come first!");
+                                    assertEquals(
+                                        100L,
+                                        toTreasury.getAmount(),
+                                        "Treasury should get 100 tokens back!");
+                                    AccountAmount fromAccount = xfers.getTransfers(1);
+                                    assertEquals(
+                                        spec.registry().getAccountID(unfrozenAccount),
+                                        fromAccount.getAccountID(),
+                                        "Account should come second!");
+                                    assertEquals(
+                                        -100L,
+                                        fromAccount.getAmount(),
+                                        "Account should send 100 tokens back!");
+                                  } catch (Throwable error) {
+                                    return List.of(error);
+                                  }
+                                  return Collections.emptyList();
+                                };
+                              }
+                            })),
+            getAccountBalance(treasury).hasTokenBalance(expiringToken, 1000L),
+            getAccountInfo(frozenAccount).hasToken(relationshipWith(expiringToken).freeze(Frozen)),
+            tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+  }
 
-	public HapiApiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
-		String tbdToken = "ToBeDeleted";
-		String zeroBalanceFrozen = "0bFrozen";
-		String zeroBalanceUnfrozen = "0bUnfrozen";
-		String nonZeroBalanceFrozen = "1bFrozen";
-		String nonZeroBalanceUnfrozen = "1bUnfrozen";
-		long initialSupply = 100L;
-		long nonZeroXfer = 10L;
+  public HapiApiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
+    String tbdToken = "ToBeDeleted";
+    String zeroBalanceFrozen = "0bFrozen";
+    String zeroBalanceUnfrozen = "0bUnfrozen";
+    String nonZeroBalanceFrozen = "1bFrozen";
+    String nonZeroBalanceUnfrozen = "1bUnfrozen";
+    long initialSupply = 100L;
+    long nonZeroXfer = 10L;
 
-		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
-				.given(
-						newKeyNamed("adminKey"),
-						newKeyNamed("freezeKey"),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(tbdToken)
-								.adminKey("adminKey")
-								.initialSupply(initialSupply)
-								.treasury(TOKEN_TREASURY)
-								.freezeKey("freezeKey")
-								.freezeDefault(true),
-						cryptoCreate(zeroBalanceFrozen).balance(0L),
-						cryptoCreate(zeroBalanceUnfrozen).balance(0L),
-						cryptoCreate(nonZeroBalanceFrozen).balance(0L),
-						cryptoCreate(nonZeroBalanceUnfrozen).balance(0L)
-				).when(
-						tokenAssociate(zeroBalanceFrozen, tbdToken),
-						tokenAssociate(zeroBalanceUnfrozen, tbdToken),
-						tokenAssociate(nonZeroBalanceFrozen, tbdToken),
-						tokenAssociate(nonZeroBalanceUnfrozen, tbdToken),
+    return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
+        .given(
+            newKeyNamed("adminKey"),
+            newKeyNamed("freezeKey"),
+            cryptoCreate(TOKEN_TREASURY).balance(0L),
+            tokenCreate(tbdToken)
+                .adminKey("adminKey")
+                .initialSupply(initialSupply)
+                .treasury(TOKEN_TREASURY)
+                .freezeKey("freezeKey")
+                .freezeDefault(true),
+            cryptoCreate(zeroBalanceFrozen).balance(0L),
+            cryptoCreate(zeroBalanceUnfrozen).balance(0L),
+            cryptoCreate(nonZeroBalanceFrozen).balance(0L),
+            cryptoCreate(nonZeroBalanceUnfrozen).balance(0L))
+        .when(
+            tokenAssociate(zeroBalanceFrozen, tbdToken),
+            tokenAssociate(zeroBalanceUnfrozen, tbdToken),
+            tokenAssociate(nonZeroBalanceFrozen, tbdToken),
+            tokenAssociate(nonZeroBalanceUnfrozen, tbdToken),
+            tokenUnfreeze(tbdToken, zeroBalanceUnfrozen),
+            tokenUnfreeze(tbdToken, nonZeroBalanceUnfrozen),
+            tokenUnfreeze(tbdToken, nonZeroBalanceFrozen),
+            cryptoTransfer(
+                moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
+            cryptoTransfer(
+                moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+            tokenFreeze(tbdToken, nonZeroBalanceFrozen),
+            getAccountBalance(TOKEN_TREASURY)
+                .hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
+            tokenDelete(tbdToken))
+        .then(
+            tokenDissociate(zeroBalanceFrozen, tbdToken),
+            tokenDissociate(zeroBalanceUnfrozen, tbdToken),
+            tokenDissociate(nonZeroBalanceFrozen, tbdToken),
+            tokenDissociate(nonZeroBalanceUnfrozen, tbdToken),
+            getAccountBalance(TOKEN_TREASURY)
+                .hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer));
+  }
 
-						tokenUnfreeze(tbdToken, zeroBalanceUnfrozen),
-						tokenUnfreeze(tbdToken, nonZeroBalanceUnfrozen),
-						tokenUnfreeze(tbdToken, nonZeroBalanceFrozen),
+  public HapiApiSpec dissociateHasExpectedSemantics() {
+    return defaultHapiSpec("DissociateHasExpectedSemantics")
+        .given(flattened(basicKeysAndTokens()))
+        .when(
+            tokenCreate("tkn1").treasury(TOKEN_TREASURY),
+            tokenDissociate(TOKEN_TREASURY, "tkn1").hasKnownStatus(ACCOUNT_IS_TREASURY),
+            cryptoCreate("misc"),
+            tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+            tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
+            tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+            tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
+            cryptoTransfer(
+                moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between(TOKEN_TREASURY, "misc")),
+            tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+            cryptoTransfer(
+                moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between("misc", TOKEN_TREASURY)),
+            tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT))
+        .then(
+            getAccountInfo("misc")
+                .hasToken(relationshipWith(KNOWABLE_TOKEN))
+                .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                .logged());
+  }
 
-						cryptoTransfer(moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
-						cryptoTransfer(moving(nonZeroXfer, tbdToken).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+  public HapiApiSpec associateHasExpectedSemantics() {
+    return defaultHapiSpec("AssociateHasExpectedSemantics")
+        .given(flattened(basicKeysAndTokens()))
+        .when(
+            cryptoCreate("misc").balance(0L),
+            tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT),
+            tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                .hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
+            tokenAssociate("misc", "1.2.3").hasKnownStatus(INVALID_TOKEN_ID),
+            tokenAssociate("misc", "1.2.3", "1.2.3").hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+            tokenDissociate("misc", "1.2.3", "1.2.3").hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+            fileUpdate(APP_PROPERTIES)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
+            tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                .hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+            fileUpdate(APP_PROPERTIES)
+                .overridingProps(Map.of("tokens.maxPerAccount", "" + 1000))
+                .payingWith(ADDRESS_BOOK_CONTROL),
+            tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+            tokenAssociate("misc", KNOWABLE_TOKEN, VANILLA_TOKEN))
+        .then(
+            getAccountInfo("misc")
+                .hasToken(
+                    relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        .kyc(KycNotApplicable)
+                        .freeze(Frozen))
+                .hasToken(
+                    relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                        .kyc(KycNotApplicable)
+                        .freeze(Unfrozen))
+                .hasToken(relationshipWith(KNOWABLE_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+                .hasToken(
+                    relationshipWith(VANILLA_TOKEN)
+                        .kyc(KycNotApplicable)
+                        .freeze(FreezeNotApplicable))
+                .logged());
+  }
 
-						tokenFreeze(tbdToken, nonZeroBalanceFrozen),
-						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer),
-						tokenDelete(tbdToken)
-				).then(
-						tokenDissociate(zeroBalanceFrozen, tbdToken),
-						tokenDissociate(zeroBalanceUnfrozen, tbdToken),
-						tokenDissociate(nonZeroBalanceFrozen, tbdToken),
-						tokenDissociate(nonZeroBalanceUnfrozen, tbdToken),
-						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(tbdToken, initialSupply - 2 * nonZeroXfer)
-				);
-	}
+  public HapiApiSpec treasuryAssociationIsAutomatic() {
+    return defaultHapiSpec("TreasuryAssociationIsAutomatic")
+        .given(basicKeysAndTokens())
+        .when()
+        .then(
+            getAccountInfo(TOKEN_TREASURY)
+                .hasToken(
+                    relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        .kyc(KycNotApplicable)
+                        .freeze(Unfrozen))
+                .hasToken(
+                    relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                        .kyc(KycNotApplicable)
+                        .freeze(Unfrozen))
+                .hasToken(relationshipWith(KNOWABLE_TOKEN).kyc(Granted).freeze(FreezeNotApplicable))
+                .hasToken(
+                    relationshipWith(VANILLA_TOKEN)
+                        .kyc(KycNotApplicable)
+                        .freeze(FreezeNotApplicable))
+                .logged());
+  }
 
-	public HapiApiSpec dissociateHasExpectedSemantics() {
-		return defaultHapiSpec("DissociateHasExpectedSemantics")
-				.given(flattened(
-						basicKeysAndTokens()
-				)).when(
-						tokenCreate("tkn1")
-								.treasury(TOKEN_TREASURY),
-						tokenDissociate(TOKEN_TREASURY, "tkn1")
-								.hasKnownStatus(ACCOUNT_IS_TREASURY),
-						cryptoCreate("misc"),
-						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-						tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
-						cryptoTransfer(
-								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
-										.between(TOKEN_TREASURY, "misc")),
-						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-						cryptoTransfer(
-								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
-										.between("misc", TOKEN_TREASURY)),
-						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-				).then(
-						getAccountInfo("misc")
-								.hasToken(relationshipWith(KNOWABLE_TOKEN))
-								.hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.logged()
-				);
-	}
+  private HapiSpecOperation[] basicKeysAndTokens() {
+    return new HapiSpecOperation[] {
+      newKeyNamed("kycKey"),
+      newKeyNamed("freezeKey"),
+      cryptoCreate(TOKEN_TREASURY).balance(0L),
+      tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+          .treasury(TOKEN_TREASURY)
+          .freezeKey("freezeKey")
+          .freezeDefault(true),
+      tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+          .treasury(TOKEN_TREASURY)
+          .freezeKey("freezeKey")
+          .freezeDefault(false),
+      tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
+      tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
+    };
+  }
 
-	public HapiApiSpec associateHasExpectedSemantics() {
-		return defaultHapiSpec("AssociateHasExpectedSemantics")
-				.given(flattened(
-						basicKeysAndTokens()
-				)).when(
-						cryptoCreate("misc").balance(0L),
-						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT),
-						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
-						tokenAssociate("misc", "1.2.3")
-								.hasKnownStatus(INVALID_TOKEN_ID),
-						tokenAssociate("misc", "1.2.3", "1.2.3")
-								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-						tokenDissociate("misc", "1.2.3", "1.2.3")
-								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
-						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + 1000
-						)).payingWith(ADDRESS_BOOK_CONTROL),
-						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-						tokenAssociate("misc", KNOWABLE_TOKEN, VANILLA_TOKEN)
-				).then(
-						getAccountInfo("misc")
-								.hasToken(
-										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
-				);
-	}
-
-	public HapiApiSpec treasuryAssociationIsAutomatic() {
-		return defaultHapiSpec("TreasuryAssociationIsAutomatic")
-				.given(
-						basicKeysAndTokens()
-				).when().then(
-						getAccountInfo(TOKEN_TREASURY)
-								.hasToken(
-										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(KNOWABLE_TOKEN)
-												.kyc(Granted)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
-				);
-	}
-
-	private HapiSpecOperation[] basicKeysAndTokens() {
-		return new HapiSpecOperation[] {
-				newKeyNamed("kycKey"),
-				newKeyNamed("freezeKey"),
-				cryptoCreate(TOKEN_TREASURY).balance(0L),
-				tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-						.treasury(TOKEN_TREASURY)
-						.freezeKey("freezeKey")
-						.freezeDefault(true),
-				tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-						.treasury(TOKEN_TREASURY)
-						.freezeKey("freezeKey")
-						.freezeDefault(false),
-				tokenCreate(KNOWABLE_TOKEN)
-						.treasury(TOKEN_TREASURY)
-						.kycKey("kycKey"),
-				tokenCreate(VANILLA_TOKEN)
-						.treasury(TOKEN_TREASURY)
-		};
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

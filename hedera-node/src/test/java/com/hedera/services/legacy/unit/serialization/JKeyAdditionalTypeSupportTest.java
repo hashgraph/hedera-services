@@ -20,46 +20,45 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class JKeyAdditionalTypeSupportTest {
-	@Test
-	void serializingJContractIDKeyTest() throws Exception {
-		final var cid = ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001);
-		final var key = Key.newBuilder().setContractID(cid).build();
-		commonAssertions(key);
-	}
+  @Test
+  void serializingJContractIDKeyTest() throws Exception {
+    final var cid = ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001);
+    final var key = Key.newBuilder().setContractID(cid).build();
+    commonAssertions(key);
+  }
 
-	@Test
-	void serializingJRSA_3072KeyTest() throws Exception {
-		final var keyBytes = TxnUtils.randomUtf8ByteString(3072 / 8);
-		final var key = Key.newBuilder().setRSA3072(keyBytes).build();
-		commonAssertions(key);
-	}
+  @Test
+  void serializingJRSA_3072KeyTest() throws Exception {
+    final var keyBytes = TxnUtils.randomUtf8ByteString(3072 / 8);
+    final var key = Key.newBuilder().setRSA3072(keyBytes).build();
+    commonAssertions(key);
+  }
 
-	private void commonAssertions(final Key key) throws Exception {
-		final var jKey = JKey.mapKey(key);
+  private void commonAssertions(final Key key) throws Exception {
+    final var jKey = JKey.mapKey(key);
 
-		final var ser = JKeySerializer.serialize(jKey);
-		final var in = new ByteArrayInputStream(ser);
-		final var dis = new DataInputStream(in);
+    final var ser = JKeySerializer.serialize(jKey);
+    final var in = new ByteArrayInputStream(ser);
+    final var dis = new DataInputStream(in);
 
-		final var jKeyReborn = (JKey) JKeySerializer.deserialize(dis);
-		final var keyReborn = JKey.mapJKey(jKeyReborn);
-		assertEquals(key, keyReborn);
+    final var jKeyReborn = (JKey) JKeySerializer.deserialize(dis);
+    final var keyReborn = JKey.mapJKey(jKeyReborn);
+    assertEquals(key, keyReborn);
 
-		final var serReborn = JKeySerializer.serialize(jKeyReborn);
-		assertArrayEquals(ser, serReborn);
-	}
+    final var serReborn = JKeySerializer.serialize(jKeyReborn);
+    assertArrayEquals(ser, serReborn);
+  }
 }

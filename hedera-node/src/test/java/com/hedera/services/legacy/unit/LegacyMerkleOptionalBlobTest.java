@@ -20,64 +20,63 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.blob.BinaryObjectNotFoundException;
-import com.swirlds.blob.internal.db.BlobStoragePipeline;
-import com.swirlds.blob.internal.db.DbManager;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
-import java.sql.SQLException;
-import java.util.Random;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.swirlds.blob.BinaryObjectNotFoundException;
+import com.swirlds.blob.internal.db.BlobStoragePipeline;
+import com.swirlds.blob.internal.db.DbManager;
+import java.sql.SQLException;
+import java.util.Random;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 @Disabled
 class LegacyMerkleOptionalBlobTest {
-	Random random = new Random();
+  Random random = new Random();
 
-	@Test
-	void testCreates() throws SQLException {
-		try (BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
-			final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
-			byte[] fileContents = new byte[1024];
-			random.nextBytes(fileContents);
+  @Test
+  void testCreates() throws SQLException {
+    try (BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
+      final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
+      byte[] fileContents = new byte[1024];
+      random.nextBytes(fileContents);
 
-			MerkleOptionalBlob sv = new MerkleOptionalBlob(fileContents);
+      MerkleOptionalBlob sv = new MerkleOptionalBlob(fileContents);
 
-			final long binaryObjectCountAfter = pipeline.retrieveNumberOfBlobs();
+      final long binaryObjectCountAfter = pipeline.retrieveNumberOfBlobs();
 
-			assertEquals(binaryObjectCountBefore + 1, binaryObjectCountAfter);
-		}
-	}
+      assertEquals(binaryObjectCountBefore + 1, binaryObjectCountAfter);
+    }
+  }
 
-	@Test
-	void testReleases() throws SQLException {
-		try (final BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
-			final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
+  @Test
+  void testReleases() throws SQLException {
+    try (final BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
+      final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
 
-			byte[] fileContents = new byte[1024];
-			random.nextBytes(fileContents);
-			final MerkleOptionalBlob sv = new MerkleOptionalBlob(fileContents);
-			final long svId = sv.getDelegate().getId();
+      byte[] fileContents = new byte[1024];
+      random.nextBytes(fileContents);
+      final MerkleOptionalBlob sv = new MerkleOptionalBlob(fileContents);
+      final long svId = sv.getDelegate().getId();
 
-			byte[] fileContents2 = new byte[1024];
-			random.nextBytes(fileContents2);
-			final MerkleOptionalBlob sv2 = new MerkleOptionalBlob(fileContents2);
+      byte[] fileContents2 = new byte[1024];
+      random.nextBytes(fileContents2);
+      final MerkleOptionalBlob sv2 = new MerkleOptionalBlob(fileContents2);
 
-			final long binaryObjectCountAfterCreate = pipeline.retrieveNumberOfBlobs();
+      final long binaryObjectCountAfterCreate = pipeline.retrieveNumberOfBlobs();
 
-			assertEquals(binaryObjectCountBefore + 2, binaryObjectCountAfterCreate);
+      assertEquals(binaryObjectCountBefore + 2, binaryObjectCountAfterCreate);
 
-			sv.release();
+      sv.release();
 
-			final long binaryObjectCountAfterDelete = pipeline.retrieveNumberOfBlobs();
+      final long binaryObjectCountAfterDelete = pipeline.retrieveNumberOfBlobs();
 
-			assertEquals(binaryObjectCountAfterCreate - 1, binaryObjectCountAfterDelete);
-			assertThrows(BinaryObjectNotFoundException.class, () -> pipeline.get(svId));
-			assertDoesNotThrow(() -> sv2.getData());
-		}
-	}
+      assertEquals(binaryObjectCountAfterCreate - 1, binaryObjectCountAfterDelete);
+      assertThrows(BinaryObjectNotFoundException.class, () -> pipeline.get(svId));
+      assertDoesNotThrow(() -> sv2.getData());
+    }
+  }
 }

@@ -20,18 +20,6 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.Platform;
-import com.swirlds.common.StatEntry;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Function;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -47,186 +35,188 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.Platform;
+import com.swirlds.common.StatEntry;
+import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class HapiOpCountersTest {
-	Platform platform;
-	CounterFactory factory;
-	MiscRunningAvgs runningAvgs;
-	TransactionContext txnCtx;
-	Function<HederaFunctionality, String> statNameFn;
+  Platform platform;
+  CounterFactory factory;
+  MiscRunningAvgs runningAvgs;
+  TransactionContext txnCtx;
+  Function<HederaFunctionality, String> statNameFn;
 
-	HapiOpCounters subject;
+  HapiOpCounters subject;
 
-	@BeforeEach
-	void setup() throws Exception {
-		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
-				CryptoTransfer,
-				TokenGetInfo,
-				ConsensusSubmitMessage,
-				NONE
-		};
+  @BeforeEach
+  void setup() throws Exception {
+    HapiOpCounters.allFunctions =
+        () ->
+            new HederaFunctionality[] {CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE};
 
-		txnCtx = mock(TransactionContext.class);
-		platform = mock(Platform.class);
-		factory = mock(CounterFactory.class);
-		statNameFn = HederaFunctionality::toString;
-		runningAvgs = mock(MiscRunningAvgs.class);
+    txnCtx = mock(TransactionContext.class);
+    platform = mock(Platform.class);
+    factory = mock(CounterFactory.class);
+    statNameFn = HederaFunctionality::toString;
+    runningAvgs = mock(MiscRunningAvgs.class);
 
-		subject = new HapiOpCounters(factory, runningAvgs, txnCtx, statNameFn);
-	}
+    subject = new HapiOpCounters(factory, runningAvgs, txnCtx, statNameFn);
+  }
 
-	@AfterEach
-	public void cleanup() {
-		HapiOpCounters.allFunctions = HederaFunctionality.class::getEnumConstants;
-	}
+  @AfterEach
+  public void cleanup() {
+    HapiOpCounters.allFunctions = HederaFunctionality.class::getEnumConstants;
+  }
 
-	@Test
-	void beginsRationally() {
-		// expect:
-		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
-		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
-		assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
-		assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
-		// and:
-		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
-		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
-		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
-		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
-		// and:
-		assertFalse(subject.receivedOps.containsKey(NONE));
-		assertFalse(subject.submittedTxns.containsKey(NONE));
-		assertFalse(subject.answeredQueries.containsKey(NONE));
-		assertFalse(subject.handledTxns.containsKey(NONE));
-	}
+  @Test
+  void beginsRationally() {
+    // expect:
+    assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
+    assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
+    assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
+    assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
+    // and:
+    assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
+    assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
+    assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
+    assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
+    // and:
+    assertFalse(subject.receivedOps.containsKey(NONE));
+    assertFalse(subject.submittedTxns.containsKey(NONE));
+    assertFalse(subject.answeredQueries.containsKey(NONE));
+    assertFalse(subject.handledTxns.containsKey(NONE));
+  }
 
-	@Test
-	void registersExpectedStatEntries() {
-		// setup:
-		StatEntry transferRcv = mock(StatEntry.class);
-		StatEntry transferSub = mock(StatEntry.class);
-		StatEntry transferHdl = mock(StatEntry.class);
-		StatEntry tokenInfoRcv = mock(StatEntry.class);
-		StatEntry tokenInfoAns = mock(StatEntry.class);
-		// and:
-		var xferRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
-		var xferSubName = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
-		var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
-		// and:
-		var xferRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
-		var xferSubDesc = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
-		var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
-		// and:
-		var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
-		var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
-		// and:
-		var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
-		var infoAnsDesc = String.format(ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL, "TokenGetInfo");
+  @Test
+  void registersExpectedStatEntries() {
+    // setup:
+    StatEntry transferRcv = mock(StatEntry.class);
+    StatEntry transferSub = mock(StatEntry.class);
+    StatEntry transferHdl = mock(StatEntry.class);
+    StatEntry tokenInfoRcv = mock(StatEntry.class);
+    StatEntry tokenInfoAns = mock(StatEntry.class);
+    // and:
+    var xferRcvName =
+        String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
+    var xferSubName =
+        String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
+    var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
+    // and:
+    var xferRcvDesc =
+        String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
+    var xferSubDesc =
+        String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
+    var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
+    // and:
+    var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
+    var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
+    // and:
+    var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
+    var infoAnsDesc = String.format(ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL, "TokenGetInfo");
 
-		given(factory.from(
-				argThat(xferRcvName::equals),
-				argThat(xferRcvDesc::equals),
-				any())).willReturn(transferRcv);
-		given(factory.from(
-				argThat(xferSubName::equals),
-				argThat(xferSubDesc::equals),
-				any())).willReturn(transferSub);
-		given(factory.from(
-				argThat(xferHdlName::equals),
-				argThat(xferHdlDesc::equals),
-				any())).willReturn(transferHdl);
-		// and:
-		given(factory.from(
-				argThat(infoRcvName::equals),
-				argThat(infoRcvDesc::equals),
-				any())).willReturn(tokenInfoRcv);
-		given(factory.from(
-				argThat(infoAnsName::equals),
-				argThat(infoAnsDesc::equals),
-				any())).willReturn(tokenInfoAns);
+    given(factory.from(argThat(xferRcvName::equals), argThat(xferRcvDesc::equals), any()))
+        .willReturn(transferRcv);
+    given(factory.from(argThat(xferSubName::equals), argThat(xferSubDesc::equals), any()))
+        .willReturn(transferSub);
+    given(factory.from(argThat(xferHdlName::equals), argThat(xferHdlDesc::equals), any()))
+        .willReturn(transferHdl);
+    // and:
+    given(factory.from(argThat(infoRcvName::equals), argThat(infoRcvDesc::equals), any()))
+        .willReturn(tokenInfoRcv);
+    given(factory.from(argThat(infoAnsName::equals), argThat(infoAnsDesc::equals), any()))
+        .willReturn(tokenInfoAns);
 
-		// when:
-		subject.registerWith(platform);
+    // when:
+    subject.registerWith(platform);
 
-		// then:
-		verify(platform).addAppStatEntry(transferRcv);
-		verify(platform).addAppStatEntry(transferSub);
-		verify(platform).addAppStatEntry(transferHdl);
-		verify(platform).addAppStatEntry(tokenInfoRcv);
-		verify(platform).addAppStatEntry(tokenInfoAns);
-	}
+    // then:
+    verify(platform).addAppStatEntry(transferRcv);
+    verify(platform).addAppStatEntry(transferSub);
+    verify(platform).addAppStatEntry(transferHdl);
+    verify(platform).addAppStatEntry(tokenInfoRcv);
+    verify(platform).addAppStatEntry(tokenInfoAns);
+  }
 
-	@Test
-	void updatesAvgSubmitMessageHdlSizeForHandled() {
-		// setup:
-		int expectedSize = 12345;
-		TransactionBody txn = mock(TransactionBody.class);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+  @Test
+  void updatesAvgSubmitMessageHdlSizeForHandled() {
+    // setup:
+    int expectedSize = 12345;
+    TransactionBody txn = mock(TransactionBody.class);
+    PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
 
-		given(txn.getSerializedSize()).willReturn(expectedSize);
-		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(accessor);
+    given(txn.getSerializedSize()).willReturn(expectedSize);
+    given(accessor.getTxn()).willReturn(txn);
+    given(txnCtx.accessor()).willReturn(accessor);
 
-		// when:
-		subject.countHandled(ConsensusSubmitMessage);
+    // when:
+    subject.countHandled(ConsensusSubmitMessage);
 
-		// then
-		verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
-	}
+    // then
+    verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
+  }
 
-	@Test
-	void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
-		// setup:
-		int expectedSize = 12345;
-		TransactionBody txn = mock(TransactionBody.class);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+  @Test
+  void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
+    // setup:
+    int expectedSize = 12345;
+    TransactionBody txn = mock(TransactionBody.class);
+    PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
 
-		given(txn.getSerializedSize()).willReturn(expectedSize);
-		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(accessor);
+    given(txn.getSerializedSize()).willReturn(expectedSize);
+    given(accessor.getTxn()).willReturn(txn);
+    given(txnCtx.accessor()).willReturn(accessor);
 
-		// when:
-		subject.countReceived(ConsensusSubmitMessage);
-		subject.countSubmitted(ConsensusSubmitMessage);
+    // when:
+    subject.countReceived(ConsensusSubmitMessage);
+    subject.countSubmitted(ConsensusSubmitMessage);
 
-		// then
-		verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
-	}
+    // then
+    verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
+  }
 
-	@Test
-	void updatesExpectedEntries() {
-		// when:
-		subject.countReceived(CryptoTransfer);
-		subject.countReceived(CryptoTransfer);
-		subject.countReceived(CryptoTransfer);
-		subject.countSubmitted(CryptoTransfer);
-		subject.countSubmitted(CryptoTransfer);
-		subject.countHandled(CryptoTransfer);
-		// and:
-		subject.countReceived(TokenGetInfo);
-		subject.countReceived(TokenGetInfo);
-		subject.countReceived(TokenGetInfo);
-		subject.countAnswered(TokenGetInfo);
-		subject.countAnswered(TokenGetInfo);
+  @Test
+  void updatesExpectedEntries() {
+    // when:
+    subject.countReceived(CryptoTransfer);
+    subject.countReceived(CryptoTransfer);
+    subject.countReceived(CryptoTransfer);
+    subject.countSubmitted(CryptoTransfer);
+    subject.countSubmitted(CryptoTransfer);
+    subject.countHandled(CryptoTransfer);
+    // and:
+    subject.countReceived(TokenGetInfo);
+    subject.countReceived(TokenGetInfo);
+    subject.countReceived(TokenGetInfo);
+    subject.countAnswered(TokenGetInfo);
+    subject.countAnswered(TokenGetInfo);
 
-		// then
-		assertEquals(3L, subject.receivedSoFar(CryptoTransfer));
-		assertEquals(2L, subject.submittedSoFar(CryptoTransfer));
-		assertEquals(1L, subject.handledSoFar(CryptoTransfer));
-		// and:
-		assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
-		assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
-	}
+    // then
+    assertEquals(3L, subject.receivedSoFar(CryptoTransfer));
+    assertEquals(2L, subject.submittedSoFar(CryptoTransfer));
+    assertEquals(1L, subject.handledSoFar(CryptoTransfer));
+    // and:
+    assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
+    assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
+  }
 
-	@Test
-	void ignoredOpsAreNoops() {
-		// expect:
-		assertDoesNotThrow(() -> subject.countReceived(NONE));
-		assertDoesNotThrow(() -> subject.countSubmitted(NONE));
-		assertDoesNotThrow(() -> subject.countHandled(NONE));
-		assertDoesNotThrow(() -> subject.countAnswered(NONE));
-		// and:
-		assertEquals(0L, subject.receivedSoFar(NONE));
-		assertEquals(0L, subject.submittedSoFar(NONE));
-		assertEquals(0L, subject.handledSoFar(NONE));
-		assertEquals(0L, subject.answeredSoFar(NONE));
-	}
+  @Test
+  void ignoredOpsAreNoops() {
+    // expect:
+    assertDoesNotThrow(() -> subject.countReceived(NONE));
+    assertDoesNotThrow(() -> subject.countSubmitted(NONE));
+    assertDoesNotThrow(() -> subject.countHandled(NONE));
+    assertDoesNotThrow(() -> subject.countAnswered(NONE));
+    // and:
+    assertEquals(0L, subject.receivedSoFar(NONE));
+    assertEquals(0L, subject.submittedSoFar(NONE));
+    assertEquals(0L, subject.handledSoFar(NONE));
+    assertEquals(0L, subject.answeredSoFar(NONE));
+  }
 }

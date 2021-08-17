@@ -29,25 +29,27 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-
 import java.util.function.BiFunction;
 
 public class TokenWipeResourceUsage implements TxnResourceUsageEstimator {
-	private static final ResourceUsageSubtypeHelper subtypeHelper = new ResourceUsageSubtypeHelper();
+  private static final ResourceUsageSubtypeHelper subtypeHelper = new ResourceUsageSubtypeHelper();
 
-	static BiFunction<TransactionBody, SigUsage, TokenWipeUsage> factory = TokenWipeUsage::newEstimate;
+  static BiFunction<TransactionBody, SigUsage, TokenWipeUsage> factory =
+      TokenWipeUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasTokenWipe();
-	}
+  @Override
+  public boolean applicableTo(TransactionBody txn) {
+    return txn.hasTokenWipe();
+  }
 
-	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		final var tokenType = view.tokenType(txn.getTokenWipe().getToken());
-		final var subType = subtypeHelper.determineTokenType(tokenType);
-		final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		final var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
-		return estimate.get();
-	}
+  @Override
+  public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+      throws InvalidTxBodyException {
+    final var tokenType = view.tokenType(txn.getTokenWipe().getToken());
+    final var subType = subtypeHelper.determineTokenType(tokenType);
+    final var sigUsage =
+        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    final var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
+    return estimate.get();
+  }
 }

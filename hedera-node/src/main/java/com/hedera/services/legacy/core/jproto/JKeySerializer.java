@@ -20,14 +20,13 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import org.apache.commons.lang3.SerializationUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.commons.lang3.SerializationUtils;
 
 /**
  * Custom Serializer for JKey structure.
@@ -41,37 +40,38 @@ public class JKeySerializer {
   private JKeySerializer() {}
 
   public static byte[] serialize(Object rootObject) throws IOException {
-    return byteStream(buffer -> {
-      buffer.writeLong(BPACK_VERSION);
+    return byteStream(
+        buffer -> {
+          buffer.writeLong(BPACK_VERSION);
 
-      JObjectType objectType = JObjectType.JKey;
+          JObjectType objectType = JObjectType.JKey;
 
-      if (rootObject instanceof JKeyList) {
-        objectType = JObjectType.JKeyList;
-      } else if (rootObject instanceof JThresholdKey) {
-        objectType = JObjectType.JThresholdKey;
-      } else if (rootObject instanceof JEd25519Key) {
-        objectType = JObjectType.JEd25519Key;
-      } else if (rootObject instanceof JECDSA_384Key) {
-        objectType = JObjectType.JECDSA_384Key;
-      } else if (rootObject instanceof JRSA_3072Key) {
-        objectType = JObjectType.JRSA_3072Key;
-      } else if (rootObject instanceof JContractIDKey) {
-        objectType = JObjectType.JContractIDKey;
-      }
+          if (rootObject instanceof JKeyList) {
+            objectType = JObjectType.JKeyList;
+          } else if (rootObject instanceof JThresholdKey) {
+            objectType = JObjectType.JThresholdKey;
+          } else if (rootObject instanceof JEd25519Key) {
+            objectType = JObjectType.JEd25519Key;
+          } else if (rootObject instanceof JECDSA_384Key) {
+            objectType = JObjectType.JECDSA_384Key;
+          } else if (rootObject instanceof JRSA_3072Key) {
+            objectType = JObjectType.JRSA_3072Key;
+          } else if (rootObject instanceof JContractIDKey) {
+            objectType = JObjectType.JContractIDKey;
+          }
 
-      final JObjectType finalObjectType = objectType;
-      buffer.writeLong(objectType.longValue());
+          final JObjectType finalObjectType = objectType;
+          buffer.writeLong(objectType.longValue());
 
-      byte[] content = byteStream(os -> pack(os, finalObjectType, rootObject));
-      int length = (content != null) ? content.length : 0;
+          byte[] content = byteStream(os -> pack(os, finalObjectType, rootObject));
+          int length = (content != null) ? content.length : 0;
 
-      buffer.writeLong(length);
+          buffer.writeLong(length);
 
-      if (length > 0) {
-        buffer.write(content);
-      }
-    });
+          if (length > 0) {
+            buffer.write(content);
+          }
+        });
   }
 
   public static <T> T deserialize(DataInputStream stream) throws IOException {
@@ -93,9 +93,10 @@ public class JKeySerializer {
     return unpack(stream, type, length);
   }
 
-  private static void pack(DataOutputStream stream, JObjectType type, Object object) throws IOException {
+  private static void pack(DataOutputStream stream, JObjectType type, Object object)
+      throws IOException {
     if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
-      JKey jKey = (JKey)object;
+      JKey jKey = (JKey) object;
       byte[] key = (jKey.hasEd25519Key()) ? jKey.getEd25519() : jKey.getECDSA384();
       stream.write(key);
     } else if (JObjectType.JThresholdKey.equals(type)) {
@@ -129,12 +130,15 @@ public class JKeySerializer {
   }
 
   @SuppressWarnings("unchecked")
-  private static <T> T unpack(DataInputStream stream, JObjectType type, long length) throws IOException {
+  private static <T> T unpack(DataInputStream stream, JObjectType type, long length)
+      throws IOException {
     if (JObjectType.JEd25519Key.equals(type) || JObjectType.JECDSA_384Key.equals(type)) {
       byte[] key = new byte[(int) length];
       stream.readFully(key);
 
-      return (JObjectType.JEd25519Key.equals(type)) ? (T) new JEd25519Key(key) : (T) new JECDSA_384Key(key);
+      return (JObjectType.JEd25519Key.equals(type))
+          ? (T) new JEd25519Key(key)
+          : (T) new JECDSA_384Key(key);
     } else if (JObjectType.JThresholdKey.equals(type)) {
       int threshold = stream.readInt();
       JKeyList keyList = deserialize(stream);
@@ -182,9 +186,9 @@ public class JKeySerializer {
     }
   }
 
-	@FunctionalInterface
-	public interface StreamConsumer<T> {
+  @FunctionalInterface
+  public interface StreamConsumer<T> {
 
-	  void accept(T stream) throws IOException;
-	}
+    void accept(T stream) throws IOException;
+  }
 }

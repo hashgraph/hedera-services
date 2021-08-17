@@ -20,11 +20,11 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
+
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
 import com.hederahashgraph.api.proto.java.FileID;
-
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 
 /**
  * Trivial file metadata lookup.
@@ -32,17 +32,17 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
  * @author Michael Tinker
  */
 public class HfsSigMetaLookup implements FileSigMetaLookup {
-	private final HederaFs hfs;
+  private final HederaFs hfs;
 
-	public HfsSigMetaLookup(HederaFs hfs) {
-		this.hfs = hfs;
-	}
+  public HfsSigMetaLookup(HederaFs hfs) {
+    this.hfs = hfs;
+  }
 
-	@Override
-	public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
-		if (!hfs.exists(id)) {
-			return SafeLookupResult.failure(MISSING_FILE);
-		}
-		return new SafeLookupResult<>(new FileSigningMetadata(hfs.getattr(id).getWacl()));
-	}
+  @Override
+  public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
+    if (!hfs.exists(id)) {
+      return SafeLookupResult.failure(MISSING_FILE);
+    }
+    return new SafeLookupResult<>(new FileSigningMetadata(hfs.getattr(id).getWacl()));
+  }
 }

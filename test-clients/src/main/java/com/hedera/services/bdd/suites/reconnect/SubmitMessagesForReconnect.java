@@ -20,16 +20,6 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.function.Supplier;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
@@ -39,49 +29,53 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import java.util.List;
+import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class SubmitMessagesForReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SubmitMessagesForReconnect.class);
+  private static final Logger log = LogManager.getLogger(SubmitMessagesForReconnect.class);
 
-	public static void main(String... args) {
-		new SubmitMessagesForReconnect().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new SubmitMessagesForReconnect().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				runSubmitMessages()
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(runSubmitMessages());
+  }
 
-	private static HapiSpecOperation submitToTestTopic(PerfTestLoadSettings settings) {
-		String topicToSubmit = String.format("0.0.%d",	settings.getTestTopicId());
-		return submitMessageTo(topicToSubmit)
-				.message(randomUtf8Bytes(100))
-				.noLogging()
-				.fee(ONE_HBAR)
-				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-				.deferStatusResolution();
-	}
+  private static HapiSpecOperation submitToTestTopic(PerfTestLoadSettings settings) {
+    String topicToSubmit = String.format("0.0.%d", settings.getTestTopicId());
+    return submitMessageTo(topicToSubmit)
+        .message(randomUtf8Bytes(100))
+        .noLogging()
+        .fee(ONE_HBAR)
+        .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
+        .deferStatusResolution();
+  }
 
-	private HapiApiSpec runSubmitMessages() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings();
+  private HapiApiSpec runSubmitMessages() {
+    PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				submitToTestTopic(settings)
-		};
+    Supplier<HapiSpecOperation[]> submitBurst =
+        () -> new HapiSpecOperation[] {submitToTestTopic(settings)};
 
-		return defaultHapiSpec("RunSubmitMessages")
-				.given(
-						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-						logIt(ignore -> settings.toString())
-				).when()
-				.then(
-						defaultLoadTest(submitBurst, settings)
-				);
-	}
+    return defaultHapiSpec("RunSubmitMessages")
+        .given(
+            withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+            logIt(ignore -> settings.toString()))
+        .when()
+        .then(defaultLoadTest(submitBurst, settings));
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

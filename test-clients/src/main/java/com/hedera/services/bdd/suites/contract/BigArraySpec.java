@@ -20,89 +20,94 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BigArraySpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(BigArraySpec.class);
+  private static final Logger log = LogManager.getLogger(BigArraySpec.class);
 
-	public static void main(String... args) {
-		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-		new org.ethereum.crypto.HashUtil();
+  public static void main(String... args) {
+    /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
+    new org.ethereum.crypto.HashUtil();
 
-		new BigArraySpec().runSuiteAsync();
-	}
+    new BigArraySpec().runSuiteAsync();
+  }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				bigArray(),
-		});
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          bigArray(),
+        });
+  }
 
-	HapiApiSpec bigArray() {
-		var MAX_CONTRACT_STORAGE_ALLOWED = 1025;
+  HapiApiSpec bigArray() {
+    var MAX_CONTRACT_STORAGE_ALLOWED = 1025;
 
-		return HapiApiSpec.defaultHapiSpec("BigArray")
-				.given(
-						fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
-								)).payingWith(ADDRESS_BOOK_CONTROL),
-						TxnVerbs.fileCreate("bigArrayContractFile")
-								.path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
-						TxnVerbs.contractCreate("bigArrayContract")
-								.bytecode("bigArrayContractFile")
-				)
-				.when(
-						withOpContext((spec, opLog) -> {
-							int kbPerStep = 16;
-							List<HapiSpecOperation> subOps = new ArrayList<>();
+    return HapiApiSpec.defaultHapiSpec("BigArray")
+        .given(
+            fileUpdate(APP_PROPERTIES)
+                .overridingProps(
+                    Map.of("contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED))
+                .payingWith(ADDRESS_BOOK_CONTROL),
+            TxnVerbs.fileCreate("bigArrayContractFile")
+                .path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
+            TxnVerbs.contractCreate("bigArrayContract").bytecode("bigArrayContractFile"))
+        .when(
+            withOpContext(
+                (spec, opLog) -> {
+                  int kbPerStep = 16;
+                  List<HapiSpecOperation> subOps = new ArrayList<>();
 
-							for (int sizeNow = kbPerStep; sizeNow < MAX_CONTRACT_STORAGE_ALLOWED; sizeNow += kbPerStep) {
-								var subOp1 = contractCall(
-										"bigArrayContract", ContractResources.BIG_ARRAY_GROW_TO_ABI, sizeNow)
-										.gas(300_000L)
-										.logged();
-								subOps.add(subOp1);
-							}
-							CustomSpecAssert.allRunFor(spec, subOps);
-						})
-				)
-				.then(
-						withOpContext((spec, opLog) -> {
-							long numberOfIterations = 10;
-							List<HapiSpecOperation> subOps = new ArrayList<>();
+                  for (int sizeNow = kbPerStep;
+                      sizeNow < MAX_CONTRACT_STORAGE_ALLOWED;
+                      sizeNow += kbPerStep) {
+                    var subOp1 =
+                        contractCall(
+                                "bigArrayContract",
+                                ContractResources.BIG_ARRAY_GROW_TO_ABI,
+                                sizeNow)
+                            .gas(300_000L)
+                            .logged();
+                    subOps.add(subOp1);
+                  }
+                  CustomSpecAssert.allRunFor(spec, subOps);
+                }))
+        .then(
+            withOpContext(
+                (spec, opLog) -> {
+                  long numberOfIterations = 10;
+                  List<HapiSpecOperation> subOps = new ArrayList<>();
 
-							for (int i = 0; i < numberOfIterations; i++) {
-								var subOp1 = contractCall(
-										"bigArrayContract", ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI,
-										ThreadLocalRandom.current().nextInt(1000))
-										.logged();
-								subOps.add(subOp1);
-							}
-							CustomSpecAssert.allRunFor(spec, subOps);
-						})
-				);
-	}
+                  for (int i = 0; i < numberOfIterations; i++) {
+                    var subOp1 =
+                        contractCall(
+                                "bigArrayContract",
+                                ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI,
+                                ThreadLocalRandom.current().nextInt(1000))
+                            .logged();
+                    subOps.add(subOp1);
+                  }
+                  CustomSpecAssert.allRunFor(spec, subOps);
+                }));
+  }
 }

@@ -20,6 +20,9 @@ package com.hedera.services.fees.calculation.schedule.queries;
  * ‍
  */
 
+import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
+import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.schedule.ExtantScheduleContext;
@@ -27,62 +30,56 @@ import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
-import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
-
 public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator {
-	private final ScheduleOpsUsage scheduleOpsUsage;
+  private final ScheduleOpsUsage scheduleOpsUsage;
 
-	public GetScheduleInfoResourceUsage(ScheduleOpsUsage scheduleOpsUsage) {
-		this.scheduleOpsUsage = scheduleOpsUsage;
-	}
+  public GetScheduleInfoResourceUsage(ScheduleOpsUsage scheduleOpsUsage) {
+    this.scheduleOpsUsage = scheduleOpsUsage;
+  }
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasScheduleGetInfo();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasScheduleGetInfo();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageFor(query, view, NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    return usageFor(query, view, NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				Optional.of(queryCtx));
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+    return usageFor(query, view, Optional.of(queryCtx));
+  }
 
-	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getScheduleGetInfo();
-		var optionalInfo = view.infoForSchedule(op.getScheduleID());
-		if (optionalInfo.isPresent()) {
-			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
-			var scheduleCtxBuilder = ExtantScheduleContext.newBuilder()
-					.setScheduledTxn(info.getScheduledTransactionBody())
-					.setMemo(info.getMemo())
-					.setNumSigners(info.getSigners().getKeysCount())
-					.setResolved(info.hasExecutionTime() || info.hasDeletionTime());
-			if (info.hasAdminKey()) {
-				scheduleCtxBuilder.setAdminKey(info.getAdminKey());
-			} else {
-				scheduleCtxBuilder.setNoAdminKey();
-			}
-			return scheduleOpsUsage.scheduleInfoUsage(query, scheduleCtxBuilder.build());
-		} else {
-			return FeeData.getDefaultInstance();
-		}
-	}
+  private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
+    var op = query.getScheduleGetInfo();
+    var optionalInfo = view.infoForSchedule(op.getScheduleID());
+    if (optionalInfo.isPresent()) {
+      var info = optionalInfo.get();
+      queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
+      var scheduleCtxBuilder =
+          ExtantScheduleContext.newBuilder()
+              .setScheduledTxn(info.getScheduledTransactionBody())
+              .setMemo(info.getMemo())
+              .setNumSigners(info.getSigners().getKeysCount())
+              .setResolved(info.hasExecutionTime() || info.hasDeletionTime());
+      if (info.hasAdminKey()) {
+        scheduleCtxBuilder.setAdminKey(info.getAdminKey());
+      } else {
+        scheduleCtxBuilder.setNoAdminKey();
+      }
+      return scheduleOpsUsage.scheduleInfoUsage(query, scheduleCtxBuilder.build());
+    } else {
+      return FeeData.getDefaultInstance();
+    }
+  }
 }

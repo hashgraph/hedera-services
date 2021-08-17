@@ -19,63 +19,63 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.test.utils.IdUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class EntityNumbersTest {
-	FileNumbers fileNumbers;
-	HederaNumbers hederaNumbers;
-	AccountNumbers accountNumbers;
+  FileNumbers fileNumbers;
+  HederaNumbers hederaNumbers;
+  AccountNumbers accountNumbers;
 
-	EntityNumbers subject;
+  EntityNumbers subject;
 
-	@BeforeEach
-	void setup() {
-		fileNumbers = new MockFileNumbers();
-		hederaNumbers = new MockHederaNumbers();
-		accountNumbers = new MockAccountNumbers();
+  @BeforeEach
+  void setup() {
+    fileNumbers = new MockFileNumbers();
+    hederaNumbers = new MockHederaNumbers();
+    accountNumbers = new MockAccountNumbers();
 
-		subject = new EntityNumbers(fileNumbers, hederaNumbers, accountNumbers);
-	}
+    subject = new EntityNumbers(fileNumbers, hederaNumbers, accountNumbers);
+  }
 
-	@Test
-	void hasExpectedMembers() {
-		// expect:
-		assertSame(fileNumbers, subject.files());
-		assertSame(accountNumbers, subject.accounts());
-		assertSame(hederaNumbers, subject.all());
-	}
+  @Test
+  void hasExpectedMembers() {
+    // expect:
+    assertSame(fileNumbers, subject.files());
+    assertSame(accountNumbers, subject.accounts());
+    assertSame(hederaNumbers, subject.all());
+  }
 
-	@Test
-	void recognizesSystemEntities() {
-		// given:
-		var sysFile = IdUtils.asFile("0.0.1000");
-		var civFile = IdUtils.asFile("0.0.1001");
-		var nonsenseFile = IdUtils.asFile("0.0.0");
-		// and:
-		var sysAccount = IdUtils.asAccount("0.0.1000");
-		var civAccount = IdUtils.asAccount("0.0.1001");
-		var nonsenseAccount = IdUtils.asAccount("0.0.0");
-		// and:
-		var sysContract = IdUtils.asContract("0.0.1000");
-		var civContract = IdUtils.asContract("0.0.1001");
-		var nonsenseContract = IdUtils.asContract("0.0.0");
+  @Test
+  void recognizesSystemEntities() {
+    // given:
+    var sysFile = IdUtils.asFile("0.0.1000");
+    var civFile = IdUtils.asFile("0.0.1001");
+    var nonsenseFile = IdUtils.asFile("0.0.0");
+    // and:
+    var sysAccount = IdUtils.asAccount("0.0.1000");
+    var civAccount = IdUtils.asAccount("0.0.1001");
+    var nonsenseAccount = IdUtils.asAccount("0.0.0");
+    // and:
+    var sysContract = IdUtils.asContract("0.0.1000");
+    var civContract = IdUtils.asContract("0.0.1001");
+    var nonsenseContract = IdUtils.asContract("0.0.0");
 
-		// expect:
-		assertTrue(subject.isSystemFile(sysFile));
-		assertFalse(subject.isSystemFile(civFile));
-		assertTrue(subject.isSystemAccount(sysAccount));
-		assertFalse(subject.isSystemAccount(civAccount));
-		assertTrue(subject.isSystemContract(sysContract));
-		assertFalse(subject.isSystemContract(civContract));
-		// and:
-		assertFalse(subject.isSystemAccount(nonsenseAccount));
-		assertFalse(subject.isSystemFile(nonsenseFile));
-		assertFalse(subject.isSystemContract(nonsenseContract));
-	}
+    // expect:
+    assertTrue(subject.isSystemFile(sysFile));
+    assertFalse(subject.isSystemFile(civFile));
+    assertTrue(subject.isSystemAccount(sysAccount));
+    assertFalse(subject.isSystemAccount(civAccount));
+    assertTrue(subject.isSystemContract(sysContract));
+    assertFalse(subject.isSystemContract(civContract));
+    // and:
+    assertFalse(subject.isSystemAccount(nonsenseAccount));
+    assertFalse(subject.isSystemFile(nonsenseFile));
+    assertFalse(subject.isSystemContract(nonsenseContract));
+  }
 }

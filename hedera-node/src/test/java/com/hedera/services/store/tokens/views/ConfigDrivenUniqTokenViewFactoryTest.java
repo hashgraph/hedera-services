@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,52 +28,45 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Supplier;
-
 @ExtendWith(MockitoExtension.class)
 class ConfigDrivenUniqTokenViewFactoryTest {
-	@Mock
-	private TokenStore tokenStore;
-	@Mock
-	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
-	@Mock
-	private Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	@Mock
-	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
-	@Mock
-	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
-	@Mock
-	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
+  @Mock private TokenStore tokenStore;
+  @Mock private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
+  @Mock private Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+  @Mock private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
+  @Mock private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
+  @Mock private Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
 
-	@Test
-	void constructsExplicitIfNotUsingWildcards() {
-		// given:
-		final var subject = new ConfigDrivenUniqTokenViewFactory(false);
+  @Test
+  void constructsExplicitIfNotUsingWildcards() {
+    // given:
+    final var subject = new ConfigDrivenUniqTokenViewFactory(false);
 
-		// when:
-		final var view = subject.viewFor(
-				tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
+    // when:
+    final var view =
+        subject.viewFor(tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
 
-		// then:
-		Assertions.assertTrue(view instanceof ExplicitOwnersUniqTokenView);
-	}
+    // then:
+    Assertions.assertTrue(view instanceof ExplicitOwnersUniqTokenView);
+  }
 
-	@Test
-	void constructsTreasuryWildcardIfUsing() {
-		// given:
-		final var subject = new ConfigDrivenUniqTokenViewFactory(true);
+  @Test
+  void constructsTreasuryWildcardIfUsing() {
+    // given:
+    final var subject = new ConfigDrivenUniqTokenViewFactory(true);
 
-		// when:
-		final var view = subject.viewFor(
-				tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
+    // when:
+    final var view =
+        subject.viewFor(tokenStore, tokens, nfts, nftsByType, nftsByOwner, treasuryNftsByType);
 
-		// then:
-		Assertions.assertTrue(view instanceof TreasuryWildcardsUniqTokenView);
-	}
+    // then:
+    Assertions.assertTrue(view instanceof TreasuryWildcardsUniqTokenView);
+  }
 }

@@ -20,15 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
-import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -37,112 +28,120 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 class MerkleEntityIdTest {
-	long shard = 13;
-	long realm = 25;
-	long num = 7;
+  long shard = 13;
+  long realm = 25;
+  long num = 7;
 
-	MerkleEntityId subject;
+  MerkleEntityId subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new MerkleEntityId(shard, realm, num);
-	}
+  @BeforeEach
+  private void setup() {
+    subject = new MerkleEntityId(shard, realm, num);
+  }
 
-	@Test
-	void toAbbrevStringWorks() {
-		// expect:
-		assertEquals("13.25.7", subject.toAbbrevString());
-	}
+  @Test
+  void toAbbrevStringWorks() {
+    // expect:
+    assertEquals("13.25.7", subject.toAbbrevString());
+  }
 
-	@Test
-	void toAccountIdWorks() {
-		// expect:
-		assertEquals(IdUtils.asAccount("13.25.7"), subject.toAccountId());
-	}
+  @Test
+  void toAccountIdWorks() {
+    // expect:
+    assertEquals(IdUtils.asAccount("13.25.7"), subject.toAccountId());
+  }
 
-	@Test
-	void objectContractMet() {
-		// given:
-		var one = new MerkleEntityId();
-		var two = new MerkleEntityId(1, 2, 3);
-		var three = new MerkleEntityId();
+  @Test
+  void objectContractMet() {
+    // given:
+    var one = new MerkleEntityId();
+    var two = new MerkleEntityId(1, 2, 3);
+    var three = new MerkleEntityId();
 
-		// when:
-		three.setShard(1);
-		three.setRealm(2);
-		three.setNum(3);
+    // when:
+    three.setShard(1);
+    three.setRealm(2);
+    three.setNum(3);
 
-		// then:
-		assertNotEquals(null, one);
-		assertNotEquals(two, one);
-		assertEquals(two, three);
-		// and:
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(two.hashCode(), three.hashCode());
-	}
+    // then:
+    assertNotEquals(null, one);
+    assertNotEquals(two, one);
+    assertEquals(two, three);
+    // and:
+    assertNotEquals(one.hashCode(), two.hashCode());
+    assertEquals(two.hashCode(), three.hashCode());
+  }
 
-	@Test
-	void merkleMethodsWork() {
-		// expect;
-		assertEquals(MerkleEntityId.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleEntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertTrue(subject.isLeaf());
-	}
+  @Test
+  void merkleMethodsWork() {
+    // expect;
+    assertEquals(MerkleEntityId.MERKLE_VERSION, subject.getVersion());
+    assertEquals(MerkleEntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+    assertTrue(subject.isLeaf());
+  }
 
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+  @Test
+  void serializeWorks() throws IOException {
+    // setup:
+    var out = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = inOrder(out);
 
-		// when:
-		subject.serialize(out);
+    // when:
+    subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeLong(shard);
-		inOrder.verify(out).writeLong(realm);
-		inOrder.verify(out).writeLong(num);
-	}
+    // then:
+    inOrder.verify(out).writeLong(shard);
+    inOrder.verify(out).writeLong(realm);
+    inOrder.verify(out).writeLong(num);
+  }
 
-	@Test
-	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleEntityId();
+  @Test
+  void deserializeWorks() throws IOException {
+    // setup:
+    var in = mock(SerializableDataInputStream.class);
+    // and:
+    var defaultSubject = new MerkleEntityId();
 
-		given(in.readLong()).willReturn(shard).willReturn(realm).willReturn(num);
+    given(in.readLong()).willReturn(shard).willReturn(realm).willReturn(num);
 
-		// when:
-		defaultSubject.deserialize(in, MerkleEntityId.MERKLE_VERSION);
+    // when:
+    defaultSubject.deserialize(in, MerkleEntityId.MERKLE_VERSION);
 
-		// then:
-		assertEquals(subject, defaultSubject);
-	}
+    // then:
+    assertEquals(subject, defaultSubject);
+  }
 
-	@Test
-	void toStringWorks() {
-		// expect:
-		assertEquals(
-				"MerkleEntityId{shard=" + shard + ", realm=" + realm + ", entity=" + num + "}",
-				subject.toString());
-	}
+  @Test
+  void toStringWorks() {
+    // expect:
+    assertEquals(
+        "MerkleEntityId{shard=" + shard + ", realm=" + realm + ", entity=" + num + "}",
+        subject.toString());
+  }
 
-	@Test
-	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+  @Test
+  void copyWorks() {
+    // when:
+    var subjectCopy = subject.copy();
 
-		// then:
-		assertTrue(subjectCopy != subject);
-		assertEquals(subject, subjectCopy);
-	}
+    // then:
+    assertTrue(subjectCopy != subject);
+    assertEquals(subject, subjectCopy);
+  }
 
-	@Test
-	void deleteIsNoop() {
-		// expect:
-		assertDoesNotThrow(subject::release);
-	}
+  @Test
+  void deleteIsNoop() {
+    // expect:
+    assertDoesNotThrow(subject::release);
+  }
 }

@@ -20,26 +20,6 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Instant;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.DELETED_FILE;
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED;
 import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS;
@@ -49,299 +29,312 @@ import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.time.Instant;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
- * A {@link HederaFs} that stores the contents and metadata of its files in
- * separate injected {@link Map}s.
+ * A {@link HederaFs} that stores the contents and metadata of its files in separate injected {@link
+ * Map}s.
  */
 public class TieredHederaFs implements HederaFs {
-	public static final Logger log = LogManager.getLogger(TieredHederaFs.class);
+  public static final Logger log = LogManager.getLogger(TieredHederaFs.class);
 
-	private final EntityIdSource ids;
-	private final Supplier<Instant> now;
-	private final Map<FileID, byte[]> data;
-	private final Map<FileID, HFileMeta> metadata;
-	private final GlobalDynamicProperties properties;
+  private final EntityIdSource ids;
+  private final Supplier<Instant> now;
+  private final Map<FileID, byte[]> data;
+  private final Map<FileID, HFileMeta> metadata;
+  private final GlobalDynamicProperties properties;
 
-	final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
+  final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
 
-	public static final int BYTES_PER_KB = 1024;
-	private Supplier<MerkleDiskFs> diskFs;
-	public enum IllegalArgumentType {
-		DELETED_FILE(ResponseCodeEnum.FILE_DELETED),
-		UNKNOWN_FILE(ResponseCodeEnum.INVALID_FILE_ID),
-		FILE_WOULD_BE_EXPIRED(ResponseCodeEnum.INVALID_EXPIRATION_TIME),
-		OVERSIZE_CONTENTS(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED);
+  public static final int BYTES_PER_KB = 1024;
+  private Supplier<MerkleDiskFs> diskFs;
 
-		private final ResponseCodeEnum suggestedStatus;
+  public enum IllegalArgumentType {
+    DELETED_FILE(ResponseCodeEnum.FILE_DELETED),
+    UNKNOWN_FILE(ResponseCodeEnum.INVALID_FILE_ID),
+    FILE_WOULD_BE_EXPIRED(ResponseCodeEnum.INVALID_EXPIRATION_TIME),
+    OVERSIZE_CONTENTS(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED);
 
-		IllegalArgumentType(ResponseCodeEnum suggestedStatus) {
-			this.suggestedStatus = suggestedStatus;
-		}
+    private final ResponseCodeEnum suggestedStatus;
 
-		public ResponseCodeEnum suggestedStatus() {
-			return suggestedStatus;
-		}
-	}
+    IllegalArgumentType(ResponseCodeEnum suggestedStatus) {
+      this.suggestedStatus = suggestedStatus;
+    }
 
-	public TieredHederaFs(
-			EntityIdSource ids,
-			GlobalDynamicProperties properties,
-			Supplier<Instant> now,
-			Map<FileID, byte[]> data,
-			Map<FileID, HFileMeta> metadata,
-			Supplier<MerkleDiskFs> diskFs
-	) {
-		this.ids = ids;
-		this.now = now;
-		this.data = data;
-		this.metadata = metadata;
-		this.properties = properties;
-		this.diskFs = diskFs;
-	}
+    public ResponseCodeEnum suggestedStatus() {
+      return suggestedStatus;
+    }
+  }
 
-	public Map<FileID, byte[]> getData() {
-		return data;
-	}
+  public TieredHederaFs(
+      EntityIdSource ids,
+      GlobalDynamicProperties properties,
+      Supplier<Instant> now,
+      Map<FileID, byte[]> data,
+      Map<FileID, HFileMeta> metadata,
+      Supplier<MerkleDiskFs> diskFs) {
+    this.ids = ids;
+    this.now = now;
+    this.data = data;
+    this.metadata = metadata;
+    this.properties = properties;
+    this.diskFs = diskFs;
+  }
 
-	public Map<FileID, HFileMeta> getMetadata() {
-		return metadata;
-	}
+  public Map<FileID, byte[]> getData() {
+    return data;
+  }
 
-	public MerkleDiskFs diskFs() {
-		return diskFs.get();
-	}
+  public Map<FileID, HFileMeta> getMetadata() {
+    return metadata;
+  }
 
-	@Override
-	public void register(FileUpdateInterceptor updateInterceptor) {
-		updateInterceptors.add(updateInterceptor);
-	}
+  public MerkleDiskFs diskFs() {
+    return diskFs.get();
+  }
 
-	@Override
-	public FileID create(byte[] contents, HFileMeta attr, AccountID sponsor) {
-		assertValid(attr);
-		assertWithinSizeLimits(contents);
+  @Override
+  public void register(FileUpdateInterceptor updateInterceptor) {
+    updateInterceptors.add(updateInterceptor);
+  }
 
-		var fid = ids.newFileId(sponsor);
-		data.put(fid, contents);
-		metadata.put(fid, attr);
+  @Override
+  public FileID create(byte[] contents, HFileMeta attr, AccountID sponsor) {
+    assertValid(attr);
+    assertWithinSizeLimits(contents);
 
-		return fid;
-	}
+    var fid = ids.newFileId(sponsor);
+    data.put(fid, contents);
+    metadata.put(fid, attr);
 
-	@Override
-	public boolean exists(FileID id) {
-		return metadata.containsKey(id);
-	}
+    return fid;
+  }
 
-	@Override
-	public byte[] cat(FileID id) {
-		assertUsable(id);
-		if (isOnDisk(id)) {
-			return diskFs.get().contentsOf(id);
-		} else {
-			return data.get(id);
-		}
-	}
+  @Override
+  public boolean exists(FileID id) {
+    return metadata.containsKey(id);
+  }
 
-	@Override
-	public HFileMeta getattr(FileID id) {
-		assertExtant(id);
+  @Override
+  public byte[] cat(FileID id) {
+    assertUsable(id);
+    if (isOnDisk(id)) {
+      return diskFs.get().contentsOf(id);
+    } else {
+      return data.get(id);
+    }
+  }
 
-		return metadata.get(id);
-	}
+  @Override
+  public HFileMeta getattr(FileID id) {
+    assertExtant(id);
 
-	@Override
-	public UpdateResult sudoSetattr(FileID id, HFileMeta attr) {
-		assertExtant(id);
-		assertValid(attr);
+    return metadata.get(id);
+  }
 
-		return uncheckedSetattr(id, attr);
-	}
+  @Override
+  public UpdateResult sudoSetattr(FileID id, HFileMeta attr) {
+    assertExtant(id);
+    assertValid(attr);
 
-	@Override
-	public UpdateResult setattr(FileID id, HFileMeta attr) {
-		assertUsable(id);
-		assertValid(attr);
+    return uncheckedSetattr(id, attr);
+  }
 
-		return uncheckedSetattr(id, attr);
-	}
+  @Override
+  public UpdateResult setattr(FileID id, HFileMeta attr) {
+    assertUsable(id);
+    assertValid(attr);
 
-	@Override
-	public UpdateResult overwrite(FileID id, byte[] newContents) {
-		assertUsable(id);
-		if (!isOnDisk(id)) {
-			assertWithinSizeLimits(newContents);
-		}
+    return uncheckedSetattr(id, attr);
+  }
 
-		return uncheckedUpdate(id, newContents);
-	}
+  @Override
+  public UpdateResult overwrite(FileID id, byte[] newContents) {
+    assertUsable(id);
+    if (!isOnDisk(id)) {
+      assertWithinSizeLimits(newContents);
+    }
 
-	@Override
-	public UpdateResult append(FileID id, byte[] moreContents) {
-		assertUsable(id);
+    return uncheckedUpdate(id, newContents);
+  }
 
-		byte[] contents;
+  @Override
+  public UpdateResult append(FileID id, byte[] moreContents) {
+    assertUsable(id);
 
-		boolean isDiskBased = isOnDisk(id);
-		if (isDiskBased) {
-			contents = diskFs.get().contentsOf(id);
-		} else {
-			contents = data.get(id);
-		}
-		var newContents = ArrayUtils.addAll(contents, moreContents);
-		String idStr = EntityIdUtils.readableId(id);
-		log.debug(
-				"Appending {} bytes to {} :: new file will have {} bytes.",
-				moreContents.length,
-				idStr,
-				newContents.length);
+    byte[] contents;
 
-		if (!isDiskBased) {
-			assertWithinSizeLimits(newContents);
-		}
+    boolean isDiskBased = isOnDisk(id);
+    if (isDiskBased) {
+      contents = diskFs.get().contentsOf(id);
+    } else {
+      contents = data.get(id);
+    }
+    var newContents = ArrayUtils.addAll(contents, moreContents);
+    String idStr = EntityIdUtils.readableId(id);
+    log.debug(
+        "Appending {} bytes to {} :: new file will have {} bytes.",
+        moreContents.length,
+        idStr,
+        newContents.length);
 
-		return uncheckedUpdate(id, newContents);
-	}
+    if (!isDiskBased) {
+      assertWithinSizeLimits(newContents);
+    }
 
-	@Override
-	public UpdateResult delete(FileID id) {
-		assertUsable(id);
+    return uncheckedUpdate(id, newContents);
+  }
 
-		var verdict = judge(id, FileUpdateInterceptor::preDelete);
-		if (verdict.getValue()) {
-			var attr = metadata.get(id);
-			attr.setDeleted(true);
-			metadata.put(id, attr);
-			data.remove(id);
-		}
-		return new SimpleUpdateResult(verdict.getValue(), verdict.getValue(), verdict.getKey());
-	}
+  @Override
+  public UpdateResult delete(FileID id) {
+    assertUsable(id);
 
-	@Override
-	public void rm(FileID id) {
-		assertExtant(id);
+    var verdict = judge(id, FileUpdateInterceptor::preDelete);
+    if (verdict.getValue()) {
+      var attr = metadata.get(id);
+      attr.setDeleted(true);
+      metadata.put(id, attr);
+      data.remove(id);
+    }
+    return new SimpleUpdateResult(verdict.getValue(), verdict.getValue(), verdict.getKey());
+  }
 
-		metadata.remove(id);
-		data.remove(id);
-	}
+  @Override
+  public void rm(FileID id) {
+    assertExtant(id);
 
-	public static class SimpleUpdateResult implements UpdateResult {
-		private final boolean attrChanged;
-		private final boolean fileReplaced;
-		private final ResponseCodeEnum outcome;
+    metadata.remove(id);
+    data.remove(id);
+  }
 
-		public SimpleUpdateResult(
-				boolean attrChanged,
-				boolean fileReplaced,
-				ResponseCodeEnum outcome
-		) {
-			this.attrChanged = attrChanged;
-			this.fileReplaced = fileReplaced;
-			this.outcome = outcome;
-		}
+  public static class SimpleUpdateResult implements UpdateResult {
+    private final boolean attrChanged;
+    private final boolean fileReplaced;
+    private final ResponseCodeEnum outcome;
 
-		@Override
-		public boolean fileReplaced() {
-			return fileReplaced;
-		}
+    public SimpleUpdateResult(boolean attrChanged, boolean fileReplaced, ResponseCodeEnum outcome) {
+      this.attrChanged = attrChanged;
+      this.fileReplaced = fileReplaced;
+      this.outcome = outcome;
+    }
 
-		@Override
-		public ResponseCodeEnum outcome() {
-			return outcome;
-		}
+    @Override
+    public boolean fileReplaced() {
+      return fileReplaced;
+    }
 
-		@Override
-		public boolean attrChanged() {
-			return attrChanged;
-		}
-	}
+    @Override
+    public ResponseCodeEnum outcome() {
+      return outcome;
+    }
 
-	private boolean isOnDisk(FileID fid) {
-		return diskFs.get().contains(fid);
-	}
+    @Override
+    public boolean attrChanged() {
+      return attrChanged;
+    }
+  }
 
-	private UpdateResult uncheckedSetattr(FileID id, HFileMeta attr) {
-		var verdict = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
+  private boolean isOnDisk(FileID fid) {
+    return diskFs.get().contains(fid);
+  }
 
-		if (verdict.getValue()) {
-			metadata.put(id, attr);
-		}
+  private UpdateResult uncheckedSetattr(FileID id, HFileMeta attr) {
+    var verdict = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
 
-		return new SimpleUpdateResult(verdict.getValue(), false, verdict.getKey());
-	}
+    if (verdict.getValue()) {
+      metadata.put(id, attr);
+    }
 
-	private UpdateResult uncheckedUpdate(FileID id, byte[] newContents) {
-		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
+    return new SimpleUpdateResult(verdict.getValue(), false, verdict.getKey());
+  }
 
-		if (verdict.getValue()) {
-			if (diskFs.get().contains(id)) {
-				diskFs.get().put(id, newContents);
-			} else {
-				data.put(id, newContents);
-			}
-			interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
-		}
-		return new SimpleUpdateResult(false, verdict.getValue(), verdict.getKey());
-	}
+  private UpdateResult uncheckedUpdate(FileID id, byte[] newContents) {
+    var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
 
-	private Map.Entry<ResponseCodeEnum, Boolean> judge(
-			FileID id,
-			BiFunction<FileUpdateInterceptor, FileID, Map.Entry<ResponseCodeEnum, Boolean>> judgment
-	) {
-		var outcome = SUCCESS;
-		var should = true;
+    if (verdict.getValue()) {
+      if (diskFs.get().contains(id)) {
+        diskFs.get().put(id, newContents);
+      } else {
+        data.put(id, newContents);
+      }
+      interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
+    }
+    return new SimpleUpdateResult(false, verdict.getValue(), verdict.getKey());
+  }
 
-		var orderedInterceptors = interceptorsFor(id);
-		for (var interceptor : orderedInterceptors) {
-			var vote = judgment.apply(interceptor, id);
-			outcome = firstUnsuccessful(outcome, vote.getKey());
-			if (!vote.getValue()) {
-				should = false;
-				break;
-			}
-		}
+  private Map.Entry<ResponseCodeEnum, Boolean> judge(
+      FileID id,
+      BiFunction<FileUpdateInterceptor, FileID, Map.Entry<ResponseCodeEnum, Boolean>> judgment) {
+    var outcome = SUCCESS;
+    var should = true;
 
-		return new AbstractMap.SimpleEntry<>(outcome, should);
-	}
+    var orderedInterceptors = interceptorsFor(id);
+    for (var interceptor : orderedInterceptors) {
+      var vote = judgment.apply(interceptor, id);
+      outcome = firstUnsuccessful(outcome, vote.getKey());
+      if (!vote.getValue()) {
+        should = false;
+        break;
+      }
+    }
 
-	private List<FileUpdateInterceptor> interceptorsFor(FileID id) {
-		return updateInterceptors
-				.stream()
-				.filter(interceptor -> interceptor.priorityForCandidate(id).isPresent())
-				.sorted(comparingInt(interceptor -> interceptor.priorityForCandidate(id).getAsInt()))
-				.collect(toList());
-	}
+    return new AbstractMap.SimpleEntry<>(outcome, should);
+  }
 
-	public static ResponseCodeEnum firstUnsuccessful(ResponseCodeEnum... outcomes) {
-		return Arrays.stream(outcomes).filter(not(SUCCESS::equals)).findAny().orElse(SUCCESS);
-	}
+  private List<FileUpdateInterceptor> interceptorsFor(FileID id) {
+    return updateInterceptors.stream()
+        .filter(interceptor -> interceptor.priorityForCandidate(id).isPresent())
+        .sorted(comparingInt(interceptor -> interceptor.priorityForCandidate(id).getAsInt()))
+        .collect(toList());
+  }
 
-	private void assertExtant(FileID id) {
-		if (!metadata.containsKey(id)) {
-			throwIllegal(UNKNOWN_FILE);
-		}
-	}
+  public static ResponseCodeEnum firstUnsuccessful(ResponseCodeEnum... outcomes) {
+    return Arrays.stream(outcomes).filter(not(SUCCESS::equals)).findAny().orElse(SUCCESS);
+  }
 
-	private void assertUsable(FileID id) {
-		assertExtant(id);
-		if (metadata.get(id).isDeleted()) {
-			throwIllegal(DELETED_FILE);
-		}
-	}
+  private void assertExtant(FileID id) {
+    if (!metadata.containsKey(id)) {
+      throwIllegal(UNKNOWN_FILE);
+    }
+  }
 
-	private void assertWithinSizeLimits(byte[] data) {
-		if (data.length > properties.maxFileSizeKb() * BYTES_PER_KB) {
-			throwIllegal(OVERSIZE_CONTENTS);
-		}
-	}
+  private void assertUsable(FileID id) {
+    assertExtant(id);
+    if (metadata.get(id).isDeleted()) {
+      throwIllegal(DELETED_FILE);
+    }
+  }
 
-	private void assertValid(HFileMeta attr) {
-		if (attr.getExpiry() < now.get().getEpochSecond()) {
-			throwIllegal(FILE_WOULD_BE_EXPIRED);
-		}
-	}
+  private void assertWithinSizeLimits(byte[] data) {
+    if (data.length > properties.maxFileSizeKb() * BYTES_PER_KB) {
+      throwIllegal(OVERSIZE_CONTENTS);
+    }
+  }
 
-	private void throwIllegal(IllegalArgumentType type) {
-		throw new IllegalArgumentException(type.toString());
-	}
+  private void assertValid(HFileMeta attr) {
+    if (attr.getExpiry() < now.get().getEpochSecond()) {
+      throwIllegal(FILE_WOULD_BE_EXPIRED);
+    }
+  }
+
+  private void throwIllegal(IllegalArgumentType type) {
+    throw new IllegalArgumentException(type.toString());
+  }
 }

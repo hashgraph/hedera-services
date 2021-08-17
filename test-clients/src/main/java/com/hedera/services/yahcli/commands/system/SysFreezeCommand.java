@@ -20,45 +20,45 @@ package com.hedera.services.yahcli.commands.system;
  * ‍
  */
 
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.FreezeSuite;
-import picocli.CommandLine;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Callable;
-
-import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import picocli.CommandLine;
 
 @CommandLine.Command(
-		name = "freeze",
-		subcommands = { picocli.CommandLine.HelpCommand.class },
-		description = "Freeze system at given start time")
+    name = "freeze",
+    subcommands = {picocli.CommandLine.HelpCommand.class},
+    description = "Freeze system at given start time")
 public class SysFreezeCommand implements Callable<Integer> {
 
-	@CommandLine.ParentCommand
-	private Yahcli yahcli;
+  @CommandLine.ParentCommand private Yahcli yahcli;
 
-	@CommandLine.Option(names = { "-s", "--start-time" },
-			paramLabel = "Freeze start time in UTC, use format 'yyyy-MM-dd.HH:mm:ss'",
-			defaultValue = "")
-	private String freezeStartTimeStr;
+  @CommandLine.Option(
+      names = {"-s", "--start-time"},
+      paramLabel = "Freeze start time in UTC, use format 'yyyy-MM-dd.HH:mm:ss'",
+      defaultValue = "")
+  private String freezeStartTimeStr;
 
-	@Override
-	public Integer call() throws Exception {
-		final var config = configFrom(yahcli);
-		final var freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
-		final var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
+  @Override
+  public Integer call() throws Exception {
+    final var config = configFrom(yahcli);
+    final var freezeStartTime = getFreezeStartTime(freezeStartTimeStr);
+    final var delegate = new FreezeSuite(config.asSpecConfig(), freezeStartTime);
 
-		delegate.runSuiteSync();
+    delegate.runSuiteSync();
 
-		return 0;
-	}
+    return 0;
+  }
 
-	private Instant getFreezeStartTime(final String timeStampInStr) {
-		final var dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss").withZone(ZoneId.of("Etc/UTC"));
+  private Instant getFreezeStartTime(final String timeStampInStr) {
+    final var dtf =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss").withZone(ZoneId.of("Etc/UTC"));
 
-		return Instant.from(dtf.parse(timeStampInStr));
-	}
+    return Instant.from(dtf.parse(timeStampInStr));
+  }
 }

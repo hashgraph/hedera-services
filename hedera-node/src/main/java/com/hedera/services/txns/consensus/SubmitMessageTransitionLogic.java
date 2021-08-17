@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,14 @@ package com.hedera.services.txns.consensus;
  * limitations under the License.
  * ‍
  */
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -29,107 +37,100 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SubmitMessageTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
+  private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
 
-	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
+  private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
+      ignore -> OK;
 
-	private final OptionValidator validator;
-	private final TransactionContext transactionContext;
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
-	private final GlobalDynamicProperties globalDynamicProperties;
+  private final OptionValidator validator;
+  private final TransactionContext transactionContext;
+  private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+  private final GlobalDynamicProperties globalDynamicProperties;
 
-	public SubmitMessageTransitionLogic(
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			OptionValidator validator,
-			TransactionContext transactionContext,
-			GlobalDynamicProperties globalDynamicProperties
-	) {
-		this.topics = topics;
-		this.validator = validator;
-		this.transactionContext = transactionContext;
-		this.globalDynamicProperties = globalDynamicProperties;
-	}
+  public SubmitMessageTransitionLogic(
+      Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+      OptionValidator validator,
+      TransactionContext transactionContext,
+      GlobalDynamicProperties globalDynamicProperties) {
+    this.topics = topics;
+    this.validator = validator;
+    this.transactionContext = transactionContext;
+    this.globalDynamicProperties = globalDynamicProperties;
+  }
 
-	@Override
-	public void doStateTransition() {
-		var transactionBody = transactionContext.accessor().getTxn();
-		var op = transactionBody.getConsensusSubmitMessage();
+  @Override
+  public void doStateTransition() {
+    var transactionBody = transactionContext.accessor().getTxn();
+    var op = transactionBody.getConsensusSubmitMessage();
 
-		if (op.getMessage().isEmpty()) {
-			transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
-			return;
-		}
+    if (op.getMessage().isEmpty()) {
+      transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
+      return;
+    }
 
-		if(op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed() ) {
-			transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
-			return;
-		}
+    if (op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed()) {
+      transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
+      return;
+    }
 
-		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
-		if (OK != topicStatus) {
-			transactionContext.setStatus(topicStatus);
-			return;
-		}
+    var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
+    if (OK != topicStatus) {
+      transactionContext.setStatus(topicStatus);
+      return;
+    }
 
-		if (op.hasChunkInfo()) {
-			var chunkInfo = op.getChunkInfo();
-			if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
-				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
-				return;
-			}
-			if (!chunkInfo.getInitialTransactionID().getAccountID().equals(
-					transactionBody.getTransactionID().getAccountID())) {
-				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
-				return;
-			}
-			if (1 == chunkInfo.getNumber() &&
-					!chunkInfo.getInitialTransactionID().equals(transactionBody.getTransactionID())) {
-				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
-				return;
-			}
-		}
+    if (op.hasChunkInfo()) {
+      var chunkInfo = op.getChunkInfo();
+      if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
+        transactionContext.setStatus(INVALID_CHUNK_NUMBER);
+        return;
+      }
+      if (!chunkInfo
+          .getInitialTransactionID()
+          .getAccountID()
+          .equals(transactionBody.getTransactionID().getAccountID())) {
+        transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+        return;
+      }
+      if (1 == chunkInfo.getNumber()
+          && !chunkInfo.getInitialTransactionID().equals(transactionBody.getTransactionID())) {
+        transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+        return;
+      }
+    }
 
-		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
-		var mutableTopic = topics.get().getForModify(topicId);
-		try {
-			mutableTopic.updateRunningHashAndSequenceNumber(
-					transactionBody.getTransactionID().getAccountID(),
-					op.getMessage().toByteArray(),
-					op.getTopicID(),
-					transactionContext.consensusTime());
-			transactionContext.setTopicRunningHash(mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
-			transactionContext.setStatus(SUCCESS);
-		} catch (IOException e) {
-			log.error("Updating topic running hash failed.", e);
-			transactionContext.setStatus(INVALID_TRANSACTION);
-		}
-	}
+    var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
+    var mutableTopic = topics.get().getForModify(topicId);
+    try {
+      mutableTopic.updateRunningHashAndSequenceNumber(
+          transactionBody.getTransactionID().getAccountID(),
+          op.getMessage().toByteArray(),
+          op.getTopicID(),
+          transactionContext.consensusTime());
+      transactionContext.setTopicRunningHash(
+          mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
+      transactionContext.setStatus(SUCCESS);
+    } catch (IOException e) {
+      log.error("Updating topic running hash failed.", e);
+      transactionContext.setStatus(INVALID_TRANSACTION);
+    }
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasConsensusSubmitMessage;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasConsensusSubmitMessage;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_RUBBER_STAMP;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_RUBBER_STAMP;
+  }
 }

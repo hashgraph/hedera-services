@@ -20,13 +20,6 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
-import com.hedera.services.test.KeyUtils;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -35,42 +28,51 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.test.KeyUtils;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import org.junit.jupiter.api.Test;
+
 class CryptoGetInfoUsageTest {
-	private Query query = Query.newBuilder().setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance()).build();
+  private Query query =
+      Query.newBuilder().setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance()).build();
 
-	private int numTokenAssocs = 3;
-	private Key key = KeyUtils.A_COMPLEX_KEY;
-	private String memo = "Hey there!";
+  private int numTokenAssocs = 3;
+  private Key key = KeyUtils.A_COMPLEX_KEY;
+  private String memo = "Hey there!";
 
-	private CryptoGetInfoUsage subject;
+  private CryptoGetInfoUsage subject;
 
-	@Test
-	void getsExpectedUsage() {
-		// setup:
-		long expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
-		long expectedRb = BASIC_QUERY_RES_HEADER + numTokenAssocs * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
-				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ getAccountKeyStorageSize(key)
-				+ memo.length()
-				+ BASIC_ENTITY_ID_SIZE;
-		// and:
-		var usage = FeeComponents.newBuilder()
-				.setBpt(expectedTb)
-				.setBpr(expectedRb)
-				.build();
-		var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
+  @Test
+  void getsExpectedUsage() {
+    // setup:
+    long expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+    long expectedRb =
+        BASIC_QUERY_RES_HEADER
+            + numTokenAssocs * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
+            + CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+            + getAccountKeyStorageSize(key)
+            + memo.length()
+            + BASIC_ENTITY_ID_SIZE;
+    // and:
+    var usage = FeeComponents.newBuilder().setBpt(expectedTb).setBpr(expectedRb).build();
+    var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
 
-		// given:
-		subject = CryptoGetInfoUsage.newEstimate(query);
+    // given:
+    subject = CryptoGetInfoUsage.newEstimate(query);
 
-		// when:
-		var actual = subject.givenCurrentKey(key)
-				.givenCurrentlyUsingProxy()
-				.givenCurrentMemo(memo)
-				.givenCurrentTokenAssocs(numTokenAssocs)
-				.get();
+    // when:
+    var actual =
+        subject
+            .givenCurrentKey(key)
+            .givenCurrentlyUsingProxy()
+            .givenCurrentMemo(memo)
+            .givenCurrentTokenAssocs(numTokenAssocs)
+            .get();
 
-		// then:
-		assertEquals(expected, actual);
-	}
+    // then:
+    assertEquals(expected, actual);
+  }
 }

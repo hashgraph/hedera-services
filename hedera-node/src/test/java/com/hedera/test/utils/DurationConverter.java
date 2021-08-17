@@ -26,12 +26,13 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public class DurationConverter implements ArgumentConverter {
-	@Override
-	public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
-		if (null == input) {
-			return null;
-		}
-		final String inputString = ConverterUtils.toStringInstance(input);
-		return Duration.newBuilder().setSeconds(Long.parseLong(inputString)).build();
-	}
+  @Override
+  public Object convert(Object input, ParameterContext parameterContext)
+      throws ArgumentConversionException {
+    if (null == input) {
+      return null;
+    }
+    final String inputString = ConverterUtils.toStringInstance(input);
+    return Duration.newBuilder().setSeconds(Long.parseLong(inputString)).build();
+  }
 }

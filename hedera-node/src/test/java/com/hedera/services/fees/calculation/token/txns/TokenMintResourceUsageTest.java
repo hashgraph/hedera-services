@@ -20,6 +20,14 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -34,96 +42,86 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.SigValueObj;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-import java.util.function.BiFunction;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.verify;
-
 class TokenMintResourceUsageTest {
-	private TransactionBody nonTokenMintTxn;
-	private TransactionBody tokenMintTxn;
+  private TransactionBody nonTokenMintTxn;
+  private TransactionBody tokenMintTxn;
 
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	private final long now = 123L;
+  int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+  SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+  SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+  private final long now = 123L;
 
-	BiFunction<TransactionBody, SigUsage, TokenMintUsage> factory;
-	FeeData expected;
+  BiFunction<TransactionBody, SigUsage, TokenMintUsage> factory;
+  FeeData expected;
 
-	StateView view;
-	TokenMintUsage usage;
-	TokenMintResourceUsage subject;
-	TokenMintTransactionBody transactionBody;
-	TokenID token;
+  StateView view;
+  TokenMintUsage usage;
+  TokenMintResourceUsage subject;
+  TokenMintTransactionBody transactionBody;
+  TokenID token;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
-		transactionBody = mock(TokenMintTransactionBody.class);
-		token = mock(TokenID.class);
+  @BeforeEach
+  private void setup() throws Throwable {
+    expected = mock(FeeData.class);
+    view = mock(StateView.class);
+    transactionBody = mock(TokenMintTransactionBody.class);
+    token = mock(TokenID.class);
 
-		tokenMintTxn = mock(TransactionBody.class);
-		given(tokenMintTxn.getTransactionID()).willReturn(TransactionID.newBuilder()
-				.setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)).build());
-		given(tokenMintTxn.hasTokenMint()).willReturn(true);
-		given(tokenMintTxn.getTokenMint()).willReturn(transactionBody);
-		given(transactionBody.getToken()).willReturn(token);
+    tokenMintTxn = mock(TransactionBody.class);
+    given(tokenMintTxn.getTransactionID())
+        .willReturn(
+            TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now))
+                .build());
+    given(tokenMintTxn.hasTokenMint()).willReturn(true);
+    given(tokenMintTxn.getTokenMint()).willReturn(transactionBody);
+    given(transactionBody.getToken()).willReturn(token);
 
-		nonTokenMintTxn = mock(TransactionBody.class);
-		given(nonTokenMintTxn.hasTokenMint()).willReturn(false);
+    nonTokenMintTxn = mock(TransactionBody.class);
+    given(nonTokenMintTxn.hasTokenMint()).willReturn(false);
 
-		usage = mock(TokenMintUsage.class);
-		given(usage.givenSubType(SubType.DEFAULT)).willReturn(usage);
-		given(usage.get()).willReturn(expected);
+    usage = mock(TokenMintUsage.class);
+    given(usage.givenSubType(SubType.DEFAULT)).willReturn(usage);
+    given(usage.get()).willReturn(expected);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenMintUsage>) mock(BiFunction.class);
-		given(factory.apply(tokenMintTxn, sigUsage)).willReturn(usage);
+    factory = (BiFunction<TransactionBody, SigUsage, TokenMintUsage>) mock(BiFunction.class);
+    given(factory.apply(tokenMintTxn, sigUsage)).willReturn(usage);
 
-		TokenMintResourceUsage.factory = factory;
+    TokenMintResourceUsage.factory = factory;
 
-		subject = new TokenMintResourceUsage();
-	}
+    subject = new TokenMintResourceUsage();
+  }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenMintTxn));
-		assertFalse(subject.applicableTo(nonTokenMintTxn));
-	}
+  @Test
+  void recognizesApplicability() {
+    // expect:
+    assertTrue(subject.applicableTo(tokenMintTxn));
+    assertFalse(subject.applicableTo(nonTokenMintTxn));
+  }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		final long expiry = 1_234_567L;
-		final long lifetime = expiry - now;
-		final var aToken = new MerkleToken(expiry, 1, 1, "A",
-				"B", true, false, EntityId.MISSING_ENTITY_ID);
-		given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
-		given(factory.apply(any(), any())).willReturn(usage);
-		given(usage.givenSubType(any())).willReturn(usage);
-		given(usage.givenExpectedLifetime(lifetime)).willReturn(usage);
-		given(view.tokenWith(token)).willReturn(Optional.of(aToken));
+  @Test
+  void delegatesToCorrectEstimate() throws Exception {
+    final long expiry = 1_234_567L;
+    final long lifetime = expiry - now;
+    final var aToken =
+        new MerkleToken(expiry, 1, 1, "A", "B", true, false, EntityId.MISSING_ENTITY_ID);
+    given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
+    given(factory.apply(any(), any())).willReturn(usage);
+    given(usage.givenSubType(any())).willReturn(usage);
+    given(usage.givenExpectedLifetime(lifetime)).willReturn(usage);
+    given(view.tokenWith(token)).willReturn(Optional.of(aToken));
 
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenMintTxn, obj, view));
-		verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
+    assertEquals(expected, subject.usageGiven(tokenMintTxn, obj, view));
+    verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
 
-		given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenMintTxn, obj, view));
-		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-		verify(usage).givenExpectedLifetime(lifetime);
-	}
+    given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
+    assertEquals(expected, subject.usageGiven(tokenMintTxn, obj, view));
+    verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+    verify(usage).givenExpectedLifetime(lifetime);
+  }
 }

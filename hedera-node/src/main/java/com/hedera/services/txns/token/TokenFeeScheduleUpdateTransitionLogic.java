@@ -20,18 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -39,70 +27,83 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.TransitionLogic;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateTransitionLogic.class);
-	private final TokenStore store;
-	private final TransactionContext txnCtx;
+  private static final Logger log =
+      LogManager.getLogger(TokenFeeScheduleUpdateTransitionLogic.class);
+  private final TokenStore store;
+  private final TransactionContext txnCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx) {
-		this.store = tokenStore;
-		this.txnCtx = txnCtx;
-	}
+  public TokenFeeScheduleUpdateTransitionLogic(
+      final TokenStore tokenStore, final TransactionContext txnCtx) {
+    this.store = tokenStore;
+    this.txnCtx = txnCtx;
+  }
 
-	@Override
-	public void doStateTransition() {
-		try {
-			transitionFor(txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate());
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			abortWith(FAIL_INVALID);
-		}
+  @Override
+  public void doStateTransition() {
+    try {
+      transitionFor(txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate());
+    } catch (Exception e) {
+      log.warn(
+          "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+      abortWith(FAIL_INVALID);
+    }
+  }
 
-	}
+  private void transitionFor(TokenFeeScheduleUpdateTransactionBody op) {
+    final var id = store.resolve(op.getTokenId());
+    if (id == MISSING_TOKEN) {
+      txnCtx.setStatus(INVALID_TOKEN_ID);
+      return;
+    }
 
-	private void transitionFor(TokenFeeScheduleUpdateTransactionBody op) {
-		final var id = store.resolve(op.getTokenId());
-		if (id == MISSING_TOKEN) {
-			txnCtx.setStatus(INVALID_TOKEN_ID);
-			return;
-		}
+    final var token = store.get(id);
+    if (token.isDeleted()) {
+      txnCtx.setStatus(TOKEN_WAS_DELETED);
+      return;
+    }
 
-		final var token = store.get(id);
-		if (token.isDeleted()) {
-			txnCtx.setStatus(TOKEN_WAS_DELETED);
-			return;
-		}
+    final var outcome = store.updateFeeSchedule(op);
+    if (outcome != OK) {
+      abortWith(outcome);
+      return;
+    }
+    txnCtx.setStatus(SUCCESS);
+  }
 
-		final var outcome = store.updateFeeSchedule(op);
-		if (outcome != OK) {
-			abortWith(outcome);
-			return;
-		}
-		txnCtx.setStatus(SUCCESS);
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasTokenFeeScheduleUpdate;
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenFeeScheduleUpdate;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  private ResponseCodeEnum validate(TransactionBody txnBody) {
+    final var op = txnBody.getTokenFeeScheduleUpdate();
+    if (!op.hasTokenId()) {
+      return INVALID_TOKEN_ID;
+    }
 
-	private ResponseCodeEnum validate(TransactionBody txnBody) {
-		final var op = txnBody.getTokenFeeScheduleUpdate();
-		if (!op.hasTokenId()) {
-			return INVALID_TOKEN_ID;
-		}
+    return OK;
+  }
 
-		return OK;
-	}
-
-	private void abortWith(ResponseCodeEnum cause) {
-		txnCtx.setStatus(cause);
-	}
+  private void abortWith(ResponseCodeEnum cause) {
+    txnCtx.setStatus(cause);
+  }
 }

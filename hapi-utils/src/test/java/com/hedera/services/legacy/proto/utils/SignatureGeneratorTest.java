@@ -25,17 +25,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class SignatureGeneratorTest {
-	@Test
-	void rejectsNonEddsaKeys() {
-		Assertions.assertThrows(
-				IllegalArgumentException.class,
-				() -> SignatureGenerator.signBytes(new byte[0], null));
-	}
+  @Test
+  void rejectsNonEddsaKeys() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class, () -> SignatureGenerator.signBytes(new byte[0], null));
+  }
 
-	@Test
-	void signsBytesCorrectly() throws Exception {
-		final var pair = new KeyPairGenerator().generateKeyPair();
-		final var sigHex = SignatureGenerator.signBytes("abc".getBytes(), pair.getPrivate());
-		Assertions.assertEquals(128, sigHex.length());
-	}
+  @Test
+  void signsBytesCorrectly() throws Exception {
+    final var pair = new KeyPairGenerator().generateKeyPair();
+    final var sigHex = SignatureGenerator.signBytes("abc".getBytes(), pair.getPrivate());
+    Assertions.assertEquals(128, sigHex.length());
+  }
 }

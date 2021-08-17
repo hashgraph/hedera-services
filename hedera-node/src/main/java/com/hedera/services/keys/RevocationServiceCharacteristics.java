@@ -20,23 +20,23 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-
 public class RevocationServiceCharacteristics {
-	public static KeyActivationCharacteristics forTopLevelFile(JKeyList wacl) {
-		return new KeyActivationCharacteristics() {
-			@Override
-			public int sigsNeededForList(JKeyList l) {
-				return equalUpToDecodability(l, wacl) ? 1 : l.getKeysList().size();
-			}
+  public static KeyActivationCharacteristics forTopLevelFile(JKeyList wacl) {
+    return new KeyActivationCharacteristics() {
+      @Override
+      public int sigsNeededForList(JKeyList l) {
+        return equalUpToDecodability(l, wacl) ? 1 : l.getKeysList().size();
+      }
 
-			@Override
-			public int sigsNeededForThreshold(JThresholdKey t) {
-				return t.getThreshold();
-			}
-		};
-	}
+      @Override
+      public int sigsNeededForThreshold(JThresholdKey t) {
+        return t.getThreshold();
+      }
+    };
+  }
 }

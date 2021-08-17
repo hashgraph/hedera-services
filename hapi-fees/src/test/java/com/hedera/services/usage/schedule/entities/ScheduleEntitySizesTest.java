@@ -20,27 +20,25 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import com.hedera.services.usage.SigUsage;
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.usage.SigUsage;
+import org.junit.jupiter.api.Test;
+
 class ScheduleEntitySizesTest {
-	private ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
+  private ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 
-	@Test
-	void estimatesSigsAsExpected() {
-		// expect:
-		assertEquals(2,
-				subject.estimatedScheduleSigs(new SigUsage(3, 100, 1)));
-		assertEquals(1,
-				subject.estimatedScheduleSigs(new SigUsage(3, 100, 10)));
-	}
+  @Test
+  void estimatesSigsAsExpected() {
+    // expect:
+    assertEquals(2, subject.estimatedScheduleSigs(new SigUsage(3, 100, 1)));
+    assertEquals(1, subject.estimatedScheduleSigs(new SigUsage(3, 100, 10)));
+  }
 
-	@Test
-	void estimatesSig() {
-		// expect:
-		assertEquals(7 * KEY_SIZE, subject.bytesUsedForSigningKeys(7));
-	}
+  @Test
+  void estimatesSig() {
+    // expect:
+    assertEquals(7 * KEY_SIZE, subject.bytesUsedForSigningKeys(7));
+  }
 }

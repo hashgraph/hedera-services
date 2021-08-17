@@ -20,6 +20,18 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.TypedTokenStore;
@@ -34,129 +46,115 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
-
 class TokenDeleteTransitionLogicTest {
 
-	private final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
-	private final Id tokenId = Id.fromGrpcToken(grpcTokenId);
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	private TypedTokenStore typedTokenStore;
-	private Token token;
+  private final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
+  private final Id tokenId = Id.fromGrpcToken(grpcTokenId);
+  private TransactionContext txnCtx;
+  private PlatformTxnAccessor accessor;
+  private TypedTokenStore typedTokenStore;
+  private Token token;
 
-	private TransactionBody tokenDeleteTxn;
-	private TokenDeleteTransitionLogic subject;
+  private TransactionBody tokenDeleteTxn;
+  private TokenDeleteTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		txnCtx = mock(TransactionContext.class);
-		accessor = mock(PlatformTxnAccessor.class);
-		typedTokenStore = mock(TypedTokenStore.class);
-		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore);
-		token = mock(Token.class);
-	}
+  @BeforeEach
+  private void setup() {
+    txnCtx = mock(TransactionContext.class);
+    accessor = mock(PlatformTxnAccessor.class);
+    typedTokenStore = mock(TypedTokenStore.class);
+    subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore);
+    token = mock(Token.class);
+  }
 
-	@Test
-	public void followsHappyPath() {
+  @Test
+  public void followsHappyPath() {
 
-		givenValidTxnCtx();
+    givenValidTxnCtx();
 
-		given(typedTokenStore.loadToken(tokenId)).willReturn(token);
-		given(token.hasAdminKey()).willReturn(true);
-		given(token.isDeleted()).willReturn(false);
-		given(token.isBelievedToHaveBeenAutoRemoved()).willReturn(false);
+    given(typedTokenStore.loadToken(tokenId)).willReturn(token);
+    given(token.hasAdminKey()).willReturn(true);
+    given(token.isDeleted()).willReturn(false);
+    given(token.isBelievedToHaveBeenAutoRemoved()).willReturn(false);
 
-		subject.doStateTransition();
+    subject.doStateTransition();
 
-		verify(token).delete();
-		verify(typedTokenStore).persistToken(token);
-	}
+    verify(token).delete();
+    verify(typedTokenStore).persistToken(token);
+  }
 
+  @Test
+  public void capturesInvalidDelete() {
 
-	@Test
-	public void capturesInvalidDelete() {
+    givenValidTxnCtx();
 
-		givenValidTxnCtx();
+    given(typedTokenStore.loadToken(tokenId))
+        .willThrow(new InvalidTransactionException(INVALID_TOKEN_ID));
 
-		given(typedTokenStore.loadToken(tokenId))
-				.willThrow(new InvalidTransactionException(INVALID_TOKEN_ID));
+    assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID);
 
-		assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID);
+    verify(token, never()).delete();
+    verify(typedTokenStore, never()).persistToken(token);
+  }
 
-		verify(token, never()).delete();
-		verify(typedTokenStore, never()).persistToken(token);
+  private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
+    final var ex = assertThrows(InvalidTransactionException.class, something::run);
+    assertEquals(status, ex.getResponseCode());
+  }
 
-	}
+  @Test
+  public void capturesInvalidDeletionDueToAlreadyDeleted() {
 
-	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
-		final var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
-	}
+    givenValidTxnCtx();
 
-	@Test
-	public void capturesInvalidDeletionDueToAlreadyDeleted() {
+    given(typedTokenStore.loadToken(tokenId))
+        .willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
 
-		givenValidTxnCtx();
+    assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
 
-		given(typedTokenStore.loadToken(tokenId)).willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
+    verify(token, never()).delete();
+    verify(typedTokenStore, never()).persistToken(token);
+  }
 
-		assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
+  @Test
+  void hasCorrectApplicability() {
+    givenValidTxnCtx();
 
-		verify(token, never()).delete();
-		verify(typedTokenStore, never()).persistToken(token);
-	}
+    // expect:
+    assertTrue(subject.applicability().test(tokenDeleteTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+  }
 
+  @Test
+  void acceptsValidTxn() {
+    givenValidTxnCtx();
 
-	@Test
-	void hasCorrectApplicability() {
-		givenValidTxnCtx();
+    // expect:
+    assertEquals(OK, subject.semanticCheck().apply(tokenDeleteTxn));
+  }
 
-		// expect:
-		assertTrue(subject.applicability().test(tokenDeleteTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+  @Test
+  void rejectsMissingToken() {
+    givenMissingToken();
 
-	@Test
-	void acceptsValidTxn() {
-		givenValidTxnCtx();
+    // expect:
+    assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenDeleteTxn));
+  }
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(tokenDeleteTxn));
-	}
+  private void givenValidTxnCtx() {
+    tokenDeleteTxn =
+        TransactionBody.newBuilder()
+            .setTokenDeletion(TokenDeleteTransactionBody.newBuilder().setToken(grpcTokenId))
+            .build();
+    given(accessor.getTxn()).willReturn(tokenDeleteTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(typedTokenStore.loadToken(tokenId)).willReturn(token);
+  }
 
-	@Test
-	void rejectsMissingToken() {
-		givenMissingToken();
-
-		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenDeleteTxn));
-	}
-
-	private void givenValidTxnCtx() {
-		tokenDeleteTxn = TransactionBody.newBuilder()
-				.setTokenDeletion(TokenDeleteTransactionBody.newBuilder()
-						.setToken(grpcTokenId))
-				.build();
-		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(typedTokenStore.loadToken(tokenId)).willReturn(token);
-
-	}
-
-	private void givenMissingToken() {
-		tokenDeleteTxn = TransactionBody.newBuilder()
-				.setTokenDeletion(TokenDeleteTransactionBody.newBuilder())
-				.build();
-	}
+  private void givenMissingToken() {
+    tokenDeleteTxn =
+        TransactionBody.newBuilder()
+            .setTokenDeletion(TokenDeleteTransactionBody.newBuilder())
+            .build();
+  }
 }

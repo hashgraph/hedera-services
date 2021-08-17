@@ -20,19 +20,6 @@ package com.hedera.services.fees.calculation.contract.queries;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -42,66 +29,77 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.fee.SmartContractFeeBuilder;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class GetBytecodeResourceUsageTest {
-	byte[] bytecode = "A Supermarket in California".getBytes();
-	ContractID target = asContract("0.0.123");
-	StateView view;
-	SmartContractFeeBuilder usageEstimator;
+  byte[] bytecode = "A Supermarket in California".getBytes();
+  ContractID target = asContract("0.0.123");
+  StateView view;
+  SmartContractFeeBuilder usageEstimator;
 
-	GetBytecodeResourceUsage subject;
+  GetBytecodeResourceUsage subject;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		usageEstimator = mock(SmartContractFeeBuilder.class);
-		view = mock(StateView.class);
+  @BeforeEach
+  private void setup() throws Throwable {
+    usageEstimator = mock(SmartContractFeeBuilder.class);
+    view = mock(StateView.class);
 
-		subject = new GetBytecodeResourceUsage(usageEstimator);
-	}
+    subject = new GetBytecodeResourceUsage(usageEstimator);
+  }
 
-	@Test
-	void recognizesApplicableQuery() {
-		// given:
-		var applicable = bytecodeQuery(target, COST_ANSWER);
-		var inapplicable = Query.getDefaultInstance();
+  @Test
+  void recognizesApplicableQuery() {
+    // given:
+    var applicable = bytecodeQuery(target, COST_ANSWER);
+    var inapplicable = Query.getDefaultInstance();
 
-		// expect:
-		assertTrue(subject.applicableTo(applicable));
-		assertFalse(subject.applicableTo(inapplicable));
-	}
+    // expect:
+    assertTrue(subject.applicableTo(applicable));
+    assertFalse(subject.applicableTo(inapplicable));
+  }
 
-	@Test
-	void invokesEstimatorAsExpectedForType() {
-		// setup:
-		FeeData costAnswerUsage = mock(FeeData.class);
-		FeeData answerOnlyUsage = mock(FeeData.class);
-		int size = bytecode.length;
+  @Test
+  void invokesEstimatorAsExpectedForType() {
+    // setup:
+    FeeData costAnswerUsage = mock(FeeData.class);
+    FeeData answerOnlyUsage = mock(FeeData.class);
+    int size = bytecode.length;
 
-		// given:
-		Query answerOnlyQuery = bytecodeQuery(target, ANSWER_ONLY);
-		Query costAnswerQuery = bytecodeQuery(target, COST_ANSWER);
-		// and:
-		given(view.bytecodeOf(target)).willReturn(Optional.of(bytecode));
-		// and:
-		given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, COST_ANSWER))
-				.willReturn(costAnswerUsage);
-		given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, ANSWER_ONLY))
-				.willReturn(answerOnlyUsage);
+    // given:
+    Query answerOnlyQuery = bytecodeQuery(target, ANSWER_ONLY);
+    Query costAnswerQuery = bytecodeQuery(target, COST_ANSWER);
+    // and:
+    given(view.bytecodeOf(target)).willReturn(Optional.of(bytecode));
+    // and:
+    given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, COST_ANSWER))
+        .willReturn(costAnswerUsage);
+    given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, ANSWER_ONLY))
+        .willReturn(answerOnlyUsage);
 
-		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
-		FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
+    // when:
+    FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
+    FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
 
-		// then:
-		assertSame(costAnswerEstimate, costAnswerUsage);
-		assertSame(answerOnlyEstimate, answerOnlyUsage);
-	}
+    // then:
+    assertSame(costAnswerEstimate, costAnswerUsage);
+    assertSame(answerOnlyEstimate, answerOnlyUsage);
+  }
 
-	private Query bytecodeQuery(ContractID id, ResponseType type) {
-		ContractGetBytecodeQuery.Builder op = ContractGetBytecodeQuery.newBuilder()
-				.setContractID(id)
-				.setHeader(QueryHeader.newBuilder().setResponseType(type));
-		return Query.newBuilder()
-				.setContractGetBytecode(op)
-				.build();
-	}
+  private Query bytecodeQuery(ContractID id, ResponseType type) {
+    ContractGetBytecodeQuery.Builder op =
+        ContractGetBytecodeQuery.newBuilder()
+            .setContractID(id)
+            .setHeader(QueryHeader.newBuilder().setResponseType(type));
+    return Query.newBuilder().setContractGetBytecode(op).build();
+  }
 }

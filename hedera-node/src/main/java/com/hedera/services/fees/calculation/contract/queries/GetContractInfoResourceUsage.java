@@ -20,60 +20,63 @@ package com.hedera.services.fees.calculation.contract.queries;
  * ‍
  */
 
+import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
+import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
-import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY;
-
 public class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {
-	static Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
+  static Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
 
-	@Override
-	public boolean applicableTo(Query query) {
-		return query.hasContractGetInfo();
-	}
+  @Override
+  public boolean applicableTo(Query query) {
+    return query.hasContractGetInfo();
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getContractGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view) {
+    return usageFor(
+        query, view, query.getContractGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
-	}
+  @Override
+  public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+    return usageFor(query, view, type, NO_QUERY_CTX);
+  }
 
-	@Override
-	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-		return usageFor(
-				query,
-				view,
-				query.getContractGetInfo().getHeader().getResponseType(),
-				Optional.of(queryCtx));
-	}
+  @Override
+  public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+    return usageFor(
+        query,
+        view,
+        query.getContractGetInfo().getHeader().getResponseType(),
+        Optional.of(queryCtx));
+  }
 
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getContractGetInfo();
-		var tentativeInfo = view.infoForContract(op.getContractID());
-		if (tentativeInfo.isPresent()) {
-			var info = tentativeInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(CONTRACT_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
-					.givenCurrentKey(info.getAdminKey())
-					.givenCurrentMemo(info.getMemo())
-					.givenCurrentTokenAssocs(info.getTokenRelationshipsCount());
-			return estimate.get();
-		} else {
-			return FeeData.getDefaultInstance();
-		}
-	}
+  private FeeData usageFor(
+      Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
+    var op = query.getContractGetInfo();
+    var tentativeInfo = view.infoForContract(op.getContractID());
+    if (tentativeInfo.isPresent()) {
+      var info = tentativeInfo.get();
+      queryCtx.ifPresent(ctx -> ctx.put(CONTRACT_INFO_CTX_KEY, info));
+      var estimate =
+          factory
+              .apply(query)
+              .givenCurrentKey(info.getAdminKey())
+              .givenCurrentMemo(info.getMemo())
+              .givenCurrentTokenAssocs(info.getTokenRelationshipsCount());
+      return estimate.get();
+    } else {
+      return FeeData.getDefaultInstance();
+    }
+  }
 }

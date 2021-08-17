@@ -20,6 +20,11 @@ package com.hedera.services.queries.meta;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.queries.AbstractAnswer;
@@ -29,45 +34,39 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-
 public class GetVersionInfoAnswer extends AbstractAnswer {
-	private final SemanticVersions semanticVersions;
+  private final SemanticVersions semanticVersions;
 
-	public GetVersionInfoAnswer(SemanticVersions semanticVersions) {
-		super(
-				GetVersionInfo,
-				query -> query.getNetworkGetVersionInfo().getHeader().getPayment(),
-				query -> query.getNetworkGetVersionInfo().getHeader().getResponseType(),
-				response -> response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode(),
-				(query, view) -> semanticVersions.getDeployed().isPresent() ? OK : FAIL_INVALID);
-		this.semanticVersions = semanticVersions;
-	}
+  public GetVersionInfoAnswer(SemanticVersions semanticVersions) {
+    super(
+        GetVersionInfo,
+        query -> query.getNetworkGetVersionInfo().getHeader().getPayment(),
+        query -> query.getNetworkGetVersionInfo().getHeader().getResponseType(),
+        response ->
+            response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode(),
+        (query, view) -> semanticVersions.getDeployed().isPresent() ? OK : FAIL_INVALID);
+    this.semanticVersions = semanticVersions;
+  }
 
-	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		var op = query.getNetworkGetVersionInfo();
-		var response = NetworkGetVersionInfoResponse.newBuilder();
+  @Override
+  public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
+    var op = query.getNetworkGetVersionInfo();
+    var response = NetworkGetVersionInfoResponse.newBuilder();
 
-		ResponseType type = op.getHeader().getResponseType();
-		if (validity != OK) {
-			response.setHeader(header(validity, type, cost));
-		} else {
-			if (type == COST_ANSWER) {
-				response.setHeader(costAnswerHeader(OK, cost));
-			} else {
-				response.setHeader(answerOnlyHeader(OK));
-				var answer = semanticVersions.getDeployed().get();
-				response.setHapiProtoVersion(answer.protoSemVer());
-				response.setHederaServicesVersion(answer.hederaSemVer());
-			}
-		}
+    ResponseType type = op.getHeader().getResponseType();
+    if (validity != OK) {
+      response.setHeader(header(validity, type, cost));
+    } else {
+      if (type == COST_ANSWER) {
+        response.setHeader(costAnswerHeader(OK, cost));
+      } else {
+        response.setHeader(answerOnlyHeader(OK));
+        var answer = semanticVersions.getDeployed().get();
+        response.setHapiProtoVersion(answer.protoSemVer());
+        response.setHederaServicesVersion(answer.hederaSemVer());
+      }
+    }
 
-		return Response.newBuilder()
-				.setNetworkGetVersionInfo(response)
-				.build();
-	}
+    return Response.newBuilder().setNetworkGetVersionInfo(response).build();
+  }
 }

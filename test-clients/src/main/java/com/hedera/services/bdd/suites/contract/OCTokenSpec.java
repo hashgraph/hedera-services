@@ -20,17 +20,6 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
-import org.junit.jupiter.api.Assertions;
-
-import java.math.BigInteger;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
@@ -52,257 +41,303 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.math.BigInteger;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.core.CallTransaction;
+import org.junit.jupiter.api.Assertions;
+
 public class OCTokenSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(OCTokenSpec.class);
+  private static final Logger log = LogManager.getLogger(OCTokenSpec.class);
 
-	public static void main(String... args) {
-		new org.ethereum.crypto.HashUtil();
-		new OCTokenSpec().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new org.ethereum.crypto.HashUtil();
+    new OCTokenSpec().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				ocToken(),
-		});
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {
+          ocToken(),
+        });
+  }
 
-	private <T> T getValueFromRegistry(HapiApiSpec spec, String from, CallTransaction.Function function) {
-		byte[] value = spec.registry().getBytes(from);
+  private <T> T getValueFromRegistry(
+      HapiApiSpec spec, String from, CallTransaction.Function function) {
+    byte[] value = spec.registry().getBytes(from);
 
-		T decodedReturnedValue = null;
-		Object[] retResults = function.decodeResult(value);
-		if (retResults != null && retResults.length > 0) {
-			decodedReturnedValue = (T) retResults[0];
-		}
-		return decodedReturnedValue;
-	}
+    T decodedReturnedValue = null;
+    Object[] retResults = function.decodeResult(value);
+    if (retResults != null && retResults.length > 0) {
+      decodedReturnedValue = (T) retResults[0];
+    }
+    return decodedReturnedValue;
+  }
 
-	HapiApiSpec ocToken() {
-		return defaultHapiSpec("ocToken")
-				.given(
-						cryptoCreate("tokenIssuer").balance(1_000_000_000_000L),
-						cryptoCreate("Alice").balance(10_000_000_000L).payingWith("tokenIssuer"),
-						cryptoCreate("Bob").balance(10_000_000_000L).payingWith("tokenIssuer"),
-						cryptoCreate("Carol").balance(10_000_000_000L).payingWith("tokenIssuer"),
-						cryptoCreate("Dave").balance(10_000_000_000L).payingWith("tokenIssuer"),
+  HapiApiSpec ocToken() {
+    return defaultHapiSpec("ocToken")
+        .given(
+            cryptoCreate("tokenIssuer").balance(1_000_000_000_000L),
+            cryptoCreate("Alice").balance(10_000_000_000L).payingWith("tokenIssuer"),
+            cryptoCreate("Bob").balance(10_000_000_000L).payingWith("tokenIssuer"),
+            cryptoCreate("Carol").balance(10_000_000_000L).payingWith("tokenIssuer"),
+            cryptoCreate("Dave").balance(10_000_000_000L).payingWith("tokenIssuer"),
+            getAccountInfo("tokenIssuer").saveToRegistry("tokenIssuerAcctInfo"),
+            getAccountInfo("Alice").saveToRegistry("AliceAcctInfo"),
+            getAccountInfo("Bob").saveToRegistry("BobAcctInfo"),
+            getAccountInfo("Carol").saveToRegistry("CarolAcctInfo"),
+            getAccountInfo("Dave").saveToRegistry("DaveAcctInfo"),
+            fileCreate("bytecode").path(OC_TOKEN_BYTECODE_PATH),
+            contractCreate(
+                    "tokenContract",
+                    TOKEN_ERC20_CONSTRUCTOR_ABI,
+                    1_000_000L,
+                    "OpenCrowd Token",
+                    "OCT")
+                .gas(250_000L)
+                .payingWith("tokenIssuer")
+                .bytecode("bytecode")
+                .via("tokenCreateTxn")
+                .logged())
+        .when(
+            assertionsHold(
+                (spec, ctxLog) -> {
+                  String issuerEthAddress =
+                      spec.registry().getAccountInfo("tokenIssuerAcctInfo").getContractAccountID();
+                  String aliceEthAddress =
+                      spec.registry().getAccountInfo("AliceAcctInfo").getContractAccountID();
+                  String bobEthAddress =
+                      spec.registry().getAccountInfo("BobAcctInfo").getContractAccountID();
+                  String carolEthAddress =
+                      spec.registry().getAccountInfo("CarolAcctInfo").getContractAccountID();
+                  String daveEthAddress =
+                      spec.registry().getAccountInfo("DaveAcctInfo").getContractAccountID();
 
-						getAccountInfo("tokenIssuer").saveToRegistry("tokenIssuerAcctInfo"),
-						getAccountInfo("Alice").saveToRegistry("AliceAcctInfo"),
-						getAccountInfo("Bob").saveToRegistry("BobAcctInfo"),
-						getAccountInfo("Carol").saveToRegistry("CarolAcctInfo"),
-						getAccountInfo("Dave").saveToRegistry("DaveAcctInfo"),
+                  var subop1 =
+                      getContractInfo("tokenContract")
+                          .nodePayment(10L)
+                          .saveToRegistry("tokenContract");
 
-						fileCreate("bytecode")
-								.path(OC_TOKEN_BYTECODE_PATH),
+                  var subop3 =
+                      contractCallLocal("tokenContract", DECIMALS_ABI)
+                          .saveResultTo("decimals")
+                          .payingWith("tokenIssuer");
 
-						contractCreate("tokenContract", TOKEN_ERC20_CONSTRUCTOR_ABI,
-								1_000_000L, "OpenCrowd Token", "OCT")
-								.gas(250_000L)
-								.payingWith("tokenIssuer")
-								.bytecode("bytecode")
-								.via("tokenCreateTxn").logged()
-				).when(
-						assertionsHold((spec, ctxLog) -> {
-							String issuerEthAddress = spec.registry().getAccountInfo("tokenIssuerAcctInfo")
-									.getContractAccountID();
-							String aliceEthAddress = spec.registry().getAccountInfo("AliceAcctInfo")
-									.getContractAccountID();
-							String bobEthAddress = spec.registry().getAccountInfo("BobAcctInfo")
-									.getContractAccountID();
-							String carolEthAddress = spec.registry().getAccountInfo("CarolAcctInfo")
-									.getContractAccountID();
-							String daveEthAddress = spec.registry().getAccountInfo("DaveAcctInfo")
-									.getContractAccountID();
+                  // Note: This contract call will cause a INSUFFICIENT_TX_FEE error, not sure why.
+                  var subop4 =
+                      contractCallLocal("tokenContract", SYMBOL_ABI)
+                          .saveResultTo("token_symbol")
+                          .payingWith("tokenIssuer")
+                          .hasAnswerOnlyPrecheckFrom(OK, INSUFFICIENT_TX_FEE);
 
-							var subop1 = getContractInfo("tokenContract")
-									.nodePayment(10L)
-									.saveToRegistry("tokenContract");
+                  var subop5 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("issuerTokenBalance");
 
-							var subop3 = contractCallLocal("tokenContract", DECIMALS_ABI)
-									.saveResultTo("decimals")
-									.payingWith("tokenIssuer");
+                  CustomSpecAssert.allRunFor(spec, subop1, subop3, subop4, subop5);
 
-							// Note: This contract call will cause a INSUFFICIENT_TX_FEE error, not sure why.
-							var subop4 = contractCallLocal("tokenContract", SYMBOL_ABI)
-									.saveResultTo("token_symbol")
-									.payingWith("tokenIssuer")
-									.hasAnswerOnlyPrecheckFrom(OK, INSUFFICIENT_TX_FEE);
+                  CallTransaction.Function funcSymbol =
+                      CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
 
-							var subop5 = contractCallLocal("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
-									.gas(250_000L)
-									.saveResultTo("issuerTokenBalance");
+                  String symbol = (String) getValueFromRegistry(spec, "token_symbol", funcSymbol);
 
-							CustomSpecAssert.allRunFor(spec, subop1, subop3, subop4, subop5);
+                  ctxLog.info("symbol: [{}]", symbol);
+                  Assertions.assertEquals(
+                      "",
+                      symbol,
+                      "TokenIssuer's symbol should be fixed value"); // should be "OCT" as expected
 
-							CallTransaction.Function funcSymbol =
-									CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
+                  CallTransaction.Function funcDecimals =
+                      CallTransaction.Function.fromJsonInterface(DECIMALS_ABI);
 
-							String symbol = (String) getValueFromRegistry(spec, "token_symbol", funcSymbol);
+                  // long decimals = getLongValueFromRegistry(spec, "decimals", function);
+                  BigInteger val = getValueFromRegistry(spec, "decimals", funcDecimals);
+                  long decimals = val.longValue();
 
-							ctxLog.info("symbol: [{}]", symbol);
-							Assertions.assertEquals(
-									"", symbol,
-									"TokenIssuer's symbol should be fixed value"); // should be "OCT" as expected
+                  ctxLog.info("decimals {}", decimals);
+                  Assertions.assertEquals(
+                      3, decimals, "TokenIssuer's decimals should be fixed value");
 
-							CallTransaction.Function funcDecimals = CallTransaction.Function.fromJsonInterface(
-									DECIMALS_ABI);
+                  long tokenMultiplier = (long) Math.pow(10, decimals);
 
-							//long decimals = getLongValueFromRegistry(spec, "decimals", function);
-							BigInteger val = getValueFromRegistry(spec, "decimals", funcDecimals);
-							long decimals = val.longValue();
+                  CallTransaction.Function function =
+                      CallTransaction.Function.fromJsonInterface(BALANCE_OF_ABI);
 
-							ctxLog.info("decimals {}", decimals);
-							Assertions.assertEquals(
-									3, decimals,
-									"TokenIssuer's decimals should be fixed value");
+                  long issuerBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance", function))
+                          .longValue();
 
-							long tokenMultiplier = (long) Math.pow(10, decimals);
+                  ctxLog.info("initial balance of Issuer {}", issuerBalance / tokenMultiplier);
+                  Assertions.assertEquals(
+                      1_000_000,
+                      issuerBalance / tokenMultiplier,
+                      "TokenIssuer's initial token balance should be 1_000_000");
 
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
-									BALANCE_OF_ABI);
+                  //  Do token transfers
+                  var subop6 =
+                      contractCall(
+                              "tokenContract",
+                              TRANSFER_ABI,
+                              aliceEthAddress,
+                              1000 * tokenMultiplier)
+                          .gas(250_000L)
+                          .payingWith("tokenIssuer");
 
-							long issuerBalance = ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance",
-									function)).longValue();
+                  var subop7 =
+                      contractCall(
+                              "tokenContract", TRANSFER_ABI, bobEthAddress, 2000 * tokenMultiplier)
+                          .gas(250_000L)
+                          .payingWith("tokenIssuer");
 
-							ctxLog.info("initial balance of Issuer {}", issuerBalance / tokenMultiplier);
-							Assertions.assertEquals(
-									1_000_000, issuerBalance / tokenMultiplier,
-									"TokenIssuer's initial token balance should be 1_000_000");
+                  var subop8 =
+                      contractCall(
+                              "tokenContract", TRANSFER_ABI, carolEthAddress, 500 * tokenMultiplier)
+                          .gas(250_000L)
+                          .payingWith("Bob");
 
-							//  Do token transfers
-							var subop6 = contractCall("tokenContract", TRANSFER_ABI,
-									aliceEthAddress, 1000 * tokenMultiplier)
-									.gas(250_000L)
-									.payingWith("tokenIssuer");
+                  var subop9 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("aliceTokenBalance");
 
-							var subop7 = contractCall("tokenContract", TRANSFER_ABI,
-									bobEthAddress, 2000 * tokenMultiplier)
-									.gas(250_000L)
-									.payingWith("tokenIssuer");
+                  var subop10 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, carolEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("carolTokenBalance");
 
-							var subop8 = contractCall("tokenContract", TRANSFER_ABI,
-									carolEthAddress, 500 * tokenMultiplier)
-									.gas(250_000L)
-									.payingWith("Bob");
+                  var subop11 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, bobEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("bobTokenBalance");
 
-							var subop9 = contractCallLocal("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
-									.gas(250_000L)
-									.saveResultTo("aliceTokenBalance");
+                  CustomSpecAssert.allRunFor(
+                      spec, subop6, subop7, subop8, subop9, subop10, subop11);
 
-							var subop10 = contractCallLocal("tokenContract", BALANCE_OF_ABI, carolEthAddress)
-									.gas(250_000L)
-									.saveResultTo("carolTokenBalance");
+                  long aliceBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance", function))
+                          .longValue();
+                  long bobBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance", function))
+                          .longValue();
+                  long carolBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance", function))
+                          .longValue();
 
-							var subop11 = contractCallLocal("tokenContract", BALANCE_OF_ABI, bobEthAddress)
-									.gas(250_000L)
-									.saveResultTo("bobTokenBalance");
+                  ctxLog.info("aliceBalance  {}", aliceBalance / tokenMultiplier);
+                  ctxLog.info("bobBalance  {}", bobBalance / tokenMultiplier);
+                  ctxLog.info("carolBalance  {}", carolBalance / tokenMultiplier);
 
-							CustomSpecAssert.allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
+                  Assertions.assertEquals(
+                      1000,
+                      aliceBalance / tokenMultiplier,
+                      "Alice's token balance should be 1_000");
 
-							long aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
-									function)).longValue();
-							long bobBalance = ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance",
-									function)).longValue();
-							long carolBalance = ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance",
-									function)).longValue();
+                  var subop12 =
+                      contractCall(
+                              "tokenContract", APPROVE_ABI, daveEthAddress, 200 * tokenMultiplier)
+                          .gas(250_000L)
+                          .payingWith("Alice");
 
-							ctxLog.info("aliceBalance  {}", aliceBalance / tokenMultiplier);
-							ctxLog.info("bobBalance  {}", bobBalance / tokenMultiplier);
-							ctxLog.info("carolBalance  {}", carolBalance / tokenMultiplier);
+                  var subop13 =
+                      contractCall(
+                              "tokenContract",
+                              TRANSFER_FROM_ABI,
+                              aliceEthAddress,
+                              bobEthAddress,
+                              100 * tokenMultiplier)
+                          .gas(250_000L)
+                          .payingWith("Dave");
 
-							Assertions.assertEquals(
-									1000, aliceBalance / tokenMultiplier,
-									"Alice's token balance should be 1_000");
+                  var subop14 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("aliceTokenBalance");
 
-							var subop12 = contractCall("tokenContract", APPROVE_ABI,
-									daveEthAddress, 200 * tokenMultiplier)
-									.gas(250_000L)
-									.payingWith("Alice");
+                  var subop15 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, bobEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("bobTokenBalance");
 
-							var subop13 = contractCall("tokenContract", TRANSFER_FROM_ABI,
-									aliceEthAddress, bobEthAddress, 100 * tokenMultiplier)
-									.gas(250_000L)
-									.payingWith("Dave");
+                  var subop16 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, carolEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("carolTokenBalance");
 
-							var subop14 = contractCallLocal("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
-									.gas(250_000L)
-									.saveResultTo("aliceTokenBalance");
+                  var subop17 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, daveEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("daveTokenBalance");
 
-							var subop15 = contractCallLocal("tokenContract", BALANCE_OF_ABI, bobEthAddress)
-									.gas(250_000L)
-									.saveResultTo("bobTokenBalance");
+                  var subop18 =
+                      contractCallLocal("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
+                          .gas(250_000L)
+                          .saveResultTo("issuerTokenBalance");
 
-							var subop16 = contractCallLocal("tokenContract", BALANCE_OF_ABI, carolEthAddress)
-									.gas(250_000L)
-									.saveResultTo("carolTokenBalance");
+                  CustomSpecAssert.allRunFor(
+                      spec, subop12, subop13, subop14, subop15, subop16, subop17, subop18);
 
-							var subop17 = contractCallLocal("tokenContract", BALANCE_OF_ABI, daveEthAddress)
-									.gas(250_000L)
-									.saveResultTo("daveTokenBalance");
+                  long daveBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance", function))
+                          .longValue();
+                  aliceBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance", function))
+                          .longValue();
+                  bobBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance", function))
+                          .longValue();
+                  carolBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance", function))
+                          .longValue();
+                  issuerBalance =
+                      ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance", function))
+                          .longValue();
 
-							var subop18 = contractCallLocal("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
-									.gas(250_000L)
-									.saveResultTo("issuerTokenBalance");
+                  ctxLog.info("aliceBalance at end {}", aliceBalance / tokenMultiplier);
+                  ctxLog.info("bobBalance at end {}", bobBalance / tokenMultiplier);
+                  ctxLog.info("carolBalance at end {}", carolBalance / tokenMultiplier);
+                  ctxLog.info("daveBalance at end {}", daveBalance / tokenMultiplier);
+                  ctxLog.info("issuerBalance at end {}", issuerBalance / tokenMultiplier);
 
-							CustomSpecAssert.allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
-									subop18);
+                  Assertions.assertEquals(
+                      997000,
+                      issuerBalance / tokenMultiplier,
+                      "TokenIssuer's final balance should be 997000");
 
-							long daveBalance = ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance",
-									function)).longValue();
-							aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
-									function)).longValue();
-							bobBalance = ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance",
-									function)).longValue();
-							carolBalance = ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance",
-									function)).longValue();
-							issuerBalance = ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance",
-									function)).longValue();
+                  Assertions.assertEquals(
+                      900, aliceBalance / tokenMultiplier, "Alice's final balance should be 900");
+                  Assertions.assertEquals(
+                      1600, bobBalance / tokenMultiplier, "Bob's final balance should be 1600");
+                  Assertions.assertEquals(
+                      500, carolBalance / tokenMultiplier, "Carol's final balance should be 500");
+                  Assertions.assertEquals(
+                      0, daveBalance / tokenMultiplier, "Dave's final balance should be 0");
+                }))
+        .then(
+            assertionsHold(
+                (spec, ctxLog) -> {
+                  var finalOp =
+                      getContractRecords("tokenContract")
+                          .saveRecordNumToRegistry("tokenContractRecordNum")
+                          .hasCostAnswerPrecheck(OK);
 
-							ctxLog.info("aliceBalance at end {}", aliceBalance / tokenMultiplier);
-							ctxLog.info("bobBalance at end {}", bobBalance / tokenMultiplier);
-							ctxLog.info("carolBalance at end {}", carolBalance / tokenMultiplier);
-							ctxLog.info("daveBalance at end {}", daveBalance / tokenMultiplier);
-							ctxLog.info("issuerBalance at end {}", issuerBalance / tokenMultiplier);
+                  CustomSpecAssert.allRunFor(spec, finalOp);
 
-							Assertions.assertEquals(
-									997000, issuerBalance / tokenMultiplier,
-									"TokenIssuer's final balance should be 997000");
+                  int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
+                  ctxLog.info("Finished {}", totalRecordNum);
 
-							Assertions.assertEquals(
-									900, aliceBalance / tokenMultiplier,
-									"Alice's final balance should be 900");
-							Assertions.assertEquals(
-									1600, bobBalance / tokenMultiplier,
-									"Bob's final balance should be 1600");
-							Assertions.assertEquals(
-									500, carolBalance / tokenMultiplier,
-									"Carol's final balance should be 500");
-							Assertions.assertEquals(
-									0, daveBalance / tokenMultiplier,
-									"Dave's final balance should be 0");
-						})
-				).then(
-						assertionsHold((spec, ctxLog) -> {
-							var finalOp = getContractRecords("tokenContract")
-									.saveRecordNumToRegistry("tokenContractRecordNum")
-									.hasCostAnswerPrecheck(OK);
+                  Assertions.assertEquals(
+                      0, totalRecordNum, "Contracts should no longer receive records!");
+                }));
+  }
 
-							CustomSpecAssert.allRunFor(spec, finalOp);
-
-							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
-							ctxLog.info("Finished {}", totalRecordNum);
-
-							Assertions.assertEquals(
-									0,
-									totalRecordNum,
-									"Contracts should no longer receive records!");
-						})
-				);
-	}
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

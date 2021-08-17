@@ -30,78 +30,75 @@ import java.util.Objects;
  * Encapsulates the changes of {@link UniqueToken} ownership within the context of one Transaction
  */
 public class OwnershipTracker {
-	private Map<Id, List<Change>> changes = new HashMap<>();
+  private Map<Id, List<Change>> changes = new HashMap<>();
 
-	public void add(final Id token, final Change change) {
-		if (changes.containsKey(token)) {
-			changes.get(token).add(change);
-		} else {
-			var changeList = new ArrayList<Change>();
-			changeList.add(change);
-			changes.put(token, changeList);
-		}
-	}
+  public void add(final Id token, final Change change) {
+    if (changes.containsKey(token)) {
+      changes.get(token).add(change);
+    } else {
+      var changeList = new ArrayList<Change>();
+      changeList.add(change);
+      changes.put(token, changeList);
+    }
+  }
 
-	public Map<Id, List<Change>> getChanges() {
-		return changes;
-	}
+  public Map<Id, List<Change>> getChanges() {
+    return changes;
+  }
 
-	public boolean isEmpty() {
-		return changes.isEmpty();
-	}
+  public boolean isEmpty() {
+    return changes.isEmpty();
+  }
 
-	public static Change forMinting(final Id treasury, final long serialNumber) {
-		return new Change(Id.DEFAULT, treasury, serialNumber);
-	}
+  public static Change forMinting(final Id treasury, final long serialNumber) {
+    return new Change(Id.DEFAULT, treasury, serialNumber);
+  }
 
-	public static Change forRemoving(final Id accountId, final long serialNumber) {
-		return new Change(accountId, Id.DEFAULT, serialNumber);
-	}
+  public static Change forRemoving(final Id accountId, final long serialNumber) {
+    return new Change(accountId, Id.DEFAULT, serialNumber);
+  }
 
-	/**
-	 * Encapsulates one set of Change of a given {@link UniqueToken}
-	 */
-	public static class Change {
-		private Id previousOwner;
-		private Id newOwner;
-		private long serialNumber;
+  /** Encapsulates one set of Change of a given {@link UniqueToken} */
+  public static class Change {
+    private Id previousOwner;
+    private Id newOwner;
+    private long serialNumber;
 
-		public Change(final Id previousOwner, final Id newOwner, final long serialNumber) {
-			this.previousOwner = previousOwner;
-			this.newOwner = newOwner;
-			this.serialNumber = serialNumber;
-		}
+    public Change(final Id previousOwner, final Id newOwner, final long serialNumber) {
+      this.previousOwner = previousOwner;
+      this.newOwner = newOwner;
+      this.serialNumber = serialNumber;
+    }
 
-		@Override
-		public boolean equals(final Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || Change.class != o.getClass()) {
-				return false;
-			}
-			final var that = (Change) o;
-			return this.previousOwner == that.previousOwner
-					&& this.newOwner == that.newOwner
-					&& this.serialNumber == that.serialNumber;
-		}
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || Change.class != o.getClass()) {
+        return false;
+      }
+      final var that = (Change) o;
+      return this.previousOwner == that.previousOwner
+          && this.newOwner == that.newOwner
+          && this.serialNumber == that.serialNumber;
+    }
 
-		@Override
-		public int hashCode() {
-			return Objects.hash(previousOwner, newOwner, serialNumber);
-		}
+    @Override
+    public int hashCode() {
+      return Objects.hash(previousOwner, newOwner, serialNumber);
+    }
 
+    public Id getPreviousOwner() {
+      return previousOwner;
+    }
 
-		public Id getPreviousOwner() {
-			return previousOwner;
-		}
+    public Id getNewOwner() {
+      return newOwner;
+    }
 
-		public Id getNewOwner() {
-			return newOwner;
-		}
-
-		public long getSerialNumber() {
-			return serialNumber;
-		}
-	}
+    public long getSerialNumber() {
+      return serialNumber;
+    }
+  }
 }

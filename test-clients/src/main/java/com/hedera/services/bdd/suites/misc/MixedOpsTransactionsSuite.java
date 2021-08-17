@@ -20,17 +20,6 @@ package com.hedera.services.bdd.suites.misc;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.perf.PerfUtilOps;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -45,89 +34,78 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.perf.PerfUtilOps;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class MixedOpsTransactionsSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(MixedOpsTransactionsSuite.class);
+  private static final Logger log = LogManager.getLogger(MixedOpsTransactionsSuite.class);
 
-	public static void main(String... args) {
-		new MixedOpsTransactionsSuite().runSuiteSync();
-	}
+  public static void main(String... args) {
+    new MixedOpsTransactionsSuite().runSuiteSync();
+  }
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				new HapiApiSpec[] {
-						createStateWithMixedOps()
-//						triggerSavedScheduleTxn(),
-				}
-		);
-	}
+  @Override
+  protected List<HapiApiSpec> getSpecsInSuite() {
+    return List.of(
+        new HapiApiSpec[] {createStateWithMixedOps()
+          //						triggerSavedScheduleTxn(),
+        });
+  }
 
-	private HapiApiSpec triggerSavedScheduleTxn() {
-		return HapiApiSpec.defaultHapiSpec("triggerSavedScheduleTxn")
-				.given(
-						getAccountBalance("0.0.1002").hasTinyBars(0L)
-				).when(
-						scheduleSign("0.0.1016")
-								.logged()
-								.alsoSigningWith(GENESIS)
-				).then(
-						getAccountBalance("0.0.1002").hasTinyBars(1L)
-				);
-	}
-	// Used to generate state with mixed operations
-	private HapiApiSpec createStateWithMixedOps() {
-		long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-		int numScheduledTxns = 10;
-		return HapiApiSpec.defaultHapiSpec("createStateWithMixedOps")
-				.given(
-						PerfUtilOps.scheduleOpsEnablement(),
-						tokenOpsEnablement(),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.schedule.txExpiryTimeSecs", "" + ONE_YEAR_IN_SECS
-								)),
-						sleepFor(10000),
-						cryptoCreate("sender")
-								.advertisingCreation()
-								.balance(ONE_HBAR),
-						cryptoCreate("receiver")
-								.key(GENESIS)
-								.advertisingCreation()
-								.balance(0L).receiverSigRequired(true),
-						cryptoCreate("tokenTreasury")
-								.key(GENESIS)
-								.advertisingCreation()
-								.balance(ONE_HBAR),
-						tokenCreate("wellKnown")
-								.advertisingCreation()
-								.initialSupply(Long.MAX_VALUE),
-						cryptoCreate("tokenReceiver")
-								.advertisingCreation(),
-						tokenAssociate("tokenReceiver", "wellKnown"),
-						createTopic("wellKnownTopic")
-								.advertisingCreation()
-				).when(
-						IntStream.range(0, numScheduledTxns).mapToObj(i ->
-								scheduleCreate("schedule" + i,
-										cryptoTransfer(tinyBarsFromTo( "sender", "receiver", 1))
-								)
-										.advertisingCreation()
-										.fee(ONE_HUNDRED_HBARS)
-										.signedBy(DEFAULT_PAYER)
-										.alsoSigningWith("sender")
-										.withEntityMemo("This is the " + i + "th scheduled txn.")
-						).toArray(HapiSpecOperation[]::new)
-				).then(
-						freeze().payingWith(GENESIS)
-								.startingIn(60).seconds()
-								.andLasting(1).minutes()
-				);
-	}
+  private HapiApiSpec triggerSavedScheduleTxn() {
+    return HapiApiSpec.defaultHapiSpec("triggerSavedScheduleTxn")
+        .given(getAccountBalance("0.0.1002").hasTinyBars(0L))
+        .when(scheduleSign("0.0.1016").logged().alsoSigningWith(GENESIS))
+        .then(getAccountBalance("0.0.1002").hasTinyBars(1L));
+  }
+  // Used to generate state with mixed operations
+  private HapiApiSpec createStateWithMixedOps() {
+    long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
+    int numScheduledTxns = 10;
+    return HapiApiSpec.defaultHapiSpec("createStateWithMixedOps")
+        .given(
+            PerfUtilOps.scheduleOpsEnablement(),
+            tokenOpsEnablement(),
+            fileUpdate(APP_PROPERTIES)
+                .payingWith(GENESIS)
+                .overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "" + ONE_YEAR_IN_SECS)),
+            sleepFor(10000),
+            cryptoCreate("sender").advertisingCreation().balance(ONE_HBAR),
+            cryptoCreate("receiver")
+                .key(GENESIS)
+                .advertisingCreation()
+                .balance(0L)
+                .receiverSigRequired(true),
+            cryptoCreate("tokenTreasury").key(GENESIS).advertisingCreation().balance(ONE_HBAR),
+            tokenCreate("wellKnown").advertisingCreation().initialSupply(Long.MAX_VALUE),
+            cryptoCreate("tokenReceiver").advertisingCreation(),
+            tokenAssociate("tokenReceiver", "wellKnown"),
+            createTopic("wellKnownTopic").advertisingCreation())
+        .when(
+            IntStream.range(0, numScheduledTxns)
+                .mapToObj(
+                    i ->
+                        scheduleCreate(
+                                "schedule" + i,
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                            .advertisingCreation()
+                            .fee(ONE_HUNDRED_HBARS)
+                            .signedBy(DEFAULT_PAYER)
+                            .alsoSigningWith("sender")
+                            .withEntityMemo("This is the " + i + "th scheduled txn."))
+                .toArray(HapiSpecOperation[]::new))
+        .then(freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes());
+  }
 
-
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+  @Override
+  protected Logger getResultsLogger() {
+    return log;
+  }
 }

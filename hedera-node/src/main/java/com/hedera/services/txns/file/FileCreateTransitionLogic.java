@@ -20,6 +20,16 @@ package com.hedera.services.txns.file;
  * ‍
  */
 
+import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
+import static com.hedera.services.txns.file.FileUpdateTransitionLogic.wrapped;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
@@ -31,111 +41,99 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
-
-import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
-import static com.hedera.services.txns.file.FileUpdateTransitionLogic.wrapped;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 public class FileCreateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
+  private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
 
-	private final HederaFs hfs;
-	private final OptionValidator validator;
-	private final TransactionContext txnCtx;
+  private final HederaFs hfs;
+  private final OptionValidator validator;
+  private final TransactionContext txnCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+  private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	public FileCreateTransitionLogic(
-			HederaFs hfs,
-			OptionValidator validator,
-			TransactionContext txnCtx
-	) {
-		this.hfs = hfs;
-		this.validator = validator;
-		this.txnCtx = txnCtx;
-	}
+  public FileCreateTransitionLogic(
+      HederaFs hfs, OptionValidator validator, TransactionContext txnCtx) {
+    this.hfs = hfs;
+    this.validator = validator;
+    this.txnCtx = txnCtx;
+  }
 
-	@Override
-	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getFileCreate();
+  @Override
+  public void doStateTransition() {
+    var op = txnCtx.accessor().getTxn().getFileCreate();
 
-		try {
-			var validity = assessedValidity(op);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
+    try {
+      var validity = assessedValidity(op);
+      if (validity != OK) {
+        txnCtx.setStatus(validity);
+        return;
+      }
 
-			var attr = asAttr(op);
-			var sponsor = txnCtx.activePayer();
-			var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
+      var attr = asAttr(op);
+      var sponsor = txnCtx.activePayer();
+      var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 
-			txnCtx.setCreated(created);
-			txnCtx.setStatus(SUCCESS);
-		} catch (IllegalArgumentException iae) {
-			mapToStatus(iae, txnCtx);
-		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+      txnCtx.setCreated(created);
+      txnCtx.setStatus(SUCCESS);
+    } catch (IllegalArgumentException iae) {
+      mapToStatus(iae, txnCtx);
+    } catch (Exception unknown) {
+      log.warn(
+          "Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
+      txnCtx.setStatus(FAIL_INVALID);
+    }
+  }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasFileCreate;
-	}
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return TransactionBody::hasFileCreate;
+  }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_CHECK;
+  }
 
-	private ResponseCodeEnum assessedValidity(FileCreateTransactionBody op) {
-		if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
-			return INVALID_FILE_WACL;
-		}
+  private ResponseCodeEnum assessedValidity(FileCreateTransactionBody op) {
+    if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
+      return INVALID_FILE_WACL;
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 
-	private HFileMeta asAttr(FileCreateTransactionBody op) {
-		JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
+  private HFileMeta asAttr(FileCreateTransactionBody op) {
+    JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
 
-		return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
-	}
+    return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
+  }
 
-	private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
-		var op = fileCreateTxn.getFileCreate();
+  private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
+    var op = fileCreateTxn.getFileCreate();
 
-		var memoValidity = validator.memoCheck(op.getMemo());
-		if (memoValidity != OK) {
-			return memoValidity;
-		}
+    var memoValidity = validator.memoCheck(op.getMemo());
+    if (memoValidity != OK) {
+      return memoValidity;
+    }
 
-		if (!op.hasExpirationTime()) {
-			return INVALID_EXPIRATION_TIME;
-		}
+    if (!op.hasExpirationTime()) {
+      return INVALID_EXPIRATION_TIME;
+    }
 
-		var effectiveDuration = Duration.newBuilder()
-				.setSeconds(
-						op.getExpirationTime().getSeconds() -
-								fileCreateTxn.getTransactionID().getTransactionValidStart().getSeconds())
-				.build();
-		if (!validator.isValidAutoRenewPeriod(effectiveDuration)) {
-			return AUTORENEW_DURATION_NOT_IN_RANGE;
-		}
+    var effectiveDuration =
+        Duration.newBuilder()
+            .setSeconds(
+                op.getExpirationTime().getSeconds()
+                    - fileCreateTxn.getTransactionID().getTransactionValidStart().getSeconds())
+            .build();
+    if (!validator.isValidAutoRenewPeriod(effectiveDuration)) {
+      return AUTORENEW_DURATION_NOT_IN_RANGE;
+    }
 
-		return OK;
-	}
+    return OK;
+  }
 }

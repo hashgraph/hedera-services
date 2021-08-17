@@ -26,33 +26,32 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenMintFactory extends SignedTxnFactory<TokenMintFactory> {
-	private TokenMintFactory() {}
+  private TokenMintFactory() {}
 
-	private TokenID id;
+  private TokenID id;
 
-	public static TokenMintFactory newSignedTokenMint() {
-		return new TokenMintFactory();
-	}
+  public static TokenMintFactory newSignedTokenMint() {
+    return new TokenMintFactory();
+  }
 
-	public TokenMintFactory minting(TokenID id) {
-		this.id = id;
-		return this;
-	}
+  public TokenMintFactory minting(TokenID id) {
+    this.id = id;
+    return this;
+  }
 
-	@Override
-	protected TokenMintFactory self() {
-		return this;
-	}
+  @Override
+  protected TokenMintFactory self() {
+    return this;
+  }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+  @Override
+  protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    return 0;
+  }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenMintTransactionBody.newBuilder()
-				.setToken(id);
-		txn.setTokenMint(op);
-	}
+  @Override
+  protected void customizeTxn(TransactionBody.Builder txn) {
+    var op = TokenMintTransactionBody.newBuilder().setToken(id);
+    txn.setTokenMint(op);
+  }
 }

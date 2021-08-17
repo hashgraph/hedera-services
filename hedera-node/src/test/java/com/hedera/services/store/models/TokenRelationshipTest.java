@@ -20,14 +20,6 @@ package com.hedera.services.store.models;
  * ‍
  */
 
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -36,174 +28,182 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class TokenRelationshipTest {
-	private final Id tokenId = new Id(0, 0, 1234);
-	private final Id accountId = new Id(1, 0, 1234);
-	private final long balance = 1_234L;
-	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
-	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
+  private final Id tokenId = new Id(0, 0, 1234);
+  private final Id accountId = new Id(1, 0, 1234);
+  private final long balance = 1_234L;
+  private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
+  private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 
-	private Token token;
-	private Account account;
+  private Token token;
+  private Account account;
 
-	private TokenRelationship subject;
+  private TokenRelationship subject;
 
-	@BeforeEach
-	void setUp() {
-		token = new Token(tokenId);
-		account = new Account(accountId);
+  @BeforeEach
+  void setUp() {
+    token = new Token(tokenId);
+    account = new Account(accountId);
 
-		subject = new TokenRelationship(token, account);
-		subject.initBalance(balance);
-	}
+    subject = new TokenRelationship(token, account);
+    subject.initBalance(balance);
+  }
 
-	@Test
-	void toStringAsExpected() {
-		// given:
-		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id{shard=1, realm=0, num=1234}," +
-				" expiry=0, balance=0, deleted=false, tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
-				"type=null, deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
-				"freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, balance=1234, " +
-				"balanceChange=0, frozen=false, kycGranted=false}";
+  @Test
+  void toStringAsExpected() {
+    // given:
+    final var desired =
+        "TokenRelationship{notYetPersisted=true, account=Account{id=Id{shard=1, realm=0, num=1234},"
+            + " expiry=0, balance=0, deleted=false, tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, "
+            + "type=null, deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, "
+            + "freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, balance=1234, "
+            + "balanceChange=0, frozen=false, kycGranted=false}";
 
-		// expect:
-		assertEquals(desired, subject.toString());
-	}
+    // expect:
+    assertEquals(desired, subject.toString());
+  }
 
-	@Test
-	void cannotChangeBalanceIfFrozenForToken() {
-		// given:
-		token.setFreezeKey(freezeKey);
-		subject.setFrozen(true);
+  @Test
+  void cannotChangeBalanceIfFrozenForToken() {
+    // given:
+    token.setFreezeKey(freezeKey);
+    subject.setFrozen(true);
 
-		assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_FROZEN_FOR_TOKEN);
-	}
+    assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_FROZEN_FOR_TOKEN);
+  }
 
-	@Test
-	void canChangeBalanceIfUnfrozenForToken() {
-		// given:
-		token.setFreezeKey(freezeKey);
-		subject.setFrozen(false);
+  @Test
+  void canChangeBalanceIfUnfrozenForToken() {
+    // given:
+    token.setFreezeKey(freezeKey);
+    subject.setFrozen(false);
 
-		// when:
-		subject.setBalance(balance + 1);
+    // when:
+    subject.setBalance(balance + 1);
 
-		// then:
-		assertEquals(1, subject.getBalanceChange());
-	}
+    // then:
+    assertEquals(1, subject.getBalanceChange());
+  }
 
-	@Test
-	void canChangeBalanceIfNoFreezeKey() {
-		// given:
-		subject.setFrozen(true);
+  @Test
+  void canChangeBalanceIfNoFreezeKey() {
+    // given:
+    subject.setFrozen(true);
 
-		// when:
-		subject.setBalance(balance + 1);
+    // when:
+    subject.setBalance(balance + 1);
 
-		// then:
-		assertEquals(1, subject.getBalanceChange());
-	}
+    // then:
+    assertEquals(1, subject.getBalanceChange());
+  }
 
-	@Test
-	void cannotChangeBalanceIfKycNotGranted() {
-		// given:
-		token.setKycKey(kycKey);
-		subject.setKycGranted(false);
+  @Test
+  void cannotChangeBalanceIfKycNotGranted() {
+    // given:
+    token.setKycKey(kycKey);
+    subject.setKycGranted(false);
 
-		// verify
-		assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
-	}
+    // verify
+    assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+  }
 
-	@Test
-	void canChangeBalanceIfKycGranted() {
-		// given:
-		token.setKycKey(kycKey);
-		subject.setKycGranted(true);
+  @Test
+  void canChangeBalanceIfKycGranted() {
+    // given:
+    token.setKycKey(kycKey);
+    subject.setKycGranted(true);
 
-		// when:
-		subject.setBalance(balance + 1);
+    // when:
+    subject.setBalance(balance + 1);
 
-		// then:
-		assertEquals(1, subject.getBalanceChange());
-	}
+    // then:
+    assertEquals(1, subject.getBalanceChange());
+  }
 
-	@Test
-	void canChangeBalanceIfNoKycKey() {
-		// given:
-		subject.setKycGranted(false);
+  @Test
+  void canChangeBalanceIfNoKycKey() {
+    // given:
+    subject.setKycGranted(false);
 
-		// when:
-		subject.setBalance(balance + 1);
+    // when:
+    subject.setBalance(balance + 1);
 
-		// then:
-		assertEquals(1, subject.getBalanceChange());
-	}
+    // then:
+    assertEquals(1, subject.getBalanceChange());
+  }
 
-	@Test
-	void updateFreezeWorksIfFeezeKeyIsPresent() {
-		// given:
-		subject.setFrozen(false);
-		token.setFreezeKey(freezeKey);
+  @Test
+  void updateFreezeWorksIfFeezeKeyIsPresent() {
+    // given:
+    subject.setFrozen(false);
+    token.setFreezeKey(freezeKey);
 
-		// when:
-		subject.changeFrozenState(true);
+    // when:
+    subject.changeFrozenState(true);
 
-		// then:
-		assertTrue(subject.isFrozen());
-	}
+    // then:
+    assertTrue(subject.isFrozen());
+  }
 
-	@Test
-	void updateFreezeFailsAsExpectedIfFreezeKeyIsNotPresent() {
-		// given:
-		subject.setFrozen(false);
-		token.setFreezeKey(null);
+  @Test
+  void updateFreezeFailsAsExpectedIfFreezeKeyIsNotPresent() {
+    // given:
+    subject.setFrozen(false);
+    token.setFreezeKey(null);
 
-		// verify
-		assertFailsWith(() -> subject.changeFrozenState(true), TOKEN_HAS_NO_FREEZE_KEY);
-	}
+    // verify
+    assertFailsWith(() -> subject.changeFrozenState(true), TOKEN_HAS_NO_FREEZE_KEY);
+  }
 
-	@Test
-	void givesCorrectRepresentation() {
-		subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
-		assertTrue(subject.hasUniqueRepresentation());
+  @Test
+  void givesCorrectRepresentation() {
+    subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
+    assertTrue(subject.hasUniqueRepresentation());
 
+    subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
+    assertTrue(subject.hasCommonRepresentation());
+  }
 
-		subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
-		assertTrue(subject.hasCommonRepresentation());
-	}
+  @Test
+  void testHashCode() {
+    var rel = new TokenRelationship(token, account);
+    rel.initBalance(balance);
+    assertEquals(rel.hashCode(), subject.hashCode());
+  }
 
-	@Test
-	void testHashCode() {
-		var rel = new TokenRelationship(token, account);
-		rel.initBalance(balance);
-		assertEquals(rel.hashCode(), subject.hashCode());
-	}
+  @Test
+  void updateKycWorksIfKycKeyIsPresent() {
+    // given:
+    subject.setKycGranted(false);
+    token.setKycKey(kycKey);
 
-	@Test
-	void updateKycWorksIfKycKeyIsPresent() {
-		// given:
-		subject.setKycGranted(false);
-		token.setKycKey(kycKey);
+    // when:
+    subject.changeKycState(true);
 
-		// when:
-		subject.changeKycState(true);
+    // then:
+    assertTrue(subject.isKycGranted());
+  }
 
-		// then:
-		assertTrue(subject.isKycGranted());
-	}
+  @Test
+  void updateKycFailsAsExpectedIfFreezeKeyIsNotPresent() {
+    // given:
+    subject.setKycGranted(false);
+    token.setKycKey(null);
 
-	@Test
-	void updateKycFailsAsExpectedIfFreezeKeyIsNotPresent() {
-		// given:
-		subject.setKycGranted(false);
-		token.setKycKey(null);
+    // verify
+    assertFailsWith(() -> subject.changeKycState(true), TOKEN_HAS_NO_KYC_KEY);
+  }
 
-		// verify
-		assertFailsWith(() -> subject.changeKycState(true), TOKEN_HAS_NO_KYC_KEY);
-	}
-
-	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
-	}
+  private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+    var ex = assertThrows(InvalidTransactionException.class, something::run);
+    assertEquals(status, ex.getResponseCode());
+  }
 }

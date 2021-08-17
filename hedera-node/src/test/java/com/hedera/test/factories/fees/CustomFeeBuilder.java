@@ -29,69 +29,65 @@ import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public class CustomFeeBuilder {
-	private AccountID feeCollector;
+  private AccountID feeCollector;
 
-	public CustomFeeBuilder(final AccountID feeCollector) {
-		setFeeCollector(feeCollector);
-	}
+  public CustomFeeBuilder(final AccountID feeCollector) {
+    setFeeCollector(feeCollector);
+  }
 
-	public void setFeeCollector(final AccountID feeCollector) {
-		this.feeCollector = feeCollector;
-	}
+  public void setFeeCollector(final AccountID feeCollector) {
+    this.feeCollector = feeCollector;
+  }
 
-	private CustomFee.Builder builder() {
-		return CustomFee.newBuilder()
-				.setFeeCollectorAccountId(feeCollector);
-	}
+  private CustomFee.Builder builder() {
+    return CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector);
+  }
 
-	public CustomFee withOnlyFeeCollector() {
-		return builder().build();
-	}
+  public CustomFee withOnlyFeeCollector() {
+    return builder().build();
+  }
 
-	public CustomFee withRoyaltyFee(RoyaltyFee.Builder fee) {
-		return  builder().setRoyaltyFee(fee).build();
-	}
+  public CustomFee withRoyaltyFee(RoyaltyFee.Builder fee) {
+    return builder().setRoyaltyFee(fee).build();
+  }
 
-	public CustomFee withFixedFee(final FixedFee.Builder fee) {
-		return builder().setFixedFee(fee).build();
-	}
+  public CustomFee withFixedFee(final FixedFee.Builder fee) {
+    return builder().setFixedFee(fee).build();
+  }
 
-	public CustomFee withFractionalFee(final FractionalFee.Builder fee) {
-		return builder().setFractionalFee(fee).build();
-	}
+  public CustomFee withFractionalFee(final FractionalFee.Builder fee) {
+    return builder().setFractionalFee(fee).build();
+  }
 
-	public static FixedFee.Builder fixedHbar(final long units) {
-		return FixedFee.newBuilder()
-				.setAmount(units);
-	}
+  public static FixedFee.Builder fixedHbar(final long units) {
+    return FixedFee.newBuilder().setAmount(units);
+  }
 
-	public static FixedFee.Builder fixedHts(final TokenID denom, final long units) {
-		return fixedHbar(units).setDenominatingTokenId(denom);
-	}
+  public static FixedFee.Builder fixedHts(final TokenID denom, final long units) {
+    return fixedHbar(units).setDenominatingTokenId(denom);
+  }
 
-	public static RoyaltyFee.Builder royaltyNoFallback(long numerator, long denominator) {
-		return RoyaltyFee.newBuilder()
-				.setExchangeValueFraction(Fraction.newBuilder()
-						.setNumerator(numerator)
-						.setDenominator(denominator));
-	}
+  public static RoyaltyFee.Builder royaltyNoFallback(long numerator, long denominator) {
+    return RoyaltyFee.newBuilder()
+        .setExchangeValueFraction(
+            Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator));
+  }
 
-	public static RoyaltyFee.Builder royaltyWithFallback(long numerator, long denominator, FixedFee.Builder fallback) {
-		return RoyaltyFee.newBuilder()
-				.setExchangeValueFraction(Fraction.newBuilder()
-								.setNumerator(numerator)
-								.setDenominator(denominator))
-				.setFallbackFee(fallback);
-	}
+  public static RoyaltyFee.Builder royaltyWithFallback(
+      long numerator, long denominator, FixedFee.Builder fallback) {
+    return RoyaltyFee.newBuilder()
+        .setExchangeValueFraction(
+            Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator))
+        .setFallbackFee(fallback);
+  }
 
-	public static FixedFee.Builder fixedHts(final long units) {
-		return fixedHts(TokenID.getDefaultInstance(), units);
-	}
+  public static FixedFee.Builder fixedHts(final long units) {
+    return fixedHts(TokenID.getDefaultInstance(), units);
+  }
 
-	public static FractionalFee.Builder fractional(final long numerator, final long denominator) {
-		return FractionalFee.newBuilder()
-				.setFractionalAmount(Fraction.newBuilder()
-						.setNumerator(numerator)
-						.setDenominator(denominator));
-	}
+  public static FractionalFee.Builder fractional(final long numerator, final long denominator) {
+    return FractionalFee.newBuilder()
+        .setFractionalAmount(
+            Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator));
+  }
 }

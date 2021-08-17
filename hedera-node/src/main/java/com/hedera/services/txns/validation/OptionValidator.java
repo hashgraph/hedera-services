@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,78 +35,90 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
-
 import java.time.Instant;
 
 /**
- * Defines a type able to divine the validity of various options that can appear in HAPI gRPC transactions.
+ * Defines a type able to divine the validity of various options that can appear in HAPI gRPC
+ * transactions.
  *
  * @author Michael Tinker
  */
-
 public interface OptionValidator {
-	boolean hasGoodEncoding(Key key);
-	boolean isValidExpiry(Timestamp expiry);
-	boolean isThisNodeAccount(AccountID id);
-	boolean isValidTxnDuration(long duration);
-	boolean isAfterConsensusSecond(long now);
-	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
-	boolean isAcceptableTransfersLength(TransferList accountAmounts);
+  boolean hasGoodEncoding(Key key);
 
-	ResponseCodeEnum memoCheck(String cand);
-	ResponseCodeEnum rawMemoCheck(byte[] cand);
-	ResponseCodeEnum rawMemoCheck(byte[] cand, boolean hasZeroByte);
-	ResponseCodeEnum tokenNameCheck(String name);
-	ResponseCodeEnum tokenSymbolCheck(String symbol);
+  boolean isValidExpiry(Timestamp expiry);
 
-	boolean isPermissibleTotalNfts(long proposedTotal);
-	ResponseCodeEnum nftMetadataCheck(byte[] metadata);
-	ResponseCodeEnum maxBatchSizeMintCheck(int length);
-	ResponseCodeEnum maxBatchSizeWipeCheck(int length);
-	ResponseCodeEnum maxBatchSizeBurnCheck(int length);
-	ResponseCodeEnum maxNftTransfersLenCheck(int length);
-	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
+  boolean isThisNodeAccount(AccountID id);
 
-	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
+  boolean isValidTxnDuration(long duration);
 
-	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		return PureValidation.queryableAccountStatus(id, accounts);
-	}
+  boolean isAfterConsensusSecond(long now);
 
-	default ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
-		return PureValidation.queryableContractStatus(cid, contracts);
-	}
+  boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 
-	default ResponseCodeEnum queryableFileStatus(FileID fid, StateView view) {
-		return PureValidation.queryableFileStatus(fid, view);
-	}
+  boolean isAcceptableTransfersLength(TransferList accountAmounts);
 
-	default Instant asCoercedInstant(Timestamp when) {
-		return PureValidation.asCoercedInstant(when);
-	}
+  ResponseCodeEnum memoCheck(String cand);
 
-	default boolean isPlausibleAccount(AccountID id) {
-		return id.getAccountNum() > 0 &&
-				id.getRealmNum() >= 0 &&
-				id.getShardNum() >= 0;
-	}
+  ResponseCodeEnum rawMemoCheck(byte[] cand);
 
-	default boolean isPlausibleTxnFee(long amount) {
-		return amount >= 0;
-	}
+  ResponseCodeEnum rawMemoCheck(byte[] cand, boolean hasZeroByte);
 
-	default ResponseCodeEnum chronologyStatus(TxnAccessor accessor, Instant consensusTime) {
-		return PureValidation.chronologyStatus(
-				consensusTime,
-				asCoercedInstant(accessor.getTxnId().getTransactionValidStart()),
-				accessor.getTxn().getTransactionValidDuration().getSeconds());
-	}
+  ResponseCodeEnum tokenNameCheck(String name);
 
-	default ResponseCodeEnum chronologyStatusForTxn(
-			Instant validAfter,
-			long forSecs,
-			Instant estimatedConsensusTime
-	) {
-		return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
-	}
+  ResponseCodeEnum tokenSymbolCheck(String symbol);
+
+  boolean isPermissibleTotalNfts(long proposedTotal);
+
+  ResponseCodeEnum nftMetadataCheck(byte[] metadata);
+
+  ResponseCodeEnum maxBatchSizeMintCheck(int length);
+
+  ResponseCodeEnum maxBatchSizeWipeCheck(int length);
+
+  ResponseCodeEnum maxBatchSizeBurnCheck(int length);
+
+  ResponseCodeEnum maxNftTransfersLenCheck(int length);
+
+  ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
+
+  ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
+
+  default ResponseCodeEnum queryableAccountStatus(
+      AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+    return PureValidation.queryableAccountStatus(id, accounts);
+  }
+
+  default ResponseCodeEnum queryableContractStatus(
+      ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
+    return PureValidation.queryableContractStatus(cid, contracts);
+  }
+
+  default ResponseCodeEnum queryableFileStatus(FileID fid, StateView view) {
+    return PureValidation.queryableFileStatus(fid, view);
+  }
+
+  default Instant asCoercedInstant(Timestamp when) {
+    return PureValidation.asCoercedInstant(when);
+  }
+
+  default boolean isPlausibleAccount(AccountID id) {
+    return id.getAccountNum() > 0 && id.getRealmNum() >= 0 && id.getShardNum() >= 0;
+  }
+
+  default boolean isPlausibleTxnFee(long amount) {
+    return amount >= 0;
+  }
+
+  default ResponseCodeEnum chronologyStatus(TxnAccessor accessor, Instant consensusTime) {
+    return PureValidation.chronologyStatus(
+        consensusTime,
+        asCoercedInstant(accessor.getTxnId().getTransactionValidStart()),
+        accessor.getTxn().getTransactionValidDuration().getSeconds());
+  }
+
+  default ResponseCodeEnum chronologyStatusForTxn(
+      Instant validAfter, long forSecs, Instant estimatedConsensusTime) {
+    return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
+  }
 }
