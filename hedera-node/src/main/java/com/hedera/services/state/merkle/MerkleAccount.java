@@ -42,7 +42,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.SerializationHelper.*;
+import static com.hedera.services.state.merkle.SerializationHelper.read;
+import static com.hedera.services.state.merkle.SerializationHelper.readInto;
+import static com.hedera.services.state.merkle.SerializationHelper.write;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, VirtualValue {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
@@ -287,13 +289,19 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	/* --- VirtualValue --- */
 
 	@Override
-	public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-		throw new UnsupportedOperationException();
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		// Workaround until wire ByteBuffer into general hash() call from platform side.
+		state().deserialize(in, version);
+		records().deserialize(in, version);
+		tokens().deserialize(in, version);
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-		throw new UnsupportedOperationException();
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		// Workaround until wire ByteBuffer into general hash() call from platform side.
+		state().serialize(out);
+		records().serialize(out);
+		tokens().serialize(out);
 	}
 
 	@Override
@@ -301,7 +309,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		write(buffer, state());
 
 		FCQueue<ExpirableTxnRecord> records = records();
-		buffer.putInt(records.size());
+		buffer.putInt(records.size());Cryptography
 		for (ExpirableTxnRecord record : records) {
 			write(buffer, record);
 		}
