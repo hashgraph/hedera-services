@@ -46,13 +46,13 @@ public class DataFileCommon {
      * Chosen max size for a data file, this is a balance as fewer bigger files are faster to read from but large files
      * are extensive to merge. It must be less than MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES.
      */
-    static final long MAX_DATA_FILE_SIZE = 128*GB;
+    static final long MAX_DATA_FILE_SIZE = 64*GB;
 
     /** Size of keys in bytes, assumed to be a single long as all our use cases just needed a long */
     static final int KEY_SIZE = Long.BYTES;
     /** The current file format version, ready for if the file format needs to change */
     static final int FILE_FORMAT_VERSION = 1;
-    /** Date formater for dates used in data file names */
+    /** Date formatter for dates used in data file names */
     static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd--HH-mm-ss-SSS").withZone(ZoneId.of("Z"));
     /** Extension to use for Jasper DB data files :-) */

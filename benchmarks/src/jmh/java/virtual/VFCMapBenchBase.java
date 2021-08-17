@@ -342,11 +342,6 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
 
         @Override
-        public void update(ByteBuffer byteBuffer) throws IOException {
-            serialize(byteBuffer);
-        }
-
-        @Override
         public Account copy() {
             return new Account(this, false);
         }
