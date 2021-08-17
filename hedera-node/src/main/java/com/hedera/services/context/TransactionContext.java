@@ -22,8 +22,9 @@ package com.hedera.services.context;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -277,4 +278,11 @@ public interface TransactionContext {
 	 * @param assessedCustomFees the assessed custom fees
 	 */
 	void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees);
+
+	/**
+	 * Set the newly created associations as a result of the active transaction.
+	 *
+	 * @param newTokenAssociations new token - account associations
+	 */
+	void setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations);
 }

@@ -23,6 +23,8 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hedera.services.txns.validation.TokenListChecks.suppliesCheck;
@@ -121,8 +124,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			abortWith(status);
 			return;
 		}
+
+		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
+		customCollectorsEnabled.add(treasury);
+
 		if (op.getCustomFeesCount() > 0) {
-			status = autoEnableFeeCollectors(created, treasury, op);
+			status = autoEnableFeeCollectors(created, customCollectorsEnabled, op);
 			if (status != OK) {
 				abortWith(status);
 				return;
@@ -137,20 +144,29 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			}
 		}
 
+		List<FcTokenAssociation> newTokenAssociations = buildNewTokenAssociationList(customCollectorsEnabled, created);
+
 		store.commitCreation();
+		txnCtx.setNewTokenAssociations(newTokenAssociations);
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
 	}
 
+	private List<FcTokenAssociation> buildNewTokenAssociationList(
+			final Set<AccountID> customCollectorsEnabled, TokenID tokenID) {
+		return customCollectorsEnabled.stream().map(
+				accountID -> new FcTokenAssociation(
+						EntityId.fromGrpcTokenId(tokenID),
+						EntityId.fromGrpcAccountId(accountID))).collect(Collectors.toList());
+	}
+
 	private ResponseCodeEnum autoEnableFeeCollectors(
 			TokenID created,
-			AccountID alreadyEnabledTreasury,
+			Set<AccountID> customCollectorsEnabled,
 			TokenCreateTransactionBody op
 	) {
 		/* TokenStore.associate() returns TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT if the
 		account-token relationship already exists. */
-		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
-		customCollectorsEnabled.add(alreadyEnabledTreasury);
 		ResponseCodeEnum status = OK;
 		for (var fee : op.getCustomFeesList()) {
 			boolean collectorEnablementNeeded = fee.hasFractionalFee();

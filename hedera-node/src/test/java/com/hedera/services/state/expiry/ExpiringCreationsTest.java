@@ -34,6 +34,7 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -124,6 +125,8 @@ class ExpiringCreationsTest {
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
 	private final List<FcAssessedCustomFee> customFeesCharged = List.of(
 			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, new long[] { 123L }));
+	private final List<FcTokenAssociation> newTokenAssociations = List.of(
+			new FcTokenAssociation(customFeeToken, customFeeCollector));
 
 
 	@BeforeEach
@@ -187,7 +190,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null, null, null, null));
+						0L, null, null, null, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -205,7 +208,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged, newTokenAssociations);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -235,6 +238,7 @@ class ExpiringCreationsTest {
 
 		assertEquals(1, actualRecord.getCustomFeesCharged().size());
 		assertEquals(customFeesCharged.get(0), actualRecord.getCustomFeesCharged().get(0));
+		assertEquals(newTokenAssociations.get(0), actualRecord.getNewTokenAssociations().get(0));
 	}
 
 	@Test
@@ -255,7 +259,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		final var builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null, null);
 		final var actualRecord = builder.build();
 
 		//then:

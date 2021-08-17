@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -78,9 +80,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyList;
@@ -331,6 +333,7 @@ class TokenCreateTransitionLogicTest {
 		verify(ledger, times(1)).unfreeze(royaltyFeeCollector, created);
 		verify(ledger, times(1)).grantKyc(royaltyFeeCollector, created);
 
+		verify(txnCtx).setNewTokenAssociations(any());
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(store).commitCreation();
@@ -828,6 +831,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 	}
 
+	private EntityId createdId = EntityId.fromGrpcTokenId(created);
 	private TokenID misc = IdUtils.asToken("3.2.1");
 	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
 	private AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
@@ -871,5 +875,22 @@ class TokenCreateTransitionLogicTest {
 			customRoyaltyHbar,
 			customRoyaltyOtherHts,
 			customRoyaltyThisHts
+	);
+	private FcTokenAssociation fixedCollectorAssociation = new FcTokenAssociation(
+			createdId, EntityId.fromGrpcAccountId(fixedFeeCollector));
+	private FcTokenAssociation treasuryAssociation = new FcTokenAssociation(
+			createdId, EntityId.fromGrpcAccountId(treasury));
+	private FcTokenAssociation feeCollectorAssociation = new FcTokenAssociation(
+			createdId, EntityId.fromGrpcAccountId(feeCollector));
+	private FcTokenAssociation fractionalCollectorAssociation = new FcTokenAssociation(
+			createdId, EntityId.fromGrpcAccountId(fractionalFeeCollector));
+	private FcTokenAssociation royaltyCollectorAssociation = new FcTokenAssociation(
+			createdId, EntityId.fromGrpcAccountId(royaltyFeeCollector));
+	private List<FcTokenAssociation> newTokenAssociations = List.of(
+			royaltyCollectorAssociation,
+			treasuryAssociation,
+			feeCollectorAssociation,
+			fractionalCollectorAssociation,
+			fixedCollectorAssociation
 	);
 }
