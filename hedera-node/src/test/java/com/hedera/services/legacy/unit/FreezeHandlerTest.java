@@ -33,7 +33,9 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.internal.SettingsCommon;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,9 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Calendar;
-import java.util.List;
 import java.util.TimeZone;
-import java.util.stream.Stream;
 
 import static com.hedera.services.legacy.unit.FreezeTestHelper.createFreezeTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
@@ -57,7 +57,6 @@ import static java.lang.Thread.sleep;
 import static java.util.Calendar.HOUR_OF_DAY;
 import static java.util.Calendar.MINUTE;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,6 +82,7 @@ class FreezeHandlerTest {
 
 	@BeforeEach
 	void setUp() {
+		removeTempDir();
 		SettingsCommon.transactionMaxBytes = 1_234_567;
 
 		hfs = mock(HederaFs.class);
@@ -94,6 +94,19 @@ class FreezeHandlerTest {
 		dualState = mock(SwirldDualState.class);
 
 		subject = new FreezeHandler(hfs, platform, exchange, () -> dualState);
+	}
+
+	@AfterEach
+	void tearDown() {
+		removeTempDir();
+	}
+
+	void removeTempDir() {
+		final var dir = new File("./temp");
+		try {
+			FileUtils.deleteDirectory(dir);
+		} catch (IOException ignore) {
+		}
 	}
 
 	@Test
@@ -214,7 +227,8 @@ class FreezeHandlerTest {
 				logCaptor.infoLogs(),
 				contains(
 						Matchers.startsWith("Dual state freeze time set to"),
-						stringContainsInOrder(List.of("Update file id is not defined"))));
+						Matchers.equalTo(
+								"NETWORK_UPDATE Node 1 Update file id is not defined, no update will be conducted")));
 	}
 
 	@Test
@@ -232,7 +246,6 @@ class FreezeHandlerTest {
 		assertEquals(SUCCESS, record.getReceipt().getStatus());
 
 		try (final var utilities = Mockito.mockStatic(Files.class)) {
-			utilities.when(() -> Files.walk(any())).thenReturn(Stream.empty());
 			utilities.when(() -> Files.delete(any())).thenThrow(new IOException());
 
 			subject.handleUpdateFeature();
@@ -280,7 +293,7 @@ class FreezeHandlerTest {
 		assertThat(
 				logCaptor.errorLogs(),
 				contains(
-						stringContainsInOrder(List.of("File hash mismatch")),
+						Matchers.equalTo("NETWORK_UPDATE Node 1 File hash mismatch"),
 						Matchers.startsWith("NETWORK_UPDATE Node 1 Hash from transaction body"),
 						Matchers.startsWith("NETWORK_UPDATE Node 1 Hash from file system"),
 						Matchers.equalTo("NETWORK_UPDATE Node 1 ABORT UPDATE PROCRESS")));
@@ -302,6 +315,6 @@ class FreezeHandlerTest {
 
 		assertThat(
 				logCaptor.errorLogs(),
-				contains(stringContainsInOrder(List.of("not found in file system"))));
+				contains(Matchers.equalTo("NETWORK_UPDATE Node 1 File ID fileNum: 150\n not found in file system")));
 	}
 }

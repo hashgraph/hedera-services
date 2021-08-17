@@ -9,9 +9,9 @@ package com.hedera.services.grpc.controllers;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,13 +38,13 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	private final TxnResponseHelper txnResponseHelper;
 	private final QueryResponseHelper queryHelper;
 
-	public static String GET_VERSION_INFO_METRIC = "getVersionInfo";
-	public static String UNCHECKED_SUBMIT_METRIC = "uncheckedSubmit";
+	public static final String GET_VERSION_INFO_METRIC = "getVersionInfo";
+	public static final String UNCHECKED_SUBMIT_METRIC = "uncheckedSubmit";
 
 	public NetworkController(
-			MetaAnswers metaAnswers,
-			TxnResponseHelper txnResponseHelper,
-			QueryResponseHelper queryHelper
+			final MetaAnswers metaAnswers,
+			final TxnResponseHelper txnResponseHelper,
+			final QueryResponseHelper queryHelper
 	) {
 		this.metaAnswers = metaAnswers;
 		this.txnResponseHelper = txnResponseHelper;
@@ -52,12 +52,12 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	}
 
 	@Override
-	public void getVersionInfo(Query query, StreamObserver<Response> observer) {
+	public void getVersionInfo(final Query query, final StreamObserver<Response> observer) {
 		queryHelper.answer(query, observer, metaAnswers.getVersionInfo(), GetVersionInfo);
 	}
 
 	@Override
-	public void uncheckedSubmit(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void uncheckedSubmit(final Transaction signedTxn, final StreamObserver<TransactionResponse> observer) {
 		txnResponseHelper.submit(signedTxn, observer, UncheckedSubmit);
 	}
 }

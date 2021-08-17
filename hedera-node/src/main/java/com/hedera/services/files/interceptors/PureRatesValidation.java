@@ -9,9 +9,9 @@ package com.hedera.services.files.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,16 +30,16 @@ import static java.math.BigInteger.valueOf;
 
 
 public class PureRatesValidation {
-	private static BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
+	private static final BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
 
-	PureRatesValidation(){
+	PureRatesValidation() {
 		throw new IllegalStateException();
 	}
 
 	public static boolean isNormalIntradayChange(
-			ExchangeRates midnightRates,
-			ExchangeRateSet proposedRates,
-			int limitPercent
+			final ExchangeRates midnightRates,
+			final ExchangeRateSet proposedRates,
+			final int limitPercent
 	) {
 		return canonicalTest(
 				limitPercent,
@@ -51,13 +51,19 @@ public class PureRatesValidation {
 						proposedRates.getNextRate().getCentEquiv(), proposedRates.getNextRate().getHbarEquiv());
 	}
 
-	private static boolean canonicalTest(long bound, long oldC, long oldH, long newC, long newH) {
-		var b100 = valueOf(bound).add(ONE_HUNDRED);
+	private static boolean canonicalTest(
+			final long bound,
+			final long oldC,
+			final long oldH,
+			final long newC,
+			final long newH
+	) {
+		final var b100 = valueOf(bound).add(ONE_HUNDRED);
 
-		var oC = valueOf(oldC);
-		var oH = valueOf(oldH);
-		var nC = valueOf(newC);
-		var nH = valueOf(newH);
+		final var oC = valueOf(oldC);
+		final var oH = valueOf(oldH);
+		final var nC = valueOf(newC);
+		final var nH = valueOf(newH);
 
 		return LongStream.of(bound, oldC, oldH, newC, newH).allMatch(i -> i > 0) &&
 				oC.multiply(nH)
