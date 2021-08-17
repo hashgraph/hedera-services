@@ -52,7 +52,7 @@ public class DataFileCommon {
     static final int KEY_SIZE = Long.BYTES;
     /** The current file format version, ready for if the file format needs to change */
     static final int FILE_FORMAT_VERSION = 1;
-    /** Date formater for dates used in data file names */
+    /** Date formatter for dates used in data file names */
     static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd--HH-mm-ss-SSS").withZone(ZoneId.of("Z"));
     /** Extension to use for Jasper DB data files :-) */

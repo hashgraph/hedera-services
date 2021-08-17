@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -32,13 +33,20 @@ import static java.nio.ByteBuffer.allocateDirect;
 
 /**
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
+ * Also, we totally depend on the hash and key to be fixed sizes. NOTE: valueSizeBytes needs to work with variable size data.
  *
  * @param <K> type for keys
  * @param <V> type for values
  */
 @SuppressWarnings("jol")
 public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
-    private final static int HASH_SIZE = Integer.BYTES+ DigestType.SHA_384.digestLength(); // TODO remove please for something better
+    /**
+     * The hash stores an Integer with the digest type + the digest data itself. This is a waste of space.
+     * We should *know* what the digest type is, and store it in one place instead of with every hash. This
+     * will save us a lot of RAM. We also shouldn't manually specify the SHA type everywhere.
+     * TODO remove please for something better
+     */
+    private final static int HASH_SIZE = Integer.BYTES + DigestType.SHA_384.digestLength();
     /** The size in bytes for serialized key objects */
     private final int keySizeBytes;
     /** The size in bytes of serialized value objects */
@@ -52,9 +60,9 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     /**
      * In memory off-heap store for internal node hashes. This data is never stored on disk so on load from disk, this
      * will be empty. That should cause all internal node hashes to have to be computed on the first round which will be
-     * expensive. TODO is it worth saving this to disk on close?
+     * expensive. TODO is it worth saving this to disk on close? Should we use a memMap file after all for this?
      */
-    private final OffHeapHashList hashStore = new OffHeapHashList();
+    private final OffHeapHashList internalHashStore = new OffHeapHashList();
     /** In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys are longs */
     private final OffHeapLongList longKeyToPath;
     /** Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have complex keys. */
@@ -99,12 +107,14 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      */
     public VFCDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
                                  Path storageDir, long maxNumOfKeys, boolean mergingEnabled) throws IOException {
-        this.keySizeBytes = Integer.BYTES + keySizeBytes;
+        this.keySizeBytes = Integer.BYTES + keySizeBytes; // extra leading integer keeps track of the version
         this.keyConstructor = keyConstructor;
-        this.valueSizeBytes = Integer.BYTES + valueSizeBytes;
+        // TODO If we pass -1 in as the valueSizeBytes (for variable length), then this guy computes wrong.
+        this.valueSizeBytes = Integer.BYTES + valueSizeBytes; // same, leading int has version
         this.valueConstructor = valueConstructor;
+        final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes; // TODO sizes wrong if valueSizeBytes is -1
         this.leafKey = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
-        this.keyHashValue = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes+HASH_SIZE+this.valueSizeBytes));
+        this.keyHashValue = ThreadLocal.withInitial(() -> allocateDirect(keyHashValueSize));
         final LoadedDataCallback loadedDataCallback;
         if (keySizeBytes == Long.BYTES) {
             isLongKeyMode = true;
@@ -123,12 +133,10 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
             // we do not need callback as HalfDiskHashMap loads its own data from disk
             loadedDataCallback = null;
         }
-        final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes;
-        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue",keyHashValueSize,loadedDataCallback);
+        pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue", keyHashValueSize, loadedDataCallback);
         // If merging is enabled then merge all data files every 30 seconds, TODO this is just a initial implementation
-        System.out.println("mergingEnabled = " + mergingEnabled);
         if (mergingEnabled) {
-            ThreadGroup mergingThreadGroup = new ThreadGroup("Merging Threads");
+            final var mergingThreadGroup = new ThreadGroup("JasperDB Merging Threads");
             mergingExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(mergingThreadGroup,r));
             mergingExecutor.setMaximumPoolSize(1);
             mergingExecutor.scheduleWithFixedDelay(this::doMerge,1,5, TimeUnit.MINUTES);
@@ -164,8 +172,10 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     // Public NEW API methods
 
     public VirtualLeafRecord<K, V> loadLeafRecord(K key) throws IOException {
-        if (key == null) throw new IllegalArgumentException("key can not be null");
-        long path = isLongKeyMode ? longKeyToPath.get(((VirtualLongKey)key).getKeyAsLong(), INVALID_PATH) : objectKeyToPath.get(key, INVALID_PATH);
+        Objects.requireNonNull(key);
+        final long path = isLongKeyMode
+                ? longKeyToPath.get(((VirtualLongKey)key).getKeyAsLong(), INVALID_PATH)
+                : objectKeyToPath.get(key, INVALID_PATH);
         if (path == INVALID_PATH) return null;
         return loadLeafRecord(path,key);
     }
@@ -179,15 +189,16 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      */
     private VirtualLeafRecord<K, V> loadLeafRecord(long path, K key) throws IOException {
         // get reusable buffer
-        ByteBuffer keyHashValueBuffer = this.keyHashValue.get().clear();
+        final ByteBuffer keyHashValueBuffer = this.keyHashValue.get().clear(); // TODO buffer needs enough room for the value!!
         // read value
-        boolean found = pathToKeyHashValue.get(path,keyHashValueBuffer);
+        final boolean found = pathToKeyHashValue.get(path, keyHashValueBuffer);
         if (!found) return null;
         // deserialize
         keyHashValueBuffer.rewind();
         // deserialize key
         if (key != null) {
-            keyHashValueBuffer.position(keySizeBytes); // jump key
+            // jump past the key because we don't need to deserialize it
+            keyHashValueBuffer.position(keySizeBytes);
         } else {
             final int keySerializationVersion = keyHashValueBuffer.getInt();
             key = keyConstructor.get();
@@ -198,7 +209,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         // deserialize value
         final int valueSerializationVersion = keyHashValueBuffer.getInt();
         final V value = valueConstructor.get();
-        value.deserialize(keyHashValueBuffer,valueSerializationVersion);
+        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
         // return new VirtualLeafRecord
         return new VirtualLeafRecord<>(path, hash, key, value);
     }
@@ -219,13 +230,13 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
             if (action == 0) {// write internal node hashes
                 if (internalRecords != null && !internalRecords.isEmpty()) {
                     for (VirtualInternalRecord rec : internalRecords) {
-                        hashStore.put(rec.getPath(), rec.getHash());
+                        internalHashStore.put(rec.getPath(), rec.getHash());
                     }
                 }
             } else if (action == 1) { // write leaves to pathToKeyHashValue
                 if (leafRecords != null && !leafRecords.isEmpty()) {
                     try {
-                        long lastPath = Long.MIN_VALUE;  //, lastKey = Long.MIN_VALUE;
+                        long prevPath = Long.MIN_VALUE;  // Used for validation to make sure the data is sorted.
                         pathToKeyHashValue.startWriting();
                         // get reusable buffer
                         ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
@@ -235,13 +246,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                             final Hash hash = rec.getHash();
                             final VirtualValue value = rec.getValue();
 
-//                            assert key > lastKey : "saveRecords keys are not sorted, got key "+key+" after key "+lastKey;
-                            if(path < lastPath) System.err.println("saveRecords paths are not sorted, got path "+path+" after path "+lastPath);
-                            lastPath = path;
-//
-//                            long keyLong = ((VirtualLongKey) rec.getKey()).getKeyAsLong();
-//                            if(keyLong < lastKey) System.err.println("saveRecords paths are not sorted, got key "+keyLong+" after key "+lastKey);
-//                            lastKey = keyLong;
+                            assert path > prevPath : "saveRecords paths are not sorted, got path " + path + " after path " + prevPath;
+                            prevPath = path;
 
                             // clear buffer for reuse
                             keyHashValueBuffer.clear();
@@ -257,8 +263,9 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                             keyHashValueBuffer.flip();
                             pathToKeyHashValue.put(path, keyHashValueBuffer);
                         }
-                        pathToKeyHashValue.endWriting(firstLeafPath,lastLeafPath);
+                        pathToKeyHashValue.endWriting(firstLeafPath, lastLeafPath);
                     } catch (IOException e) {
+                        // TODO maybe need a way to make sure streams / writers are closed if there is an exception?
                         throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
                     }
                 }
@@ -315,7 +322,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     @Override
     public Hash loadInternalHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        return hashStore.get(path);
+        return internalHashStore.get(path);
     }
 
     /**
@@ -421,7 +428,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null)  throw new IllegalArgumentException("Hash is null");
         // write hash
-        hashStore.put(path,hash);
+        internalHashStore.put(path,hash);
     }
 
     /**
