@@ -128,13 +128,13 @@
     </repository>
   </distributionManagement>
 
-    <licenses>
-      <license>
-        <distribution>repo</distribution>
-        <name>Apache License 2.0</name>
-        <url>https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
-      </license>
-    </licenses>
+  <licenses>
+    <license>
+      <distribution>repo</distribution>
+      <name>Apache License 2.0</name>
+      <url>https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
+    </license>
+  </licenses>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -188,6 +188,10 @@
     <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S125</sonar.issue.ignore.multicriteria.e1.ruleKey>
 
     <project.build.outputTimestamp>2021-08-11T17:16:31Z</project.build.outputTimestamp>
+
+    <!-- Code formatting properties -->
+    <spotless.version>2.5.0</spotless.version>
+    <google-java-format.version>1.11.0</google-java-format.version>
   </properties>
 
   <modules>
@@ -296,6 +300,10 @@ ${git.signoff}
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -371,6 +379,19 @@ ${git.signoff}
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
           <version>${sonar.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${spotless.version}</version>
+          <configuration>
+            <java>
+              <removeUnusedImports/>
+              <googleJavaFormat>
+                <version>${google-java-format.version}</version>
+              </googleJavaFormat>
+            </java>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
