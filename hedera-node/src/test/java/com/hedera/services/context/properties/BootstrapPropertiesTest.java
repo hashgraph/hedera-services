@@ -9,9 +9,9 @@ package com.hedera.services.context.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,11 +22,15 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -34,23 +38,27 @@ import java.util.Set;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static java.util.Map.entry;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith({ LogCaptureExtension.class })
 class BootstrapPropertiesTest {
-	BootstrapProperties subject = new BootstrapProperties();
+	@Inject
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private BootstrapProperties subject = new BootstrapProperties();
 
-	private String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
-	private String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
-	private String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
-	private String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
+	private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
+	private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
+	private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
+	private static final String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
 
-	private String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
-	private String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
+	private static final String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
+	private static final String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
 
 	private static final Map<String, Object> expectedProps = Map.ofEntries(
 			entry("bootstrap.feeSchedulesJson.resource", "feeSchedules.json"),
@@ -146,7 +154,7 @@ class BootstrapPropertiesTest {
 			entry("queries.blob.lookupRetries", 3),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
-			entry("tokens.maxTokenNameUtf8Bytes",100),
+			entry("tokens.maxTokenNameUtf8Bytes", 100),
 			entry("tokens.maxCustomFeesAllowed", 10),
 			entry("tokens.maxCustomFeeDepth", 2),
 			entry("files.maxSizeKb", 1024),
@@ -175,117 +183,96 @@ class BootstrapPropertiesTest {
 
 	@BeforeEach
 	void setUp() {
-		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = EMPTY_OVERRIDE_PROPS_LOC;
+		subject.bootstrapOverridePropsLoc = EMPTY_OVERRIDE_PROPS_LOC;
 	}
 
 	@Test
 	void throwsIseIfUnreadable() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = UNREADABLE_PROPS_RESOURCE;
+		subject.bootstrapPropsResource = UNREADABLE_PROPS_RESOURCE;
 
-		// expect:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var msg = String.format("'%s' contains unrecognized properties:", UNREADABLE_PROPS_RESOURCE);
+		assertTrue(ise.getMessage().startsWith(msg));
 	}
 
 	@Test
 	void throwsIseIfIoExceptionOccurs() {
-		// setup:
-		var bkup = BootstrapProperties.resourceStreamProvider;
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		// and:
+		final var bkup = BootstrapProperties.resourceStreamProvider;
+		subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
 		BootstrapProperties.resourceStreamProvider = ignore -> {
 			throw new IOException("Oops!");
 		};
 
-		// expect:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var msg = String.format("'%s' could not be loaded!", STD_PROPS_RESOURCE);
+		assertEquals(msg, ise.getMessage());
 
-		// cleanup:
 		BootstrapProperties.resourceStreamProvider = bkup;
 	}
 
 	@Test
 	void throwsIseIfInvalid() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = INVALID_PROPS_RESOURCE;
+		subject.bootstrapPropsResource = INVALID_PROPS_RESOURCE;
 
-		// expect:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var msg = String.format("'%s' contains unrecognized properties:", INVALID_PROPS_RESOURCE);
+		assertTrue(ise.getMessage().startsWith(msg));
 	}
 
 	@Test
 	void ensuresFilePropsFromExtant() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+		subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
 
-		// when:
 		subject.ensureProps();
 
-		// then:
 		for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
 			assertEquals(expectedProps.get(name), subject.getProperty(name), name + " has the wrong value!");
 		}
-		// and:
 		assertEquals(expectedProps, subject.bootstrapProps);
 	}
 
 	@Test
 	void includesOverrides() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = OVERRIDE_PROPS_LOC;
+		subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
+		subject.bootstrapOverridePropsLoc = OVERRIDE_PROPS_LOC;
 
-		// when:
 		subject.ensureProps();
 
-		// then:
 		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
 	}
 
 	@Test
 	void doesntThrowOnMissingOverridesFile() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = "im-not-here";
+		subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
+		subject.bootstrapOverridePropsLoc = "im-not-here";
 
-		// expect:
 		assertDoesNotThrow(subject::ensureProps);
 	}
 
 	@Test
 	void throwsIaeOnMissingPropRequest() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		// and:
+		subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
+
 		subject.ensureProps();
 
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.getProperty("not-a-real-prop"));
+		final var ise = assertThrows(IllegalArgumentException.class, () -> subject.getProperty("not-a-real-prop"));
+		assertEquals("Argument 'name=not-a-real-prop' is invalid!", ise.getMessage());
 	}
 
 	@Test
 	void throwsIseIfMissingProps() {
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = INCOMPLETE_STD_PROPS_RESOURCE;
+		subject.bootstrapPropsResource = INCOMPLETE_STD_PROPS_RESOURCE;
 
-		// when:
-		assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
+		final var msg = String.format("'%s' is missing properties:", INCOMPLETE_STD_PROPS_RESOURCE);
+		assertTrue(ise.getMessage().startsWith(msg));
 	}
 
 	@Test
 	void logsLoadedPropsOnInit() {
-		// setup:
-		BootstrapProperties.log = mock(Logger.class);
-
-		// given:
-		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
-		// and:
+		subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
 		subject.getProperty("bootstrap.feeSchedulesJson.resource");
 
-		// expect:
-		verify(BootstrapProperties.log).info(
-				argThat((String s) -> s.startsWith("Resolved bootstrap")));
-		// cleanup:
-		BootstrapProperties.log = LogManager.getLogger(BootstrapProperties.class);
+		assertThat(logCaptor.infoLogs(), contains(Matchers.startsWith(("Resolved bootstrap properties:"))));
 	}
 }
