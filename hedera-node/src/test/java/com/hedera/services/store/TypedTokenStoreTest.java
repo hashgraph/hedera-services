@@ -123,7 +123,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsExtantTokenRelAsExpected() {
 		// setup:
-		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted);
+		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted, automaticAssociation);
 
 		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
 		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
