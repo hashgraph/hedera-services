@@ -21,6 +21,8 @@ public class DataFileCommon {
     public static final long MB = 1024*1024;
     /** Data size constant used when the data size is variable */
     public static final int VARIABLE_DATA_SIZE = -1;
+    /** This is the size of the header written for each variable size data item to store its size */
+    public static final int SIZE_OF_DATA_ITEM_SIZE_IN_FILE = Integer.BYTES;
     /**
      * The data item byte offset is packed into lower 40 bits and file index upper 24 bits.
      * This allows for 16 million files 1 trillion bytes of data.

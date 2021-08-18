@@ -24,12 +24,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFilesSmallerThan;
-import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteBuffer.allocate;
 
 /**
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
@@ -113,8 +114,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         this.valueSizeBytes = Integer.BYTES + valueSizeBytes; // same, leading int has version
         this.valueConstructor = valueConstructor;
         final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes; // TODO sizes wrong if valueSizeBytes is -1
-        this.leafKey = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
-        this.keyHashValue = ThreadLocal.withInitial(() -> allocateDirect(keyHashValueSize));
+        this.leafKey = ThreadLocal.withInitial(() -> allocate(this.keySizeBytes));
+        this.keyHashValue = ThreadLocal.withInitial(() -> allocate(keyHashValueSize));
         final LoadedDataCallback loadedDataCallback;
         if (keySizeBytes == Long.BYTES) {
             isLongKeyMode = true;
@@ -214,6 +215,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         return new VirtualLeafRecord<>(path, hash, key, value);
     }
 
+    private final AtomicBoolean currentlySaving = new AtomicBoolean(false);
+
     /**
      * Save a batch of data to data store.
      *
@@ -224,7 +227,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      */
     public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords,
                             List<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
-        // TODO work out how to delete things using firstLeafPath & lastLeafPath
+        if (currentlySaving.getAndSet(true)) throw new IOException("Tried to saveRecords when we are already saving records.");
         // might as well write to the 3 data stores in parallel
         IntStream.range(0,3).parallel().forEach(action -> {
             if (action == 0) {// write internal node hashes
@@ -290,6 +293,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                 }
             }
         });
+        // done
+        currentlySaving.set(false);
     }
 
     /**

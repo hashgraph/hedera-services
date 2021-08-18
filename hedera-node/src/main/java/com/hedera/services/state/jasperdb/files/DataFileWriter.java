@@ -1,6 +1,7 @@
 package com.hedera.services.state.jasperdb.files;
 
 import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -24,20 +25,32 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
  *
  * At the end of the file in last 4096 byte block is a footer created by DataFileMetadata.
  */
-@SuppressWarnings("DuplicatedCode")
 public final class DataFileWriter {
-    private final BufferedOutputStream writingStream;
-    private final boolean isMergeFile; // Might not need it. Was keeping track of "original" file vs. "merge" file
-    private final int dataSize; // size of value data or -1 if variable length (see commons for constant)
-    private final boolean hasVariableDataSize; // computed based on dataSize.
-    private final int index; // file index number
-    // moment in time when the file should be considered as existing for.
-    // When we merge files, we take the newest timestamp of the set of merge files and give it to this new file.
+    /** The output stream we are writing to */
+    private final DataOutputStream writingStream;
+    /** Might not need it. Was keeping track of "original" file vs. "merge" file */
+    private final boolean isMergeFile;
+    /** size of value data or -1 if variable length (see commons for constant) */
+    private final int dataSize;
+    /** computed based on dataSize */
+    private final boolean hasVariableDataSize;
+    /** file index number */
+    private final int index;
+    /**
+     * The moment in time when the file should be considered as existing for.
+     * When we merge files, we take the newest timestamp of the set of merge files and give it to this new file.
+     */
     private final Instant creationInstant;
+    /** The path to the data file we are writing */
     private final Path path;
+    /** The path to the lock file for data file we are writing */
     private final Path lockFilePath;
-    private ByteBuffer tempWriteBuffer = null; // reused for perf
+    /**
+     * The current offset in bytes from teh beginning of the file where we are writing. This is very important as it
+     * used to calculate the data location pointers to the data items we have written.
+     */
     private long writePosition = 0; // position in the file to write next
+    /** Count of the number of data items we have written to be stored in footer metadata */
     private long dataItemCount = 0; // number if items already written to the file
 
     /**
@@ -60,7 +73,8 @@ public final class DataFileWriter {
         this.path = createDataFilePath(filePrefix, dataFileDir, index, creationInstant);
         this.lockFilePath = getLockFilePath(path);
         if (Files.exists(lockFilePath)) throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
-        writingStream = new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 4*1024*1024);
+        writingStream = new DataOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 4*1024*1024));
         Files.createFile(lockFilePath);
     }
 
@@ -89,30 +103,30 @@ public final class DataFileWriter {
      */
     public synchronized long storeData(long key, ByteBuffer dataToStore) throws IOException {
         final int dataValueSize, dataSize;
-        final ByteBuffer tempWriteBuffer;
         if (hasVariableDataSize) {
             dataValueSize = dataToStore.remaining();
-            dataSize = Integer.BYTES + DataFileCommon.KEY_SIZE + dataValueSize;
-            tempWriteBuffer = getTempWriteBuffer(dataSize);
+            dataSize = SIZE_OF_DATA_ITEM_SIZE_IN_FILE + KEY_SIZE + dataValueSize;
             // write data size
-            tempWriteBuffer.putInt(dataValueSize);
+            writingStream.writeInt(dataValueSize);
         } else {
             dataValueSize = this.dataSize;
             if (dataToStore.remaining() != dataValueSize) {
                 throw new BufferTooSmallException(dataValueSize, dataToStore.remaining());
             }
-            dataSize = DataFileCommon.KEY_SIZE + dataValueSize;
-            tempWriteBuffer = getTempWriteBuffer(dataSize);
+            dataSize = KEY_SIZE + dataValueSize;
         }
         // find offset for the start of this new data item, we assume we always write data in a whole number of blocks
         final long byteOffset = writePosition;
         writePosition += dataSize;
         // write key and value
-        tempWriteBuffer.putLong(key);
-        tempWriteBuffer.put(dataToStore);
-        // write temp buffer to file
-        tempWriteBuffer.flip();
-        writingStream.write(tempWriteBuffer.array(), tempWriteBuffer.position(), tempWriteBuffer.limit() - tempWriteBuffer.position());
+        writingStream.writeLong(key);
+        if (dataToStore.isDirect()) {
+            byte[] bytes = new byte[dataToStore.remaining()]; // TODO ugly for now
+            dataToStore.get(bytes);
+            writingStream.write(bytes);
+        } else {
+            writingStream.write(dataToStore.array(), dataToStore.position(), dataToStore.limit() - dataToStore.position());
+        }
         // increment data item counter
         dataItemCount++;
         // return the offset where we wrote the data
@@ -123,7 +137,7 @@ public final class DataFileWriter {
      * Store data in provided ByteBuffer from its current position to its limit. If the file has variable size data then
      * the buffer should contain:
      *
-     *  - Int value size
+     *  - Int value size (Optional based on hasVariableDataSize)
      *  - Long key
      *  - Data Value bytes
      *
@@ -155,12 +169,8 @@ public final class DataFileWriter {
      */
     public synchronized DataFileMetadata finishWriting(long minimumValidKey, long maximumValidKey) throws IOException {
         // pad the end of file till we are a whole number of pages
-        final ByteBuffer tempWriteBuffer = getTempWriteBuffer(DataFileCommon.PAGE_SIZE);
         int paddingBytesNeeded = computePaddingLength();
-        tempWriteBuffer.position(0);
-        for (int i = 0; i < paddingBytesNeeded; i++)  tempWriteBuffer.put((byte)0);
-        tempWriteBuffer.flip();
-        writingStream.write(tempWriteBuffer.array(), tempWriteBuffer.position(), paddingBytesNeeded);
+        for (int i = 0; i < paddingBytesNeeded; i++)  writingStream.write((byte)0);
         writePosition += paddingBytesNeeded;
         // write any metadata to end of file.
         DataFileMetadata metadataFooter = new DataFileMetadata(DataFileCommon.FILE_FORMAT_VERSION, dataSize,
@@ -178,18 +188,9 @@ public final class DataFileWriter {
     }
 
     /**
-     * Get a temporary byte buffer we can use for writing
+     * Compute the amount of padding needed to append at the end of file to push the metadata footer so that it sits on
+     * a page boundary for fast random access reading later.
      */
-    private ByteBuffer getTempWriteBuffer(int size) {
-        if (tempWriteBuffer == null || tempWriteBuffer.limit() < size) {
-            tempWriteBuffer = ByteBuffer.allocate(size);
-        } else {
-            tempWriteBuffer.clear();
-        }
-        tempWriteBuffer.limit(size);
-        return tempWriteBuffer;
-    }
-
     private int computePaddingLength() {
         return (int)(DataFileCommon.PAGE_SIZE - (writePosition % DataFileCommon.PAGE_SIZE));
     }
