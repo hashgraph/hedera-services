@@ -289,7 +289,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		write(buffer, state());
 
 		FCQueue<ExpirableTxnRecord> records = records();
-		buffer.putInt(records.size());Cryptography
+		buffer.putInt(records.size());
 		for (ExpirableTxnRecord record : records) {
 			write(buffer, record);
 		}
