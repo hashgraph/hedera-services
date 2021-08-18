@@ -129,4 +129,8 @@ public class ExpectedCustomThrottles {
 			ScheduleGetInfo,
 			TokenFeeScheduleUpdate
 	);
+
+	ExpectedCustomThrottles() {
+		throw new IllegalStateException("Utility Class");
+	}
 }

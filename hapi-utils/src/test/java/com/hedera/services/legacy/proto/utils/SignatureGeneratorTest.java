@@ -24,7 +24,14 @@ import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 class SignatureGeneratorTest {
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, SignatureGenerator::new);
+	}
+
 	@Test
 	void rejectsNonEddsaKeys() {
 		Assertions.assertThrows(

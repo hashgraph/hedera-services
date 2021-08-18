@@ -27,6 +27,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class ThrottlesJsonToProtoSerde {
+	ThrottlesJsonToProtoSerde() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	public static ThrottleDefinitions loadProtoDefs(InputStream in) throws IOException {
 		return loadPojoDefs(in).toProto();
 	}

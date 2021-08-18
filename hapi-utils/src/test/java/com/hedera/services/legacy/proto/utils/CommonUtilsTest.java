@@ -1,4 +1,4 @@
-package com.hedera.services.utils;
+package com.hedera.services.legacy.proto.utils;
 
 /*-
  * ‌
@@ -20,15 +20,20 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CommonUtilsTest {
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, CommonUtils::new);
+	}
+
 	@Test
 	void testNap() throws InterruptedException, IOException {
 		final String filePath = "./src/test/resources/test.txt";

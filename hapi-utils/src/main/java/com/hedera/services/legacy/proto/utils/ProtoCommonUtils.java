@@ -28,41 +28,44 @@ import java.time.Instant;
 
 /**
  * Protobuf related utilities shared by client and server.
- *
- * @author hua Created on 2018-09-29
  */
 public class ProtoCommonUtils {
-  /**
-   * Gets current UTC timestamp.
-   *
-   * @param sec_to_wind seconds to wind the clock. If negative, wind back, else wind forward.
-   * @return the timestamp
-   */
-  public static Timestamp getCurrentTimestampUTC(long sec_to_wind) {
-    Timestamp timestamp = null;
-    timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(sec_to_wind));
-    return timestamp;
-  }
+	ProtoCommonUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
 
-  /**
-   * Gets the current UTC instant.
-   *
-   * @return current UTC instant
-   */
-  public static Instant getCurrentInstantUTC() {
-    return Instant.now(Clock.systemUTC());
-  }
+	/**
+	 * Gets current UTC timestamp.
+	 *
+	 * @param secToWind
+	 * 		seconds to wind the clock. If negative, wind back, else wind forward.
+	 * @return the timestamp
+	 */
+	public static Timestamp getCurrentTimestampUTC(final long secToWind) {
+		return RequestBuilder.getTimestamp(getCurrentInstantUTC().plusSeconds(secToWind));
+	}
 
-  /**
-   * Adds a number of seconds to a timestamp
-   *
-   * @param timestamp timestamp to which to add seconds
-   * @param seconds number of seconds to add
-   * @return the timestamp plus the number of seconds
-   */
-  public static Timestamp addSecondsToTimestamp(Timestamp timestamp, long seconds) {
-    return Timestamp.newBuilder().setNanos(timestamp.getNanos())
-        .setSeconds(timestamp.getSeconds() + seconds).build();
-  }
+	/**
+	 * Gets the current UTC instant.
+	 *
+	 * @return current UTC instant
+	 */
+	public static Instant getCurrentInstantUTC() {
+		return Instant.now(Clock.systemUTC());
+	}
+
+	/**
+	 * Adds a number of seconds to a timestamp
+	 *
+	 * @param timestamp
+	 * 		timestamp to which to add seconds
+	 * @param seconds
+	 * 		number of seconds to add
+	 * @return the timestamp plus the number of seconds
+	 */
+	public static Timestamp addSecondsToTimestamp(final Timestamp timestamp, final long seconds) {
+		return timestamp.toBuilder()
+				.setSeconds(timestamp.getSeconds() + seconds)
+				.build();
+	}
 }

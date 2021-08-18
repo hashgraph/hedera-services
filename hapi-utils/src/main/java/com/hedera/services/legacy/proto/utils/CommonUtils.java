@@ -50,6 +50,9 @@ import java.util.Base64;
  * @author hua
  */
 public class CommonUtils {
+  CommonUtils() {
+    throw new IllegalStateException("Utility Class");
+  }
 
   /**
    * Sleep given seconds.

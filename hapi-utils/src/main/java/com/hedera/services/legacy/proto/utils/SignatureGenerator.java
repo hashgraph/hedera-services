@@ -28,6 +28,10 @@ import java.security.PrivateKey;
 import java.security.SignatureException;
 
 public class SignatureGenerator {
+	SignatureGenerator() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	/**
 	 * Signs a message with a private key.
 	 *
