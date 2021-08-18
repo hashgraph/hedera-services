@@ -49,6 +49,6 @@ class CounterFactoryTest {
 		assertEquals("%d", counter.format);
 		assertNull(counter.buffered);
 		assertNull(counter.init);
-		assertSame(pretend, counter.statsStringSupplier);
+		assertSame(pretend, counter.supplier);
 	}
 }
