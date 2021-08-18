@@ -34,11 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.MerkleAccount.ChildIndices.RELEASE_090_ASSOCIATED_TOKENS;
-import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static com.hedera.services.state.merkle.MerkleAccountStateTest.buildMeta;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -59,6 +55,9 @@ class MerkleAccountTest {
 	private boolean smartContract = true;
 	private boolean receiverSigRequired = true;
 	private EntityId proxy = new EntityId(1L, 2L, 3L);
+	private int maxAutoAssociaitons = 1234;
+	private int alreadyUsedAutoAssociations = 123;
+	private int autoAssociationMetadata = buildMeta(maxAutoAssociaitons, alreadyUsedAutoAssociations);
 
 	private JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private long otherExpiry = 7_234_567L;
@@ -97,7 +96,7 @@ class MerkleAccountTest {
 				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy);
+				proxy, autoAssociationMetadata);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}

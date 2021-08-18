@@ -38,11 +38,20 @@ import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
+
+	/* This will mask the most significant 16 bits and just give us the least sig 16
+	which represent Max auto associations */
+	private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
+	/* This will mask the least significant 16 bits and just give us the most sig 16
+	which represent already used auto associations */
+	private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK << 16;
+
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
 
 	static final int RELEASE_090_VERSION = 4;
 	static final int RELEASE_0160_VERSION = 5;
-	private static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+	static final int RELEASE_0180_VERSION = 6;
+	private static final int MERKLE_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -59,6 +68,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private boolean receiverSigRequired;
 	private EntityId proxy;
 	private long nftsOwned;
+	private int autoAssociationMetadata;
 
 	public MerkleAccountState() {
 	}
@@ -72,7 +82,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			boolean deleted,
 			boolean smartContract,
 			boolean receiverSigRequired,
-			EntityId proxy
+			EntityId proxy,
+			int autoAssociationMetadata
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -83,6 +94,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
+		this.autoAssociationMetadata = autoAssociationMetadata;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -111,6 +123,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
 			nftsOwned = in.readLong();
 		}
+		if (version >= RELEASE_0180_VERSION) {
+			autoAssociationMetadata = in.readInt();
+		}
 	}
 
 	@Override
@@ -125,6 +140,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
+		out.writeInt(autoAssociationMetadata);
 	}
 
 	/* --- Copyable --- */
@@ -139,7 +155,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				deleted,
 				smartContract,
 				receiverSigRequired,
-				proxy);
+				proxy,
+				autoAssociationMetadata);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -164,6 +181,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.receiverSigRequired == that.receiverSigRequired &&
 				Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
+				this.autoAssociationMetadata == that.autoAssociationMetadata &&
 				equalUpToDecodability(this.key, that.key);
 	}
 
@@ -179,7 +197,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				smartContract,
 				receiverSigRequired,
 				proxy,
-				nftsOwned);
+				nftsOwned,
+				autoAssociationMetadata);
 	}
 
 	/* --- Bean --- */
@@ -196,6 +215,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
 				.add("nftsOwned", nftsOwned)
+				.add("autoAssociationMetadata", autoAssociationMetadata)
 				.toString();
 	}
 
@@ -287,6 +307,23 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setNftsOwned(long nftsOwned) {
 		assertMutable("nftsOwned");
 		this.nftsOwned = nftsOwned;
+	}
+
+	public int getMaxAutomaticAssociations() {
+		return autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK;
+	}
+
+	public int getAlreadyUsedAutomaticAssociations() {
+		return (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) >> 16;
+	}
+
+	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+		autoAssociationMetadata = (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
+	}
+
+	public void
+	setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
 	}
 
 	private void assertMutable(String proximalField) {
