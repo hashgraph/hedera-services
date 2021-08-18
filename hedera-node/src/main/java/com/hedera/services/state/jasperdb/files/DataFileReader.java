@@ -159,6 +159,12 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
         return Integer.compare(metadata.getIndex(), Objects.requireNonNull(o).getMetadata().getIndex());
     }
 
+    /** ToString for debugging */
+    @Override
+    public String toString() {
+        return Integer.toString(metadata.getIndex());
+    }
+
     // =================================================================================================================
     // Abstract methods
 

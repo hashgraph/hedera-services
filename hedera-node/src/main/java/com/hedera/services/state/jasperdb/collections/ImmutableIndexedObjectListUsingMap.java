@@ -1,9 +1,7 @@
 package com.hedera.services.state.jasperdb.collections;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -21,6 +19,18 @@ public class ImmutableIndexedObjectListUsingMap<T extends IndexedObject> extends
      * Create a new ImmutableIndexedObjectList from existing set of objects.
      */
     public ImmutableIndexedObjectListUsingMap(T[] objects) {
+        super(null);
+        SortedMap<Integer, T> map = new TreeMap<>();
+        for(var object: objects) {
+            if (object != null) map.put(object.getIndex(),object);
+        }
+        dataMap = Collections.unmodifiableSortedMap(map);
+    }
+
+    /**
+     * Create a new ImmutableIndexedObjectList from existing list of objects.
+     */
+    public ImmutableIndexedObjectListUsingMap(List<T> objects) {
         super(null);
         SortedMap<Integer, T> map = new TreeMap<>();
         for(var object: objects) {
@@ -63,6 +73,10 @@ public class ImmutableIndexedObjectListUsingMap<T extends IndexedObject> extends
         if (dataMap.isEmpty()) return this; // we are already empty
         SortedMap<Integer, T> map = new TreeMap<>(dataMap);
         for(var object: objectsToDelete) if (object != null) map.remove(object.getIndex());
+        System.err.println("ImmutableIndexedObjectListUsingMap.withDeletingObjects \n"+
+                "objectsToDelete="+ Arrays.toString(objectsToDelete.toArray())+"\n"+
+                "after=("+ map.values().stream().map(Objects::toString).collect(Collectors.joining(","))+")");
+        new Exception().printStackTrace();
         return new ImmutableIndexedObjectListUsingMap<>(Collections.unmodifiableSortedMap(map));
     }
 

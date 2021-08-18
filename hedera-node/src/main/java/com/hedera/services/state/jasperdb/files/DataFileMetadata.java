@@ -14,8 +14,14 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZ
  * DataFile's metadata that is stored in the data file's footer
  */
 public final class DataFileMetadata {
+    /** The file format version, this is ready in case we need to change file format and support multiple versions. */
     private final int fileFormatVersion;
+    /**
+     * The data item value's size, if the file contains fixed size data items then this is the size in bytes of
+     * those items. If the file contains variable size items then this is the constant VARIABLE_DATA_SIZE.
+     */
     private final int dataItemValueSize;
+    /** The number of data items the file contains */
     private final long dataItemCount;
     private final int index;
     private final Instant creationDate;
@@ -135,5 +141,20 @@ public final class DataFileMetadata {
      */
     public boolean isMergeFile() {
         return isMergeFile;
+    }
+
+    /** toString for debugging */
+    @Override
+    public String toString() {
+        return "DataFileMetadata{" +
+                "fileFormatVersion=" + fileFormatVersion +
+                ", dataItemValueSize=" + dataItemValueSize +
+                ", dataItemCount=" + dataItemCount +
+                ", index=" + index +
+                ", creationDate=" + creationDate +
+                ", minimumValidKey=" + minimumValidKey +
+                ", maximumValidKey=" + maximumValidKey +
+                ", isMergeFile=" + isMergeFile +
+                '}';
     }
 }

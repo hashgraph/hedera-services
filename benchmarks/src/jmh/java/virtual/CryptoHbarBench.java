@@ -3,6 +3,8 @@ package virtual;
 import com.swirlds.virtualmap.VirtualMap;
 import org.openjdk.jmh.annotations.*;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -52,10 +54,14 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         virtualMap = createMap(dsType, Id.SERIALIZED_SIZE, Id::new, Account.SERIALIZED_SIZE, Account::new, numEntities);
         prepService = Executors.newFixedThreadPool(prepperThreadCount, Pipeline.threadFactory("Preppers", PREPPER_GROUP));
 
+        long START = System.currentTimeMillis();
         if (preFill) {
             for (int i = 0; i < numEntities; i++) {
                 if (i % 100000 == 0 && i > 0) {
-                    System.out.printf("Completed: %,d\n",i);
+                    final long END = System.currentTimeMillis();
+                    double tookSeconds = (END - START) / 1000d;
+                    START = END;
+                    System.out.printf("Completed: %,d in %,.2f seconds\n",i,tookSeconds);
 //                    System.out.println(virtualMap.toDebugString());
                     virtualMap = pipeline.endRound(virtualMap);
                 }
