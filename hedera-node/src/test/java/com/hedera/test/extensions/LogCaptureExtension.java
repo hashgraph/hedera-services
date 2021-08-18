@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
-import javax.inject.Inject;
 import java.lang.reflect.Field;
 import java.util.stream.Stream;
 
@@ -91,7 +90,7 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
 			throw new IllegalStateException("The test class has no designated subject");
 		}
 		if (logCaptor == null) {
-			throw new IllegalStateException("The test class has no LogCaptor field marked with @Inject");
+			throw new IllegalStateException("The test class has no LogCaptor field marked with @LoggingTarget");
 		}
 
 		injectCaptor(o, subject, logCaptor);
@@ -114,6 +113,6 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
 			return false;
 		}
 		var annotations = field.getDeclaredAnnotations();
-		return Stream.of(annotations).anyMatch(a -> a.annotationType().equals(Inject.class));
+		return Stream.of(annotations).anyMatch(a -> a.annotationType().equals(LoggingTarget.class));
 	}
 }

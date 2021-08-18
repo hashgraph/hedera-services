@@ -23,6 +23,9 @@ package com.hedera.services.context.properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -42,6 +45,8 @@ import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+@Singleton
+@Named("bootstrap")
 public class BootstrapProperties implements PropertySource {
 	private static final Map<String, Object> MISSING_PROPS = null;
 
@@ -58,6 +63,10 @@ public class BootstrapProperties implements PropertySource {
 		return in;
 	};
 	private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+
+	@Inject
+	public BootstrapProperties() {
+	}
 
 	String bootstrapPropsResource = "bootstrap.properties";
 	String bootstrapOverridePropsLoc = "data/config/bootstrap.properties";

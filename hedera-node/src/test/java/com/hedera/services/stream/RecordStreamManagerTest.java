@@ -25,6 +25,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
@@ -39,7 +40,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.inject.Inject;
 import java.util.Queue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,7 +85,7 @@ public class RecordStreamManagerTest {
 	private static NodeLocalProperties disabledProps;
 	private static NodeLocalProperties enabledProps;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private RecordStreamManager recordStreamManager;
