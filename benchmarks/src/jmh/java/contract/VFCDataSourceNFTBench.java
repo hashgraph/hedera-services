@@ -364,13 +364,6 @@ public class VFCDataSourceNFTBench {
         }
 
         @Override
-        public void update(ByteBuffer byteBuffer) throws IOException {
-            randomData.rewind();
-            byteBuffer.putInt(randomData.limit());
-            byteBuffer.put(randomData);
-        }
-
-        @Override
         public NFTData copy() {
             return new NFTData(this);
         }

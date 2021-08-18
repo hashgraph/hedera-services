@@ -39,7 +39,6 @@ public class DataFileCommon {
      * array of data location pointers will be initialized to be all non-existent.
      */
     public static long NON_EXISTENT_DATA_LOCATION = 0;
-
     /** Just a handy constant for one GB */
     static final long GB = 1024*1024*1024;
     /**
@@ -47,7 +46,6 @@ public class DataFileCommon {
      * are extensive to merge. It must be less than MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES.
      */
     static final long MAX_DATA_FILE_SIZE = 64*GB;
-
     /** Size of keys in bytes, assumed to be a single long as all our use cases just needed a long */
     static final int KEY_SIZE = Long.BYTES;
     /** The current file format version, ready for if the file format needs to change */
@@ -59,14 +57,11 @@ public class DataFileCommon {
     static final String FILE_EXTENSION = ".jdb";
     /** System page size used in calculations, could be read from system but for linux we are pretty safe assuming 4k */
     static final int PAGE_SIZE = 4096;
-
-    /** Size of metadata footer writen at end of file */
+    /** Size of metadata footer written at end of file */
     static final int FOOTER_SIZE = PAGE_SIZE;
-
-    /**
-     * Comparator for comparing DataFileReaders by file creation time
-     */
-    static Comparator<DataFileReader> dataFileReaderCreationTimeComparator = Comparator.comparing(o -> o.getMetadata().getCreationDate());
+    /** Comparator for comparing DataFileReaders by file creation time */
+    static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
+            Comparator.comparing(o -> o.getMetadata().getCreationDate());
 
     /**
      * Create a filter to only return all new files that are smaller than given size
@@ -78,7 +73,7 @@ public class DataFileCommon {
         long sizeBytes = sizeMB * MB;
         return dataFileReaders -> {
             var filesNewestFirst = dataFileReaders.stream()
-                    .sorted(dataFileReaderCreationTimeComparator.reversed())
+                    .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR.reversed())
                     .collect(Collectors.toList());
             var smallEnoughFiles = new ArrayList<DataFileReader>(filesNewestFirst.size());
             for(var file: filesNewestFirst) {

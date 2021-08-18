@@ -1,6 +1,8 @@
 package com.hedera.services.state.jasperdb.files;
 
+import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectList;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
+import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectListUsingMap;
 import org.eclipse.collections.api.map.primitive.ImmutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
@@ -10,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +42,7 @@ public class DataFileCollection {
     private final AtomicInteger nextFileIndex = new AtomicInteger();
     private final AtomicLong minimumValidKey = new AtomicLong();
     private final AtomicLong maximumValidKey = new AtomicLong();
-    private final AtomicReference<ImmutableIndexedObjectListUsingArray<DataFileReader>> indexedFileList = new AtomicReference<>();
+    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader>> indexedFileList = new AtomicReference<>();
     private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
     private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.ofEpochSecond(0));
     /**
@@ -106,7 +109,8 @@ public class DataFileCollection {
                         .toArray(DataFileReader[]::new);
             if (dataFileReaders.length > 0) {
                 System.out.println("Loading existing set of ["+dataFileReaders.length+"] data files for DataFileCollection ["+storeName+"] ...");
-                indexedFileList.set(new ImmutableIndexedObjectListUsingArray<>(dataFileReaders));
+//                indexedFileList.set(new ImmutableIndexedObjectListUsingArray<>(dataFileReaders));
+                indexedFileList.set(new ImmutableIndexedObjectListUsingMap<>(dataFileReaders));
                 // work out what the next index would be, the highest current index plus one
                 nextFileIndex.set(dataFileReaders[dataFileReaders.length-1].getMetadata().getIndex() + 1);
                 // we loaded an existing set of files
@@ -442,8 +446,11 @@ public class DataFileCollection {
                 currentFileList -> {
                     try {
                         DataFileReader newDataFileReader = dataFileReaderFactory.newDataFileReader(filePath,metadata);
+//                        return (currentFileList == null) ?
+//                            new ImmutableIndexedObjectListUsingArray<>(Collections.singletonList(newDataFileReader)) :
+//                            currentFileList.withAddedObject(newDataFileReader);
                         return (currentFileList == null) ?
-                            new ImmutableIndexedObjectListUsingArray<>(Collections.singletonList(newDataFileReader)) :
+                            new ImmutableIndexedObjectListUsingMap<>(Collections.singletonList(newDataFileReader)) :
                             currentFileList.withAddedObject(newDataFileReader);
                     } catch (IOException e) {
                         throw new RuntimeException(e); // TODO something better?
