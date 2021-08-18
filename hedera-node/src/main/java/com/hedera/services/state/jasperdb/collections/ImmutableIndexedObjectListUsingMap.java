@@ -1,7 +1,9 @@
 package com.hedera.services.state.jasperdb.collections;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /**
@@ -73,9 +75,6 @@ public class ImmutableIndexedObjectListUsingMap<T extends IndexedObject> extends
         if (dataMap.isEmpty()) return this; // we are already empty
         SortedMap<Integer, T> map = new TreeMap<>(dataMap);
         for(var object: objectsToDelete) if (object != null) map.remove(object.getIndex());
-        System.err.println("ImmutableIndexedObjectListUsingMap.withDeletingObjects \n"+
-                "objectsToDelete="+ Arrays.toString(objectsToDelete.toArray())+"\n"+
-                "after=("+ map.values().stream().map(Objects::toString).collect(Collectors.joining(","))+")");
         new Exception().printStackTrace();
         return new ImmutableIndexedObjectListUsingMap<>(Collections.unmodifiableSortedMap(map));
     }
