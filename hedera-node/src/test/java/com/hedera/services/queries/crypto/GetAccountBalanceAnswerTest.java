@@ -48,6 +48,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,8 +73,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-class GetAccountBalanceAnswerTest {
-	private FCMap accounts;
+public class GetAccountBalanceAnswerTest {
+	private VirtualMap accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
@@ -128,7 +129,7 @@ class GetAccountBalanceAnswerTest {
 				fromAccountTokenRel(target, dToken),
 				new MerkleTokenRelStatus(dBalance, false, false));
 
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);

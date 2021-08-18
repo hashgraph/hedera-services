@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +64,7 @@ import static org.mockito.BDDMockito.verify;
 class GetAccountRecordsAnswerTest {
 	long fee = 1_234L;
 	StateView view;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	Transaction paymentTxn;
 	String node = "0.0.3";
 	String payer = "0.0.12345";
@@ -91,7 +91,7 @@ class GetAccountRecordsAnswerTest {
 		payerAccount.records().offer(recordOne());
 		payerAccount.records().offer(recordTwo());
 
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);

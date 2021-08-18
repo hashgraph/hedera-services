@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +71,7 @@ class AnswerFunctionsTest {
 	private String target = payer;
 	private StateView view;
 	private RecordCache recordCache;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private NodeLocalProperties nodeProps;
 
@@ -83,7 +83,7 @@ class AnswerFunctionsTest {
 		payerAccount.records().offer(recordOne());
 		payerAccount.records().offer(targetRecord);
 
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();

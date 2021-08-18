@@ -70,6 +70,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
+import com.swirlds.virtualmap.VirtualMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.ethereum.core.AccountState;
@@ -117,7 +118,7 @@ class SmartContractRequestHandlerPayableTest {
   private static final long contractSequenceNumber = 334L;
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+  VirtualMap<MerkleEntityId, MerkleAccount> fcMap = null;
   BackingAccounts backingAccounts;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
@@ -170,7 +171,7 @@ class SmartContractRequestHandlerPayableTest {
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
     //Init FCMap
-    fcMap = new FCMap<>();
+    fcMap = new VirtualMap<>();
     storageMap = new FCMap<>();
     // Create accounts
     createAccount(payerAccountId, INITIAL_BALANCE);
@@ -657,8 +658,8 @@ class SmartContractRequestHandlerPayableTest {
 
   private long getTotalBalance() {
     long total = 0L;
-    for (MerkleAccount val : fcMap.values()) {
-      total += val.getBalance();
+    for (var iter = fcMap.entries(); iter.hasNext(); ) {
+      total += iter.next().getValue().getBalance();
     }
     return total;
   }

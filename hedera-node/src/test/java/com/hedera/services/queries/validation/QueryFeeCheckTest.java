@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -79,7 +79,7 @@ class QueryFeeCheckTest {
 	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
 	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private QueryFeeCheck subject;
 
@@ -98,7 +98,7 @@ class QueryFeeCheckTest {
 		queryPayer = mock(MerkleAccount.class);
 		given(queryPayer.getBalance()).willReturn(aLot);
 
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(argThat(missingKey::equals))).willReturn(null);
 		given(accounts.get(argThat(richKey::equals))).willReturn(rich);
 		given(accounts.get(argThat(brokeKey::equals))).willReturn(broke);

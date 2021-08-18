@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -110,7 +111,7 @@ class ContextOptionValidatorTest {
 	private MerkleTopic expiredMerkleTopic;
 	private MerkleTopic merkleTopic;
 	private FCMap topics;
-	private FCMap accounts;
+	private VirtualMap accounts;
 	private TransactionContext txnCtx;
 	private ContextOptionValidator subject;
 	private JKey wacl;
@@ -128,7 +129,7 @@ class ContextOptionValidatorTest {
 	private void setup() throws Exception {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(a))).willReturn(aV);
 		given(accounts.get(MerkleEntityId.fromAccountId(deleted))).willReturn(deletedV);
 		given(accounts.get(fromContractId(contract))).willReturn(contractV);
