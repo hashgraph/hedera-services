@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -39,7 +38,6 @@ import static java.nio.ByteBuffer.allocate;
  * @param <K> type for keys
  * @param <V> type for values
  */
-@SuppressWarnings("jol")
 public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     /**
      * The hash stores an Integer with the digest type + the digest data itself. This is a waste of space.
@@ -50,8 +48,6 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     private final static int HASH_SIZE = Integer.BYTES + DigestType.SHA_384.digestLength();
     /** The size in bytes for serialized key objects */
     private final int keySizeBytes;
-    /** The size in bytes of serialized value objects */
-    private final int valueSizeBytes;
     /** Constructor for creating new key objects during de-serialization */
     private final Supplier<K> keyConstructor;
     /** Constructor for creating new value objects during de-serialization */
@@ -111,9 +107,10 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         this.keySizeBytes = Integer.BYTES + keySizeBytes; // extra leading integer keeps track of the version
         this.keyConstructor = keyConstructor;
         // TODO If we pass -1 in as the valueSizeBytes (for variable length), then this guy computes wrong.
-        this.valueSizeBytes = Integer.BYTES + valueSizeBytes; // same, leading int has version
+        // add leading int for version
+        valueSizeBytes = Integer.BYTES + valueSizeBytes;
         this.valueConstructor = valueConstructor;
-        final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + this.valueSizeBytes; // TODO sizes wrong if valueSizeBytes is -1
+        final int keyHashValueSize = this.keySizeBytes + HASH_SIZE + valueSizeBytes; // TODO sizes wrong if valueSizeBytes is -1
         this.leafKey = ThreadLocal.withInitial(() -> allocate(this.keySizeBytes));
         this.keyHashValue = ThreadLocal.withInitial(() -> allocate(keyHashValueSize));
         final LoadedDataCallback loadedDataCallback;
@@ -215,8 +212,6 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         return new VirtualLeafRecord<>(path, hash, key, value);
     }
 
-    private final AtomicBoolean currentlySaving = new AtomicBoolean(false);
-
     /**
      * Save a batch of data to data store.
      *
@@ -227,74 +222,16 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      */
     public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords,
                             List<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
-        if (currentlySaving.getAndSet(true)) throw new IOException("Tried to saveRecords when we are already saving records.");
         // might as well write to the 3 data stores in parallel
         IntStream.range(0,3).parallel().forEach(action -> {
             if (action == 0) {// write internal node hashes
-                if (internalRecords != null && !internalRecords.isEmpty()) {
-                    for (VirtualInternalRecord rec : internalRecords) {
-                        internalHashStore.put(rec.getPath(), rec.getHash());
-                    }
-                }
+                writeInternalRecords(internalRecords);
             } else if (action == 1) { // write leaves to pathToKeyHashValue
-                if (leafRecords != null && !leafRecords.isEmpty()) {
-                    try {
-                        long prevPath = Long.MIN_VALUE;  // Used for validation to make sure the data is sorted.
-                        pathToKeyHashValue.startWriting();
-                        // get reusable buffer
-                        ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
-                        for (var rec : leafRecords) {
-                            final long path = rec.getPath();
-                            final VirtualKey key = rec.getKey();
-                            final Hash hash = rec.getHash();
-                            final VirtualValue value = rec.getValue();
-
-                            assert path > prevPath : "saveRecords paths are not sorted, got path " + path + " after path " + prevPath;
-                            prevPath = path;
-
-                            // clear buffer for reuse
-                            keyHashValueBuffer.clear();
-                            // put key
-                            keyHashValueBuffer.putInt(key.getVersion());
-                            key.serialize(keyHashValueBuffer);
-                            // put hash
-                            Hash.toByteBuffer(hash, keyHashValueBuffer);
-                            // put value
-                            keyHashValueBuffer.putInt(value.getVersion());
-                            value.serialize(keyHashValueBuffer);
-                            // now save pathToKeyHashValue
-                            keyHashValueBuffer.flip();
-                            pathToKeyHashValue.put(path, keyHashValueBuffer);
-                        }
-                        pathToKeyHashValue.endWriting(firstLeafPath, lastLeafPath);
-                    } catch (IOException e) {
-                        // TODO maybe need a way to make sure streams / writers are closed if there is an exception?
-                        throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-                    }
-                }
+                writeLeavesToPathToKeyHashValue(firstLeafPath, lastLeafPath, leafRecords);
             } else if (action == 2) { // write leaves to objectKeyToPath
-                if (leafRecords != null && !leafRecords.isEmpty()) {
-                    if (isLongKeyMode) {
-                        for (var rec : leafRecords) {
-                            long key = ((VirtualLongKey) rec.getKey()).getKeyAsLong();
-                            longKeyToPath.put(key, rec.getPath());
-                        }
-                    } else {
-                        try {
-                            objectKeyToPath.startWriting();
-                            for (var rec : leafRecords) {
-                                objectKeyToPath.put(rec.getKey(), rec.getPath());
-                            }
-                            objectKeyToPath.endWriting();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-                        }
-                    }
-                }
+                writeLeavesToObjectKeyToPath(leafRecords);
             }
         });
-        // done
-        currentlySaving.set(false);
     }
 
     /**
@@ -345,6 +282,85 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         } finally {
             if (objectKeyToPath!= null) objectKeyToPath.close();
             pathToKeyHashValue.close();
+        }
+    }
+
+    //==================================================================================================================
+    // private methods
+
+    /**
+     * Write all internal records hashes to internalHashStore
+     */
+    private void writeInternalRecords(List<VirtualInternalRecord> internalRecords) {
+        if (internalRecords != null && !internalRecords.isEmpty()) {
+            for (VirtualInternalRecord rec : internalRecords) {
+                internalHashStore.put(rec.getPath(), rec.getHash());
+            }
+        }
+    }
+
+    /**
+     * Write all the given leaf records to pathToKeyHashValue
+     */
+    private void writeLeavesToPathToKeyHashValue(long firstLeafPath, long lastLeafPath,
+                                                 List<VirtualLeafRecord<K, V>> leafRecords) {
+        if (leafRecords != null && !leafRecords.isEmpty()) {
+            try {
+                long prevPath = Long.MIN_VALUE;  // Used for validation to make sure the data is sorted.
+                pathToKeyHashValue.startWriting();
+                // get reusable buffer
+                ByteBuffer keyHashValueBuffer = this.keyHashValue.get();
+                for (var rec : leafRecords) {
+                    final long path = rec.getPath();
+                    final VirtualKey key = rec.getKey();
+                    final Hash hash = rec.getHash();
+                    final VirtualValue value = rec.getValue();
+
+                    assert path > prevPath : "saveRecords paths are not sorted, got path " + path + " after path " + prevPath;
+                    prevPath = path;
+
+                    // clear buffer for reuse
+                    keyHashValueBuffer.clear();
+                    // put key
+                    keyHashValueBuffer.putInt(key.getVersion());
+                    key.serialize(keyHashValueBuffer);
+                    // put hash
+                    Hash.toByteBuffer(hash, keyHashValueBuffer);
+                    // put value
+                    keyHashValueBuffer.putInt(value.getVersion());
+                    value.serialize(keyHashValueBuffer);
+                    // now save pathToKeyHashValue
+                    keyHashValueBuffer.flip();
+                    pathToKeyHashValue.put(path, keyHashValueBuffer);
+                }
+                pathToKeyHashValue.endWriting(firstLeafPath, lastLeafPath);
+            } catch (IOException e) {
+                // TODO maybe need a way to make sure streams / writers are closed if there is an exception?
+                throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+            }
+        }
+    }
+    /**
+     * Write all the given leaf records to objectKeyToPath
+     */
+    private void writeLeavesToObjectKeyToPath(List<VirtualLeafRecord<K, V>> leafRecords) {
+        if (leafRecords != null && !leafRecords.isEmpty()) {
+            if (isLongKeyMode) {
+                for (var rec : leafRecords) {
+                    long key = ((VirtualLongKey) rec.getKey()).getKeyAsLong();
+                    longKeyToPath.put(key, rec.getPath());
+                }
+            } else {
+                try {
+                    objectKeyToPath.startWriting();
+                    for (var rec : leafRecords) {
+                        objectKeyToPath.put(rec.getKey(), rec.getPath());
+                    }
+                    objectKeyToPath.endWriting();
+                } catch (IOException e) {
+                    throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
+                }
+            }
         }
     }
 
