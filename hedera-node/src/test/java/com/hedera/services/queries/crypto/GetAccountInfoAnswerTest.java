@@ -47,11 +47,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,7 +86,7 @@ class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
@@ -176,7 +177,7 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);

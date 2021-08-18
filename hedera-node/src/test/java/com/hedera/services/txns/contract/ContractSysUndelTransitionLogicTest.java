@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
 
@@ -62,7 +63,7 @@ public class ContractSysUndelTransitionLogicTest {
 	private TransactionBody contractSysUndelTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	VirtualMap<MerkleEntityId, MerkleAccount> contracts;
 	ContractSysUndelTransitionLogic subject;
 
 	@BeforeEach

@@ -46,6 +46,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +91,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts = new VirtualMap<>();
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 
 	private MerkleToken token;
@@ -254,7 +255,7 @@ class SignedStateBalancesExporterTest {
 		var loc = expectedExportLoc();
 		var desiredDebugMsg = "Created balance signature file " + "'" + loc + "_sig'.";
 		// and:
-		accounts.clear();
+//		accounts.clear();
 		accounts.put(
 				new MerkleEntityId(0, 0, 1),
 				MerkleAccountFactory.newAccount().get());

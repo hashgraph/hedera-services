@@ -43,7 +43,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.BiPredicate;
@@ -79,7 +79,7 @@ public class SigVerifierRegressionTest {
 	private HederaSigningOrder retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 

@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,11 +82,11 @@ class ContractCallLocalAnswerTest {
 	ContractCallLocalAnswer subject;
 	OptionValidator validator;
 	ContractCallLocalAnswer.LegacyLocalCaller delegate;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	VirtualMap<MerkleEntityId, MerkleAccount> contracts;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+		contracts = (VirtualMap<MerkleEntityId, MerkleAccount>) mock(VirtualMap.class);
 		view = mock(StateView.class);
 
 		delegate = mock(ContractCallLocalAnswer.LegacyLocalCaller.class);

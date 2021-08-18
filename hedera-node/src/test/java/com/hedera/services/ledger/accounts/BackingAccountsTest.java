@@ -31,10 +31,12 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -64,13 +66,25 @@ class BackingAccountsTest {
 	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
 	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
-	private FCMap<MerkleEntityId, MerkleAccount> map;
+	private VirtualMap<MerkleEntityId, MerkleAccount> map;
 	private BackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
-		map = mock(FCMap.class);
-		given(map.keySet()).willReturn(Collections.emptySet());
+		map = mock(VirtualMap.class);
+		given(map.entries()).willReturn(
+		new Iterator<Map.Entry<MerkleEntityId, MerkleAccount>>() {
+			@Override
+			public boolean hasNext() {
+				return false;
+			}
+
+			@Override
+			public Map.Entry<MerkleEntityId, MerkleAccount> next() {
+				return null;
+			}
+		});
+//		given(map.keySet()).willReturn(Collections.emptySet());
 
 		subject = new BackingAccounts(() -> map);
 	}
@@ -78,7 +92,7 @@ class BackingAccountsTest {
 	@Test
 	void syncsFromInjectedMap() {
 		// setup:
-		map = new FCMap<>();
+		map = new VirtualMap<>();
 		map.put(aKey, aValue);
 		map.put(bKey, bValue);
 		// and:
@@ -92,14 +106,14 @@ class BackingAccountsTest {
 	@Test
 	void rebuildsFromChangedSources() {
 		// setup:
-		map = new FCMap<>();
+		map = new VirtualMap<>();
 		map.put(aKey, aValue);
 		map.put(bKey, bValue);
 		// and:
 		subject = new BackingAccounts(() -> map);
 
 		// when:
-		map.clear();
+		map = new VirtualMap<>();
 		map.put(cKey, cValue);
 		map.put(dKey, dValue);
 		// and:

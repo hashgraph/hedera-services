@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ class ContractUpdateResourceUsageTest {
 	Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 	StateView view;
 	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private SigValueObj sigUsage;
 	private SmartContractFeeBuilder usageEstimator;
@@ -70,7 +70,7 @@ class ContractUpdateResourceUsageTest {
 
 		account = mock(MerkleAccount.class);
 		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(accountKey)).willReturn(account);
 		view = mock(StateView.class);
 		given(view.accounts()).willReturn(accounts);

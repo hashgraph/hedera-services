@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
 
@@ -85,7 +86,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
 	private TopicCreateTransitionLogic subject;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
 	private EntityIdSource entityIdSource;
 	private HederaLedger ledger;
@@ -108,7 +109,7 @@ class MerkleTopicCreateTransitionLogicTest {
 		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
 		entityIdSource = mock(EntityIdSource.class);
 		given(entityIdSource.newAccountId(any())).willReturn(NEW_TOPIC_ID);
-		accounts.clear();
+		accounts = new VirtualMap<>();
 		topics.clear();
 
 		ledger = mock(HederaLedger.class);

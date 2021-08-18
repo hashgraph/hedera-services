@@ -42,7 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -94,7 +94,7 @@ class GetTxnRecordAnswerTest {
 	private String node = "0.0.3";
 	private long fee = 1_234L;
 	private Transaction paymentTxn;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
 	private NodeLocalProperties nodeProps;
@@ -102,7 +102,7 @@ class GetTxnRecordAnswerTest {
 	@BeforeEach
 	private void setup() {
 		recordCache = mock(RecordCache.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 		optionValidator = mock(OptionValidator.class);

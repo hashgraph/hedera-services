@@ -50,7 +50,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.AbstractMap;
@@ -99,7 +99,7 @@ class SigOpsRegressionTest {
 	private SignatureStatus expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
 	private HederaSigningOrder signingOrder;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
 	private Predicate<TransactionBody> updateAccountSigns = txn ->

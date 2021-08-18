@@ -42,7 +42,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import javafx.util.Pair;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
@@ -88,7 +88,7 @@ class ExpiringCreationsTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	@Mock
 	private ServicesContext ctx;
 	@Mock

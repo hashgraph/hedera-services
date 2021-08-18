@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,7 +85,7 @@ class ToStringAccountsExporterTest {
 				"num=0}}, # records=0, tokens=[1234.0.0]}\n";
 
 		// given:
-		FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+		VirtualMap<MerkleEntityId, MerkleAccount> accounts = new VirtualMap<>();
 		// and:
 		accounts.put(new MerkleEntityId(0, 0, 2), account2);
 		accounts.put(new MerkleEntityId(0, 0, 1), account1);

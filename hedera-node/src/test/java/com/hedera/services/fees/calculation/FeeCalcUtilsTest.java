@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
 
 import java.text.MessageFormat;
@@ -84,7 +84,7 @@ public class FeeCalcUtilsTest {
 	public void returnsAccountExpiryIfAvail() {
 		// setup:
 		MerkleAccount account = mock(MerkleAccount.class);
-		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
+		VirtualMap<MerkleEntityId, MerkleAccount> accounts = mock(VirtualMap.class);
 		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 
 		given(account.getExpiry()).willReturn(Long.MAX_VALUE);

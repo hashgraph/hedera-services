@@ -44,6 +44,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.ethereum.core.AccountState;
 import org.ethereum.core.Repository;
 import org.ethereum.datasource.DbSource;
@@ -61,8 +62,8 @@ import static org.mockito.BDDMockito.mock;
 public class RepoNewCacheTest {
 	@Ignore
 	public void test() {
-		FCMap<MerkleEntityId, MerkleAccount> accountMap =
-				new FCMap<>();
+		VirtualMap<MerkleEntityId, MerkleAccount> accountMap =
+				new VirtualMap<>();
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
@@ -142,8 +143,8 @@ public class RepoNewCacheTest {
 
 	@Test
 	public void rollbackTest() {
-		FCMap<MerkleEntityId, MerkleAccount> accountMap =
-				new FCMap<>();
+		VirtualMap<MerkleEntityId, MerkleAccount> accountMap =
+				new VirtualMap<>();
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 

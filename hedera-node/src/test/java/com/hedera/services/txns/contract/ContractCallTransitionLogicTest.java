@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +69,7 @@ public class ContractCallTransitionLogicTest {
 	private TransactionBody contractCallTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	VirtualMap<MerkleEntityId, MerkleAccount> contracts;
 	ContractCallTransitionLogic subject;
 
 	@BeforeEach

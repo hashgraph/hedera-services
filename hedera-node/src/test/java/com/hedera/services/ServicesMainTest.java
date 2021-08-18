@@ -61,6 +61,7 @@ import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,14 +84,13 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mockStatic;
 
 public class ServicesMainTest {
 	private final long NODE_ID = 1L;
 	private final String PATH = "/this/was/mr/bleaneys/room";
 
 	private FCMap topics;
-	private FCMap accounts;
+	private VirtualMap accounts;
 	private FCMap storage;
 	private Pause pause;
 	private Console console;
@@ -127,7 +127,7 @@ public class ServicesMainTest {
 		fees = mock(FeeCalculator.class);
 		grpc = mock(GrpcServerManager.class);
 		pause = mock(Pause.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		topics = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		console = mock(Console.class);

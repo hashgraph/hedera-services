@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ import static org.mockito.BDDMockito.mock;
 class GetAccountRecordsResourceUsageTest {
 	StateView view;
 	CryptoFeeBuilder usageEstimator;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	GetAccountRecordsResourceUsage subject;
 	String a = "0.0.1234";
 	MerkleAccount aValue;
@@ -68,7 +68,7 @@ class GetAccountRecordsResourceUsageTest {
 		aValue.records().offer(recordOne());
 		aValue.records().offer(recordTwo());
 		usageEstimator = mock(CryptoFeeBuilder.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 

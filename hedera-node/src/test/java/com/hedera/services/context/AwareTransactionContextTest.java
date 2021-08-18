@@ -62,7 +62,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -184,7 +184,7 @@ class AwareTransactionContextTest {
 		payerKey = mock(JKey.class);
 		MerkleAccount payerAccount = mock(MerkleAccount.class);
 		given(payerAccount.getKey()).willReturn(payerKey);
-		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
+		VirtualMap<MerkleEntityId, MerkleAccount> accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
 
 		ctx = mock(ServicesContext.class);

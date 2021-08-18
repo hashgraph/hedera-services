@@ -70,11 +70,12 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.virtualmap.VirtualMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.collections4.Predicate;
@@ -127,7 +128,7 @@ public class SmartContractRequestHandlerStorageTest {
 	public static String ADDRESS_PATH = "/{0}/s{1}";
 	SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  FCMap<MerkleEntityId, MerkleAccount> contracts = null;
+  VirtualMap<MerkleEntityId, MerkleAccount> contracts = null;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -178,7 +179,7 @@ public class SmartContractRequestHandlerStorageTest {
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
-    contracts = new FCMap<>();
+    contracts = new VirtualMap<>();
     storageMap = new FCMap<>();
     createAccount(payerAccountId, 1_000_000_000L);
     createAccount(nodeAccountId, 10_000L);

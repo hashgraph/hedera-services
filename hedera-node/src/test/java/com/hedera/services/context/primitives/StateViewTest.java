@@ -55,7 +55,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,7 +134,7 @@ class StateViewTest {
 	private Map<FileID, HFileMeta> attrs;
 	private BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
-	private FCMap<MerkleEntityId, MerkleAccount> contracts;
+	private VirtualMap<MerkleEntityId, MerkleAccount> contracts;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -191,7 +191,7 @@ class StateViewTest {
 				.deleted(true)
 				.expirationTime(9_999_999L)
 				.get();
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+		contracts = (VirtualMap<MerkleEntityId, MerkleAccount>) mock(VirtualMap.class);
 		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
 
