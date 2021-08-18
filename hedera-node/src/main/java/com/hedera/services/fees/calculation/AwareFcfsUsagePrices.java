@@ -53,8 +53,8 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	private static final Logger log = LogManager.getLogger(AwareFcfsUsagePrices.class);
 
-	public static long DEFAULT_FEE = 100_000L;
-	public static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
+	private static final long DEFAULT_FEE = 100_000L;
+	private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
 			.setMin(DEFAULT_FEE)
 			.setMax(DEFAULT_FEE)
 			.setConstant(0).setBpt(0).setVpt(0).setRbh(0).setSbh(0).setGas(0).setTv(0).setBpr(0).setSbpr(0)

@@ -70,6 +70,7 @@ class TokenCreateUsageTest {
 	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	private AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
 
+	private TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private TokenCreateTransactionBody op;
 	private TransactionBody txn;
 
@@ -125,7 +126,7 @@ class TokenCreateUsageTest {
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
 		verify(base).addBpt(expectedBytes);
-		verify(base).addRbs(expectedBytes * autoRenewPeriod);
+		verify(base).addRbs((expectedBytes + tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList())) * autoRenewPeriod);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -188,7 +189,7 @@ class TokenCreateUsageTest {
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
 		verify(base).addBpt(expectedBytes);
-		verify(base).addRbs(expectedBytes * autoRenewPeriod);
+		verify(base).addRbs((expectedBytes + tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList())) * autoRenewPeriod);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

@@ -9,9 +9,9 @@ package com.hedera.services.context.domain.security;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,9 +25,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.regex.Pattern;
 
 public class PermissionedAccountsRange {
-	private static Pattern DEGENERATE = Pattern.compile("\\d+");
-	private static Pattern NON_DEGENERATE = Pattern.compile("(\\d+)-(\\d+)");
-	private static Pattern NON_DEGENERATE_WILDCARD = Pattern.compile("(\\d+)-[*]");
+	private static final Pattern DEGENERATE = Pattern.compile("\\d+");
+	private static final Pattern NON_DEGENERATE = Pattern.compile("(\\d+)-(\\d+)");
+	private static final Pattern NON_DEGENERATE_WILDCARD = Pattern.compile("(\\d+)-[*]");
 
 	final Long from;
 	final Long inclusiveTo;
