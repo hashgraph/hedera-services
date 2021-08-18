@@ -141,7 +141,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (assessedCustomFees != NO_CUSTOM_FEES) {
-			int n = assessedCustomFees.size();
 			var readable = assessedCustomFees.stream().map(
 					assessedCustomFee -> String.format("(%s)", assessedCustomFee))
 					.collect(joining(", "));
@@ -149,7 +148,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
-			int n = newTokenAssociations.size();
 			var readable = newTokenAssociations.stream().map(
 					newTokenAssociation -> String.format("(%s)", newTokenAssociation))
 					.collect(joining(", "));

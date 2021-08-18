@@ -37,7 +37,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
-public class FcTokenAssociationTest {
+class FcTokenAssociationTest {
 	private final EntityId accountId = new EntityId(4, 5, 6);
 	private final EntityId tokenId = new EntityId(1, 2, 3);
 	private final FcTokenAssociation subject = new FcTokenAssociation(tokenId, accountId);
