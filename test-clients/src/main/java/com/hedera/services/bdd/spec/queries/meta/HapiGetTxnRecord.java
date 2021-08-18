@@ -383,7 +383,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 							actualAssessedCustomFees
 					));
 		}
-		final var actualNewTokenAssociations = actualRecord.getNewTokenAssociationsList();
+		final var actualNewTokenAssociations = actualRecord.getAutomaticTokenAssociationsList();
 		if (!newTokenAssociations.isEmpty()) {
 			newTokenAssociations.forEach(pair ->
 					validateNewTokenAssociations(

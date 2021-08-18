@@ -421,7 +421,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
-			grpc.addAllNewTokenAssociations(
+			grpc.addAllAutomaticTokenAssociations(
 					newTokenAssociations.stream().map(FcTokenAssociation::toGrpc).collect(toList()));
 		}
 

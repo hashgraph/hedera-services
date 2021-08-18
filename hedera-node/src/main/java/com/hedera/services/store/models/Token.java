@@ -250,12 +250,13 @@ public class Token {
         return adminKey != null;
     }
 
-	public TokenRelationship newRelationshipWith(final Account account) {
+	public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
 		final var newRel = new TokenRelationship(this, account);
 		if (hasFreezeKey() && frozenByDefault) {
 			newRel.setFrozen(true);
 		}
 		newRel.setKycGranted(!hasKycKey());
+		newRel.setAutomaticAssociation(automaticAssociation);
 		return newRel;
 	}
 

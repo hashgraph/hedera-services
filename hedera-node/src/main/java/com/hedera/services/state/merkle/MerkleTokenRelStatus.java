@@ -31,13 +31,15 @@ import java.io.IOException;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	static final int RELEASE_090_VERSION = 1;
+	static final int RELEASE_0180_VERSION = 2;
+	static final int MERKLE_VERSION = RELEASE_0180_VERSION;
 
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
+	private boolean automaticAssociation;
 
 	public MerkleTokenRelStatus() {
 	}
@@ -46,6 +48,14 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		this.balance = balance;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
+		this.automaticAssociation = false;
+	}
+
+	public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted, boolean automaticAssociation) {
+		this.balance = balance;
+		this.frozen = frozen;
+		this.kycGranted = kycGranted;
+		this.automaticAssociation = automaticAssociation;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -64,6 +74,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		balance = in.readLong();
 		frozen = in.readBoolean();
 		kycGranted = in.readBoolean();
+		if (version >= RELEASE_0180_VERSION) {
+			automaticAssociation = in.readBoolean();
+		}
 	}
 
 	@Override
@@ -71,6 +84,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		out.writeLong(balance);
 		out.writeBoolean(frozen);
 		out.writeBoolean(kycGranted);
+		out.writeBoolean(automaticAssociation);
 	}
 
 	/* --- Object --- */
@@ -88,6 +102,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 				.append(balance, that.balance)
 				.append(frozen, that.frozen)
 				.append(kycGranted, that.kycGranted)
+				.append(automaticAssociation, that.automaticAssociation)
 				.isEquals();
 	}
 
@@ -97,6 +112,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 				.append(balance)
 				.append(frozen)
 				.append(kycGranted)
+				.append(automaticAssociation)
 				.toHashCode();
 	}
 
@@ -131,11 +147,20 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		this.kycGranted = kycGranted;
 	}
 
+	public boolean isAutomaticAssociation() {
+		return automaticAssociation;
+	}
+
+	public void setAutomaticAssociation(boolean automaticAssociation) {
+		throwIfImmutable("Cannot change this token relation's automaticAssociation if it's immutable.");
+		this.automaticAssociation = automaticAssociation;
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 	}
 
 	@Override
@@ -144,6 +169,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 				.add("balance", balance)
 				.add("isFrozen", frozen)
 				.add("hasKycGranted", kycGranted)
+				.add("isAutomaticAssociation", automaticAssociation)
 				.toString();
 	}
 }

@@ -83,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyList;
@@ -209,7 +210,7 @@ class TokenCreateTransitionLogicTest {
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
+		given(store.associate(any(), anyList(), anyBoolean())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
@@ -232,7 +233,7 @@ class TokenCreateTransitionLogicTest {
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		given(store.associate(any(), anyList(), anyBoolean())).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
 		subject.doStateTransition();
@@ -252,7 +253,7 @@ class TokenCreateTransitionLogicTest {
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
+		given(store.associate(any(), anyList(), anyBoolean())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
@@ -276,11 +277,11 @@ class TokenCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(treasury, createdList)).willReturn(OK);
+		given(store.associate(treasury, createdList, true)).willReturn(OK);
 
 		subject.doStateTransition();
 
-		verify(store).associate(treasury, createdList);
+		verify(store).associate(treasury, createdList, true);
 		verify(ledger, never()).unfreeze(any(), any());
 		verify(ledger, never()).grantKyc(any(), any());
 
@@ -297,11 +298,11 @@ class TokenCreateTransitionLogicTest {
 
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(treasury, createdList)).willReturn(OK);
-		given(store.associate(feeCollector, createdList)).willReturn(OK);
-		given(store.associate(fixedFeeCollector, createdList)).willReturn(OK);
-		given(store.associate(fractionalFeeCollector, createdList)).willReturn(OK);
-		given(store.associate(royaltyFeeCollector, createdList)).willReturn(OK);
+		given(store.associate(treasury, createdList, true)).willReturn(OK);
+		given(store.associate(feeCollector, createdList, true)).willReturn(OK);
+		given(store.associate(fixedFeeCollector, createdList, true)).willReturn(OK);
+		given(store.associate(fractionalFeeCollector, createdList, true)).willReturn(OK);
+		given(store.associate(royaltyFeeCollector, createdList, true)).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
 		given(ledger.unfreeze(fixedFeeCollector, created)).willReturn(OK);
@@ -317,19 +318,19 @@ class TokenCreateTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(store, times(1)).associate(treasury, createdList);
+		verify(store, times(1)).associate(treasury, createdList, true);
 		verify(ledger, times(1)).unfreeze(treasury, created);
 		verify(ledger, times(1)).grantKyc(treasury, created);
-		verify(store, times(1)).associate(feeCollector, createdList);
+		verify(store, times(1)).associate(feeCollector, createdList, true);
 		verify(ledger, times(1)).unfreeze(feeCollector, created);
 		verify(ledger, times(1)).grantKyc(feeCollector, created);
-		verify(store, times(1)).associate(fixedFeeCollector, createdList);
+		verify(store, times(1)).associate(fixedFeeCollector, createdList, true);
 		verify(ledger, times(1)).unfreeze(fixedFeeCollector, created);
 		verify(ledger, times(1)).grantKyc(fixedFeeCollector, created);
-		verify(store, times(1)).associate(fractionalFeeCollector, createdList);
+		verify(store, times(1)).associate(fractionalFeeCollector, createdList, true);
 		verify(ledger, times(1)).unfreeze(fractionalFeeCollector, created);
 		verify(ledger, times(1)).grantKyc(fractionalFeeCollector, created);
-		verify(store, times(1)).associate(royaltyFeeCollector, createdList);
+		verify(store, times(1)).associate(royaltyFeeCollector, createdList, true);
 		verify(ledger, times(1)).unfreeze(royaltyFeeCollector, created);
 		verify(ledger, times(1)).grantKyc(royaltyFeeCollector, created);
 
@@ -351,8 +352,8 @@ class TokenCreateTransitionLogicTest {
 		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
-		given(store.associate(treasury, createdList)).willReturn(OK);
-		given(store.associate(feeCollector, createdList)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		given(store.associate(treasury, createdList, true)).willReturn(OK);
+		given(store.associate(feeCollector, createdList, true)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
 		subject.doStateTransition();
@@ -372,7 +373,7 @@ class TokenCreateTransitionLogicTest {
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
+		given(store.associate(any(), anyList(), anyBoolean())).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
@@ -396,7 +397,7 @@ class TokenCreateTransitionLogicTest {
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(any(), anyList())).willReturn(OK);
+		given(store.associate(any(), anyList(), anyBoolean())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);

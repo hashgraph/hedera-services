@@ -83,6 +83,7 @@ class TokenTest {
 
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
+		treasuryRel.setAutomaticAssociation(true);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
 	}
 
@@ -100,12 +101,21 @@ class TokenTest {
 
 
 	@Test
+	void constructsTreasuryRelationShipAsExpected() {
+		subject.setKycKey(someKey);
+		final var newRel = subject.newRelationshipWith(treasuryAccount, true);
+		newRel.initBalance(initialTreasuryBalance);
+
+		assertEquals(newRel, treasuryRel);
+	}
+
+	@Test
 	void constructsExpectedDefaultRelWithNoKeys() {
 		// setup:
 		nonTreasuryRel.setKycGranted(true);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -134,7 +144,7 @@ class TokenTest {
 		subject.setFrozenByDefault(true);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -150,7 +160,7 @@ class TokenTest {
 		subject.setFrozenByDefault(false);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -162,7 +172,7 @@ class TokenTest {
 		subject.setKycKey(someKey);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);

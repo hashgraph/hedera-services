@@ -195,7 +195,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			TokenID created,
 			TokenCreateTransactionBody op
 	) {
-		var status = store.associate(id, List.of(created));
+		var status = store.associate(id, List.of(created), true);
 		if (status != OK) {
 			return status;
 		}

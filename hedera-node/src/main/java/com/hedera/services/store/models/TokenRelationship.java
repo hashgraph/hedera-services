@@ -56,6 +56,7 @@ public class TokenRelationship {
 	private boolean kycGranted;
 	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
+	private boolean automaticAssociation = false;
 
 	private long balanceChange = 0L;
 
@@ -180,9 +181,17 @@ public class TokenRelationship {
 		return token.getType() == TokenType.NON_FUNGIBLE_UNIQUE;
 	}
 
+	public boolean isAutomaticAssociation() {
+		return automaticAssociation;
+	}
+
+	public void setAutomaticAssociation(final boolean automaticAssociation) {
+		this.automaticAssociation = automaticAssociation;
+	}
+
 	/* The object methods below are only overridden to improve
-	readability of unit tests; model objects are not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
+		readability of unit tests; model objects are not used in hash-based
+		collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
@@ -203,6 +212,7 @@ public class TokenRelationship {
 				.add("balanceChange", balanceChange)
 				.add("frozen", frozen)
 				.add("kycGranted", kycGranted)
+				.add("isAutomaticAssociation", automaticAssociation)
 				.toString();
 	}
 }

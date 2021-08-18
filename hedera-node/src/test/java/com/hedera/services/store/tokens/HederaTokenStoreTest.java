@@ -469,7 +469,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsDeletedTokens() {
 		given(token.isDeleted()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKEN_WAS_DELETED, status);
 	}
@@ -478,7 +478,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(INVALID_TOKEN_ID, status);
 	}
@@ -487,7 +487,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
@@ -510,7 +510,7 @@ class HederaTokenStoreTest {
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
@@ -522,7 +522,7 @@ class HederaTokenStoreTest {
 		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		verify(tokens, never()).associateAll(any());
@@ -539,7 +539,7 @@ class HederaTokenStoreTest {
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), true);
 
 		assertEquals(OK, status);
 		verify(tokens).associateAll(Set.of(misc));
@@ -547,6 +547,7 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
+		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
 	}
 
 	@Test

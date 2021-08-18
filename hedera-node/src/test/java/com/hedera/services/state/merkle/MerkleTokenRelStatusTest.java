@@ -42,6 +42,7 @@ class MerkleTokenRelStatusTest {
 	private static final long balance = 666;
 	private static final boolean frozen = true;
 	private static final boolean kycGranted = true;
+	private static final boolean automaticAssociation = false;
 
 	private MerkleTokenRelStatus subject;
 
@@ -92,7 +93,7 @@ class MerkleTokenRelStatusTest {
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance);
-		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted);
+		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
 		defaultSubject.deserialize(in, MerkleTokenRelStatus.MERKLE_VERSION);
 
@@ -105,6 +106,7 @@ class MerkleTokenRelStatusTest {
 				"MerkleTokenRelStatus{balance=" + balance
 						+ ", isFrozen=" + frozen
 						+ ", hasKycGranted=" + kycGranted
+						+ ", isAutomaticAssociation=" + automaticAssociation
 						+ "}",
 				subject.toString());
 	}

@@ -40,7 +40,6 @@ import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -205,7 +204,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
+	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID id : tokenIds) {
@@ -230,6 +229,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 							relationship,
 							TokenRelProperty.IS_KYC_GRANTED,
 							!token.hasKycKey());
+					tokenRelsLedger.set(
+							relationship,
+							TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
+							automaticAssociation);
 				}
 			}
 			hederaLedger.setAssociatedTokens(aId, accountTokens);

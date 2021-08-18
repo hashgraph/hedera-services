@@ -229,10 +229,10 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
-		tokenStore.associate(a, List.of(tA, tB));
-		tokenStore.associate(b, List.of(tA, tB));
-		tokenStore.associate(c, List.of(tA, tB));
-		tokenStore.associate(d, List.of(tA, tB));
+		tokenStore.associate(a, List.of(tA, tB), false);
+		tokenStore.associate(b, List.of(tA, tB), false);
+		tokenStore.associate(c, List.of(tA, tB), false);
+		tokenStore.associate(d, List.of(tA, tB), false);
 		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);

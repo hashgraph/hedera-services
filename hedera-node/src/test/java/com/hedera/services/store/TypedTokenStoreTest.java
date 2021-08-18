@@ -433,10 +433,11 @@ class TypedTokenStoreTest {
 	}
 
 	private void setupTokenRel() {
-		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
+		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
 	}
 
@@ -466,6 +467,7 @@ class TypedTokenStoreTest {
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
 	private final boolean freezeDefault = true;
+	private final boolean automaticAssociation = true;
 	private final MerkleEntityAssociation miscTokenRelId = new MerkleEntityAssociation(
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);
