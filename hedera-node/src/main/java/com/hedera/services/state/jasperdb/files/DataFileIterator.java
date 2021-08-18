@@ -19,6 +19,7 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.KEY_SIZE;
  * 
  * It is designed to be used from a single thread.
  */
+@SuppressWarnings("jol")
 public final class DataFileIterator implements AutoCloseable {
     private final DataInputStream inputStream;
     private final DataFileMetadata metadata;
@@ -26,9 +27,9 @@ public final class DataFileIterator implements AutoCloseable {
     private final Path path;
     private ByteBuffer dataItemBuffer;
     private int currentDataItemSizeBytes;
-    private int currentDataItem = -1;
-    private int currentDataItemByteOffset = 0;
-    private int nextDataItemByteOffset = 0;
+    private long currentDataItem = -1;
+    private long currentDataItemByteOffset = 0;
+    private long nextDataItemByteOffset = 0;
     private long key;
 
     public DataFileIterator(Path path, DataFileMetadata metadata) {
@@ -135,5 +136,14 @@ public final class DataFileIterator implements AutoCloseable {
      */
     public Instant getDataFileCreationDate() {
         return metadata.getCreationDate();
+    }
+
+    /** toString for debugging */
+    @Override
+    public String toString() {
+        return "DataFileIterator{" +
+                "metadata=" + metadata +
+                ", key=" + key +
+                '}';
     }
 }
