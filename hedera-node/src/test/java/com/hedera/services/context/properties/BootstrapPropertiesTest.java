@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -162,7 +164,7 @@ class BootstrapPropertiesTest {
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage)),
+			entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage, TokenMint, TokenBurn)),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),
@@ -170,7 +172,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),
 			entry("tokens.nfts.areEnabled", true),
-			entry("tokens.nfts.areQueriesEnabled", true),
+			entry("tokens.nfts.areQueriesEnabled", false),
 			entry("tokens.nfts.useTreasuryWildcards", true),
 			entry("tokens.nfts.maxQueryRange", 100L),
 			entry("tokens.nfts.maxBatchSizeWipe", 10),
