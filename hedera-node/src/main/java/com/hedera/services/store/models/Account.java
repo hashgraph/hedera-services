@@ -49,6 +49,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
  * memo field, for example, is not yet present.
  */
 public class Account {
+	private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
+	private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK << 16;
+
 	private final Id id;
 
 	private long expiry;
@@ -56,6 +59,7 @@ public class Account {
 	private boolean deleted = false;
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
+	private int autoAssociationMetadata;
 
 	public Account(Id id) {
 		this.id = id;
@@ -83,6 +87,42 @@ public class Account {
 
 	public void incrementOwnedNfts() {
 		this.ownedNfts++;
+	}
+
+	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
+		this.autoAssociationMetadata = autoAssociationMetadata;
+	}
+
+	public int getAutoAssociationMetadata() {
+		return autoAssociationMetadata;
+	}
+
+	public int getMaxAutomaticAssociations() {
+		return autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK;
+	}
+
+	public int getAlreadyUsedAutomaticAssociations() {
+		return (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) >> 16;
+	}
+
+	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+		autoAssociationMetadata = (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
+	}
+
+	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+		// TODO : get the right response code
+		validateTrue(alreadyUsedCount >=0 && alreadyUsedCount < getMaxAutomaticAssociations(), FAIL_INVALID );
+		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
+	}
+
+	public void incrementUsedAutomaticAssocitions() {
+		var count = getAlreadyUsedAutomaticAssociations();
+		setAlreadyUsedAutomaticAssociations(++count);
+	}
+
+	public void decrementUsedAutomaticAssocitions() {
+		var count = getAlreadyUsedAutomaticAssociations();
+		setAlreadyUsedAutomaticAssociations(--count);
 	}
 
 	public void associateWith(List<Token> tokens, int maxAllowed) {
@@ -149,6 +189,9 @@ public class Account {
 				.add("balance", balance)
 				.add("deleted", deleted)
 				.add("tokens", assocTokenRepr)
+				.add("ownedNfts", ownedNfts)
+				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
+				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.toString();
 	}
 }

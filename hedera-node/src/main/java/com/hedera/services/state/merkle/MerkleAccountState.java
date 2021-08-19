@@ -215,7 +215,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
 				.add("nftsOwned", nftsOwned)
-				.add("autoAssociationMetadata", autoAssociationMetadata)
+				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
+				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.toString();
 	}
 
@@ -318,11 +319,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+		assertMutable("maxAutomaticAssociations");
 		autoAssociationMetadata = (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
 	}
 
-	public void
-	setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+		assertMutable("alreadyUsedAutomaticAssociations");
 		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
 	}
 

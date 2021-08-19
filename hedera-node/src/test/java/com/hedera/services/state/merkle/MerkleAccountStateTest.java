@@ -110,7 +110,9 @@ class MerkleAccountStateTest {
 						"deleted=" + deleted + ", " +
 						"smartContract=" + smartContract + ", " +
 						"receiverSigRequired=" + receiverSigRequired + ", " +
-						"proxy=" + proxy + ", nftsOwned=0, autoAssociationMetadata=" + autoAssociationMetadata + "}",
+						"proxy=" + proxy + ", nftsOwned=0, " +
+						"alreadyUsedAutoAssociations=" + alreadyUsedAutoAssociations + ", " +
+						"maxAutoAssociations=" + maxAutoAssociaitons + "}",
 				subject.toString());
 	}
 
@@ -130,6 +132,8 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setReceiverSigRequired(true));
 		assertThrows(MutabilityException.class, () -> subject.setExpiry(1_234_567L));
 		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
+		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociaitons));
+		assertThrows(MutabilityException.class, () -> subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations));
 	}
 
 	@Test

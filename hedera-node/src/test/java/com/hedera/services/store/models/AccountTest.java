@@ -45,6 +45,10 @@ class AccountTest {
 	private Id subjectId = new Id(0, 0, 12345);
 	private Id treasuryId = new Id(0, 0, 123456);
 	private CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
+	private long ownedNfts = 5;
+	private int alreadyUsedAutoAssociations = 123;
+	private int maxAutoAssociations = 1234;
+	private int autoAssociationMetadata = buildMeta(maxAutoAssociations, alreadyUsedAutoAssociations);
 
 	private Account subject;
 	private Account treasuryAccount;
@@ -55,6 +59,8 @@ class AccountTest {
 		subject = new Account(subjectId);
 		treasuryAccount = new Account(treasuryId);
 		subject.setAssociatedTokens(assocTokens);
+		subject.setAutoAssociationMetadata(autoAssociationMetadata);
+		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
 	}
@@ -63,7 +69,7 @@ class AccountTest {
 	void toStringAsExpected() {
 		// given:
 		final var desired = "Account{id=Id{shard=0, realm=0, num=12345}, expiry=0, balance=0, deleted=false, " +
-				"tokens=[0.0.666, 0.0.777]}";
+				"tokens=[0.0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -146,11 +152,15 @@ class AccountTest {
 		account.initBalance(100L);
 		account.setOwnedNfts(1L);
 		account.incrementOwnedNfts();
+		account.setMaxAutomaticAssociations(123);
+		account.setAlreadyUsedAutomaticAssociations(12);
 
 		subject.setExpiry(1000L);
 		subject.initBalance(100L);
 		subject.setOwnedNfts(1L);
 		subject.incrementOwnedNfts();
+		subject.setMaxAutomaticAssociations(123);
+		subject.setAlreadyUsedAutomaticAssociations(12);
 
 		// when:
 		var actualResult = subject.equals(account);
@@ -162,18 +172,20 @@ class AccountTest {
 		// and:
 		assertEquals(account.getAssociatedTokens(), subject.getAssociatedTokens());
 		// and:
+		assertEquals(account.getAutoAssociationMetadata(), subject.getAutoAssociationMetadata());
 		assertTrue(actualResult);
 	}
 
 	@Test
 	void accountHashCodeCheck() {
 		// setup:
+		subject.setOwnedNfts(0);
 		var otherSubject = new Account(subjectId);
 		otherSubject.incrementOwnedNfts();
 		otherSubject.setAssociatedTokens(assocTokens);
 
 		subject.incrementOwnedNfts();
-
+		otherSubject.setAutoAssociationMetadata(autoAssociationMetadata);
 		// when:
 		var actualResult = subject.hashCode();
 
@@ -181,8 +193,31 @@ class AccountTest {
 		assertEquals(otherSubject.hashCode(), actualResult);
 	}
 
+	@Test
+	void invalidValuesToAlreadyUsedAutoAssociationsFailAsExpected() {
+		assertFailsWith(
+				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations),
+				FAIL_INVALID);
+
+		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations-1);
+
+		assertFailsWith(
+				() -> subject.incrementUsedAutomaticAssocitions(),
+				FAIL_INVALID);
+
+		subject.setAlreadyUsedAutomaticAssociations(0);
+
+		assertFailsWith(
+				() -> subject.decrementUsedAutomaticAssocitions(),
+				FAIL_INVALID);
+	}
+
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
+	}
+
+	private int buildMeta(int maxAutoAssociaitons, int alreadyUsedAutoAssociations) {
+		return (alreadyUsedAutoAssociations << 16) | maxAutoAssociaitons;
 	}
 }

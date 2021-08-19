@@ -77,6 +77,8 @@ public class AccountStore {
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
+		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
 
 		return account;
 	}
@@ -96,6 +98,8 @@ public class AccountStore {
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		mutableAccount.setNftsOwned(account.getOwnedNfts());
+		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
+		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
 	}
 
 

@@ -115,6 +115,8 @@ class AccountStoreTest {
 				.balance(balance)
 				.assocTokens(firstAssocTokenId, secondAssocTokenId, aThirdToken.getId())
 				.expirationTime(expiry)
+				.maxAutomaticAssociations(maxAutoAssociations)
+				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.get();
 
 		// given:
@@ -130,6 +132,40 @@ class AccountStoreTest {
 		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 		// and:
 		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokens());
+	}
+
+	@Test
+	void persistanceUpdatesAutoAssociations() {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
+		var newMax = maxAutoAssociations + 5;
+		var newUsedCount = alreadyUsedAutoAssociations - 10;
+		// and:
+		final var expectedReplacement = MerkleAccountFactory.newAccount()
+				.balance(balance)
+				.assocTokens(firstAssocTokenId, secondAssocTokenId)
+				.expirationTime(expiry)
+				.maxAutomaticAssociations(newMax)
+				.alreadyUsedAutomaticAssociations(newUsedCount)
+				.get();
+
+		// given:
+		final var model = subject.loadAccount(miscId);
+
+		// when:
+		model.setMaxAutomaticAssociations(newMax);
+		// decrease the already Used automatic associations by 10
+		for (int i=0; i<11; i++){
+			model.decrementUsedAutomaticAssocitions();
+		}
+		model.incrementUsedAutomaticAssocitions();
+
+		// and:
+		subject.persistAccount(model);
+
+		// then:
+		assertEquals(expectedReplacement, miscMerkleAccount);
+		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 	}
 
 	private void setupWithAccount(MerkleEntityId anId, MerkleAccount anAccount) {
@@ -150,11 +186,15 @@ class AccountStoreTest {
 				.balance(balance)
 				.assocTokens(firstAssocTokenId, secondAssocTokenId)
 				.expirationTime(expiry)
+				.maxAutomaticAssociations(maxAutoAssociations)
+				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.get();
 
 		miscAccount.setExpiry(expiry);
 		miscAccount.initBalance(balance);
 		miscAccount.setAssociatedTokens(miscMerkleAccount.tokens().getIds());
+		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
+		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
 	}
@@ -165,6 +205,8 @@ class AccountStoreTest {
 	private final long autoRenewAccountNum = 3_234L;
 	private final long firstAssocTokenNum = 666L;
 	private final long secondAssocTokenNum = 777L;
+	private final int alreadyUsedAutoAssociations = 12;
+	private final int maxAutoAssociations = 123;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
