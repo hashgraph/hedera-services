@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -139,6 +140,9 @@ class BootstrapPropertiesTest {
 			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
 			entry("iss.dumpFcms", false),
+			entry("netty.ciphers", List.of(
+					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")),
 			entry("netty.mode", Profile.PROD),
 			entry("netty.prod.flowControlWindow", 10240),
 			entry("netty.prod.maxConcurrentCalls", 10),

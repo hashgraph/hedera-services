@@ -135,5 +135,6 @@ class ConfigDrivenNettyFactoryTest {
 		// then:
 		verify(nodeLocalProperties).nettyTlsCrtPath();
 		verify(nodeLocalProperties).nettyTlsKeyPath();
+		verify(nodeLocalProperties).nettyCiphers();
 	}
 }
