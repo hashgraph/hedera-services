@@ -44,13 +44,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	public MerkleTokenRelStatus() {
 	}
 
-	public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted) {
-		this.balance = balance;
-		this.frozen = frozen;
-		this.kycGranted = kycGranted;
-		this.automaticAssociation = false;
-	}
-
 	public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted, boolean automaticAssociation) {
 		this.balance = balance;
 		this.frozen = frozen;

@@ -170,7 +170,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsNewTokenRelAsExpected() {
 		// setup:
-		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true);
+		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
 
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);

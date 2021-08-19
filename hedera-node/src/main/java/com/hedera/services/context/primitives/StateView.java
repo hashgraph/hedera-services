@@ -409,7 +409,8 @@ public class StateView {
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(id))
-				.setOwnedNfts(account.getNftsOwned());
+				.setOwnedNfts(account.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
@@ -548,7 +549,8 @@ public class StateView {
 					tId.getRealmNum(),
 					tId.getTokenNum(),
 					relationship.isFrozen(),
-					relationship.isKycGranted()
+					relationship.isKycGranted(),
+					relationship.isAutomaticAssociation()
 			).asGrpcFor(effectiveToken));
 		}
 		return relationships;

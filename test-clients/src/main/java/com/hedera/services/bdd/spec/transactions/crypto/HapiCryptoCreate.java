@@ -72,6 +72,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<KeyType> keyType = Optional.empty();
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
+	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 
 
 	@Override
@@ -125,6 +126,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
 	public HapiCryptoCreate balance(Long amount) {
 		initialBalance = Optional.of(amount);
+		return this;
+	}
+
+	public HapiCryptoCreate maxAutomaticTokenAssociations(int max) {
+		maxAutomaticTokenAssociations = Optional.of(max);
 		return this;
 	}
 
@@ -184,14 +190,15 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 				.<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
 						CryptoCreateTransactionBody.class, b -> {
 							b.setKey(key);
-							proxy.ifPresent(p -> b.setProxyAccountID(p));
-							entityMemo.ifPresent(m -> b.setMemo(m));
-							sendThresh.ifPresent(a -> b.setSendRecordThreshold(a));
-							receiveThresh.ifPresent(a -> b.setReceiveRecordThreshold(a));
-							initialBalance.ifPresent(a -> b.setInitialBalance(a));
-							receiverSigRequired.ifPresent(r -> b.setReceiverSigRequired(r));
+							proxy.ifPresent(b::setProxyAccountID);
+							entityMemo.ifPresent(b::setMemo);
+							sendThresh.ifPresent(b::setSendRecordThreshold);
+							receiveThresh.ifPresent(b::setReceiveRecordThreshold);
+							initialBalance.ifPresent(b::setInitialBalance);
+							receiverSigRequired.ifPresent(b::setReceiverSigRequired);
 							autoRenewDurationSecs.ifPresent(
 									s -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(s).build()));
+							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 						});
 		return b -> b.setCryptoCreateAccount(opBody);
 	}

@@ -165,10 +165,10 @@ class SignedStateBalancesExporterTest {
 
 		tokenRels.put(
 				fromAccountTokenRel(secondNonNode, theToken),
-				new MerkleTokenRelStatus(secondNonNodeTokenBalance, false, true));
+				new MerkleTokenRelStatus(secondNonNodeTokenBalance, false, true, false));
 		tokenRels.put(
 				fromAccountTokenRel(secondNonNode, theDeletedToken),
-				new MerkleTokenRelStatus(secondNonNodeDeletedTokenBalance, false, true));
+				new MerkleTokenRelStatus(secondNonNodeDeletedTokenBalance, false, true, false));
 
 		assurance = mock(DirectoryAssurance.class);
 

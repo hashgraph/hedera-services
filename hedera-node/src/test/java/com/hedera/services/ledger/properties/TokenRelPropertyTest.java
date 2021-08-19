@@ -32,8 +32,9 @@ class TokenRelPropertyTest {
 	long balance = 123, newBalance = 321;
 	boolean frozen = true;
 	boolean kycGranted = false;
+	boolean automaticAssociation = false;
 
-	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 
 	@Test
 	void gettersWork() {

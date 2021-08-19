@@ -48,16 +48,16 @@ class MerkleTokenRelStatusTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 	}
 
 	@Test
 	void objectContractMet() {
 		final var one = new MerkleTokenRelStatus();
-		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
-		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted);
-		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted);
-		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted, !automaticAssociation);
+		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted, automaticAssociation);
+		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted, automaticAssociation);
+		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);

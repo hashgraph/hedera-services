@@ -39,9 +39,10 @@ class RawTokenRelationshipTest {
 	private static final long balance = 234;
 	private static final boolean frozen = true;
 	private static final boolean kyc = false;
+	private static final boolean automaticAssociation = false;
 
 	private MerkleToken token;
-	private RawTokenRelationship subject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
+	private RawTokenRelationship subject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc, automaticAssociation);
 
 	@BeforeEach
 	void setUp() {
@@ -52,15 +53,15 @@ class RawTokenRelationshipTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"RawTokenRelationship{token=0.0.123, balance=234, frozen=true, kycGranted=false}",
+				"RawTokenRelationship{token=0.0.123, balance=234, frozen=true, kycGranted=false, automaticAssociation=false}",
 				subject.toString());
 	}
 
 	@Test
 	void objectContractMet() {
-		final var identicalSubject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
+		final var identicalSubject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc, automaticAssociation);
 		final var otherSubject = new RawTokenRelationship(
-				balance * 2, 0, 0, num - 1, !frozen, !kyc);
+				balance * 2, 0, 0, num - 1, !frozen, !kyc, !automaticAssociation);
 
 		assertNotEquals(null, subject);
 		assertNotEquals(subject, otherSubject);
@@ -95,7 +96,7 @@ class RawTokenRelationshipTest {
 
 	@Test
 	void grpcConversionRecognizesApplicableUnfozen() {
-		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false);
+		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false, true);
 		given(token.hasFreezeKey()).willReturn(true);
 
 		final var desc = subject.asGrpcFor(token);
@@ -118,7 +119,7 @@ class RawTokenRelationshipTest {
 
 	@Test
 	void grpcConversionRecognizesApplicableGranted() {
-		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, true);
+		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, true, false);
 		given(token.hasKycKey()).willReturn(true);
 
 		final var desc = subject.asGrpcFor(token);
