@@ -116,7 +116,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.merkle.exceptions.MerkleCopyException;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
@@ -251,17 +250,16 @@ class MiscUtilsTest {
 	void forEachDropInWorksAsExpected() {
 		final FCMap<MerkleLong, MerkleLong> testFcm = new FCMap<>();
 		final BiConsumer<MerkleLong, MerkleLong> mockConsumer = mock(BiConsumer.class);
-		testFcm.put(new MerkleLong(1L), new MerkleLong(1L));
+		testFcm.put(new MerkleLong(1L), null);
 		testFcm.put(new MerkleLong(2L), new MerkleLong(2L));
 
 		MiscUtils.forEach(testFcm, mockConsumer);
 
 		verify(mockConsumer, times(2)).accept(any(), any());
-		verify(mockConsumer).accept(new MerkleLong(1L), new MerkleLong(1L));
+		verify(mockConsumer).accept(new MerkleLong(1L), null);
 		verify(mockConsumer).accept(new MerkleLong(2L), new MerkleLong(2L));
 
 		assertThrows(NullPointerException.class, () -> testFcm.put(null, new MerkleLong(3L)));
-		assertThrows(MerkleCopyException.class, () -> testFcm.put(new MerkleLong(3L), null));
 	}
 
 	@Test

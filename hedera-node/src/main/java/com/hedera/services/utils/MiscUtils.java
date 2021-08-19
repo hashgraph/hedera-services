@@ -667,7 +667,10 @@ public class MiscUtils {
 		return asOrdinary(scheduledTxn, TRANSACTION_TYPES).getLeft();
 	}
 
-	static Pair<TransactionBody,String> asOrdinary(final SchedulableTransactionBody scheduledTxn, final Set<String> types) {
+	static Pair<TransactionBody, String> asOrdinary(
+			final SchedulableTransactionBody scheduledTxn,
+			final Set<String> types
+	) {
 		final var ordinary = TransactionBody.newBuilder();
 		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
 				.setMemo(scheduledTxn.getMemo());
