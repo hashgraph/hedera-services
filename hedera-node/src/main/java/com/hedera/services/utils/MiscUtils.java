@@ -44,7 +44,9 @@ import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -252,7 +254,11 @@ public class MiscUtils {
 	private static final HashMap<String, Method> TRANSACTION_SETTERS = new HashMap<>();
 
 	static {
-		for (var type : TRANSACTION_TYPES) {
+		initializeScheduleAndTransactionMethods(TRANSACTION_TYPES);
+	}
+
+	static void initializeScheduleAndTransactionMethods(final Set<String> types) {
+		for (var type : types) {
 			try {
 				SCHEDULE_HAS_METHODS.put(type, SchedulableTransactionBody.class.getMethod("has" + type));
 				SCHEDULE_GETTERS.put(type, SchedulableTransactionBody.class.getMethod("get" + type));
@@ -263,7 +269,7 @@ public class MiscUtils {
 						.get();
 				TRANSACTION_SETTERS.put(type, setter);
 			} catch (NoSuchMethodException | NoSuchElementException e) {
-				throw new RuntimeException("Methods missing for " + type, e);
+				throw new IllegalArgumentException("Methods missing for " + type, e);
 			}
 		}
 	}
@@ -658,10 +664,14 @@ public class MiscUtils {
 	}
 
 	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn) {
+		return asOrdinary(scheduledTxn, TRANSACTION_TYPES).getLeft();
+	}
+
+	static Pair<TransactionBody,String> asOrdinary(final SchedulableTransactionBody scheduledTxn, final Set<String> types) {
 		final var ordinary = TransactionBody.newBuilder();
 		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
 				.setMemo(scheduledTxn.getMemo());
-		for (var type : TRANSACTION_TYPES) {
+		for (var type : types) {
 			try {
 				if ((boolean) SCHEDULE_HAS_METHODS.get(type).invoke(scheduledTxn)) {
 					final var op = SCHEDULE_GETTERS.get(type).invoke(scheduledTxn);
@@ -669,10 +679,11 @@ public class MiscUtils {
 					break;
 				}
 			} catch (Exception e) {
-				System.out.println("All exceptions should show up in the static initializer, yet `" + e + "` occurred");
+				final var msg = "All exceptions should show up in the static initializer, yet `" + e + "` occurred";
+				return Pair.of(ordinary.build(), msg);
 			}
 		}
-		return ordinary.build();
+		return Pair.of(ordinary.build(), "");
 	}
 
 	/**
@@ -704,8 +715,8 @@ public class MiscUtils {
 			final FCMap<K, V> map,
 			final BiConsumer<? super K, ? super V> action
 	) {
-		map.forEachNode((final MerkleNode node) -> {
-			if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
+		map.forEachNode((@Nonnull final MerkleNode node) -> {
+			if (node.getClassId() == MerklePair.CLASS_ID) {
 				final MerklePair<K, V> pair = node.cast();
 				action.accept(pair.getKey(), pair.getValue());
 			}
