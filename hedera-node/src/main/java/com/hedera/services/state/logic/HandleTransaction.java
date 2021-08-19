@@ -6,6 +6,7 @@ import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.utils.TxnAccessor;
 
 public class HandleTransaction {
 	private final Rationalization rationalization;
@@ -31,5 +32,7 @@ public class HandleTransaction {
 		this.opPolicies = opPolicies;
 	}
 
-
+	void finishTransition(TxnAccessor accessor) {
+		throw new AssertionError("Not implemented");
+	}
 }
