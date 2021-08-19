@@ -105,6 +105,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -172,6 +173,8 @@ class HederaTokenStoreTest {
 	private static final int decimals = 10;
 	private static final long treasuryBalance = 50_000L;
 	private static final long sponsorBalance = 1_000L;
+	private static final int maxAutoAssociations = 1234;
+	private static final int alreadyUsedAutoAssocitaions = 123;
 	private static final TokenID misc = IdUtils.asToken("3.2.1");
 	private static final TokenID nonfungible = IdUtils.asToken("4.3.2");
 	private static final TokenID anotherMisc = IdUtils.asToken("6.4.2");
@@ -535,6 +538,8 @@ class HederaTokenStoreTest {
 		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(sponsor)).willReturn(alreadyUsedAutoAssocitaions);
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
@@ -548,6 +553,20 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
+	}
+
+	@Test
+	void associatingFailsWhenAutoAssociationLimitReached() {
+		final var tokens = mock(MerkleAccountTokens.class);
+		final var key = asTokenRel(sponsor, misc);
+		given(tokens.includes(misc)).willReturn(false);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+
+		final var status = subject.associate(sponsor, List.of(misc), true);
+
+		assertEquals(FAIL_INVALID, status);
 	}
 
 	@Test

@@ -62,12 +62,14 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -501,6 +503,22 @@ public class HederaLedger {
 
 	public boolean isReceiverSigRequired(AccountID id) {
 		return (boolean) accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED);
+	}
+
+	public int maxAutomaticAssociations(AccountID id) {
+		return (int) accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS);
+	}
+
+	public int alreadyUsedAutomaticAssociations(AccountID id) {
+		return (int) accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+	}
+
+	public void setMaxAutomaticAssociations(AccountID id, int max) {
+		accountsLedger.set(id, MAX_AUTOMATIC_ASSOCIATIONS, max);
+	}
+
+	public void setAlreadyUsedAutomaticAssociations(AccountID id, int usedCount) {
+		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
 	public boolean isDeleted(AccountID id) {

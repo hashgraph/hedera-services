@@ -96,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -229,10 +230,21 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 							relationship,
 							TokenRelProperty.IS_KYC_GRANTED,
 							!token.hasKycKey());
-					tokenRelsLedger.set(
-							relationship,
-							TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
-							automaticAssociation);
+					if(automaticAssociation) {
+						var maxAutomaticAssociations = hederaLedger.maxAutomaticAssociations(aId);
+						var alreadyUsedAutomaticAssociations = hederaLedger.alreadyUsedAutomaticAssociations(aId);
+
+						if (alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
+							// TODO use appropriate response code.
+							validity = FAIL_INVALID;
+						} else {
+							hederaLedger.setAlreadyUsedAutomaticAssociations(aId, alreadyUsedAutomaticAssociations+1);
+							tokenRelsLedger.set(
+									relationship,
+									TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
+									true);
+						}
+					}
 				}
 			}
 			hederaLedger.setAssociatedTokens(aId, accountTokens);

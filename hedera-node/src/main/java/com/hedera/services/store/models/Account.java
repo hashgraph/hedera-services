@@ -153,6 +153,9 @@ public class Account {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
 			dissociation.updateModelRelsSubjectTo(validator);
 			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
+			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
+				decrementUsedAutomaticAssocitions();
+			}
 		}
 		associatedTokens.removeAllIds(dissociatedTokenIds);
 	}

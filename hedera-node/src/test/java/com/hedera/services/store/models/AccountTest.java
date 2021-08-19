@@ -80,11 +80,14 @@ class AccountTest {
 		// setup:
 		final var alreadyAssocTokenId = new Id(0, 0, 666);
 		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
 		// and:
 		final var expectedFinalTokens = "[0.0.777]";
 
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 
 		// when:
 		subject.dissociateUsing(List.of(dissociationRel), validator);
@@ -92,6 +95,7 @@ class AccountTest {
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+		assertEquals(alreadyUsedAutoAssociations-1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
 	@Test
