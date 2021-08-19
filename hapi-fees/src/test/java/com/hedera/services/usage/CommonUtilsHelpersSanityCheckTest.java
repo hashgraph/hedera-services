@@ -59,9 +59,9 @@ class CommonUtilsHelpersSanityCheckTest {
 	@Test
 	void feeScheduleMetaObjContractSanityChecks() {
 		// given:
-		final var a = new FeeScheduleUpdateMeta(12, 3, 4);
-		final var b = new FeeScheduleUpdateMeta(23, 4, 5);
-		final var c = new FeeScheduleUpdateMeta(12, 3, 4);
+		final var a = new FeeScheduleUpdateMeta(12, 3);
+		final var b = new FeeScheduleUpdateMeta(23, 4);
+		final var c = new FeeScheduleUpdateMeta(12, 3);
 
 		// expect:
 		assertEquals(a, c);

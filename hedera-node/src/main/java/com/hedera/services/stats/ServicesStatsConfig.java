@@ -30,7 +30,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 
 public class ServicesStatsConfig {
-	public static Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
+	public static final Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
 			NONE,
 			UNRECOGNIZED,
 			GetByKey

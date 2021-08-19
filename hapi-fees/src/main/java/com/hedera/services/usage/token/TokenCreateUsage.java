@@ -37,6 +37,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
+	private static final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+
 	public TokenCreateUsage(TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
 		super(tokenCreationOp, usageEstimator);
 	}
@@ -76,7 +78,9 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
 
 		usageEstimator.addBpt(baseSize);
-		usageEstimator.addRbs(baseSize * lifetime);
+		final var feeSchedulesSize = op.getCustomFeesCount() > 0
+				? tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()) : 0;
+		usageEstimator.addRbs((baseSize + feeSchedulesSize) * lifetime);
 		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE);
 		addTokenTransfersRecordRb(1, op.getInitialSupply() > 0 ? 1 : 0, 0);
 

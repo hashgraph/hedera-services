@@ -44,13 +44,14 @@ import static java.util.Map.entry;
 public class ScreenedSysFileProps implements PropertySource {
 	private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
-	static String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
-	static String MISPLACED_PROP_TPL = "Property '%s' is not global/dynamic, please find it a proper home!";
-	static String DEPRECATED_PROP_TPL = "Property name '%s' is deprecated, please use '%s' instead!";
-	static String UNPARSEABLE_PROP_TPL = "Value '%s' is unparseable for '%s' (%s), being ignored!";
-	static String UNTRANSFORMABLE_PROP_TPL = "Value '%s' is untransformable for deprecated '%s' (%s), being ignored!";
+	static final String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
+	static final String MISPLACED_PROP_TPL = "Property '%s' is not global/dynamic, please find it a proper home!";
+	static final String DEPRECATED_PROP_TPL = "Property name '%s' is deprecated, please use '%s' instead!";
+	static final String UNPARSEABLE_PROP_TPL = "Value '%s' is unparseable for '%s' (%s), being ignored!";
+	static final String UNTRANSFORMABLE_PROP_TPL = "Value '%s' is untransformable for deprecated '%s' (%s), being " +
+			"ignored!";
 
-	private static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+	private static final Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("configAccountNum", "ledger.maxAccountNum"),
 			entry("defaultContractDurationSec", "contracts.defaultLifetime"),
 			entry("maxGasLimit", "contracts.maxGas"),
@@ -71,17 +72,17 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("minimumAutoRenewDuration", "ledger.autoRenewPeriod.minDuration"),
 			entry("localCallEstReturnBytes", "contracts.localCall.estRetBytes")
 	);
-	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
+	private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + parseAccount(legacy).getAccountNum()),
 			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	@SuppressWarnings("unchecked")
-	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
+	private static final Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
 			entry(
 					"rates.intradayChangeLimitPercent",
 					limitPercent -> (int) limitPercent > 0),
 			entry("scheduling.whitelist",
-					whitelist -> ((Set<HederaFunctionality>)whitelist)
+					whitelist -> ((Set<HederaFunctionality>) whitelist)
 							.stream()
 							.noneMatch(MiscUtils.QUERY_FUNCTIONS::contains)),
 			entry(

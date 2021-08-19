@@ -27,16 +27,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class FeeScheduleUpdateMeta {
 	private final long effConsensusTime;
 	private final int numBytesInNewFeeScheduleRepr;
-	private final int numBytesInGrpcFeeScheduleRepr;
 
-	public FeeScheduleUpdateMeta(
-			long effConsensusTime,
-			int numBytesInNewFeeScheduleRepr,
-			int numBytesInGrpcFeeScheduleRepr
-	) {
+	public FeeScheduleUpdateMeta(long effConsensusTime, int numBytesInNewFeeScheduleRepr) {
 		this.effConsensusTime = effConsensusTime;
 		this.numBytesInNewFeeScheduleRepr = numBytesInNewFeeScheduleRepr;
-		this.numBytesInGrpcFeeScheduleRepr = numBytesInGrpcFeeScheduleRepr;
 	}
 
 	public long effConsensusTime() {
@@ -45,10 +39,6 @@ public class FeeScheduleUpdateMeta {
 
 	public int numBytesInNewFeeScheduleRepr() {
 		return numBytesInNewFeeScheduleRepr;
-	}
-
-	public int numBytesInGrpcFeeScheduleRepr() {
-		return numBytesInGrpcFeeScheduleRepr;
 	}
 
 	@Override
@@ -66,7 +56,6 @@ public class FeeScheduleUpdateMeta {
 		return MoreObjects.toStringHelper(this)
 				.add("effConsensusTime", effConsensusTime)
 				.add("numBytesInNewFeeScheduleRepr", numBytesInNewFeeScheduleRepr)
-				.add("numBytesInGrpcFeeScheduleRepr", numBytesInGrpcFeeScheduleRepr)
 				.toString();
 	}
 }
