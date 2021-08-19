@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,6 +35,8 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
     private final Exchanger<HashingData> hashingExchanger = new Exchanger<>();
     /** Used to pass a virtual map from the holder thread to the release thread, where it will be released / merged */
     private final Exchanger<VirtualMap<K, V>> releaseExchanger = new Exchanger<>();
+    /** Used to pass a virtual map from the holder thread to the archive thread, where it will be archived to disk */
+    private final Exchanger<VirtualMap<K, V>> archiveExchanger = new Exchanger<>();
 
     /** This thread will hash the virtual map (which has a bunch of additional background threads) */
     private final ExecutorService hashingService = Executors.newSingleThreadExecutor(threadFactory("HashingService", null));
@@ -73,6 +76,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         final var masterMap = new AtomicReference<VirtualMap<K, V>>(null);
         final var archiveStartTime = new AtomicLong(System.currentTimeMillis());
         final var finishedArchiving = new AtomicBoolean(true);
+        final var mergedRoundsCount = new AtomicInteger(0);
         releaseService.submit(new Task(() -> {
             final var map = releaseExchanger.exchange(null);
             synchronized (masterMap) {
@@ -82,8 +86,12 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                 }
                 masterMap.set(map);
             }
+//            var currentMergedRoundsCount = mergedRoundsCount.incrementAndGet();
+//            if (currentMergedRoundsCount >= 10) {
+//                archiveExchanger.exchange(map);
+//            }
 
-            while (System.currentTimeMillis() - archiveStartTime.get() > 10*1000 && !finishedArchiving.get()) {
+            while (!finishedArchiving.get()) {
                 try{
                     Thread.sleep(1000);
                 } catch (InterruptedException ignored) { }
@@ -95,22 +103,23 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
             //noinspection InfiniteLoopStatement
             while (true) {
                 finishedArchiving.set(false);
-                var time = System.currentTimeMillis();
-                if (time - archiveStartTime.get() > 10*1000) {
-                    archiveStartTime.set(time);
-                    try {
-                        VirtualMap<?, ?> map;
-                        synchronized (masterMap) {
-                            map = masterMap.getAndSet(null);
-                        }
-
-                        if (map != null) {
-                            map.archive();
-                            finishedArchiving.set(true);
-                        }
-                    } catch (Throwable th) {
-                        th.printStackTrace();
+                try {
+                    VirtualMap<?, ?> map;
+                    synchronized (masterMap) {
+                        map = masterMap.getAndSet(null);
                     }
+
+                    if (map != null) {
+                        map.archive();
+                        finishedArchiving.set(true);
+                    }
+                } catch (Throwable th) {
+                    th.printStackTrace();
+                }
+                try {
+                    Thread.sleep(10_000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         });
