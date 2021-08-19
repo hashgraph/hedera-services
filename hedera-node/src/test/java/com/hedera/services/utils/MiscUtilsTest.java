@@ -87,6 +87,7 @@ import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -109,6 +110,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
@@ -116,9 +118,9 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcqueue.FCQueue;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -130,7 +132,6 @@ import java.security.KeyPair;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -410,17 +411,27 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void prettyPrintsJTransactionRecordFcll() {
-		final LinkedList<ExpirableTxnRecord> records = new LinkedList<>();
-		records.add(fromGprc(recordWith(SUCCESS)));
-		records.add(fromGprc(recordWith(INVALID_ACCOUNT_ID)));
+	void prettyPrintsExpirableTransactionRecord() {
+		final var grpcRecord1 = recordWith(SUCCESS);
+		final var grpcRecord2 = recordWith(INVALID_ACCOUNT_ID);
+		final var record1 = fromGprc(grpcRecord1);
+		final var record2 = fromGprc(grpcRecord2);
+		final FCQueue<ExpirableTxnRecord> recordsFCQ = new FCQueue<>();
+		recordsFCQ.add(record1);
+		recordsFCQ.add(record2);
 
-		Assertions.assertDoesNotThrow(() -> readableProperty(records));
+		final var expected = List.of(grpcRecord1, grpcRecord2).toString();
+		assertEquals(expected, readableProperty(recordsFCQ));
+
+		final var records = List.of(record1, record2);
+		assertEquals(records.toString(), readableProperty(records));
 	}
 
 	private TransactionRecord recordWith(final ResponseCodeEnum code) {
 		return TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(code))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+				.setConsensusTimestamp(Timestamp.getDefaultInstance())
 				.build();
 	}
 
