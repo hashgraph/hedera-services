@@ -29,12 +29,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -57,7 +55,6 @@ public interface PropertySource {
 			.collect(toSet());
 	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
-	Function<String, Object> AS_CSV = s -> Arrays.stream(s.split(",")).collect(toList());
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);
@@ -71,9 +68,6 @@ public interface PropertySource {
 	}
 	default boolean getBooleanProperty(String name) {
 		return getTypedProperty(Boolean.class, name);
-	}
-	default List<String> getListProperty(String name) {
-		return getTypedProperty(List.class, name);
 	}
 	@SuppressWarnings("unchecked")
 	default Set<HederaFunctionality> getFunctionsProperty(String name) {
