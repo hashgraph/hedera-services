@@ -3,32 +3,33 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.Rationalization;
-import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 
-public class ScopedProcessing implements Runnable {
+public class HandleTransaction {
 	private final Rationalization rationalization;
+	private final SystemOpPolicies opPolicies;
 	private final TransactionContext txnCtx;
 	private final NetworkCtxManager networkCtxManager;
 	private final TxnChargingPolicyAgent chargingPolicyAgent;
-	private final ReusableBodySigningFactory bodySigningFactory;
+	private final InHandleActivationHelper activationHelper;
 
-	public ScopedProcessing(
+	public HandleTransaction(
 			Rationalization rationalization,
-			TransactionContext txnCtx,
+			SystemOpPolicies opPolicies,
 			NetworkCtxManager networkCtxManager,
+			TransactionContext txnCtx,
 			TxnChargingPolicyAgent chargingPolicyAgent,
-			ReusableBodySigningFactory bodySigningFactory
+			InHandleActivationHelper activationHelper
 	) {
 		this.rationalization = rationalization;
 		this.txnCtx = txnCtx;
 		this.networkCtxManager = networkCtxManager;
 		this.chargingPolicyAgent = chargingPolicyAgent;
-		this.bodySigningFactory = bodySigningFactory;
+		this.activationHelper = activationHelper;
+		this.opPolicies = opPolicies;
 	}
 
-	@Override
-	public void run() {
 
-	}
 }
