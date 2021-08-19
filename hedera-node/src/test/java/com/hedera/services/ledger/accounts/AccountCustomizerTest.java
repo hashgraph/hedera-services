@@ -36,8 +36,10 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DE
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,5 +195,26 @@ class AccountCustomizerTest {
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_RECEIVER_SIG_REQUIRED)::equals),
 				argThat(isSigRequired::equals));
+	}
+
+	@Test
+	void changesAutoAssociationFieldsAsExpected() {
+		setupWithMockChangeManager();;
+		final Integer maxAutoAssociations = 1234;
+		final Integer alreadyUsedAutoAssociations = 123;
+
+		subject.maxAutomaticAssociations(maxAutoAssociations);
+		subject.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(MAX_AUTOMATIC_ASSOCIATIONS)::equals),
+				argThat(maxAutoAssociations::equals)
+		);
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(ALREADY_USED_AUTOMATIC_ASSOCIATIONS)::equals),
+				argThat(alreadyUsedAutoAssociations::equals)
+		);
 	}
 }
