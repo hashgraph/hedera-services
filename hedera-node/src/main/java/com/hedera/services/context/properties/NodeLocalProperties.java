@@ -20,6 +20,8 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import java.util.List;
+
 public class NodeLocalProperties {
 	private final PropertySource properties;
 
@@ -53,6 +55,7 @@ public class NodeLocalProperties {
 	private int nettyStartRetries;
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
+	private List<String> nettyCiphers;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -91,6 +94,7 @@ public class NodeLocalProperties {
 		nettyStartRetries = properties.getIntProperty("netty.startRetries");
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
+		nettyCiphers = properties.getListProperty("netty.ciphers");
 	}
 
 	public int port() {
@@ -211,5 +215,9 @@ public class NodeLocalProperties {
 
 	public boolean shouldDumpFcmsOnIss() {
 		return dumpFcmsOnIss;
+	}
+
+	public List<String> nettyCiphers() {
+		return nettyCiphers;
 	}
 }
