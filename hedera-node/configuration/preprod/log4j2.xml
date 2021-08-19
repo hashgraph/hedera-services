@@ -47,7 +47,7 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="TRACE" additivity="false">
+    <Logger name="com.swirlds" level="INFO" additivity="false">
       <AppenderRef ref="fileLog" />
       <!--
 	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
@@ -99,6 +99,7 @@
         <!-- Signed State Signatures -->
         <MarkerFilter marker="STATE_SIG_DIST"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_DELETER"          onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="OBJECT_STREAM_DETAIL"   onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <!-- Cryptography -->
         <MarkerFilter marker="OPENCL_INIT_EXCEPTIONS" onMatch="DENY"   onMismatch="NEUTRAL"/>
