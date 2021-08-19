@@ -45,13 +45,16 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.codec.DecoderException;
 
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -209,6 +212,61 @@ public class MiscUtils {
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos
 	);
+
+	private static final Set<String> TRANSACTION_TYPES = Set.of(
+			"ContractCall",
+			"ContractCreateInstance",
+			"ContractUpdateInstance",
+			"ContractDeleteInstance",
+			"CryptoCreateAccount",
+			"CryptoDelete",
+			"CryptoTransfer",
+			"CryptoUpdateAccount",
+			"FileAppend",
+			"FileCreate",
+			"FileDelete",
+			"FileUpdate",
+			"SystemDelete",
+			"SystemUndelete",
+			"Freeze",
+			"ConsensusCreateTopic",
+			"ConsensusUpdateTopic",
+			"ConsensusDeleteTopic",
+			"ConsensusSubmitMessage",
+			"TokenCreation",
+			"TokenFreeze",
+			"TokenUnfreeze",
+			"TokenGrantKyc",
+			"TokenRevokeKyc",
+			"TokenDeletion",
+			"TokenUpdate",
+			"TokenMint",
+			"TokenBurn",
+			"TokenWipe",
+			"TokenAssociate",
+			"TokenDissociate",
+			"ScheduleDelete"
+	);
+	private static final HashMap<String, Method> SCHEDULE_HAS_METHODS = new HashMap<>();
+	private static final HashMap<String, Method> SCHEDULE_GETTERS = new HashMap<>();
+	private static final HashMap<String, Method> TRANSACTION_SETTERS = new HashMap<>();
+
+	static {
+		for (var type : TRANSACTION_TYPES) {
+			try {
+				SCHEDULE_HAS_METHODS.put(type, SchedulableTransactionBody.class.getMethod("has" + type));
+				SCHEDULE_GETTERS.put(type, SchedulableTransactionBody.class.getMethod("get" + type));
+				final var setter = Stream.of(TransactionBody.Builder.class.getMethods())
+						.filter(m -> m.getName().equals("set" + type) &&
+								!m.getParameterTypes()[0].getSimpleName().contains("Builder"))
+						.findFirst()
+						.get();
+				TRANSACTION_SETTERS.put(type, setter);
+			} catch (NoSuchMethodException | NoSuchElementException e) {
+				throw new RuntimeException("Methods missing for " + type, e);
+			}
+		}
+	}
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
 	static final String TOKEN_BURN_METRIC = "burnToken";
@@ -603,70 +661,16 @@ public class MiscUtils {
 		final var ordinary = TransactionBody.newBuilder();
 		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
 				.setMemo(scheduledTxn.getMemo());
-		if (scheduledTxn.hasContractCall()) {
-			ordinary.setContractCall(scheduledTxn.getContractCall());
-		} else if (scheduledTxn.hasContractCreateInstance()) {
-			ordinary.setContractCreateInstance(scheduledTxn.getContractCreateInstance());
-		} else if (scheduledTxn.hasContractUpdateInstance()) {
-			ordinary.setContractUpdateInstance(scheduledTxn.getContractUpdateInstance());
-		} else if (scheduledTxn.hasContractDeleteInstance()) {
-			ordinary.setContractDeleteInstance(scheduledTxn.getContractDeleteInstance());
-		} else if (scheduledTxn.hasCryptoCreateAccount()) {
-			ordinary.setCryptoCreateAccount(scheduledTxn.getCryptoCreateAccount());
-		} else if (scheduledTxn.hasCryptoDelete()) {
-			ordinary.setCryptoDelete(scheduledTxn.getCryptoDelete());
-		} else if (scheduledTxn.hasCryptoTransfer()) {
-			ordinary.setCryptoTransfer(scheduledTxn.getCryptoTransfer());
-		} else if (scheduledTxn.hasCryptoUpdateAccount()) {
-			ordinary.setCryptoUpdateAccount(scheduledTxn.getCryptoUpdateAccount());
-		} else if (scheduledTxn.hasFileAppend()) {
-			ordinary.setFileAppend(scheduledTxn.getFileAppend());
-		} else if (scheduledTxn.hasFileCreate()) {
-			ordinary.setFileCreate(scheduledTxn.getFileCreate());
-		} else if (scheduledTxn.hasFileDelete()) {
-			ordinary.setFileDelete(scheduledTxn.getFileDelete());
-		} else if (scheduledTxn.hasFileUpdate()) {
-			ordinary.setFileUpdate(scheduledTxn.getFileUpdate());
-		} else if (scheduledTxn.hasSystemDelete()) {
-			ordinary.setSystemDelete(scheduledTxn.getSystemDelete());
-		} else if (scheduledTxn.hasSystemUndelete()) {
-			ordinary.setSystemUndelete(scheduledTxn.getSystemUndelete());
-		} else if (scheduledTxn.hasFreeze()) {
-			ordinary.setFreeze(scheduledTxn.getFreeze());
-		} else if (scheduledTxn.hasConsensusCreateTopic()) {
-			ordinary.setConsensusCreateTopic(scheduledTxn.getConsensusCreateTopic());
-		} else if (scheduledTxn.hasConsensusUpdateTopic()) {
-			ordinary.setConsensusUpdateTopic(scheduledTxn.getConsensusUpdateTopic());
-		} else if (scheduledTxn.hasConsensusDeleteTopic()) {
-			ordinary.setConsensusDeleteTopic(scheduledTxn.getConsensusDeleteTopic());
-		} else if (scheduledTxn.hasConsensusSubmitMessage()) {
-			ordinary.setConsensusSubmitMessage(scheduledTxn.getConsensusSubmitMessage());
-		} else if (scheduledTxn.hasTokenCreation()) {
-			ordinary.setTokenCreation(scheduledTxn.getTokenCreation());
-		} else if (scheduledTxn.hasTokenFreeze()) {
-			ordinary.setTokenFreeze(scheduledTxn.getTokenFreeze());
-		} else if (scheduledTxn.hasTokenUnfreeze()) {
-			ordinary.setTokenUnfreeze(scheduledTxn.getTokenUnfreeze());
-		} else if (scheduledTxn.hasTokenGrantKyc()) {
-			ordinary.setTokenGrantKyc(scheduledTxn.getTokenGrantKyc());
-		} else if (scheduledTxn.hasTokenRevokeKyc()) {
-			ordinary.setTokenRevokeKyc(scheduledTxn.getTokenRevokeKyc());
-		} else if (scheduledTxn.hasTokenDeletion()) {
-			ordinary.setTokenDeletion(scheduledTxn.getTokenDeletion());
-		} else if (scheduledTxn.hasTokenUpdate()) {
-			ordinary.setTokenUpdate(scheduledTxn.getTokenUpdate());
-		} else if (scheduledTxn.hasTokenMint()) {
-			ordinary.setTokenMint(scheduledTxn.getTokenMint());
-		} else if (scheduledTxn.hasTokenBurn()) {
-			ordinary.setTokenBurn(scheduledTxn.getTokenBurn());
-		} else if (scheduledTxn.hasTokenWipe()) {
-			ordinary.setTokenWipe(scheduledTxn.getTokenWipe());
-		} else if (scheduledTxn.hasTokenAssociate()) {
-			ordinary.setTokenAssociate(scheduledTxn.getTokenAssociate());
-		} else if (scheduledTxn.hasTokenDissociate()) {
-			ordinary.setTokenDissociate(scheduledTxn.getTokenDissociate());
-		} else if (scheduledTxn.hasScheduleDelete()) {
-			ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
+		for (var type : TRANSACTION_TYPES) {
+			try {
+				if ((boolean) SCHEDULE_HAS_METHODS.get(type).invoke(scheduledTxn)) {
+					final var op = SCHEDULE_GETTERS.get(type).invoke(scheduledTxn);
+					TRANSACTION_SETTERS.get(type).invoke(ordinary, op);
+					break;
+				}
+			} catch (Exception e) {
+				System.out.println("All exceptions should show up in the static initializer, yet `" + e + "` occurred");
+			}
 		}
 		return ordinary.build();
 	}
