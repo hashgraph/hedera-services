@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>0.17.2</version>
+  <version>0.17.3-SNAPSHOT</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>
@@ -21,7 +21,7 @@
     <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>v0.17.2</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <developers>
@@ -187,7 +187,7 @@
     <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S125</sonar.issue.ignore.multicriteria.e1.ruleKey>
 
-    <project.build.outputTimestamp>2021-08-19T00:59:04Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-08-19T01:01:51Z</project.build.outputTimestamp>
   </properties>
 
   <modules>
