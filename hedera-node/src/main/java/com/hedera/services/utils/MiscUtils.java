@@ -260,7 +260,7 @@ public class MiscUtils {
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
 	}
 
-	public static final EnumMap<HederaFunctionality, String> BASE_STAT_NAMES =
+	private static final EnumMap<HederaFunctionality, String> BASE_STAT_NAMES =
 			new EnumMap<>(HederaFunctionality.class);
 
 	static {
@@ -326,19 +326,19 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
 	}
 
-	public static String baseStatNameOf(HederaFunctionality function) {
+	public static String baseStatNameOf(final HederaFunctionality function) {
 		return BASE_STAT_NAMES.getOrDefault(function, function.toString());
 	}
 
-	public static List<AccountAmount> canonicalDiffRepr(List<AccountAmount> a, List<AccountAmount> b) {
+	public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
 		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
 	}
 
-	private static AccountAmount negationOf(AccountAmount adjustment) {
+	private static AccountAmount negationOf(final AccountAmount adjustment) {
 		return adjustment.toBuilder().setAmount(-1 * adjustment.getAmount()).build();
 	}
 
-	public static List<AccountAmount> canonicalRepr(List<AccountAmount> transfers) {
+	public static List<AccountAmount> canonicalRepr(final List<AccountAmount> transfers) {
 		return transfers.stream()
 				.collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount, Math::addExact))
 				.entrySet().stream()
@@ -348,7 +348,7 @@ public class MiscUtils {
 				.collect(toList());
 	}
 
-	public static String readableTransferList(TransferList accountAmounts) {
+	public static String readableTransferList(final TransferList accountAmounts) {
 		return accountAmounts.getAccountAmountsList()
 				.stream()
 				.map(aa -> String.format(
@@ -361,7 +361,7 @@ public class MiscUtils {
 				.toString();
 	}
 
-	public static String readableNftTransferList(TokenTransferList tokenTransferList) {
+	public static String readableNftTransferList(final TokenTransferList tokenTransferList) {
 		return tokenTransferList.getNftTransfersList()
 				.stream()
 				.map(nftTransfer -> String.format(
@@ -373,17 +373,21 @@ public class MiscUtils {
 				.toString();
 	}
 
-	public static JKey lookupInCustomStore(LegacyEd25519KeyReader b64Reader, String storeLoc, String kpId) {
+	public static JKey lookupInCustomStore(
+			final LegacyEd25519KeyReader b64Reader,
+			final String storeLoc,
+			final String kpId
+	) {
 		try {
 			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (IllegalArgumentException e) {
-			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc,
-					kpId);
+			final var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!",
+					storeLoc, kpId);
 			throw new IllegalArgumentException(msg, e);
 		}
 	}
 
-	public static String readableProperty(Object o) {
+	public static String readableProperty(final Object o) {
 		if (o instanceof FCQueue) {
 			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
 		} else {
@@ -391,7 +395,7 @@ public class MiscUtils {
 		}
 	}
 
-	public static JKey asFcKeyUnchecked(Key key) {
+	public static JKey asFcKeyUnchecked(final Key key) {
 		try {
 			return JKey.mapKey(key);
 		} catch (DecoderException impermissible) {
@@ -399,9 +403,9 @@ public class MiscUtils {
 		}
 	}
 
-	public static Optional<JKey> asUsableFcKey(Key key) {
+	public static Optional<JKey> asUsableFcKey(final Key key) {
 		try {
-			var fcKey = JKey.mapKey(key);
+			final var fcKey = JKey.mapKey(key);
 			if (!fcKey.isValid()) {
 				return Optional.empty();
 			}
@@ -411,7 +415,7 @@ public class MiscUtils {
 		}
 	}
 
-	public static Key asKeyUnchecked(JKey fcKey) {
+	public static Key asKeyUnchecked(final JKey fcKey) {
 		try {
 			return mapJKey(fcKey);
 		} catch (Exception impossible) {
@@ -419,18 +423,18 @@ public class MiscUtils {
 		}
 	}
 
-	public static Timestamp asTimestamp(Instant when) {
+	public static Timestamp asTimestamp(final Instant when) {
 		return Timestamp.newBuilder()
 				.setSeconds(when.getEpochSecond())
 				.setNanos(when.getNano())
 				.build();
 	}
 
-	public static Instant timestampToInstant(Timestamp timestamp) {
+	public static Instant timestampToInstant(final Timestamp timestamp) {
 		return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
 
-	public static Optional<QueryHeader> activeHeaderFrom(Query query) {
+	public static Optional<QueryHeader> activeHeaderFrom(final Query query) {
 		switch (query.getQueryCase()) {
 			case TOKENGETNFTINFO:
 				return Optional.of(query.getTokenGetNftInfo().getHeader());
@@ -481,7 +485,7 @@ public class MiscUtils {
 		}
 	}
 
-	static String getTxnStat(TransactionBody txn) {
+	static String getTxnStat(final TransactionBody txn) {
 		try {
 			return BASE_STAT_NAMES.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {
@@ -489,7 +493,7 @@ public class MiscUtils {
 		}
 	}
 
-	public static HederaFunctionality functionOf(TransactionBody txn) throws UnknownHederaFunctionality {
+	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
 		if (txn.hasSystemDelete()) {
 			return SystemDelete;
 		} else if (txn.hasSystemUndelete()) {
@@ -571,11 +575,11 @@ public class MiscUtils {
 		}
 	}
 
-	public static Optional<HederaFunctionality> functionalityOfQuery(Query query) {
+	public static Optional<HederaFunctionality> functionalityOfQuery(final Query query) {
 		return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
 	}
 
-	public static String describe(JKey k) {
+	public static String describe(final JKey k) {
 		if (k == null) {
 			return "<N/A>";
 		} else {
@@ -588,15 +592,15 @@ public class MiscUtils {
 		}
 	}
 
-	public static Set<AccountID> getNodeAccounts(AddressBook addressBook) {
+	public static Set<AccountID> getNodeAccounts(final AddressBook addressBook) {
 		return IntStream.range(0, addressBook.getSize())
 				.mapToObj(addressBook::getAddress)
 				.map(address -> parseAccount(address.getMemo()))
 				.collect(toSet());
 	}
 
-	public static TransactionBody asOrdinary(SchedulableTransactionBody scheduledTxn) {
-		var ordinary = TransactionBody.newBuilder();
+	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn) {
+		final var ordinary = TransactionBody.newBuilder();
 		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
 				.setMemo(scheduledTxn.getMemo());
 		if (scheduledTxn.hasContractCall()) {
@@ -674,25 +678,27 @@ public class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x the value to permute
+	 * @param x
+	 * 		the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
 		// Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
-		x += x <<  30;
+		x += x << 30;
 		x ^= x >>> 27;
-		x += x <<  16;
+		x += x << 16;
 		x ^= x >>> 20;
-		x += x <<   5;
+		x += x << 5;
 		x ^= x >>> 18;
-		x += x <<  10;
+		x += x << 10;
 		x ^= x >>> 24;
-		x += x <<  30;
+		x += x << 30;
 		return x;
 	}
+
 	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
-			FCMap<K, V> map,
-			BiConsumer<? super K, ? super V> action
+			final FCMap<K, V> map,
+			final BiConsumer<? super K, ? super V> action
 	) {
 		map.forEachNode((final MerkleNode node) -> {
 			if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
