@@ -22,8 +22,13 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.PropertySource;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
+@Singleton
 public class HederaNumbers {
 	private final PropertySource properties;
 
@@ -31,7 +36,8 @@ public class HederaNumbers {
 	private long shard = UNKNOWN_NUMBER;
 	private long numReservedSystemEntities = UNKNOWN_NUMBER;
 
-	public HederaNumbers(PropertySource properties) {
+	@Inject
+	public HederaNumbers(@Named("composite") PropertySource properties) {
 		this.properties = properties;
 	}
 

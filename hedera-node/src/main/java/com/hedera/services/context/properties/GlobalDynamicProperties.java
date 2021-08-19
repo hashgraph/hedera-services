@@ -26,8 +26,12 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import java.util.Set;
 
+@Singleton
 public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
@@ -82,9 +86,10 @@ public class GlobalDynamicProperties {
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 
+	@Inject
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
-			PropertySource properties
+			@Named("composite") PropertySource properties
 	) {
 		this.hederaNums = hederaNums;
 		this.properties = properties;

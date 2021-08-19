@@ -20,6 +20,11 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+@Singleton
 public class NodeLocalProperties {
 	private final PropertySource properties;
 
@@ -54,7 +59,8 @@ public class NodeLocalProperties {
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
 
-	public NodeLocalProperties(PropertySource properties) {
+	@Inject
+	public NodeLocalProperties(@Named("composite") PropertySource properties) {
 		this.properties = properties;
 
 		reload();

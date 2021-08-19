@@ -64,8 +64,6 @@ public class StandardizedPropertySourcesTest {
 	@Test
 	void usesNodeAsSecondPriority() {
 		// setup:
-		given(nodeProps.containsProperty("testProp")).willReturn(true);
-		given(nodeProps.getProperty("testProp")).willReturn("imperfectAnswer");
 		given(nodeProps.containsProperty("testProp2")).willReturn(true);
 		given(nodeProps.getProperty("testProp2")).willReturn("goodEnoughForMe");
 		// and:
@@ -91,8 +89,6 @@ public class StandardizedPropertySourcesTest {
 
 	@Test
 	void usesBootstrapSourceAsApropos() {
-		givenImpliedSubject();
-		// and:
 		subject.getNodeProps().getFromFile().clear();
 
 		// when:
@@ -104,9 +100,5 @@ public class StandardizedPropertySourcesTest {
 		for (String bootstrapProp : BOOTSTRAP_PROP_NAMES) {
 			verify(bootstrapProps).getProperty(bootstrapProp);
 		}
-	}
-
-	private void givenImpliedSubject() {
-		subject = new StandardizedPropertySources(bootstrapProps);
 	}
 }

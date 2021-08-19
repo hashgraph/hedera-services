@@ -52,6 +52,7 @@ public class StandardizedPropertySources implements PropertySources {
 	private final ScreenedSysFileProps dynamicGlobalProps;
 	private final ScreenedNodeFileProps nodeProps;
 
+	@Inject
 	public StandardizedPropertySources(
 			@Named("bootstrap") PropertySource bootstrapProps,
 			ScreenedSysFileProps dynamicGlobalProps,
@@ -62,7 +63,6 @@ public class StandardizedPropertySources implements PropertySources {
 		this.dynamicGlobalProps = dynamicGlobalProps;
 	}
 
-	@Inject
 	public StandardizedPropertySources(@Named("bootstrap") PropertySource bootstrapProps) {
 		this.bootstrapProps = bootstrapProps;
 

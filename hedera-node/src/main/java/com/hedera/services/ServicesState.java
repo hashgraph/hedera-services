@@ -24,6 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.init.InitializationFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.ScreenedNodeFileProps;
+import com.hedera.services.context.properties.ScreenedSysFileProps;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -335,7 +337,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (CONTEXTS.isInitialized(selfId.getId())) {
 			ctx = CONTEXTS.lookup(selfId.getId());
 		} else {
-			final var properties = new StandardizedPropertySources(bootstrapProps);
+			final var properties = new StandardizedPropertySources(
+					bootstrapProps,
+					new ScreenedSysFileProps(),
+					new ScreenedNodeFileProps());
 			ctx = new ServicesContext(selfId, platform, this, properties);
 		}
 		metadata = new StateMetadata(ctx);
