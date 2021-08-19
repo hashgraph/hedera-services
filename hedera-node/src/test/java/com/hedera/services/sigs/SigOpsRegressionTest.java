@@ -29,6 +29,7 @@ import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
@@ -394,8 +395,6 @@ class SigOpsRegressionTest {
 
 	private Rationalization invokeRationalizationScenario() {
 		// setup:
-		final var rationalization = new Rationalization();
-
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
@@ -403,12 +402,10 @@ class SigOpsRegressionTest {
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
-		rationalization.performFor(
-				platformTxn,
-				syncVerifier,
-				keyOrder,
-				platformTxn.getPkToSigsFn(),
-				new BodySigningSigFactory(platformTxn));
+		// given:
+		final var rationalization = new Rationalization(syncVerifier, keyOrder, new ReusableBodySigningFactory());
+
+		rationalization.performFor(platformTxn);
 
 		return rationalization;
 	}

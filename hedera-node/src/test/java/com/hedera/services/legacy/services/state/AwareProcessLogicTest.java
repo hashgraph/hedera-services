@@ -33,7 +33,6 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.Rationalization;
-import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -96,7 +95,6 @@ class AwareProcessLogicTest {
 	private Rationalization rationalization;
 	private HederaSigningOrder keyOrder;
 	private MiscSpeedometers speedometers;
-	private ReusableBodySigningFactory bodySigningFactory;
 	private BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private AwareProcessLogic subject;
@@ -117,7 +115,6 @@ class AwareProcessLogicTest {
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
 		final EntityAutoRenewal entityAutoRenewal = mock(EntityAutoRenewal.class);
 
-		bodySigningFactory = mock(ReusableBodySigningFactory.class);
 		speedometers = mock(MiscSpeedometers.class);
 		invariantChecks = mock(InvariantChecks.class);
 		expiryManager = mock(ExpiryManager.class);
@@ -173,7 +170,7 @@ class AwareProcessLogicTest {
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
 
-		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
+		subject = new AwareProcessLogic(ctx, rationalization, validityTest);
 	}
 
 	@Test
@@ -190,8 +187,7 @@ class AwareProcessLogicTest {
 		final var result = subject.rationalizeWithPreConsensusSigs(txnAccessor);
 
 		// then:
-		verify(bodySigningFactory).resetFor(txnAccessor);
-		verify(rationalization).performFor(txnAccessor, syncVerifier, keyOrder, sigBytesFn, bodySigningFactory);
+		verify(rationalization).performFor(txnAccessor);
 		verify(speedometers).cycleAsyncVerifications();
 		// and:
 		Assertions.assertEquals(OK, result);
@@ -212,8 +208,7 @@ class AwareProcessLogicTest {
 		final var result = subject.rationalizeWithPreConsensusSigs(txnAccessor);
 
 		// then:
-		verify(bodySigningFactory).resetFor(txnAccessor);
-		verify(rationalization).performFor(txnAccessor, syncVerifier, keyOrder, sigBytesFn, bodySigningFactory);
+		verify(rationalization).performFor(txnAccessor);
 		verify(speedometers).cycleSyncVerifications();
 		// and:
 		Assertions.assertEquals(OK, result);
@@ -233,8 +228,7 @@ class AwareProcessLogicTest {
 		final var result = subject.rationalizeWithPreConsensusSigs(txnAccessor);
 
 		// then:
-		verify(bodySigningFactory).resetFor(txnAccessor);
-		verify(rationalization).performFor(eq(txnAccessor), eq(syncVerifier), eq(keyOrder), eq(sigBytesFn), any());
+		verify(rationalization).performFor(txnAccessor);
 		verify(rationalization, never()).usedSyncVerification();
 		verifyNoInteractions(speedometers);
 		// and:

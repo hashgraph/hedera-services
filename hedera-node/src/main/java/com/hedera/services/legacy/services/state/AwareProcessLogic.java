@@ -25,7 +25,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
-import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -71,7 +70,6 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private final ServicesContext ctx;
 	private final Rationalization rationalization;
-	private final ReusableBodySigningFactory bodySigningFactory;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
@@ -82,13 +80,11 @@ public class AwareProcessLogic implements ProcessLogic {
 	public AwareProcessLogic(
 			ServicesContext ctx,
 			Rationalization rationalization,
-			ReusableBodySigningFactory bodySigningFactory,
 			BiPredicate<JKey, TransactionSignature> validityTest
 	) {
 		this.ctx = ctx;
 		this.validityTest = validityTest;
 		this.rationalization = rationalization;
-		this.bodySigningFactory = bodySigningFactory;
 	}
 
 	@Override
@@ -207,14 +203,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	ResponseCodeEnum rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
-		bodySigningFactory.resetFor(accessor);
-
-		rationalization.performFor(
-				accessor,
-				ctx.syncVerifier(),
-				ctx.backedKeyOrder(),
-				accessor.getPkToSigsFn(),
-				bodySigningFactory);
+		rationalization.performFor(accessor);
 		final var status = rationalization.finalStatus();
 		if (status == OK) {
 			if (rationalization.usedSyncVerification()) {

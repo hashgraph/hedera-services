@@ -1812,9 +1812,9 @@ public class ServicesContext {
 
 	public ProcessLogic logic() {
 		if (logic == null) {
-			final var rationalization = new Rationalization();
 			final var bodySigningFactory = new ReusableBodySigningFactory();
-			logic = new AwareProcessLogic(this, rationalization, bodySigningFactory, validityTest());
+			final var rationalization = new Rationalization(syncVerifier(), backedKeyOrder(), bodySigningFactory);
+			logic = new AwareProcessLogic(this, rationalization, validityTest());
 		}
 		return logic;
 	}

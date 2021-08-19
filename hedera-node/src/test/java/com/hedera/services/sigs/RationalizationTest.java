@@ -22,7 +22,7 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -71,7 +71,7 @@ class RationalizationTest {
 	@Mock
 	private HederaSigningOrder keyOrderer;
 	@Mock
-	private TxnScopedPlatformSigFactory sigFactory;
+	private ReusableBodySigningFactory sigFactory;
 	@Mock
 	private PubKeyToSigBytes pkToSigFn;
 	@Mock
@@ -83,7 +83,7 @@ class RationalizationTest {
 	void setUp() {
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
 
-		subject = new Rationalization();
+		subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
 	}
 
 	@Test
@@ -92,7 +92,7 @@ class RationalizationTest {
 		final List<TransactionSignature> mockSigs = new ArrayList<>();
 		final JKey fake = new JEd25519Key("FAKE".getBytes(StandardCharsets.UTF_8));
 
-		subject = new Rationalization();
+		subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
 
 		given(swirldsTxn.getSignatures()).willReturn(mockSigs);
 		// and:
@@ -105,14 +105,13 @@ class RationalizationTest {
 		subject.setVerifiedSync(true);
 
 		// when:
-		subject.resetFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		subject.resetFor(txnAccessor);
 
 		// then:
 		assertSame(txnAccessor, subject.getTxnAccessor());
 		assertSame(syncVerifier, subject.getSyncVerifier());
 		assertSame(keyOrderer, subject.getKeyOrderer());
 		assertSame(pkToSigFn, subject.getPkToSigFn());
-		assertSame(sigFactory, subject.getSigFactory());
 		assertSame(mockSigs, subject.getTxnSigs());
 		// and:
 		assertTrue(subject.getRealPayerSigs().isEmpty());
@@ -123,6 +122,8 @@ class RationalizationTest {
 		assertNull(subject.getReqPayerSig());
 		assertNull(subject.getReqOthersSigs());
 		assertNull(subject.getLastOrderResult());
+		// and:
+		verify(sigFactory).resetFor(txnAccessor);
 	}
 
 	@Test
@@ -134,7 +135,7 @@ class RationalizationTest {
 		given(keyOrderer.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(generalError);
 
 		// when:
-		subject.performFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		subject.performFor(txnAccessor);
 
 		// then:
 		assertEquals(generalError.getErrorReport(), subject.finalStatus());
@@ -154,7 +155,7 @@ class RationalizationTest {
 		given(keyOrderer.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(othersError);
 
 		// when:
-		subject.performFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		subject.performFor(txnAccessor);
 
 		// then:
 		assertEquals(othersError.getErrorReport(), subject.finalStatus());

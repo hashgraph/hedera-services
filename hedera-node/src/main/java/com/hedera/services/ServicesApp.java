@@ -10,6 +10,7 @@ import javax.inject.Singleton;
 @Singleton
 @Component(modules = CompositePropertiesModule.class)
 public interface ServicesApp {
+//	ProcessLogic processLogic();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 }

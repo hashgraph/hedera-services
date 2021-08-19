@@ -25,7 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.sigs.Rationalization;
-import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
@@ -72,8 +71,6 @@ class TargetedAwareProcessLogicTest {
 	@Mock
 	private Rationalization rationalization;
 	@Mock
-	private ReusableBodySigningFactory bodySigningFactory;
-	@Mock
 	private BiPredicate<JKey, TransactionSignature> validityTest;
 	@Mock
 	private AwareProcessLogic.PayerSigValidity payerSigValidity;
@@ -86,7 +83,7 @@ class TargetedAwareProcessLogicTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
+		subject = new AwareProcessLogic(ctx, rationalization, validityTest);
 	}
 
 	@Test
