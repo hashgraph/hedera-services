@@ -22,7 +22,6 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -57,27 +56,25 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.context.AwareTransactionContext.EMPTY_KEY;
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
@@ -100,119 +97,75 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(LogCaptureExtension.class)
-class AwareTransactionContextTest {
-	private final long offeredFee = 123_000_000L;
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
+class BasicTransactionContextTest {
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.build();
-	private long memberId = 3;
-	private long anotherMemberId = 4;
-	private Instant now = Instant.now();
-	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
+	private final long memberId = 3;
+	private final long anotherMemberId = 4;
+	private final Instant now = Instant.now();
+	private final ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
 			TimestampSeconds.newBuilder()).build();
-	private ExchangeRateSet ratesNow =
+	private final ExchangeRateSet ratesNow =
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
-	private AccountID payer = asAccount("0.0.2");
-	private AccountID anotherNodeAccount = asAccount("0.0.4");
-	private AccountID created = asAccount("1.0.2");
-	private AccountID another = asAccount("1.0.300");
-	private TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
-	private TokenID tokenCreated = asToken("3.0.2");
-	private ScheduleID scheduleCreated = asSchedule("0.0.10");
-	private TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
+	private final AccountID payer = asAccount("0.0.2");
+	private final AccountID anotherNodeAccount = asAccount("0.0.4");
+	private final AccountID created = asAccount("1.0.2");
+	private final AccountID another = asAccount("1.0.300");
+	private final TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private final TokenID tokenCreated = asToken("3.0.2");
+	private final ScheduleID scheduleCreated = asSchedule("0.0.10");
+	private final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
 			.setToken(tokenCreated)
 			.addAllTransfers(withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList())
 			.build();
-	private FileID fileCreated = asFile("2.0.1");
-	private ContractID contractCreated = asContract("0.1.2");
-	private TopicID topicCreated = asTopic("5.4.3");
-	private long txnValidStart = now.getEpochSecond() - 1_234L;
-	private HederaLedger ledger;
-	private AccountID nodeAccount = asAccount("0.0.3");
-	private Address address;
-	private Address anotherAddress;
-	private AddressBook book;
-	private HbarCentExchange exchange;
-	private NodeInfo nodeInfo;
-	private ServicesContext ctx;
-	private NarratedCharging narratedCharging;
-	private PlatformTxnAccessor accessor;
-	private Transaction signedTxn;
-	private TransactionBody txn;
-	private ExpirableTxnRecord record;
-	private ExpiringEntity expiringEntity;
-	private String memo = "Hi!";
-	private byte[] hash = "fake hash".getBytes();
-	private TransactionID txnId = TransactionID.newBuilder()
+	private final FileID fileCreated = asFile("2.0.1");
+	private final ContractID contractCreated = asContract("0.1.2");
+	private final TopicID topicCreated = asTopic("5.4.3");
+	private final long txnValidStart = now.getEpochSecond() - 1_234L;
+	private final AccountID nodeAccount = asAccount("0.0.3");
+	private final String memo = "Hi!";
+	private final byte[] hash = "fake hash".getBytes();
+	private final TransactionID txnId = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 			.setAccountID(payer)
 			.build();
-	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
+	private final ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(
+			contractCreated).build();
+	private ExpirableTxnRecord record;
+
+	@Mock
+	private HbarCentExchange exchange;
+	@Mock
+	private NodeInfo nodeInfo;
+	@Mock
+	private NarratedCharging narratedCharging;
+	@Mock
+	private PlatformTxnAccessor accessor;
+	@Mock
+	private TransactionBody txn;
+	@Mock
+	private ExpiringEntity expiringEntity;
+	@Mock
 	private JKey payerKey;
+	@Mock
+	private MerkleAccount payerAccount;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	@Mock
+	private ExpiringCreations creator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
-	private AwareTransactionContext subject;
-
-	private ExpiringCreations creator;
+	private BasicTransactionContext subject;
 
 	@BeforeEach
 	private void setup() {
-		address = mock(Address.class);
-		given(address.getMemo()).willReturn(asAccountString(nodeAccount));
-		anotherAddress = mock(Address.class);
-		given(anotherAddress.getMemo()).willReturn(asAccountString(anotherNodeAccount));
-		book = mock(AddressBook.class);
-		given(book.getAddress(memberId)).willReturn(address);
-		given(book.getAddress(anotherMemberId)).willReturn(anotherAddress);
+		subject = new BasicTransactionContext(narratedCharging, () -> accounts, nodeInfo, exchange, creator);
+		verify(exchange).setTxnCtx(subject);
 
-		ledger = mock(HederaLedger.class);
-		given(ledger.netTransfersInTxn()).willReturn(transfers);
-		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
-
-		exchange = mock(HbarCentExchange.class);
-		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
-
-		narratedCharging = mock(NarratedCharging.class);
-
-		payerKey = mock(JKey.class);
-		MerkleAccount payerAccount = mock(MerkleAccount.class);
-		given(payerAccount.getKey()).willReturn(payerKey);
-		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
-
-		ctx = mock(ServicesContext.class);
-		creator = mock(ExpiringCreations.class);
-		given(ctx.exchange()).willReturn(exchange);
-		given(ctx.ledger()).willReturn(ledger);
-		given(ctx.accounts()).willReturn(accounts);
-		given(ctx.narratedCharging()).willReturn(narratedCharging);
-		given(ctx.accounts()).willReturn(accounts);
-		given(ctx.addressBook()).willReturn(book);
-		given(ctx.creator()).willReturn(creator);
-
-		nodeInfo = mock(NodeInfo.class);
-		given(ctx.nodeInfo()).willReturn(nodeInfo);
-		given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
-
-		txn = mock(TransactionBody.class);
-		given(txn.getMemo()).willReturn(memo);
-		signedTxn = mock(Transaction.class);
-		given(signedTxn.toByteArray()).willReturn(memo.getBytes());
-		accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getOfferedFee()).willReturn(offeredFee);
-		given(accessor.getTxnId()).willReturn(txnId);
-		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getSignedTxnWrapper()).willReturn(signedTxn);
-		given(accessor.getPayer()).willReturn(payer);
-		given(accessor.getHash()).willReturn(hash);
-
-		expiringEntity = mock(ExpiringEntity.class);
-
-		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
 
 		verify(narratedCharging).resetForTxn(accessor, memberId);
@@ -226,7 +179,9 @@ class AwareTransactionContextTest {
 
 	@Test
 	void returnsPayerIfSigActive() {
-		// given:
+		given(accessor.getPayer()).willReturn(payer);
+
+		// when:
 		subject.payerSigIsKnownActive();
 
 		// expect:
@@ -241,7 +196,11 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsPayerKeyIfSigActive() {
-		// given:
+		given(payerAccount.getKey()).willReturn(payerKey);
+		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
+		given(accessor.getPayer()).willReturn(payer);
+
+		// when:
 		subject.payerSigIsKnownActive();
 
 		// then:
@@ -250,6 +209,8 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedNodeAccount() {
+		given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
+
 		// expect:
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
 	}
@@ -268,25 +229,29 @@ class AwareTransactionContextTest {
 	@Test
 	void resetsRecordSoFar() {
 		// given:
-		subject.recordSoFar = mock(ExpirableTxnRecord.Builder.class);
+		subject.setRecordSoFar(mock(ExpirableTxnRecord.Builder.class));
 
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 
 		// then:
-		verify(subject.recordSoFar).clear();
+		verify(subject.getRecordSoFar()).clear();
 	}
 
 	@Test
 	void resetsEverythingElse() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
 		given(nodeInfo.accountOf(anotherMemberId)).willReturn(anotherNodeAccount);
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
 		// and:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(SUCCESS);
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
-		subject.hasComputedRecordSoFar = true;
+		subject.setHasComputedRecordSoFar(true);
 		subject.setAssessedCustomFees(Collections.emptyList());
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
@@ -295,7 +260,7 @@ class AwareTransactionContextTest {
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertNull(subject.getAssessedCustomFees());
-		assertFalse(subject.hasComputedRecordSoFar);
+		assertFalse(subject.hasComputedRecordSoFar());
 		// and:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
@@ -306,7 +271,7 @@ class AwareTransactionContextTest {
 		assertEquals(0, record.asGrpc().getTransactionFee());
 		assertFalse(record.asGrpc().hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
-		assertTrue(subject.hasComputedRecordSoFar);
+		assertTrue(subject.hasComputedRecordSoFar());
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		// and:
@@ -315,13 +280,17 @@ class AwareTransactionContextTest {
 
 	@Test
 	void effectivePayerIsSubmittingNodeIfNotVerified() {
+		given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
+
 		// expect:
 		assertEquals(nodeAccount, subject.effectivePayer());
 	}
 
 	@Test
 	void effectivePayerIsActiveIfVerified() {
-		// given:
+		given(accessor.getPayer()).willReturn(payer);
+
+		// when:
 		subject.payerSigIsKnownActive();
 
 		// expect:
@@ -330,9 +299,14 @@ class AwareTransactionContextTest {
 
 	@Test
 	void usesChargingToSetTransactionFee() {
+		// setup:
 		long std = 1_234L;
 		long other = 4_321L;
+
 		given(narratedCharging.totalFeesChargedToPayer()).willReturn(std);
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);
@@ -346,6 +320,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void usesTokenTransfersToSetApropos() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
@@ -356,6 +334,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void configuresCallResult() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCallResult(result);
 		setUpBuildingExpirableTxnRecord();
@@ -367,6 +349,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void configuresCreateResult() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		setUpBuildingExpirableTxnRecord();
 		subject.setCreateResult(result);
@@ -378,6 +364,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void hasTransferList() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		setUpBuildingExpirableTxnRecord();
 		// expect:
 		assertEquals(transfers, subject.recordSoFar().asGrpc().getTransferList());
@@ -385,6 +375,12 @@ class AwareTransactionContextTest {
 
 	@Test
 	void hasExpectedCopyFields() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+		given(txn.getMemo()).willReturn(memo);
+		given(accessor.getHash()).willReturn(hash);
+
 		setUpBuildingExpirableTxnRecord();
 		// when:
 		ExpirableTxnRecord record = subject.recordSoFar();
@@ -415,6 +411,12 @@ class AwareTransactionContextTest {
 
 	@Test
 	void hasExpectedRecordStatus() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+		given(txn.getMemo()).willReturn(memo);
+		given(accessor.getHash()).willReturn(hash);
+
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 		setUpBuildingExpirableTxnRecord();
@@ -427,6 +429,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForAccountCreation() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCreated(created);
 		setUpBuildingExpirableTxnRecord();
@@ -439,6 +445,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForTokenCreation() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCreated(tokenCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -452,6 +462,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForTokenMintBurnWipe() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		final var newTotalSupply = 1000L;
 		subject.setNewTotalSupply(newTotalSupply);
@@ -467,6 +481,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForFileCreation() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCreated(fileCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -480,6 +498,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForContractCreation() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCreated(contractCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -492,6 +514,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForTopicCreation() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCreated(topicCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -504,6 +530,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForSubmitMessage() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		var sequenceNumber = 1000L;
 		var runningHash = new byte[11];
 
@@ -521,6 +551,10 @@ class AwareTransactionContextTest {
 
 	@Test
 	void getsExpectedReceiptForSuccessfulScheduleOps() {
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
 		// when:
 		subject.setCreated(scheduleCreated);
 		subject.setScheduledTxnId(scheduledTxnId);
@@ -552,13 +586,18 @@ class AwareTransactionContextTest {
 	void triggersTxn() {
 		// when:
 		subject.trigger(accessor);
+
 		// then:
 		assertEquals(subject.triggeredTxn(), accessor);
 	}
 
 	@Test
 	void getsExpectedRecordForTriggeredTxn() {
-		// given:
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+
+		// and:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);
 		setUpBuildingExpirableTxnRecord();
@@ -574,6 +613,7 @@ class AwareTransactionContextTest {
 	void addsExpiringEntities() {
 		// given:
 		var expected = Collections.singletonList(expiringEntity);
+
 		// when:
 		subject.addExpiringEntities(expected);
 
@@ -585,7 +625,8 @@ class AwareTransactionContextTest {
 	void setsCreatedSerialNumbersInReceipt() {
 		// given:
 		List<Long> expected = List.of(1L, 2L, 3L, 4L, 5L, 6L);
-		var expectedArray = new long[]{1L, 2L, 3L, 4L, 5L, 6L};
+		var expectedArray = new long[] { 1L, 2L, 3L, 4L, 5L, 6L };
+
 		// when:
 		subject.setCreated(expected);
 
@@ -595,8 +636,6 @@ class AwareTransactionContextTest {
 
 	@Test
 	void throwsIfAccessorIsAlreadyTriggered() {
-		// given:
-		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);
 
 		// when:
@@ -604,15 +643,15 @@ class AwareTransactionContextTest {
 	}
 
 	private ExpirableTxnRecord.Builder buildRecord(
-                  long otherNonThresholdFees, 
-                  byte[] hash, 
-                  TxnAccessor accessor, 
-                  Instant consensusTime, 
-                  TxnReceipt receipt
-        ) {
-		long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		TransferList transfersList = ctx.ledger().netTransfersInTxn();
-		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
+			long otherNonThresholdFees,
+			byte[] hash,
+			TxnAccessor accessor,
+			Instant consensusTime,
+			TxnReceipt receipt
+	) {
+		long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
+		TransferList transfersList = transfers;
+		List<TokenTransferList> tokenTransferList = List.of(tokenTransfers);
 
 		var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(receipt)
@@ -640,10 +679,13 @@ class AwareTransactionContextTest {
 	}
 
 	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
-		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
+		var expirableRecordBuilder = buildRecord(
+				subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
-				accessor, now, subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any()))
+				accessor,
+				now,
+				subject.receiptSoFar().build());
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
 				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}

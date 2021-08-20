@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -82,6 +83,11 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	@Override
 	public void expire(EntityId id) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setTxnCtx(TransactionContext txnCtx) {
+		/* No-op */
 	}
 
 	@Override

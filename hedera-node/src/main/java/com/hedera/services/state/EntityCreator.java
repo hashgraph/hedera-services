@@ -20,11 +20,11 @@ package com.hedera.services.state;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -40,6 +40,13 @@ public interface EntityCreator {
 	 * 		record cache
 	 */
 	void setRecordCache(RecordCache recordCache);
+
+	/**
+	 * Sets the ledger for the entity creator.
+	 *
+	 * @param ledger the ledger to use
+	 */
+	void setLedger(HederaLedger ledger);
 
 	/**
 	 * Sets needed properties like expiry and submitting member to {@link ExpirableTxnRecord} and adds record to state
@@ -78,8 +85,6 @@ public interface EntityCreator {
 	 * 		transaction receipt
 	 * @param explicitTokenTransfers
 	 * 		explicit list of token transfers
-	 * @param ctx
-	 * 		services context
 	 * @param assessedCustomFees
 	 * 		the list of assessed custom fees
 	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
@@ -91,7 +96,6 @@ public interface EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
 			List<FcAssessedCustomFee> assessedCustomFees);
 
 	/**

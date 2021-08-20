@@ -73,11 +73,9 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
-			TransactionContext txnCtx,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		super(ids);
-		this.txnCtx = txnCtx;
 		this.schedules = schedules;
 		this.properties = properties;
 		buildContentAddressableViewOfExtantSchedules();
@@ -231,6 +229,11 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var schedule = get(id);
 		schedules.get().remove(entityId.asMerkle());
 		extantSchedules.remove(schedule);
+	}
+
+	@Override
+	public void setTxnCtx(TransactionContext txnCtx) {
+		this.txnCtx = txnCtx;
 	}
 
 	public Map<MerkleSchedule, MerkleEntityId> getExtantSchedules() {

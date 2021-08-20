@@ -130,9 +130,10 @@ class HederaScheduleStoreTest {
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
-		subject = new HederaScheduleStore(globalDynamicProperties, ids, txnCtx, () -> schedules);
+		subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
+		subject.setTxnCtx(txnCtx);
 	}
 
 	@Test

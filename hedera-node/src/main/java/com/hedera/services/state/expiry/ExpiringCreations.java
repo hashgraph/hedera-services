@@ -20,17 +20,18 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -51,18 +52,30 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 public class ExpiringCreations implements EntityCreator {
 	private RecordCache recordCache;
 
+	private HederaLedger ledger;
+
 	private final ExpiryManager expiries;
+	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
+			NarratedCharging narratedCharging,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;
+		this.narratedCharging = narratedCharging;
 		this.dynamicProperties = dynamicProperties;
+	}
+
+	@Override
+	public void setLedger(HederaLedger ledger) {
+		this.ledger = ledger;
+
+		narratedCharging.setLedger(ledger);
 	}
 
 	@Override
@@ -100,14 +113,13 @@ public class ExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
 			List<FcAssessedCustomFee> customFeesCharged
 	) {
-		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		final long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
+		final TransferList transfersList = ledger.netTransfersInTxn();
 		final var tokenTransferList = explicitTokenTransfers != null
 				? explicitTokenTransfers
-				: ctx.ledger().netTokenTransfersInTxn();
+				: ledger.netTokenTransfersInTxn();
 		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
 				? CurrencyAdjustments.fromGrpc(transfersList) : null;
 

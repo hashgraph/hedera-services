@@ -20,12 +20,12 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -38,6 +38,11 @@ public enum NoopExpiringCreations implements EntityCreator {
 
 	@Override
 	public void setRecordCache(RecordCache recordCache) {
+		/* No-op */
+	}
+
+	@Override
+	public void setLedger(HederaLedger ledger) {
 		/* No-op */
 	}
 
@@ -59,7 +64,6 @@ public enum NoopExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
 			List<FcAssessedCustomFee> customFeesCharged
 	) {
 		throw new UnsupportedOperationException();

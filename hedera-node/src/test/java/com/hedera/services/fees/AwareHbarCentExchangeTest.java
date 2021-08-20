@@ -35,9 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class AwareHbarCentExchangeTest {
@@ -60,7 +58,8 @@ class AwareHbarCentExchangeTest {
 
 	@BeforeEach
 	void setUp() throws Exception {
-		subject = new AwareHbarCentExchange(txnCtx);
+		subject = new AwareHbarCentExchange();
+		subject.setTxnCtx(txnCtx);
 	}
 
 	@Test

@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -91,8 +90,6 @@ class ExpiringCreationsTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	@Mock
-	private ServicesContext ctx;
-	@Mock
 	private NarratedCharging narratedCharging;
 	@Mock
 	private HederaLedger ledger;
@@ -128,13 +125,16 @@ class ExpiringCreationsTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
+		subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> accounts);
+		subject.setLedger(ledger);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);
 		expectedRecord.setSubmittingMember(submittingMember);
 
 		subject.setRecordCache(recordCache);
+
+		verify(narratedCharging).setLedger(ledger);
 	}
 
 	void setUpForExpiringRecordBuilder() {
@@ -187,7 +187,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null, null, null, null));
+						0L, null, null, null, null,  null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -196,16 +196,14 @@ class ExpiringCreationsTest {
 	void validateBuildExpiringRecord() {
 		//given:
 		setUpForExpiringRecordBuilder();
-		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
-
-		given(ctx.ledger()).willReturn(ledger);
-		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
-		given(ctx.ledger().netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
+		given(ledger.netTransfersInTxn()).willReturn(transfers);
+		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged);
+				subject.buildExpiringRecord(
+						100L, hash, accessor, timestamp, receipt, null, customFeesCharged);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -241,9 +239,7 @@ class ExpiringCreationsTest {
 	void canOverrideTokenTransfers() {
 		//given:
 		setUpForExpiringRecordBuilder();
-		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(narratedCharging.totalFeesChargedToPayer()).willReturn(123L);
-		given(ctx.ledger()).willReturn(ledger);
 		given(ledger.netTransfersInTxn()).willReturn(transfers);
 		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
 				.setToken(IdUtils.asToken("1.2.3"))
@@ -255,7 +251,8 @@ class ExpiringCreationsTest {
 
 		//when:
 		final var builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null);
+				subject.buildExpiringRecord(
+						100L, hash, accessor, timestamp, receipt, someTokenXfers, null);
 		final var actualRecord = builder.build();
 
 		//then:

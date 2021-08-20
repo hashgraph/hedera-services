@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -49,6 +50,8 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
 	ResponseCodeEnum markAsExecuted(ScheduleID id);
 	void expire(EntityId id);
+
+	void setTxnCtx(TransactionContext txnCtx);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;

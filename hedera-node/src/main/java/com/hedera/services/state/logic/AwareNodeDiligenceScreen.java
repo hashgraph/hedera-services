@@ -65,10 +65,14 @@ public class AwareNodeDiligenceScreen {
 
 		var submittingAccount = txnCtx.submittingNodeAccount();
 		var designatedAccount = accessor.getTxn().getNodeAccountID();
-
 		boolean designatedNodeExists = backingAccounts.contains(designatedAccount);
 		if (!designatedNodeExists) {
-			logAccountWarning(MISSING_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
+			logAccountWarning(
+					MISSING_NODE_LOG_TPL,
+					submittingAccount,
+					txnCtx.submittingSwirldsMember(),
+					designatedAccount,
+					accessor);
 			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
 			return true;
 		}
@@ -89,7 +93,12 @@ public class AwareNodeDiligenceScreen {
 		}
 
 		if (!submittingAccount.equals(designatedAccount)) {
-			logAccountWarning(WRONG_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
+			logAccountWarning(
+					WRONG_NODE_LOG_TPL,
+					submittingAccount,
+					txnCtx.submittingSwirldsMember(),
+					designatedAccount,
+					accessor);
 			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
 			return true;
 		}
@@ -128,11 +137,16 @@ public class AwareNodeDiligenceScreen {
 	/**
 	 * Logs account warnings
 	 *
-	 * @param message template for the log which includes each of the additional parameters
-	 * @param submittingNodeAccount submitting node account for the transaction
-	 * @param submittingMember submitting member
-	 * @param relatedAccount related account as to which the warning applies to
-	 * @param accessor transaction accessor
+	 * @param message
+	 * 		template for the log which includes each of the additional parameters
+	 * @param submittingNodeAccount
+	 * 		submitting node account for the transaction
+	 * @param submittingMember
+	 * 		submitting member
+	 * @param relatedAccount
+	 * 		related account as to which the warning applies to
+	 * @param accessor
+	 * 		transaction accessor
 	 */
 	private void logAccountWarning(
 			String message,

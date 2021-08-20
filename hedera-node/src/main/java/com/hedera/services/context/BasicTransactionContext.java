@@ -20,13 +20,18 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
@@ -42,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -65,8 +72,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
  * @author Michael Tinker
  * @author Neeharika Sompalli
  */
-public class AwareTransactionContext implements TransactionContext {
-	private static final Logger log = LogManager.getLogger(AwareTransactionContext.class);
+public class BasicTransactionContext implements TransactionContext {
+	private static final Logger log = LogManager.getLogger(BasicTransactionContext.class);
 
 	static final JKey EMPTY_KEY;
 
@@ -74,13 +81,10 @@ public class AwareTransactionContext implements TransactionContext {
 		EMPTY_KEY = asFcKeyUnchecked(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
 	}
 
-	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
-	};
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
-	};
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -98,8 +102,26 @@ public class AwareTransactionContext implements TransactionContext {
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
 
-	AwareTransactionContext(ServicesContext ctx) {
-		this.ctx = ctx;
+	private final NodeInfo nodeInfo;
+	private final NarratedCharging narratedCharging;
+	private final HbarCentExchange exchange;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final ExpiringCreations creator;
+
+	BasicTransactionContext(
+			NarratedCharging narratedCharging,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			NodeInfo nodeInfo,
+			HbarCentExchange exchange,
+			ExpiringCreations creator
+	) {
+		this.accounts = accounts;
+		this.narratedCharging = narratedCharging;
+		this.nodeInfo = nodeInfo;
+		this.exchange = exchange;
+		this.creator = creator;
+
+		this.exchange.setTxnCtx(this);
 	}
 
 	@Override
@@ -120,7 +142,7 @@ public class AwareTransactionContext implements TransactionContext {
 		explicitTokenTransfers = null;
 		assessedCustomFees = null;
 
-		ctx.narratedCharging().resetForTxn(accessor, submittingMember);
+		narratedCharging.resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
 	}
@@ -138,7 +160,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? ctx.accounts().get(fromAccountId(accessor.getPayer())).getKey()
+				? accounts.get().get(fromAccountId(accessor.getPayer())).getKey()
 				: EMPTY_KEY;
 	}
 
@@ -153,7 +175,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public AccountID submittingNodeAccount() {
 		try {
-			return ctx.nodeInfo().accountOf(submittingMember);
+			return nodeInfo.accountOf(submittingMember);
 		} catch (IllegalArgumentException e) {
 			log.warn("No available Hedera account for member {}!", submittingMember, e);
 			throw new IllegalStateException(String.format("Member %d must have a Hedera account!", submittingMember));
@@ -169,14 +191,13 @@ public class AwareTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord recordSoFar() {
 		final var receipt = receiptSoFar().build();
 
-		recordSoFar = ctx.creator().buildExpiringRecord(
+		recordSoFar = creator.buildExpiringRecord(
 				otherNonThresholdFees,
 				hash,
 				accessor,
 				consensusTime,
 				receipt,
 				explicitTokenTransfers,
-				ctx,
 				assessedCustomFees);
 
 		recordConfig.accept(recordSoFar);
@@ -186,7 +207,7 @@ public class AwareTransactionContext implements TransactionContext {
 
 	TxnReceipt.Builder receiptSoFar() {
 		final var receipt = TxnReceipt.newBuilder()
-				.setExchangeRates(ctx.exchange().fcActiveRates())
+				.setExchangeRates(exchange.fcActiveRates())
 				.setStatus(statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
@@ -317,7 +338,24 @@ public class AwareTransactionContext implements TransactionContext {
 		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
 	}
 
+	/* --- Used by unit tests --- */
 	List<FcAssessedCustomFee> getAssessedCustomFees() {
 		return assessedCustomFees;
+	}
+
+	ExpirableTxnRecord.Builder getRecordSoFar() {
+		return recordSoFar;
+	}
+
+	void setRecordSoFar(ExpirableTxnRecord.Builder recordSoFar) {
+		this.recordSoFar = recordSoFar;
+	}
+
+	void setHasComputedRecordSoFar(boolean hasComputedRecordSoFar) {
+		this.hasComputedRecordSoFar = hasComputedRecordSoFar;
+	}
+
+	public boolean hasComputedRecordSoFar() {
+		return hasComputedRecordSoFar;
 	}
 }

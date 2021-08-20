@@ -41,6 +41,7 @@ class ExceptionalScheduleStoreTest {
         assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::isCreationPending);
         // and:
         assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setAccountsLedger(null));
+        assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setTxnCtx(null));
         assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setHederaLedger(null));
     }
 }

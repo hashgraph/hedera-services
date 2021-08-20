@@ -41,8 +41,9 @@ import java.util.function.Supplier;
 public class NarratedLedgerCharging implements NarratedCharging {
 	private static final long UNKNOWN_ACCOUNT_BALANCE = -1L;
 
+	private HederaLedger ledger;
+
 	private final NodeInfo nodeInfo;
-	private final HederaLedger ledger;
 	private final FeeExemptions feeExemptions;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -61,12 +62,10 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	public NarratedLedgerCharging(
 			NodeInfo nodeInfo,
-			HederaLedger ledger,
 			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
-		this.ledger = ledger;
 		this.accounts = accounts;
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
@@ -89,6 +88,11 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		payerExempt = feeExemptions.hasExemptPayer(accessor);
 		totalCharged = 0L;
 		effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
+	}
+
+	@Override
+	public void setLedger(HederaLedger ledger) {
+		this.ledger = ledger;
 	}
 
 	@Override

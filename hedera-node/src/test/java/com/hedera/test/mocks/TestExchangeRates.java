@@ -20,6 +20,7 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -38,6 +39,12 @@ public enum TestExchangeRates implements HbarCentExchange {
 					EXPIRY_TIME,
 					1, 15,
 					EXPIRY_TIME);
+
+	@Override
+	public void setTxnCtx(TransactionContext txnCtx) {
+		/* No-op */
+	}
+
 	@Override
 	public ExchangeRate activeRate() {
 		return rates.getCurrentRate();
@@ -57,4 +64,6 @@ public enum TestExchangeRates implements HbarCentExchange {
 	public ExchangeRates fcActiveRates() {
 		return ExchangeRates.fromGrpc(activeRates());
 	}
+
+
 }

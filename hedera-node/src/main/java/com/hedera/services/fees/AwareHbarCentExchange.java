@@ -27,12 +27,13 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
 public class AwareHbarCentExchange implements HbarCentExchange {
-	private final TransactionContext txnCtx;
+	private TransactionContext txnCtx;
 
 	private ExchangeRates fcRates = null;
 	private ExchangeRateSet grpcRates = null;
 
-	public AwareHbarCentExchange(TransactionContext txnCtx) {
+	@Override
+	public void setTxnCtx(TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;
 	}
 

@@ -78,7 +78,7 @@ import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.services.state.AwareProcessLogic;
+import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryHeaderValidity;
 import com.hedera.services.queries.answering.QueryResponseHelper;
@@ -588,7 +588,7 @@ class ServicesContextTest {
 		assertThat(ctx.fees(), instanceOf(UsageBasedFeeCalculator.class));
 		assertThat(ctx.grpc(), instanceOf(NettyGrpcServerManager.class));
 		assertThat(ctx.ledger(), instanceOf(HederaLedger.class));
-		assertThat(ctx.txnCtx(), instanceOf(AwareTransactionContext.class));
+		assertThat(ctx.txnCtx(), instanceOf(BasicTransactionContext.class));
 		assertThat(ctx.keyOrder(), instanceOf(HederaSigningOrder.class));
 		assertThat(ctx.backedKeyOrder(), instanceOf(HederaSigningOrder.class));
 		assertThat(ctx.validator(), instanceOf(ContextOptionValidator.class));
@@ -715,7 +715,7 @@ class ServicesContextTest {
 		// and expect legacy:
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
-		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
+		assertThat(ctx.logic(), instanceOf(StandardProcessLogic.class));
 	}
 
 	@Test

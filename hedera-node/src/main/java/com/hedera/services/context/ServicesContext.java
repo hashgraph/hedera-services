@@ -170,7 +170,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.services.state.AwareProcessLogic;
+import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryHeaderValidity;
@@ -1625,7 +1625,8 @@ public class ServicesContext {
 
 	public TransactionContext txnCtx() {
 		if (txnCtx == null) {
-			txnCtx = new AwareTransactionContext(this);
+			txnCtx = new BasicTransactionContext(narratedCharging(), this::accounts, nodeInfo(), exchange(), creator());
+			scheduleStore().setTxnCtx(txnCtx);
 		}
 		return txnCtx;
 	}
@@ -1670,7 +1671,7 @@ public class ServicesContext {
 
 	public HbarCentExchange exchange() {
 		if (exchange == null) {
-			exchange = new AwareHbarCentExchange(txnCtx());
+			exchange = new AwareHbarCentExchange();
 		}
 		return exchange;
 	}
@@ -1739,7 +1740,7 @@ public class ServicesContext {
 
 	public ScheduleStore scheduleStore() {
 		if (scheduleStore == null) {
-			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), txnCtx(), this::schedules);
+			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), this::schedules);
 		}
 		return scheduleStore;
 	}
@@ -1786,7 +1787,7 @@ public class ServicesContext {
 	public NarratedCharging narratedCharging() {
 		if (narratedCharging == null) {
 			narratedCharging = new NarratedLedgerCharging(
-					nodeInfo(), ledger(), exemptions(), globalDynamicProperties(), this::accounts);
+					nodeInfo(), exemptions(), globalDynamicProperties(), this::accounts);
 		}
 		return narratedCharging;
 	}
@@ -1802,7 +1803,11 @@ public class ServicesContext {
 
 	public ExpiringCreations creator() {
 		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), globalDynamicProperties(), this::accounts);
+			creator = new ExpiringCreations(
+					expiries(),
+					narratedCharging(),
+					globalDynamicProperties(),
+					this::accounts);
 			creator.setRecordCache(recordCache());
 		}
 		return creator;
@@ -1867,7 +1872,8 @@ public class ServicesContext {
 					ledger(),
 					txnCtx());
 
-			logic = new AwareProcessLogic(this, txnManager);
+			logic = new StandardProcessLogic(
+					expiries(), invariants(), expandHandleSpan(), entityAutoRenewal(), txnManager, txnCtx());
 		}
 		return logic;
 	}
