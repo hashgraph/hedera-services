@@ -42,6 +42,7 @@ import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
@@ -149,6 +150,9 @@ public class CryptoOpsUsage {
 		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
 		if (op.hasProxyAccountID()) {
 			variableBytes += BASIC_ENTITY_ID_SIZE;
+		}
+		if(op.getMaxAutomaticTokenAssociations() != 0) {
+			variableBytes += INT_SIZE;
 		}
 
 		var lifetime = op.getAutoRenewPeriod().getSeconds();

@@ -54,6 +54,7 @@ import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_EN
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +72,7 @@ class CryptoOpsUsageTest {
 	private Key key = KeyUtils.A_COMPLEX_KEY;
 	private String memo = "That abler soul, which thence doth flow";
 	private AccountID proxy = IdUtils.asAccount("0.0.75231");
+	private int maxAutoAssociations = 123;
 	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 
@@ -142,9 +144,9 @@ class CryptoOpsUsageTest {
 	void estimatesCreationAsExpected() {
 		givenCreationOp();
 		// and given:
-		long rb = basicReprBytes();
+		long rb = basicReprBytes() + INT_SIZE;
 		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE;
+				+ 2 * LONG_SIZE + BOOL_SIZE + INT_SIZE;
 
 		// when:
 		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
@@ -252,6 +254,7 @@ class CryptoOpsUsageTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build())
 				.setMemo(memo)
 				.setKey(key)
+				.setMaxAutomaticTokenAssociations(maxAutoAssociations)
 				.build();
 		setCreateTxn();
 	}
