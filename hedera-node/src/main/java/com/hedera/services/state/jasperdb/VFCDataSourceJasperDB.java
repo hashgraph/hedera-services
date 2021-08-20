@@ -22,11 +22,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFilesSmallerThan;
 import static java.nio.ByteBuffer.allocate;
@@ -38,6 +36,7 @@ import static java.nio.ByteBuffer.allocate;
  * @param <K> type for keys
  * @param <V> type for values
  */
+@SuppressWarnings("jol")
 public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     /**
      * The hash stores an Integer with the digest type + the digest data itself. This is a waste of space.
@@ -70,8 +69,17 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     private final ThreadLocal<ByteBuffer> leafKey;
     /** Thread local reusable buffer for reading key, hash and value sets */
     private final ThreadLocal<ByteBuffer> keyHashValue;
+    /** Group for all our threads */
+    private final ThreadGroup threadGroup = new ThreadGroup("JasperDB");
     /** ScheduledThreadPool for executing merges */
-    private final ScheduledThreadPoolExecutor mergingExecutor;
+    private final ScheduledThreadPoolExecutor mergingExecutor =
+            new ScheduledThreadPoolExecutor(1, runnable -> new Thread(threadGroup,runnable,"Merging"));
+    /** Thead pool storing internal records */
+    private final ExecutorService storeInternalExecutor = Executors.newSingleThreadExecutor(
+            runnable -> new Thread(threadGroup, runnable,"Store Internal Records"));
+    /** Thead pool storing internal records */
+    private final ExecutorService storeKeyToPathExecutor = Executors.newSingleThreadExecutor(
+            runnable -> new Thread(threadGroup, runnable,"Store Key to Path"));
     /** When was the last medium-sized merge, only touched from single merge thread. */
     private Instant lastMediumMerge = Instant.now();
     /** When was the last full merge, only touched from single merge thread. */
@@ -134,41 +142,20 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         pathToKeyHashValue = new MemoryIndexDiskKeyValueStore(storageDir,"pathToKeyHashValue", keyHashValueSize, loadedDataCallback);
         // If merging is enabled then merge all data files every 30 seconds, TODO this is just a initial implementation
         if (mergingEnabled) {
-            final var mergingThreadGroup = new ThreadGroup("JasperDB Merging Threads");
-            mergingExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(mergingThreadGroup,r));
-            mergingExecutor.setMaximumPoolSize(1);
             mergingExecutor.scheduleWithFixedDelay(this::doMerge,1,5, TimeUnit.MINUTES);
-        } else {
-            mergingExecutor = null;
-        }
-    }
-
-    /**
-     * Start a Merge
-     */
-    private void doMerge() {
-        final Instant startMerge = Instant.now();
-        Function<List<DataFileReader>, List<DataFileReader>> filesToMergeFilter;
-        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) { // every 2 hours
-            lastFullMerge = startMerge;
-            filesToMergeFilter = dataFileReaders -> dataFileReaders; // everything
-        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
-            lastMediumMerge = startMerge;
-            filesToMergeFilter = newestFilesSmallerThan(10*1024); // < 10Gb
-        } else { // every 5 minutes
-            filesToMergeFilter = newestFilesSmallerThan(2*1024); // < 2Gb
-        }
-        try {
-            pathToKeyHashValue.mergeAll(filesToMergeFilter);
-        } catch (Throwable t) {
-            System.err.println("Exception while merging!");
-            t.printStackTrace();
         }
     }
 
     //==================================================================================================================
     // Public NEW API methods
 
+    /**
+     * Load a leaf record by key
+     *
+     * @param key they to the leaf to load record for
+     * @return loaded record or null if not found
+     * @throws IOException If there was a problem reading record from db
+     */
     public VirtualLeafRecord<K, V> loadLeafRecord(K key) throws IOException {
         Objects.requireNonNull(key);
         final long path = isLongKeyMode
@@ -178,6 +165,13 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         return loadLeafRecord(path,key);
     }
 
+    /**
+     * Load a leaf record by path
+     *
+     * @param path the path for the leaf we are loading
+     * @return loaded record or null if not found
+     * @throws IOException If there was a problem reading record from db
+     */
     public VirtualLeafRecord<K, V> loadLeafRecord(long path) throws IOException {
         return loadLeafRecord(path,null);
     }
@@ -221,17 +215,27 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      * @param leafRecords list of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
      */
     public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords,
-                            List<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
-        // might as well write to the 3 data stores in parallel
-        IntStream.range(0,3).parallel().forEach(action -> {
-            if (action == 0) {// write internal node hashes
-                writeInternalRecords(internalRecords);
-            } else if (action == 1) { // write leaves to pathToKeyHashValue
-                writeLeavesToPathToKeyHashValue(firstLeafPath, lastLeafPath, leafRecords);
-            } else if (action == 2) { // write leaves to objectKeyToPath
-                writeLeavesToObjectKeyToPath(leafRecords);
-            }
+                            List<VirtualLeafRecord<K, V>> leafRecords) {
+        final var countDownLatch = new CountDownLatch(2);
+        // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
+        storeInternalExecutor.execute(() -> {
+            writeInternalRecords(internalRecords);
+            countDownLatch.countDown();
         });
+        storeKeyToPathExecutor.execute(() -> {
+            writeLeavesToObjectKeyToPath(leafRecords);
+            countDownLatch.countDown();
+        });
+        // we might as well do this in the archive thread rather than leaving it waiting
+        writeLeavesToPathToKeyHashValue(firstLeafPath, lastLeafPath, leafRecords);
+        // wait for the other two threads in the rare case they are not finished yet. We need to have all writing done
+        // before we return as when we return the state version we are writing is deleted from the cache and the flood
+        // gates are opened for reads through to the data we have written here.
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -273,10 +277,13 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     @Override
     public void close() throws IOException {
         try {
-            mergingExecutor.shutdown();
-            boolean finishedWithoutTimeout = mergingExecutor.awaitTermination(5,TimeUnit.MINUTES);
-            if (!finishedWithoutTimeout)
-                throw new IOException("Timeout while waiting for merge to finish.");
+            for(var executor: new ExecutorService[]{mergingExecutor,storeInternalExecutor,storeKeyToPathExecutor}) {
+                executor.shutdown();
+                boolean finishedWithoutTimeout = executor.awaitTermination(5,TimeUnit.MINUTES);
+                if (!finishedWithoutTimeout)
+                    throw new IOException("Timeout while waiting for executor service to finish.");
+            }
+                throw new IOException("Timeout while waiting for storing threads to finish.");
         } catch (InterruptedException e) {
             throw new IOException("Interrupted while waiting for merge to finish.",e);
         } finally {
@@ -361,6 +368,29 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                     throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
                 }
             }
+        }
+    }
+
+    /**
+     * Start a Merge
+     */
+    private void doMerge() {
+        final Instant startMerge = Instant.now();
+        Function<List<DataFileReader>, List<DataFileReader>> filesToMergeFilter;
+        if (startMerge.minus(2, ChronoUnit.HOURS).isAfter(lastFullMerge)) { // every 2 hours
+            lastFullMerge = startMerge;
+            filesToMergeFilter = dataFileReaders -> dataFileReaders; // everything
+        } else if (startMerge.minus(30, ChronoUnit.MINUTES).isAfter(lastMediumMerge)) { // every 30 min
+            lastMediumMerge = startMerge;
+            filesToMergeFilter = newestFilesSmallerThan(10*1024); // < 10Gb
+        } else { // every 5 minutes
+            filesToMergeFilter = newestFilesSmallerThan(2*1024); // < 2Gb
+        }
+        try {
+            pathToKeyHashValue.mergeAll(filesToMergeFilter);
+        } catch (Throwable t) {
+            System.err.println("Exception while merging!");
+            t.printStackTrace();
         }
     }
 
