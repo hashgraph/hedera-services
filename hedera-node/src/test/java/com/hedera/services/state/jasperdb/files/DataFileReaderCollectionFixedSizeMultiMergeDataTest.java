@@ -64,17 +64,17 @@ public class DataFileReaderCollectionFixedSizeMultiMergeDataTest extends DataFil
                     var allFiles = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
                     var filesToMerge = allFiles.subList(0,5);
                     fileCollection.mergeFiles(
-                            moves -> moves.forEachKeyValue((key, move) -> {
+                            moves -> moves.forEach((key, oldValue, newValue) -> {
 
                                 System.out.printf("move key %d from file %d item %d -> file %d item %d, updating = %b\n",
                                         key,
-                                        DataFileCommon.fileIndexFromDataLocation(move[0]),
-                                        DataFileCommon.byteOffsetFromDataLocation(move[0]),
-                                        DataFileCommon.fileIndexFromDataLocation(move[1]),
-                                        DataFileCommon.byteOffsetFromDataLocation(move[1]),
-                                        storedOffsets.get((int)key) == move[0]
+                                        DataFileCommon.fileIndexFromDataLocation(oldValue),
+                                        DataFileCommon.byteOffsetFromDataLocation(oldValue),
+                                        DataFileCommon.fileIndexFromDataLocation(newValue),
+                                        DataFileCommon.byteOffsetFromDataLocation(newValue),
+                                        storedOffsets.get((int)key) == oldValue
                                 );
-                                if (storedOffsets.get((int)key) == move[0]) storedOffsets.set((int)key, move[1]);
+                                if (storedOffsets.get((int)key) == oldValue) storedOffsets.set((int)key, newValue);
                             }), filesToMerge);
                 } catch (IOException e) {
                     e.printStackTrace();
