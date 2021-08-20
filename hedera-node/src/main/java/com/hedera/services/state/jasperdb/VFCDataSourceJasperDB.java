@@ -283,7 +283,6 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
                 if (!finishedWithoutTimeout)
                     throw new IOException("Timeout while waiting for executor service to finish.");
             }
-                throw new IOException("Timeout while waiting for storing threads to finish.");
         } catch (InterruptedException e) {
             throw new IOException("Interrupted while waiting for merge to finish.",e);
         } finally {
