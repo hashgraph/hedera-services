@@ -259,7 +259,8 @@ class MiscUtilsTest {
 		verify(mockConsumer).accept(new MerkleLong(1L), null);
 		verify(mockConsumer).accept(new MerkleLong(2L), new MerkleLong(2L));
 
-		assertThrows(NullPointerException.class, () -> testFcm.put(null, new MerkleLong(3L)));
+		final var l3 = new MerkleLong(3L);
+		assertThrows(NullPointerException.class, () -> testFcm.put(null, l3));
 	}
 
 	@Test

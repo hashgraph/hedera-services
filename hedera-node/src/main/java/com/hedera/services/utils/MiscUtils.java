@@ -56,7 +56,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -262,13 +261,13 @@ public class MiscUtils {
 			try {
 				SCHEDULE_HAS_METHODS.put(type, SchedulableTransactionBody.class.getMethod("has" + type));
 				SCHEDULE_GETTERS.put(type, SchedulableTransactionBody.class.getMethod("get" + type));
-				final var setter = Stream.of(TransactionBody.Builder.class.getMethods())
-						.filter(m -> m.getName().equals("set" + type) &&
-								!m.getParameterTypes()[0].getSimpleName().contains("Builder"))
-						.findFirst()
-						.get();
-				TRANSACTION_SETTERS.put(type, setter);
-			} catch (NoSuchMethodException | NoSuchElementException e) {
+				for (var m : TransactionBody.Builder.class.getMethods()) {
+					if (m.getName().equals("set" + type)
+							&& !m.getParameterTypes()[0].getSimpleName().contains("Builder")) {
+						TRANSACTION_SETTERS.put(type, m);
+					}
+				}
+			} catch (NoSuchMethodException e) {
 				throw new IllegalArgumentException("Methods missing for " + type, e);
 			}
 		}
