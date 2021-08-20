@@ -219,7 +219,7 @@ public class MiscUtils {
 			TokenGetAccountNftInfos
 	);
 
-	private static final Set<HederaFunctionality> SCHEDULE_FUNCTIONS = new HashSet<HederaFunctionality>();
+	private static final Set<HederaFunctionality> SCHEDULE_FUNCTIONS = new HashSet<>();
 	private static final Set<String> SCHEDULE_FUNCTION_STRINGS = new HashSet<>();
 	private static final EnumMap<HederaFunctionality, String> TRANSACTION_FUNCTION_TO_STRINGS
 			= new EnumMap<>(HederaFunctionality.class);
@@ -542,8 +542,8 @@ public class MiscUtils {
 			final var getHeader = queryOp.getClass().getDeclaredMethod("getHeader");
 			return Optional.of((QueryHeader) getHeader.invoke(queryOp));
 		} catch (Exception ignoreToReturnOptionalEmpty) {
+			return Optional.empty();
 		}
-		return Optional.empty();
 	}
 
 	static String getTxnStat(final TransactionBody txn) {
@@ -586,13 +586,11 @@ public class MiscUtils {
 	public static String describe(final JKey k) {
 		if (k == null) {
 			return "<N/A>";
-		} else {
-			Key readable = null;
-			try {
-				readable = mapJKey(k);
-			} catch (Exception ignore) {
-			}
-			return String.valueOf(readable);
+		}
+		try {
+			return mapJKey(k).toString();
+		} catch (DecoderException ignore) {
+			return "<N/A>";
 		}
 	}
 

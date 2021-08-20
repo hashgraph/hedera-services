@@ -38,6 +38,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -121,6 +122,7 @@ import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -161,6 +163,7 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.services.utils.MiscUtils.baseStatNameOf;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.MiscUtils.canonicalRepr;
+import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
@@ -741,6 +744,17 @@ class MiscUtilsTest {
 		assertEquals(0L, perm64(0L));
 		assertEquals(-4328535976359616544L, perm64(1L));
 		assertEquals(2657016865369639288L, perm64(7L));
+	}
+
+	@Test
+	void describesCorrectly() throws DecoderException {
+		assertEquals("<N/A>", describe(null));
+
+		final var key = Key.newBuilder().setEd25519(ByteString.copyFrom("abcd".getBytes())).build();
+		assertEquals(key.toString(), describe(JKey.mapKey(key)));
+
+		final var tooDeep = TxnUtils.nestJKeys(15);
+		assertEquals("<N/A>", describe(tooDeep));
 	}
 
 	@Test
