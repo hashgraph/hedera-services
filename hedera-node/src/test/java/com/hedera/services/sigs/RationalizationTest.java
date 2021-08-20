@@ -94,6 +94,7 @@ class RationalizationTest {
 
 		subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
 
+		given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
 		given(swirldsTxn.getSignatures()).willReturn(mockSigs);
 		// and:
 		subject.getRealPayerSigs().add(null);

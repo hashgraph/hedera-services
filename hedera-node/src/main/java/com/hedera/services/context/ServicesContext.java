@@ -148,6 +148,7 @@ import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.RoyaltyFeeAssessor;
 import com.hedera.services.keys.CharacteristicsFactory;
+import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
@@ -238,7 +239,14 @@ import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.state.logic.InvariantChecks;
+import com.hedera.services.state.logic.KeyActivationScreen;
 import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.services.state.logic.RecordStreaming;
+import com.hedera.services.state.logic.ScreenedTransition;
+import com.hedera.services.state.logic.ServicesTxnManager;
+import com.hedera.services.state.logic.SignatureScreen;
+import com.hedera.services.state.logic.TopLevelTransition;
+import com.hedera.services.state.logic.TriggeredTransition;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -417,6 +425,7 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FAC
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_STATUSES;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.txns.submission.StructuralPrecheck.HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -1814,7 +1823,51 @@ public class ServicesContext {
 		if (logic == null) {
 			final var bodySigningFactory = new ReusableBodySigningFactory();
 			final var rationalization = new Rationalization(syncVerifier(), backedKeyOrder(), bodySigningFactory);
-			logic = new AwareProcessLogic(this, rationalization, validityTest());
+			final var screenedTransition = new ScreenedTransition(
+					transitionRunner(),
+					systemOpPolicies(),
+					txnCtx(),
+					networkCtxManager());
+			final var sigScreen = new SignatureScreen(
+					rationalization,
+					HederaKeyActivation::payerSigIsActive,
+					txnCtx(),
+					networkCtxManager(),
+					speedometers(),
+					validityTest());
+			final var activationScreen = new KeyActivationScreen(
+					txnCtx(),
+					activationHelper(),
+					TERMINAL_SIG_STATUSES,
+					validityTest());
+			final var recordStreaming = new RecordStreaming(
+					txnCtx(),
+					nonBlockingHandoff(),
+					this::updateRecordRunningHash,
+					recordsHistorian());
+			final var topLevelTransition = new TopLevelTransition(
+					screenedTransition,
+					networkCtxManager(),
+					txnCtx(),
+					sigScreen,
+					chargingPolicyAgent(),
+					activationScreen);
+			final var triggeredTransition = new TriggeredTransition(
+					currentView(),
+					fees(),
+					txnChargingPolicy(),
+					txnCtx(),
+					networkCtxManager(),
+					screenedTransition);
+			final var txnManager = new ServicesTxnManager(
+					topLevelTransition,
+					recordStreaming,
+					triggeredTransition,
+					recordCache(),
+					ledger(),
+					txnCtx());
+
+			logic = new AwareProcessLogic(this, txnManager);
 		}
 		return logic;
 	}
