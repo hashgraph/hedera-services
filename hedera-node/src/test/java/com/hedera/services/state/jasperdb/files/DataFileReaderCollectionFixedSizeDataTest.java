@@ -148,16 +148,16 @@ public class DataFileReaderCollectionFixedSizeDataTest {
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     fileCollection.mergeFiles(moves -> {
                         assertEquals(1000,moves.size());
-                        for(long[] move: moves) {
+                        moves.forEach((key, oldValue, newValue) -> {
                             System.out.printf("move from file %d item %d -> file %d item %d\n",
-                                    DataFileCommon.fileIndexFromDataLocation(move[0]),
-                                    DataFileCommon.byteOffsetFromDataLocation(move[0]),
-                                    DataFileCommon.fileIndexFromDataLocation(move[1]),
-                                    DataFileCommon.byteOffsetFromDataLocation(move[1])
+                                    DataFileCommon.fileIndexFromDataLocation(oldValue),
+                                    DataFileCommon.byteOffsetFromDataLocation(oldValue),
+                                    DataFileCommon.fileIndexFromDataLocation(newValue),
+                                    DataFileCommon.byteOffsetFromDataLocation(newValue)
                             );
-                            int index = storedOffsets.indexOf(move[0]);
-                            storedOffsets.set(index, move[1]);
-                        }
+                            int index = storedOffsets.indexOf(oldValue);
+                            storedOffsets.set(index, newValue);
+                        });
                     }, filesToMerge);
                 } catch (IOException e) {
                     e.printStackTrace();
