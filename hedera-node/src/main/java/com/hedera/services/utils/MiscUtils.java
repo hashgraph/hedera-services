@@ -290,19 +290,19 @@ public class MiscUtils {
 	static final void initializeScheduleAndTransactionMethods(final Set<String> types) {
 		try {
 			for (var type : types) {
-				SCHEDULE_HAS_METHODS.put(type, SchedulableTransactionBody.class.getMethod("has" + type));
-				SCHEDULE_GETTERS.put(type, SchedulableTransactionBody.class.getMethod("get" + type));
-				for (var m : TransactionBody.Builder.class.getMethods()) {
+				SCHEDULE_HAS_METHODS.put(type, SchedulableTransactionBody.class.getDeclaredMethod("has" + type));
+				SCHEDULE_GETTERS.put(type, SchedulableTransactionBody.class.getDeclaredMethod("get" + type));
+				for (var m : TransactionBody.Builder.class.getDeclaredMethods()) {
 					if (m.getName().equals("set" + type)
 							&& !m.getParameterTypes()[0].getSimpleName().contains("Builder")) {
 						TRANSACTION_SETTERS.put(type, m);
 					}
 				}
-				TRANSACTION_HAS_METHODS.put(type, TransactionBody.class.getMethod("has" + type));
+				TRANSACTION_HAS_METHODS.put(type, TransactionBody.class.getDeclaredMethod("has" + type));
 			}
 			for (var f : NON_SCHEDULE_FUNCTIONS) {
 				final var type = f.name();
-				TRANSACTION_HAS_METHODS.put(type, TransactionBody.class.getMethod("has" + type));
+				TRANSACTION_HAS_METHODS.put(type, TransactionBody.class.getDeclaredMethod("has" + type));
 			}
 		} catch (NoSuchMethodException e) {
 			throw new IllegalArgumentException(e);

@@ -779,7 +779,7 @@ class MiscUtilsTest {
 		void setDefaultInstanceFor(final B builder) {
 			try {
 				final var setter = getSetter(builder, type);
-				final var defaultGetter = type.getMethod("getDefaultInstance");
+				final var defaultGetter = type.getDeclaredMethod("getDefaultInstance");
 				final T defaultInstance = (T) defaultGetter.invoke(null);
 				setter.invoke(builder, defaultInstance);
 			} catch (Exception e) {
@@ -789,7 +789,7 @@ class MiscUtilsTest {
 
 		void setActiveHeaderFor(final B builder) {
 			try {
-				final var newBuilderMethod = type.getMethod("newBuilder");
+				final var newBuilderMethod = type.getDeclaredMethod("newBuilder");
 				final var opBuilder = newBuilderMethod.invoke(null);
 				final var opBuilderClass = opBuilder.getClass();
 				final var setHeaderMethod = opBuilderClass
