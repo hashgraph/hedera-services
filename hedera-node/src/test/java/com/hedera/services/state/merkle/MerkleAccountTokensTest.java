@@ -29,7 +29,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -46,20 +45,20 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
 
 class MerkleAccountTokensTest {
-	private TokenID a = asToken("0.0.2");
-	private TokenID b = asToken("0.1.2");
-	private TokenID c = asToken("1.1.2");
-	private TokenID d = asToken("0.0.3");
-	private TokenID e = asToken("0.0.1");
-	private long[] initialIds = new long[] { 2, 0, 0, 2, 1, 0, 2, 1, 1 };
+	private static final TokenID a = asToken("0.0.2");
+	private static final TokenID b = asToken("0.1.2");
+	private static final TokenID c = asToken("1.1.2");
+	private static final TokenID d = asToken("0.0.3");
+	private static final TokenID e = asToken("0.0.1");
+	private static final long[] initialIds = new long[] { 2, 0, 0, 2, 1, 0, 2, 1, 1 };
 
-	private Id aId = new Id(0, 0, 2);
-	private Id dId = new Id(0, 0, 3);
-	private Id eId = new Id(0, 0, 1);
+	private static final Id aId = new Id(0, 0, 2);
+	private static final Id dId = new Id(0, 0, 3);
+	private static final Id eId = new Id(0, 0, 1);
 
 	private MerkleAccountTokens subject;
 
@@ -70,15 +69,12 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void copiedSubjectBecomesImmutable() {
-		// given:
 		final var someSet = Set.of(asToken("1.2.3"));
 		final var someModelSet = Set.of(aId);
 		final var someIds = subject.getIds();
 
-		// when:
 		final var subjectCopy = subject.copy();
 
-		// then:
 		assertTrue(subject.isImmutable());
 		Assertions.assertThrows(MutabilityException.class, () -> subject.associateAll(someSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.associate(someModelSet));
@@ -89,13 +85,10 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void nonMerkleCopiedSubjectNotImmutable() {
-		// given:
 		final var someSet = Set.of(asToken("1.2.3"));
 
-		// when:
 		final var subjectCopy = subject.tmpNonMerkleCopy();
 
-		// then:
 		assertFalse(subject.isImmutable());
 		Assertions.assertDoesNotThrow(() -> subject.associateAll(someSet));
 		Assertions.assertDoesNotThrow(() -> subject.shareTokensOf(subjectCopy));
@@ -103,19 +96,15 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void shareTokensUsesStructuralSharing() {
-		// given:
 		final var other = new MerkleAccountTokens();
 
-		// when:
 		other.shareTokensOf(subject);
 
-		// then:
 		assertSame(subject.getRawIds(), other.getRawIds());
 	}
 
 	@Test
 	void rejectsIndivisibleParts() {
-		// expect:
 		Assertions.assertThrows(
 				IllegalArgumentException.class,
 				() -> new MerkleAccountTokens(new CopyOnWriteIds(new long[MerkleAccountTokens.NUM_ID_PARTS + 1])));
@@ -123,46 +112,39 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void asTokenIdsWorks() {
-		// expect:
 		assertEquals(
 				List.of(a, b, c),
 				subject.asTokenIds());
-		// and when:
+
 		subject = new MerkleAccountTokens();
-		// then:
+
 		assertEquals(Collections.emptyList(), subject.asTokenIds());
 	}
 
 	@Test
 	void associateAllWorks() {
-		// when:
 		subject.associateAll(Set.of(d, e));
 
-		// then:
 		assertArrayEquals(new long[] { 1, 0, 0 }, Arrays.copyOfRange(subject.getRawIds(), 0, 3));
-		// and:
 		assertArrayEquals(new long[] { 3, 0, 0 }, Arrays.copyOfRange(subject.getRawIds(), 12, 15));
 	}
 
 	@Test
 	void objectContractMet() {
-		// given:
-		var one = new MerkleAccountTokens();
-		var two = new MerkleAccountTokens();
+		final var one = new MerkleAccountTokens();
+		final var two = new MerkleAccountTokens();
 		two.associateAll(Set.of(a, b, c));
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
 		assertEquals(subject, two);
-		// and:
+
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(subject.hashCode(), two.hashCode());
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		// expect;
 		assertEquals(MerkleAccountTokens.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountTokens.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
@@ -170,37 +152,26 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+		final var out = mock(SerializableDataOutputStream.class);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
-		inOrder.verify(out).writeLongArray(initialIds);
+		verify(out).writeLongArray(initialIds);
 	}
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleAccountTokens();
-
+		final var in = mock(SerializableDataInputStream.class);
+		final var defaultSubject = new MerkleAccountTokens();
 		given(in.readLongArray(MerkleAccountTokens.MAX_CONCEIVABLE_TOKEN_ID_PARTS)).willReturn(initialIds);
 
-		// when:
 		defaultSubject.deserialize(in, MerkleAccountTokens.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, defaultSubject);
 	}
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"MerkleAccountTokens{tokens=[0.0.2, 0.1.2, 1.1.2]}",
 				subject.toString());
@@ -208,27 +179,20 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+		final var subjectCopy = subject.copy();
 
-		// then:
 		assertNotSame(subjectCopy, subject);
 		assertEquals(subject, subjectCopy);
 	}
 
 	@Test
 	void updateAssociationsWorks() {
-		// setup:
 		final var expectedUpdate = "[0.0.1, 0.0.3]";
-
-		// given:
 		final var newIds = new CopyOnWriteIds();
 		newIds.addAllIds(Set.of(dId, eId));
 
-		// when:
 		subject.updateAssociationsFrom(newIds);
 
-		// then:
 		assertEquals(expectedUpdate, subject.readableTokenIds());
 	}
 }

@@ -144,13 +144,11 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 		final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
 		final var effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
 		final var bytesToReprNew = TOKEN_OPS_USAGE.bytesNeededToRepr(op.getCustomFeesList());
-		final var bytesToReprGrpc = op.getSerializedSize() - op.getTokenId().getSerializedSize();
-
 		final var bytesToReprOld = TOKEN_OPS_USAGE.bytesNeededToRepr(info.getCustomFeesList());
 
 		final var ctx = new ExtantFeeScheduleContext(info.getExpiry().getSeconds(), bytesToReprOld);
 		final var accumulator = new UsageAccumulator();
-		final var opMeta = new FeeScheduleUpdateMeta(effectiveNow, bytesToReprNew, bytesToReprGrpc);
+		final var opMeta = new FeeScheduleUpdateMeta(effectiveNow, bytesToReprNew);
 		TOKEN_OPS_USAGE.feeScheduleUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
 
 		return AdapterUtils.feeDataFrom(accumulator);

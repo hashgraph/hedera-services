@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
+import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 
 public class OpUsageCtxHelper {
 	private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX =
@@ -58,6 +59,9 @@ public class OpUsageCtxHelper {
 		int numFixedHbarFees = 0;
 		int numFixedHtsFees = 0;
 		int numFractionalFees = 0;
+		int numRoyaltyNoFallbackFees = 0;
+		int numRoyaltyHtsFallbackFees = 0;
+		int numRoyaltyHbarFallbackFees = 0;
 		for (var fee : feeSchedule) {
 			if (fee.getFeeType() == FIXED_FEE) {
 				if (fee.getFixedFeeSpec().getTokenDenomination() != null) {
@@ -65,10 +69,28 @@ public class OpUsageCtxHelper {
 				} else {
 					numFixedHbarFees++;
 				}
-			} else {
+			} else if (fee.getFeeType() == FRACTIONAL_FEE) {
 				numFractionalFees++;
+			} else {
+				final var royaltyFee = fee.getRoyaltyFeeSpec();
+				final var fallbackFee = royaltyFee.getFallbackFee();
+				if (fallbackFee != null) {
+					if (fallbackFee.getTokenDenomination() != null) {
+						numRoyaltyHtsFallbackFees++;
+					} else {
+						numRoyaltyHbarFallbackFees++;
+					}
+				} else {
+					numRoyaltyNoFallbackFees++;
+				}
 			}
 		}
-		return tokenOpsUsage.bytesNeededToRepr(numFixedHbarFees, numFixedHtsFees, numFractionalFees);
+		return tokenOpsUsage.bytesNeededToRepr(
+				numFixedHbarFees,
+				numFixedHtsFees,
+				numFractionalFees,
+				numRoyaltyNoFallbackFees,
+				numRoyaltyHtsFallbackFees,
+				numRoyaltyHbarFallbackFees);
 	}
 }

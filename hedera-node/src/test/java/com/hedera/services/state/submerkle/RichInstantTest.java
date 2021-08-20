@@ -26,7 +26,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.time.Instant;
 
@@ -36,47 +35,38 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.inOrder;
 
 class RichInstantTest {
-	long seconds = 1_234_567L;
-	int nanos = 890;
+	private static final long seconds = 1_234_567L;
+	private static final int nanos = 890;
 
-	RichInstant subject;
-
-	DataInputStream din;
-	SerializableDataInputStream in;
+	private RichInstant subject;
 
 	@BeforeEach
 	void setup() {
-		in = mock(SerializableDataInputStream.class);
-		din = mock(DataInputStream.class);
-
 		subject = new RichInstant(seconds, nanos);
 	}
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
-		verify(out).writeLong(seconds);
-		verify(out).writeInt(nanos);
+		inOrder.verify(out).writeLong(seconds);
+		inOrder.verify(out).writeInt(nanos);
 	}
 
 	@Test
 	void factoryWorks() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
 		given(in.readLong()).willReturn(seconds);
 		given(in.readInt()).willReturn(nanos);
 
-		// when:
-		var readSubject = RichInstant.from(in);
+		final var readSubject = RichInstant.from(in);
 
-		// expect:
 		assertEquals(subject, readSubject);
 	}
 
@@ -87,23 +77,19 @@ class RichInstantTest {
 
 	@Test
 	void viewWorks() {
-		// given:
-		var grpc = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+		final var grpc = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
-		// expect:
 		assertEquals(grpc, subject.toGrpc());
 	}
 
 	@Test
 	void knowsIfMissing() {
-		// expect:
 		assertFalse(subject.isMissing());
 		assertTrue(RichInstant.MISSING_INSTANT.isMissing());
 	}
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"RichInstant{seconds=" + seconds + ", nanos=" + nanos + "}",
 				subject.toString());
@@ -111,26 +97,21 @@ class RichInstantTest {
 
 	@Test
 	void factoryWorksForMissing() {
-		// expect:
-		assertTrue(RichInstant.MISSING_INSTANT == RichInstant.fromGrpc(Timestamp.getDefaultInstance()));
+		assertEquals(RichInstant.MISSING_INSTANT, RichInstant.fromGrpc(Timestamp.getDefaultInstance()));
 		assertEquals(subject, RichInstant.fromGrpc(subject.toGrpc()));
 	}
 
 	@Test
 	void objectContractWorks() {
-		// given:
-		var one = subject;
-		var two = new RichInstant(seconds - 1, nanos - 1);
-		var three = new RichInstant(subject.getSeconds(), subject.getNanos());
+		final var one = subject;
+		final var two = new RichInstant(seconds - 1, nanos - 1);
+		final var three = new RichInstant(subject.getSeconds(), subject.getNanos());
 
-		// when:
-
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
 		assertNotEquals(one, two);
 		assertEquals(one, three);
-		// and:
+
 		assertEquals(one.hashCode(), three.hashCode());
 		assertNotEquals(one.hashCode(), two.hashCode());
 	}
@@ -144,13 +125,11 @@ class RichInstantTest {
 
 	@Test
 	void javaFactoryWorks() {
-		// expect:
 		assertEquals(subject, RichInstant.fromJava(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos())));
 	}
 
 	@Test
 	void javaViewWorks() {
-		// expect:
 		assertEquals(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos()), subject.toJava());
 	}
 }

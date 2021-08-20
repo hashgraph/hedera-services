@@ -9,9 +9,9 @@ package com.hedera.services.context.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,12 +43,12 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class BootstrapProperties implements PropertySource {
-	private static Map<String, Object> MISSING_PROPS = null;
+	private static final Map<String, Object> MISSING_PROPS = null;
 
-	private static Function<String, InputStream> nullableResourceStreamProvider =
+	private static final Function<String, InputStream> nullableResourceStreamProvider =
 			BootstrapProperties.class.getClassLoader()::getResourceAsStream;
 
-	static Logger log = LogManager.getLogger(BootstrapProperties.class);
+	private static final Logger log = LogManager.getLogger(BootstrapProperties.class);
 
 	static ThrowingStreamProvider resourceStreamProvider = resource -> {
 		var in = nullableResourceStreamProvider.apply(resource);
@@ -59,37 +59,47 @@ public class BootstrapProperties implements PropertySource {
 	};
 	private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
-	String BOOTSTRAP_PROPS_RESOURCE = "bootstrap.properties";
-	String BOOTSTRAP_OVERRIDE_PROPS_LOC = "data/config/bootstrap.properties";
+	String bootstrapPropsResource = "bootstrap.properties";
+	String bootstrapOverridePropsLoc = "data/config/bootstrap.properties";
 
 	Map<String, Object> bootstrapProps = MISSING_PROPS;
 
-	private void initPropsFromResource() {
-		var resourceProps = new Properties();
-		load(BOOTSTRAP_PROPS_RESOURCE, resourceProps);
-		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps, fileStreamProvider, log);
+	private void initPropsFromResource() throws IllegalStateException {
+		final var resourceProps = new Properties();
+		load(bootstrapPropsResource, resourceProps);
+		loadOverride(bootstrapOverridePropsLoc, resourceProps, fileStreamProvider, log);
+		checkForUnrecognizedProps(resourceProps);
+		checkForMissingProps(resourceProps);
+		resolveBootstrapProps(resourceProps);
+	}
 
-		Set<String> unrecognizedProps = new HashSet<>(resourceProps.stringPropertyNames());
+	private void checkForUnrecognizedProps(final Properties resourceProps) throws IllegalStateException {
+		final Set<String> unrecognizedProps = new HashSet<>(resourceProps.stringPropertyNames());
 		unrecognizedProps.removeAll(BOOTSTRAP_PROP_NAMES);
 		if (!unrecognizedProps.isEmpty()) {
-			var msg = String.format(
+			final var msg = String.format(
 					"'%s' contains unrecognized properties: %s!",
-					BOOTSTRAP_PROPS_RESOURCE,
+					bootstrapPropsResource,
 					unrecognizedProps);
 			throw new IllegalStateException(msg);
 		}
-		var missingProps = BOOTSTRAP_PROP_NAMES.stream()
+	}
+
+	private void checkForMissingProps(final Properties resourceProps) throws IllegalStateException {
+		final var missingProps = BOOTSTRAP_PROP_NAMES.stream()
 				.filter(name -> !resourceProps.containsKey(name))
 				.sorted()
 				.collect(toList());
 		if (!missingProps.isEmpty()) {
-			var msg = String.format(
+			final var msg = String.format(
 					"'%s' is missing properties: %s!",
-					BOOTSTRAP_PROPS_RESOURCE,
+					bootstrapPropsResource,
 					missingProps);
 			throw new IllegalStateException(msg);
 		}
+	}
 
+	private void resolveBootstrapProps(final Properties resourceProps) {
 		bootstrapProps = new HashMap<>();
 		BOOTSTRAP_PROP_NAMES
 				.stream()
@@ -97,15 +107,15 @@ public class BootstrapProperties implements PropertySource {
 						prop,
 						transformFor(prop).apply(resourceProps.getProperty(prop))));
 
-		var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
+		final var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
 				.map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
 				.collect(Collectors.joining("\n  "));
 		log.info(msg);
 	}
 
-	private void load(String resource, Properties intoProps) {
-		try (InputStream fin = resourceStreamProvider.newInputStream(resource)) {
+	private void load(final String resource, final Properties intoProps) throws IllegalStateException {
+		try (final var fin = resourceStreamProvider.newInputStream(resource)) {
 			intoProps.load(fin);
 		} catch (IOException e) {
 			throw new IllegalStateException(
@@ -114,19 +124,19 @@ public class BootstrapProperties implements PropertySource {
 		}
 	}
 
-	void ensureProps() {
+	void ensureProps() throws IllegalStateException{
 		if (bootstrapProps == MISSING_PROPS) {
 			initPropsFromResource();
 		}
 	}
 
 	@Override
-	public boolean containsProperty(String name) {
+	public boolean containsProperty(final String name) {
 		return BOOTSTRAP_PROP_NAMES.contains(name);
 	}
 
 	@Override
-	public Object getProperty(String name) {
+	public Object getProperty(final String name) {
 		ensureProps();
 		if (bootstrapProps.containsKey(name)) {
 			return bootstrapProps.get(name);
@@ -140,7 +150,7 @@ public class BootstrapProperties implements PropertySource {
 		return BOOTSTRAP_PROP_NAMES;
 	}
 
-	static final Set<String> BOOTSTRAP_PROPS = Set.of(
+	private static final Set<String> BOOTSTRAP_PROPS = Set.of(
 			"bootstrap.feeSchedulesJson.resource",
 			"bootstrap.genesisB64Keystore.keyName",
 			"bootstrap.genesisB64Keystore.path",
@@ -158,7 +168,7 @@ public class BootstrapProperties implements PropertySource {
 			"bootstrap.throttleDefsJson.resource"
 	);
 
-	static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
+	private static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
 			"accounts.addressBookAdmin",
 			"accounts.exchangeRatesAdmin",
 			"accounts.feeSchedulesAdmin",
@@ -180,7 +190,8 @@ public class BootstrapProperties implements PropertySource {
 			"hedera.realm",
 			"hedera.shard",
 			"ledger.numSystemAccounts",
-			"ledger.totalTinyBarFloat"
+			"ledger.totalTinyBarFloat",
+			"tokens.nfts.areQueriesEnabled"
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
@@ -278,7 +289,7 @@ public class BootstrapProperties implements PropertySource {
 		return PROP_TRANSFORMS.getOrDefault(prop, AS_STRING);
 	}
 
-	static final Map<String, Function<String, Object>> PROP_TRANSFORMS = Map.ofEntries(
+	private static final Map<String, Function<String, Object>> PROP_TRANSFORMS = Map.ofEntries(
 			entry("accounts.addressBookAdmin", AS_LONG),
 			entry("accounts.exchangeRatesAdmin", AS_LONG),
 			entry("accounts.feeSchedulesAdmin", AS_LONG),
@@ -370,6 +381,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),
 			entry("tokens.nfts.maxQueryRange", AS_LONG),
 			entry("tokens.nfts.useTreasuryWildcards", AS_BOOLEAN),
+			entry("tokens.nfts.areQueriesEnabled", AS_BOOLEAN),
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.maxStorageKb", AS_INT),
 			entry("contracts.defaultLifetime", AS_LONG),

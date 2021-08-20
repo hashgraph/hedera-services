@@ -254,7 +254,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
@@ -964,15 +963,18 @@ public class ServicesContext {
 
 	public UniqTokenViewsManager uniqTokenViewsManager() {
 		if (uniqTokenViewsManager == null) {
+			final var shouldNoop = shouldNoopFcotmrUsage();
 			if (shouldUseTreasuryWildcards()) {
 				uniqTokenViewsManager = new UniqTokenViewsManager(
 						this::uniqueTokenAssociations,
 						this::uniqueOwnershipAssociations,
-						this::uniqueOwnershipTreasuryAssociations);
+						this::uniqueOwnershipTreasuryAssociations,
+						shouldNoop);
 			} else {
 				uniqTokenViewsManager = new UniqTokenViewsManager(
 						this::uniqueTokenAssociations,
-						this::uniqueOwnershipAssociations);
+						this::uniqueOwnershipAssociations,
+						shouldNoop);
 			}
 		}
 		return uniqTokenViewsManager;
@@ -980,6 +982,10 @@ public class ServicesContext {
 
 	private boolean shouldUseTreasuryWildcards() {
 		return properties().getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+	}
+
+	private boolean shouldNoopFcotmrUsage() {
+		return !properties().getBooleanProperty("tokens.nfts.areQueriesEnabled");
 	}
 
 	public HederaNumbers hederaNums() {

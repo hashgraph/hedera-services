@@ -99,7 +99,8 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAccountOwnerships,
-				() -> uniqueTokenTreasuryOwnerships);
+				() -> uniqueTokenTreasuryOwnerships,
+				false);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,

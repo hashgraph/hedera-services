@@ -64,8 +64,8 @@ public class HederaKeyActivation {
 	 * @return whether the payer's Hedera key is active
 	 */
 	public static boolean payerSigIsActive(
-			TxnAccessor accessor,
-			BiPredicate<JKey, TransactionSignature> validity
+			final TxnAccessor accessor,
+			final BiPredicate<JKey, TransactionSignature> validity
 	) {
 		final var sigMeta = accessor.getSigMeta();
 
@@ -96,26 +96,26 @@ public class HederaKeyActivation {
 	 * @return whether the Hedera key is active.
 	 */
 	public static boolean isActive(
-			JKey key,
-			Function<byte[], TransactionSignature> sigsFn,
-			BiPredicate<JKey, TransactionSignature> validity
+			final JKey key,
+			final Function<byte[], TransactionSignature> sigsFn,
+			final BiPredicate<JKey, TransactionSignature> validity
 	) {
 		return isActive(key, sigsFn, validity, DEFAULT_ACTIVATION_CHARACTERISTICS);
 	}
 
 	public static boolean isActive(
-			JKey key,
-			Function<byte[], TransactionSignature> sigsFn,
-			BiPredicate<JKey, TransactionSignature> validity,
-			KeyActivationCharacteristics characteristics
+			final JKey key,
+			final Function<byte[], TransactionSignature> sigsFn,
+			final BiPredicate<JKey, TransactionSignature> validity,
+			final KeyActivationCharacteristics characteristics
 	) {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
 			return validity.test(key, sigsFn.apply(key.getEd25519()));
 		} else {
-			final List<JKey> children = key.hasKeyList()
+			final var children = key.hasKeyList()
 					? key.getKeyList().getKeysList()
 					: key.getThresholdKey().getKeys().getKeysList();
-			final int m = key.hasKeyList()
+			final var m = key.hasKeyList()
 					? characteristics.sigsNeededForList((JKeyList) key)
 					: characteristics.sigsNeededForThreshold((JThresholdKey) key);
 			var n = 0;
@@ -135,9 +135,9 @@ public class HederaKeyActivation {
 	 * 		the backing list of platform sigs.
 	 * @return a supplier that produces the backing list sigs by public key.
 	 */
-	public static Function<byte[], TransactionSignature> pkToSigMapFrom(List<TransactionSignature> sigs) {
+	public static Function<byte[], TransactionSignature> pkToSigMapFrom(final List<TransactionSignature> sigs) {
 		return key -> {
-			for (TransactionSignature sig : sigs) {
+			for (var sig : sigs) {
 				if (Arrays.equals(key, sig.getExpandedPublicKeyDirect())) {
 					return sig;
 				}
@@ -147,11 +147,11 @@ public class HederaKeyActivation {
 	}
 
 	private static class InvalidSignature extends TransactionSignature {
-		private static byte[] MEANINGLESS_BYTE = new byte[] {
+		private static final byte[] MEANINGLESS_BYTE = new byte[] {
 				(byte) 0xAB
 		};
 
-		public InvalidSignature() {
+		private InvalidSignature() {
 			super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
 		}
 

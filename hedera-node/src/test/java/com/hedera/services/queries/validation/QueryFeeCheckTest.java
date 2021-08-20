@@ -54,36 +54,34 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class QueryFeeCheckTest {
-	private final long payerExpiry = 1_234_567L;
+	private static final long payerExpiry = 1_234_567L;
+	private static final AccountID aMissing = asAccount("1.2.3");
+	private static final AccountID aRich = asAccount("0.0.2");
+	private static final AccountID aNode = asAccount("0.0.3");
+	private static final AccountID anotherNode = asAccount("0.0.4");
+	private static final AccountID aBroke = asAccount("0.0.13257");
+	private static final AccountID aDetached = asAccount("0.0.75231");
+	private static final AccountID aQueryPayer = asAccount("0.0.13258");
+	private static final AccountID aTestPayer = asAccount("0.0.13259");
+	private static final TransactionID txnId = TransactionID.newBuilder().setAccountID(aRich).build();
+	private static final long feeRequired = 1234L;
+	private static final long aLittle = 2L;
+	private static final long aLot = Long.MAX_VALUE - 1L;
+	private static final long aFew = 100L;
+	private static final MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
+	private static final MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
+	private static final MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
+	private static final MerkleEntityId nodeKey = MerkleEntityId.fromAccountId(aNode);
+	private static final MerkleEntityId anotherNodeKey = MerkleEntityId.fromAccountId(anotherNode);
+	private static final MerkleEntityId queryPayerKey = MerkleEntityId.fromAccountId(aQueryPayer);
+	private static final MerkleEntityId testPayerKey = MerkleEntityId.fromAccountId(aTestPayer);
 
-	AccountID aMissing = asAccount("1.2.3");
-	AccountID aRich = asAccount("0.0.2");
-	AccountID aNode = asAccount("0.0.3");
-	AccountID anotherNode = asAccount("0.0.4");
-	AccountID aBroke = asAccount("0.0.13257");
-	AccountID aDetached = asAccount("0.0.75231");
-	AccountID aQueryPayer = asAccount("0.0.13258");
-	AccountID aTestPayer = asAccount("0.0.13259");
-
-	TransactionID txnId = TransactionID.newBuilder().setAccountID(aRich).build();
-	long feeRequired = 1234L;
-
-	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L, aFew = 100L;
-	MerkleAccount detached, broke, rich, testPayer, queryPayer;
-	MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
-	MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
-	MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
-	MerkleEntityId nodeKey = MerkleEntityId.fromAccountId(aNode);
-	MerkleEntityId anotherNodeKey = MerkleEntityId.fromAccountId(anotherNode);
-
-	MerkleEntityId queryPayerKey = MerkleEntityId.fromAccountId(aQueryPayer);
-	MerkleEntityId testPayerKey = MerkleEntityId.fromAccountId(aTestPayer);
-
+	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
 	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	QueryFeeCheck subject;
+	private QueryFeeCheck subject;
 
 	@BeforeEach
 	private void setup() {
@@ -123,14 +121,12 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsEmptyTransfers() {
-		// expect:
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(null));
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(Collections.emptyList()));
 	}
 
 	@Test
 	void acceptsSufficientFee() {
-		// expect:
 		assertEquals(
 				OK,
 				subject.nodePaymentValidity(
@@ -142,7 +138,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsWrongRecipient() {
-		// expect:
 		assertEquals(
 				INVALID_RECEIVING_NODE_ACCOUNT,
 				subject.nodePaymentValidity(
@@ -154,7 +149,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsWhenNodeIsMissing() {
-		// expect:
 		assertEquals(
 				INVALID_RECEIVING_NODE_ACCOUNT,
 				subject.nodePaymentValidity(
@@ -167,7 +161,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void allowsMultipleRecipients() {
-		// expect:
 		assertEquals(
 				OK,
 				subject.nodePaymentValidity(
@@ -180,7 +173,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsInsufficientNodePayment() {
-		// expect:
 		assertEquals(
 				INSUFFICIENT_TX_FEE,
 				subject.nodePaymentValidity(
@@ -188,12 +180,11 @@ class QueryFeeCheckTest {
 								adjustmentWith(aRich, -aLittle * 2),
 								adjustmentWith(aBroke, aLittle + aLittle / 2),
 								adjustmentWith(aNode, aLittle / 2)),
-						aLittle , aNode));
+						aLittle, aNode));
 	}
 
 	@Test
 	void rejectsInsufficientFee() {
-		// expect:
 		assertEquals(
 				INSUFFICIENT_TX_FEE,
 				subject.nodePaymentValidity(
@@ -205,7 +196,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void filtersOnBasicImplausibility() {
-		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_AMOUNTS,
 				subject.nodePaymentValidity(
@@ -216,7 +206,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsOverflowingTransfer() {
-		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_AMOUNTS,
 				subject.transfersPlausibility(
@@ -227,7 +216,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsNonNetTransfer() {
-		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_AMOUNTS,
 				subject.transfersPlausibility(
@@ -238,7 +226,6 @@ class QueryFeeCheckTest {
 
 	@Test
 	void catchesBadEntry() {
-		// expect:
 		assertEquals(
 				ACCOUNT_ID_DOES_NOT_EXIST,
 				subject.transfersPlausibility(
@@ -250,51 +237,38 @@ class QueryFeeCheckTest {
 
 	@Test
 	void rejectsMinValue() {
-		// given:
-		var adjustment = adjustmentWith(aRich, Long.MIN_VALUE);
+		final var adjustment = adjustmentWith(aRich, Long.MIN_VALUE);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// then:
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, status);
 	}
 
 	@Test
 	void nonexistentSenderHasNoBalance() {
-		// given:
-		var adjustment = adjustmentWith(aMissing, -aLittle);
+		final var adjustment = adjustmentWith(aMissing, -aLittle);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, status);
 	}
 
 	@Test
 	void brokePayerRejected() {
-		// setup:
-		var adjustment = adjustmentWith(aBroke, -aLot);
+		final var adjustment = adjustmentWith(aBroke, -aLot);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
 	}
 
 	@Test
 	void detachedPayerRejectedWithRefinement() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
+		final var adjustment = adjustmentWith(aDetached, -aLot);
 
-		// given:
-		var adjustment = adjustmentWith(aDetached, -aLot);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
-
-		// then:
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
 	}
 
@@ -302,14 +276,10 @@ class QueryFeeCheckTest {
 	void cannotBeDetachedIfNoAutoRenew() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		dynamicProps.disableAutoRenew();
+		final var adjustment = adjustmentWith(aDetached, -aLot);
 
-		// given:
-		var adjustment = adjustmentWith(aDetached, -aLot);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
-
-		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
 	}
 
@@ -317,100 +287,79 @@ class QueryFeeCheckTest {
 	void noLongerDetachedWithNonzeroBalance() {
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		given(detached.getBalance()).willReturn(1L);
+		final var adjustment = adjustmentWith(aDetached, -aLot);
 
-		// given:
-		var adjustment = adjustmentWith(aDetached, -aLot);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
-
-		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
 	}
 
 	@Test
 	void missingReceiverRejected() {
-		// given:
-		var adjustment = adjustmentWith(aMissing, aLot);
+		final var adjustment = adjustmentWith(aMissing, aLot);
 
-		// when:
-		var status = subject.adjustmentPlausibility(adjustment);
+		final var status = subject.adjustmentPlausibility(adjustment);
 
-		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, status);
 	}
 
 	@Test
 	void validateQueryPaymentSucceeds() {
-		// setup:
-		long amount = 8;
-		// given :
-		TransactionBody body = getPaymentTxnBody(amount, null);
+		final long amount = 8;
+		final var body = getPaymentTxnBody(amount, null);
 
-		// then:
-		assertEquals(body.getTransactionID().getAccountID(), aRich);
+		assertEquals(aRich, body.getTransactionID().getAccountID());
 		assertTrue(checkPayerInTransferList(body, aRich));
-		assertEquals(subject.validateQueryPaymentTransfers(body), OK);
+		assertEquals(OK, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
 	void paymentFailsWithQueryPayerBalance() {
-		// setup:
-		long amount = 5000L;
-		// given :
-		TransferList transList = TransferList.newBuilder()
+		final long amount = 5000L;
+		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
-				.build();
-		TransactionBody body = TransactionBody.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+		final var body = TransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
 				.setTransactionID(txnId)
 				.setNodeAccountID(aNode)
-				.setTransactionFee(feeRequired).build();
+				.setTransactionFee(feeRequired)
+				.build();
 
-		// then:
-		assertEquals(body.getTransactionID().getAccountID(), aRich);
+		assertEquals(aRich, body.getTransactionID().getAccountID());
 		assertFalse(checkPayerInTransferList(body, aRich));
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
 	void paymentFailsWithBrokenPayer() {
-		// setup:
-		long amount = 5000L;
-		// given :
-		TransferList transList = TransferList.newBuilder()
+		final long amount = 5000L;
+		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
-				.build();
-		TransactionBody body = TransactionBody.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+		final var body = TransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-				.setTransactionID(TransactionID.newBuilder().setAccountID(aBroke).build())
+				.setTransactionID(TransactionID.newBuilder().setAccountID(aBroke))
 				.setNodeAccountID(aNode)
-				.setTransactionFee(feeRequired).build();
+				.setTransactionFee(feeRequired)
+				.build();
 
-		// then:
-		assertEquals(body.getTransactionID().getAccountID(), aBroke);
+		assertEquals(aBroke, body.getTransactionID().getAccountID());
 		assertTrue(checkPayerInTransferList(body, aBroke));
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
 	void queryPaymentMultiPayerMultiNodeSucceeds() {
-		// setup:
-		long amount = 200L;
+		final long amount = 200L;
+		final var transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount / 4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount / 4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount / 2))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount / 2))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(anotherNode).setAmount(amount / 2));
+		final var body = getPaymentTxnBody(amount, transList);
 
-		// given :
-		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount/4))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount/4))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount/2))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount/2))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(anotherNode).setAmount(amount/2))
-				.build();
-		TransactionBody body = getPaymentTxnBody(amount, transList);
-
-		// then:
 		assertEquals(3, body.getCryptoTransfer().getTransfers()
 				.getAccountAmountsList().stream()
 				.filter(aa -> aa.getAmount() < 0)
@@ -420,20 +369,15 @@ class QueryFeeCheckTest {
 
 	@Test
 	void queryPaymentMultiTransferFails() {
-		// setup:
-		long amount = 200L;
+		final long amount = 200L;
+		final var transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount / 4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount / 4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount / 4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount / 4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+		final var body = getPaymentTxnBody(amount, transList);
 
-		// given :
-		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount/4))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount/4))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount/4))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount/4))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
-				.build();
-		TransactionBody body = getPaymentTxnBody(amount, transList);
-
-		// then:
 		assertEquals(4, body.getCryptoTransfer().getTransfers()
 				.getAccountAmountsList().stream()
 				.filter(aa -> aa.getAmount() < 0)
@@ -441,51 +385,40 @@ class QueryFeeCheckTest {
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
 
-	private AccountAmount adjustmentWith(AccountID id, long amount) {
+	private AccountAmount adjustmentWith(final AccountID id, final long amount) {
 		return AccountAmount.newBuilder()
 				.setAccountID(id)
 				.setAmount(amount)
 				.build();
 	}
 
-	private List<AccountAmount> transfersWith(
-			AccountAmount a,
-			AccountAmount b
-	) {
+	private List<AccountAmount> transfersWith(final AccountAmount a, final AccountAmount b) {
 		return List.of(a, b);
 	}
 
-	private List<AccountAmount> transfersWith(
-			AccountAmount a,
-			AccountAmount b,
-			AccountAmount c
-	) {
+	private List<AccountAmount> transfersWith(final AccountAmount a, final AccountAmount b, final AccountAmount c) {
 		return List.of(a, b, c);
 	}
 
-	private TransactionBody getPaymentTxnBody(long amount, TransferList transferList) {
-		TransferList transList = TransferList.newBuilder()
+	private TransactionBody getPaymentTxnBody(final long amount, final TransferList.Builder transferList) {
+		final var transList = (transferList != null)
+				? transferList
+				: TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
-				.build();
-		if (transferList != null) {
-			transList = transferList;
-		}
-		TransactionBody body = TransactionBody.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+		return TransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
 				.setTransactionID(txnId)
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
-		return body;
 	}
 
-	private boolean checkPayerInTransferList(TransactionBody body, AccountID payer){
-		AccountAmount  payerTransfer = body.getCryptoTransfer().
+	private boolean checkPayerInTransferList(final TransactionBody body, final AccountID payer) {
+		final var payerTransfer = body.getCryptoTransfer().
 				getTransfers().
 				getAccountAmountsList().
 				stream().filter(aa -> aa.getAccountID() == payer).findAny().orElse(null);
-		return payerTransfer != null ? true : false;
-
+		return payerTransfer != null;
 	}
 }
