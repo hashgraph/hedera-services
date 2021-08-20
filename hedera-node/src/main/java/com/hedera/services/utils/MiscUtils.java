@@ -219,10 +219,11 @@ public class MiscUtils {
 			TokenGetAccountNftInfos
 	);
 
-	private static final Set<HederaFunctionality> SCHEDULE_FUNCTIONS = new HashSet();
+	private static final Set<HederaFunctionality> SCHEDULE_FUNCTIONS = new HashSet<HederaFunctionality>();
 	private static final Set<String> SCHEDULE_FUNCTION_STRINGS = new HashSet<>();
-	private static final Map<HederaFunctionality, String> TRANSACTION_FUNCTION_TO_STRINGS = new HashMap<>();
-	private static final Set<HederaFunctionality> NON_SCHEDULE_FUNCTIONS = Set.of(
+	private static final EnumMap<HederaFunctionality, String> TRANSACTION_FUNCTION_TO_STRINGS
+			= new EnumMap<>(HederaFunctionality.class);
+	private static final EnumSet<HederaFunctionality> NON_SCHEDULE_FUNCTIONS = EnumSet.of(
 			CryptoAddLiveHash,
 			CryptoDeleteLiveHash,
 			TokenFeeScheduleUpdate,
@@ -533,54 +534,16 @@ public class MiscUtils {
 	}
 
 	public static Optional<QueryHeader> activeHeaderFrom(final Query query) {
-		switch (query.getQueryCase()) {
-			case TOKENGETNFTINFO:
-				return Optional.of(query.getTokenGetNftInfo().getHeader());
-			case TOKENGETNFTINFOS:
-				return Optional.of(query.getTokenGetNftInfos().getHeader());
-			case TOKENGETACCOUNTNFTINFOS:
-				return Optional.of(query.getTokenGetAccountNftInfos().getHeader());
-			case TOKENGETINFO:
-				return Optional.of(query.getTokenGetInfo().getHeader());
-			case SCHEDULEGETINFO:
-				return Optional.of(query.getScheduleGetInfo().getHeader());
-			case CONSENSUSGETTOPICINFO:
-				return Optional.of(query.getConsensusGetTopicInfo().getHeader());
-			case GETBYSOLIDITYID:
-				return Optional.of(query.getGetBySolidityID().getHeader());
-			case CONTRACTCALLLOCAL:
-				return Optional.of(query.getContractCallLocal().getHeader());
-			case CONTRACTGETINFO:
-				return Optional.of(query.getContractGetInfo().getHeader());
-			case CONTRACTGETBYTECODE:
-				return Optional.of(query.getContractGetBytecode().getHeader());
-			case CONTRACTGETRECORDS:
-				return Optional.of(query.getContractGetRecords().getHeader());
-			case CRYPTOGETACCOUNTBALANCE:
-				return Optional.of(query.getCryptogetAccountBalance().getHeader());
-			case CRYPTOGETACCOUNTRECORDS:
-				return Optional.of(query.getCryptoGetAccountRecords().getHeader());
-			case CRYPTOGETINFO:
-				return Optional.of(query.getCryptoGetInfo().getHeader());
-			case CRYPTOGETLIVEHASH:
-				return Optional.of(query.getCryptoGetLiveHash().getHeader());
-			case CRYPTOGETPROXYSTAKERS:
-				return Optional.of(query.getCryptoGetProxyStakers().getHeader());
-			case FILEGETCONTENTS:
-				return Optional.of(query.getFileGetContents().getHeader());
-			case FILEGETINFO:
-				return Optional.of(query.getFileGetInfo().getHeader());
-			case TRANSACTIONGETRECEIPT:
-				return Optional.of(query.getTransactionGetReceipt().getHeader());
-			case TRANSACTIONGETRECORD:
-				return Optional.of(query.getTransactionGetRecord().getHeader());
-			case TRANSACTIONGETFASTRECORD:
-				return Optional.of(query.getTransactionGetFastRecord().getHeader());
-			case NETWORKGETVERSIONINFO:
-				return Optional.of(query.getNetworkGetVersionInfo().getHeader());
-			default:
-				return Optional.empty();
+		final var methodToSearch = "GET" + query.getQueryCase().name();
+		try {
+			final var getQueryOp = Stream.of(query.getClass().getDeclaredMethods())
+					.filter(m -> methodToSearch.equals(m.getName().toUpperCase())).collect(toList()).get(0);
+			final var queryOp = getQueryOp.invoke(query);
+			final var getHeader = queryOp.getClass().getDeclaredMethod("getHeader");
+			return Optional.of((QueryHeader) getHeader.invoke(queryOp));
+		} catch (Exception ignoreToReturnOptionalEmpty) {
 		}
+		return Optional.empty();
 	}
 
 	static String getTxnStat(final TransactionBody txn) {
