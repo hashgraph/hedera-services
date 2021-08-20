@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.state.logic.PayerSigValidity;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -226,11 +227,6 @@ public class AwareProcessLogic implements ProcessLogic {
 		while (!handoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */
 		}
-	}
-
-	@FunctionalInterface
-	interface PayerSigValidity {
-		boolean test(TxnAccessor accessor, BiPredicate<JKey, TransactionSignature> test);
 	}
 
 	void setPayerSigValidity(PayerSigValidity payerSigValidity) {
