@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -159,6 +160,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
@@ -191,6 +193,9 @@ public class MiscUtils {
 		throw new IllegalStateException("Utility Class");
 	}
 
+	private static final String UNEXPECTED_RUNTIME_ERROR =
+			"All exceptions should show up in the static initializer, yet `%s` occurred";
+
 	public static final EnumSet<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
 			ConsensusGetTopicInfo,
 			GetBySolidityID,
@@ -214,51 +219,76 @@ public class MiscUtils {
 			TokenGetAccountNftInfos
 	);
 
-	private static final Set<String> TRANSACTION_TYPES = Set.of(
-			"ContractCall",
-			"ContractCreateInstance",
-			"ContractUpdateInstance",
-			"ContractDeleteInstance",
-			"CryptoCreateAccount",
-			"CryptoDelete",
-			"CryptoTransfer",
-			"CryptoUpdateAccount",
-			"FileAppend",
-			"FileCreate",
-			"FileDelete",
-			"FileUpdate",
-			"SystemDelete",
-			"SystemUndelete",
-			"Freeze",
-			"ConsensusCreateTopic",
-			"ConsensusUpdateTopic",
-			"ConsensusDeleteTopic",
-			"ConsensusSubmitMessage",
-			"TokenCreation",
-			"TokenFreeze",
-			"TokenUnfreeze",
-			"TokenGrantKyc",
-			"TokenRevokeKyc",
-			"TokenDeletion",
-			"TokenUpdate",
-			"TokenMint",
-			"TokenBurn",
-			"TokenWipe",
-			"TokenAssociate",
-			"TokenDissociate",
-			"ScheduleDelete"
+	private static final Set<HederaFunctionality> SCHEDULE_FUNCTIONS = new HashSet();
+	private static final Set<String> SCHEDULE_FUNCTION_STRINGS = new HashSet<>();
+	private static final Map<HederaFunctionality, String> TRANSACTION_FUNCTION_TO_STRINGS = new HashMap<>();
+	private static final Set<HederaFunctionality> NON_SCHEDULE_FUNCTIONS = Set.of(
+			CryptoAddLiveHash,
+			CryptoDeleteLiveHash,
+			TokenFeeScheduleUpdate,
+			ScheduleCreate,
+			ScheduleSign,
+			UncheckedSubmit
 	);
+
+	static {
+		final var sameNameTransactionFunctions = Set.of(
+				ContractCall,
+				CryptoDelete,
+				CryptoTransfer,
+				FileAppend,
+				FileCreate,
+				FileDelete,
+				FileUpdate,
+				SystemDelete,
+				SystemUndelete,
+				Freeze,
+				ConsensusCreateTopic,
+				ConsensusUpdateTopic,
+				ConsensusDeleteTopic,
+				ConsensusSubmitMessage,
+				TokenUpdate,
+				TokenMint,
+				TokenBurn,
+				ScheduleDelete
+		);
+		for (var f : sameNameTransactionFunctions) {
+			addFunction(f, f.name());
+		}
+		addFunction(ContractCreate, "ContractCreateInstance");
+		addFunction(ContractUpdate, "ContractUpdateInstance");
+		addFunction(ContractDelete, "ContractDeleteInstance");
+		addFunction(CryptoCreate, "CryptoCreateAccount");
+		addFunction(CryptoUpdate, "CryptoUpdateAccount");
+		addFunction(TokenCreate, "TokenCreation");
+		addFunction(TokenFreezeAccount, "TokenFreeze");
+		addFunction(TokenUnfreezeAccount, "TokenUnfreeze");
+		addFunction(TokenGrantKycToAccount, "TokenGrantKyc");
+		addFunction(TokenRevokeKycFromAccount, "TokenRevokeKyc");
+		addFunction(TokenDelete, "TokenDeletion");
+		addFunction(TokenAccountWipe, "TokenWipe");
+		addFunction(TokenAssociateToAccount, "TokenAssociate");
+		addFunction(TokenDissociateFromAccount, "TokenDissociate");
+	}
+
+	private static final void addFunction(final HederaFunctionality func, final String name) {
+		SCHEDULE_FUNCTIONS.add(func);
+		SCHEDULE_FUNCTION_STRINGS.add(name);
+		TRANSACTION_FUNCTION_TO_STRINGS.put(func, name);
+	}
+
 	private static final HashMap<String, Method> SCHEDULE_HAS_METHODS = new HashMap<>();
 	private static final HashMap<String, Method> SCHEDULE_GETTERS = new HashMap<>();
 	private static final HashMap<String, Method> TRANSACTION_SETTERS = new HashMap<>();
+	private static final HashMap<String, Method> TRANSACTION_HAS_METHODS = new HashMap<>();
 
 	static {
-		initializeScheduleAndTransactionMethods(TRANSACTION_TYPES);
+		initializeScheduleAndTransactionMethods(SCHEDULE_FUNCTION_STRINGS);
 	}
 
-	static void initializeScheduleAndTransactionMethods(final Set<String> types) {
-		for (var type : types) {
-			try {
+	static final void initializeScheduleAndTransactionMethods(final Set<String> types) {
+		try {
+			for (var type : types) {
 				SCHEDULE_HAS_METHODS.put(type, SchedulableTransactionBody.class.getMethod("has" + type));
 				SCHEDULE_GETTERS.put(type, SchedulableTransactionBody.class.getMethod("get" + type));
 				for (var m : TransactionBody.Builder.class.getMethods()) {
@@ -267,9 +297,14 @@ public class MiscUtils {
 						TRANSACTION_SETTERS.put(type, m);
 					}
 				}
-			} catch (NoSuchMethodException e) {
-				throw new IllegalArgumentException("Methods missing for " + type, e);
+				TRANSACTION_HAS_METHODS.put(type, TransactionBody.class.getMethod("has" + type));
 			}
+			for (var f : NON_SCHEDULE_FUNCTIONS) {
+				final var type = f.name();
+				TRANSACTION_HAS_METHODS.put(type, TransactionBody.class.getMethod("has" + type));
+			}
+		} catch (NoSuchMethodException e) {
+			throw new IllegalArgumentException(e);
 		}
 	}
 
@@ -557,85 +592,28 @@ public class MiscUtils {
 	}
 
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
-		if (txn.hasSystemDelete()) {
-			return SystemDelete;
-		} else if (txn.hasSystemUndelete()) {
-			return SystemUndelete;
-		} else if (txn.hasContractCall()) {
-			return ContractCall;
-		} else if (txn.hasContractCreateInstance()) {
-			return ContractCreate;
-		} else if (txn.hasContractUpdateInstance()) {
-			return ContractUpdate;
-		} else if (txn.hasCryptoAddLiveHash()) {
-			return CryptoAddLiveHash;
-		} else if (txn.hasCryptoCreateAccount()) {
-			return CryptoCreate;
-		} else if (txn.hasCryptoDelete()) {
-			return CryptoDelete;
-		} else if (txn.hasCryptoDeleteLiveHash()) {
-			return CryptoDeleteLiveHash;
-		} else if (txn.hasCryptoTransfer()) {
-			return CryptoTransfer;
-		} else if (txn.hasCryptoUpdateAccount()) {
-			return CryptoUpdate;
-		} else if (txn.hasFileAppend()) {
-			return FileAppend;
-		} else if (txn.hasFileCreate()) {
-			return FileCreate;
-		} else if (txn.hasFileDelete()) {
-			return FileDelete;
-		} else if (txn.hasFileUpdate()) {
-			return FileUpdate;
-		} else if (txn.hasContractDeleteInstance()) {
-			return ContractDelete;
-		} else if (txn.hasFreeze()) {
-			return Freeze;
-		} else if (txn.hasConsensusCreateTopic()) {
-			return ConsensusCreateTopic;
-		} else if (txn.hasConsensusUpdateTopic()) {
-			return ConsensusUpdateTopic;
-		} else if (txn.hasConsensusDeleteTopic()) {
-			return ConsensusDeleteTopic;
-		} else if (txn.hasConsensusSubmitMessage()) {
-			return ConsensusSubmitMessage;
-		} else if (txn.hasTokenCreation()) {
-			return TokenCreate;
-		} else if (txn.hasTokenFreeze()) {
-			return TokenFreezeAccount;
-		} else if (txn.hasTokenUnfreeze()) {
-			return TokenUnfreezeAccount;
-		} else if (txn.hasTokenGrantKyc()) {
-			return TokenGrantKycToAccount;
-		} else if (txn.hasTokenRevokeKyc()) {
-			return TokenRevokeKycFromAccount;
-		} else if (txn.hasTokenDeletion()) {
-			return TokenDelete;
-		} else if (txn.hasTokenUpdate()) {
-			return TokenUpdate;
-		} else if (txn.hasTokenMint()) {
-			return TokenMint;
-		} else if (txn.hasTokenBurn()) {
-			return TokenBurn;
-		} else if (txn.hasTokenWipe()) {
-			return TokenAccountWipe;
-		} else if (txn.hasTokenAssociate()) {
-			return TokenAssociateToAccount;
-		} else if (txn.hasTokenDissociate()) {
-			return TokenDissociateFromAccount;
-		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return TokenFeeScheduleUpdate;
-		} else if (txn.hasScheduleCreate()) {
-			return ScheduleCreate;
-		} else if (txn.hasScheduleSign()) {
-			return ScheduleSign;
-		} else if (txn.hasScheduleDelete()) {
-			return ScheduleDelete;
-		} else if (txn.hasUncheckedSubmit()) {
-			return UncheckedSubmit;
-		} else {
-			throw new UnknownHederaFunctionality();
+		return functionOf(txn, NON_SCHEDULE_FUNCTIONS).getLeft();
+	}
+
+	static Pair<HederaFunctionality, String> functionOf(
+			final TransactionBody txn,
+			final Set<HederaFunctionality> sameNameNonScheduleFunctions
+	) throws UnknownHederaFunctionality {
+		try {
+			for (var f : SCHEDULE_FUNCTIONS) {
+				if ((boolean) TRANSACTION_HAS_METHODS.get(TRANSACTION_FUNCTION_TO_STRINGS.get(f)).invoke(txn)) {
+					return Pair.of(f, "");
+				}
+			}
+			for (var f : sameNameNonScheduleFunctions) {
+				if ((boolean) TRANSACTION_HAS_METHODS.get(f.name()).invoke(txn)) {
+					return Pair.of(f, "");
+				}
+			}
+		} catch (Exception e) {
+			return Pair.of(UNRECOGNIZED, String.format(UNEXPECTED_RUNTIME_ERROR, e));
 		}
+		throw new UnknownHederaFunctionality();
 	}
 
 	public static Optional<HederaFunctionality> functionalityOfQuery(final Query query) {
@@ -663,7 +641,7 @@ public class MiscUtils {
 	}
 
 	public static TransactionBody asOrdinary(final SchedulableTransactionBody scheduledTxn) {
-		return asOrdinary(scheduledTxn, TRANSACTION_TYPES).getLeft();
+		return asOrdinary(scheduledTxn, SCHEDULE_FUNCTION_STRINGS).getLeft();
 	}
 
 	static Pair<TransactionBody, String> asOrdinary(
@@ -681,8 +659,7 @@ public class MiscUtils {
 					break;
 				}
 			} catch (Exception e) {
-				final var msg = "All exceptions should show up in the static initializer, yet `" + e + "` occurred";
-				return Pair.of(ordinary.build(), msg);
+				return Pair.of(ordinary.build(), String.format(UNEXPECTED_RUNTIME_ERROR, e));
 			}
 		}
 		return Pair.of(ordinary.build(), "");

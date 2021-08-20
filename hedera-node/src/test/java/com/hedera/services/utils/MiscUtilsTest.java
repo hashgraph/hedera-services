@@ -656,7 +656,7 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void getsExpectedTxnFunctionality() {
+	void getsExpectedTxnFunctionality() throws UnknownHederaFunctionality {
 		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
 				setters = new HashMap<>() {{
 			put(SystemDelete, new BodySetter<>(SystemDeleteTransactionBody.class));
@@ -708,6 +708,10 @@ class MiscUtilsTest {
 				throw new IllegalStateException(uhf);
 			}
 		});
+
+		final var unsupported = Set.of(CryptoGetInfo);
+		final var msg = functionOf(TransactionBody.getDefaultInstance(), unsupported).getRight();
+		assertTrue(msg.startsWith("All exceptions should show up in the static initializer"));
 	}
 
 	@Test
