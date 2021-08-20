@@ -2,8 +2,7 @@ package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectList;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
-import org.eclipse.collections.api.map.primitive.ImmutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import com.hedera.services.state.jasperdb.collections.ThreeLongsList;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -49,7 +48,7 @@ public class DataFileCollection {
      *   - creating of new files by writers while we are getting a new file for merging
      *   - concurrent index updates by writers and merge call-back
      */
-    private final ReentrantLock writeLock = new ReentrantLock();
+//    private final ReentrantLock writeLock = new ReentrantLock();
 
     /**
      * Construct a new DataFileCollection with the default DataFileReaderFactory
@@ -195,7 +194,7 @@ public class DataFileCollection {
      *                              files can be safely deleted.
      * @param filesToMerge list of files to merge
      */
-    public synchronized void mergeFiles(Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
+    public synchronized void mergeFiles(Consumer<ThreeLongsList> locationChangeHandler,
                                         List<DataFileReader> filesToMerge) throws IOException {
         final var indexedFileList = this.indexedFileList.get();
         // check if anything new has been written since we last merged
@@ -215,7 +214,7 @@ public class DataFileCollection {
         // update last merge time
         this.lastMerge.set(mergeTime);
         // create new map for keeping track of moves
-        LongObjectHashMap<long[]> movesMap = new LongObjectHashMap<>();
+        ThreeLongsList movesMap = new ThreeLongsList();
         // Open a new merge file for writing
         DataFileWriter newFileWriter = newDataFile(mergeTime,true);
         // get the most recent min and max key
@@ -268,10 +267,11 @@ public class DataFileCollection {
                 if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
                     // finish writing current file, add it for reading then open new file for writing
                     closeCurrentMergeFile(newFileWriter,minimumValidKey,maximumValidKey,locationChangeHandler,movesMap);
+                    movesMap.clear();
                     newFileWriter = newDataFile(mergeTime, true);
                 }
                 // add to movesMap
-                movesMap.put(lowestKey, new long[]{newestIteratorWithLowestKey.getDataItemsDataLocation(), newDataLocation});
+                movesMap.add(lowestKey,newestIteratorWithLowestKey.getDataItemsDataLocation(), newDataLocation);
             } else {
                 System.out.println("lowestKey ["+lowestKey+"] is out of range ["+minimumValidKey+"] > ["+maximumValidKey+"]");
             }
@@ -300,16 +300,16 @@ public class DataFileCollection {
 
     /** Finish a merge file and close it. */
     private void closeCurrentMergeFile(DataFileWriter newFileWriter, long minimumValidKey, long maximumValidKey,
-                                       Consumer<ImmutableLongObjectMap<long[]>> locationChangeHandler,
-                                       LongObjectHashMap<long[]> movesMap) throws IOException {
+                                       Consumer<ThreeLongsList> locationChangeHandler,
+                                       ThreeLongsList movesMap) throws IOException {
         // close current file
         final DataFileMetadata metadata = newFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // add it for reading
         addNewDataFileReader(newFileWriter.getPath(), metadata);
         // call locationChangeHandler with the write-lock so no writes are changing the index while we are
-        writeLock.lock(); //System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
-        locationChangeHandler.accept(movesMap.toImmutable());
-        writeLock.unlock(); //System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
+//        writeLock.lock(); //System.out.println("WRITE LOCK - LOCK - MERGE FILE location change handler");
+        locationChangeHandler.accept(movesMap);
+//        writeLock.unlock(); //System.out.println("WRITE LOCK - UNLOCK - MERGE FILE location change handler");
     }
 
     /**
@@ -337,7 +337,7 @@ public class DataFileCollection {
     public void startWriting() throws IOException {
         var currentDataFileWriter = this.currentDataFileWriter.get();
         if (currentDataFileWriter != null) throw new IOException("Tried to start writing when we were already writing.");
-        writeLock.lock();// System.out.println("WRITE LOCK - LOCK - START WRITING");
+//        writeLock.lock();// System.out.println("WRITE LOCK - LOCK - START WRITING");
         this.currentDataFileWriter.set(newDataFile(Instant.now(), false));
     }
 
@@ -357,7 +357,7 @@ public class DataFileCollection {
         DataFileMetadata metadata = currentDataFileWriter.finishWriting(minimumValidKey, maximumValidKey);
         // open reader on newly written file and add it to indexedFileList ready to be read.
         addNewDataFileReader(currentDataFileWriter.getPath(), metadata);
-        writeLock.unlock();// System.out.println("WRITE LOCK - UNLOCK - END WRITING - minimumValidKey="+minimumValidKey+" maximumValidKey="+maximumValidKey);
+//        writeLock.unlock();// System.out.println("WRITE LOCK - UNLOCK - END WRITING - minimumValidKey="+minimumValidKey+" maximumValidKey="+maximumValidKey);
     }
 
     /**

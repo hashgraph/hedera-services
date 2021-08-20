@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <K>
  * @param <V>
  */
+@SuppressWarnings("FieldCanBeLocal")
 public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
     /** Used to pass a virtual map from the handleTransaction (main) thread to the hashing thread */
     private final Exchanger<HashingData> hashingExchanger = new Exchanger<>();
@@ -42,8 +43,8 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
     private final ExecutorService hashingService = Executors.newSingleThreadExecutor(threadFactory("HashingService", null));
     /** This thread will release the map and pass the map to the archive service */
     private final ExecutorService releaseService = Executors.newSingleThreadExecutor(threadFactory("ReleaseService", null));
-    /** This thread will archive the most recent map once per minute (the others it throws away) */
-    private final ScheduledExecutorService archiveService = Executors.newSingleThreadScheduledExecutor(threadFactory("ArchiveService", null));
+    /** This thread will archive the most recent map every N rounds */
+    private final ExecutorService archiveService = Executors.newSingleThreadExecutor(threadFactory("ArchiveService", null));
 
     /**
      * This future is created by the hashing thread and passed back to the handle transaction thread via
@@ -74,7 +75,6 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         // will wake up and get the map setting it back to null, at which point
         // we start the process over again.
         final var masterMap = new AtomicReference<VirtualMap<K, V>>(null);
-        final var archiveStartTime = new AtomicLong(System.currentTimeMillis());
         final var finishedArchiving = new AtomicBoolean(true);
         final var mergedRoundsCount = new AtomicInteger(0);
         releaseService.submit(new Task(() -> {
@@ -86,43 +86,23 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                 }
                 masterMap.set(map);
             }
-//            var currentMergedRoundsCount = mergedRoundsCount.incrementAndGet();
-//            if (currentMergedRoundsCount >= 10) {
-//                archiveExchanger.exchange(map);
-//            }
-
-            while (!finishedArchiving.get()) {
-                try{
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored) { }
+            var currentMergedRoundsCount = mergedRoundsCount.incrementAndGet();
+            if (currentMergedRoundsCount >= 30 && finishedArchiving.get()) {
+                mergedRoundsCount.set(0);
+                // start a new archiving job, if we have completed at least 30 rounds and the last archiving job is complete
+                finishedArchiving.set(false);
+                archiveExchanger.exchange(masterMap.getAndSet(null));
             }
         }));
 
         // Runs once a minute and grabs the latest "master" map. If not null, it archives it.
-        archiveService.execute(() -> {
-            //noinspection InfiniteLoopStatement
-            while (true) {
-                finishedArchiving.set(false);
-                try {
-                    VirtualMap<?, ?> map;
-                    synchronized (masterMap) {
-                        map = masterMap.getAndSet(null);
-                    }
-
-                    if (map != null) {
-                        map.archive();
-                        finishedArchiving.set(true);
-                    }
-                } catch (Throwable th) {
-                    th.printStackTrace();
-                }
-                try {
-                    Thread.sleep(10_000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        archiveService.execute(new Task(() -> {
+            final var map = archiveExchanger.exchange(null);
+            if (map != null) {
+                map.archive();
+                finishedArchiving.set(true);
             }
-        });
+        }));
     }
 
     public VirtualMap<K, V> endRound(VirtualMap<K, V> virtualMap) {

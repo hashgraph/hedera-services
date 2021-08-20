@@ -2,9 +2,7 @@ package com.hedera.services.state.jasperdb.collections;
 
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
-import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
-import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
@@ -13,7 +11,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
@@ -89,9 +86,9 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         if (ENABLE_DEEP_VALIDATION) startChecking();
         fileCollection.mergeFiles(
                 // update index with all moved data
-                moves -> moves.forEachKeyValue((key, move) -> {
-                   boolean casSuccessful = index.putIfEqual(key, move[0], move[1]);
-                   if (ENABLE_DEEP_VALIDATION) checkItem(casSuccessful,key,move);
+                moves -> moves.forEach((key, oldValue, newValue) -> {
+                   boolean casSuccessful = index.putIfEqual(key, oldValue, newValue);
+                   if (ENABLE_DEEP_VALIDATION) checkItem(casSuccessful, key, oldValue, newValue);
                 }),
                 filesToMerge);
         if (ENABLE_DEEP_VALIDATION) endChecking(filesToMerge);
@@ -170,11 +167,11 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         keyCount = new LongLongHashMap();
     }
 
-    private void checkItem(boolean casSuccessful, long key, long[] move) {
+    private void checkItem(boolean casSuccessful, long key, long oldValue, long newValue) {
         if (!casSuccessful) {
             CasMiss miss = new CasMiss(
-                    move[0],
-                    move[1],
+                    oldValue,
+                    newValue,
                     index.get(key,0)
             );
             casMisses.put(key,miss);

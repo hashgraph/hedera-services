@@ -96,7 +96,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
             fileCollection.mergeFiles(
                     moves -> {
                         // update index with all moved data
-                        moves.forEachKeyValue((key, move) -> bucketIndexToBucketLocation.putIfEqual(key, move[0], move[1]));
+                        moves.forEach(bucketIndexToBucketLocation::putIfEqual);
                     }, filesToMerge);
         }
     }
