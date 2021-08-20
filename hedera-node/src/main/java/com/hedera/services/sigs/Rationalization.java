@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -42,6 +44,7 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMa
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class Rationalization {
 	private final SyncVerifier syncVerifier;
 	private final HederaSigningOrder keyOrderer;
@@ -59,6 +62,7 @@ public class Rationalization {
 	private List<TransactionSignature> realPayerSigs = new ArrayList<>();
 	private List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
 
+	@Inject
 	public Rationalization(
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,

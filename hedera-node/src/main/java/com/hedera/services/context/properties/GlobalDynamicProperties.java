@@ -21,13 +21,13 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Set;
 
@@ -89,7 +89,7 @@ public class GlobalDynamicProperties {
 	@Inject
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
-			@Named("composite") PropertySource properties
+			@CompositeProps PropertySource properties
 	) {
 		this.hederaNums = hederaNums;
 		this.properties = properties;

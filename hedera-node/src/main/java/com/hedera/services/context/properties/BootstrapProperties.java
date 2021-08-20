@@ -20,11 +20,11 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.context.annotations.BootstrapProps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Singleton
-@Named("bootstrap")
+@BootstrapProps
 public class BootstrapProperties implements PropertySource {
 	private static final Map<String, Object> MISSING_PROPS = null;
 

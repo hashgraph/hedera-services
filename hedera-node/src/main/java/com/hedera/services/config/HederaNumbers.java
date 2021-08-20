@@ -20,10 +20,10 @@ package com.hedera.services.config;
  * ‍
  */
 
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
@@ -37,7 +37,7 @@ public class HederaNumbers {
 	private long numReservedSystemEntities = UNKNOWN_NUMBER;
 
 	@Inject
-	public HederaNumbers(@Named("composite") PropertySource properties) {
+	public HederaNumbers(@CompositeProps PropertySource properties) {
 		this.properties = properties;
 	}
 

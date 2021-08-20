@@ -20,12 +20,12 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.context.annotations.BootstrapProps;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -54,7 +54,7 @@ public class StandardizedPropertySources implements PropertySources {
 
 	@Inject
 	public StandardizedPropertySources(
-			@Named("bootstrap") PropertySource bootstrapProps,
+			@BootstrapProps PropertySource bootstrapProps,
 			ScreenedSysFileProps dynamicGlobalProps,
 			ScreenedNodeFileProps nodeProps
 	) {
@@ -63,7 +63,7 @@ public class StandardizedPropertySources implements PropertySources {
 		this.dynamicGlobalProps = dynamicGlobalProps;
 	}
 
-	public StandardizedPropertySources(@Named("bootstrap") PropertySource bootstrapProps) {
+	public StandardizedPropertySources(@BootstrapProps PropertySource bootstrapProps) {
 		this.bootstrapProps = bootstrapProps;
 
 		nodeProps = nodePropertiesSupplier.get();
