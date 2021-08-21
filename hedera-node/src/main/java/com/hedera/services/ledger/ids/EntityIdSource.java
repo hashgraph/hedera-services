@@ -9,9 +9,9 @@ package com.hedera.services.ledger.ids;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,17 +24,19 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.SwirldTransaction;
+
+import java.time.Instant;
 
 /**
  * Defines a type able to create ids of various entities under various conditions.
- *
- * @author Michael Tinker
  */
 public interface EntityIdSource {
 	/**
 	 * Returns the {@link AccountID} to use for a new account with the given sponsor.
 	 *
- 	 * @param newAccountSponsor the sponsor of the new account
+	 * @param newAccountSponsor the sponsor of the new account
 	 * @return an appropriate id to use
 	 */
 	AccountID newAccountId(AccountID newAccountSponsor);
@@ -67,4 +69,16 @@ public interface EntityIdSource {
 	 * Reclaims the last id issued.
 	 */
 	void reclaimLastId();
+
+	/**
+	 * Reclaims the IDs issued during one
+	 * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)} transition
+	 */
+	void reclaimProvisionalIds();
+
+	/**
+	 * Resets the provisional ids created during one
+	 * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)} transition
+	 */
+	void resetProvisionalIds();
 }

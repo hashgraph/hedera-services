@@ -50,4 +50,10 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	public void reclaimLastId() {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public void reclaimProvisionalIds() { throw new UnsupportedOperationException(); }
+
+	@Override
+	public void resetProvisionalIds() { throw new UnsupportedOperationException(); }
 }

@@ -94,7 +94,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 		/* --- Do the business logic --- */
 		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
-			token.mint(treasuryRel, op.getAmount());
+			token.mint(treasuryRel, op.getAmount(), false);
 		} else {
 			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(txnCtx.consensusTime()));
 		}
