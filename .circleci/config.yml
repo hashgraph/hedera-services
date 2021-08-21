@@ -1853,11 +1853,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 7 * * *"
+          cron: "05 3 * * *"
           filters:
             branches:
               only:
-                - master
+                - refactor-MiscUtils
     jobs:
       - build-platform-and-services
       - jrs-regression:
