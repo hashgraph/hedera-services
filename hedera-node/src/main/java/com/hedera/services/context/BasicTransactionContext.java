@@ -24,6 +24,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -51,6 +52,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,6 +75,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
  * @author Michael Tinker
  * @author Neeharika Sompalli
  */
+@Singleton
 public class BasicTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(BasicTransactionContext.class);
 
@@ -103,17 +107,18 @@ public class BasicTransactionContext implements TransactionContext {
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
 
 	private final NodeInfo nodeInfo;
+	private final EntityCreator creator;
 	private final NarratedCharging narratedCharging;
 	private final HbarCentExchange exchange;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private final ExpiringCreations creator;
 
+	@Inject
 	BasicTransactionContext(
 			NarratedCharging narratedCharging,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			NodeInfo nodeInfo,
 			HbarCentExchange exchange,
-			ExpiringCreations creator
+			EntityCreator creator
 	) {
 		this.accounts = accounts;
 		this.narratedCharging = narratedCharging;

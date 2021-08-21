@@ -1,13 +1,15 @@
 package com.hedera.services;
 
+import com.hedera.services.context.ContextModule;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
 import com.hedera.services.fees.FeesModule;
-import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.store.StoresModule;
 import com.swirlds.common.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -19,11 +21,13 @@ import javax.inject.Singleton;
 		FeesModule.class,
 		SigsModule.class,
 		StateModule.class,
+		StoresModule.class,
+		ContextModule.class,
+		RecordsModule.class,
 		PropertiesModule.class,
 })
 public interface ServicesApp {
-	SyncVerifier syncVerifier();
-	NarratedCharging narratedCharging();
+	ExpiryManager expiries();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 

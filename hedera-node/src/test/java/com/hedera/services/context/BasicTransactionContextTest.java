@@ -24,7 +24,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -154,7 +154,7 @@ class BasicTransactionContextTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	@Mock
-	private ExpiringCreations creator;
+	private EntityCreator creator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;

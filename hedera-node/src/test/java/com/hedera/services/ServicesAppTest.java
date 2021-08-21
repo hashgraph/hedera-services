@@ -2,8 +2,6 @@ package com.hedera.services;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.fees.charging.NarratedLedgerCharging;
-import com.hedera.services.sigs.verification.SyncVerifier;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Cryptography;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,9 +40,7 @@ class ServicesAppTest {
 	@Test
 	void objectGraphRootsAreAvailable() {
 		// expect:
-		assertThat(subject.syncVerifier(), instanceOf(SyncVerifier.class));
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		assertThat(subject.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
 	}
 }

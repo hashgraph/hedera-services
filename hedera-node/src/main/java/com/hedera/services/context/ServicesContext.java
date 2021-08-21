@@ -1794,7 +1794,7 @@ public class ServicesContext {
 		if (expiries == null) {
 			var histories = txnHistories();
 			expiries = new ExpiryManager(
-					recordCache(), scheduleStore(), hederaNums(), histories, this::accounts, this::schedules);
+					scheduleStore(), hederaNums(), histories, this::accounts, this::schedules);
 		}
 		return expiries;
 	}
@@ -1806,7 +1806,6 @@ public class ServicesContext {
 					narratedCharging(),
 					globalDynamicProperties(),
 					this::accounts);
-			creator.setRecordCache(recordCache());
 		}
 		return creator;
 	}

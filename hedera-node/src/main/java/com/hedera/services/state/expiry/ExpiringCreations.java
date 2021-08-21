@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -41,6 +40,8 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +50,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ExpiringCreations implements EntityCreator {
-	private RecordCache recordCache;
-
 	private HederaLedger ledger;
 
 	private final ExpiryManager expiries;
@@ -59,6 +59,7 @@ public class ExpiringCreations implements EntityCreator {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	@Inject
 	public ExpiringCreations(
 			ExpiryManager expiries,
 			NarratedCharging narratedCharging,
@@ -79,11 +80,6 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public void setRecordCache(RecordCache recordCache) {
-		this.recordCache = recordCache;
-	}
-
-	@Override
 	public ExpirableTxnRecord saveExpiringRecord(
 			AccountID payer,
 			ExpirableTxnRecord expiringRecord,
@@ -94,13 +90,9 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 
-		if (dynamicProperties.shouldKeepRecordsInState()) {
-			final var key = MerkleEntityId.fromAccountId(payer);
-			addToState(key, expiringRecord);
-			expiries.trackRecordInState(payer, expiringRecord.getExpiry());
-		} else {
-			recordCache.trackForExpiry(expiringRecord);
-		}
+		final var key = MerkleEntityId.fromAccountId(payer);
+		addToState(key, expiringRecord);
+		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 
 		return expiringRecord;
 	}

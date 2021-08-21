@@ -23,7 +23,6 @@ package com.hedera.services.records;
 import com.google.common.cache.Cache;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,15 +55,10 @@ public class RecordCache {
 	private Cache<TransactionID, Boolean> timedReceiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
-	MonotonicFullQueueExpiries<TransactionID> recordExpiries = new MonotonicFullQueueExpiries<>();
-
 	@Inject
-	public RecordCache(
-			Cache<TransactionID, Boolean> timedReceiptCache,
-			Map<TransactionID, TxnIdRecentHistory> histories
-	) {
+	public RecordCache(Cache<TransactionID, Boolean> cache, Map<TransactionID, TxnIdRecentHistory> histories) {
 		this.histories = histories;
-		this.timedReceiptCache = timedReceiptCache;
+		this.timedReceiptCache = cache;
 	}
 
 	@Inject
@@ -147,26 +141,5 @@ public class RecordCache {
 					.orElse(null);
 		}
 		return null;
-	}
-
-	public void forgetAnyOtherExpiredHistory(long now) {
-		while (recordExpiries.hasExpiringAt(now)) {
-			var txnId = recordExpiries.expireNextAt(now);
-			var history = histories.get(txnId);
-			if (history != null) {
-				history.forgetExpiredAt(now);
-				if (history.isForgotten()) {
-					histories.remove(txnId);
-				}
-			}
-		}
-	}
-
-	public void trackForExpiry(ExpirableTxnRecord record) {
-		recordExpiries.track(record.getTxnId().toGrpc(), record.getExpiry());
-	}
-
-	public void reset() {
-		recordExpiries.reset();
 	}
 }

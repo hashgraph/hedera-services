@@ -22,7 +22,6 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
@@ -48,9 +47,11 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -71,108 +72,38 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class RecordCacheTest {
 	long someExpiry = 1_234_567L;
 	long submittingMember = 1L;
-	private TransactionID txnIdA = TransactionID.newBuilder()
-			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
-			.setAccountID(asAccount("0.0.2"))
-			.build();
-	private TransactionID txnIdB = TransactionID.newBuilder()
-			.setAccountID(asAccount("2.2.0"))
-			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
-			.build();
-	private TransactionID txnIdC = TransactionID.newBuilder()
-			.setAccountID(asAccount("2.2.3"))
-			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
-			.build();
-	private TxnReceipt unknownReceipt = TxnReceipt.newBuilder()
-			.setStatus(UNKNOWN.name())
-			.build();
-	private ExchangeRate rate = ExchangeRate.newBuilder()
-			.setCentEquiv(1)
-			.setHbarEquiv(12)
-			.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(555L).build())
-			.build();
-	private TxnReceipt knownReceipt = TxnReceipt.newBuilder()
-			.setStatus(SUCCESS.name())
-			.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.2")))
-			.setExchangeRates(ExchangeRates.fromGrpc(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate).build()))
-			.build();
-	private ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
-			.setMemo("Something")
-			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
-			.setReceipt(knownReceipt)
-			.setTxnId(TxnId.fromGrpc(txnIdA))
-			.setFee(123L)
-			.build();
 
+	@Mock
 	private EntityCreator creator;
-	private ServicesContext ctx;
+	@Mock
 	private Cache<TransactionID, Boolean> receiptCache;
+	@Mock
 	private Map<TransactionID, TxnIdRecentHistory> histories;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private TxnIdRecentHistory recentHistory;
+	@Mock
+	MonotonicFullQueueExpiries<TransactionID> recordExpiries;
 
 	private RecordCache subject;
 
 	@BeforeEach
 	private void setup() {
-		creator = mock(EntityCreator.class);
-		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
-		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
 		subject = new RecordCache(receiptCache, histories);
+
 		subject.setCreator(creator);
-	}
-
-	@Test
-	void resetsHistoriesIfRequested() {
-		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
-
-		// when:
-		subject.reset();
-
-		// then:
-		verify(subject.recordExpiries).reset();
-	}
-
-	@Test
-	void expiresOtherForgottenHistory() {
-		// setup:
-		subject = new RecordCache(receiptCache, new HashMap<>());
-		subject.setCreator(creator);
-
-		// given:
-		aRecord.setExpiry(someExpiry);
-		subject.setPostConsensus(txnIdA, SUCCESS, aRecord);
-		subject.trackForExpiry(aRecord);
-
-		// when:
-		subject.forgetAnyOtherExpiredHistory(someExpiry + 1);
-
-		// then:
-		assertFalse(subject.isReceiptPresent(txnIdA));
-	}
-
-	@Test
-	void tracksExpiringTxnIds() {
-		// setup:
-		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
-		// and:
-		aRecord.setExpiry(someExpiry);
-
-		// when:
-		subject.trackForExpiry(aRecord);
-
-		// then:
-		verify(subject.recordExpiries).track(txnIdA, someExpiry);
 	}
 
 	@Test
 	void getsReceiptWithKnownStatusPostConsensus() {
 		// setup:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-
-		given(history.priorityRecord()).willReturn(aRecord);
-		given(histories.get(txnIdA)).willReturn(history);
+		given(recentHistory.priorityRecord()).willReturn(aRecord);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
 
 		// expect:
 		assertEquals(knownReceipt, subject.getPriorityReceipt(txnIdA));
@@ -181,11 +112,10 @@ class RecordCacheTest {
 	@Test
 	void getsDuplicateRecordsAsExpected() {
 		// setup:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 		var duplicateRecords = List.of(aRecord);
 
-		given(history.duplicateRecords()).willReturn(duplicateRecords);
-		given(histories.get(txnIdA)).willReturn(history);
+		given(recentHistory.duplicateRecords()).willReturn(duplicateRecords);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
 
 		// when:
 		var actual = subject.getDuplicateRecords(txnIdA);
@@ -233,11 +163,8 @@ class RecordCacheTest {
 
 	@Test
 	void getsReceiptWithUnknownStatusWhenNoPriorityRecordExists() {
-		// setup:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-
-		given(history.priorityRecord()).willReturn(null);
-		given(histories.get(txnIdA)).willReturn(history);
+		given(recentHistory.priorityRecord()).willReturn(null);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
 
 		// expect:
 		assertEquals(unknownReceipt, subject.getPriorityReceipt(txnIdA));
@@ -271,11 +198,8 @@ class RecordCacheTest {
 
 	@Test
 	void getsRecordWhenPresent() {
-		// setup:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-
-		given(history.priorityRecord()).willReturn(aRecord);
-		given(histories.get(txnIdA)).willReturn(history);
+		given(recentHistory.priorityRecord()).willReturn(aRecord);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
 
 		// expect:
 		assertEquals(aRecord, subject.getPriorityRecord(txnIdA));
@@ -292,10 +216,7 @@ class RecordCacheTest {
 
 	@Test
 	void delegatesToPutPostConsensus() {
-		// setup:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-
-		given(histories.computeIfAbsent(argThat(txnIdA::equals), any())).willReturn(history);
+		given(histories.computeIfAbsent(argThat(txnIdA::equals), any())).willReturn(recentHistory);
 
 		// when:
 		subject.setPostConsensus(
@@ -303,7 +224,7 @@ class RecordCacheTest {
 				ResponseCodeEnum.valueOf(aRecord.getReceipt().getStatus()),
 				aRecord);
 		// then:
-		verify(history).observe(aRecord, ResponseCodeEnum.valueOf(aRecord.getReceipt().getStatus()));
+		verify(recentHistory).observe(aRecord, ResponseCodeEnum.valueOf(aRecord.getReceipt().getStatus()));
 	}
 
 	@Test
@@ -320,11 +241,9 @@ class RecordCacheTest {
 		// and:
 		SwirldTransaction platformTxn = new SwirldTransaction(signedTxn.toByteArray());
 		// and:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-		// and:
 		AccountID effectivePayer = IdUtils.asAccount("0.0.3");
 
-		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(history);
+		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
 
 		// given:
 		PlatformTxnAccessor accessor = uncheckedAccessorFor(platformTxn);
@@ -352,7 +271,7 @@ class RecordCacheTest {
 				submittingMember);
 
 		// then:
-		verify(history).observe(
+		verify(recentHistory).observe(
 				argThat(expectedRecord::equals),
 				argThat(FAIL_INVALID::equals));
 	}
@@ -369,12 +288,10 @@ class RecordCacheTest {
 						.build().toByteString())
 				.build();
 		// and:
-		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-		// and:
 		AccountID effectivePayer = IdUtils.asAccount("0.0.3");
 		ScheduleID effectiveScheduleID = IdUtils.asSchedule("0.0.123");
 
-		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(history);
+		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
 
 		// given:
 		TxnAccessor accessor = new TriggeredTxnAccessor(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
@@ -388,8 +305,7 @@ class RecordCacheTest {
 				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
 		var expirableTxnRecord = expirableTxnRecordBuilder.build();
 		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
-		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(
-				expirableTxnRecord);
+		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expirableTxnRecord);
 
 		// when:
 		subject.setFailInvalid(
@@ -399,16 +315,13 @@ class RecordCacheTest {
 				submittingMember);
 
 		// then:
-		verify(history).observe(
-				argThat(expirableTxnRecord::equals),
-				argThat(FAIL_INVALID::equals));
+		verify(recentHistory).observe(expirableTxnRecord, FAIL_INVALID);
 	}
 
 
 	@Test
 	void usesHistoryThenCacheToTestReceiptPresence() {
 		given(histories.containsKey(txnIdA)).willReturn(true);
-		given(receiptCache.getIfPresent(txnIdA)).willReturn(null);
 		// and:
 		given(histories.containsKey(txnIdB)).willReturn(false);
 		given(receiptCache.getIfPresent(txnIdB)).willReturn(RecordCache.MARKER);
@@ -426,4 +339,38 @@ class RecordCacheTest {
 		assertTrue(hasB);
 		assertFalse(hasC);
 	}
+
+	private final TransactionID txnIdA = TransactionID.newBuilder()
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
+			.setAccountID(asAccount("0.0.2"))
+			.build();
+	private final TransactionID txnIdB = TransactionID.newBuilder()
+			.setAccountID(asAccount("2.2.0"))
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
+			.build();
+	private final TransactionID txnIdC = TransactionID.newBuilder()
+			.setAccountID(asAccount("2.2.3"))
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
+			.build();
+	private final TxnReceipt unknownReceipt = TxnReceipt.newBuilder()
+			.setStatus(UNKNOWN.name())
+			.build();
+	private final ExchangeRate rate = ExchangeRate.newBuilder()
+			.setCentEquiv(1)
+			.setHbarEquiv(12)
+			.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(555L).build())
+			.build();
+	private final TxnReceipt knownReceipt = TxnReceipt.newBuilder()
+			.setStatus(SUCCESS.name())
+			.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.2")))
+			.setExchangeRates(
+					ExchangeRates.fromGrpc(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate).build()))
+			.build();
+	private final ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
+			.setMemo("Something")
+			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
+			.setReceipt(knownReceipt)
+			.setTxnId(TxnId.fromGrpc(txnIdA))
+			.setFee(123L)
+			.build();
 }

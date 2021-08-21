@@ -54,7 +54,6 @@ public class GlobalDynamicProperties {
 	private long maxAccountNum;
 	private long nodeBalanceWarningThreshold;
 	private String pathToBalancesExportDir;
-	private boolean shouldKeepRecordsInState;
 	private boolean shouldExportBalances;
 	private boolean shouldExportTokenBalances;
 	private AccountID fundingAccount;
@@ -98,7 +97,6 @@ public class GlobalDynamicProperties {
 	}
 
 	public void reload() {
-		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
 		maxNftMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
 		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
@@ -204,10 +202,6 @@ public class GlobalDynamicProperties {
 
 	public int ratesIntradayChangeLimitPercent() {
 		return ratesIntradayChangeLimitPercent;
-	}
-
-	public boolean shouldKeepRecordsInState() {
-		return shouldKeepRecordsInState;
 	}
 
 	public int balancesExportPeriodSecs() {

@@ -34,14 +34,6 @@ import java.util.List;
 
 public interface EntityCreator {
 	/**
-	 * setter for {@link RecordCache} in {@link EntityCreator}
-	 *
-	 * @param recordCache
-	 * 		record cache
-	 */
-	void setRecordCache(RecordCache recordCache);
-
-	/**
 	 * Sets the ledger for the entity creator.
 	 *
 	 * @param ledger the ledger to use
