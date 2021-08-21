@@ -2,6 +2,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Cryptography;
@@ -17,10 +18,13 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ServicesAppTest {
+	private long selfId = 123;
 	private ServicesApp subject;
 
 	@Mock
 	private Platform platform;
+	@Mock
+	private ServicesState initialState;
 	@Mock
 	private Cryptography cryptography;
 
@@ -29,7 +33,9 @@ class ServicesAppTest {
 		given(platform.getCryptography()).willReturn(cryptography);
 
 		subject = DaggerServicesApp.builder()
+				.initialState(initialState)
 				.platform(platform)
+				.selfId(selfId)
 				.build();
 	}
 
@@ -39,5 +45,6 @@ class ServicesAppTest {
 		assertThat(subject.syncVerifier(), instanceOf(SyncVerifier.class));
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
+		assertThat(subject.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
 	}
 }

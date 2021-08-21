@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -38,6 +40,7 @@ import java.util.function.Supplier;
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger}
  * to charge the requested fees.
  */
+@Singleton
 public class NarratedLedgerCharging implements NarratedCharging {
 	private static final long UNKNOWN_ACCOUNT_BALANCE = -1L;
 
@@ -60,6 +63,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private MerkleEntityId nodeId;
 	private MerkleEntityId payerId;
 
+	@Inject
 	public NarratedLedgerCharging(
 			NodeInfo nodeInfo,
 			FeeExemptions feeExemptions,
@@ -70,6 +74,11 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
+	}
+
+	@Override
+	public void setLedger(HederaLedger ledger) {
+		this.ledger = ledger;
 	}
 
 	@Override
@@ -88,11 +97,6 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		payerExempt = feeExemptions.hasExemptPayer(accessor);
 		totalCharged = 0L;
 		effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
-	}
-
-	@Override
-	public void setLedger(HederaLedger ledger) {
-		this.ledger = ledger;
 	}
 
 	@Override

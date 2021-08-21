@@ -20,11 +20,16 @@ package com.hedera.services.config;
  * ‍
  */
 
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
+@Singleton
 public class FileNumbers {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
@@ -38,7 +43,8 @@ public class FileNumbers {
 	private long softwareUpdateZip = UNKNOWN_NUMBER;
 	private long throttleDefinitions = UNKNOWN_NUMBER;
 
-	public FileNumbers(HederaNumbers hederaNums, PropertySource properties) {
+	@Inject
+	public FileNumbers(HederaNumbers hederaNums, @CompositeProps PropertySource properties) {
 		this.hederaNums = hederaNums;
 		this.properties = properties;
 	}

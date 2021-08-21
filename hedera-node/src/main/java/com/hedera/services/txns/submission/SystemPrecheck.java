@@ -21,7 +21,7 @@ package com.hedera.services.txns.submission;
  */
 
 import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

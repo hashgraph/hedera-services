@@ -2,7 +2,6 @@ package com.hedera.services.state;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.state.annotations.InitialState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -25,11 +24,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class StatesManager {
+public class ActiveStates {
 	private final StateChildren workingChildren = new StateChildren();
 
 	@Inject
-	public StatesManager(@InitialState ServicesState initialState) {
+	public ActiveStates(ServicesState initialState) {
 		updateWorkingState(initialState);
 	}
 

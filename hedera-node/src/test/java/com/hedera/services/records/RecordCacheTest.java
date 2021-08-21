@@ -24,7 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -45,11 +45,9 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -109,7 +107,7 @@ class RecordCacheTest {
 			.setFee(123L)
 			.build();
 
-	private ExpiringCreations creator;
+	private EntityCreator creator;
 	private ServicesContext ctx;
 	private Cache<TransactionID, Boolean> receiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
@@ -118,12 +116,11 @@ class RecordCacheTest {
 
 	@BeforeEach
 	private void setup() {
-		creator = mock(ExpiringCreations.class);
-		ctx = mock(ServicesContext.class);
-		given(ctx.creator()).willReturn(creator);
+		creator = mock(EntityCreator.class);
 		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
 		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
-		subject = new RecordCache(ctx, receiptCache, histories);
+		subject = new RecordCache(receiptCache, histories);
+		subject.setCreator(creator);
 	}
 
 	@Test
@@ -140,7 +137,8 @@ class RecordCacheTest {
 	@Test
 	void expiresOtherForgottenHistory() {
 		// setup:
-		subject = new RecordCache(ctx, receiptCache, new HashMap<>());
+		subject = new RecordCache(receiptCache, new HashMap<>());
+		subject.setCreator(creator);
 
 		// given:
 		aRecord.setExpiry(someExpiry);

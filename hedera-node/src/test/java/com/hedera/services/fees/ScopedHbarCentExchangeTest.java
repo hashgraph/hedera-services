@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class AwareHbarCentExchangeTest {
+class ScopedHbarCentExchangeTest {
 	private long crossoverTime = 1_234_567L;
 	private ExchangeRateSet rates = ExchangeRateSet.newBuilder()
 			.setCurrentRate(ExchangeRate.newBuilder()
@@ -54,11 +54,11 @@ class AwareHbarCentExchangeTest {
 	@Mock
 	private TransactionContext txnCtx;
 
-	private AwareHbarCentExchange subject;
+	private ScopedHbarCentExchange subject;
 
 	@BeforeEach
 	void setUp() throws Exception {
-		subject = new AwareHbarCentExchange();
+		subject = new ScopedHbarCentExchange();
 		subject.setTxnCtx(txnCtx);
 	}
 

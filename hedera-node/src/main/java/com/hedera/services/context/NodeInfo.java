@@ -26,6 +26,8 @@ import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -36,6 +38,7 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
  * re-reading the book; but at present nodes may treat the initializing
  * book as static.
  */
+@Singleton
 public class NodeInfo {
 	private static final Logger log = LogManager.getLogger(NodeInfo.class);
 
@@ -49,6 +52,7 @@ public class NodeInfo {
 	private final long selfId;
 	private final Supplier<AddressBook> book;
 
+	@Inject
 	public NodeInfo(long selfId, Supplier<AddressBook> book) {
 		this.book = book;
 		this.selfId = selfId;

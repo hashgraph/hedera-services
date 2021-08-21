@@ -22,11 +22,14 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,16 +38,18 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Michael Tinker
  */
+@Singleton
 public class RecordCacheFactory {
 	private static final Logger log = LogManager.getLogger(RecordCache.class);
 
 	private final PropertySource properties;
 
-	public RecordCacheFactory(PropertySource properties) {
+	@Inject
+	public RecordCacheFactory(@CompositeProps PropertySource properties) {
 		this.properties = properties;
 	}
 
-	public Cache<TransactionID, Boolean> getRecordCache() {
+	public Cache<TransactionID, Boolean> getCache() {
 		int ttl = properties.getIntProperty("cache.records.ttl");
 
 		log.info("Constructing the node-local txn id cache with ttl={}s", ttl);

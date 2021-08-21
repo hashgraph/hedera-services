@@ -1,4 +1,4 @@
-package com.hedera.services.security.ops;
+package com.hedera.services.txns.auth;
 
 /*-
  * ‌
@@ -27,14 +27,16 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumMap;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.security.ops.SystemOpAuthorization.IMPERMISSIBLE;
-import static com.hedera.services.security.ops.SystemOpAuthorization.UNAUTHORIZED;
-import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -47,11 +49,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
+@Singleton
 public class SystemOpPolicies {
 	private final EntityNumbers entityNums;
 
 	private final EnumMap<HederaFunctionality, Function<TransactionBody, SystemOpAuthorization>> functionPolicies;
 
+	@Inject
 	public SystemOpPolicies(EntityNumbers entityNums) {
 		this.entityNums = entityNums;
 

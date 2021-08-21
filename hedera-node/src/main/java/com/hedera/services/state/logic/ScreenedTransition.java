@@ -1,7 +1,7 @@
 package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.utils.TxnAccessor;
 

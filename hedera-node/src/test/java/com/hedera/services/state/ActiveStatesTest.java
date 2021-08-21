@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class StatesManagerTest {
+class ActiveStatesTest {
 	@Mock
 	private ServicesState state;
 	@Mock
@@ -58,11 +58,11 @@ class StatesManagerTest {
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
 
-	private StatesManager statesManager;
+	private ActiveStates activeStates;
 
 	@BeforeEach
 	void setUp() {
-		statesManager = new StatesManager(state);
+		activeStates = new ActiveStates(state);
 	}
 
 	@Test
@@ -82,21 +82,21 @@ class StatesManagerTest {
 		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
 
 		// when:
-		statesManager.updateWorkingState(state);
+		activeStates.updateWorkingState(state);
 
 		// then:
-		assertSame(accounts, statesManager.accounts());
-		assertSame(storage, statesManager.storage());
-		assertSame(topics, statesManager.topics());
-		assertSame(tokens, statesManager.tokens());
-		assertSame(tokenAssociations, statesManager.tokenAssociations());
-		assertSame(scheduleTxs, statesManager.schedules());
-		assertSame(networkCtx, statesManager.networkCtx());
-		assertSame(addressBook, statesManager.addressBook());
-		assertSame(diskFs, statesManager.diskFs());
-		assertSame(uniqueTokens, statesManager.uniqueTokens());
-		assertSame(uniqueTokenAssociations, statesManager.uniqueTokenAssociations());
-		assertSame(uniqueOwnershipAssociations, statesManager.uniqueOwnershipAssociations());
-		assertSame(uniqueTreasuryOwnershipAssociations, statesManager.uniqueOwnershipTreasuryAssociations());
+		assertSame(accounts, activeStates.accounts());
+		assertSame(storage, activeStates.storage());
+		assertSame(topics, activeStates.topics());
+		assertSame(tokens, activeStates.tokens());
+		assertSame(tokenAssociations, activeStates.tokenAssociations());
+		assertSame(scheduleTxs, activeStates.schedules());
+		assertSame(networkCtx, activeStates.networkCtx());
+		assertSame(addressBook, activeStates.addressBook());
+		assertSame(diskFs, activeStates.diskFs());
+		assertSame(uniqueTokens, activeStates.uniqueTokens());
+		assertSame(uniqueTokenAssociations, activeStates.uniqueTokenAssociations());
+		assertSame(uniqueOwnershipAssociations, activeStates.uniqueOwnershipAssociations());
+		assertSame(uniqueTreasuryOwnershipAssociations, activeStates.uniqueOwnershipTreasuryAssociations());
 	}
 }

@@ -22,17 +22,18 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpAuthorization;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
 /**
  * Implementation of {@link SignatureWaivers} that waives signatures based on the
- * {@link com.hedera.services.security.ops.SystemOpAuthorization} status of the
+ * {@link SystemOpAuthorization} status of the
  * transaction to which they apply.
  *
  * That is, it waives a signature if and only if the transaction is {@code AUTHORIZED}

@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
  * @author Daniel Ivanov
  * @author Michael Tinker
  */
+@Singleton
 public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
@@ -70,6 +73,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	TransactionContext txnCtx;
 	Map<MerkleSchedule, MerkleEntityId> extantSchedules = new HashMap<>();
 
+	@Inject
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
@@ -79,6 +83,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		this.schedules = schedules;
 		this.properties = properties;
 		buildContentAddressableViewOfExtantSchedules();
+	}
+
+	@Inject
+	@Override
+	public void setTxnCtx(TransactionContext txnCtx) {
+		this.txnCtx = txnCtx;
 	}
 
 	@Override
@@ -229,11 +239,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var schedule = get(id);
 		schedules.get().remove(entityId.asMerkle());
 		extantSchedules.remove(schedule);
-	}
-
-	@Override
-	public void setTxnCtx(TransactionContext txnCtx) {
-		this.txnCtx = txnCtx;
 	}
 
 	public Map<MerkleSchedule, MerkleEntityId> getExtantSchedules() {

@@ -26,12 +26,21 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
-public class AwareHbarCentExchange implements HbarCentExchange {
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
+public class ScopedHbarCentExchange implements HbarCentExchange {
 	private TransactionContext txnCtx;
 
 	private ExchangeRates fcRates = null;
 	private ExchangeRateSet grpcRates = null;
 
+	@Inject
+	public ScopedHbarCentExchange() {
+	}
+
+	@Inject
 	@Override
 	public void setTxnCtx(TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;

@@ -43,7 +43,7 @@ import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.fees.AwareHbarCentExchange;
+import com.hedera.services.fees.ScopedHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.FeeMultiplierSource;
@@ -213,7 +213,7 @@ import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -1640,10 +1640,8 @@ public class ServicesContext {
 
 	public RecordCache recordCache() {
 		if (recordCache == null) {
-			recordCache = new RecordCache(
-					this,
-					new RecordCacheFactory(properties()).getRecordCache(),
-					txnHistories());
+			recordCache = new RecordCache(new RecordCacheFactory(properties()).getCache(), txnHistories());
+			recordCache.setCreator(creator());
 		}
 		return recordCache;
 	}
@@ -1671,7 +1669,7 @@ public class ServicesContext {
 
 	public HbarCentExchange exchange() {
 		if (exchange == null) {
-			exchange = new AwareHbarCentExchange();
+			exchange = new ScopedHbarCentExchange();
 		}
 		return exchange;
 	}

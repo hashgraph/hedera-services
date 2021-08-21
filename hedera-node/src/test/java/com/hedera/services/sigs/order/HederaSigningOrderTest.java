@@ -25,7 +25,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -80,7 +80,6 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.SCHEDULE_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.SECOND_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.SIMPLE_NEW_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.SIMPLE_NEW_WACL_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.TOKEN_KYC_KT;
@@ -154,7 +153,6 @@ import static com.hedera.test.factories.scenarios.FileDeleteScenarios.IMMUTABLE_
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.MISSING_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.VANILLA_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_MISSING_SCENARIO;
-import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_NEW_WACL_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.IMMUTABLE_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.MASTER_SYS_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_SYS_FILE_UPDATE_SCENARIO;

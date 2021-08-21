@@ -1,4 +1,4 @@
-package com.hedera.services.security.ops;
+package com.hedera.services.txns.auth;
 
 /*-
  * ‌
@@ -45,10 +45,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.security.ops.SystemOpAuthorization.IMPERMISSIBLE;
-import static com.hedera.services.security.ops.SystemOpAuthorization.UNAUTHORIZED;
-import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

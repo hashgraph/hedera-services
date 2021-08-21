@@ -1,5 +1,7 @@
 package com.hedera.services.state;
 
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -26,67 +28,72 @@ import java.util.function.Supplier;
 @Module
 public abstract class StateModule {
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts(StatesManager states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts(ActiveStates states) {
 		return states::accounts;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage(StatesManager statesManager) {
-		return statesManager::storage;
+	public static Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage(ActiveStates activeStates) {
+		return activeStates::storage;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics(StatesManager states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics(ActiveStates states) {
 		return states::topics;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens(StatesManager states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens(ActiveStates states) {
 		return states::tokens;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations(StatesManager states) {
+	public static Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations(ActiveStates states) {
 		return states::tokenAssociations;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules(StatesManager states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules(ActiveStates states) {
 		return states::schedules;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts(StatesManager states) {
+	public static Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts(ActiveStates states) {
 		return states::uniqueTokens;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType(StatesManager states) {
+	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType(ActiveStates states) {
 		return states::uniqueTokenAssociations;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner(StatesManager states) {
+	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner(ActiveStates states) {
 		return states::uniqueOwnershipAssociations;
 	}
 
 	@Provides @Singleton
-	public Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType(StatesManager states) {
+	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType(ActiveStates states) {
 		return states::uniqueOwnershipTreasuryAssociations;
 	}
 
 	@Provides @Singleton
-	public Supplier<MerkleDiskFs> diskFs(StatesManager states) {
+	public static Supplier<MerkleDiskFs> diskFs(ActiveStates states) {
 		return states::diskFs;
 	}
 
 	@Provides @Singleton
-	public Supplier<MerkleNetworkContext> networkCtx(StatesManager states) {
+	public static Supplier<MerkleNetworkContext> networkCtx(ActiveStates states) {
 		return states::networkCtx;
 	}
 
 	@Provides @Singleton
-	public Supplier<AddressBook> addressBook(StatesManager states) {
+	public static Supplier<AddressBook> addressBook(ActiveStates states) {
 		return states::addressBook;
+	}
+
+	@Provides @Singleton
+	public static EntityIdSource ids(ActiveStates states) {
+		return new SeqNoEntityIdSource(() -> states.networkCtx().seqNo());
 	}
 }
