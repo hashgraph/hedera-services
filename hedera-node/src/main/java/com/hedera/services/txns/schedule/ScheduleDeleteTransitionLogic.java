@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -55,15 +56,15 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
+			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete(), txnCtx.consensusTime());
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 
-	private void transitionFor(ScheduleDeleteTransactionBody op) {
-		var outcome = store.delete(op.getScheduleID());
+	private void transitionFor(ScheduleDeleteTransactionBody op, Instant consensusTime) {
+		var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 

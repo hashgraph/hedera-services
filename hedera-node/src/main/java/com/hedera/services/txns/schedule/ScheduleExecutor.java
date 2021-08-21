@@ -50,27 +50,28 @@ public final class ScheduleExecutor {
 	 * 		the id of the scheduled transaction
 	 * @param store
 	 * 		the relevant store of schedule entities
-	 * @param context
+	 * @param txnCtx
 	 * 		the active (parent) transaction context
 	 * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
 	 */
 	ResponseCodeEnum processExecution(
 			@Nonnull ScheduleID id,
 			@Nonnull ScheduleStore store,
-			@Nonnull TransactionContext context
+			@Nonnull TransactionContext txnCtx
 	) throws InvalidProtocolBufferException {
 		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
 		Objects.requireNonNull(store, "The schedule entity store cannot be null");
-		Objects.requireNonNull(context, "The active transaction context cannot be null");
+		Objects.requireNonNull(txnCtx, "The active transaction context cannot be null");
 
-		final var executionStatus = store.markAsExecuted(id);
+		final var now = txnCtx.consensusTime();
+		final var executionStatus = store.markAsExecuted(id, now);
 		if (executionStatus != OK) {
 			return executionStatus;
 		}
 
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
-		context.trigger(
+		txnCtx.trigger(
 				new TriggeredTxnAccessor(
 						transaction.toByteArray(),
 						schedule.effectivePayer().toGrpcAccountId(),

@@ -20,7 +20,6 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -34,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -76,7 +76,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public ResponseCodeEnum markAsExecuted(ScheduleID id) {
+	public ResponseCodeEnum markAsExecuted(ScheduleID id, Instant now) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -86,12 +86,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public void setTxnCtx(TransactionContext txnCtx) {
-		/* No-op */
-	}
-
-	@Override
-	public ResponseCodeEnum delete(ScheduleID id) {
+	public ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -107,6 +102,11 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 
 	@Override
 	public boolean isCreationPending() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum delete(ScheduleID id) {
 		throw new UnsupportedOperationException();
 	}
 

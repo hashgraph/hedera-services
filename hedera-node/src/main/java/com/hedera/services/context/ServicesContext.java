@@ -1626,7 +1626,6 @@ public class ServicesContext {
 	public TransactionContext txnCtx() {
 		if (txnCtx == null) {
 			txnCtx = new BasicTransactionContext(narratedCharging(), this::accounts, nodeInfo(), exchange(), creator());
-			scheduleStore().setTxnCtx(txnCtx);
 		}
 		return txnCtx;
 	}
