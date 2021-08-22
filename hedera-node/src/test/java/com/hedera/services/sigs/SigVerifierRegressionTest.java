@@ -229,8 +229,7 @@ class SigVerifierRegressionTest {
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
-		final var pkToSigFn = platformTxn.getPkToSigsFn();
-		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> pkToSigFn);
+		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
 	}
 }
 

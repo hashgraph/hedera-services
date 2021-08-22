@@ -214,8 +214,8 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -361,7 +361,6 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
-import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -1381,7 +1380,7 @@ public class ServicesContext {
 		if (precheckVerifier == null) {
 			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
 			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
-			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, TxnAccessor::getPkToSigsFn);
+			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs);
 		}
 		return precheckVerifier;
 	}

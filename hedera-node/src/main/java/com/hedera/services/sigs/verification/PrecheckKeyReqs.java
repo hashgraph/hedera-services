@@ -22,10 +22,14 @@ package com.hedera.services.sigs.verification;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.sigs.annotations.PayerSigReqs;
+import com.hedera.services.sigs.annotations.QuerySigReqs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -40,9 +44,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 /**
  * Encapsulates logic to determine which Hedera keys need to have valid
  * signatures for a transaction to pass precheck.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class PrecheckKeyReqs {
 	private static final Set<ResponseCodeEnum> INVALID_ACCOUNT_STATUSES = EnumSet.of(
 			INVALID_ACCOUNT_ID,
@@ -54,9 +57,10 @@ public class PrecheckKeyReqs {
 	private final SigRequirements keyOrderModuloRetry;
 	private final Predicate<TransactionBody> isQueryPayment;
 
+	@Inject
 	public PrecheckKeyReqs(
-			SigRequirements keyOrder,
-			SigRequirements keyOrderModuloRetry,
+			@PayerSigReqs SigRequirements keyOrder,
+			@QuerySigReqs SigRequirements keyOrderModuloRetry,
 			Predicate<TransactionBody> isQueryPayment
 	) {
 		this.keyOrder = keyOrder;
