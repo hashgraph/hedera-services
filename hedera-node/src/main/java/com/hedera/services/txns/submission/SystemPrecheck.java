@@ -26,6 +26,8 @@ import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.LongPredicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -38,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class SystemPrecheck {
 	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 
@@ -45,6 +48,7 @@ public class SystemPrecheck {
 	private final HapiOpPermissions hapiOpPermissions;
 	private final TransactionThrottling txnThrottling;
 
+	@Inject
 	public SystemPrecheck(
 			SystemOpPolicies systemOpPolicies,
 			HapiOpPermissions hapiOpPermissions,

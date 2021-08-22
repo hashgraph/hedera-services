@@ -76,20 +76,6 @@ class BackingAccountsTest {
 	}
 
 	@Test
-	void syncsFromInjectedMap() {
-		// setup:
-		map = new FCMap<>();
-		map.put(aKey, aValue);
-		map.put(bKey, bValue);
-		// and:
-		subject = new BackingAccounts(() -> map);
-
-		// then:
-		assertTrue(subject.existingAccounts.contains(a));
-		assertTrue(subject.existingAccounts.contains(b));
-	}
-
-	@Test
 	void rebuildsFromChangedSources() {
 		// setup:
 		map = new FCMap<>();

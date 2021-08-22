@@ -2,6 +2,7 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 
@@ -11,12 +12,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Module
 public abstract class RecordsModule {
-	@Provides @Singleton
+	@Binds
+	@Singleton
+	public abstract AccountRecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
+
+	@Provides
+	@Singleton
 	public static Map<TransactionID, TxnIdRecentHistory> txnHistories() {
 		return new ConcurrentHashMap<>();
 	}
 
-	@Provides @Singleton
+	@Provides
+	@Singleton
 	public static Cache<TransactionID, Boolean> provideCache(RecordCacheFactory recordCacheFactory) {
 		return recordCacheFactory.getCache();
 	}

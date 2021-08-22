@@ -210,6 +210,8 @@ class SmartContractRequestHandlerPayableTest {
     payerMerkleEntityId.setNum(payerAccount);
     payerMerkleEntityId.setRealm(0);
     payerMerkleEntityId.setShard(0);
+
+    backingAccounts.rebuildFromSources();
   }
 
   @Test

@@ -25,10 +25,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 /**
@@ -36,10 +39,12 @@ import java.util.function.Supplier;
  * of {@link UniqTokenView} depending on the injected value of the global/static
  * {@code tokens.nfts.useTreasuryWildcards} property.
  */
+@Singleton
 public class ConfigDrivenUniqTokenViewFactory implements UniqTokenViewFactory {
 	private final boolean shouldUseTreasuryWildcards;
 
-	public ConfigDrivenUniqTokenViewFactory(boolean shouldUseTreasuryWildcards) {
+	@Inject
+	public ConfigDrivenUniqTokenViewFactory(@AreTreasuryWildcardsEnabled boolean shouldUseTreasuryWildcards) {
 		this.shouldUseTreasuryWildcards = shouldUseTreasuryWildcards;
 	}
 

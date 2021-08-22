@@ -136,6 +136,7 @@ class SmartContractRequestHandlerMiscTest {
   private long selfID = 9870798L;
   private FCStorageWrapper storageWrapper;
   ExchangeRateSet rates;
+  BackingAccounts backingAccounts;
 
   /**
    * TestInstance.Lifecycle.PER_CLASS is used to force non static implementation of BeforeAll When
@@ -147,10 +148,11 @@ class SmartContractRequestHandlerMiscTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    backingAccounts = new BackingAccounts(() -> fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new BackingAccounts(() -> fcMap),
+            backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
@@ -227,6 +229,8 @@ class SmartContractRequestHandlerMiscTest {
     payerMerkleEntityId.setNum(payerAccount);
     payerMerkleEntityId.setRealm(0);
     payerMerkleEntityId.setShard(0);
+
+    backingAccounts.rebuildFromSources();
   }
 
   private void createAccount(AccountID payerAccount, long balance)

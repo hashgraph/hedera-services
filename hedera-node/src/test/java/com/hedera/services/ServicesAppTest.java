@@ -2,9 +2,10 @@ package com.hedera.services;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Platform;
+import com.swirlds.common.crypto.Cryptography;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,11 +26,14 @@ class ServicesAppTest {
 	@Mock
 	private AddressBook addressBook;
 	@Mock
+	private Cryptography cryptography;
+	@Mock
 	private ServicesState initialState;
 
 	@BeforeEach
 	void setUp() {
 		given(initialState.addressBook()).willReturn(addressBook);
+		given(platform.getCryptography()).willReturn(cryptography);
 
 		subject = DaggerServicesApp.builder()
 				.initialState(initialState)
@@ -43,6 +47,6 @@ class ServicesAppTest {
 		// expect:
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		assertThat(subject.tokenStore(), instanceOf(HederaTokenStore.class));
+		assertThat(subject.contracts(), instanceOf(SmartContractRequestHandler.class));
 	}
 }

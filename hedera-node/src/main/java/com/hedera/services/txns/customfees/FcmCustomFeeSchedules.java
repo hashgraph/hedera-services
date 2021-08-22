@@ -28,14 +28,18 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 /**
  * Active CustomFeeSchedules for an entity in the tokens FCMap
  */
+@Singleton
 public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
+	@Inject
 	public FcmCustomFeeSchedules(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
 		this.tokens = tokens;
 	}

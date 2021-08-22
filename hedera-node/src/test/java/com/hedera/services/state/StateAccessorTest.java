@@ -18,6 +18,7 @@ import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class WorkingStateTest {
+class StateAccessorTest {
 	@Mock
 	private ServicesState state;
 	@Mock
@@ -58,11 +59,11 @@ class WorkingStateTest {
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
 
-	private WorkingState workingState;
+	private StateAccessor subject;
 
 	@BeforeEach
 	void setUp() {
-		workingState = new WorkingState(state);
+		subject = new StateAccessor(state);
 	}
 
 	@Test
@@ -82,21 +83,27 @@ class WorkingStateTest {
 		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
 
 		// when:
-		workingState.updateFrom(state);
+		subject.updateFrom(state);
 
 		// then:
-		assertSame(accounts, workingState.accounts());
-		assertSame(storage, workingState.storage());
-		assertSame(topics, workingState.topics());
-		assertSame(tokens, workingState.tokens());
-		assertSame(tokenAssociations, workingState.tokenAssociations());
-		assertSame(scheduleTxs, workingState.schedules());
-		assertSame(networkCtx, workingState.networkCtx());
-		assertSame(addressBook, workingState.addressBook());
-		assertSame(diskFs, workingState.diskFs());
-		assertSame(uniqueTokens, workingState.uniqueTokens());
-		assertSame(uniqueTokenAssociations, workingState.uniqueTokenAssociations());
-		assertSame(uniqueOwnershipAssociations, workingState.uniqueOwnershipAssociations());
-		assertSame(uniqueTreasuryOwnershipAssociations, workingState.uniqueOwnershipTreasuryAssociations());
+		assertSame(accounts, subject.accounts());
+		assertSame(storage, subject.storage());
+		assertSame(topics, subject.topics());
+		assertSame(tokens, subject.tokens());
+		assertSame(tokenAssociations, subject.tokenAssociations());
+		assertSame(scheduleTxs, subject.schedules());
+		assertSame(networkCtx, subject.networkCtx());
+		assertSame(addressBook, subject.addressBook());
+		assertSame(diskFs, subject.diskFs());
+		assertSame(uniqueTokens, subject.uniqueTokens());
+		assertSame(uniqueTokenAssociations, subject.uniqueTokenAssociations());
+		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());
+		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
+	}
+
+	@Test
+	void childrenNonNull() {
+		// expect:
+		Assertions.assertNotNull(subject.children());
 	}
 }

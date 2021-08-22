@@ -20,83 +20,82 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+public class StateAccessor {
+	private final StateChildren children = new StateChildren();
 
-@Singleton
-public class WorkingState {
-	private final StateChildren workingChildren = new StateChildren();
-
-	@Inject
-	public WorkingState(ServicesState initialState) {
+	public StateAccessor(ServicesState initialState) {
 		updateFrom(initialState);
 	}
 
 	public void updateFrom(ServicesState state) {
-		workingChildren.setAccounts(state.accounts());
-		workingChildren.setTopics(state.topics());
-		workingChildren.setStorage(state.storage());
-		workingChildren.setTokens(state.tokens());
-		workingChildren.setTokenAssociations(state.tokenAssociations());
-		workingChildren.setSchedules(state.scheduleTxs());
-		workingChildren.setNetworkCtx(state.networkCtx());
-		workingChildren.setAddressBook(state.addressBook());
-		workingChildren.setDiskFs(state.diskFs());
-		workingChildren.setUniqueTokens(state.uniqueTokens());
-		workingChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		workingChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		workingChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		children.setAccounts(state.accounts());
+		children.setTopics(state.topics());
+		children.setStorage(state.storage());
+		children.setTokens(state.tokens());
+		children.setTokenAssociations(state.tokenAssociations());
+		children.setSchedules(state.scheduleTxs());
+		children.setNetworkCtx(state.networkCtx());
+		children.setAddressBook(state.addressBook());
+		children.setDiskFs(state.diskFs());
+		children.setUniqueTokens(state.uniqueTokens());
+		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return workingChildren.getAccounts();
+		return children.getAccounts();
 	}
 
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return workingChildren.getTopics();
+		return children.getTopics();
 	}
 
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		return workingChildren.getStorage();
+		return children.getStorage();
 	}
 
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
-		return workingChildren.getTokens();
+		return children.getTokens();
 	}
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
-		return workingChildren.getTokenAssociations();
+		return children.getTokenAssociations();
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
-		return workingChildren.getSchedules();
+		return children.getSchedules();
 	}
 
 	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
-		return workingChildren.getUniqueTokens();
+		return children.getUniqueTokens();
 	}
 
 	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
-		return workingChildren.getUniqueTokenAssociations();
+		return children.getUniqueTokenAssociations();
 	}
 
 	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
-		return workingChildren.getUniqueOwnershipAssociations();
+		return children.getUniqueOwnershipAssociations();
 	}
 
 	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations() {
-		return workingChildren.getUniqueOwnershipTreasuryAssociations();
+		return children.getUniqueOwnershipTreasuryAssociations();
 	}
 
 	public MerkleDiskFs diskFs() {
-		return workingChildren.getDiskFs();
+		return children.getDiskFs();
 	}
 
 	public MerkleNetworkContext networkCtx() {
-		return workingChildren.getNetworkCtx();
+		return children.getNetworkCtx();
 	}
 
 	public AddressBook addressBook() {
-		return workingChildren.getAddressBook();
+		return children.getAddressBook();
+	}
+
+	public StateChildren children() {
+		return children;
 	}
 }

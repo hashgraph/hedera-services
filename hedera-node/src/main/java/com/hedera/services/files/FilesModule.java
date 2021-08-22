@@ -1,10 +1,12 @@
 package com.hedera.services.files;
 
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.interceptors.ConfigListUtils;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
+import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -13,6 +15,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 import dagger.Binds;
 import dagger.Module;
@@ -70,10 +73,12 @@ public abstract class FilesModule {
 
 	@Provides
 	@ElementsIntoSet
-	public static Set<FileUpdateInterceptor> provideFeeSchedulesInterceptor(
+	public static Set<FileUpdateInterceptor> provideFileUpdateInterceptors(
+			FileNumbers fileNums,
+			SysFileCallbacks sysFileCallbacks,
+			Supplier<AddressBook> addressBook,
 			FeeSchedulesManager feeSchedulesManager,
 			TxnAwareRatesManager txnAwareRatesManager,
-			SysFileCallbacks sysFileCallbacks,
 			@CompositeProps PropertySource properties
 	) {
 		final var propertiesCb = sysFileCallbacks.propertiesCb();
@@ -92,6 +97,10 @@ public abstract class FilesModule {
 				contents -> permissionsCb.accept(uncheckedParse(contents)),
 				ConfigListUtils::isConfigList);
 
-		return Set.of(feeSchedulesManager, txnAwareRatesManager, propertiesManager, permissionsManager);
+		final var throttlesCb = sysFileCallbacks.throttlesCb();
+		final var throttleDefsManager = new ThrottleDefsManager(fileNums, addressBook, throttlesCb);
+
+		return Set.of(
+				feeSchedulesManager, txnAwareRatesManager, propertiesManager, permissionsManager, throttleDefsManager);
 	}
 }

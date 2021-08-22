@@ -405,7 +405,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -767,8 +766,7 @@ public class ServicesContext {
 		if (transactionPrecheck == null) {
 			final var structure = new StructuralPrecheck(
 					Platform.getTransactionMaxBytes(), HISTORICAL_MAX_PROTO_MESSAGE_DEPTH);
-			final var semantics = new SemanticPrecheck(
-					transitionLogic());
+			final var semantics = new SemanticPrecheck(transitionLogic());
 			final var solvency = new SolvencyPrecheck(
 					exemptions(), fees(), validator(),
 					precheckVerifier(), stateViews(), globalDynamicProperties(), this::accounts);
@@ -1259,7 +1257,6 @@ public class ServicesContext {
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
-				// TODO: add resourceUsage of TokenFeeScheduleUpdate to estimatorsMap
 				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
 				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
 				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
@@ -1486,10 +1483,10 @@ public class ServicesContext {
 		return transitionLogic;
 	}
 
-	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
+	private Map<HederaFunctionality, List<TransitionLogic>> transitions() {
 		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
-		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
+		return Map.ofEntries(
 				/* Crypto */
 				entry(CryptoCreate,
 						List.of(new CryptoCreateTransitionLogic(ledger(), validator(), txnCtx()))),
@@ -1601,7 +1598,6 @@ public class ServicesContext {
 				entry(UncheckedSubmit,
 						List.of(new UncheckedSubmitTransitionLogic()))
 		);
-		return transitionsMap::get;
 	}
 
 	public EntityIdSource ids() {
