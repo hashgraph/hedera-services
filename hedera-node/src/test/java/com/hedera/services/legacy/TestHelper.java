@@ -27,11 +27,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.RequestBuilder;
 
-/**
- * @author Akshay
- * @Date : 8/20/2018
- */
-
 public class TestHelper {
   private static long DEFAULT_WIND_SEC = -13; // seconds to wind back the UTC clock
   private static volatile long lastNano = 0;

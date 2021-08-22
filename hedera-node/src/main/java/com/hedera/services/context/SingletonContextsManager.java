@@ -25,8 +25,6 @@ import java.util.Map;
 
 /**
  * Implements a thread-safe {@link ContextsManager}.
- *
- * @author Michael Tinker
  */
 public enum SingletonContextsManager implements ContextsManager {
 	CONTEXTS;

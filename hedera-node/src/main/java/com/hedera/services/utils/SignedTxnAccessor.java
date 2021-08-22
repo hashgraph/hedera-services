@@ -57,8 +57,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeSch
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
- *
- * @author Michael Tinker
  */
 public class SignedTxnAccessor implements TxnAccessor {
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);

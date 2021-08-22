@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -39,17 +41,17 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * of token relationships, indexed by ({@code AccountID}, {@code TokenID})
  * pairs. This class is <b>not</b> thread-safe, and should never be used
  * by any thread other than the {@code handleTransaction} thread.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
 	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
 
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> delegate;
 
+	@Inject
 	public BackingTokenRels(Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> delegate) {
 		this.delegate = delegate;
-		rebuildFromSources();
+		/* Existing rels view is re-built on restart or reconnect */
 	}
 
 	@Override

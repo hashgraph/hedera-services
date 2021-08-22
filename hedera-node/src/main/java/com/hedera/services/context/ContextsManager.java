@@ -26,8 +26,6 @@ package com.hedera.services.context;
  *
  * Logically, the {@link ServicesContext} is a singleton but for testing it is
  * convenient to run multiple nodes in the same JVM.
- *
- * @author Michael Tinker
  */
 public interface ContextsManager {
 	/**

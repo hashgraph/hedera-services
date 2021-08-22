@@ -2,8 +2,9 @@ package com.hedera.services;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.Platform;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ServicesAppTest {
@@ -21,10 +23,14 @@ class ServicesAppTest {
 	@Mock
 	private Platform platform;
 	@Mock
+	private AddressBook addressBook;
+	@Mock
 	private ServicesState initialState;
 
 	@BeforeEach
 	void setUp() {
+		given(initialState.addressBook()).willReturn(addressBook);
+
 		subject = DaggerServicesApp.builder()
 				.initialState(initialState)
 				.platform(platform)
@@ -37,9 +43,6 @@ class ServicesAppTest {
 		// expect:
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		// and:
-		final var interceptors = subject.interceptors();
-		Assertions.assertEquals(2, interceptors.size());
-//		interceptors.forEach(System.out::println);
+		assertThat(subject.tokenStore(), instanceOf(HederaTokenStore.class));
 	}
 }

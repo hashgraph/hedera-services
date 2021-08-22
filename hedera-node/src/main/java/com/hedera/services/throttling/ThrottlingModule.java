@@ -13,7 +13,9 @@ import java.util.function.Supplier;
 
 @Module
 public abstract class ThrottlingModule {
-	@Provides @Singleton @HapiThrottle
+	@Provides
+	@Singleton
+	@HapiThrottle
 	public static FunctionalityThrottling provideHapiThrottling(
 			Supplier<AddressBook> addressBook,
 			GlobalDynamicProperties dynamicProperties
@@ -22,7 +24,9 @@ public abstract class ThrottlingModule {
 		return new HapiThrottling(delegate);
 	}
 
-	@Provides @Singleton @HandleThrottle
+	@Provides
+	@Singleton
+	@HandleThrottle
 	public static FunctionalityThrottling provideHandleThrottling(
 			TransactionContext txnCtx,
 			GlobalDynamicProperties dynamicProperties

@@ -54,8 +54,6 @@ import static com.swirlds.common.PlatformStatus.MAINTENANCE;
 
 /**
  * Drives the major state transitions for a Hedera Node via its {@link ServicesContext}.
- *
- * @author Michael Tinker
  */
 public class ServicesMain implements SwirldMain {
 	private static final Logger log = LogManager.getLogger(ServicesMain.class);

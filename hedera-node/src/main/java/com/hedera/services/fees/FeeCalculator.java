@@ -37,8 +37,6 @@ import java.util.Map;
 
 /**
  * Defines a type able to calculate the fees required for various operations within Hedera Services.
- *
- * @author Michael Tinker
  */
 public interface FeeCalculator {
 	void init();

@@ -101,11 +101,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-/**
- * @author oc/peter
- * @version Junit5 Tests the SmartContractRequestHandler class features
- */
-
 class SmartContractRequestHandlerMiscTest {
 
   private static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";

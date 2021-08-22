@@ -70,9 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
  * since such infrastructure will often depend on an instance of
  * {@link TransactionContext}; and we risk circular dependencies if we
  * inject the infrastructure as dependencies here.
- *
- * @author Michael Tinker
- * @author Neeharika Sompalli
  */
 @Singleton
 public class BasicTransactionContext implements TransactionContext {

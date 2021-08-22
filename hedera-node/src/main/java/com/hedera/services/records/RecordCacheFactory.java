@@ -35,8 +35,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Minimal helper to construct a {@link RecordCache} based on the TTL
  * configured in the Hedera Services properties.
- *
- * @author Michael Tinker
  */
 @Singleton
 public class RecordCacheFactory {

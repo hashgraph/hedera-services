@@ -36,18 +36,17 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.SemanticVersions;
-import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
@@ -473,8 +472,6 @@ import static java.util.Map.entry;
  * Provide a trivial implementation of the inversion-of-control pattern,
  * isolating secondary responsibilities of dependency creation and
  * injection in a single component.
- *
- * @author Michael Tinker
  */
 public class ServicesContext {
 	private static final Logger log = LogManager.getLogger(ServicesContext.class);
@@ -973,19 +970,12 @@ public class ServicesContext {
 
 	public UniqTokenViewsManager uniqTokenViewsManager() {
 		if (uniqTokenViewsManager == null) {
-			final var shouldNoop = shouldNoopFcotmrUsage();
-			if (shouldUseTreasuryWildcards()) {
-				uniqTokenViewsManager = new UniqTokenViewsManager(
-						this::uniqueTokenAssociations,
-						this::uniqueOwnershipAssociations,
-						this::uniqueOwnershipTreasuryAssociations,
-						shouldNoop);
-			} else {
-				uniqTokenViewsManager = new UniqTokenViewsManager(
-						this::uniqueTokenAssociations,
-						this::uniqueOwnershipAssociations,
-						shouldNoop);
-			}
+			uniqTokenViewsManager = new UniqTokenViewsManager(
+					this::uniqueTokenAssociations,
+					this::uniqueOwnershipAssociations,
+					this::uniqueOwnershipTreasuryAssociations,
+					shouldNoopFcotmrUsage(),
+					shouldUseTreasuryWildcards());
 		}
 		return uniqTokenViewsManager;
 	}
@@ -2113,7 +2103,7 @@ public class ServicesContext {
 			var configCallbacks = new ConfigCallbacks(
 					hapiOpPermissions(),
 					globalDynamicProperties(),
-					(StandardizedPropertySources) propertySources());
+					propertySources());
 			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
 			var throttlesCallback = new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
 			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);

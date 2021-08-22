@@ -35,8 +35,6 @@ import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTR
 /**
  * Implements a {@link PropertySources} that re-resolves every property
  * reference by delegating to a supplier.
- *
- * @author Michael Tinker
  */
 public class StandardizedPropertySources implements PropertySources {
 	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
@@ -63,13 +61,7 @@ public class StandardizedPropertySources implements PropertySources {
 		this.dynamicGlobalProps = dynamicGlobalProps;
 	}
 
-	public StandardizedPropertySources(@BootstrapProps PropertySource bootstrapProps) {
-		this.bootstrapProps = bootstrapProps;
-
-		nodeProps = nodePropertiesSupplier.get();
-		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
-	}
-
+	@Override
 	public void reloadFrom(ServicesConfigurationList config) {
 		log.info("Reloading global dynamic properties from {} candidates", config.getNameValueCount());
 		dynamicGlobalProps.screenNew(config);

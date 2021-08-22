@@ -45,25 +45,32 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdat
 
 @Module
 public abstract class FeesModule {
-	@Binds @Singleton
+	@Binds
+	@Singleton
 	public abstract FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
 
-	@Binds @Singleton
+	@Binds
+	@Singleton
 	public abstract UsagePricesProvider bindUsagePricesProvider(BasicFcfsUsagePrices basicFcfsUsagePrices);
 
-	@Binds @Singleton
+	@Binds
+	@Singleton
 	public abstract FeeExemptions bindFeeExemptions(StandardExemptions standardExemptions);
 
-	@Binds @Singleton
+	@Binds
+	@Singleton
 	public abstract FeeMultiplierSource bindFeeMultiplierSource(TxnRateFeeMultiplierSource txnRateFeeMultiplierSource);
 
-	@Binds @Singleton
+	@Binds
+	@Singleton
 	public abstract NarratedCharging bindNarratedCharging(NarratedLedgerCharging narratedLedgerCharging);
 
-	@Binds @Singleton
+	@Binds
+	@Singleton
 	public abstract HbarCentExchange bindHbarCentExchange(BasicHbarCentExchange basicHbarCentExchange);
 
-	@Provides @ElementsIntoSet
+	@Provides
+	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideMetaQueryEstimators(
 			GetVersionInfoResourceUsage getVersionInfoResourceUsage,
 			GetTxnRecordResourceUsage getTxnRecordResourceUsage
@@ -71,7 +78,8 @@ public abstract class FeesModule {
 		return Set.of(getVersionInfoResourceUsage, getTxnRecordResourceUsage);
 	}
 
-	@Provides @ElementsIntoSet
+	@Provides
+	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideCryptoQueryEstimators(
 			GetAccountInfoResourceUsage getAccountInfoResourceUsage,
 			GetAccountRecordsResourceUsage getAccountRecordsResourceUsage
@@ -79,7 +87,8 @@ public abstract class FeesModule {
 		return Set.of(getAccountInfoResourceUsage, getAccountRecordsResourceUsage);
 	}
 
-	@Provides @ElementsIntoSet
+	@Provides
+	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideFileQueryEstimators(
 			GetFileInfoResourceUsage getFileInfoResourceUsage,
 			GetFileContentsResourceUsage getFileContentsResourceUsage
@@ -87,14 +96,16 @@ public abstract class FeesModule {
 		return Set.of(getFileInfoResourceUsage, getFileContentsResourceUsage);
 	}
 
-	@Provides @ElementsIntoSet
+	@Provides
+	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideConsensusQueryEstimators(
 			GetTopicInfoResourceUsage getTopicInfoResourceUsage
 	) {
 		return Set.of(getTopicInfoResourceUsage);
 	}
 
-	@Provides @ElementsIntoSet
+	@Provides
+	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideContractQueryEstimators(
 			GetBytecodeResourceUsage getBytecodeResourceUsage,
 			GetContractInfoResourceUsage getContractInfoResourceUsage,
@@ -103,49 +114,63 @@ public abstract class FeesModule {
 		return Set.of(getBytecodeResourceUsage, getContractInfoResourceUsage, getContractRecordsResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(CryptoCreate)
+	@Provides
+	@IntoMap
+	@FunctionKey(CryptoCreate)
 	public static List<TxnResourceUsageEstimator> provideCryptoCreateEstimator(
 			CryptoCreateResourceUsage cryptoCreateResourceUsage
 	) {
 		return List.of(cryptoCreateResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(CryptoDelete)
+	@Provides
+	@IntoMap
+	@FunctionKey(CryptoDelete)
 	public static List<TxnResourceUsageEstimator> provideCryptoDeleteEstimator(
 			CryptoDeleteResourceUsage cryptoDeleteResourceUsage
 	) {
 		return List.of(cryptoDeleteResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(CryptoUpdate)
+	@Provides
+	@IntoMap
+	@FunctionKey(CryptoUpdate)
 	public static List<TxnResourceUsageEstimator> provideCryptoUpdateEstimator(
 			CryptoUpdateResourceUsage cryptoUpdateResourceUsage
 	) {
 		return List.of(cryptoUpdateResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(ContractCall)
+	@Provides
+	@IntoMap
+	@FunctionKey(ContractCall)
 	public static List<TxnResourceUsageEstimator> provideContractCallUpdateEstimator(
 			ContractCallResourceUsage contractCallResourceUsage
 	) {
 		return List.of(contractCallResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(ContractCreate)
+	@Provides
+	@IntoMap
+	@FunctionKey(ContractCreate)
 	public static List<TxnResourceUsageEstimator> provideContractCreateUpdateEstimator(
 			ContractCreateResourceUsage contractCreateResourceUsage
 	) {
 		return List.of(contractCreateResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(ContractDelete)
+	@Provides
+	@IntoMap
+	@FunctionKey(ContractDelete)
 	public static List<TxnResourceUsageEstimator> provideContractDeleteEstimator(
 			ContractDeleteResourceUsage contractDeleteResourceUsage
 	) {
 		return List.of(contractDeleteResourceUsage);
 	}
 
-	@Provides @IntoMap @FunctionKey(ContractUpdate)
+	@Provides
+	@IntoMap
+	@FunctionKey(ContractUpdate)
 	public static List<TxnResourceUsageEstimator> provideContractUpdateEstimator(
 			ContractUpdateResourceUsage contractUpdateResourceUsage
 	) {

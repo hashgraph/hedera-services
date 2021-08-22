@@ -23,8 +23,6 @@ package com.hedera.services.fees;
 /**
  * Enumerates the types of fees that may be charged by a canonical
  * (i.e. non-EVM) charging facility while processing a transaction.
- *
- * @author Michael Tinker
  */
 public enum TxnFeeType {
 	NETWORK, NODE, SERVICE

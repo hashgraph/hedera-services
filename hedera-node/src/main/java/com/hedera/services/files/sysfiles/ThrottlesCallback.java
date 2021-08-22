@@ -22,19 +22,25 @@ package com.hedera.services.files.sysfiles;
 
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Consumer;
 
+@Singleton
 public class ThrottlesCallback {
 	private final FeeMultiplierSource multiplierSource;
 	private final FunctionalityThrottling hapiThrottling;
 	private final FunctionalityThrottling handleThrottling;
 
+	@Inject
 	public ThrottlesCallback(
 			FeeMultiplierSource multiplierSource,
-			FunctionalityThrottling hapiThrottling,
-			FunctionalityThrottling handleThrottling
+			@HapiThrottle FunctionalityThrottling hapiThrottling,
+			@HandleThrottle FunctionalityThrottling handleThrottling
 	) {
 		this.multiplierSource = multiplierSource;
 		this.hapiThrottling = hapiThrottling;

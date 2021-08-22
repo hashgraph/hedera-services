@@ -147,7 +147,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.times;
 
 class HederaTokenStoreTest {
 	private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
@@ -339,9 +338,9 @@ class HederaTokenStoreTest {
 
 		subject.rebuildViews();
 
-		verify(tokens, times(2)).forEachNode(captor.capture());
+		verify(tokens).forEachNode(captor.capture());
 
-		final var visitor = captor.getAllValues().get(1);
+		final var visitor = captor.getValue();
 		visitor.accept(new MerklePair<>(fromTokenId(misc), token));
 		visitor.accept(new MerklePair<>(fromTokenId(anotherMisc), deletedToken));
 

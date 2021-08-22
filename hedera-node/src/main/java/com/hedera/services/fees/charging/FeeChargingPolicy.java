@@ -38,8 +38,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *    <li>For a triggered txn; and,</li>
  *    <li>For a txn that was submitted responsibly, and is believed unique.</li>
  * </ol>
- *
- * @author Michael Tinker
  */
 public class FeeChargingPolicy {
 	private final NarratedCharging narratedCharging;

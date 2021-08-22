@@ -33,8 +33,6 @@ import java.util.Map;
 /**
  * Defines a type able to provide the prices (in tinyCents) that must
  * be paid for various resources to perform each Hedera operation.
- *
- * @author Michael Tinker
  */
 public interface UsagePricesProvider {
 	/**

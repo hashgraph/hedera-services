@@ -31,8 +31,6 @@ import java.util.Optional;
 
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
- *
- * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private ExpirableTxnRecord lastExpirableRecord;

@@ -138,7 +138,7 @@ class LedgerBalanceChangesTest {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -238,7 +238,7 @@ class LedgerBalanceChangesTest {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
