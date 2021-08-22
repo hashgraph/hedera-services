@@ -147,6 +147,7 @@ class LedgerBalanceChangesTest {
 				() -> tokens,
 				tokenRelsLedger,
 				nftsLedger);
+		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
@@ -251,6 +252,7 @@ class LedgerBalanceChangesTest {
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
+		tokenStore.rebuildViews();
 
 		givenInitialBalancesAndOwnership();
 
@@ -477,6 +479,8 @@ class LedgerBalanceChangesTest {
 		backingNfts.put(
 				bbNft,
 				new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+
+		backingRels.rebuildFromSources();
 	}
 
 	private List<BalanceChange> fixtureChanges() {
