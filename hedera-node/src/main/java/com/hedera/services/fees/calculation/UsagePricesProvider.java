@@ -46,10 +46,11 @@ public interface UsagePricesProvider {
 	void loadPriceSchedules();
 
 	/**
-	 * Returns the prices in a map SubType keys and FeeData values in 1/1000th of a tinyCent that must be paid to
-	 * consume various resources while processing the active
-	 * transaction.
+	 * Returns the prices in a map SubType keys and FeeData values in 1/1000th of a
+	 * tinyCent that must be paid to consume various resources while processing the
+	 * active transaction.
 	 *
+	 * @param accessor the active transaction
 	 * @return the prices for the active transaction
 	 */
 	Map<SubType, FeeData> activePrices(TxnAccessor accessor);
