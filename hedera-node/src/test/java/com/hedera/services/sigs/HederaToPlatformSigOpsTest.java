@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -64,7 +64,7 @@ class HederaToPlatformSigOpsTest {
 	static List<JKey> otherKeys;
 	PubKeyToSigBytes allSigBytes;
 	PlatformTxnAccessor platformTxn;
-	RequiredSigs keyOrdering;
+	SigRequirements keyOrdering;
 
 	@BeforeAll
 	private static void setupAll() throws Throwable {
@@ -77,7 +77,7 @@ class HederaToPlatformSigOpsTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		allSigBytes = mock(PubKeyToSigBytes.class);
-		keyOrdering = mock(RequiredSigs.class);
+		keyOrdering = mock(SigRequirements.class);
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 	}
 

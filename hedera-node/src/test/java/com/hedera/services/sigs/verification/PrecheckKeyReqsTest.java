@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,8 +50,8 @@ import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 class PrecheckKeyReqsTest {
 	private List<JKey> keys;
 	private PrecheckKeyReqs subject;
-	private RequiredSigs keyOrder;
-	private RequiredSigs keyOrderModuloRetry;
+	private SigRequirements keyOrder;
+	private SigRequirements keyOrderModuloRetry;
 	private final List<JKey> PAYER_KEYS = List.of(new JKeyList());
 	private final List<JKey> OTHER_KEYS = List.of(new JKeyList(), new JKeyList());
 	private final List<JKey> ALL_KEYS = Stream.of(PAYER_KEYS, OTHER_KEYS).flatMap(List::stream).collect(toList());
@@ -64,8 +64,8 @@ class PrecheckKeyReqsTest {
 
 	@BeforeEach
 	private void setup() {
-		keyOrder = mock(RequiredSigs.class);
-		keyOrderModuloRetry = mock(RequiredSigs.class);
+		keyOrder = mock(SigRequirements.class);
+		keyOrderModuloRetry = mock(SigRequirements.class);
 	}
 
 	@Test

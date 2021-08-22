@@ -251,7 +251,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class RequiredSigsTest {
+class SigRequirementsTest {
 	private static class TopicAdapter {
 		public static TopicSigMetaLookup throwingUoe() {
 			return id -> {
@@ -315,7 +315,7 @@ class RequiredSigsTest {
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
-	private RequiredSigs subject;
+	private SigRequirements subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
@@ -2430,7 +2430,7 @@ class RequiredSigsTest {
 		tokenStore = scenario.tokenStore();
 		scheduleStore = scenario.scheduleStore();
 
-		subject = new RequiredSigs(
+		subject = new SigRequirements(
 				sigMetaLookup.orElse(
 						defaultLookupsFor(
 								hfs,

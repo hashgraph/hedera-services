@@ -214,7 +214,7 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
@@ -563,9 +563,9 @@ public class ServicesContext {
 	private EntityAutoRenewal entityAutoRenewal;
 	private TransactionContext txnCtx;
 	private ContractController contractsGrpc;
-	private RequiredSigs keyOrder;
-	private RequiredSigs backedKeyOrder;
-	private RequiredSigs lookupRetryingKeyOrder;
+	private SigRequirements keyOrder;
+	private SigRequirements backedKeyOrder;
+	private SigRequirements lookupRetryingKeyOrder;
 	private StoragePersistence storagePersistence;
 	private ScheduleController scheduleGrpc;
 	private NonBlockingHandoff nonBlockingHandoff;
@@ -1302,7 +1302,7 @@ public class ServicesContext {
 		return answerFlow;
 	}
 
-	public RequiredSigs keyOrder() {
+	public SigRequirements keyOrder() {
 		if (keyOrder == null) {
 			var lookups = defaultLookupsFor(
 					hfs(),
@@ -1315,7 +1315,7 @@ public class ServicesContext {
 		return keyOrder;
 	}
 
-	public RequiredSigs backedKeyOrder() {
+	public SigRequirements backedKeyOrder() {
 		if (backedKeyOrder == null) {
 			var lookups = backedLookupsFor(
 					hfs(),
@@ -1329,7 +1329,7 @@ public class ServicesContext {
 		return backedKeyOrder;
 	}
 
-	public RequiredSigs lookupRetryingKeyOrder() {
+	public SigRequirements lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			var lookups = defaultAccountRetryingLookupsFor(
 					hfs(),
@@ -1352,8 +1352,8 @@ public class ServicesContext {
 		return nodeType;
 	}
 
-	private RequiredSigs requiredSigsFrom(DelegatingSigMetadataLookup lookups) {
-		return new RequiredSigs(lookups, globalDynamicProperties(), signatureWaivers());
+	private SigRequirements requiredSigsFrom(DelegatingSigMetadataLookup lookups) {
+		return new SigRequirements(lookups, globalDynamicProperties(), signatureWaivers());
 	}
 
 	public StoragePersistence storagePersistence() {

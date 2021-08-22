@@ -27,7 +27,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SignatureWaivers;
@@ -75,8 +75,8 @@ import static org.mockito.BDDMockito.verify;
 class SigVerifierRegressionTest {
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier precheckVerifier;
-	private RequiredSigs keyOrder;
-	private RequiredSigs retryingKeyOrder;
+	private SigRequirements keyOrder;
+	private SigRequirements retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -215,12 +215,12 @@ class SigVerifierRegressionTest {
 		platformTxn = scenario.platformTxn();
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
-		keyOrder = new RequiredSigs(
+		keyOrder = new SigRequirements(
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		retryingKeyOrder =
-				new RequiredSigs(
+				new SigRequirements(
 						defaultLookupsPlusAccountRetriesFor(
 								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),

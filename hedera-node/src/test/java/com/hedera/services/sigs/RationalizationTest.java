@@ -23,7 +23,7 @@ package com.hedera.services.sigs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -69,7 +69,7 @@ class RationalizationTest {
 	@Mock
 	private SyncVerifier syncVerifier;
 	@Mock
-	private RequiredSigs keyOrderer;
+	private SigRequirements keyOrderer;
 	@Mock
 	private ReusableBodySigningFactory sigFactory;
 	@Mock

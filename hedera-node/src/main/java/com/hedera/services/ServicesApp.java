@@ -9,6 +9,7 @@ import com.hedera.services.files.FilesModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.SigsModule;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.throttling.ThrottlingModule;
@@ -23,6 +24,7 @@ import javax.inject.Singleton;
 @Component(modules = {
 		FeesModule.class,
 		SigsModule.class,
+		StatsModule.class,
 		StateModule.class,
 		FilesModule.class,
 		LogicModule.class,

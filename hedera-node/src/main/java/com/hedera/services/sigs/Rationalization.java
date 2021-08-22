@@ -23,7 +23,7 @@ package com.hedera.services.sigs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class Rationalization {
 	private final SyncVerifier syncVerifier;
-	private final RequiredSigs keyOrderer;
+	private final SigRequirements keyOrderer;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
 	private TxnAccessor txnAccessor;
@@ -65,7 +65,7 @@ public class Rationalization {
 	@Inject
 	public Rationalization(
 			SyncVerifier syncVerifier,
-			RequiredSigs keyOrderer,
+			SigRequirements keyOrderer,
 			ReusableBodySigningFactory bodySigningFactory
 	) {
 		this.keyOrderer = keyOrderer;
@@ -189,7 +189,7 @@ public class Rationalization {
 		return pkToSigFn;
 	}
 
-	RequiredSigs getKeyOrderer() {
+	SigRequirements getKeyOrderer() {
 		return keyOrderer;
 	}
 

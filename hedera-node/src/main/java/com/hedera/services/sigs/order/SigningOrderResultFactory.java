@@ -35,7 +35,7 @@ import java.util.List;
  *
  * @param <T> the type of error report this factory produces.
  * @author Michael Tinker
- * @see RequiredSigs
+ * @see SigRequirements
  */
 public interface SigningOrderResultFactory<T> {
 	/**
@@ -69,7 +69,7 @@ public interface SigningOrderResultFactory<T> {
 
 	/**
 	 * Report a smart contract with no admin key that was encountered when listing signing
-	 * keys for some txn. (The current semantics of {@link RequiredSigs} mean it is
+	 * keys for some txn. (The current semantics of {@link SigRequirements} mean it is
 	 * never valid to reference such smart contracts in a transaction.)
 	 *
 	 * @return the error summary.

@@ -79,12 +79,12 @@ import static java.util.Collections.EMPTY_LIST;
  * file targeted by the gRPC transaction must have an active signature; and one with logic to make an
  * equivalent decision for a crypto account.
  */
-public class RequiredSigs {
+public class SigRequirements {
 	private final SignatureWaivers signatureWaivers;
 	private final SigMetadataLookup sigMetaLookup;
 	private final GlobalDynamicProperties properties;
 
-	public RequiredSigs(
+	public SigRequirements(
 			SigMetadataLookup sigMetaLookup,
 			GlobalDynamicProperties properties,
 			SignatureWaivers signatureWaivers
@@ -746,9 +746,7 @@ public class RequiredSigs {
 		var result = sigMetaLookup.tokenSigningMetaFor(id);
 		if (result.succeeded()) {
 			var meta = result.metadata();
-			if (meta.adminKey().isPresent()) {
-				required.add(meta.adminKey().get());
-			}
+			meta.adminKey().ifPresent(required::add);
 			optionalKeyLookups.forEach(lookup -> {
 				var candidate = lookup.apply(meta);
 				candidate.ifPresent(required::add);
@@ -890,9 +888,7 @@ public class RequiredSigs {
 		var result = sigMetaLookup.scheduleSigningMetaFor(id);
 		if (result.succeeded()) {
 			var meta = result.metadata();
-			if (meta.adminKey().isPresent()) {
-				required.add(meta.adminKey().get());
-			}
+			meta.adminKey().ifPresent(required::add);
 		} else {
 			return factory.forMissingSchedule();
 		}

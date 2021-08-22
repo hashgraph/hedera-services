@@ -27,7 +27,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.order.RequiredSigs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -94,7 +94,7 @@ class SigOpsRegressionTest {
 	private ResponseCodeEnum actualStatus;
 	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
-	private RequiredSigs signingOrder;
+	private SigRequirements signingOrder;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
@@ -103,7 +103,7 @@ class SigOpsRegressionTest {
 
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
-			RequiredSigs keyOrder,
+			SigRequirements keyOrder,
 			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory
 	) {
 		return otherPartySigsAreActive(accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
@@ -111,7 +111,7 @@ class SigOpsRegressionTest {
 
 	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
-			RequiredSigs keyOrder,
+			SigRequirements keyOrder,
 			SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
 			KeyActivationCharacteristics characteristics
 	) {
@@ -356,7 +356,7 @@ class SigOpsRegressionTest {
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
-		RequiredSigs keysOrder = new RequiredSigs(
+		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -370,7 +370,7 @@ class SigOpsRegressionTest {
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
 		platformTxn.getPlatformTxn().clear();
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
-		RequiredSigs keysOrder = new RequiredSigs(
+		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -384,7 +384,7 @@ class SigOpsRegressionTest {
 				defaultLookupsPlusAccountRetriesFor(
 						hfs, () -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
 						runningAvgs, speedometers);
-		RequiredSigs keyOrder = new RequiredSigs(
+		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -397,7 +397,7 @@ class SigOpsRegressionTest {
 		// setup:
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
-		RequiredSigs keyOrder = new RequiredSigs(
+		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
@@ -419,7 +419,7 @@ class SigOpsRegressionTest {
 
 		expectedErrorStatus = null;
 
-		signingOrder = new RequiredSigs(
+		signingOrder = new SigRequirements(
 				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
