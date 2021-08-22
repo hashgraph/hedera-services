@@ -251,7 +251,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class HederaSigningOrderTest {
+class RequiredSigsTest {
 	private static class TopicAdapter {
 		public static TopicSigMetaLookup throwingUoe() {
 			return id -> {
@@ -315,7 +315,7 @@ class HederaSigningOrderTest {
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
-	private HederaSigningOrder subject;
+	private RequiredSigs subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
@@ -2430,7 +2430,7 @@ class HederaSigningOrderTest {
 		tokenStore = scenario.tokenStore();
 		scheduleStore = scenario.scheduleStore();
 
-		subject = new HederaSigningOrder(
+		subject = new RequiredSigs(
 				sigMetaLookup.orElse(
 						defaultLookupsFor(
 								hfs,

@@ -25,7 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.init.InitializationFlow;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.RequiredSigs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -134,7 +134,7 @@ class ServicesStateTest {
 	@Mock
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
-	private HederaSigningOrder retryingKeyOrder;
+	private RequiredSigs retryingKeyOrder;
 	@Mock
 	private PubKeyToSigBytes pubKeyToSigBytes;
 

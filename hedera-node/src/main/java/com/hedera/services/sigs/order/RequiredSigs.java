@@ -79,12 +79,12 @@ import static java.util.Collections.EMPTY_LIST;
  * file targeted by the gRPC transaction must have an active signature; and one with logic to make an
  * equivalent decision for a crypto account.
  */
-public class HederaSigningOrder {
+public class RequiredSigs {
 	private final SignatureWaivers signatureWaivers;
 	private final SigMetadataLookup sigMetaLookup;
 	private final GlobalDynamicProperties properties;
 
-	public HederaSigningOrder(
+	public RequiredSigs(
 			SigMetadataLookup sigMetaLookup,
 			GlobalDynamicProperties properties,
 			SignatureWaivers signatureWaivers

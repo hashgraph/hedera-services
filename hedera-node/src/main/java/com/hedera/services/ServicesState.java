@@ -28,7 +28,7 @@ import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.context.properties.ScreenedSysFileProps;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.RequiredSigs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -96,7 +96,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	interface ExpansionHelper {
 		ResponseCodeEnum expandIn(
 				PlatformTxnAccessor txnAccessor,
-				HederaSigningOrder keyOrderer,
+				RequiredSigs keyOrderer,
 				PubKeyToSigBytes pkToSigFn);
 	}
 

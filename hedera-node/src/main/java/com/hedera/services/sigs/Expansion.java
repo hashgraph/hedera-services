@@ -22,7 +22,7 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.RequiredSigs;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -42,13 +42,13 @@ class Expansion {
 	private static final Logger log = LogManager.getLogger(Expansion.class);
 
 	private final PubKeyToSigBytes pkToSigFn;
-	private final HederaSigningOrder keyOrderer;
+	private final RequiredSigs keyOrderer;
 	private final PlatformTxnAccessor txnAccessor;
 	private final TxnScopedPlatformSigFactory sigFactory;
 
 	public Expansion(
 			PlatformTxnAccessor txnAccessor,
-			HederaSigningOrder keyOrderer,
+			RequiredSigs keyOrderer,
 			PubKeyToSigBytes pkToSigFn,
 			TxnScopedPlatformSigFactory sigFactory
 	) {

@@ -22,7 +22,7 @@ package com.hedera.services.sigs.verification;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.RequiredSigs;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -50,13 +50,13 @@ public class PrecheckKeyReqs {
 			ACCOUNT_ID_DOES_NOT_EXIST
 	);
 
-	private final HederaSigningOrder keyOrder;
-	private final HederaSigningOrder keyOrderModuloRetry;
+	private final RequiredSigs keyOrder;
+	private final RequiredSigs keyOrderModuloRetry;
 	private final Predicate<TransactionBody> isQueryPayment;
 
 	public PrecheckKeyReqs(
-			HederaSigningOrder keyOrder,
-			HederaSigningOrder keyOrderModuloRetry,
+			RequiredSigs keyOrder,
+			RequiredSigs keyOrderModuloRetry,
 			Predicate<TransactionBody> isQueryPayment
 	) {
 		this.keyOrder = keyOrder;

@@ -94,7 +94,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.txns.auth.SystemOpPolicies;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.RequiredSigs;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -589,8 +589,8 @@ class ServicesContextTest {
 		assertThat(ctx.grpc(), instanceOf(NettyGrpcServerManager.class));
 		assertThat(ctx.ledger(), instanceOf(HederaLedger.class));
 		assertThat(ctx.txnCtx(), instanceOf(BasicTransactionContext.class));
-		assertThat(ctx.keyOrder(), instanceOf(HederaSigningOrder.class));
-		assertThat(ctx.backedKeyOrder(), instanceOf(HederaSigningOrder.class));
+		assertThat(ctx.keyOrder(), instanceOf(RequiredSigs.class));
+		assertThat(ctx.backedKeyOrder(), instanceOf(RequiredSigs.class));
 		assertThat(ctx.validator(), instanceOf(ContextOptionValidator.class));
 		assertThat(ctx.hcsAnswers(), instanceOf(HcsAnswers.class));
 		assertThat(ctx.issEventInfo(), instanceOf(IssEventInfo.class));
@@ -647,7 +647,7 @@ class ServicesContextTest {
 		assertThat(ctx.repository(), instanceOf(ServicesRepositoryRoot.class));
 		assertThat(ctx.newPureRepo(), instanceOf(Supplier.class));
 		assertThat(ctx.exchangeRatesManager(), instanceOf(TxnAwareRatesManager.class));
-		assertThat(ctx.lookupRetryingKeyOrder(), instanceOf(HederaSigningOrder.class));
+		assertThat(ctx.lookupRetryingKeyOrder(), instanceOf(RequiredSigs.class));
 		assertThat(ctx.soliditySigsVerifier(), instanceOf(TxnAwareSoliditySigsVerifier.class));
 		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
 		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));

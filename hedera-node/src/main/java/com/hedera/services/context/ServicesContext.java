@@ -214,7 +214,7 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.RequiredSigs;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
@@ -563,9 +563,9 @@ public class ServicesContext {
 	private EntityAutoRenewal entityAutoRenewal;
 	private TransactionContext txnCtx;
 	private ContractController contractsGrpc;
-	private HederaSigningOrder keyOrder;
-	private HederaSigningOrder backedKeyOrder;
-	private HederaSigningOrder lookupRetryingKeyOrder;
+	private RequiredSigs keyOrder;
+	private RequiredSigs backedKeyOrder;
+	private RequiredSigs lookupRetryingKeyOrder;
 	private StoragePersistence storagePersistence;
 	private ScheduleController scheduleGrpc;
 	private NonBlockingHandoff nonBlockingHandoff;
@@ -1302,7 +1302,7 @@ public class ServicesContext {
 		return answerFlow;
 	}
 
-	public HederaSigningOrder keyOrder() {
+	public RequiredSigs keyOrder() {
 		if (keyOrder == null) {
 			var lookups = defaultLookupsFor(
 					hfs(),
@@ -1310,12 +1310,12 @@ public class ServicesContext {
 					this::topics,
 					REF_LOOKUP_FACTORY.apply(tokenStore()),
 					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
-			keyOrder = keyOrderWith(lookups);
+			keyOrder = requiredSigsFrom(lookups);
 		}
 		return keyOrder;
 	}
 
-	public HederaSigningOrder backedKeyOrder() {
+	public RequiredSigs backedKeyOrder() {
 		if (backedKeyOrder == null) {
 			var lookups = backedLookupsFor(
 					hfs(),
@@ -1324,12 +1324,12 @@ public class ServicesContext {
 					this::accounts,
 					REF_LOOKUP_FACTORY.apply(tokenStore()),
 					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
-			backedKeyOrder = keyOrderWith(lookups);
+			backedKeyOrder = requiredSigsFrom(lookups);
 		}
 		return backedKeyOrder;
 	}
 
-	public HederaSigningOrder lookupRetryingKeyOrder() {
+	public RequiredSigs lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			var lookups = defaultAccountRetryingLookupsFor(
 					hfs(),
@@ -1340,7 +1340,7 @@ public class ServicesContext {
 					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()),
 					runningAvgs(),
 					speedometers());
-			lookupRetryingKeyOrder = keyOrderWith(lookups);
+			lookupRetryingKeyOrder = requiredSigsFrom(lookups);
 		}
 		return lookupRetryingKeyOrder;
 	}
@@ -1352,8 +1352,8 @@ public class ServicesContext {
 		return nodeType;
 	}
 
-	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
-		return new HederaSigningOrder(lookups, globalDynamicProperties(), signatureWaivers());
+	private RequiredSigs requiredSigsFrom(DelegatingSigMetadataLookup lookups) {
+		return new RequiredSigs(lookups, globalDynamicProperties(), signatureWaivers());
 	}
 
 	public StoragePersistence storagePersistence() {
