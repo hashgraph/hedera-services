@@ -164,7 +164,6 @@ class BasicTransactionContextTest {
 	@BeforeEach
 	private void setup() {
 		subject = new BasicTransactionContext(narratedCharging, () -> accounts, nodeInfo, exchange, creator);
-		verify(exchange).setTxnCtx(subject);
 
 		subject.resetFor(accessor, now, memberId);
 

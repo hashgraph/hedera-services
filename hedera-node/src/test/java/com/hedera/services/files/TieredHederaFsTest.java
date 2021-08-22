@@ -111,13 +111,12 @@ class TieredHederaFsTest {
 	}
 
 	@Test
-	void registerWorks() {
-		// when:
+	void interceptorsAreRegistered() {
+		// given:
 		subject.register(lowInterceptor);
-		// and:
 		subject.register(highInterceptor);
 
-		// then:
+		// expect:
 		assertEquals(lowInterceptor, subject.updateInterceptors.get(0));
 		assertEquals(highInterceptor, subject.updateInterceptors.get(1));
 	}

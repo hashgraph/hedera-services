@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
@@ -45,12 +47,17 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+@Singleton
 public class CryptoOpsUsage {
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 	private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
 
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+
+	@Inject
+	public CryptoOpsUsage() {
+	}
 
 	public void cryptoTransferUsage(
 			SigUsage sigUsage,

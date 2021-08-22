@@ -30,12 +30,15 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
+@Singleton
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			CryptoTransfer,
@@ -51,6 +54,7 @@ public class AccessorBasedUsages {
 	private final ConsensusOpsUsage consensusOpsUsage;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public AccessorBasedUsages(
 			TokenOpsUsage tokenOpsUsage,
 			CryptoOpsUsage cryptoOpsUsage,

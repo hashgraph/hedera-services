@@ -39,7 +39,7 @@ public class TriggeredTransition implements Runnable {
 		networkCtxManager.advanceConsensusClockTo(now);
 		networkCtxManager.prepareForIncorporating(accessor);
 
-		final var fee = fees.computeFee(accessor, txnCtx.activePayerKey(), currentView);
+		final var fee = fees.computeFee(accessor, txnCtx.activePayerKey(), currentView, now);
 		final var chargingOutcome = chargingPolicy.applyForTriggered(fee);
 		if (chargingOutcome != OK) {
 			txnCtx.setStatus(chargingOutcome);

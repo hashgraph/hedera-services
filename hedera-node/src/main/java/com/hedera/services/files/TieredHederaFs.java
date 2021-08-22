@@ -31,6 +31,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ import static java.util.stream.Collectors.toList;
  * A {@link HederaFs} that stores the contents and metadata of its files in
  * separate injected {@link Map}s.
  */
+@Singleton
 public class TieredHederaFs implements HederaFs {
 	public static final Logger log = LogManager.getLogger(TieredHederaFs.class);
 
@@ -83,6 +86,7 @@ public class TieredHederaFs implements HederaFs {
 		}
 	}
 
+	@Inject
 	public TieredHederaFs(
 			EntityIdSource ids,
 			GlobalDynamicProperties properties,

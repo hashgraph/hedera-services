@@ -21,7 +21,6 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.google.common.io.Files;
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -52,7 +51,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -70,7 +69,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-class AwareFcfsUsagePricesTest {
+class BasicFcfsUsagePricesTest {
 	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 
 	FileID schedules = IdUtils.asFile("0.0.111");
@@ -112,7 +111,7 @@ class AwareFcfsUsagePricesTest {
 	FeeSchedule nextFeeSchedule, currentFeeSchedule;
 	CurrentAndNextFeeSchedule feeSchedules;
 
-	AwareFcfsUsagePrices subject;
+	BasicFcfsUsagePrices subject;
 
 	TransactionBody contractCallTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder()
@@ -122,7 +121,6 @@ class AwareFcfsUsagePricesTest {
 			).build();
 
 	HederaFs hfs;
-	TransactionContext txnCtx;
 	PlatformTxnAccessor accessor;
 
 	@BeforeEach
@@ -152,10 +150,8 @@ class AwareFcfsUsagePricesTest {
 		given(accessor.getTxn()).willReturn(contractCallTxn);
 		given(accessor.getTxnId()).willReturn(contractCallTxn.getTransactionID());
 		given(accessor.getFunction()).willReturn(ContractCall);
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.accessor()).willReturn(accessor);
 
-		subject = new AwareFcfsUsagePrices(hfs, new MockFileNumbers(), txnCtx);
+		subject = new BasicFcfsUsagePrices(hfs, new MockFileNumbers());
 	}
 
 	@Test
@@ -176,31 +172,19 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	void getsDefaultActivePrices() throws Exception {
+	void getsActivePrices() {
 		// given:
 		subject.loadPriceSchedules();
 
 		// when:
-		FeeData actual = subject.defaultActivePrices();
-
-		// then:
-		assertEquals(nextUsagePrices, actual);
-	}
-
-	@Test
-	void getsActivePrices() throws Exception {
-		// given:
-		subject.loadPriceSchedules();
-
-		// when:
-		Map<SubType, FeeData> actual = subject.activePrices();
+		Map<SubType, FeeData> actual = subject.activePrices(accessor);
 
 		// then:
 		assertEquals(nextUsagePricesMap, actual);
 	}
 
 	@Test
-	void getsDefaultPricesIfActiveTxnInvalid() throws Exception {
+	void getsDefaultPricesIfActiveTxnInvalid() {
 		// given:
 		subject.loadPriceSchedules();
 		// and:
@@ -208,7 +192,7 @@ class AwareFcfsUsagePricesTest {
 		given(accessor.getFunction()).willReturn(UNRECOGNIZED);
 
 		// when:
-		Map<SubType, FeeData> actual = subject.activePrices();
+		Map<SubType, FeeData> actual = subject.activePrices(accessor);
 
 		// then:
 		assertEquals(DEFAULT_RESOURCE_PRICES, actual);
@@ -216,7 +200,7 @@ class AwareFcfsUsagePricesTest {
 
 
 	@Test
-	void getsTransferUsagePricesAtCurrent() throws Exception {
+	void getsTransferUsagePricesAtCurrent() {
 		// given:
 		subject.loadPriceSchedules();
 		Timestamp at = Timestamp.newBuilder()
@@ -231,10 +215,10 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	void returnsDefaultUsagePricesForUnsupported() throws Exception {
+	void returnsDefaultUsagePricesForUnsupported() {
 		// setup:
 		MockAppender mockAppender = new MockAppender();
-		var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(AwareFcfsUsagePrices.class);
+		var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(BasicFcfsUsagePrices.class);
 		log.addAppender(mockAppender);
 		Level levelForReset = log.getLevel();
 		log.setLevel(Level.DEBUG);
@@ -316,7 +300,7 @@ class AwareFcfsUsagePricesTest {
 		given(accessor.getFunction()).willThrow(IllegalStateException.class);
 
 		// when:
-		var prices = subject.activePrices();
+		var prices = subject.activePrices(accessor);
 
 		// then:
 		assertEquals(DEFAULT_RESOURCE_PRICES, prices);

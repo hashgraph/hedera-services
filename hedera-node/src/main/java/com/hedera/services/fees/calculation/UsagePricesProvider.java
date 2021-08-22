@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -51,16 +52,7 @@ public interface UsagePricesProvider {
 	 *
 	 * @return the prices for the active transaction
 	 */
-	Map<SubType, FeeData> activePrices();
-
-	/**
-	 * Returns the prices corresponding to the SubType.NONE in tinyCents that must be paid to
-	 * consume various resources while processing the active
-	 * transaction.
-	 *
-	 * @return the prices for the active transaction
-	 */
-	FeeData defaultActivePrices();
+	Map<SubType, FeeData> activePrices(TxnAccessor accessor);
 
 	/**
 	 * Returns the prices in tinyCents that are likely to be

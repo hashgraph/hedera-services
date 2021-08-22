@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
@@ -47,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	private static final Logger log = LogManager.getLogger(TxnAwareRatesManager.class);
 	private static final int APPLICABLE_PRIORITY = 0;
@@ -66,6 +69,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	private final Consumer<ExchangeRateSet> postUpdateCb;
 	private final IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory;
 
+	@Inject
 	public TxnAwareRatesManager(
 			FileNumbers fileNums,
 			AccountNumbers accountNums,

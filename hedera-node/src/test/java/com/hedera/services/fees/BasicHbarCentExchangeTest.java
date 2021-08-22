@@ -20,25 +20,21 @@ package com.hedera.services.fees;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class ScopedHbarCentExchangeTest {
+class BasicHbarCentExchangeTest {
 	private long crossoverTime = 1_234_567L;
 	private ExchangeRateSet rates = ExchangeRateSet.newBuilder()
 			.setCurrentRate(ExchangeRate.newBuilder()
@@ -49,30 +45,21 @@ class ScopedHbarCentExchangeTest {
 					.setHbarEquiv(1).setCentEquiv(24))
 			.build();
 
-	@Mock
-	private TxnAccessor accessor;
-	@Mock
-	private TransactionContext txnCtx;
-
-	private ScopedHbarCentExchange subject;
+	private BasicHbarCentExchange subject;
 
 	@BeforeEach
-	void setUp() throws Exception {
-		subject = new ScopedHbarCentExchange();
-		subject.setTxnCtx(txnCtx);
+	void setUp() {
+		subject = new BasicHbarCentExchange();
 	}
 
 	@Test
 	void updatesWorkWithCurrentRate() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accessor.getTxn()).willReturn(beforeTxn);
-
 		// when:
 		subject.updateRates(rates);
 
 		// expect:
 		assertEquals(rates, subject.activeRates());
-		assertEquals(rates.getCurrentRate(), subject.activeRate());
+		assertEquals(rates.getCurrentRate(), subject.activeRate(beforeCrossInstant));
 		assertEquals(rates.getCurrentRate(), subject.rate(beforeCrossTime));
 		// and:
 		assertEquals(rates, subject.fcActiveRates().toGrpc());
@@ -80,14 +67,11 @@ class ScopedHbarCentExchangeTest {
 
 	@Test
 	void updatesWorkWithNextRate() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accessor.getTxn()).willReturn(afterTxn);
-
 		// when:
 		subject.updateRates(rates);
 
 		// expect:
-		assertEquals(rates.getNextRate(), subject.activeRate());
+		assertEquals(rates.getNextRate(), subject.activeRate(afterCrossInstant));
 		assertEquals(rates.getNextRate(), subject.rate(afterCrossTime));
 		// and:
 		assertEquals(rates, subject.fcActiveRates().toGrpc());
@@ -97,14 +81,6 @@ class ScopedHbarCentExchangeTest {
 			.setSeconds(crossoverTime - 1).build();
 	private Timestamp afterCrossTime = Timestamp.newBuilder()
 			.setSeconds(crossoverTime).build();
-	private TransactionBody beforeTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(beforeCrossTime)
-					.build())
-			.build();
-	private TransactionBody afterTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(afterCrossTime)
-					.build())
-			.build();
+	private Instant afterCrossInstant = Instant.ofEpochSecond(crossoverTime);
+	private Instant beforeCrossInstant = Instant.ofEpochSecond(crossoverTime - 1);
 }

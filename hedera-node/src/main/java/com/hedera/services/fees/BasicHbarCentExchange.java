@@ -20,7 +20,6 @@ package com.hedera.services.fees;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -28,28 +27,20 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 
 @Singleton
-public class ScopedHbarCentExchange implements HbarCentExchange {
-	private TransactionContext txnCtx;
-
+public class BasicHbarCentExchange implements HbarCentExchange {
 	private ExchangeRates fcRates = null;
 	private ExchangeRateSet grpcRates = null;
 
 	@Inject
-	public ScopedHbarCentExchange() {
-	}
-
-	@Inject
-	@Override
-	public void setTxnCtx(TransactionContext txnCtx) {
-		this.txnCtx = txnCtx;
+	public BasicHbarCentExchange() {
 	}
 
 	@Override
-	public ExchangeRate activeRate() {
-		var now = txnCtx.accessor().getTxn().getTransactionID().getTransactionValidStart();
-		return rate(now);
+	public ExchangeRate activeRate(Instant now) {
+		return rateAt(now.getEpochSecond());
 	}
 
 	@Override
@@ -58,10 +49,8 @@ public class ScopedHbarCentExchange implements HbarCentExchange {
 	}
 
 	@Override
-	public ExchangeRate rate(Timestamp at) {
-		var currentRate = grpcRates.getCurrentRate();
-		long currentExpiry = currentRate.getExpirationTime().getSeconds();
-		return (at.getSeconds() < currentExpiry) ? currentRate : grpcRates.getNextRate();
+	public ExchangeRate rate(Timestamp now) {
+		return rateAt(now.getSeconds());
 	}
 
 	@Override
@@ -73,5 +62,11 @@ public class ScopedHbarCentExchange implements HbarCentExchange {
 	@Override
 	public ExchangeRates fcActiveRates() {
 		return fcRates;
+	}
+
+	private ExchangeRate rateAt(long now) {
+		var currentRate = grpcRates.getCurrentRate();
+		long currentExpiry = currentRate.getExpirationTime().getSeconds();
+		return (now < currentExpiry) ? currentRate : grpcRates.getNextRate();
 	}
 }

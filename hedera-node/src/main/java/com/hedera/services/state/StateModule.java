@@ -16,6 +16,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -30,75 +31,80 @@ import java.util.function.Supplier;
 @Module
 public abstract class StateModule {
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleAccount>> provideAccounts(ActiveStates states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleAccount>> provideAccounts(WorkingState states) {
 		return states::accounts;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> provideStorage(ActiveStates activeStates) {
-		return activeStates::storage;
+	public static Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> provideStorage(WorkingState workingState) {
+		return workingState::storage;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleTopic>> provideTopics(ActiveStates states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleTopic>> provideTopics(WorkingState states) {
 		return states::topics;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleToken>> provideTokens(ActiveStates states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleToken>> provideTokens(WorkingState states) {
 		return states::tokens;
 	}
 
 	@Provides @Singleton
 	public static Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> provideTokenAssociations(
-			ActiveStates states
+			WorkingState states
 	) {
 		return states::tokenAssociations;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleSchedule>> provideSchedules(ActiveStates states) {
+	public static Supplier<FCMap<MerkleEntityId, MerkleSchedule>> provideSchedules(WorkingState states) {
 		return states::schedules;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> provideNfts(ActiveStates states) {
+	public static Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> provideNfts(WorkingState states) {
 		return states::uniqueTokens;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideNftsByType(ActiveStates states) {
+	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideNftsByType(WorkingState states) {
 		return states::uniqueTokenAssociations;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideNftsByOwner(ActiveStates states) {
+	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideNftsByOwner(WorkingState states) {
 		return states::uniqueOwnershipAssociations;
 	}
 
 	@Provides @Singleton
-	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideTreasuryNftsByType(ActiveStates states) {
+	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideTreasuryNftsByType(WorkingState states) {
 		return states::uniqueOwnershipTreasuryAssociations;
 	}
 
 	@Provides @Singleton
-	public static Supplier<MerkleDiskFs> provideDiskFs(ActiveStates states) {
+	public static Supplier<MerkleDiskFs> provideDiskFs(WorkingState states) {
 		return states::diskFs;
 	}
 
 	@Provides @Singleton
-	public static Supplier<MerkleNetworkContext> provideNetworkCtx(ActiveStates states) {
+	public static Supplier<MerkleNetworkContext> provideNetworkCtx(WorkingState states) {
 		return states::networkCtx;
 	}
 
 	@Provides @Singleton
-	public static Supplier<AddressBook> provideAddressBook(ActiveStates states) {
+	public static Supplier<AddressBook> provideAddressBook(WorkingState states) {
 		return states::addressBook;
 	}
 
 	@Provides @Singleton
-	public static EntityIdSource provideEntityIdSource(ActiveStates states) {
+	public static EntityIdSource provideEntityIdSource(WorkingState states) {
 		return new SeqNoEntityIdSource(() -> states.networkCtx().seqNo());
+	}
+
+	@Provides @Singleton
+	public static Supplier<ExchangeRates> provideMidnightRates(WorkingState states) {
+		return () -> states.networkCtx().midnightRates();
 	}
 
 	@Binds

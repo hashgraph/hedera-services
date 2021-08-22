@@ -27,9 +27,14 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.FileFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator {
 	private final FileFeeBuilder usageEstimator;
 
+	@Inject
 	public GetFileContentsResourceUsage(FileFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

@@ -43,15 +43,15 @@ import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.fees.ScopedHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
-import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
+import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -170,7 +170,6 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryHeaderValidity;
@@ -213,7 +212,6 @@ import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -245,6 +243,7 @@ import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.logic.ScreenedTransition;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.logic.SignatureScreen;
+import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.state.logic.TopLevelTransition;
 import com.hedera.services.state.logic.TriggeredTransition;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -296,6 +295,7 @@ import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.TransitionRunner;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
@@ -402,6 +402,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1203,7 +1204,7 @@ public class ServicesContext {
 					usagePrices(),
 					feeMultiplierSource(),
 					pricedUsageCalculator(),
-					List.of(
+					Set.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
 							new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
@@ -1237,7 +1238,7 @@ public class ServicesContext {
 		return fees;
 	}
 
-	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
+	private Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
 			CryptoOpsUsage cryptoOpsUsage,
 			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
@@ -1247,7 +1248,7 @@ public class ServicesContext {
 	) {
 		var props = globalDynamicProperties();
 
-		Map<HederaFunctionality, List<TxnResourceUsageEstimator>> estimatorsMap = Map.ofEntries(
+		return Map.ofEntries(
 				/* Crypto */
 				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
@@ -1289,8 +1290,6 @@ public class ServicesContext {
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
 				entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees)))
 		);
-
-		return estimatorsMap::get;
 	}
 
 	public AnswerFlow answerFlow() {
@@ -1668,7 +1667,7 @@ public class ServicesContext {
 
 	public HbarCentExchange exchange() {
 		if (exchange == null) {
-			exchange = new ScopedHbarCentExchange();
+			exchange = new BasicHbarCentExchange();
 		}
 		return exchange;
 	}
@@ -2236,7 +2235,7 @@ public class ServicesContext {
 
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
-			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
+			usagePrices = new BasicFcfsUsagePrices(hfs(), fileNums());
 		}
 		return usagePrices;
 	}

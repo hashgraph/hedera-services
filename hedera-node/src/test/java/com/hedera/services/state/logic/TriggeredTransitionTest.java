@@ -56,7 +56,7 @@ class TriggeredTransitionTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(txnCtx.activePayerKey()).willReturn(activePayerKey);
-		given(fees.computeFee(accessor, activePayerKey, currentView)).willReturn(fee);
+		given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
 		given(chargingPolicy.applyForTriggered(fee)).willReturn(OK);
 
 		// when:
@@ -73,7 +73,7 @@ class TriggeredTransitionTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(txnCtx.activePayerKey()).willReturn(activePayerKey);
-		given(fees.computeFee(accessor, activePayerKey, currentView)).willReturn(fee);
+		given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
 		given(chargingPolicy.applyForTriggered(fee)).willReturn(INSUFFICIENT_TX_FEE);
 
 		// when:

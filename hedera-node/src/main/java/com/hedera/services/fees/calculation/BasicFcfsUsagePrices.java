@@ -22,9 +22,9 @@ package com.hedera.services.fees.calculation;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.pricing.RequiredPriceTypes;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -38,6 +38,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
@@ -50,8 +52,9 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 /**
  * Implements a {@link UsagePricesProvider} by loading the required fee schedules from the Hedera "file system".
  */
-public class AwareFcfsUsagePrices implements UsagePricesProvider {
-	private static final Logger log = LogManager.getLogger(AwareFcfsUsagePrices.class);
+@Singleton
+public class BasicFcfsUsagePrices implements UsagePricesProvider {
+	private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
 
 	private static final long DEFAULT_FEE = 100_000L;
 	private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
@@ -67,7 +70,6 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 
 	private final HederaFs hfs;
 	private final FileNumbers fileNumbers;
-	private final TransactionContext txnCtx;
 
 	CurrentAndNextFeeSchedule feeSchedules;
 
@@ -77,9 +79,9 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	private EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
 	private EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
 
-	public AwareFcfsUsagePrices(HederaFs hfs, FileNumbers fileNumbers, TransactionContext txnCtx) {
+	@Inject
+	public BasicFcfsUsagePrices(HederaFs hfs, FileNumbers fileNumbers) {
 		this.hfs = hfs;
-		this.txnCtx = txnCtx;
 		this.fileNumbers = fileNumbers;
 	}
 
@@ -101,25 +103,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public FeeData defaultActivePrices() {
+	public Map<SubType, FeeData> activePrices(TxnAccessor accessor) {
 		try {
-			var accessor = txnCtx.accessor();
-			return defaultPricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
-		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(),
-					e);
-		}
-		return DEFAULT_RESOURCE_PRICES.get(DEFAULT);
-	}
-
-	@Override
-	public Map<SubType, FeeData> activePrices() {
-		try {
-			var accessor = txnCtx.accessor();
 			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(),
-					e);
+			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
 		}
 		return DEFAULT_RESOURCE_PRICES;
 	}

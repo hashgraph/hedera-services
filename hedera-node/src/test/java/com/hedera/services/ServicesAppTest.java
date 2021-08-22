@@ -2,8 +2,8 @@ package com.hedera.services;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.expiry.ExpiryManager;
 import com.swirlds.common.Platform;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +37,9 @@ class ServicesAppTest {
 		// expect:
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		assertThat(subject.expiries(), instanceOf(ExpiryManager.class));
+		// and:
+		final var interceptors = subject.interceptors();
+		Assertions.assertEquals(2, interceptors.size());
+//		interceptors.forEach(System.out::println);
 	}
 }

@@ -74,7 +74,8 @@ public class TxnChargingPolicyAgent {
 	 * @return whether or not handleTransaction can continue after policy application.
 	 */
 	public boolean applyPolicyFor(TxnAccessor accessor) {
-		final var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get());
+		final var now = txnCtx.consensusTime();
+		final var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
 		final var recentHistory = txnHistories.get(accessor.getTxnId());
 		var duplicity = (recentHistory == null)
 				? BELIEVED_UNIQUE

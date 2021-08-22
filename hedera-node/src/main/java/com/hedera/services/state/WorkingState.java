@@ -24,15 +24,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ActiveStates {
+public class WorkingState {
 	private final StateChildren workingChildren = new StateChildren();
 
 	@Inject
-	public ActiveStates(ServicesState initialState) {
-		updateWorkingState(initialState);
+	public WorkingState(ServicesState initialState) {
+		updateFrom(initialState);
 	}
 
-	public void updateWorkingState(ServicesState state) {
+	public void updateFrom(ServicesState state) {
 		workingChildren.setAccounts(state.accounts());
 		workingChildren.setTopics(state.topics());
 		workingChildren.setStorage(state.storage());

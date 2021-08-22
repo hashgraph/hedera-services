@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class ActiveStatesTest {
+class WorkingStateTest {
 	@Mock
 	private ServicesState state;
 	@Mock
@@ -58,11 +58,11 @@ class ActiveStatesTest {
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
 
-	private ActiveStates activeStates;
+	private WorkingState workingState;
 
 	@BeforeEach
 	void setUp() {
-		activeStates = new ActiveStates(state);
+		workingState = new WorkingState(state);
 	}
 
 	@Test
@@ -82,21 +82,21 @@ class ActiveStatesTest {
 		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
 
 		// when:
-		activeStates.updateWorkingState(state);
+		workingState.updateFrom(state);
 
 		// then:
-		assertSame(accounts, activeStates.accounts());
-		assertSame(storage, activeStates.storage());
-		assertSame(topics, activeStates.topics());
-		assertSame(tokens, activeStates.tokens());
-		assertSame(tokenAssociations, activeStates.tokenAssociations());
-		assertSame(scheduleTxs, activeStates.schedules());
-		assertSame(networkCtx, activeStates.networkCtx());
-		assertSame(addressBook, activeStates.addressBook());
-		assertSame(diskFs, activeStates.diskFs());
-		assertSame(uniqueTokens, activeStates.uniqueTokens());
-		assertSame(uniqueTokenAssociations, activeStates.uniqueTokenAssociations());
-		assertSame(uniqueOwnershipAssociations, activeStates.uniqueOwnershipAssociations());
-		assertSame(uniqueTreasuryOwnershipAssociations, activeStates.uniqueOwnershipTreasuryAssociations());
+		assertSame(accounts, workingState.accounts());
+		assertSame(storage, workingState.storage());
+		assertSame(topics, workingState.topics());
+		assertSame(tokens, workingState.tokens());
+		assertSame(tokenAssociations, workingState.tokenAssociations());
+		assertSame(scheduleTxs, workingState.schedules());
+		assertSame(networkCtx, workingState.networkCtx());
+		assertSame(addressBook, workingState.addressBook());
+		assertSame(diskFs, workingState.diskFs());
+		assertSame(uniqueTokens, workingState.uniqueTokens());
+		assertSame(uniqueTokenAssociations, workingState.uniqueTokenAssociations());
+		assertSame(uniqueOwnershipAssociations, workingState.uniqueOwnershipAssociations());
+		assertSame(uniqueTreasuryOwnershipAssociations, workingState.uniqueOwnershipTreasuryAssociations());
 	}
 }
