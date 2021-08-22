@@ -283,7 +283,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedAutoAssociations) {
 		// TODO : throw a better exception with appropriate response code.
-		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations >= getMaxAutomaticAssociations()) {
+		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
 			throw new IllegalArgumentException("Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
 		}
 		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);

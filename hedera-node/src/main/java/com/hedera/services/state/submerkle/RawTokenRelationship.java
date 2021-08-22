@@ -90,7 +90,8 @@ public class RawTokenRelationship {
 	}
 
 	public TokenRelationship asGrpcFor(MerkleToken token) {
-		return TokenRelationship.newBuilder()
+		System.out.println("building TokenRel");
+		var rel = TokenRelationship.newBuilder()
 				.setBalance(balance)
 				.setDecimals(token.decimals())
 				.setSymbol(token.symbol())
@@ -103,6 +104,8 @@ public class RawTokenRelationship {
 				.setAutomaticAssociation(automaticAssociation)
 				.build();
 
+		System.out.println(rel);
+		return rel;
 	}
 
 	private TokenFreezeStatus freezeStatusFor(MerkleToken token) {

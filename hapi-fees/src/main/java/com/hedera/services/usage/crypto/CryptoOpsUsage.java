@@ -115,7 +115,8 @@ public class CryptoOpsUsage {
 				+ keyBytesUsed
 				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
 				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
-				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0);
+				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0)
+				+ (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0);
 		var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
 		estimate.addBpt(msgBytesUsed);
 

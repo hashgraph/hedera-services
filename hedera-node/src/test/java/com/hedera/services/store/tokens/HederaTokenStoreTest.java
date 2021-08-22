@@ -549,6 +549,7 @@ class HederaTokenStoreTest {
 		assertEquals(OK, status);
 		verify(tokens).associateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(hederaLedger).addNewAssociationToList(any());
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
@@ -558,7 +559,6 @@ class HederaTokenStoreTest {
 	@Test
 	void associatingFailsWhenAutoAssociationLimitReached() {
 		final var tokens = mock(MerkleAccountTokens.class);
-		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);

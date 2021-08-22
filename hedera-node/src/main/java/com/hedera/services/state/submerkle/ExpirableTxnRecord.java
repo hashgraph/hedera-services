@@ -33,6 +33,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +49,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final List<NftAdjustments> NO_NFT_TOKEN_ADJUSTMENTS = null;
 	static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = null;
 	static final EntityId NO_SCHEDULE_REF = null;
-	static final List<FcTokenAssociation> NO_NEW_TOKEN_ASSOCIATIONS = null;
+	static final List<FcTokenAssociation> NO_NEW_TOKEN_ASSOCIATIONS = new ArrayList<>();
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
@@ -109,7 +110,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		this.scheduleRef = builder.scheduleRef;
 		this.assessedCustomFees = builder.assessedCustomFees;
-		this.newTokenAssociations = builder.newTokenAssociations;
+		this.newTokenAssociations = new ArrayList<>(builder.newTokenAssociations);
 	}
 
 	/* --- Object --- */
@@ -463,7 +464,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<NftAdjustments> nftTokenAdjustments;
 		private EntityId scheduleRef;
 		private List<FcAssessedCustomFee> assessedCustomFees;
-		private List<FcTokenAssociation> newTokenAssociations;
+		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 
 		public Builder setFee(long fee) {
 			this.fee = fee;

@@ -26,6 +26,7 @@ import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.crypto.Hash;
@@ -63,6 +64,8 @@ class ExpirableTxnRecordTest {
 	private static final AccountID sponsor = IdUtils.asAccount("1.2.5");
 	private static final AccountID beneficiary = IdUtils.asAccount("1.2.6");
 	private static final AccountID magician = IdUtils.asAccount("1.2.7");
+	private static final List<TokenAssociation> newRelationships = List.of(new FcTokenAssociation(
+			new EntityId(1, 2, 10), new EntityId(1, 2, 11)).toGrpc());
 
 	private static final EntityId feeCollector = new EntityId(1, 2, 8);
 	private static final EntityId token = new EntityId(1, 2, 9);
@@ -278,8 +281,7 @@ class ExpirableTxnRecordTest {
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
-				"num=8}, " +
-				"units=123, effective payer accounts=[234]})}";
+				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=}";
 
 		assertEquals(desired, subject.toString());
 	}

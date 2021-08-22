@@ -190,7 +190,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null, null, null, null, null));
+						0L, null, null, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -205,10 +205,11 @@ class ExpiringCreationsTest {
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
 		given(ctx.ledger().netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
+		given(ctx.ledger().getNewTokenAssociations()).willReturn(newTokenAssociations);
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged, newTokenAssociations);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -259,7 +260,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		final var builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null, null);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null);
 		final var actualRecord = builder.build();
 
 		//then:

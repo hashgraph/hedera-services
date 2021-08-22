@@ -255,7 +255,7 @@ class MerkleAccountTest {
 	@Test
 	void throwsOnInvalidAlreadyUsedAtoAssociations() {
 		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(-1));
-		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociaitons));
+		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociaitons+1));
 	}
 
 	@Test

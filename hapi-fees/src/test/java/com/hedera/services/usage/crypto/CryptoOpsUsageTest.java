@@ -21,6 +21,7 @@ package com.hedera.services.usage.crypto;
  */
 
 import com.google.protobuf.StringValue;
+import com.google.protobuf.UInt32Value;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.EstimatorFactory;
@@ -217,7 +218,7 @@ class CryptoOpsUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
+		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE + INT_SIZE);
 		verify(base).addRbs(newRbs - oldRbs);
 	}
 
@@ -235,6 +236,7 @@ class CryptoOpsUsageTest {
 				.setProxyAccountID(proxy)
 				.setMemo(StringValue.newBuilder().setValue(memo))
 				.setKey(key)
+				.setMaxAutomaticTokenAssociations(UInt32Value.of(maxAutoAssociations))
 				.build();
 		setUpdateTxn();
 	}

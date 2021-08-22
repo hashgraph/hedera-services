@@ -111,7 +111,7 @@ public class Account {
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
 		// TODO : get the right response code
-		validateTrue(alreadyUsedCount >=0 && alreadyUsedCount < getMaxAutomaticAssociations(), FAIL_INVALID );
+		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), FAIL_INVALID );
 		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
 	}
 

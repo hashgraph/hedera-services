@@ -73,6 +73,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
 				} else {
+					System.out.println("failed to build account Info for " + id);
 					response.setHeader(answerOnlyHeader(FAIL_INVALID));
 				}
 			}

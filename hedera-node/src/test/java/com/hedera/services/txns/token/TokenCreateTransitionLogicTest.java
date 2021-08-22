@@ -334,7 +334,6 @@ class TokenCreateTransitionLogicTest {
 		verify(ledger, times(1)).unfreeze(royaltyFeeCollector, created);
 		verify(ledger, times(1)).grantKyc(royaltyFeeCollector, created);
 
-		verify(txnCtx).setNewTokenAssociations(any());
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(store).commitCreation();

@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -102,8 +101,7 @@ public class ExpiringCreations implements EntityCreator {
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx,
-			List<FcAssessedCustomFee> customFeesCharged,
-			List<FcTokenAssociation> newTokenAssociations
+			List<FcAssessedCustomFee> customFeesCharged
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
@@ -123,7 +121,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setTransferList(currencyAdjustments)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setCustomFeesCharged(customFeesCharged)
-				.setNewTokenAssociations(newTokenAssociations);
+				.setNewTokenAssociations(ctx.ledger().getNewTokenAssociations());
 
 		if (!tokenTransferList.isEmpty()) {
 			setTokensAndTokenAdjustments(builder, tokenTransferList);

@@ -200,10 +200,10 @@ class AccountTest {
 	@Test
 	void invalidValuesToAlreadyUsedAutoAssociationsFailAsExpected() {
 		assertFailsWith(
-				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations),
+				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations+1),
 				FAIL_INVALID);
 
-		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations-1);
+		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
 		assertFailsWith(
 				() -> subject.incrementUsedAutomaticAssocitions(),

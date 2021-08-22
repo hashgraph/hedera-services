@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -123,6 +124,7 @@ public class HederaLedger {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
+	private final List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
@@ -203,6 +205,7 @@ public class HederaLedger {
 			tokenViewsManager.rollback();
 		}
 		netTransfers.clear();
+		newTokenAssociations.clear();
 		clearNetTokenTransfers();
 	}
 
@@ -222,7 +225,16 @@ public class HederaLedger {
 			tokenViewsManager.commit();
 		}
 		netTransfers.clear();
+		newTokenAssociations.clear();
 		clearNetTokenTransfers();
+	}
+
+	public void addNewAssociationToList(FcTokenAssociation newAssociation) {
+		newTokenAssociations.add(newAssociation);
+	}
+
+	public List<FcTokenAssociation> getNewTokenAssociations() {
+		return newTokenAssociations;
 	}
 
 	public TransferList netTransfersInTxn() {

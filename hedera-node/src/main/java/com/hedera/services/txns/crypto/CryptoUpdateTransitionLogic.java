@@ -134,6 +134,14 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
+		if (keyChanges.contains(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
+				// TODO : return appropriate response code EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT
+				return FAIL_INVALID;
+			}
+		}
+
 		return OK;
 	}
 
@@ -162,7 +170,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasMemo()) {
 			customizer.memo(op.getMemo().getValue());
 		}
-
+		if (op.hasMaxAutomaticTokenAssociations()) {
+			customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
+		}
 		return customizer;
 	}
 

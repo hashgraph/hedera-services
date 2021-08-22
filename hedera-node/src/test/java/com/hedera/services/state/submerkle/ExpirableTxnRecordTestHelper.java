@@ -86,6 +86,8 @@ public class ExpirableTxnRecordTestHelper {
 				.setNftTokenAdjustments(nftTokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
 				.setCustomFeesCharged(fcAssessedFees)
+				.setNewTokenAssociations(record.getAutomaticTokenAssociationsList()
+						.stream().map(a -> FcTokenAssociation.fromGrpc(a)).collect(toList()))
 				.build();
 	}
 }
