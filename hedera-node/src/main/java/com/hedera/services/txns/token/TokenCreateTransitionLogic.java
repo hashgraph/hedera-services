@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -107,8 +108,9 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		}
 
 		TokenID created;
-		if (result.getCreated().isPresent()) {
-			created = result.getCreated().get();
+		Optional<TokenID> optionalTokenID = result.getCreated();
+		if (optionalTokenID.isPresent()) {
+			created = optionalTokenID.get();
 		} else {
 			log.warn("TokenStore#createProvisionally contract broken, no created id for OK response!");
 			abortWith(FAIL_INVALID);

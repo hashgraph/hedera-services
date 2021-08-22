@@ -394,21 +394,10 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
-		System.out.println("Starting to build account Info for " + id);
 		var account = accounts().get(fromAccountId(id));
 		if (account == null) {
 			return Optional.empty();
 		}
-		System.out.println("found merkleAccount for " + id);
-		System.out.println("isReceiverSigRequired " + account.isReceiverSigRequired());
-		System.out.println("isDeleted " + account.isDeleted());
-		System.out.println("memo " + account.getMemo());
-		System.out.println("getAutoRenewSecs " + account.getAutoRenewSecs());
-		System.out.println("balance  " + account.getBalance());
-		System.out.println("expiry " + account.getExpiry());
-		System.out.println("nftsOwned " + account.getNftsOwned());
-		System.out.println("alreadyUsed " + account.getAlreadyUsedAutoAssociations());
-		System.out.println("MaxAllowed " + account.getMaxAutomaticAssociations());
 
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getKey()))
@@ -422,7 +411,6 @@ public class StateView {
 				.setContractAccountID(asSolidityAddressHex(id))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
-		System.out.println("proxy :" + account.getProxy());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
@@ -430,7 +418,6 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
-		System.out.println("building account Info for " + account.toString());
 		return Optional.of(info.build());
 	}
 
@@ -547,22 +534,14 @@ public class StateView {
 	}
 
 	static List<TokenRelationship> tokenRels(StateView view, AccountID id) {
-		System.out.println("loading relationships :");
 		var account = view.accounts().get(fromAccountId(id));
 		List<TokenRelationship> relationships = new ArrayList<>();
 		var tokenIds = account.tokens().asTokenIds();
-		System.out.println("tokenIds size :" + tokenIds.size());
 		for (TokenID tId : tokenIds) {
-			System.out.println("analyzing token :" + tId);
 			var optionalToken = view.tokenWith(tId);
 			var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
 			var relKey = fromAccountTokenRel(id, tId);
 			var relationship = view.tokenAssociations().get(relKey);
-			System.out.println("rel bal :" + relationship.getBalance());
-			System.out.println("tokenNum :" + tId.getTokenNum());
-			System.out.println("frozen :" + relationship.isFrozen());
-			System.out.println("KycGrant :" + relationship.isKycGranted());
-			System.out.println("auto :" + relationship.isAutomaticAssociation());
 			relationships.add(new RawTokenRelationship(
 					relationship.getBalance(),
 					tId.getShardNum(),
@@ -572,10 +551,6 @@ public class StateView {
 					relationship.isKycGranted(),
 					relationship.isAutomaticAssociation()
 			).asGrpcFor(effectiveToken));
-		}
-		System.out.println("tokenRels :");
-		for(var rel : relationships) {
-			System.out.println(rel.toString());
 		}
 		return relationships;
 	}
