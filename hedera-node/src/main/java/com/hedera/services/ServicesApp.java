@@ -27,8 +27,9 @@ import com.hedera.services.context.properties.PropertiesModule;
 import com.hedera.services.contracts.ContractsModule;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
+import com.hedera.services.grpc.GrpcModule;
+import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.SigsModule;
 import com.hedera.services.state.StateModule;
@@ -37,6 +38,7 @@ import com.hedera.services.store.StoresModule;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.submission.SubmissionModule;
+import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.swirlds.common.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -46,7 +48,9 @@ import javax.inject.Singleton;
 @Singleton
 @Component(modules = {
 		FeesModule.class,
+		KeysModule.class,
 		SigsModule.class,
+		GrpcModule.class,
 		StatsModule.class,
 		StateModule.class,
 		FilesModule.class,
@@ -61,7 +65,7 @@ import javax.inject.Singleton;
 		TransactionsModule.class,
 })
 public interface ServicesApp {
-	SmartContractRequestHandler contracts();
+	TransactionPrecheck precheck();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 

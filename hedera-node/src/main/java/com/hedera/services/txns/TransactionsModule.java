@@ -20,24 +20,45 @@ package com.hedera.services.txns;
  * ‍
  */
 
+import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.services.legacy.handler.SmartContractRequestHandler;
+import com.hedera.services.txns.contract.ConsensusLogicModule;
+import com.hedera.services.txns.contract.ContractLogicModule;
+import com.hedera.services.txns.contract.ContractSysDelTransitionLogic;
+import com.hedera.services.txns.contract.ContractSysUndelTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.file.FileLogicModule;
+import com.hedera.services.txns.file.FileSysDelTransitionLogic;
+import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
+import com.hedera.services.txns.network.NetworkLogicModule;
+import com.hedera.services.txns.schedule.ScheduleLogicModule;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import dagger.multibindings.IntoMap;
 
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
 @Module(includes = {
 		FileLogicModule.class,
+		TokenLogicModule.class,
 		CryptoLogicModule.class,
+		NetworkLogicModule.class,
+		ScheduleLogicModule.class,
+		ContractLogicModule.class,
+		ConsensusLogicModule.class
 })
 public abstract class TransactionsModule {
 	@Binds
@@ -52,5 +73,41 @@ public abstract class TransactionsModule {
 	@Singleton
 	public static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager) {
 		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager);
+	}
+
+	@Provides
+	@Singleton
+	public static ContractSysDelTransitionLogic.LegacySystemDeleter provideLegacySystemDeleter(
+			SmartContractRequestHandler contracts
+	) {
+		return contracts::systemDelete;
+	}
+
+	@Provides
+	@Singleton
+	public static ContractSysUndelTransitionLogic.LegacySystemUndeleter provideLegacySystemUndeleter(
+			SmartContractRequestHandler contracts
+	) {
+		return contracts::systemUndelete;
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(SystemDelete)
+	public static List<TransitionLogic> provideSystemDeleteLogic(
+			FileSysDelTransitionLogic fileSysDelTransitionLogic,
+			ContractSysDelTransitionLogic contractSysDelTransitionLogic
+	) {
+		return List.of(fileSysDelTransitionLogic, contractSysDelTransitionLogic);
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(SystemUndelete)
+	public static List<TransitionLogic> provideSystemUndeleteLogic(
+			FileSysUndelTransitionLogic fileSysUndelTransitionLogic,
+			ContractSysUndelTransitionLogic contractSysUndelTransitionLogic
+	) {
+		return List.of(fileSysUndelTransitionLogic, contractSysUndelTransitionLogic);
 	}
 }

@@ -1,4 +1,4 @@
-package com.hedera.services.context;
+package com.hedera.services.keys;
 
 /*-
  * ‌
@@ -20,28 +20,20 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.swirlds.common.PlatformStatus;
+import com.hedera.services.context.TransactionContext;
+import dagger.Module;
+import dagger.Provides;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.swirlds.common.PlatformStatus.STARTING_UP;
-
-@Singleton
-public class ContextPlatformStatus implements CurrentPlatformStatus {
-	private PlatformStatus current = STARTING_UP;
-
-	@Inject
-	public ContextPlatformStatus() {
-	}
-
-	@Override
-	public synchronized void set(PlatformStatus status) {
-		current = status;
-	}
-
-	@Override
-	public synchronized PlatformStatus get() {
-		return current;
+@Module
+public abstract class KeysModule {
+	@Provides
+	@Singleton
+	public static InHandleActivationHelper provideActivationHelper(
+			TransactionContext txnCtx,
+			CharacteristicsFactory characteristicsFactory
+	) {
+		return new InHandleActivationHelper(characteristicsFactory, txnCtx::accessor);
 	}
 }

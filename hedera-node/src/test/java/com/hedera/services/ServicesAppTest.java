@@ -22,7 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
+import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Cryptography;
@@ -67,6 +67,6 @@ class ServicesAppTest {
 		// expect:
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		assertThat(subject.contracts(), instanceOf(SmartContractRequestHandler.class));
+		assertThat(subject.precheck(), instanceOf(TransactionPrecheck.class));
 	}
 }

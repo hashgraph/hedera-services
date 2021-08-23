@@ -23,6 +23,8 @@ package com.hedera.services.txns;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +34,13 @@ import java.util.Optional;
  * Provides logic to identify what {@link TransitionLogic} applies to the
  * active node and transaction context.
  */
+@Singleton
 public class TransitionLogicLookup {
 	private final EnumMap<HederaFunctionality, Optional<TransitionLogic>> unambiguousLookups =
 			new EnumMap<>(HederaFunctionality.class);
 	private final Map<HederaFunctionality, List<TransitionLogic>> transitions;
 
+	@Inject
 	public TransitionLogicLookup(Map<HederaFunctionality, List<TransitionLogic>> transitions) {
 		this.transitions = transitions;
 		for (var function : HederaFunctionality.class.getEnumConstants()) {

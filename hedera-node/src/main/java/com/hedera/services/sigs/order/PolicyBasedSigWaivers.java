@@ -26,6 +26,9 @@ import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.auth.SystemOpAuthorization;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -44,10 +47,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
  * here, and a new key must sign; https://github.com/hashgraph/hedera-services/issues/1890
  * has details.
  */
+@Singleton
 public class PolicyBasedSigWaivers implements SignatureWaivers {
 	private final AccountNumbers accountNums;
 	private final SystemOpPolicies opPolicies;
 
+	@Inject
 	public PolicyBasedSigWaivers(EntityNumbers entityNums, SystemOpPolicies opPolicies) {
 		this.opPolicies = opPolicies;
 

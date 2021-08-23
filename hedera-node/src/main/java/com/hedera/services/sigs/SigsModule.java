@@ -29,6 +29,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.HandleSigReqs;
 import com.hedera.services.sigs.annotations.PayerSigReqs;
 import com.hedera.services.sigs.annotations.QuerySigReqs;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
@@ -45,6 +46,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.fcmap.FCMap;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 
@@ -61,6 +63,10 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_L
 
 @Module
 public abstract class SigsModule {
+	@Binds
+	@Singleton
+	public abstract SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
+
 	@Provides
 	@Singleton
 	public static SyncVerifier provideSyncVerifier(Platform platform) {

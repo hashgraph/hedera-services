@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -43,9 +45,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 
 /**
  * Provides the state transition for associating tokens to an account.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -54,6 +55,7 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public TokenAssociateTransitionLogic(
 			AccountStore accountStore,
 			TypedTokenStore tokenStore,

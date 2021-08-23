@@ -25,6 +25,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.token.process.Dissociation;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import dagger.Module;
 import dagger.Provides;
@@ -35,9 +37,11 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
@@ -126,6 +130,20 @@ public abstract class TokenLogicModule {
 	}
 
 	@Provides
+	@IntoMap
+	@FunctionKey(TokenAssociateToAccount)
+	public static List<TransitionLogic> provideTokenAssocLogic(TokenAssociateTransitionLogic tokenAssocLogic) {
+		return List.of(tokenAssocLogic);
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(TokenDissociateFromAccount)
+	public static List<TransitionLogic> provideTokenDissocLogic(TokenDissociateTransitionLogic tokenDissocLogic) {
+		return List.of(tokenDissocLogic);
+	}
+
+	@Provides
 	@Singleton
 	public static Predicate<TokenUpdateTransactionBody> provideAffectsExpiryOnly() {
 		return HederaTokenStore::affectsExpiryAtMost;
@@ -141,5 +159,11 @@ public abstract class TokenLogicModule {
 	@Singleton
 	public static TypedTokenStore.LegacyTreasuryAdder provideLegacyTreasuryAdder(TokenStore tokenStore) {
 		return tokenStore::addKnownTreasury;
+	}
+
+	@Provides
+	@Singleton
+	public static DissociationFactory provideDissociationFactory() {
+		return Dissociation::loadFrom;
 	}
 }

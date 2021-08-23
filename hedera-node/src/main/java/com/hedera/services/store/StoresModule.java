@@ -38,6 +38,8 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreFcotmrQueriesDisabled;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
@@ -49,6 +51,10 @@ import javax.inject.Singleton;
 
 @Module
 public abstract class StoresModule {
+	@Binds
+	@Singleton
+	public abstract UniqTokenViewFactory bindTokenViewFactory(ConfigDrivenUniqTokenViewFactory configDrivenFactory);
+
 	@Binds
 	@Singleton
 	public abstract TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);

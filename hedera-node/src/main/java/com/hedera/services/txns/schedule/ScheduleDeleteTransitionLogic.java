@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -38,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
@@ -46,9 +49,11 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	ScheduleStore store;
 	TransactionContext txnCtx;
 
+	@Inject
 	public ScheduleDeleteTransitionLogic(
 			ScheduleStore store,
-			TransactionContext txnCtx) {
+			TransactionContext txnCtx
+	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
 	}

@@ -33,6 +33,10 @@ import java.util.function.Supplier;
 public abstract class ContextModule {
 	@Binds
 	@Singleton
+	public abstract CurrentPlatformStatus bindCurrentPlatformStatus(ContextPlatformStatus contextPlatformStatus);
+
+	@Binds
+	@Singleton
 	public abstract TransactionContext bindTransactionContext(BasicTransactionContext txnCtx);
 
 	@Provides

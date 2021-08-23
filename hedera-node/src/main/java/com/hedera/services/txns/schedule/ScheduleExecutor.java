@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Objects;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -35,11 +37,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Defines a final class to handle scheduled transaction execution once the scheduled transaction is signed by the
  * required number of parties.
- *
- * @author Michael Tinker
- * @author Abhishek Pandey
  */
+@Singleton
 public final class ScheduleExecutor {
+	@Inject
+	public ScheduleExecutor() {
+	}
+
 	/**
 	 * Given a {@link ScheduleID}, {@link ScheduleStore}, {@link TransactionContext} it first checks if the underlying
 	 * transaction is already executed/deleted before attempting to execute and then returns response code after

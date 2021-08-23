@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 @Module
 public abstract class NetworkLogicModule {
@@ -58,7 +59,7 @@ public abstract class NetworkLogicModule {
 
 	@Provides
 	@IntoMap
-	@FunctionKey(Freeze)
+	@FunctionKey(UncheckedSubmit)
 	public static List<TransitionLogic> provideUncheckedSubLogic(UncheckedSubmitTransitionLogic uncheckedSubLogic) {
 		return List.of(uncheckedSubLogic);
 	}
