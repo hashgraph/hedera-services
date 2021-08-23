@@ -198,6 +198,28 @@ class AccountTest {
 	}
 
 	@Test
+	void cannotAutomaticallyAssociateIfLimitReaches() {
+		final var firstNewToken = new Token(new Id(0, 0, 888));
+		subject.setMaxAutomaticAssociations(maxAutoAssociations);
+		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
+
+		assertFailsWith(
+				() -> subject.associateWith(List.of(firstNewToken), 10, true),
+				FAIL_INVALID);
+	}
+
+	@Test
+	void incrementsTheAlreadyUsedAutoAssociationAsExpected() {
+		final var firstNewToken = new Token(new Id(0, 0, 888));
+		subject.setMaxAutomaticAssociations(maxAutoAssociations);
+		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations-1);
+
+		subject.associateWith(List.of(firstNewToken), 10, true);
+
+		assertEquals(maxAutoAssociations, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
 	void invalidValuesToAlreadyUsedAutoAssociationsFailAsExpected() {
 		assertFailsWith(
 				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations+1),

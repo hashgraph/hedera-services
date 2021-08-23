@@ -103,8 +103,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -631,6 +629,7 @@ class HederaTokenStoreTest {
 	@Test
 	void changingOwnerRejectsUnassociatedReceiver() {
 		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
+		given(hederaLedger.maxAutomaticAssociations(counterparty)).willReturn(0);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -1320,6 +1319,53 @@ class HederaTokenStoreTest {
 		final var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
 
 		assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
+	}
+
+	@Test
+	void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(0);
+
+		var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	void adjustmentFailsOnAutomaticAssociationLimitReached() {
+		final var tokens = mock(MerkleAccountTokens.class);
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
+		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(3);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(anotherFeeCollector)).willReturn(3);
+		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
+		given(tokens.includes(misc)).willReturn(false);
+
+		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+
+		assertEquals(FAIL_INVALID, status);
+		verify(tokenRelsLedger, never()).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
+		verify(hederaLedger, never()).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
+	}
+
+	@Test
+	void adjustmentWorksAndIncrementsAlreadyUsedAutoAssociationCountForNewAssociation() {
+		final var tokens = mock(MerkleAccountTokens.class);
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
+		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(5);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(anotherFeeCollector)).willReturn(3);
+		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
+		given(tokens.includes(misc)).willReturn(false);
+
+		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+
+		assertEquals(OK, status);
+		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
+		verify(hederaLedger).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
 	}
 
 	@Test
