@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.StringValue;
+import com.google.protobuf.UInt32Value;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
@@ -55,6 +56,7 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -68,20 +70,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 
 class CryptoUpdateTransitionLogicTest {
 	final private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	final private long curExpiry = consensusTime.getEpochSecond() + 2L;
 	final private long newExpiry = consensusTime.getEpochSecond() + 7776000L;
+	final private int curMaxAutomaticAssociations = 10;
+	final private int newMaxAutomaticAssociations = 15;
 
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long autoRenewPeriod = 100_001L;
@@ -188,6 +193,33 @@ class CryptoUpdateTransitionLogicTest {
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
 		assertEquals(newExpiry, (long)changes.get(AccountProperty.EXPIRY));
+	}
+
+	@Test
+	void updatesMaxAutomaticAssociationsIfPresent() {
+		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(curMaxAutomaticAssociations);
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(target::equals), captor.capture());
+		verify(txnCtx).setStatus(SUCCESS);
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		assertEquals(1, changes.size());
+		assertEquals(newMaxAutomaticAssociations, (int)changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS));
+	}
+
+	@Test
+	void updateMaxAutomaticAssociationsFailAsExpected() {
+		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(newMaxAutomaticAssociations+1);
+
+		subject.doStateTransition();
+
+		verify(ledger, never()).customize(argThat(target::equals), captor.capture());
+		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	@Test
@@ -472,6 +504,9 @@ class CryptoUpdateTransitionLogicTest {
 		}
 		if (updating.contains(AUTO_RENEW_PERIOD)) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
+		}
+		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
+			op.setMaxAutomaticTokenAssociations(UInt32Value.of(newMaxAutomaticAssociations));
 		}
 		op.setAccountIDToUpdate(target);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
