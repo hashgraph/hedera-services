@@ -125,7 +125,7 @@ public class Account {
 		setAlreadyUsedAutomaticAssociations(--count);
 	}
 
-	public void associateWith(List<Token> tokens, int maxAllowed) {
+	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
 		final var alreadyAssociated = associatedTokens.size();
 		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
 		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
@@ -134,6 +134,9 @@ public class Account {
 		for (var token : tokens) {
 			final var id = token.getId();
 			validateFalse(associatedTokens.contains(id), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			if (automaticAssociation) {
+				incrementUsedAutomaticAssocitions();
+			}
 			uniqueIds.add(id);
 		}
 

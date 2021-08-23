@@ -26,6 +26,7 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -60,7 +61,8 @@ public enum NoopExpiringCreations implements EntityCreator {
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx,
-			List<FcAssessedCustomFee> customFeesCharged
+			List<FcAssessedCustomFee> customFeesCharged,
+			List<FcTokenAssociation> newTokenAssociations
 	) {
 		throw new UnsupportedOperationException();
 	}

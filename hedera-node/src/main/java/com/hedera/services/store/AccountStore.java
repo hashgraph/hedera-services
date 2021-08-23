@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,10 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -54,7 +56,7 @@ public class AccountStore {
 	}
 
 	/**
-	 * Returns a model of the requested token, with operations that can be used to
+	 * Returns a model of the requested account, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
@@ -62,17 +64,38 @@ public class AccountStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
+	 * The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by passing a `null` explicit response code
+	 *
 	 * @param id the account to load
 	 * @return a usable model of the account
 	 * @throws InvalidTransactionException if the requested account is missing, deleted, or expired and pending removal
 	 */
 	public Account loadAccount(Id id) {
+		return this.loadAccountOrFailWith(id, null);
+	}
+
+	/**
+	 * Attempts to load an account from state
+	 * and throws the given code if an exception occurs due to an invalid account.
+	 *
+	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
+	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
+	 * in order for its changes to be applied to the Swirlds state, and included in the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+	 *
+	 * @param id   the account to load
+	 * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+	 * @return a usable model of the account if available
+	 */
+	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
+		Account account;
+
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
 		final var merkleAccount = accounts.get().get(key);
 
-		validateUsable(merkleAccount);
+		validateUsable(merkleAccount, code);
 
-		final var account = new Account(id);
+		account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
@@ -102,10 +125,9 @@ public class AccountStore {
 		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
 	}
 
-
-	private void validateUsable(MerkleAccount merkleAccount) {
-		validateTrue(merkleAccount != null, INVALID_ACCOUNT_ID);
-		validateFalse(merkleAccount.isDeleted(), ACCOUNT_DELETED);
+	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
+		validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : INVALID_ACCOUNT_ID);
+		validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : ACCOUNT_DELETED);
 		if (dynamicProperties.autoRenewEnabled()) {
 			if (merkleAccount.getBalance() == 0) {
 				final boolean isExpired = !validator.isAfterConsensusSecond(merkleAccount.getExpiry());

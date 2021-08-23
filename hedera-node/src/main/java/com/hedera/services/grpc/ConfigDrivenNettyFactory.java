@@ -43,7 +43,7 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 	private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
 
 	private static final List<String> SUPPORTED_CIPHERS = List.of(
-			"TLS_AES_256_GCM_SHA384",
+			"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
 			"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
 	);
 	private static final List<String> SUPPORTED_PROTOCOLS = List.of(

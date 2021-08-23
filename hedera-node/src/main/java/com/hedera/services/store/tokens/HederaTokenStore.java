@@ -36,7 +36,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
-import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
@@ -48,7 +47,6 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -81,8 +79,6 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
-import static com.hedera.services.store.CreationResult.failure;
-import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -108,7 +104,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -438,69 +433,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		});
 	}
 
-	@Override
-	public CreationResult<TokenID> createProvisionally(
-			final TokenCreateTransactionBody request,
-			final AccountID sponsor,
-			final long now
-	) {
-		var validity = usableOrElse(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-		if (validity != OK) {
-			return failure(validity);
-		}
-		if (request.hasAutoRenewAccount()) {
-			validity = usableOrElse(request.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (validity != OK) {
-				return failure(validity);
-			}
-		}
-
-		final var freezeKey = asUsableFcKey(request.getFreezeKey());
-		final var adminKey = asUsableFcKey(request.getAdminKey());
-		final var kycKey = asUsableFcKey(request.getKycKey());
-		final var wipeKey = asUsableFcKey(request.getWipeKey());
-		final var supplyKey = asUsableFcKey(request.getSupplyKey());
-		final var feeScheduleKey = asUsableFcKey(request.getFeeScheduleKey());
-
-		final var expiry = expiryOf(request, now);
-		pendingId = ids.newTokenId(sponsor);
-		pendingCreation = new MerkleToken(
-				expiry,
-				request.getInitialSupply(),
-				request.getDecimals(),
-				request.getSymbol(),
-				request.getName(),
-				request.getFreezeDefault(),
-				kycKey.isEmpty(),
-				fromGrpcAccountId(request.getTreasury()));
-		pendingCreation.setTokenType(request.getTokenTypeValue());
-		pendingCreation.setSupplyType(request.getSupplyTypeValue());
-		pendingCreation.setMemo(request.getMemo());
-		pendingCreation.setMaxSupply(request.getMaxSupply());
-		adminKey.ifPresent(pendingCreation::setAdminKey);
-		kycKey.ifPresent(pendingCreation::setKycKey);
-		wipeKey.ifPresent(pendingCreation::setWipeKey);
-		freezeKey.ifPresent(pendingCreation::setFreezeKey);
-		supplyKey.ifPresent(pendingCreation::setSupplyKey);
-		feeScheduleKey.ifPresent(pendingCreation::setFeeScheduleKey);
-
-		if (request.hasAutoRenewAccount()) {
-			pendingCreation.setAutoRenewAccount(fromGrpcAccountId(request.getAutoRenewAccount()));
-			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
-		}
-
-		if (request.getCustomFeesCount() > 0) {
-			final var customFees = request.getCustomFeesList();
-			validity = validateFeeSchedule(customFees, false, pendingId, pendingCreation);
-			if (validity != OK) {
-				return failure(validity);
-			}
-			pendingCreation.setFeeScheduleFrom(customFees, EntityId.fromGrpcTokenId(pendingId));
-		}
-
-		return success(pendingId);
-	}
-
 	private ResponseCodeEnum validateFeeSchedule(
 			final List<CustomFee> feeSchedule,
 			final boolean isUpdate,
@@ -663,6 +595,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return (a > 0 && b > 0);
 	}
 
+	@Override
 	public void addKnownTreasury(final AccountID aId, final TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
@@ -713,12 +646,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private boolean isValidAutoRenewPeriod(final long secs) {
 		return validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
-	}
-
-	private long expiryOf(final TokenCreateTransactionBody request, final long now) {
-		return request.hasAutoRenewAccount()
-				? now + request.getAutoRenewPeriod().getSeconds()
-				: request.getExpiry().getSeconds();
 	}
 
 	@Override

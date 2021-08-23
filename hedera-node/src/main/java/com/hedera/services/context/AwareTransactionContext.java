@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
@@ -94,6 +95,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<TokenTransferList> explicitTokenTransfers;
 	private List<FcAssessedCustomFee> assessedCustomFees;
+	private List<FcTokenAssociation> newTokenAssociations;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -119,6 +121,7 @@ public class AwareTransactionContext implements TransactionContext {
 		hasComputedRecordSoFar = false;
 		explicitTokenTransfers = null;
 		assessedCustomFees = null;
+		newTokenAssociations = null;
 
 		ctx.narratedCharging().resetForTxn(accessor, submittingMember);
 
@@ -133,6 +136,11 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
 		this.assessedCustomFees = assessedCustomFees;
+	}
+
+	@Override
+	public void setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations) {
+		this.newTokenAssociations = newTokenAssociations;
 	}
 
 	@Override
@@ -177,7 +185,8 @@ public class AwareTransactionContext implements TransactionContext {
 				receipt,
 				explicitTokenTransfers,
 				ctx,
-				assessedCustomFees);
+				assessedCustomFees,
+				newTokenAssociations);
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
@@ -319,5 +328,9 @@ public class AwareTransactionContext implements TransactionContext {
 
 	List<FcAssessedCustomFee> getAssessedCustomFees() {
 		return assessedCustomFees;
+	}
+
+	List<FcTokenAssociation> getNewTokenAssociations() {
+		return newTokenAssociations;
 	}
 }

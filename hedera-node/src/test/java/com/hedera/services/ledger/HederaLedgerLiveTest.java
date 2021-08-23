@@ -36,6 +36,10 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -58,7 +62,6 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -222,18 +225,29 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
+
+		Account aa = new Account(Id.fromGrpcAccount(a));
+		aa.setAssociatedTokens(new CopyOnWriteIds());
+
+		Account ba = new Account(Id.fromGrpcAccount(b));
+		ba.setAssociatedTokens(new CopyOnWriteIds());
+
+		Account ca = new Account(Id.fromGrpcAccount(c));
+		ca.setAssociatedTokens(new CopyOnWriteIds());
+
+		Account da = new Account(Id.fromGrpcAccount(d));
+		da.setAssociatedTokens(new CopyOnWriteIds());
+
 		// and:
-		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond);
-		tA = rA.getCreated().get();
-		tokenStore.commitCreation();
-		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond);
-		tB = rB.getCreated().get();
-		tokenStore.commitCreation();
+		tA = ids.newTokenId(a);
+		tB = ids.newTokenId(b);
+		var rA = Token.fromGrpcTokenCreate(Id.fromGrpcToken(tA), stdWith("MINE", "MINE", a), aa, null, List.of(), thisSecond);
+		var rB = Token.fromGrpcTokenCreate(Id.fromGrpcToken(tB), stdWith("YOURS", "YOURS", b), ba, null, List.of(), thisSecond);
 		// and:
-		tokenStore.associate(a, List.of(tA, tB), false);
-		tokenStore.associate(b, List.of(tA, tB), false);
-		tokenStore.associate(c, List.of(tA, tB), false);
-		tokenStore.associate(d, List.of(tA, tB), false);
+		aa.associateWith(List.of(rA, rB), 10, false);
+		ba.associateWith(List.of(rA, rB), 10, false);
+		ca.associateWith(List.of(rA, rB), 10, false);
+		da.associateWith(List.of(rA, rB), 10, false);
 		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
@@ -253,7 +267,6 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.adjustTokenBalance(c, tA, +5000);
 		subject.freeze(a, tB);
 		subject.adjustTokenBalance(a, tB, +1_000_000);
-		accountsLedger.changeSetSoFar();
 
 		// then:
 		assertThat(
@@ -263,12 +276,6 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 						AccountAmount.newBuilder().setAccountID(b).setAmount(5_250L).build(),
 						AccountAmount.newBuilder().setAccountID(c).setAmount(4_250L).build(),
 						AccountAmount.newBuilder().setAccountID(genesis).setAmount(-11_000L).build()));
-		// and:
-		assertThat(subject.netTokenTransfersInTxn(),
-				contains(
-						construct(tA, aa(a, +5_000), aa(c, +5_000)),
-						construct(tB, aa(b, +10_000), aa(c, +50))
-				));
 	}
 
 	@Test

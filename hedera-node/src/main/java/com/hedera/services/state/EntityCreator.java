@@ -25,6 +25,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -82,6 +83,8 @@ public interface EntityCreator {
 	 * 		services context
 	 * @param assessedCustomFees
 	 * 		the list of assessed custom fees
+	 * @param newTokenAssociations
+	 * 		the list of newly created token associations
 	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(
@@ -92,7 +95,8 @@ public interface EntityCreator {
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx,
-			List<FcAssessedCustomFee> assessedCustomFees);
+			List<FcAssessedCustomFee> assessedCustomFees,
+			List<FcTokenAssociation> newTokenAssociations);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

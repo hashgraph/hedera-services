@@ -117,7 +117,7 @@ class AccountTest {
 
 		// expect:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(alreadyAssocToken), 100),
+				() -> subject.associateWith(List.of(alreadyAssocToken), 100, false),
 				TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 	}
 
@@ -129,7 +129,7 @@ class AccountTest {
 
 		// when:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), 3),
+				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), 3, false),
 				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 	}
 
@@ -141,7 +141,7 @@ class AccountTest {
 		final var expectedFinalTokens = "[0.0.666, 0.0.777, 0.0.888, 0.0.999]";
 
 		// when:
-		subject.associateWith(List.of(firstNewToken, secondNewToken), 10);
+		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, false);
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
