@@ -56,14 +56,11 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -102,25 +99,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -153,6 +142,78 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 
 class HederaTokenStoreTest {
+	private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
+	private static final JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
+	private static final Key adminKey = TOKEN_ADMIN_KT.asKey();
+	private static final Key kycKey = TOKEN_KYC_KT.asKey();
+	private static final Key freezeKey = TOKEN_FREEZE_KT.asKey();
+	private static final Key wipeKey = MISC_ACCOUNT_KT.asKey();
+	private static final Key supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
+	private static final Key feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
+
+	private static final String symbol = "NOTHBAR";
+	private static final String newSymbol = "REALLYSOM";
+	private static final String newMemo = "NEWMEMO";
+	private static final String memo = "TOKENMEMO";
+	private static final String name = "TOKENNAME";
+	private static final String newName = "NEWNAME";
+	private static final int maxCustomFees = 5;
+	private static final long expiry = CONSENSUS_NOW + 1_234_567L;
+	private static final long newExpiry = CONSENSUS_NOW + 1_432_765L;
+	private static final long totalSupply = 1_000_000L;
+	private static final int decimals = 10;
+	private static final long treasuryBalance = 50_000L;
+	private static final long sponsorBalance = 1_000L;
+	private static final TokenID misc = IdUtils.asToken("3.2.1");
+	private static final TokenID nonfungible = IdUtils.asToken("4.3.2");
+	private static final TokenID anotherMisc = IdUtils.asToken("6.4.2");
+	private static final boolean freezeDefault = true;
+	private static final boolean accountsKycGrantedByDefault = false;
+	private static final long autoRenewPeriod = 500_000L;
+	private static final long newAutoRenewPeriod = 2_000_000L;
+	private static final AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
+	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("1.2.6");
+	private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.0");
+	private static final AccountID treasury = IdUtils.asAccount("1.2.3");
+	private static final AccountID newTreasury = IdUtils.asAccount("3.2.1");
+	private static final AccountID sponsor = IdUtils.asAccount("1.2.666");
+	private static final AccountID counterparty = IdUtils.asAccount("1.2.777");
+	private static final AccountID feeCollector = treasury;
+	private static final AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
+	private static final TokenID created = IdUtils.asToken("1.2.666666");
+	private static final TokenID pending = IdUtils.asToken("1.2.555555");
+	private static final int MAX_TOKENS_PER_ACCOUNT = 100;
+	private static final int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
+	private static final int MAX_TOKEN_NAME_UTF8_BYTES = 100;
+	private static final Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
+	private static final Pair<AccountID, TokenID> treasuryNft = asTokenRel(primaryTreasury, nonfungible);
+	private static final Pair<AccountID, TokenID> newTreasuryNft = asTokenRel(newTreasury, nonfungible);
+	private static final Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
+	private static final Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
+	private static final Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private static final NftId aNft = new NftId(4, 3, 2, 1_234);
+	private static final NftId tNft = new NftId(4, 3, 2, 1_2345);
+	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
+	private static final CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
+	private static final FractionalFee.Builder fractionalFee = fractional(15L, 100L)
+			.setMaximumAmount(50)
+			.setMinimumAmount(10);
+	private static final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
+	private static final CustomFee customFixedFeeInHts = new CustomFeeBuilder(anotherFeeCollector)
+			.withFixedFee(fixedHts(misc, 100L));
+	private static final CustomFee customRoyaltyNoFallback = new CustomFeeBuilder(feeCollector)
+			.withRoyaltyFee(royaltyNoFallback(11, 111));
+	private static final CustomFee customRoyaltyHtsFallback = new CustomFeeBuilder(anotherFeeCollector)
+			.withRoyaltyFee(royaltyWithFallback(11, 111, fixedHts(misc, 123)));
+	private static final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
+	private static final CustomFee customFractionalFee = builder.withFractionalFee(fractionalFee);
+	private static final List<CustomFee> grpcCustomFees = List.of(
+			customFixedFeeInHbar,
+			customFixedFeeInHts,
+			customFractionalFee,
+			customFixedFeeSameToken
+	);
+
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private UniqTokenViewsManager uniqTokenViewsManager;
@@ -165,81 +226,10 @@ class HederaTokenStoreTest {
 	private MerkleToken token;
 	private MerkleToken nonfungibleToken;
 
-	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
-	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
-	private Key adminKey, kycKey, freezeKey, supplyKey, wipeKey, feeScheduleKey;
-	private String symbol = "NOTHBAR";
-	private String newSymbol = "REALLYSOM";
-	private String newMemo = "NEWMEMO";
-	private String memo = "TOKENMEMO";
-	private String name = "TOKENNAME";
-	private String newName = "NEWNAME";
-	private int maxCustomFees = 5;
-	private long expiry = CONSENSUS_NOW + 1_234_567;
-	private long newExpiry = CONSENSUS_NOW + 1_432_765;
-	private long totalSupply = 1_000_000;
-	private int decimals = 10;
-	private long treasuryBalance = 50_000, sponsorBalance = 1_000;
-	private TokenID misc = IdUtils.asToken("3.2.1");
-	private TokenID nonfungible = IdUtils.asToken("4.3.2");
-	private TokenID anotherMisc = IdUtils.asToken("6.4.2");
-	private boolean freezeDefault = true;
-	private boolean accountsKycGrantedByDefault = false;
-	private long autoRenewPeriod = 500_000;
-	private long newAutoRenewPeriod = 2_000_000;
-	private AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
-	private AccountID newAutoRenewAccount = IdUtils.asAccount("1.2.6");
-	private AccountID primaryTreasury = IdUtils.asAccount("0.0.0");
-	private AccountID treasury = IdUtils.asAccount("1.2.3");
-	private AccountID newTreasury = IdUtils.asAccount("3.2.1");
-	private AccountID sponsor = IdUtils.asAccount("1.2.666");
-	private AccountID counterparty = IdUtils.asAccount("1.2.777");
-	private AccountID feeCollector = treasury;
-	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
-	private TokenID created = IdUtils.asToken("1.2.666666");
-	private TokenID pending = IdUtils.asToken("1.2.555555");
-	private int MAX_TOKENS_PER_ACCOUNT = 100;
-	private int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
-	private int MAX_TOKEN_NAME_UTF8_BYTES = 100;
-	private Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
-	private Pair<AccountID, TokenID> treasuryNft = asTokenRel(primaryTreasury, nonfungible);
-	private Pair<AccountID, TokenID> newTreasuryNft = asTokenRel(newTreasury, nonfungible);
-	private Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
-	private Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
-	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
-	private NftId aNft = new NftId(4, 3, 2, 1_234);
-	private NftId tNft = new NftId(4, 3, 2, 1_2345);
-	private Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
-	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
-	private FractionalFee.Builder fractionalFee = fractional(15L, 100L)
-			.setMaximumAmount(50)
-			.setMinimumAmount(10);
-	private CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
-	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(anotherFeeCollector)
-			.withFixedFee(fixedHts(misc, 100L));
-	private CustomFee customRoyaltyNoFallback = new CustomFeeBuilder(feeCollector)
-			.withRoyaltyFee(royaltyNoFallback(11, 111));
-	private CustomFee customRoyaltyHtsFallback = new CustomFeeBuilder(anotherFeeCollector)
-			.withRoyaltyFee(royaltyWithFallback(11, 111, fixedHts(misc, 123)));
-	private CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
-	private CustomFee customFractionalFee = builder.withFractionalFee(fractionalFee);
-	private List<CustomFee> grpcCustomFees = List.of(
-			customFixedFeeInHbar,
-			customFixedFeeInHts,
-			customFractionalFee,
-			customFixedFeeSameToken
-	);
 	private HederaTokenStore subject;
 
 	@BeforeEach
 	void setup() {
-		adminKey = TOKEN_ADMIN_KT.asKey();
-		kycKey = TOKEN_KYC_KT.asKey();
-		freezeKey = TOKEN_FREEZE_KT.asKey();
-		wipeKey = MISC_ACCOUNT_KT.asKey();
-		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
-		feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
-
 		token = mock(MerkleToken.class);
 		given(token.expiry()).willReturn(expiry);
 		given(token.symbol()).willReturn(symbol);
@@ -311,7 +301,8 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
 		given(tokens.getForModify(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
-		given(tokens.get(fromTokenId(tNft.tokenId())).treasury()).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
+		given(tokens.get(fromTokenId(tNft.tokenId())).treasury()).willReturn(
+				EntityId.fromGrpcAccountId(primaryTreasury));
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -332,7 +323,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rebuildsAsExpected() {
-		ArgumentCaptor<Consumer<MerkleNode>> captor = forClass(Consumer.class);
+		final var captor = forClass(Consumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
 		final var deletedToken = new MerkleToken();
 		deletedToken.setDeleted(true);
@@ -342,7 +333,7 @@ class HederaTokenStoreTest {
 
 		verify(tokens, times(2)).forEachNode(captor.capture());
 
-		Consumer<MerkleNode> visitor = captor.getAllValues().get(1);
+		final var visitor = captor.getAllValues().get(1);
 		visitor.accept(new MerklePair<>(fromTokenId(misc), token));
 		visitor.accept(new MerklePair<>(fromTokenId(anotherMisc), deletedToken));
 
@@ -380,7 +371,7 @@ class HederaTokenStoreTest {
 	@Test
 	void applicationWorks() {
 		final var change = mock(Consumer.class);
-		InOrder inOrder = Mockito.inOrder(change, tokens);
+		final var inOrder = Mockito.inOrder(change, tokens);
 
 		subject.apply(misc, change);
 
@@ -635,8 +626,10 @@ class HederaTokenStoreTest {
 
 	@Test
 	void changingOwnerDoesTheExpected() {
-		long startSponsorNfts = 5, startCounterpartyNfts = 8;
-		long startSponsorANfts = 4, startCounterpartyANfts = 1;
+		final long startSponsorNfts = 5;
+		final long startCounterpartyNfts = 8;
+		final long startSponsorANfts = 4;
+		final long startCounterpartyANfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(sponsor);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
 		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(aNft.tokenId()), aNft.serialNo());
@@ -659,8 +652,10 @@ class HederaTokenStoreTest {
 
 	@Test
 	void changingOwnerDoesTheExpectedWithTreasuryReturn() {
-		long startTreasuryNfts = 5, startCounterpartyNfts = 8;
-		long startTreasuryTNfts = 4, startCounterpartyTNfts = 1;
+		final long startTreasuryNfts = 5;
+		final long startCounterpartyNfts = 8;
+		final long startTreasuryTNfts = 4;
+		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(counterparty);
 		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(tNft.tokenId()), tNft.serialNo());
@@ -687,8 +682,10 @@ class HederaTokenStoreTest {
 
 	@Test
 	void changingOwnerDoesTheExpectedWithTreasuryExit() {
-		long startTreasuryNfts = 5, startCounterpartyNfts = 8;
-		long startTreasuryTNfts = 4, startCounterpartyTNfts = 1;
+		final long startTreasuryNfts = 5;
+		final long startCounterpartyNfts = 8;
+		final long startTreasuryTNfts = 4;
+		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
 		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(tNft.tokenId()), tNft.serialNo());
@@ -715,11 +712,10 @@ class HederaTokenStoreTest {
 
 	@Test
 	void changingOwnerWildCardDoesTheExpectedWithTreasury() {
-		long startTreasuryNfts = 1, startCounterpartyNfts = 0;
-		long startTreasuryTNfts = 1, startCounterpartyTNfts = 0;
-		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
-		final var receiver = EntityId.fromGrpcAccountId(counterparty);
-		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(tNft.tokenId()), tNft.serialNo());
+		final long startTreasuryNfts = 1;
+		final long startCounterpartyNfts = 0;
+		final long startTreasuryTNfts = 1;
+		final long startCounterpartyTNfts = 0;
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
 		}});
@@ -880,7 +876,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsZeroTokenBalanceKey() {
-		Set<TokenID> tokenSet = new HashSet<>();
+		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(nonfungible);
 		givenUpdateTarget(ALL_KEYS, nonfungibleToken);
 		var op = updateWith(ALL_KEYS, nonfungible, true, true, true);
@@ -893,7 +889,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void treasuryRemovalForTokenRemovesKeyWhenEmpty() {
-		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		final Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
 		subject.knownTreasuries.put(treasury, tokenSet);
 
 		subject.removeKnownTreasuryForToken(treasury, misc);
@@ -911,7 +907,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void removeKnownTreasuryWorks() {
-		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc, anotherMisc));
+		final Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc, anotherMisc));
 		subject.knownTreasuries.put(treasury, tokenSet);
 
 		subject.removeKnownTreasuryForToken(treasury, misc);
@@ -923,7 +919,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void isKnownTreasuryWorks() {
-		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		final Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
 
@@ -932,7 +928,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void treasuriesServeWorks() {
-		Set<TokenID> tokenSet = new HashSet<>(List.of(anotherMisc, misc));
+		final Set<TokenID> tokenSet = new HashSet<>(List.of(anotherMisc, misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
 		assertEquals(List.of(misc, anotherMisc), subject.listOfTokensServed(treasury));
@@ -943,7 +939,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void isTreasuryForTokenWorks() {
-		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		final Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
 
@@ -972,7 +968,7 @@ class HederaTokenStoreTest {
 	@Test
 	void updateHappyPathIgnoresZeroExpiry() {
 		subject.addKnownTreasury(treasury, misc);
-		Set<TokenID> tokenSet = new HashSet<>();
+		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 		givenUpdateTarget(ALL_KEYS, token);
 		var op = updateWith(ALL_KEYS, misc, true, true, true);
@@ -989,7 +985,7 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRemovesAdminKeyWhenAppropos() {
 		subject.addKnownTreasury(treasury, misc);
-		Set<TokenID> tokenSet = new HashSet<>();
+		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 		givenUpdateTarget(EnumSet.noneOf(KeyType.class), token);
 		final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), misc, false, false, false);
@@ -1003,7 +999,7 @@ class HederaTokenStoreTest {
 	@Test
 	void updateHappyPathWorksForEverythingWithNewExpiry() {
 		subject.addKnownTreasury(treasury, misc);
-		Set<TokenID> tokenSet = new HashSet<>();
+		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 		givenUpdateTarget(ALL_KEYS, token);
 		var op = updateWith(ALL_KEYS, misc, true, true, true);
@@ -1052,7 +1048,6 @@ class HederaTokenStoreTest {
 	@Test
 	void updateHappyPathWorksWithNewMemoForNonfungible() {
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
 		final var op = updateWith(NO_KEYS,
@@ -1088,27 +1083,27 @@ class HederaTokenStoreTest {
 		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE
 	}
 
-	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
-	private static EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
+	private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
+	private static final EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
 
 	private TokenUpdateTransactionBody updateWith(
-			EnumSet<KeyType> keys,
-			TokenID tokenId,
-			boolean useNewSymbol,
-			boolean useNewName,
-			boolean useNewTreasury
+			final EnumSet<KeyType> keys,
+			final TokenID tokenId,
+			final boolean useNewSymbol,
+			final boolean useNewName,
+			final boolean useNewTreasury
 	) {
 		return updateWith(keys, tokenId, useNewName, useNewSymbol, useNewTreasury, false, false);
 	}
 
 	private TokenUpdateTransactionBody updateWith(
-			EnumSet<KeyType> keys,
-			TokenID tokenId,
-			boolean useNewSymbol,
-			boolean useNewName,
-			boolean useNewTreasury,
-			boolean useNewAutoRenewAccount,
-			boolean useNewAutoRenewPeriod
+			final EnumSet<KeyType> keys,
+			final TokenID tokenId,
+			final boolean useNewSymbol,
+			final boolean useNewName,
+			final boolean useNewTreasury,
+			final boolean useNewAutoRenewAccount,
+			final boolean useNewAutoRenewPeriod
 	) {
 		return updateWith(
 				keys,
@@ -1123,15 +1118,15 @@ class HederaTokenStoreTest {
 	}
 
 	private TokenUpdateTransactionBody updateWith(
-			EnumSet<KeyType> keys,
-			TokenID tokenId,
-			boolean useNewSymbol,
-			boolean useNewName,
-			boolean useNewTreasury,
-			boolean useNewAutoRenewAccount,
-			boolean useNewAutoRenewPeriod,
-			boolean setInvalidKeys,
-			boolean useNewMemo
+			final EnumSet<KeyType> keys,
+			final TokenID tokenId,
+			final boolean useNewSymbol,
+			final boolean useNewName,
+			final boolean useNewTreasury,
+			final boolean useNewAutoRenewAccount,
+			final boolean useNewAutoRenewPeriod,
+			final boolean setInvalidKeys,
+			final boolean useNewMemo
 	) {
 		final var invalidKey = Key.getDefaultInstance();
 		final var op = TokenUpdateTransactionBody.newBuilder().setToken(tokenId);
@@ -1153,7 +1148,7 @@ class HederaTokenStoreTest {
 		if (useNewAutoRenewPeriod) {
 			op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
 		}
-		for (KeyType key : keys) {
+		for (var key : keys) {
 			switch (key) {
 				case WIPE:
 					op.setWipeKey(setInvalidKeys ? invalidKey : newKey);
@@ -1178,7 +1173,7 @@ class HederaTokenStoreTest {
 		return op.build();
 	}
 
-	private void givenUpdateTarget(EnumSet<KeyType> keys, MerkleToken token) {
+	private void givenUpdateTarget(final EnumSet<KeyType> keys, final MerkleToken token) {
 		if (keys.contains(KeyType.WIPE)) {
 			given(token.hasWipeKey()).willReturn(true);
 		}
@@ -1321,7 +1316,7 @@ class HederaTokenStoreTest {
 
 		verify(tokens, never()).put(fromTokenId(created), token);
 		verify(ids).reclaimLastId();
-		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
+		assertSame(HederaTokenStore.NO_PENDING_ID, subject.pendingId);
 		assertNull(subject.pendingCreation);
 	}
 
@@ -1339,480 +1334,11 @@ class HederaTokenStoreTest {
 		subject.commitCreation();
 
 		verify(tokens).put(fromTokenId(created), token);
-		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
+		assertSame(HederaTokenStore.NO_PENDING_ID, subject.pendingId);
 		assertNull(subject.pendingCreation);
 		assertTrue(subject.isKnownTreasury(treasury));
 		assertEquals(Set.of(created, misc), subject.knownTreasuries.get(treasury));
 	}
-
-	@Test
-	void rejectsTooManyFeeSchedules() {
-		given(properties.maxCustomFeesAllowed()).willReturn(1);
-		final var req = fullyValidTokenCreateAttempt().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEES_LIST_TOO_LONG, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsUnderspecifiedFeeSchedules() {
-		final var grpcUnderspecifiedCustomFees = List.of(builder.withOnlyFeeCollector());
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcUnderspecifiedCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_NOT_FULLY_SPECIFIED, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsInvalidFeeCollector() {
-		given(accountsLedger.exists(anotherFeeCollector)).willReturn(false);
-		final var req = fullyValidTokenCreateAttempt().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsMissingTokenDenomination() {
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
-		final var req = fullyValidTokenCreateAttempt().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(INVALID_TOKEN_ID_IN_CUSTOM_FEES, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNftAsCustomFeeDenomination() {
-		final var grpcNftAsDenominatingToken = List.of(
-				builder.withFixedFee(fixedHts(nonfungible, 100L))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNftAsDenominatingToken).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsUnassociatedFeeCollector() {
-		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
-		final var req = fullyValidTokenCreateAttempt().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsFractionalFeeInCustomFeeWhenCreatingNft() {
-		final var req = fullyValidTokenCreateAttempt()
-				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsZeroFractionInFractionalFee() {
-		final var grpcZeroFractionCustomFees = List.of(
-				builder.withFractionalFee(fractional(0L, 1_000L))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcZeroFractionCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNegativeFractionInFractionalFee() {
-		final var grpcNegativeFractionCustomFees = List.of(
-				builder.withFractionalFee(fractional(123L, -1_000L))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeFractionCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNegativeMaxInFractionalFee() {
-		final var grpcNegativeMaximumCustomFees = List.of(
-				builder.withFractionalFee(
-						fractional(123L, 1_000L)
-								.setMaximumAmount(-1L))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeMaximumCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNegativeMinInFractionalFee() {
-		final var grpcNegativeMinimumCustomFees = List.of(
-				builder.withFractionalFee(
-						fractional(123L, 1_000L)
-								.setMinimumAmount(-1L))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeMinimumCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNegativeAmountInFixedFee() {
-		final var grpcNegativeFixedCustomFees = List.of(
-				builder.withFixedFee(fixedHts(-1_000L))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeFixedCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsInvalidFractionInFractionalFee() {
-		final var grpcDivideByZeroCustomFees = List.of(
-				builder.withFractionalFee(fractional(15, 0))
-		);
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcDivideByZeroCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void acceptsValidFractionInRoyaltyFeeNoFallback() {
-		// given:
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
-				.addCustomFees(customRoyaltyNoFallback)
-				.build();
-
-		// when:
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
-		assertEquals(OK, result.getStatus());
-	}
-
-	@Test
-	void acceptsValidRoyaltyFeeWithFallback() {
-		// given:
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
-				.addCustomFees(customRoyaltyHtsFallback)
-				.build();
-
-		// when:
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
-		assertEquals(OK, result.getStatus());
-	}
-
-	@Test
-	void validatesFallbackForRoyaltyFeeIfPresent() {
-		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
-		// and:
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
-				.addCustomFees(customRoyaltyHtsFallback)
-				.build();
-
-		// when:
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
-	}
-
-	@Test
-	void rejectsInvalidFractionInRoyaltyFee() {
-		// given:
-		final var dbz = builder.withRoyaltyFee(royaltyNoFallback(15, 0));
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
-				.addCustomFees(dbz)
-				.build();
-
-		// when:
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
-		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsOversizedFractionInRoyaltyFeeOnCreation() {
-		final var royalty = builder.withRoyaltyFee(royaltyNoFallback(9, 8));
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE)
-				.addCustomFees(royalty)
-				.build();
-
-		// when:
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
-		assertEquals(ROYALTY_FRACTION_CANNOT_EXCEED_ONE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsFractionalFeeMaxAmountLessThanMinAmount() {
-		final var grpcMaxLessThanMinCustomFees = List.of(
-				builder.withFractionalFee(
-						fractional(123L, 1_000L)
-								.setMinimumAmount(10L)
-								.setMaximumAmount(2L))
-		);
-		final var req = fullyValidTokenCreateAttempt()
-				.addAllCustomFees(grpcMaxLessThanMinCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void acceptsFractionalFeeMaxAmountEqualToMinAmount() {
-		final var grpcMaxEqualToMinCustomFees = List.of(
-				builder.withFractionalFee(
-						fractional(123L, 1_000L)
-								.setMinimumAmount(2L)
-								.setMaximumAmount(2L))
-		);
-		final var req = fullyValidTokenCreateAttempt()
-				.addAllCustomFees(grpcMaxEqualToMinCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(OK, result.getStatus());
-		assertFalse(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void acceptsFractionalFeeWithZeroMaxAmountPositiveMinAmount() {
-		final var grpcZeroMaxPositiveMinCustomFees = List.of(
-				builder.withFractionalFee(
-						fractional(123L, 1_000L)
-								.setMinimumAmount(10L)
-								.setMaximumAmount(0L))
-		);
-		final var req = fullyValidTokenCreateAttempt()
-				.addAllCustomFees(grpcZeroMaxPositiveMinCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(OK, result.getStatus());
-		assertFalse(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsBothNumeratorAndDenominatorNegativeInFractionalFee() {
-		final var grpcBothNegativeFractionCustomFees = List.of(
-				builder.withFractionalFee(fractional(-123L, -1_000L))
-		);
-		final var req = fullyValidTokenCreateAttempt()
-				.addAllCustomFees(grpcBothNegativeFractionCustomFees).build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void happyPathWorksWithAutoRenew() {
-		final var expected = buildFullyValidExpectedToken();
-		final var req = fullyValidTokenCreateAttempt()
-				.setExpiry(Timestamp.newBuilder().setSeconds(0))
-				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(enduring(autoRenewPeriod))
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(OK, result.getStatus());
-		assertEquals(created, result.getCreated().get());
-		assertEquals(created, subject.pendingId);
-		assertEquals(expected, subject.pendingCreation);
-	}
-
-	@Test
-	void canCreateTokenWithImmutableFeeSchedule() {
-		final var expected = buildFullyValidExpectedToken();
-		expected.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
-		final var req = fullyValidTokenCreateAttempt()
-				.setFeeScheduleKey(Key.newBuilder().getDefaultInstanceForType())
-				.setExpiry(Timestamp.newBuilder().setSeconds(0))
-				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(enduring(autoRenewPeriod))
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(OK, result.getStatus());
-		assertEquals(created, result.getCreated().get());
-		assertEquals(created, subject.pendingId);
-		assertEquals(expected, subject.pendingCreation);
-	}
-
-	@Test
-	void canCreateTokenWithFeeScheduleKeyButNoFeeSchedules() {
-		final var expected = buildFullyValidExpectedToken();
-		expected.setFeeScheduleFrom(Collections.emptyList(), null);
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setExpiry(Timestamp.newBuilder().setSeconds(0))
-				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(enduring(autoRenewPeriod))
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(OK, result.getStatus());
-		assertEquals(created, result.getCreated().get());
-		assertEquals(created, subject.pendingId);
-		assertEquals(expected, subject.pendingCreation);
-	}
-
-	@Test
-	void happyPathWorksWithExplicitExpiry() {
-		final var expected = new MerkleToken(
-				expiry,
-				totalSupply,
-				decimals,
-				symbol,
-				name,
-				freezeDefault,
-				accountsKycGrantedByDefault,
-				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
-		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
-		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
-		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
-		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
-		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
-		expected.setFeeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
-		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
-		expected.setSupplyType(TokenSupplyType.INFINITE);
-		expected.setMemo(memo);
-		expected.setFeeScheduleFrom(Collections.emptyList(), null);
-		final var req = fullyValidTokenCreateAttempt().clearCustomFees().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(OK, result.getStatus());
-		assertEquals(created, result.getCreated().get());
-		assertEquals(created, subject.pendingId);
-		assertEquals(expected, subject.pendingCreation);
-	}
-
-	@Test
-	void rejectsInvalidAutoRenewAccount() {
-		given(accountsLedger.exists(autoRenewAccount)).willReturn(false);
-		final var req = fullyValidTokenCreateAttempt()
-				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(enduring(1000L))
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(INVALID_AUTORENEW_ACCOUNT, result.getStatus());
-	}
-
-	@Test
-	void rejectsMissingTreasury() {
-		given(accountsLedger.exists(treasury)).willReturn(false);
-		final var req = fullyValidTokenCreateAttempt().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
-	}
-
-	@Test
-	void rejectsDeletedTreasuryAccount() {
-		given(hederaLedger.isDeleted(treasury)).willReturn(true);
-		final var req = fullyValidTokenCreateAttempt().build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
-	}
-
-	@Test
-	void allowsZeroInitialSupplyAndDecimals() {
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setInitialSupply(0L)
-				.setDecimals(0)
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(ResponseCodeEnum.OK, result.getStatus());
-	}
-
-	@Test
-	void allowsToCreateTokenWithTheBiggestAmountInLong() {
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.setInitialSupply(9)
-				.setDecimals(18)
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(ResponseCodeEnum.OK, result.getStatus());
-	}
-
-	@Test
-	void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
-		final var req = fullyValidTokenCreateAttempt()
-				.clearCustomFees()
-				.clearKycKey()
-				.build();
-
-		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		assertEquals(ResponseCodeEnum.OK, result.getStatus());
-		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
-	}
-
 
 	TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
@@ -1860,7 +1386,7 @@ class HederaTokenStoreTest {
 		return expected;
 	}
 
-	private Duration enduring(long secs) {
+	private Duration enduring(final long secs) {
 		return Duration.newBuilder().setSeconds(secs).build();
 	}
 
@@ -1905,7 +1431,6 @@ class HederaTokenStoreTest {
 	@Test
 	void canOnlyUpdateTokensWithFeeScheduleKey() {
 		given(token.hasFeeScheduleKey()).willReturn(false);
-
 		final var op = updateFeeScheduleWith();
 
 		final var result = subject.updateFeeSchedule(op);
@@ -1916,7 +1441,6 @@ class HederaTokenStoreTest {
 	@Test
 	void cannotUseFractionalFeeWithNonfungibleUpdateTarget() {
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
 		final var op = updateFeeScheduleWithOnlyFractional();
 
 		final var result = subject.updateFeeSchedule(op);
@@ -1927,7 +1451,6 @@ class HederaTokenStoreTest {
 	@Test
 	void cannotUseRoyaltyFeeWithFungibleCommonUpdateTarget() {
 		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-
 		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallback();
 
 		final var result = subject.updateFeeSchedule(op);
@@ -1945,7 +1468,7 @@ class HederaTokenStoreTest {
 		assertEquals(OK, result);
 	}
 
-	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithEmptyFees() {
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithEmptyFees() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(List.of());
@@ -1953,27 +1476,27 @@ class HederaTokenStoreTest {
 	}
 
 
-	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithMissingTokenId() {
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithMissingTokenId() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.addAllCustomFees(grpcCustomFees);
 		return op.build();
 	}
 
-	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWith() {
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWith() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(grpcCustomFees);
 		return op.build();
 	}
 
-	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyFractional() {
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyFractional() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(List.of(customFractionalFee));
 		return op.build();
 	}
 
-	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallback() {
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallback() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(List.of(customRoyaltyHtsFallback));

@@ -151,7 +151,7 @@ class AccessorBasedUsagesTest {
 		final var realAccessor = uncheckedFrom(signedFeeScheduleUpdateTxn());
 
 		final var op = feeScheduleUpdateTxn().getTokenFeeScheduleUpdate();
-		final var opMeta = new FeeScheduleUpdateMeta(now, 234, 111);
+		final var opMeta = new FeeScheduleUpdateMeta(now, 234);
 		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 		final var feeScheduleCtx = new ExtantFeeScheduleContext(now, 123);
 

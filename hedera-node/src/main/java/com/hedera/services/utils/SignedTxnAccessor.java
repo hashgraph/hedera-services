@@ -310,9 +310,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var effConsTime = getTxnId().getTransactionValidStart().getSeconds();
 		final var op = getTxn().getTokenFeeScheduleUpdate();
 		final var reprBytes = TOKEN_OPS_USAGE.bytesNeededToRepr(op.getCustomFeesList());
-		final var grpcReprBytes = op.getSerializedSize() - op.getTokenId().getSerializedSize();
 
-		final var meta = new FeeScheduleUpdateMeta(effConsTime, reprBytes, grpcReprBytes);
+		final var meta = new FeeScheduleUpdateMeta(effConsTime, reprBytes);
 		SPAN_MAP_ACCESSOR.setFeeScheduleUpdateMeta(this, meta);
 	}
 }

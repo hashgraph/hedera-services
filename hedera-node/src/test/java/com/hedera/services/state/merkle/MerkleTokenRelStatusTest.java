@@ -24,7 +24,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.IOException;
 
@@ -40,11 +39,11 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
 
 class MerkleTokenRelStatusTest {
-	long balance = 666;
-	boolean frozen = true;
-	boolean kycGranted = true;
+	private static final long balance = 666;
+	private static final boolean frozen = true;
+	private static final boolean kycGranted = true;
 
-	MerkleTokenRelStatus subject;
+	private MerkleTokenRelStatus subject;
 
 	@BeforeEach
 	private void setup() {
@@ -53,28 +52,25 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void objectContractMet() {
-		// given:
-		var one = new MerkleTokenRelStatus();
-		var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
-		var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted);
-		var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted);
-		var five = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		final var one = new MerkleTokenRelStatus();
+		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
+		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted);
+		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted);
+		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted);
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
 		assertNotEquals(subject, two);
 		assertNotEquals(subject, three);
 		assertNotEquals(subject, four);
 		assertEquals(subject, five);
-		// and:
+
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(subject.hashCode(), five.hashCode());
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		// expect;
 		assertEquals(MerkleTokenRelStatus.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleTokenRelStatus.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
@@ -82,39 +78,29 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeLong(balance);
 		inOrder.verify(out, times(2)).writeBoolean(true);
 	}
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleTokenRelStatus();
-
+		final var in = mock(SerializableDataInputStream.class);
+		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance);
 		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted);
 
-		// when:
 		defaultSubject.deserialize(in, MerkleTokenRelStatus.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, defaultSubject);
 	}
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"MerkleTokenRelStatus{balance=" + balance
 						+ ", isFrozen=" + frozen
@@ -125,23 +111,20 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+		final var subjectCopy = subject.copy();
 
-		// then:
-		assertNotSame(subjectCopy, subject);
+		assertNotSame(subject, subjectCopy);
 		assertEquals(subject, subjectCopy);
+		assertTrue(subject.isImmutable());
 	}
 
 	@Test
 	void deleteIsNoop() {
-		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 
 	@Test
 	void throwsOnNegativeBalance() {
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.setBalance(-1));
 	}
 }

@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,14 +34,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class RawTokenRelationshipTest {
-	int decimals = 5;
-	long num = 123;
-	long balance = 234;
-	boolean frozen = true;
-	boolean kyc = false;
+	private static final int decimals = 5;
+	private static final long num = 123;
+	private static final long balance = 234;
+	private static final boolean frozen = true;
+	private static final boolean kyc = false;
 
-	MerkleToken token;
-	RawTokenRelationship subject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
+	private MerkleToken token;
+	private RawTokenRelationship subject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
 
 	@BeforeEach
 	void setUp() {
@@ -50,7 +51,6 @@ class RawTokenRelationshipTest {
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"RawTokenRelationship{token=0.0.123, balance=234, frozen=true, kycGranted=false}",
 				subject.toString());
@@ -58,16 +58,14 @@ class RawTokenRelationshipTest {
 
 	@Test
 	void objectContractMet() {
-		// given:
-		var identicalSubject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
-		// and:
-		var otherSubject = new RawTokenRelationship(balance * 2, 0, 0, num - 1, !frozen, !kyc);
+		final var identicalSubject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
+		final var otherSubject = new RawTokenRelationship(
+				balance * 2, 0, 0, num - 1, !frozen, !kyc);
 
-		// expect:
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, otherSubject);
 		assertEquals(subject, identicalSubject);
-		// and:
+
 		assertNotEquals(subject.hashCode(), otherSubject.hashCode());
 		assertEquals(subject.hashCode(), identicalSubject.hashCode());
 	}
@@ -76,12 +74,9 @@ class RawTokenRelationshipTest {
 	void grpcConversionRecognizesInapplicable() {
 		given(token.decimals()).willReturn(decimals);
 
-		// when:
-		var desc = subject.asGrpcFor(token);
+		final var desc = subject.asGrpcFor(token);
 
-		// then:
-		assertEquals(balance, desc.getBalance());
-		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
+		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.KycNotApplicable, desc.getKycStatus());
 		assertEquals(decimals, desc.getDecimals());
@@ -91,29 +86,21 @@ class RawTokenRelationshipTest {
 	void grpcConversionRecognizesApplicableFrozen() {
 		given(token.hasFreezeKey()).willReturn(true);
 
-		// when:
-		var desc = subject.asGrpcFor(token);
+		final var desc = subject.asGrpcFor(token);
 
-		// then:
-		assertEquals(balance, desc.getBalance());
-		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
+		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.Frozen, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.KycNotApplicable, desc.getKycStatus());
 	}
 
 	@Test
 	void grpcConversionRecognizesApplicableUnfozen() {
-		// setup:
 		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false);
-
 		given(token.hasFreezeKey()).willReturn(true);
 
-		// when:
-		var desc = subject.asGrpcFor(token);
+		final var desc = subject.asGrpcFor(token);
 
-		// then:
-		assertEquals(balance, desc.getBalance());
-		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
+		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.Unfrozen, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.KycNotApplicable, desc.getKycStatus());
 	}
@@ -122,37 +109,33 @@ class RawTokenRelationshipTest {
 	void grpcConversionRecognizesApplicableKycRevoked() {
 		given(token.hasKycKey()).willReturn(true);
 
-		// when:
-		var desc = subject.asGrpcFor(token);
+		final var desc = subject.asGrpcFor(token);
 
-		// then:
-		assertEquals(balance, desc.getBalance());
-		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
+		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.Revoked, desc.getKycStatus());
 	}
 
 	@Test
 	void grpcConversionRecognizesApplicableGranted() {
-		// setup:
 		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, true);
-
 		given(token.hasKycKey()).willReturn(true);
 
-		// when:
-		var desc = subject.asGrpcFor(token);
+		final var desc = subject.asGrpcFor(token);
 
-		// then:
-		assertEquals(balance, desc.getBalance());
-		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
+		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, desc.getKycStatus());
 		assertEquals("HEYMA", desc.getSymbol());
 	}
 
+	private void commonAssertions(final TokenRelationship desc) {
+		assertEquals(balance, desc.getBalance());
+		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
+	}
+
 	@Test
 	void getsId() {
-		// expect:
 		assertEquals(IdUtils.tokenWith(num), subject.id());
 	}
 }

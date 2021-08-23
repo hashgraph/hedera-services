@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -47,6 +48,9 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
 class TokenDeleteTransitionLogicTest {
+	
+	private Token modelToken;
+	private Account modelAccountTreasury;
 
 	private final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
 	private final Id tokenId = Id.fromGrpcToken(grpcTokenId);
@@ -65,6 +69,9 @@ class TokenDeleteTransitionLogicTest {
 		typedTokenStore = mock(TypedTokenStore.class);
 		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore);
 		token = mock(Token.class);
+
+		modelToken = mock(Token.class);
+		modelAccountTreasury = mock(Account.class);
 	}
 
 	@Test

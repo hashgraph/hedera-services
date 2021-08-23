@@ -29,10 +29,10 @@ class FeeScheduleUpdateMetaTest {
 	void toStringWorks() {
 		// given:
 		final var desired = "FeeScheduleUpdateMeta{effConsensusTime=1234567, " +
-				"numBytesInNewFeeScheduleRepr=22, numBytesInGrpcFeeScheduleRepr=33}";
+				"numBytesInNewFeeScheduleRepr=22}";
 
 		// when:
-		final var subject = new FeeScheduleUpdateMeta(1_234_567L, 22, 33);
+		final var subject = new FeeScheduleUpdateMeta(1_234_567L, 22);
 
 		// then:
 		assertEquals(desired, subject.toString());

@@ -37,13 +37,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -70,34 +69,27 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 public class MerkleScheduleTest {
-	byte[] fpk = "firstPretendKey".getBytes();
-	byte[] spk = "secondPretendKey".getBytes();
-	byte[] tpk = "thirdPretendKey".getBytes();
+	private static final byte[] fpk = "firstPretendKey".getBytes();
+	private static final byte[] spk = "secondPretendKey".getBytes();
+	private static final byte[] tpk = "thirdPretendKey".getBytes();
+	private static final long expiry = 1_234_567L;
+	private static final String entityMemo = "Just some memo again";
+	private static final String otherEntityMemo = "Yet another memo";
+	private static final EntityId payer = new EntityId(4, 5, 6);
+	private static final EntityId otherPayer = new EntityId(4, 5, 5);
+	private static final EntityId schedulingAccount = new EntityId(1, 2, 3);
+	private static final Instant resolutionTime = Instant.ofEpochSecond(1_234_567L);
+	private static final Timestamp grpcResolutionTime = RichInstant.fromJava(resolutionTime).toGrpc();
+	private static final RichInstant schedulingTXValidStart = new RichInstant(123, 456);
+	private static final RichInstant otherSchedulingTXValidStart = new RichInstant(456, 789);
+	private static final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private static final JKey otherAdminKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 
-	long expiry = 1_234_567L;
-	byte[] transactionBody, otherTransactionBody;
-	String entityMemo = "Just some memo again", otherEntityMemo = "Yet another memo";
-	EntityId payer = new EntityId(4, 5, 6), otherPayer = new EntityId(4, 5, 5);
-	EntityId schedulingAccount = new EntityId(1, 2, 3);
-	Instant resolutionTime = Instant.ofEpochSecond(1_234_567L);
-	Timestamp grpcResolutionTime = RichInstant.fromJava(resolutionTime).toGrpc();
-	RichInstant schedulingTXValidStart = new RichInstant(123, 456);
-	RichInstant otherSchedulingTXValidStart = new RichInstant(456, 789);
-	JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
-	JKey otherAdminKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
-	List<byte[]> signatories;
-
-	MerkleSchedule subject;
-	MerkleSchedule other;
+	private List<byte[]> signatories;
+	private MerkleSchedule subject;
 
 	@BeforeEach
 	void setup() {
-		otherTransactionBody = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(2L))))
-				.build()
-				.toByteArray();
-
 		signatories = new ArrayList<>();
 		signatories.addAll(List.of(fpk, spk, tpk));
 
@@ -114,7 +106,6 @@ public class MerkleScheduleTest {
 
 	@Test
 	void factoryWorks() {
-		// expect:
 		assertFalse(subject.isDeleted());
 		assertFalse(subject.isExecuted());
 		assertEquals(payer, subject.payer());
@@ -131,7 +122,6 @@ public class MerkleScheduleTest {
 
 	@Test
 	void factoryTranslatesImpossibleParseError() {
-		// expect:
 		final var iae = assertThrows(IllegalArgumentException.class,
 				() -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
 		assertEquals("Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!", iae.getMessage());
@@ -146,47 +136,34 @@ public class MerkleScheduleTest {
 
 	@Test
 	void understandsSchedulerIsFallbackPayer() {
-		// expect:
 		assertEquals(subject.payer(), subject.effectivePayer());
 
-		// and when:
 		subject.setPayer(null);
 
-		// expect:
 		assertEquals(subject.schedulingAccount(), subject.effectivePayer());
 	}
 
 	@Test
 	void checksResolutionAsExpected() {
-		// expect:
 		assertThrows(IllegalStateException.class, subject::deletionTime);
 		assertThrows(IllegalStateException.class, subject::executionTime);
 
-		// when:
 		subject.markExecuted(resolutionTime);
-
-		// then:
 		assertEquals(grpcResolutionTime, subject.executionTime());
 
-		// and when:
 		subject.markDeleted(resolutionTime);
-
-		// then:
 		assertEquals(grpcResolutionTime, subject.deletionTime());
 	}
 
 	@Test
 	void notaryWorks() {
-		// given:
 		assertFalse(subject.hasValidEd25519Signature(fpk));
 		assertFalse(subject.hasValidEd25519Signature(spk));
 		assertFalse(subject.hasValidEd25519Signature(tpk));
 
-		// when:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(tpk);
 
-		// then:
 		assertTrue(subject.hasValidEd25519Signature(fpk));
 		assertFalse(subject.hasValidEd25519Signature(spk));
 		assertTrue(subject.hasValidEd25519Signature(tpk));
@@ -194,44 +171,34 @@ public class MerkleScheduleTest {
 
 	@Test
 	void witnessOnlyTrueIfNewSignatory() {
-		// expect:
 		assertTrue(subject.witnessValidEd25519Signature(fpk));
 		assertFalse(subject.witnessValidEd25519Signature(fpk));
 	}
 
 	@Test
 	void releaseIsNoop() {
-		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 
 	@Test
 	void signatoriesArePublished() {
-		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.witnessValidEd25519Signature(tpk);
 
-		// expect:
 		assertTrue(subject.signatories().containsAll(signatories));
 	}
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(serdes, out);
-
-		// given:
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(serdes, out);
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.markDeleted(resolutionTime);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeLong(expiry);
 		inOrder.verify(out).writeByteArray(bodyBytes);
 		inOrder.verify(out).writeBoolean(false);
@@ -244,13 +211,10 @@ public class MerkleScheduleTest {
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-		// and:
+		final var fin = mock(SerializableDataInputStream.class);
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.markExecuted(resolutionTime);
-
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
@@ -261,13 +225,10 @@ public class MerkleScheduleTest {
 		given(fin.readBoolean())
 				.willReturn(true)
 				.willReturn(false);
-		// and:
-		var read = new MerkleSchedule();
+		final var read = new MerkleSchedule();
 
-		// when:
 		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, read);
 		assertTrue(read.signatories().contains(fpk));
 		assertTrue(read.signatories().contains(spk));
@@ -279,86 +240,66 @@ public class MerkleScheduleTest {
 
 	@Test
 	void nonessentialFieldsDontAffectIdentity() {
-		// given:
-		var diffBodyBytes = parentTxn.toBuilder()
+		final var diffBodyBytes = parentTxn.toBuilder()
 				.setTransactionID(parentTxn.getTransactionID().toBuilder()
 						.setAccountID(otherPayer.toGrpcAccountId())
 						.setTransactionValidStart(MiscUtils.asTimestamp(otherSchedulingTXValidStart.toJava())))
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setPayerAccountID(otherPayer.toGrpcAccountId()))
 				.build().toByteArray();
-		other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
+		final var other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
 		other.markExecuted(resolutionTime);
 		other.markDeleted(resolutionTime);
 		other.witnessValidEd25519Signature(fpk);
 
-		// expect:
 		assertEquals(subject, other);
-		// and:
 		assertEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
 	void differentAdminKeysNotIdentical() {
-		// setup:
-		var bodyBytesDiffAdminKey = parentTxn.toBuilder()
+		final var bodyBytesDiffAdminKey = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
 				.build().toByteArray();
+		final var other = MerkleSchedule.from(bodyBytesDiffAdminKey, expiry);
 
-		// given:
-		other = MerkleSchedule.from(bodyBytesDiffAdminKey, expiry);
-
-		// expect:
 		assertNotEquals(subject, other);
-		// and:
 		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
 	void differentMemosNotIdentical() {
-		// setup:
-		var bodyBytesDiffMemo = parentTxn.toBuilder()
+		final var bodyBytesDiffMemo = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setMemo(otherEntityMemo))
 				.build().toByteArray();
+		final var other = MerkleSchedule.from(bodyBytesDiffMemo, expiry);
 
-		// given:
-		other = MerkleSchedule.from(bodyBytesDiffMemo, expiry);
-
-		// expect:
 		assertNotEquals(subject, other);
-		// and:
 		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
 	void differentScheduledTxnNotIdentical() {
-		// setup:
-		var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
+		final var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setScheduledTransactionBody(scheduledTxn.toBuilder().setMemo("Slightly different!")))
 				.build().toByteArray();
+		final var other = MerkleSchedule.from(bodyBytesDiffScheduledTxn, expiry);
 
-		// given:
-		other = MerkleSchedule.from(bodyBytesDiffScheduledTxn, expiry);
-
-		// expect:
 		assertNotEquals(subject, other);
-		// and:
 		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
 	void validToString() {
-		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.witnessValidEd25519Signature(tpk);
 		subject.markDeleted(resolutionTime);
 
-		// and:
-		var expected = "MerkleSchedule{"
+		final var expected = "MerkleSchedule{"
 				+ "scheduledTxn=" + scheduledTxn + ", "
 				+ "expiry=" + expiry + ", "
 				+ "executed=" + false + ", "
@@ -372,55 +313,44 @@ public class MerkleScheduleTest {
 				+ "resolutionTime=" + RichInstant.fromJava(resolutionTime).toString()
 				+ "}";
 
-		// expect:
 		assertEquals(expected, subject.toString());
 	}
 
 	@Test
 	void validEqualityChecks() {
-		// expect:
 		assertEquals(subject, subject);
-		// and:
-		assertNotEquals(subject, null);
-		// and:
-		assertNotEquals(subject, new Object());
+		assertNotEquals(null, subject);
+		assertNotEquals(new Object(), subject);
 	}
 
 	@Test
 	void validVersion() {
-		// expect:
 		assertEquals(MerkleSchedule.MERKLE_VERSION, subject.getVersion());
 	}
 
 	@Test
 	void validRuntimeConstructableID() {
-		// expect:
 		assertEquals(MerkleSchedule.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
 	void validIsLeaf() {
-		// expect:
 		assertTrue(subject.isLeaf());
 	}
 
 	@Test
 	void copyWorks() {
-		// setup:
 		subject.markDeleted(resolutionTime);
 		subject.witnessValidEd25519Signature(tpk);
+		final var copySubject = subject.copy();
 
-		// given:
-		var copySubject = subject.copy();
-
-		// expect:
 		assertTrue(copySubject.isDeleted());
 		assertFalse(copySubject.isExecuted());
 		assertTrue(copySubject.hasValidEd25519Signature(tpk));
-		// and:
+
 		assertEquals(subject.toString(), copySubject.toString());
 		assertNotSame(subject.signatories(), copySubject.signatories());
-		// and:
+
 		assertEquals(grpcResolutionTime, copySubject.deletionTime());
 		assertEquals(payer, copySubject.payer());
 		assertEquals(expiry, copySubject.expiry());
@@ -431,26 +361,23 @@ public class MerkleScheduleTest {
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
 		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
+		assertTrue(subject.isImmutable());
 	}
 
 	@Test
 	void cavWorks() {
-		// setup:
 		subject.markDeleted(resolutionTime);
 		subject.markExecuted(resolutionTime);
 		subject.witnessValidEd25519Signature(tpk);
+		final var cavSubject = subject.toContentAddressableView();
 
-		// given:
-		var cavSubject = subject.toContentAddressableView();
-
-		// expect:
 		assertFalse(cavSubject.isDeleted());
 		assertFalse(cavSubject.isExecuted());
 		assertFalse(cavSubject.hasValidEd25519Signature(tpk));
-		// and:
+
 		assertNotEquals(subject.toString(), cavSubject.toString());
 		assertTrue(cavSubject.signatories().isEmpty());
-		// and:
+
 		assertNull(cavSubject.payer());
 		assertEquals(0L, cavSubject.expiry());
 		assertNull(cavSubject.schedulingAccount());
@@ -477,27 +404,26 @@ public class MerkleScheduleTest {
 
 	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 
-	ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
+	private static final ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
 			.setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
 			.setPayerAccountID(payer.toGrpcAccountId())
 			.setMemo(entityMemo)
 			.setScheduledTransactionBody(scheduledTxn)
 			.build();
-	TransactionBody parentTxn = TransactionBody.newBuilder()
+	private static final TransactionBody parentTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder()
 					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
 					.setAccountID(schedulingAccount.toGrpcAccountId())
 					.build())
 			.setScheduleCreate(creation)
 			.build();
-	private final byte[] bodyBytes = parentTxn.toByteArray();
+	private static final byte[] bodyBytes = parentTxn.toByteArray();
 
-	private Transaction expectedSignedTxn() {
-		TransactionID expectedId = TransactionID.newBuilder()
+	private static Transaction expectedSignedTxn() {
+		final var expectedId = TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setScheduled(true)
-				.build();
+				.setScheduled(true);
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(
 						SignedTransaction.newBuilder()
@@ -511,18 +437,17 @@ public class MerkleScheduleTest {
 	}
 
 	public static TransactionBody scheduleCreateTxnWith(
-			Key scheduleAdminKey,
-			String scheduleMemo,
-			AccountID payer,
-			AccountID scheduler,
-			Timestamp validStart
+			final Key scheduleAdminKey,
+			final String scheduleMemo,
+			final AccountID payer,
+			final AccountID scheduler,
+			final Timestamp validStart
 	) {
-		ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
+		final var creation = ScheduleCreateTransactionBody.newBuilder()
 				.setAdminKey(scheduleAdminKey)
 				.setPayerAccountID(payer)
 				.setMemo(scheduleMemo)
-				.setScheduledTransactionBody(scheduledTxn)
-				.build();
+				.setScheduledTransactionBody(scheduledTxn);
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(validStart)

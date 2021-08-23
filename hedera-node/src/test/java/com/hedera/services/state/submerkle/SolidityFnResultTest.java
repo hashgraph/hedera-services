@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,19 +22,14 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
@@ -50,27 +45,22 @@ import static org.mockito.BDDMockito.intThat;
 import static org.mockito.BDDMockito.mock;
 
 class SolidityFnResultTest {
-	long gasUsed = 1_234;
-	byte[] result = "abcdefgh".getBytes();
-	byte[] otherResult = "hgfedcba".getBytes();
-	byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
-	String error = "Oops!";
-	EntityId contractId = new EntityId(1L, 2L, 3L);
-	List<EntityId> createdContractIds = List.of(
+	private static final long gasUsed = 1_234;
+	private static final byte[] result = "abcdefgh".getBytes();
+	private static final byte[] otherResult = "hgfedcba".getBytes();
+	private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
+	private static final String error = "Oops!";
+	private static final EntityId contractId = new EntityId(1L, 2L, 3L);
+	private static final List<EntityId> createdContractIds = List.of(
 			new EntityId(2L, 3L, 4L),
 			new EntityId(3L, 4L, 5L));
-	List<SolidityLog> logs = List.of(logFrom(0), logFrom(1));
+	private final List<SolidityLog> logs = List.of(logFrom(0), logFrom(1));
 
-	DomainSerdes serdes;
-	DataInputStream din;
-	SerializableDataInputStream in;
-
-	SolidityFnResult subject;
+	private DomainSerdes serdes;
+	private SolidityFnResult subject;
 
 	@BeforeEach
 	void setup() {
-		din = mock(DataInputStream.class);
-		in = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
 
 		subject = new SolidityFnResult(
@@ -86,15 +76,14 @@ class SolidityFnResultTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		SolidityFnResult.serdes = new DomainSerdes();
 	}
 
 	@Test
 	void objectContractWorks() {
-		// given:
-		var one = subject;
-		var two = new SolidityFnResult(
+		final var one = subject;
+		final var two = new SolidityFnResult(
 				contractId,
 				otherResult,
 				error,
@@ -102,28 +91,26 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds);
-		var three = new SolidityFnResult(
-						contractId,
-						result,
-						error,
-						bloom,
-						gasUsed,
-						logs,
-						createdContractIds);
+		final var three = new SolidityFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds);
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
-		assertNotEquals(two, one);
-		assertEquals(three, one);
-		// and:
-		assertEquals(one.hashCode(), three.hashCode());
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
+		assertNotEquals(one, two);
+		assertEquals(one, three);
+
 		assertNotEquals(one.hashCode(), two.hashCode());
+		assertEquals(one.hashCode(), three.hashCode());
 	}
 
 	@Test
 	void beanWorks() {
-		// expect:
 		assertEquals(
 				new SolidityFnResult(
 						subject.getContractId(),
@@ -139,7 +126,6 @@ class SolidityFnResultTest {
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"SolidityFnResult{" +
 						"gasUsed=" + gasUsed + ", " +
@@ -154,8 +140,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void factoryWorks() {
-		// given:
-		var grpc = ContractFunctionResult.newBuilder()
+		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
 				.setContractCallResult(ByteString.copyFrom(result))
 				.setBloom(ByteString.copyFrom(bloom))
@@ -165,14 +150,12 @@ class SolidityFnResultTest {
 				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
 				.build();
 
-		// expect:
 		assertEquals(subject, SolidityFnResult.fromGrpc(grpc));
 	}
 
 	@Test
 	void viewWorks() {
-		// setup:
-		var expected = ContractFunctionResult.newBuilder()
+		final var expected = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
 				.setContractCallResult(ByteString.copyFrom(result))
 				.setBloom(ByteString.copyFrom(bloom))
@@ -182,22 +165,15 @@ class SolidityFnResultTest {
 				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
 				.build();
 
-		// when:
-		var actual = subject.toGrpc();
+		final var actual = subject.toGrpc();
 
-		// then:
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var readSubject = new SolidityFnResult();
-		// and:
-		ArgumentCaptor<IoReadingFunction> captor = ArgumentCaptor.forClass(IoReadingFunction.class);
-
+		final var in = mock(SerializableDataInputStream.class);
+		final var readSubject = new SolidityFnResult();
 		given(in.readLong()).willReturn(gasUsed);
 		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
 		given(in.readByteArray(SolidityFnResult.MAX_RESULT_BYTES)).willReturn(result);
@@ -212,25 +188,18 @@ class SolidityFnResultTest {
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(createdContractIds);
 
-		// when:
 		readSubject.deserialize(in, SolidityFnResult.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, readSubject);
 	}
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		ArgumentCaptor<IoWritingConsumer> captor = ArgumentCaptor.forClass(IoWritingConsumer.class);
-		InOrder inOrder = inOrder(serdes, out);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(serdes, out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeLong(gasUsed);
 		inOrder.verify(out).writeByteArray(bloom);
 		inOrder.verify(out).writeByteArray(result);
@@ -242,12 +211,11 @@ class SolidityFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		// expect;
 		assertEquals(SolidityFnResult.MERKLE_VERSION, subject.getVersion());
 		assertEquals(SolidityFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
-	public static SolidityLog logFrom(int s) {
+	private static final SolidityLog logFrom(final int s) {
 		return new SolidityLog(
 				contracts[s],
 				blooms[s],
@@ -255,25 +223,25 @@ class SolidityFnResultTest {
 				data[s]);
 	}
 
-	static EntityId[] contracts = new EntityId[] {
+	private static final EntityId[] contracts = new EntityId[] {
 			new EntityId(1L, 2L, 3L),
 			new EntityId(2L, 3L, 4L),
 			new EntityId(3L, 4L, 5L),
 	};
 
-	static byte[][] topics = new byte[][] {
+	private static final byte[][] topics = new byte[][] {
 			"alpha".getBytes(),
 			"bravo".getBytes(),
 			"charlie".getBytes(),
 	};
 
-	static byte[][] blooms = new byte[][] {
+	private static final byte[][] blooms = new byte[][] {
 			"tulip".getBytes(),
 			"lily".getBytes(),
 			"cynthia".getBytes(),
 	};
 
-	static byte[][] data = new byte[][] {
+	private static final byte[][] data = new byte[][] {
 			"one".getBytes(),
 			"two".getBytes(),
 			"three".getBytes(),

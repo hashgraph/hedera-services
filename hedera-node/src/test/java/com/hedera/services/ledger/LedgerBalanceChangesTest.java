@@ -137,7 +137,8 @@ class LedgerBalanceChangesTest {
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
-				() -> uniqueOwnershipTreasuryAssociations);
+				() -> uniqueOwnershipTreasuryAssociations,
+				false);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -236,7 +237,8 @@ class LedgerBalanceChangesTest {
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
-				() -> uniqueOwnershipTreasuryAssociations);
+				() -> uniqueOwnershipTreasuryAssociations,
+				false);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,

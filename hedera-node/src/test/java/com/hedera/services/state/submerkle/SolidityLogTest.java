@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,15 +21,13 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -43,22 +41,17 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class SolidityLogTest {
-	byte[] data = "hgfedcba".getBytes();
-	byte[] otherData = "abcdefgh".getBytes();
-	byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
-	EntityId contractId = new EntityId(1L, 2L, 3L);
-	List<byte[]> topics = List.of("first".getBytes(), "second".getBytes(), "third".getBytes());
+	private static final byte[] data = "hgfedcba".getBytes();
+	private static final byte[] otherData = "abcdefgh".getBytes();
+	private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
+	private static final EntityId contractId = new EntityId(1L, 2L, 3L);
+	private static final List<byte[]> topics = List.of("first".getBytes(), "second".getBytes(), "third".getBytes());
 
-	DomainSerdes serdes;
-	DataInputStream din;
-	SerializableDataInputStream in;
-
-	SolidityLog subject;
+	private DomainSerdes serdes;
+	private SolidityLog subject;
 
 	@BeforeEach
 	void setup() {
-		din = mock(DataInputStream.class);
-		in = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
 
 		subject = new SolidityLog(contractId, bloom, topics, data);
@@ -73,64 +66,54 @@ class SolidityLogTest {
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
-				"SolidityLog{data="	+ CommonUtils.hex(data) + ", " +
-					"bloom=" + CommonUtils.hex(bloom) + ", " +
-					"contractId=" + contractId + ", " +
-					"topics=" + topics.stream().map(CommonUtils::hex).collect(toList()) + "}",
+				"SolidityLog{data=" + CommonUtils.hex(data) + ", " +
+						"bloom=" + CommonUtils.hex(bloom) + ", " +
+						"contractId=" + contractId + ", " +
+						"topics=" + topics.stream().map(CommonUtils::hex).collect(toList()) + "}",
 				subject.toString()
 		);
 	}
 
 	@Test
 	void objectContractWorks() {
-		// given:
-		var one = subject;
-		var two = new SolidityLog(contractId, bloom, topics, otherData);
-		var three = new SolidityLog(contractId, bloom, topics, data);
+		final var one = subject;
+		final var two = new SolidityLog(contractId, bloom, topics, otherData);
+		final var three = new SolidityLog(contractId, bloom, topics, data);
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
-		assertNotEquals(two, one);
-		assertEquals(three, one);
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
+		assertNotEquals(one, two);
+		assertEquals(one, three);
 
-		// and:
-		assertEquals(one.hashCode(), three.hashCode());
 		assertNotEquals(one.hashCode(), two.hashCode());
+		assertEquals(one.hashCode(), three.hashCode());
 	}
 
 	@Test
 	void beanWorks() {
-		// expect:
 		assertEquals(
 				new SolidityLog(
 						subject.getContractId(),
 						subject.getBloom(),
 						subject.getTopics(),
-						subject.getData())
-				, subject);
+						subject.getData()),
+				subject);
 	}
 
 	@Test
 	void serializableDetWorks() {
-		// expect;
 		assertEquals(SolidityLog.MERKLE_VERSION, subject.getVersion());
 		assertEquals(SolidityLog.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(serdes, out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, data)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, bloom)));
 		inOrder.verify(serdes).writeNullableSerializable(contractId, out);
@@ -142,11 +125,8 @@ class SolidityLogTest {
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var readSubject = new SolidityLog();
-
+		final var in = mock(SerializableDataInputStream.class);
+		final var readSubject = new SolidityLog();
 		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
 		given(in.readByteArray(SolidityLog.MAX_DATA_BYTES)).willReturn(data);
 		given(serdes.readNullableSerializable(in)).willReturn(contractId);
@@ -156,10 +136,8 @@ class SolidityLogTest {
 				.willReturn(topics.get(1))
 				.willReturn(topics.get(2));
 
-		// when:
 		readSubject.deserialize(in, SolidityLog.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, readSubject);
 	}
 }

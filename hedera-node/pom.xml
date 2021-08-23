@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.17.1-SNAPSHOT</version>
+    <version>0.18.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -239,12 +239,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.17.1-SNAPSHOT</version>
+      <version>0.18.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.17.1-SNAPSHOT</version>
+      <version>0.18.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
@@ -282,6 +282,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport-native-epoll</artifactId>
+      <classifier>linux-x86_64</classifier>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

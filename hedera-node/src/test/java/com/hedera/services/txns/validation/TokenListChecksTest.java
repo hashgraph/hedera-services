@@ -43,14 +43,11 @@ import static org.mockito.BDDMockito.mock;
 class TokenListChecksTest {
 	@Test
 	void permitsAdminKeyRemoval() {
-		// setup:
-		Predicate<Key> adminKeyRemoval = mock(Predicate.class);
-		TokenListChecks.ADMIN_KEY_REMOVAL = adminKeyRemoval;
-
+		final Predicate<Key> adminKeyRemoval = mock(Predicate.class);
+		TokenListChecks.adminKeyRemoval = adminKeyRemoval;
 		given(adminKeyRemoval.test(any())).willReturn(true);
 
-		// when:
-		var validity = TokenListChecks.checkKeys(
+		final var validity = TokenListChecks.checkKeys(
 				true, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
@@ -58,43 +55,35 @@ class TokenListChecksTest {
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance());
 
-		// then:
 		assertEquals(OK, validity);
 
-		// cleanup:
-		TokenListChecks.ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
+		TokenListChecks.adminKeyRemoval = ImmutableKeyUtils::signalsKeyRemoval;
 	}
 
 	@Test
 	void typeChecks() {
-		// ok common
 		var validity = TokenListChecks.typeCheck(TokenType.FUNGIBLE_COMMON, 10, 5);
 		assertEquals(OK, validity);
 
-		// ok unique
 		validity = TokenListChecks.typeCheck(TokenType.NON_FUNGIBLE_UNIQUE, 0, 0);
 		assertEquals(OK, validity);
 
-		// fail common
 		validity = TokenListChecks.typeCheck(TokenType.FUNGIBLE_COMMON, 10, -1);
 		assertEquals(INVALID_TOKEN_DECIMALS, validity);
 		validity = TokenListChecks.typeCheck(TokenType.FUNGIBLE_COMMON, -1, 100);
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, validity);
 
-		// fail unique
 		validity = TokenListChecks.typeCheck(TokenType.NON_FUNGIBLE_UNIQUE, 1, 0);
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, validity);
 		validity = TokenListChecks.typeCheck(TokenType.NON_FUNGIBLE_UNIQUE, 0, 1);
 		assertEquals(INVALID_TOKEN_DECIMALS, validity);
 
-		// not supported
 		validity = TokenListChecks.typeCheck(TokenType.UNRECOGNIZED, 0, 0);
 		assertEquals(NOT_SUPPORTED, validity);
 	}
 
 	@Test
 	void suppliesChecks() {
-		// ok
 		var validity = TokenListChecks.suppliesCheck(10, 100);
 		assertEquals(OK, validity);
 
@@ -105,31 +94,26 @@ class TokenListChecksTest {
 
 	@Test
 	void supplyTypeChecks() {
-		// ok
 		var validity = TokenListChecks.supplyTypeCheck(TokenSupplyType.FINITE, 10);
 		assertEquals(OK, validity);
 		validity = TokenListChecks.supplyTypeCheck(TokenSupplyType.INFINITE, 0);
 		assertEquals(OK, validity);
 
-		// not ok
 		validity = TokenListChecks.supplyTypeCheck(TokenSupplyType.FINITE, 0);
 		assertEquals(INVALID_TOKEN_MAX_SUPPLY, validity);
 		validity = TokenListChecks.supplyTypeCheck(TokenSupplyType.INFINITE, 10);
 		assertEquals(INVALID_TOKEN_MAX_SUPPLY, validity);
 
-		//
 		validity = TokenListChecks.supplyTypeCheck(TokenSupplyType.UNRECOGNIZED, 10);
 		assertEquals(NOT_SUPPORTED, validity);
 	}
 
 	@Test
 	void checksInvalidFeeScheduleKey() {
-		// setup:
-		KeyList invalidKeyList1 = KeyList.newBuilder().build();
-		Key invalidFeeScheduleKey = Key.newBuilder().setKeyList(invalidKeyList1).build();
+		final var invalidKeyList1 = KeyList.newBuilder().build();
+		final var invalidFeeScheduleKey = Key.newBuilder().setKeyList(invalidKeyList1).build();
 
-		// when:
-		var validity = TokenListChecks.checkKeys(
+		final var validity = TokenListChecks.checkKeys(
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
@@ -137,7 +121,6 @@ class TokenListChecksTest {
 				false, Key.getDefaultInstance(),
 				true, invalidFeeScheduleKey);
 
-		// then:
 		assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, validity);
 	}
 }

@@ -24,7 +24,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.IOException;
 
@@ -40,12 +39,12 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class MerkleEntityAssociationTest {
-	long fromShard = 13;
-	long fromRealm = 25;
-	long fromNum = 7;
-	long toShard = 31;
-	long toRealm = 52;
-	long toNum = 0;
+	private static final long fromShard = 13;
+	private static final long fromRealm = 25;
+	private static final long fromNum = 7;
+	private static final long toShard = 31;
+	private static final long toRealm = 52;
+	private static final long toNum = 0;
 
 	MerkleEntityAssociation subject;
 
@@ -58,30 +57,26 @@ class MerkleEntityAssociationTest {
 
 	@Test
 	void toAbbrevStringWorks() {
-		// expect:
 		assertEquals("13.25.7 <-> 31.52.0", subject.toAbbrevString());
 	}
 
 	@Test
 	void objectContractMet() {
-		// given:
-		var one = new MerkleEntityAssociation();
-		var two = new MerkleEntityAssociation(toShard, toRealm, toNum, fromShard, fromRealm, fromNum);
-		var three = new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
+		final var one = new MerkleEntityAssociation();
+		final var two = new MerkleEntityAssociation(toShard, toRealm, toNum, fromShard, fromRealm, fromNum);
+		final var three = new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
 
-		// then:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
 		assertEquals(subject, three);
-		// and:
+
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(subject.hashCode(), three.hashCode());
 	}
 
 	@Test
 	void factoryWorks() {
-		// expect:
 		assertEquals(
 				subject,
 				MerkleEntityAssociation.fromAccountTokenRel(asAccount("13.25.7"), asToken("31.52.0")));
@@ -89,7 +84,6 @@ class MerkleEntityAssociationTest {
 
 	@Test
 	void merkleMethodsWork() {
-		// expect;
 		assertEquals(MerkleEntityAssociation.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleEntityAssociation.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
@@ -97,15 +91,11 @@ class MerkleEntityAssociationTest {
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeLong(fromShard);
 		inOrder.verify(out).writeLong(fromRealm);
 		inOrder.verify(out).writeLong(fromNum);
@@ -116,25 +106,19 @@ class MerkleEntityAssociationTest {
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleEntityAssociation();
-
+		final var in = mock(SerializableDataInputStream.class);
+		final var defaultSubject = new MerkleEntityAssociation();
 		given(in.readLong())
 				.willReturn(fromShard).willReturn(fromRealm).willReturn(fromNum)
 				.willReturn(toShard).willReturn(toRealm).willReturn(toNum);
 
-		// when:
 		defaultSubject.deserialize(in, MerkleEntityAssociation.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, defaultSubject);
 	}
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"MerkleEntityAssociation{fromShard=" + fromShard
 						+ ", fromRealm=" + fromRealm
@@ -148,17 +132,15 @@ class MerkleEntityAssociationTest {
 
 	@Test
 	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+		final var subjectCopy = subject.copy();
 
-		// then:
 		assertNotSame(subjectCopy, subject);
 		assertEquals(subject, subjectCopy);
+		assertTrue(subject.isImmutable());
 	}
 
 	@Test
 	void deleteIsNoop() {
-		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 }

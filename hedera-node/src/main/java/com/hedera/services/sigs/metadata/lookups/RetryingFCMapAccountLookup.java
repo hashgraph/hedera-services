@@ -45,8 +45,8 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
  * @author Michael Tinker
  */
 public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
-	private static int DEFAULT_MAX_RETRIES = 10;
-	private static int DEFAULT_RETRY_WAIT_INCREMENT_MS = 10;
+	private static final int DEFAULT_MAX_RETRIES = 10;
+	private static final int DEFAULT_RETRY_WAIT_INCREMENT_MS = 10;
 
 	private int maxRetries;
 	private int retryWaitIncrementMs;
@@ -57,12 +57,12 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	private Optional<NodeLocalProperties> properties;
 
 	public RetryingFCMapAccountLookup(
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			int maxRetries,
-			int retryWaitIncrementMs,
-			Pause pause,
-			MiscRunningAvgs runningAvgs,
-			MiscSpeedometers speedometers
+			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			final int maxRetries,
+			final int retryWaitIncrementMs,
+			final Pause pause,
+			final MiscRunningAvgs runningAvgs,
+			final MiscSpeedometers speedometers
 	) {
 		super(accounts);
 		this.pause = pause;
@@ -74,11 +74,11 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	}
 
 	public RetryingFCMapAccountLookup(
-			Pause pause,
-			NodeLocalProperties properties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			MiscRunningAvgs runningAvgs,
-			MiscSpeedometers speedometers
+			final Pause pause,
+			final NodeLocalProperties properties,
+			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			final MiscRunningAvgs runningAvgs,
+			final MiscSpeedometers speedometers
 	) {
 		super(accounts);
 		this.pause = pause;
@@ -90,7 +90,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
 		maxRetries = properties
 				.map(NodeLocalProperties::precheckLookupRetries)
 				.orElse(maxRetries);
@@ -101,13 +101,13 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 		final long lookupStart = System.nanoTime();
 		int retriesRemaining = maxRetries;
 
-		AccountSigningMetadata meta = superLookup(id);
+		var meta = superLookup(id);
 		if (meta != null) {
 			return new SafeLookupResult<>(meta);
 		}
 
 		do {
-			int retryNo = maxRetries - retriesRemaining + 1;
+			final int retryNo = maxRetries - retriesRemaining + 1;
 			if (!pause.forMs((long) retryNo * retryWaitIncrementMs)) {
 				return SafeLookupResult.failure(MISSING_ACCOUNT);
 			}
@@ -131,18 +131,18 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 		return runningAvgs != null && speedometers != null;
 	}
 
-	private void updateStats(int n, double time) {
+	private void updateStats(final int n, final double time) {
 		speedometers.cycleAccountLookupRetries();
 		runningAvgs.recordAccountLookupRetries(n);
 		runningAvgs.recordAccountRetryWaitMs(time);
 	}
 
-	private double msElapsedSince(long then) {
+	private double msElapsedSince(final long then) {
 		return (System.nanoTime() - (double) then) / 1_000_000L;
 	}
 
-	private AccountSigningMetadata superLookup(AccountID id) {
-		var result = super.safeLookup(id);
+	private AccountSigningMetadata superLookup(final AccountID id) {
+		final var result = super.safeLookup(id);
 		return result.succeeded() ? result.metadata() : null;
 	}
 }

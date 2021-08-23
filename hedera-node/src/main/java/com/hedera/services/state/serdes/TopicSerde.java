@@ -9,9 +9,9 @@ package com.hedera.services.state.serdes;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,9 +29,9 @@ import java.io.IOException;
 public class TopicSerde {
 	static DomainSerdes serdes = new DomainSerdes();
 
-	public static int MAX_MEMO_BYTES = 4_096;
+	public static final int MAX_MEMO_BYTES = 4_096;
 
-	public void deserializeV1(SerializableDataInputStream in, MerkleTopic to) throws IOException {
+	public void deserializeV1(final SerializableDataInputStream in, final MerkleTopic to) throws IOException {
 		to.setMemo(null);
 		if (in.readBoolean()) {
 			to.setMemo(in.readNormalisedString(MAX_MEMO_BYTES));
@@ -47,7 +47,7 @@ public class TopicSerde {
 		to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
 	}
 
-	public void serialize(MerkleTopic merkleTopic, SerializableDataOutputStream out) throws IOException {
+	public void serialize(final MerkleTopic merkleTopic, final SerializableDataOutputStream out) throws IOException {
 		if (merkleTopic.hasMemo()) {
 			out.writeBoolean(true);
 			out.writeNormalisedString(merkleTopic.getMemo());

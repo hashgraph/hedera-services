@@ -52,8 +52,8 @@ class ScreenedNodeFilePropsTest {
 	void setup() {
 		log = mock(Logger.class);
 		ScreenedNodeFileProps.log = log;
-		ScreenedNodeFileProps.NODE_PROPS_LOC = STD_NODE_PROPS_LOC;
-		ScreenedNodeFileProps.LEGACY_NODE_PROPS_LOC = LEGACY_NODE_PROPS_LOC;
+		ScreenedNodeFileProps.nodePropsLoc = STD_NODE_PROPS_LOC;
+		ScreenedNodeFileProps.legacyNodePropsLoc = LEGACY_NODE_PROPS_LOC;
 
 		subject = new ScreenedNodeFileProps();
 	}
@@ -61,8 +61,8 @@ class ScreenedNodeFilePropsTest {
 	@Test
 	void warnsOfFailedTransform() {
 		// setup:
-		ScreenedNodeFileProps.NODE_PROPS_LOC = BROKEN_NODE_PROPS_LOC;
-		ScreenedNodeFileProps.LEGACY_NODE_PROPS_LOC = EMPTY_NODE_PROPS_LOC;
+		ScreenedNodeFileProps.nodePropsLoc = BROKEN_NODE_PROPS_LOC;
+		ScreenedNodeFileProps.legacyNodePropsLoc = EMPTY_NODE_PROPS_LOC;
 
 		// given:
 		subject = new ScreenedNodeFileProps();

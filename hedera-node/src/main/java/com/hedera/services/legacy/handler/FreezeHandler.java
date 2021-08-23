@@ -1,11 +1,33 @@
 package com.hedera.services.legacy.handler;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
+import static com.swirlds.common.CommonUtils.hex;
+import static java.util.Calendar.HOUR_OF_DAY;
+import static java.util.Calendar.MINUTE;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.TimeZone;
+import java.util.function.Supplier;
+
 /*-
  * ‌
  * Hedera Services Node
- * ​
+ *
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,37 +54,15 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.TimeZone;
-import java.util.function.Supplier;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
-import static com.swirlds.common.CommonUtils.hex;
-import static java.util.Calendar.HOUR_OF_DAY;
-import static java.util.Calendar.MINUTE;
-
 /**
- * @author Qian
- * 		FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
- * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
+ * FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
+ * transactions. Documentation available at
+ * index.html#proto.FreezeTransactionBody
  */
 public class FreezeHandler {
 	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
@@ -72,23 +72,19 @@ public class FreezeHandler {
 	private final HbarCentExchange exchange;
 	private final Supplier<SwirldDualState> dualState;
 
-	private static String TARGET_DIR = "./";
-	private static String TEMP_DIR = "./temp";
-	private static String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
-	private static String CMD_SCRIPT = "exec.sh";
-	private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
+	private static final String TARGET_DIR = "./";
+	private static final String TEMP_DIR = "./temp";
+	private static final String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
+	private static final String CMD_SCRIPT = "exec.sh";
+	private static final String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
+	private static final String ABORT_UDPATE_MESSAGE = "ABORT UPDATE PROCRESS";
 	private String LOG_PREFIX;
-	private static String ABORT_UDPATE_MESSAGE = "ABORT UPDATE PROCRESS";
 
 	private FileID updateFeatureFile;
 	private byte[] updateFileHash;
 
-	public FreezeHandler(
-			HederaFs hfs,
-			Platform platform,
-			HbarCentExchange exchange,
-			Supplier<SwirldDualState> dualState
-	) {
+	public FreezeHandler(final HederaFs hfs, final Platform platform, final HbarCentExchange exchange,
+			final Supplier<SwirldDualState> dualState) {
 		this.hfs = hfs;
 		this.exchange = exchange;
 		this.platform = platform;
@@ -97,22 +93,10 @@ public class FreezeHandler {
 	}
 
 	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
-		log.info("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
-		FreezeTransactionBody op = transactionBody.getFreeze();
+		log.debug("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
+		saveUpdateFileForMaintenance(transactionBody);
+		final var naturalFreezeStart = deriveFreezeStartTime(transactionBody.getFreeze(), consensusTime);
 		TransactionReceipt receipt;
-		if (transactionBody.getFreeze().hasUpdateFile()) {
-			//save the file ID and will be used after platform goes into maintenance mode
-			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
-			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
-		}
-		Instant naturalFreezeStart;
-		if (op.hasStartTime()) {
-			final var ts = op.getStartTime();
-			naturalFreezeStart = Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
-		} else
-			{
-			naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
-		}
 		try {
 			final var dual = dualState.get();
 			dual.setFreezeTime(naturalFreezeStart);
@@ -123,26 +107,42 @@ public class FreezeHandler {
 			receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, exchange.activeRates());
 		}
 
-		TransactionRecord.Builder transactionRecord = RequestBuilder.getTransactionRecord(
-				transactionBody.getTransactionFee(),
-				transactionBody.getMemo(),
-				transactionBody.getTransactionID(),
+		final var builder = RequestBuilder.getTransactionRecord(transactionBody.getTransactionFee(),
+				transactionBody.getMemo(), transactionBody.getTransactionID(),
 				RequestBuilder.getTimestamp(consensusTime), receipt);
-		return transactionRecord.build();
+		return builder.build();
 	}
 
-	private Instant nextNaturalInstant(Instant now, int nominalHour, int nominalMin) {
-		final int minsSinceMidnightNow = minutesSinceMidnight(now);
-		final int nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
+	private void saveUpdateFileForMaintenance(final TransactionBody transactionBody) {
+		if (transactionBody.getFreeze().hasUpdateFile()) {
+			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
+			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
+		}
+	}
+
+	private Instant deriveFreezeStartTime(final FreezeTransactionBody op, final Instant consensusTime) {
+		if (op.hasStartTime()) {
+			final var ts = op.getStartTime();
+			return Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+		}
+		return nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
+	}
+
+	private Instant nextNaturalInstant(final Instant now, final int nominalHour, final int nominalMin) {
+		final var minsSinceMidnightNow = minutesSinceMidnight(now);
+		final var nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
 		int diffMins = nominalMinsSinceMidnight - minsSinceMidnightNow;
 		if (diffMins < 0) {
-			/* Can't go back in time, so add a day's worth of minutes to hit the nominal time tomorrow */
+			/*
+			 * Can't go back in time, so add a day's worth of minutes to hit the nominal
+			 * time tomorrow
+			 */
 			diffMins += 24 * 60;
 		}
 		return now.plusSeconds(diffMins * 60L);
 	}
 
-	public int minutesSinceMidnight(Instant now) {
+	public int minutesSinceMidnight(final Instant now) {
 		final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		calendar.setTimeInMillis(now.getEpochSecond() * 1_000);
 		return calendar.get(HOUR_OF_DAY) * 60 + calendar.get(MINUTE);
@@ -150,91 +150,100 @@ public class FreezeHandler {
 
 	public void handleUpdateFeature() {
 		if (updateFeatureFile == null) {
-			log.info(String.format("%s Update file id is not defined, no update will be conducted", LOG_PREFIX));
+			log.info("{} Update file id is not defined, no update will be conducted", LOG_PREFIX);
 			return;
 		}
 		log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);
 
-		FileID fileIDtoUse = updateFeatureFile;
+		final var fileIDtoUse = updateFeatureFile;
 		updateFeatureFile = null; // reset to null since next freeze may not need file update
 		if (hfs.exists(fileIDtoUse)) {
 			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
-			byte[] fileBytes = hfs.cat(fileIDtoUse);
+			final var fileBytes = hfs.cat(fileIDtoUse);
 			if (fileBytes == null || fileBytes.length == 0) {
-				log.error(String.format("%s Update file is empty", LOG_PREFIX));
-				log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+				logOnEmptyUpdateFile();
 				return;
 			}
 			try {
-				byte[] readFileHash = MessageDigest.getInstance("SHA-384").digest(fileBytes);
+				final var readFileHash = MessageDigest.getInstance("SHA-384").digest(fileBytes);
 				if (Arrays.equals(readFileHash, updateFileHash)) {
 					updateFeatureWithFileContents(fileBytes);
 				} else {
-					log.error(String.format("%s File hash mismatch", LOG_PREFIX));
-					log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
-					log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
-					log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+					logOnFileHashMismatch(readFileHash);
 				}
 			} catch (NoSuchAlgorithmException e) {
 				log.error("{} Exception {}", LOG_PREFIX, e);
 			}
 		} else {
-			log.error(String.format("%s File ID %s not found in file system ", LOG_PREFIX, fileIDtoUse));
+			log.error("{} File ID {} not found in file system", LOG_PREFIX, fileIDtoUse);
 		}
+	}
+
+	private void logOnEmptyUpdateFile() {
+		log.error("{} Update file is empty", LOG_PREFIX);
+		log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+	}
+
+	private void logOnFileHashMismatch(final byte[] readFileHash) {
+		log.error("{} File hash mismatch", LOG_PREFIX);
+		log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
+		log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
+		log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
 	}
 
 	private void updateFeatureWithFileContents(final byte[] fileBytes) {
 		log.info("{} current directory {}", LOG_PREFIX, System.getProperty("user.dir"));
-		File directory = new File(TEMP_DIR);
 		try {
-			if (directory.exists()) {
-				log.info("{} clean directory {}", LOG_PREFIX, directory);
-				// delete everything in it recursively
-				try (final var walk = Files.walk(directory.toPath())) {
-					walk.sorted(Comparator.reverseOrder())
-							.map(Path::toFile)
-							.forEach(File::delete);
-				}
-			} else {
-				log.info("{} create directory {}", LOG_PREFIX, directory);
-				directory.mkdir();
-			}
+			prepareEmptyTempDir();
 			log.info("{} has read file content {} bytes", LOG_PREFIX, fileBytes.length);
-
 			log.info("{} unzipping file to directory {} ", LOG_PREFIX, TEMP_DIR);
-			//unzip bytes stream to target directory
 			UnzipUtility.unzip(fileBytes, TEMP_DIR);
-
-			File deleteTxt = new File(DELETE_FILE);
-			if (deleteTxt.exists()) {
-				log.info("{} executing delete file list {}", LOG_PREFIX, DELETE_FILE);
-				deleteFileFromList(DELETE_FILE);
-
-				log.info("{} deleting file {}", LOG_PREFIX, DELETE_FILE);
-				try {
-					Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
-				} catch (IOException ex) {
-					log.warn("{} File could not be deleted {}", DELETE_FILE, ex);
-				}
-			}
-
-			File script = new File(FULL_SCRIPT_PATH);
-			if (script.exists()) {
-				if (script.setExecutable(true)) {
-					log.info("{} ready to execute script {}", LOG_PREFIX, FULL_SCRIPT_PATH);
-					runScript(FULL_SCRIPT_PATH);
-				} else {
-					log.error("{} could not change to executable permission for file {}", LOG_PREFIX, FULL_SCRIPT_PATH);
-				}
-			}
+			deleteFiles();
+			executeScriptFile();
 		} catch (SecurityException | IOException e) {
 			log.error("Exception during handleUpdateFeature ", e);
 		}
 	}
 
-	private void deleteFileFromList(String deleteFileListName) {
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				new FileInputStream(deleteFileListName), StandardCharsets.UTF_8));) {
+	private void prepareEmptyTempDir() throws IOException {
+		final var directory = new File(TEMP_DIR);
+		log.info("{} prepare empty directory {}", LOG_PREFIX, directory);
+		if (directory.exists()) {
+			FileUtils.deleteDirectory(directory);
+		}
+		directory.mkdir();
+	}
+
+	private void deleteFiles() {
+		final var deleteTxt = new File(DELETE_FILE);
+		if (deleteTxt.exists()) {
+			log.info("{} executing delete file list {}", LOG_PREFIX, DELETE_FILE);
+			deleteFilesFromList(DELETE_FILE);
+
+			log.info("{} deleting files from {}", LOG_PREFIX, DELETE_FILE);
+			try {
+				Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
+			} catch (IOException ex) {
+				log.warn("{} File could not be deleted {}", DELETE_FILE, ex);
+			}
+		}
+	}
+
+	private void executeScriptFile() {
+		final var script = new File(FULL_SCRIPT_PATH);
+		if (script.exists()) {
+			if (script.setExecutable(true)) {
+				log.info("{} ready to execute script {}", LOG_PREFIX, FULL_SCRIPT_PATH);
+				runScript(FULL_SCRIPT_PATH);
+			} else {
+				log.error("{} could not change to executable permission for file {}", LOG_PREFIX, FULL_SCRIPT_PATH);
+			}
+		}
+	}
+
+	private void deleteFilesFromList(final String deleteFileListName) {
+		try (BufferedReader br = new BufferedReader(
+				new InputStreamReader(new FileInputStream(deleteFileListName), StandardCharsets.UTF_8));) {
 			String line;
 			// each line of the input stream is a file name to be deleted
 			while ((line = br.readLine()) != null) {
@@ -259,7 +268,7 @@ public class FreezeHandler {
 		}
 	}
 
-	private void runScript(String scriptFullPath) {
+	private void runScript(final String scriptFullPath) {
 		try {
 			log.info("{} start running script: {}", LOG_PREFIX, scriptFullPath);
 			Runtime.getRuntime().exec(" nohup " + scriptFullPath + " " + platform.getSelfId().getId());

@@ -34,10 +34,8 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -55,64 +53,49 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class ExpirableTxnRecordTest {
-	long expiry = 1_234_567L;
-	long submittingMember = 1L;
+	private static final long expiry = 1_234_567L;
+	private static final long submittingMember = 1L;
 
-	DataInputStream din;
+	private static final byte[] pretendHash = "not-really-a-hash".getBytes();
 
-	DomainSerdes serdes;
+	private static final TokenID tokenA = IdUtils.asToken("1.2.3");
+	private static final TokenID tokenB = IdUtils.asToken("1.2.4");
+	private static final AccountID sponsor = IdUtils.asAccount("1.2.5");
+	private static final AccountID beneficiary = IdUtils.asAccount("1.2.6");
+	private static final AccountID magician = IdUtils.asAccount("1.2.7");
 
-	byte[] pretendHash = "not-really-a-hash".getBytes();
+	private static final EntityId feeCollector = new EntityId(1, 2, 8);
+	private static final EntityId token = new EntityId(1, 2, 9);
+	private static final long units = 123L;
 
-	TokenID tokenA = IdUtils.asToken("1.2.3");
-	TokenID tokenB = IdUtils.asToken("1.2.4");
-	AccountID sponsor = IdUtils.asAccount("1.2.5");
-	AccountID beneficiary = IdUtils.asAccount("1.2.6");
-	AccountID magician = IdUtils.asAccount("1.2.7");
-
-	EntityId feeCollector = new EntityId(1, 2, 8);
-	EntityId token = new EntityId(1, 2, 9);
-	long units = 123L;
-
-	TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
+	private static final TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
 			.setToken(tokenA)
 			.addAllTransfers(
 					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
 			.build();
-	TokenTransferList bTokenTransfers = TokenTransferList.newBuilder()
+	private static final TokenTransferList bTokenTransfers = TokenTransferList.newBuilder()
 			.setToken(tokenB)
 			.addAllTransfers(
 					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
 			.build();
-	ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
-	FcAssessedCustomFee balanceChange = new FcAssessedCustomFee(feeCollector, token, units);
+	private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
+	private static final FcAssessedCustomFee balanceChange =
+			new FcAssessedCustomFee(feeCollector, token, units, new long[] { 234L });
 
-	ExpirableTxnRecord subject;
+	private DomainSerdes serdes;
+	private ExpirableTxnRecord subject;
 
 	@BeforeEach
 	void setup() {
 		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
-
-		din = mock(DataInputStream.class);
 
 		serdes = mock(DomainSerdes.class);
 
 		ExpirableTxnRecord.serdes = serdes;
 	}
 
-	private ExpirableTxnRecord subjectRecord() {
-		var s = fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
-						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.build());
-		s.setExpiry(expiry);
-		s.setSubmittingMember(submittingMember);
-		return s;
-	}
-
-	private ExpirableTxnRecord subjectRecordWithTokenTransfers() {
-		var s = ExpirableTxnRecordTestHelper.fromGprc(
+	private static ExpirableTxnRecord subjectRecordWithTokenTransfers() {
+		final var s = ExpirableTxnRecordTestHelper.fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
@@ -123,8 +106,8 @@ class ExpirableTxnRecordTest {
 		return s;
 	}
 
-	private ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
-		var s = fromGprc(
+	private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
+		final var s = fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
@@ -137,22 +120,17 @@ class ExpirableTxnRecordTest {
 		return s;
 	}
 
-
 	@Test
 	void hashableMethodsWork() {
-		// given:
-		Hash pretend = mock(Hash.class);
+		final var pretend = mock(Hash.class);
 
-		// when:
 		subject.setHash(pretend);
 
-		// then:
 		assertEquals(pretend, subject.getHash());
 	}
 
 	@Test
 	void fastCopyableWorks() {
-		// expect;
 		assertTrue(subject.isImmutable());
 		assertSame(subject, subject.copy());
 		assertDoesNotThrow(subject::release);
@@ -160,10 +138,8 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void v0120DeserializeWorks() throws IOException {
-		// setup:
 		subject = subjectRecordWithTokenTransfers();
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-
+		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
 				.willReturn(subject.getTxnId())
@@ -187,22 +163,17 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getSubmittingMember());
 		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
-		// and:
-		var deserializedRecord = new ExpirableTxnRecord();
+		final var deserializedRecord = new ExpirableTxnRecord();
 
-		// when:
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0120_VERSION);
 
-		// then:
 		assertEquals(subject, deserializedRecord);
 	}
 
 	@Test
 	void v0160DeserializeWorks() throws IOException {
-		// setup:
 		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-
+		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
 				.willReturn(subject.getTxnId())
@@ -229,27 +200,20 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getMemo());
 		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
 				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		// and:
-		var deserializedRecord = new ExpirableTxnRecord();
+		final var deserializedRecord = new ExpirableTxnRecord();
 
-		// when:
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0160_VERSION);
 
-		// then:
 		assertEquals(subject, deserializedRecord);
 	}
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = Mockito.inOrder(serdes, fout);
+		final var fout = mock(SerializableDataOutputStream.class);
+		final var inOrder = Mockito.inOrder(serdes, fout);
 
-		// when:
 		subject.serialize(fout);
 
-		// then:
 		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
 		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
 		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
@@ -271,41 +235,35 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void serializableDetWorks() {
-		// expect;
 		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
 	void grpcInterconversionWorks() {
-		// given:
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
 
-		// expect:
 		assertEquals(subject, fromGprc(subject.asGrpc()));
 	}
 
 	@Test
 	void objectContractWorks() {
-		// given:
-		var one = subject;
-		var two = DomainSerdesTest.recordOne();
-		var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
+		final var one = subject;
+		final var two = DomainSerdesTest.recordOne();
+		final var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 
-		// when:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
 		assertEquals(one, three);
 		assertNotEquals(one, two);
-		// and:
+
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(one.hashCode(), three.hashCode());
 	}
 
 	@Test
 	void toStringWorks() {
-		// setup:
 		final var desired = "ExpirableTxnRecord{receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
 				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, " +
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
@@ -321,9 +279,8 @@ class ExpirableTxnRecordTest {
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, " +
-				"units=123})}";
+				"units=123, effective payer accounts=[234]})}";
 
-		// expect:
 		assertEquals(desired, subject.toString());
 	}
 
