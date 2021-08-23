@@ -60,6 +60,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<LongConsumer> exposingBalanceTo = Optional.empty();
 	Optional<Long> ownedNfts = Optional.empty();
 	Optional<Integer> maxAutomaticAssociations = Optional.empty();
+	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
@@ -115,6 +116,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo hasAlreadyUsedAutomaticAssociations(int count) {
+		this.alreadyUsedAutomaticAssociations = Optional.of(count);
+		return this;
+	}
+
 	@Override
 	protected HapiGetAccountInfo self() {
 		return this;
@@ -138,6 +144,15 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
 		maxAutomaticAssociations.ifPresent(maxAutoAssiations ->
 				Assertions.assertEquals((int) maxAutoAssiations , actualMaxAutoAssociations));
+		alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
+			int actualCount = 0;
+			for (var rel : actualTokenRels) {
+				if (rel.getAutomaticAssociation()) {
+					actualCount++;
+				}
+			}
+			Assertions.assertEquals(actualCount, usedCount);
+		});
 	}
 
 	@Override

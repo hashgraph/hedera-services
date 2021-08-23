@@ -44,16 +44,13 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -91,33 +88,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
 				xferRequiresCrypto(),
-				usdFeeAsExpected(),
-				createWithAutoAssociations()
+				usdFeeAsExpected()
 		);
-	}
-
-	private HapiApiSpec createWithAutoAssociations() {
-		return defaultHapiSpec("CreateWithAutoAssociations")
-				.given(
-						newKeyNamed("adminKey"),
-						newKeyNamed("freezeKey"),
-						cryptoCreate("account")
-								.balance(ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(1234)
-				)
-				.when(
-						tokenCreate("tokenA")
-								.adminKey("adminKey")
-								.freezeKey("freezeKey")
-								.initialSupply(1000L)
-								.treasury("account")
-				)
-				.then(
-						// TODO : validate with getInfo on the account
-						getAccountInfo("account")
-								.hasMaxAutomaticAssociations(1234)
-								.logged()
-				);
 	}
 
 	/* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
