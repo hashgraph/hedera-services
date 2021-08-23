@@ -26,11 +26,14 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.EnumSet;
 
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 
+@Singleton
 public class RenewalProcess {
 	private static final Logger log = LogManager.getLogger(RenewalProcess.class);
 
@@ -46,6 +49,7 @@ public class RenewalProcess {
 
 	private Instant cycleTime = null;
 
+	@Inject
 	public RenewalProcess(
 			FeeCalculator fees,
 			HederaNumbers hederaNums,

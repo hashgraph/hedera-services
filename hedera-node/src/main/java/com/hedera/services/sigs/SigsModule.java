@@ -23,17 +23,19 @@ package com.hedera.services.sigs;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.HandleSigReqs;
 import com.hedera.services.sigs.annotations.PayerSigReqs;
-import com.hedera.services.sigs.annotations.QuerySigReqs;
+import com.hedera.services.sigs.annotations.RetryingSigReqs;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.logic.PayerSigValidity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -42,6 +44,7 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -60,6 +63,7 @@ import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defa
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
+import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_STATUSES;
 
 @Module
 public abstract class SigsModule {
@@ -104,7 +108,7 @@ public abstract class SigsModule {
 
 	@Provides
 	@Singleton
-	@QuerySigReqs
+	@RetryingSigReqs
 	public static SigRequirements provideQuerySigReqs(
 			HederaFs hfs,
 			TokenStore tokenStore,
@@ -154,5 +158,23 @@ public abstract class SigsModule {
 	@Singleton
 	public static Predicate<TransactionBody> provideQueryPaymentTest(AccountID nodeAccount) {
 		return PrecheckUtils.queryPaymentTestFor(nodeAccount);
+	}
+
+	@Provides
+	@Singleton
+	public static Predicate<ResponseCodeEnum> provideTerminalSigStatusTest() {
+		return TERMINAL_SIG_STATUSES;
+	}
+
+	@Provides
+	@Singleton
+	public static PayerSigValidity providePayerSigValidity() {
+		return HederaKeyActivation::payerSigIsActive;
+	}
+
+	@Provides
+	@Singleton
+	public static ExpansionHelper provideExpansionHelper() {
+		return HederaToPlatformSigOps::expandIn;
 	}
 }

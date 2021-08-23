@@ -28,6 +28,8 @@ import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -43,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * Please see {@link FeeChargingPolicy} for details.
  */
+@Singleton
 public class TxnChargingPolicyAgent {
 	private final FeeCalculator feeCalc;
 	private final FeeChargingPolicy chargingPolicy;
@@ -51,6 +54,7 @@ public class TxnChargingPolicyAgent {
 	private final AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
+	@Inject
 	public TxnChargingPolicyAgent(
 			FeeCalculator feeCalc,
 			FeeChargingPolicy chargingPolicy,

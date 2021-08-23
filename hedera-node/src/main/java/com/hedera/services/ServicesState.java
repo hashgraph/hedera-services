@@ -27,9 +27,8 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.context.properties.ScreenedSysFileProps;
 import com.hedera.services.context.properties.StandardizedPropertySources;
+import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -52,9 +51,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -92,13 +89,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static HashLogger hashLogger = new HashLogger();
 	private static ExpansionHelper expansionHelper = HederaToPlatformSigOps::expandIn;
 	private static BiConsumer<ServicesState, ServicesContext> contextInitializer = InitializationFlow::accept;
-
-	interface ExpansionHelper {
-		ResponseCodeEnum expandIn(
-				PlatformTxnAccessor txnAccessor,
-				SigRequirements keyOrderer,
-				PubKeyToSigBytes pkToSigFn);
-	}
 
 	/* Will only be over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = StateVersions.CURRENT_VERSION;

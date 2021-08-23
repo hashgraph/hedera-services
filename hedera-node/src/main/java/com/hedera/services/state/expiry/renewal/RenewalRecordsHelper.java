@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -33,6 +32,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +40,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 
@@ -49,9 +50,9 @@ public class RenewalRecordsHelper {
 
 	private static final Transaction EMPTY_SIGNED_TXN = Transaction.getDefaultInstance();
 
-	private final ServicesContext ctx;
 	private final RecordStreamManager recordStreamManager;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Consumer<RunningHash> updateRunningHash;
 
 	private int consensusNanosIncr = 0;
 	private Instant cycleStart = null;
@@ -59,11 +60,11 @@ public class RenewalRecordsHelper {
 
 	@Inject
 	public RenewalRecordsHelper(
-			ServicesContext ctx,
 			RecordStreamManager recordStreamManager,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			Consumer<RunningHash> updateRunningHash
 	) {
-		this.ctx = ctx;
+		this.updateRunningHash = updateRunningHash;
 		this.recordStreamManager = recordStreamManager;
 		this.dynamicProperties = dynamicProperties;
 	}
@@ -117,7 +118,7 @@ public class RenewalRecordsHelper {
 
 	private void stream(ExpirableTxnRecord expiringRecord, Instant at) {
 		final var rso = new RecordStreamObject(expiringRecord, EMPTY_SIGNED_TXN, at);
-		ctx.updateRecordRunningHash(rso.getRunningHash());
+		updateRunningHash.accept(rso.getRunningHash());
 		recordStreamManager.addRecordStreamObject(rso);
 	}
 

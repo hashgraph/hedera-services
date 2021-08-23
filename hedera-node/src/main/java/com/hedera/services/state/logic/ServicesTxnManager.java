@@ -23,14 +23,20 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.annotations.RunRecordStreaming;
+import com.hedera.services.state.annotations.RunTopLevelTransition;
+import com.hedera.services.state.annotations.RunTriggeredTransition;
 import com.hedera.services.utils.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ServicesTxnManager {
 	private static final Logger log = LogManager.getLogger(ServicesTxnManager.class);
 
@@ -43,10 +49,11 @@ public class ServicesTxnManager {
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public ServicesTxnManager(
-			Runnable scopedProcessing,
-			Runnable scopedRecordStreaming,
-			Runnable scopedTriggeredProcessing,
+			@RunTopLevelTransition Runnable scopedProcessing,
+			@RunRecordStreaming Runnable scopedRecordStreaming,
+			@RunTriggeredTransition Runnable scopedTriggeredProcessing,
 			RecordCache recordCache,
 			HederaLedger ledger,
 			TransactionContext txnCtx

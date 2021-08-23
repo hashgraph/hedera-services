@@ -21,26 +21,48 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.ContextModule;
-import com.hedera.services.context.init.FullInitializationFlow;
+import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.ServicesNodeType;
+import com.hedera.services.context.annotations.BootstrapProps;
+import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.ContractsModule;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
 import com.hedera.services.grpc.GrpcModule;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.records.RecordsModule;
+import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.SigsModule;
+import com.hedera.services.sigs.annotations.RetryingSigReqs;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.state.DualStateAccessor;
+import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.state.annotations.WorkingState;
+import com.hedera.services.state.exports.AccountsExporter;
+import com.hedera.services.state.exports.BalancesExporter;
+import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
+import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
+import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
+import com.hedera.services.utils.Pause;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.Address;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -67,11 +89,30 @@ import javax.inject.Singleton;
 		TransactionsModule.class,
 })
 public interface ServicesApp {
+	/* Needed by ServicesState */
+	HashLogger hashLogger();
+	ProcessLogic logic();
+	ExpansionHelper expansionHelper();
+	ExpandHandleSpan expandHandleSpan();
+	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
-	FullInitializationFlow initializationFlow();
+	@WorkingState StateAccessor workingState();
+	@RetryingSigReqs SigRequirements retryingSigReqs();
+
+	/* Needed by ServicesMain */
+	Pause pause();
+	NodeId nodeId();
+	Address nodeAddress();
+	ServicesNodeType nodeType();
+	AccountsExporter accountsExporter();
+	BalancesExporter balancesExporter();
+	NetworkCtxManager networkCtxManager();
+	SystemFilesManager sysFilesManager();
+	CurrentPlatformStatus platformStatus();
+	BackingStore<AccountID, MerkleAccount> backingAccounts();
 
 	@Component.Builder
 	interface Builder {
@@ -79,6 +120,8 @@ public interface ServicesApp {
 		Builder platform(Platform platform);
 		@BindsInstance
 		Builder selfId(long selfId);
+		@BindsInstance
+		Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
 		@BindsInstance
 		Builder initialState(ServicesState initialState);
 

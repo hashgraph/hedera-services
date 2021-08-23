@@ -1,4 +1,4 @@
-package com.hedera.services.context.properties;
+package com.hedera.services.context.init;
 
 /*-
  * ‌
@@ -20,23 +20,31 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.context.annotations.CompositeProps;
-import dagger.Binds;
-import dagger.Module;
-import dagger.Provides;
+import com.hedera.services.ServicesState;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
-@Module
-public abstract class PropertiesModule {
-	@Provides
-	@Singleton
-	@CompositeProps
-	public static PropertySource providePropertySource(PropertySources propertySources) {
-		return propertySources.asResolvingSource();
+@Singleton
+public class ServicesInitFlow {
+	private final StateInitializationFlow stateFlow;
+	private final StoreInitializationFlow storeFlow;
+	private final EntitiesInitializationFlow entitiesFlow;
+
+	@Inject
+	public ServicesInitFlow(
+			StateInitializationFlow stateFlow,
+			StoreInitializationFlow storeFlow,
+			EntitiesInitializationFlow entitiesFlow
+	) {
+		this.stateFlow = stateFlow;
+		this.storeFlow = storeFlow;
+		this.entitiesFlow = entitiesFlow;
 	}
 
-	@Binds
-	@Singleton
-	public abstract PropertySources bindPropertySources(StandardizedPropertySources standardizedPropertySources);
+	public void runWith(ServicesState activeState) {
+		stateFlow.runWith(activeState);
+		storeFlow.run();
+		entitiesFlow.run();
+	}
 }

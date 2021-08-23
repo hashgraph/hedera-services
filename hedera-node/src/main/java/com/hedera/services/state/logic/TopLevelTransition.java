@@ -23,6 +23,10 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class TopLevelTransition implements Runnable {
 	private final ScreenedTransition screenedTransition;
 	private final TransactionContext txnCtx;
@@ -31,6 +35,7 @@ public class TopLevelTransition implements Runnable {
 	private final SignatureScreen signatureScreen;
 	private final KeyActivationScreen keyActivationScreen;
 
+	@Inject
 	public TopLevelTransition(
 			ScreenedTransition screenedTransition,
 			NetworkCtxManager networkCtxManager,

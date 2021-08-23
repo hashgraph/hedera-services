@@ -25,8 +25,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class TriggeredTransition implements Runnable {
 	private final StateView currentView;
 	private final FeeCalculator fees;
@@ -35,6 +39,7 @@ public class TriggeredTransition implements Runnable {
 	private final ScreenedTransition screenedTransition;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public TriggeredTransition(
 			StateView currentView,
 			FeeCalculator fees,

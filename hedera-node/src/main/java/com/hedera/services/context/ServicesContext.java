@@ -1761,12 +1761,12 @@ public class ServicesContext {
 					tokenStore(), hederaNums(), globalDynamicProperties(),
 					this::tokens, this::accounts, this::tokenAssociations, backingAccounts());
 			final var recordHelper = new RenewalRecordsHelper(
-					this, recordStreamManager(), globalDynamicProperties());
+					recordStreamManager(), globalDynamicProperties(), this::updateRecordRunningHash);
 			final var renewalProcess = new RenewalProcess(
 					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
-					hederaNums(), renewalProcess, this,
-					globalDynamicProperties(), networkCtxManager(), this::networkCtx);
+					hederaNums(), renewalProcess, globalDynamicProperties(), networkCtxManager(),
+					this::networkCtx, this::seqNo);
 		}
 		return entityAutoRenewal;
 	}

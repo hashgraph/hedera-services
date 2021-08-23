@@ -23,7 +23,7 @@ package com.hedera.services.sigs.verification;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.sigs.annotations.PayerSigReqs;
-import com.hedera.services.sigs.annotations.QuerySigReqs;
+import com.hedera.services.sigs.annotations.RetryingSigReqs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -60,7 +60,7 @@ public class PrecheckKeyReqs {
 	@Inject
 	public PrecheckKeyReqs(
 			@PayerSigReqs SigRequirements keyOrder,
-			@QuerySigReqs SigRequirements keyOrderModuloRetry,
+			@RetryingSigReqs SigRequirements keyOrderModuloRetry,
 			Predicate<TransactionBody> isQueryPayment
 	) {
 		this.keyOrder = keyOrder;

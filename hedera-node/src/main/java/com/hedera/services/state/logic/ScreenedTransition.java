@@ -25,14 +25,19 @@ import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.utils.TxnAccessor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class ScreenedTransition {
 	private final TransitionRunner transitionRunner;
 	private final SystemOpPolicies opPolicies;
 	private final TransactionContext txnCtx;
 	private final NetworkCtxManager networkCtxManager;
 
+	@Inject
 	public ScreenedTransition(
 			TransitionRunner transitionRunner,
 			SystemOpPolicies opPolicies,

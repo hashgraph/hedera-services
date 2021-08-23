@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.init.InitializationFlow;
+import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -128,7 +129,7 @@ class ServicesStateTest {
 	@Mock
 	private ProcessLogic logic;
 	@Mock
-	private ServicesState.ExpansionHelper expansionHelper;
+	private ExpansionHelper expansionHelper;
 	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock

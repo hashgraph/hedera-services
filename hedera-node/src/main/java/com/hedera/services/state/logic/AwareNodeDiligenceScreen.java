@@ -30,6 +30,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -40,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
+@Singleton
 public class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
@@ -50,6 +54,7 @@ public class AwareNodeDiligenceScreen {
 	private final TransactionContext txnCtx;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
+	@Inject
 	public AwareNodeDiligenceScreen(
 			OptionValidator validator,
 			TransactionContext txnCtx,

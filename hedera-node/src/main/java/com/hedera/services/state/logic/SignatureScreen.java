@@ -30,10 +30,13 @@ import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.BiPredicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class SignatureScreen {
 	private static final Logger log = LogManager.getLogger(SignatureScreen.class);
 
@@ -44,6 +47,7 @@ public class SignatureScreen {
 	private final NetworkCtxManager networkCtxManager;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
+	@Inject
 	public SignatureScreen(
 			Rationalization rationalization,
 			PayerSigValidity payerSigValidity,

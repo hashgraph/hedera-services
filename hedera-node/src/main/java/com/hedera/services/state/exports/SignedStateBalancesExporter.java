@@ -21,6 +21,7 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -43,6 +44,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -62,6 +65,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
+@Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
@@ -94,8 +98,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
+	@Inject
 	public SignedStateBalancesExporter(
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			UnaryOperator<byte[]> signer,
 			GlobalDynamicProperties dynamicProperties
 	) {

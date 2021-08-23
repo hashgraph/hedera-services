@@ -27,15 +27,19 @@ import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
 import com.swirlds.common.crypto.RunningHash;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Consumer;
 
+@Singleton
 public class RecordStreaming implements Runnable {
 	private final TransactionContext txnCtx;
 	private final NonBlockingHandoff nonBlockingHandoff;
 	private final Consumer<RunningHash> runningHashUpdate;
 	private final AccountRecordsHistorian recordsHistorian;
 
+	@Inject
 	public RecordStreaming(
 			TransactionContext txnCtx,
 			NonBlockingHandoff nonBlockingHandoff,

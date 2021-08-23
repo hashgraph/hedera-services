@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -34,8 +35,15 @@ import com.hedera.services.state.annotations.NftsByType;
 import com.hedera.services.state.annotations.TreasuryNftsByType;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.exports.AccountsExporter;
+import com.hedera.services.state.exports.BalancesExporter;
+import com.hedera.services.state.exports.SignedStateBalancesExporter;
+import com.hedera.services.state.exports.ToStringAccountsExporter;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
+import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -55,7 +63,12 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.Pause;
+import com.hedera.services.utils.SleepingPause;
+import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.common.Platform;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import dagger.Binds;
@@ -64,10 +77,13 @@ import dagger.Provides;
 
 import javax.inject.Singleton;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
+import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
+import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
-@Module
+@Module(includes = HandleLogicModule.class)
 public abstract class StateModule {
 	@Binds
 	@Singleton
@@ -75,7 +91,48 @@ public abstract class StateModule {
 
 	@Binds
 	@Singleton
+	public abstract BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
+
+	@Binds
+	@Singleton
 	public abstract SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
+
+	@Binds
+	@Singleton
+	public abstract AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
+
+	@Binds
+	@Singleton
+	public abstract SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
+
+	@Provides
+	@Singleton
+	public static Pause providePause() {
+		return SleepingPause.SLEEPING_PAUSE;
+	}
+
+	@Provides
+	@Singleton
+	public static Address provideNodeAddress(Supplier<AddressBook> book, long selfId) {
+		return book.get().getAddress(selfId);
+	}
+
+	@Provides
+	public static ServicesNodeType provideNodeType(Address nodeAddress) {
+		return nodeAddress.getStake() > 0 ? STAKED_NODE : ZERO_STAKE_NODE;
+	}
+
+	@Provides
+	@Singleton
+	public static UnaryOperator<byte[]> provideSigner(Platform platform) {
+		return platform::sign;
+	}
+
+	@Provides
+	@Singleton
+	public static NodeId provideNodeId(Platform platform) {
+		return platform.getSelfId();
+	}
 
 	@Provides
 	@Singleton

@@ -1,4 +1,4 @@
-package com.hedera.services.context.properties;
+package com.hedera.services.sigs.annotations;
 
 /*-
  * ‌
@@ -20,23 +20,15 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.context.annotations.CompositeProps;
-import dagger.Binds;
-import dagger.Module;
-import dagger.Provides;
+import javax.inject.Qualifier;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import javax.inject.Singleton;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Module
-public abstract class PropertiesModule {
-	@Provides
-	@Singleton
-	@CompositeProps
-	public static PropertySource providePropertySource(PropertySources propertySources) {
-		return propertySources.asResolvingSource();
-	}
-
-	@Binds
-	@Singleton
-	public abstract PropertySources bindPropertySources(StandardizedPropertySources standardizedPropertySources);
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
+@Qualifier
+@Retention(RUNTIME)
+public @interface RetryingSigReqs {
 }

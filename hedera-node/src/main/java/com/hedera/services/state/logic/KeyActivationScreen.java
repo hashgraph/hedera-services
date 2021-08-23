@@ -26,17 +26,21 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
+@Singleton
 public class KeyActivationScreen {
 	private final TransactionContext txnCtx;
 	private final InHandleActivationHelper activationHelper;
 	private final Predicate<ResponseCodeEnum> terminalSigStatusTest;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
+	@Inject
 	public KeyActivationScreen(
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper,

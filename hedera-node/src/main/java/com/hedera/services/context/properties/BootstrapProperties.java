@@ -46,7 +46,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Singleton
-@BootstrapProps
 public class BootstrapProperties implements PropertySource {
 	private static final Map<String, Object> MISSING_PROPS = null;
 

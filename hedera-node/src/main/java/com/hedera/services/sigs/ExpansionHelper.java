@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.annotations;
+package com.hedera.services.sigs;
 
 /*-
  * ‌
@@ -20,15 +20,14 @@ package com.hedera.services.sigs.annotations;
  * ‍
  */
 
-import javax.inject.Qualifier;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-@Target({ ElementType.METHOD, ElementType.PARAMETER })
-@Qualifier
-@Retention(RUNTIME)
-public @interface QuerySigReqs {
+public interface ExpansionHelper {
+	ResponseCodeEnum expandIn(
+			PlatformTxnAccessor txnAccessor,
+			SigRequirements keyOrderer,
+			PubKeyToSigBytes pkToSigFn);
 }

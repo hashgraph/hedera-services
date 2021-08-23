@@ -30,8 +30,11 @@ import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 
+@Singleton
 public class StandardProcessLogic implements ProcessLogic {
 	private static final Logger log = LogManager.getLogger(StandardProcessLogic.class);
 
@@ -42,6 +45,7 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final ServicesTxnManager txnManager;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public StandardProcessLogic(
 			ExpiryManager expiries,
 			InvariantChecks invariantChecks,

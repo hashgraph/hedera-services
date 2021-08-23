@@ -27,6 +27,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,7 +36,12 @@ import java.util.List;
 
 import static java.util.Comparator.comparing;
 
+@Singleton
 public class ToStringAccountsExporter implements AccountsExporter {
+	@Inject
+	public ToStringAccountsExporter() {
+	}
+
 	@Override
 	public void toFile(String path, FCMap<MerkleEntityId, MerkleAccount> accounts) throws Exception {
 		try (var writer = Files.newBufferedWriter(Paths.get(path))) {

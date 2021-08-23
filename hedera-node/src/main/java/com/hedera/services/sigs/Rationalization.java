@@ -21,6 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.annotations.HandleSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -65,7 +66,7 @@ public class Rationalization {
 	@Inject
 	public Rationalization(
 			SyncVerifier syncVerifier,
-			SigRequirements keyOrderer,
+			@HandleSigReqs SigRequirements keyOrderer,
 			ReusableBodySigningFactory bodySigningFactory
 	) {
 		this.keyOrderer = keyOrderer;

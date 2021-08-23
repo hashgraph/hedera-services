@@ -34,9 +34,16 @@ import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
+import java.util.function.Consumer;
 
 @Module
 public abstract class GrpcModule {
+	@Provides
+	@Singleton
+	public static Consumer<Thread> provideHookAdder() {
+		return Runtime.getRuntime()::addShutdownHook;
+	}
+
 	@Provides
 	@Singleton
 	public static RoyaltyFeeAssessor provideRoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
