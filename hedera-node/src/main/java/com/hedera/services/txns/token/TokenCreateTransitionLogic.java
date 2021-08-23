@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -56,9 +58,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 
 /**
  * Provides the state transition for token creation.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TokenCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenCreateTransitionLogic.class);
 
@@ -70,6 +71,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public TokenCreateTransitionLogic(
 			OptionValidator validator,
 			TokenStore store,

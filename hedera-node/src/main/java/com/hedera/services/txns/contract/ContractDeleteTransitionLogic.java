@@ -33,6 +33,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -41,6 +43,7 @@ import java.util.function.Supplier;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
 
@@ -52,6 +55,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public ContractDeleteTransitionLogic(
 			HederaLedger ledger,
 			LegacyDeleter delegate,

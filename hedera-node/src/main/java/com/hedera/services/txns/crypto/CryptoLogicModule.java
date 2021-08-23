@@ -1,5 +1,25 @@
 package com.hedera.services.txns.crypto;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
 import dagger.Module;
@@ -18,7 +38,7 @@ public abstract class CryptoLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(CryptoCreate)
-	public static List<TransitionLogic> provideCryptoCreateEstimator(
+	public static List<TransitionLogic> provideCryptoCreateLogic(
 			CryptoCreateTransitionLogic cryptoCreateTransitionLogic
 	) {
 		return List.of(cryptoCreateTransitionLogic);
@@ -27,7 +47,7 @@ public abstract class CryptoLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(CryptoUpdate)
-	public static List<TransitionLogic> provideCryptoUpdateEstimator(
+	public static List<TransitionLogic> provideCryptoUpdateLogic(
 			CryptoUpdateTransitionLogic cryptoUpdateTransitionLogic
 	) {
 		return List.of(cryptoUpdateTransitionLogic);
@@ -36,7 +56,7 @@ public abstract class CryptoLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(CryptoDelete)
-	public static List<TransitionLogic> provideCryptoDeleteEstimator(
+	public static List<TransitionLogic> provideCryptoDeleteLogic(
 			CryptoDeleteTransitionLogic cryptoDeleteTransitionLogic
 	) {
 		return List.of(cryptoDeleteTransitionLogic);
@@ -45,7 +65,7 @@ public abstract class CryptoLogicModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(CryptoTransfer)
-	public static List<TransitionLogic> provideCryptoTransferEstimator(
+	public static List<TransitionLogic> provideCryptoTransferLogic(
 			CryptoTransferTransitionLogic cryptoTransferTransitionLogic
 	) {
 		return List.of(cryptoTransferTransitionLogic);

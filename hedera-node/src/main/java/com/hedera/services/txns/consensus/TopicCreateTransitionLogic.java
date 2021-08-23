@@ -39,6 +39,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -56,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  * The syntax check pre-consensus validates the adminKey's structure as signature validation occurs before
  * doStateTransition().
  */
+@Singleton
 public class TopicCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicCreateTransitionLogic.class);
 
@@ -69,6 +72,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
+	@Inject
 	public TopicCreateTransitionLogic(
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,

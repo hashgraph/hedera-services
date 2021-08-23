@@ -26,6 +26,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,6 +37,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -57,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 /**
  * Provides the state transition for token updates.
  */
+@Singleton
 public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenUpdateTransitionLogic.class);
 
@@ -69,8 +73,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
+	@Inject
 	public TokenUpdateTransitionLogic(
-			boolean allowChangedTreasuryToOwnNfts,
+			@AreTreasuryWildcardsEnabled boolean allowChangedTreasuryToOwnNfts,
 			OptionValidator validator,
 			TokenStore store,
 			HederaLedger ledger,

@@ -43,6 +43,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
@@ -77,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * {@link TransactionRecordService} to inspect the entity for changes that
  * may need to be included in the record of the transaction.
  */
+@Singleton
 public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
@@ -87,8 +90,9 @@ public class TypedTokenStore {
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
-	private final LegacyStore delegate;
+	private final LegacyTreasuryRemover delegate;
 
+	@Inject
 	public TypedTokenStore(
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
@@ -97,7 +101,7 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
-            LegacyStore delegate
+            LegacyTreasuryRemover delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -418,7 +422,7 @@ public class TypedTokenStore {
 	}
 
     @FunctionalInterface
-    public interface LegacyStore {
+    public interface LegacyTreasuryRemover {
         void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
     }
 }

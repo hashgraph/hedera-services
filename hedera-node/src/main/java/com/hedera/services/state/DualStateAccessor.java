@@ -1,4 +1,4 @@
-package com.hedera.services.context;
+package com.hedera.services.state;
 
 /*-
  * ‌
@@ -20,30 +20,24 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import dagger.Binds;
-import dagger.Module;
-import dagger.Provides;
+import com.swirlds.common.SwirldDualState;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
-import java.util.function.Supplier;
 
-@Module
-public abstract class ContextModule {
-	@Binds
-	@Singleton
-	public abstract TransactionContext bindTransactionContext(BasicTransactionContext txnCtx);
+@Singleton
+public class DualStateAccessor {
+	private SwirldDualState dualState = null;
 
-	@Provides
-	@Singleton
-	public static Supplier<Instant> provideConsensusTime(TransactionContext txnCtx) {
-		return txnCtx::consensusTime;
+	@Inject
+	public DualStateAccessor() {
 	}
 
-	@Provides
-	@Singleton
-	public static AccountID provideEffectiveNodeAccount(NodeInfo nodeInfo) {
-		return nodeInfo.hasSelfAccount() ? nodeInfo.selfAccount() : AccountID.getDefaultInstance();
+	public SwirldDualState getDualState() {
+		return dualState;
+	}
+
+	public void setDualState(SwirldDualState dualState) {
+		this.dualState = dualState;
 	}
 }
