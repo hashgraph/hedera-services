@@ -54,7 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
-class RenewalProcessTest {
+class AutoProcessorTest {
 	private final long now = 1_234_567L;
 	private final long requestedRenewalPeriod = 3601L;
 	private final long nonZeroBalance = 2L;
@@ -75,11 +75,12 @@ class RenewalProcessTest {
 	@Mock
 	private RenewalRecordsHelper recordsHelper;
 
-	private RenewalProcess subject;
+	private AutoProcessor subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, recordsHelper);
+		// TODO:
+		subject = new AutoProcessor(fees, new MockHederaNumbers(), helper, recordsHelper);
 	}
 
 	@Test

@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringShortLivedEntities;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -55,6 +56,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 
 class TxnAwareRecordsHistorianTest {
@@ -137,9 +139,9 @@ class TxnAwareRecordsHistorianTest {
 
 		// then:
 		verify(txnCtx).expiringEntities();
-		verify(expiringEntity).id();
-		verify(expiringEntity).consumer();
-		verify(expiringEntity).expiry();
+		verify(expiringEntity, atLeast(2)).id();
+		verify(expiringEntity, atLeast(2)).consumer();
+		verify(expiringEntity, atLeast(2)).expiry();
 		// and:
 		verify(expiries).trackExpirationEvent(any(), eq(nows));
 	}
@@ -197,10 +199,13 @@ class TxnAwareRecordsHistorianTest {
 
 		recordCache = mock(RecordCache.class);
 
+		var expiringShortLivedEntities = mock(ExpiringShortLivedEntities.class);
+
 		subject = new TxnAwareRecordsHistorian(
 				recordCache,
 				txnCtx,
-				expiries);
+				expiries,
+				expiringShortLivedEntities);
 		subject.setCreator(creator);
 	}
 }

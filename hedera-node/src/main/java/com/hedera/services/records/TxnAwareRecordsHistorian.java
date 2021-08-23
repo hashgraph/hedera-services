@@ -23,6 +23,7 @@ package com.hedera.services.records;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringShortLivedEntities;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
@@ -42,11 +43,13 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private final RecordCache recordCache;
 	private final ExpiryManager expiries;
 	private final TransactionContext txnCtx;
+	private final ExpiringShortLivedEntities expiringShortLivedEntitiesJob;
 
-	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
+	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries, ExpiringShortLivedEntities expiringShortLivedEntities) {
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 		this.recordCache = recordCache;
+		this.expiringShortLivedEntitiesJob = expiringShortLivedEntities;
 	}
 
 	@Override
@@ -84,6 +87,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	public void noteNewExpirationEvents() {
 		for (var expiringEntity : txnCtx.expiringEntities()) {
 			expiries.trackExpirationEvent(
+					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),
+					expiringEntity.expiry());
+			expiringShortLivedEntitiesJob.trackExpirationEvent(
 					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),
 					expiringEntity.expiry());
 		}

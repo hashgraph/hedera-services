@@ -25,12 +25,13 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringRecords;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -54,15 +55,18 @@ public class ExpiringCreations implements EntityCreator {
 	private final ExpiryManager expiries;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final ExpiringRecords expiringRecords;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			ExpiringRecords expiringRecords
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;
 		this.dynamicProperties = dynamicProperties;
+		this.expiringRecords = expiringRecords;
 	}
 
 	@Override
@@ -85,6 +89,7 @@ public class ExpiringCreations implements EntityCreator {
 			final var key = MerkleEntityId.fromAccountId(payer);
 			addToState(key, expiringRecord);
 			expiries.trackRecordInState(payer, expiringRecord.getExpiry());
+			expiringRecords.trackRecordInState(payer, expiringRecord.getExpiry());
 		} else {
 			recordCache.trackForExpiry(expiringRecord);
 		}

@@ -29,13 +29,17 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.EnumSet;
 
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DELETED_TOKEN;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_TOKEN;
 
-public class RenewalProcess {
-	private static final Logger log = LogManager.getLogger(RenewalProcess.class);
+public class AutoProcessor {
+	private static final Logger log = LogManager.getLogger(AutoProcessor.class);
 
 	private static final EnumSet<ExpiredEntityClassification> TERMINAL_CLASSIFICATIONS = EnumSet.of(
-			DETACHED_ACCOUNT_GRACE_PERIOD_OVER
+			DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
+			DELETED_TOKEN,
+			EXPIRED_TOKEN
 	);
 
 	private final long shard, realm;
@@ -44,9 +48,10 @@ public class RenewalProcess {
 	private final RenewalHelper helper;
 	private final RenewalRecordsHelper recordsHelper;
 
+	
 	private Instant cycleTime = null;
-
-	public RenewalProcess(
+	
+	public AutoProcessor(
 			FeeCalculator fees,
 			HederaNumbers hederaNums,
 			RenewalHelper helper,
@@ -121,7 +126,7 @@ public class RenewalProcess {
 
 	private void assertNotInCycle() {
 		if (cycleTime != null) {
-			throw new IllegalStateException("Cannot end renewal cycle, none is started!");
+			throw new IllegalStateException("Cannot start renewal cycle, already started!");
 		}
 	}
 

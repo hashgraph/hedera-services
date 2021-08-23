@@ -104,15 +104,14 @@ public class AwareProcessLogic implements ProcessLogic {
 				return;
 			}
 
-			ctx.expiries().purge(effectiveConsensusTime.getEpochSecond());
-
+			ctx.backgroundWorker().runPreTransactionJobs(effectiveConsensusTime.getEpochSecond());
+			
 			txnManager.process(accessor, effectiveConsensusTime, submittingMember, ctx);
 			final var triggeredAccessor = ctx.txnCtx().triggeredTxn();
 			if (triggeredAccessor != null) {
 				txnManager.process(triggeredAccessor, consensusTime, submittingMember, ctx);
 			}
-
-			ctx.entityAutoRenewal().execute(consensusTime);
+			ctx.backgroundWorker().runPostTransactionJobs(consensusTime.getEpochSecond());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}

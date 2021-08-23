@@ -56,10 +56,11 @@ public class InitializationFlow {
 		/* Use any payer records stored in state to rebuild the recent transaction
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
-		ctx.expiries().reviewExistingPayerRecords();
+		ctx.expiringRecords().reviewExistingEntities();
+		log.info("Payer records reviewed; now reviewing existing short-lived entities");
 		log.info("Payer records reviewed; now reviewing existing short-lived entities");
 		/* Use any entities stored in state to rebuild queue of expired entities. */
-		ctx.expiries().reviewExistingShortLivedEntities();
+		ctx.expiringShortLivedEntities().reviewExistingEntities();
 		log.info("Short-lived entities reviewed");
 
 		/* Re-initialize the "observable" system files; that is, the files which have

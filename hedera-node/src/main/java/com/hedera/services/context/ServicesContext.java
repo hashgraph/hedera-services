@@ -225,8 +225,13 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.backgroundworker.BackgroundWorker;
+import com.hedera.services.state.expiry.backgroundworker.HederaBackgroundWorker;
+import com.hedera.services.state.expiry.backgroundworker.buckets.AutoProcessing;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringRecords;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringShortLivedEntities;
+import com.hedera.services.state.expiry.renewal.AutoProcessor;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
-import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -608,7 +613,14 @@ public class ServicesContext {
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private BiPredicate<JKey, TransactionSignature> validityTest;
-
+	/* expiry and auto-renewal */
+	private ExpiringRecords expiringRecords;
+	private ExpiringShortLivedEntities expiringShortLivedEntities;
+	private BackgroundWorker backgroundWorker;
+	private com.hedera.services.state.expiry.backgroundworker.buckets.ExpiryManager expiryBucket;
+	private AutoProcessing autoProcessingBucket;
+	private RenewalRecordsHelper recordsHelper;
+	
 	private final StateChildren workingState = new StateChildren();
 	private final AtomicReference<StateChildren> queryableState = new AtomicReference<>();
 
@@ -840,6 +852,68 @@ public class ServicesContext {
 					CustomSchedulesManager::new);
 		}
 		return impliedTransfersMarshal;
+	}
+	
+	public ExpiringRecords expiringRecords() {
+		if (expiringRecords == null) {
+			expiringRecords = new ExpiringRecords(
+					hederaNums(),
+					recordCache(),
+					this::accounts,
+					txnHistories());
+		}
+		return expiringRecords;
+	}
+	
+	public ExpiringShortLivedEntities expiringShortLivedEntities() {
+		if (expiringShortLivedEntities == null) {
+			expiringShortLivedEntities = new ExpiringShortLivedEntities(hederaNums(), this::schedules, scheduleStore());
+		}
+		return expiringShortLivedEntities;
+	}
+	
+	public BackgroundWorker backgroundWorker() {
+		if (backgroundWorker == null) {
+			backgroundWorker = new HederaBackgroundWorker(List.of(expiryBucket(), autoProcessingBucket()), recordsHelper());
+		}
+		return backgroundWorker;
+	}
+	
+	public com.hedera.services.state.expiry.backgroundworker.buckets.ExpiryManager expiryBucket() {
+		if (expiryBucket == null) {
+			expiryBucket = new com.hedera.services.state.expiry.backgroundworker.buckets.ExpiryManager(
+					List.of(expiringRecords(), expiringShortLivedEntities())
+			);
+		}
+		return expiryBucket;
+	}
+	
+	private RenewalRecordsHelper recordsHelper() {
+		if (recordsHelper == null) {
+			recordsHelper = new RenewalRecordsHelper(
+					this, recordStreamManager(), globalDynamicProperties());
+		}
+		return recordsHelper;
+	}
+	
+	public AutoProcessing autoProcessingBucket() {
+		if (autoProcessingBucket == null) {
+			
+			autoProcessingBucket = new AutoProcessing(
+					hederaNums(),
+					recordsHelper(),
+					tokenStore,
+					globalDynamicProperties(),
+					this::tokens,
+					this::accounts,
+					this::tokenAssociations,
+					backingAccounts(),
+					this,
+					networkCtxManager,
+					this::networkCtx,
+					fees());
+		}
+		return autoProcessingBucket;
 	}
 
 	private CustomFeeSchedules customFeeSchedules() {
@@ -1647,7 +1721,7 @@ public class ServicesContext {
 
 	public AccountRecordsHistorian recordsHistorian() {
 		if (recordsHistorian == null) {
-			recordsHistorian = new TxnAwareRecordsHistorian(recordCache(), txnCtx(), expiries());
+			recordsHistorian = new TxnAwareRecordsHistorian(recordCache(), txnCtx(), expiries(), expiringShortLivedEntities());
 		}
 		return recordsHistorian;
 	}
@@ -1765,7 +1839,7 @@ public class ServicesContext {
 					this::tokens, this::accounts, this::tokenAssociations, backingAccounts());
 			final var recordHelper = new RenewalRecordsHelper(
 					this, recordStreamManager(), globalDynamicProperties());
-			final var renewalProcess = new RenewalProcess(
+			final var renewalProcess = new AutoProcessor(
 					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
 					hederaNums(), renewalProcess, this,
@@ -1793,7 +1867,7 @@ public class ServicesContext {
 
 	public ExpiringCreations creator() {
 		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), globalDynamicProperties(), this::accounts);
+			creator = new ExpiringCreations(expiries(), globalDynamicProperties(), this::accounts, expiringRecords());
 			creator.setRecordCache(recordCache());
 		}
 		return creator;

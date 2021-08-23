@@ -27,6 +27,7 @@ import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringRecords;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
@@ -70,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ExpiringCreationsTest {
@@ -128,7 +130,8 @@ class ExpiringCreationsTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
+		var expiringRecords = mock(ExpiringRecords.class);
+		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts, expiringRecords);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);

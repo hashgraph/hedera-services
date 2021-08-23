@@ -23,6 +23,8 @@ package com.hedera.services.context.init;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringRecords;
+import com.hedera.services.state.expiry.backgroundworker.jobs.light.ExpiringShortLivedEntities;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -66,6 +68,10 @@ class InitializationFlowTest {
 	@Mock
 	private ExpiryManager expiryManager;
 	@Mock
+	private ExpiringRecords expiringRecords;
+	@Mock
+	private ExpiringShortLivedEntities expiringShortLivedEntities;
+	@Mock
 	private ServicesState state;
 	@Mock
 	private ServicesContext ctx;
@@ -85,7 +91,7 @@ class InitializationFlowTest {
 	@Test
 	void initializesContextAsExpectedWhenBlobStoreNotInitializing() {
 		// setup:
-		final InOrder inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiryManager, networkCtxManager);
+		final InOrder inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiringRecords, expiringShortLivedEntities, networkCtxManager);
 
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.tokens()).willReturn(tokens);
@@ -93,7 +99,8 @@ class InitializationFlowTest {
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(EMPTY_HASH);
 		given(ctx.uniqTokenViewsManager()).willReturn(uniqTokenViewsManager);
-		given(ctx.expiries()).willReturn(expiryManager);
+		given(ctx.expiringRecords()).willReturn(expiringRecords);
+		given(ctx.expiringShortLivedEntities()).willReturn(expiringShortLivedEntities);
 		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 
 		// when:
@@ -105,8 +112,8 @@ class InitializationFlowTest {
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(uniqTokenViewsManager).rebuildNotice(tokens, uniqueTokens);
-		inOrder.verify(expiryManager).reviewExistingPayerRecords();
-		inOrder.verify(expiryManager).reviewExistingShortLivedEntities();
+		inOrder.verify(expiringRecords).reviewExistingEntities();
+		inOrder.verify(expiringShortLivedEntities).reviewExistingEntities();
 		inOrder.verify(networkCtxManager).setObservableFilesNotLoaded();
 		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 	}
@@ -116,7 +123,7 @@ class InitializationFlowTest {
 		given(blobStore.isInitializing()).willReturn(true);
 
 		// setup:
-		final InOrder inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiryManager, networkCtxManager);
+		final InOrder inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiringRecords, expiringShortLivedEntities, networkCtxManager);
 
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.tokens()).willReturn(tokens);
@@ -124,7 +131,8 @@ class InitializationFlowTest {
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(EMPTY_HASH);
 		given(ctx.uniqTokenViewsManager()).willReturn(uniqTokenViewsManager);
-		given(ctx.expiries()).willReturn(expiryManager);
+		given(ctx.expiringRecords()).willReturn(expiringRecords);
+		given(ctx.expiringShortLivedEntities()).willReturn(expiringShortLivedEntities);
 		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 
 		// when:
@@ -136,8 +144,8 @@ class InitializationFlowTest {
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(uniqTokenViewsManager).rebuildNotice(tokens, uniqueTokens);
-		inOrder.verify(expiryManager).reviewExistingPayerRecords();
-		inOrder.verify(expiryManager).reviewExistingShortLivedEntities();
+		inOrder.verify(expiringRecords).reviewExistingEntities();
+		inOrder.verify(expiringShortLivedEntities).reviewExistingEntities();
 		inOrder.verify(networkCtxManager).setObservableFilesNotLoaded();
 		inOrder.verify(networkCtxManager, never()).loadObservableSysFilesIfNeeded();
 	}

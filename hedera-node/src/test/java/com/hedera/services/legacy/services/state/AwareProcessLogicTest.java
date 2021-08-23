@@ -40,6 +40,7 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.backgroundworker.BackgroundWorker;
 import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.MiscRunningAvgs;
@@ -116,6 +117,7 @@ class AwareProcessLogicTest {
 		final SystemOpPolicies policies = mock(SystemOpPolicies.class);
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
 		final EntityAutoRenewal entityAutoRenewal = mock(EntityAutoRenewal.class);
+		final BackgroundWorker backgroundWorker = mock(BackgroundWorker.class);
 
 		bodySigningFactory = mock(ReusableBodySigningFactory.class);
 		speedometers = mock(MiscSpeedometers.class);
@@ -172,6 +174,7 @@ class AwareProcessLogicTest {
 		given(policies.check(any())).willReturn(SystemOpAuthorization.AUTHORIZED);
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
+		given(ctx.backgroundWorker()).willReturn(backgroundWorker);
 
 		subject = new AwareProcessLogic(ctx, rationalization, bodySigningFactory, validityTest);
 	}
@@ -272,7 +275,7 @@ class AwareProcessLogicTest {
 		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
 
 		// then:
-		verify(expiryManager).purge(consensusNow.getEpochSecond());
+		verify(ctx.backgroundWorker()).runPreTransactionJobs(consensusNow.getEpochSecond());
 	}
 
 	@Test
@@ -292,7 +295,7 @@ class AwareProcessLogicTest {
 		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
 
 		// then:
-		verify(expiryManager).purge(consensusNow.minusNanos(1L).getEpochSecond());
+		verify(ctx.backgroundWorker()).runPreTransactionJobs(consensusNow.minusNanos(1L).getEpochSecond());
 		verify(triggeredTxn).isTriggeredTxn();
 	}
 

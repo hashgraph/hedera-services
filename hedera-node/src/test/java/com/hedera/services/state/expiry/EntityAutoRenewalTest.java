@@ -24,7 +24,7 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.state.expiry.renewal.RenewalProcess;
+import com.hedera.services.state.expiry.renewal.AutoProcessor;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -54,7 +54,7 @@ class EntityAutoRenewalTest {
 	@Mock
 	private ServicesContext ctx;
 	@Mock
-	private RenewalProcess renewalProcess;
+	private AutoProcessor autoProcessor;
 	@Mock
 	private NetworkCtxManager networkCtxManager;
 	@Mock
@@ -65,7 +65,7 @@ class EntityAutoRenewalTest {
 	@BeforeEach
 	void setUp() {
 		subject = new EntityAutoRenewal(
-				mockHederaNums, renewalProcess, ctx, properties, networkCtxManager, () -> networkCtx);
+				mockHederaNums, autoProcessor, ctx, properties, networkCtxManager, () -> networkCtx);
 	}
 
 	@Test
@@ -77,7 +77,7 @@ class EntityAutoRenewalTest {
 		subject.execute(instantNow);
 
 		// then:
-		verifyNoInteractions(renewalProcess);
+		verifyNoInteractions(autoProcessor);
 
 		// cleanup:
 		properties.enableAutoRenew();
@@ -92,7 +92,7 @@ class EntityAutoRenewalTest {
 		subject.execute(instantNow);
 
 		// then:
-		verifyNoInteractions(renewalProcess);
+		verifyNoInteractions(autoProcessor);
 	}
 
 	@Test
@@ -120,12 +120,12 @@ class EntityAutoRenewalTest {
 		subject.execute(instantNow);
 
 		// then:
-		verify(renewalProcess).beginRenewalCycle(instantNow);
+		verify(autoProcessor).beginRenewalCycle(instantNow);
 		for (long i = aNum; i < aNum + numToScan; i++) {
-			verify(renewalProcess).process(i);
+			verify(autoProcessor).process(i);
 		}
 		// and:
-		verify(renewalProcess).endRenewalCycle();
+		verify(autoProcessor).endRenewalCycle();
 		verify(ctx).updateLastScannedEntity(aNum + numToScan - 1);
 	}
 
@@ -136,20 +136,20 @@ class EntityAutoRenewalTest {
 
 		givenWrapNum(aNum + numToScan);
 		givenLastScanned(aNum - 1);
-		given(renewalProcess.process(aNum)).willReturn(true);
-		given(renewalProcess.process(bNum)).willReturn(true);
+		given(autoProcessor.process(aNum)).willReturn(true);
+		given(autoProcessor.process(bNum)).willReturn(true);
 
 		// when:
 		subject.execute(instantNow);
 
 		// then:
-		verify(renewalProcess).beginRenewalCycle(instantNow);
+		verify(autoProcessor).beginRenewalCycle(instantNow);
 		for (long i = aNum; i < cNum; i++) {
-			verify(renewalProcess).process(i);
+			verify(autoProcessor).process(i);
 		}
 		// and:
-		verify(renewalProcess, never()).process(cNum);
-		verify(renewalProcess).endRenewalCycle();
+		verify(autoProcessor, never()).process(cNum);
+		verify(autoProcessor).endRenewalCycle();
 		verify(ctx).updateLastScannedEntity(bNum);
 	}
 
@@ -160,23 +160,23 @@ class EntityAutoRenewalTest {
 
 		givenWrapNum(aNum + numToScan);
 		givenLastScanned(aNum + numToScan - 2);
-		given(renewalProcess.process(aNum + numToScan - 1)).willReturn(false);
-		given(renewalProcess.process(aNum - 1)).willReturn(false);
-		given(renewalProcess.process(aNum)).willReturn(true);
-		given(renewalProcess.process(bNum)).willReturn(true);
+		given(autoProcessor.process(aNum + numToScan - 1)).willReturn(false);
+		given(autoProcessor.process(aNum - 1)).willReturn(false);
+		given(autoProcessor.process(aNum)).willReturn(true);
+		given(autoProcessor.process(bNum)).willReturn(true);
 
 		// when:
 		subject.execute(instantNow);
 
 		// then:
-		verify(renewalProcess).beginRenewalCycle(instantNow);
-		verify(renewalProcess).process(aNum + numToScan - 1);
+		verify(autoProcessor).beginRenewalCycle(instantNow);
+		verify(autoProcessor).process(aNum + numToScan - 1);
 		for (long i = aNum; i < cNum; i++) {
-			verify(renewalProcess).process(i);
+			verify(autoProcessor).process(i);
 		}
 		// and:
-		verify(renewalProcess, never()).process(cNum);
-		verify(renewalProcess).endRenewalCycle();
+		verify(autoProcessor, never()).process(cNum);
+		verify(autoProcessor).endRenewalCycle();
 		verify(ctx).updateLastScannedEntity(bNum);
 		// and:
 		verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);
