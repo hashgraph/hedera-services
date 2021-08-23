@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoUpdate transaction,
@@ -137,8 +138,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (keyChanges.contains(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
 			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
-				// TODO : return appropriate response code EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT
-				return FAIL_INVALID;
+				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 			}
 		}
 

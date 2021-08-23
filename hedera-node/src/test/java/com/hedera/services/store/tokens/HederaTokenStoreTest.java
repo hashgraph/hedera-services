@@ -110,6 +110,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -558,7 +559,7 @@ class HederaTokenStoreTest {
 
 		final var status = subject.associate(sponsor, List.of(misc), true);
 
-		assertEquals(FAIL_INVALID, status);
+		assertEquals(NO_REMAINING_AUTO_ASSOCIATIONS, status);
 	}
 
 	@Test
@@ -1344,7 +1345,7 @@ class HederaTokenStoreTest {
 
 		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
-		assertEquals(FAIL_INVALID, status);
+		assertEquals(NO_REMAINING_AUTO_ASSOCIATIONS, status);
 		verify(tokenRelsLedger, never()).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
 		verify(hederaLedger, never()).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
 	}

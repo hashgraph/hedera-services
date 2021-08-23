@@ -35,6 +35,7 @@ import java.util.Set;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
@@ -110,8 +111,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		// TODO : get the right response code
-		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), FAIL_INVALID );
+		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTO_ASSOCIATIONS );
 		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
 	}
 
