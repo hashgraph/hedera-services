@@ -21,14 +21,25 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
+import com.hedera.services.ServicesState;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
+import java.io.File;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 @Module
 public abstract class RecordsModule {
@@ -46,5 +57,37 @@ public abstract class RecordsModule {
 	@Singleton
 	public static Cache<TransactionID, Boolean> provideCache(RecordCacheFactory recordCacheFactory) {
 		return recordCacheFactory.getCache();
+	}
+
+	@Provides
+	public static String provideRecordLogDir(NodeLocalProperties nodeLocalProperties, AccountID nodeAccount) {
+		final var idLiteral = asLiteralString(nodeAccount);
+		var baseDir = nodeLocalProperties.recordLogDir();
+		if (!baseDir.endsWith(File.separator)) {
+			baseDir += File.separator;
+		}
+		return baseDir + "record" + idLiteral;
+	}
+
+	@Provides
+	@Singleton
+	public static RecordStreamManager provideRecordStreamManager(
+			Platform platform,
+			MiscRunningAvgs runningAvgs,
+			NodeLocalProperties nodeLocalProperties,
+			String recordLogDir,
+			ServicesState initialState
+	) {
+		try {
+			final var initialHash = initialState.runningHashLeaf().getRunningHash().getHash();
+			return new RecordStreamManager(
+					platform,
+					runningAvgs,
+					nodeLocalProperties,
+					recordLogDir,
+					initialHash);
+		} catch (NoSuchAlgorithmException | IOException fatal) {
+			throw new IllegalStateException("Could not construct record stream manager", fatal);
+		}
 	}
 }

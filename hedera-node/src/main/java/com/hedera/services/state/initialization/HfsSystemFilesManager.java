@@ -23,6 +23,7 @@ package com.hedera.services.state.initialization;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
@@ -46,6 +47,8 @@ import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -63,6 +66,7 @@ import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeSc
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.Address.ipString;
 
+@Singleton
 public class HfsSystemFilesManager implements SystemFilesManager {
 	private static final Logger log = LogManager.getLogger(HfsSystemFilesManager.class);
 	private static final String PROPERTIES_SYS_FILE_NAME = "properties";
@@ -76,17 +80,18 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private JKey systemKey;
 	private boolean filesLoaded = false;
-	private final AddressBook currentBook;
 	private final FileNumbers fileNumbers;
 	private final PropertySource properties;
 	private final TieredHederaFs hfs;
 	private final Supplier<JKey> keySupplier;
+	private final Supplier<AddressBook> bookSupplier;
 	private final SysFileCallbacks callbacks;
 
+	@Inject
 	public HfsSystemFilesManager(
-			AddressBook currentBook,
+			Supplier<AddressBook> bookSupplier,
 			FileNumbers fileNumbers,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			TieredHederaFs hfs,
 			Supplier<JKey> keySupplier,
 			SysFileCallbacks callbacks
@@ -94,7 +99,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		this.hfs = hfs;
 		this.callbacks = callbacks;
 		this.properties = properties;
-		this.currentBook = currentBook;
+		this.bookSupplier = bookSupplier;
 		this.fileNumbers = fileNumbers;
 		this.keySupplier = keySupplier;
 	}
@@ -351,6 +356,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private byte[] platformAddressBookToGrpc() {
 		var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
+		final var currentBook = bookSupplier.get();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address -> basicBioEntryFrom(address).build())

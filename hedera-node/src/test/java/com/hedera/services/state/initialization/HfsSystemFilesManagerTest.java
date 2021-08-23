@@ -206,7 +206,7 @@ class HfsSystemFilesManagerTest {
 
 		callbacks = mock(SysFileCallbacks.class);
 
-		subject = new HfsSystemFilesManager(currentBook, fileNumbers, properties, hfs, () -> masterKey, callbacks);
+		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, () -> masterKey, callbacks);
 	}
 
 	@Test

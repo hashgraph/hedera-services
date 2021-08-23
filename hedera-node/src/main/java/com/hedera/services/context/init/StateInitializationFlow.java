@@ -24,11 +24,20 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.stream.RecordStreamManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class StateInitializationFlow {
+	private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
+
 	private final StateAccessor stateAccessor;
 	private final RecordStreamManager recordStreamManager;
 
+	@Inject
 	public StateInitializationFlow(
 			@WorkingState StateAccessor stateAccessor,
 			RecordStreamManager recordStreamManager
@@ -39,7 +48,10 @@ public class StateInitializationFlow {
 
 	public void runWith(ServicesState activeState) {
 		stateAccessor.updateFrom(activeState);
+		log.info("Context updated with working state");
+
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);
+		log.info("Record running hash initialized");
 	}
 }

@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.ContextModule;
+import com.hedera.services.context.init.FullInitializationFlow;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
@@ -32,13 +33,14 @@ import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.SigsModule;
+import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateModule;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
+import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.submission.SubmissionModule;
-import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.swirlds.common.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -65,9 +67,11 @@ import javax.inject.Singleton;
 		TransactionsModule.class,
 })
 public interface ServicesApp {
-	TransactionPrecheck precheck();
+	DualStateAccessor dualStateAccessor();
+	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
+	FullInitializationFlow initializationFlow();
 
 	@Component.Builder
 	interface Builder {

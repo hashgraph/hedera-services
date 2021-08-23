@@ -2129,7 +2129,7 @@ public class ServicesContext {
 	public SystemFilesManager systemFilesManager() {
 		if (systemFilesManager == null) {
 			systemFilesManager = new HfsSystemFilesManager(
-					addressBook(),
+					this::addressBook,
 					fileNums(),
 					properties(),
 					(TieredHederaFs) hfs(),

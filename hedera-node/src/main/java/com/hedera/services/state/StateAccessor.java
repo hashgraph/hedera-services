@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -61,6 +62,7 @@ public class StateAccessor {
 		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
 		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		children.setRunningHashLeaf(state.runningHashLeaf());
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
@@ -113,6 +115,10 @@ public class StateAccessor {
 
 	public AddressBook addressBook() {
 		return children.getAddressBook();
+	}
+
+	public RecordsRunningHashLeaf runningHashLeaf() {
+		return children.getRunningHashLeaf();
 	}
 
 	public StateChildren children() {

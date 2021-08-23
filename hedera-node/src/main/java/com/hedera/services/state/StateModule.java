@@ -21,15 +21,21 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.annotations.NftsByOwner;
 import com.hedera.services.state.annotations.NftsByType;
 import com.hedera.services.state.annotations.TreasuryNftsByType;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.initialization.HfsSystemFilesManager;
+import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -59,11 +65,17 @@ import dagger.Provides;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+
 @Module
 public abstract class StateModule {
 	@Binds
 	@Singleton
 	public abstract EntityCreator bindEntityCreator(ExpiringCreations creator);
+
+	@Binds
+	@Singleton
+	public abstract SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
 
 	@Provides
 	@Singleton
@@ -235,5 +247,17 @@ public abstract class StateModule {
 			@WorkingState StateAccessor accessor
 	) {
 		return () -> accessor.networkCtx().seqNo();
+	}
+
+	@Provides
+	@Singleton
+	public static Supplier<JKey> provideSystemFileKey(
+			LegacyEd25519KeyReader b64KeyReader,
+			@CompositeProps PropertySource properties
+	) {
+		return () -> lookupInCustomStore(
+				b64KeyReader,
+				properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
+				properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
 	}
 }

@@ -36,11 +36,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 
+@Singleton
 public class RenewalRecordsHelper {
 	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
 
@@ -54,6 +57,7 @@ public class RenewalRecordsHelper {
 	private Instant cycleStart = null;
 	private AccountID funding = null;
 
+	@Inject
 	public RenewalRecordsHelper(
 			ServicesContext ctx,
 			RecordStreamManager recordStreamManager,

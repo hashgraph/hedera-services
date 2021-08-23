@@ -20,12 +20,18 @@ package com.hedera.services;
  * ‍
  */
 
+import com.hedera.services.context.init.FullInitializationFlow;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.txns.submission.TransactionPrecheck;
+import com.hedera.services.state.DualStateAccessor;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +45,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class ServicesAppTest {
 	private long selfId = 123;
+	private NodeId selfNodeId = new NodeId(false, selfId);
 	private ServicesApp subject;
 
 	@Mock
@@ -49,11 +56,21 @@ class ServicesAppTest {
 	private Cryptography cryptography;
 	@Mock
 	private ServicesState initialState;
+	@Mock
+	private Hash hash;
+	@Mock
+	private RunningHash runningHash;
+	@Mock
+	private RecordsRunningHashLeaf runningHashLeaf;
 
 	@BeforeEach
 	void setUp() {
 		given(initialState.addressBook()).willReturn(addressBook);
-		given(platform.getCryptography()).willReturn(cryptography);
+		given(initialState.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(hash);
+//		given(platform.getCryptography()).willReturn(cryptography);
+		given(platform.getSelfId()).willReturn(selfNodeId);
 
 		subject = DaggerServicesApp.builder()
 				.initialState(initialState)
@@ -67,6 +84,8 @@ class ServicesAppTest {
 		// expect:
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		assertThat(subject.precheck(), instanceOf(TransactionPrecheck.class));
+		assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
+		assertThat(subject.initializationFlow(), instanceOf(FullInitializationFlow.class));
+		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 	}
 }

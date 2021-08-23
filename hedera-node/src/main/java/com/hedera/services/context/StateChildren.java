@@ -34,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -58,6 +59,7 @@ public class StateChildren {
 	private MerkleNetworkContext networkCtx;
 	private AddressBook addressBook;
 	private MerkleDiskFs diskFs;
+	private RecordsRunningHashLeaf runningHashLeaf;
 
 	public FCMap<MerkleEntityId, MerkleAccount> getAccounts() {
 		Objects.requireNonNull(accounts);
@@ -178,6 +180,15 @@ public class StateChildren {
 			FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations
 	) {
 		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
+	}
+
+	public RecordsRunningHashLeaf getRunningHashLeaf() {
+		Objects.requireNonNull(runningHashLeaf);
+		return runningHashLeaf;
+	}
+
+	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
+		this.runningHashLeaf = runningHashLeaf;
 	}
 }
 

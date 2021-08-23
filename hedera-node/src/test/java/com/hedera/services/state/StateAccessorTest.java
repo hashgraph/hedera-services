@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -78,6 +79,8 @@ class StateAccessorTest {
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
+	@Mock
+	private RecordsRunningHashLeaf runningHashLeaf;
 
 	private StateAccessor subject;
 
@@ -101,6 +104,7 @@ class StateAccessorTest {
 		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
 		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
+		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 
 		// when:
 		subject.updateFrom(state);
@@ -119,6 +123,7 @@ class StateAccessorTest {
 		assertSame(uniqueTokenAssociations, subject.uniqueTokenAssociations());
 		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());
 		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
+		assertSame(runningHashLeaf, subject.runningHashLeaf());
 	}
 
 	@Test
