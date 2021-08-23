@@ -142,7 +142,8 @@ class BootstrapPropertiesTest {
 			entry("iss.dumpFcms", false),
 			entry("netty.ciphers", List.of(
 					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")),
+					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+					"TLS_AES_256_GCM_SHA384")),
 			entry("netty.mode", Profile.PROD),
 			entry("netty.prod.flowControlWindow", 10240),
 			entry("netty.prod.maxConcurrentCalls", 10),
