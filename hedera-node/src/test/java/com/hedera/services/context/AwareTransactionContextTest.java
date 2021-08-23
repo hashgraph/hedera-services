@@ -34,6 +34,7 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
@@ -150,6 +151,8 @@ class AwareTransactionContextTest {
 			.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	private JKey payerKey;
+	private List<FcTokenAssociation> newTokenAssociations = List.of(new FcTokenAssociation(
+			EntityId.fromGrpcTokenId(tokenCreated), EntityId.fromGrpcAccountId(payer)));
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -288,6 +291,7 @@ class AwareTransactionContextTest {
 		subject.payerSigIsKnownActive();
 		subject.hasComputedRecordSoFar = true;
 		subject.setAssessedCustomFees(Collections.emptyList());
+		subject.setNewTokenAssociations(Collections.emptyList());
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -309,6 +313,7 @@ class AwareTransactionContextTest {
 		assertTrue(subject.hasComputedRecordSoFar);
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
+		assertEquals(newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
 		// and:
 		verify(narratedCharging).resetForTxn(accessor, memberId);
 	}
@@ -623,7 +628,8 @@ class AwareTransactionContextTest {
 				.setFee(amount)
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
 						transfersList) : null)
-				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
+				.setNewTokenAssociations(newTokenAssociations);
 
 		List<EntityId> tokens = new ArrayList<>();
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();

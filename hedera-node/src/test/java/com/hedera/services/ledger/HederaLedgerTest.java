@@ -24,6 +24,8 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,12 +34,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -245,6 +249,28 @@ public class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
+	void deligatesToCorrectMaxAutomaticAssociationsProperty() {
+		subject.maxAutomaticAssociations(genesis);
+
+		verify(accountsLedger).get(genesis, MAX_AUTOMATIC_ASSOCIATIONS);
+
+		subject.setMaxAutomaticAssociations(genesis, 10);
+
+		verify(accountsLedger).set(genesis, MAX_AUTOMATIC_ASSOCIATIONS, 10);
+	}
+
+	@Test
+	void deligatesToCorrectAlreadyUsedAutomaticAssociationProperty() {
+		subject.alreadyUsedAutomaticAssociations(genesis);
+
+		verify(accountsLedger).get(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+
+		subject.setAlreadyUsedAutomaticAssociations(genesis, 7);
+
+		verify(accountsLedger).set(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 7);
+	}
+
+	@Test
 	void throwsOnUnderfundedCreate() {
 		// expect:
 		assertThrows(InsufficientFundsException.class, () ->
@@ -392,5 +418,15 @@ public class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		inOrder.verify(accountsLedger).commit();
 		inOrder.verify(accountsLedger).begin();
 		inOrder.verify(accountsLedger).rollback();
+	}
+
+	@Test
+	void persistsNewTokenAssociationsAsExpected() {
+		var tokenId = new EntityId(1,2,3);
+		var accountId = new EntityId(2,3,4);
+		var tokenAssociation = new FcTokenAssociation(tokenId, accountId);
+		subject.addNewAssociationToList(tokenAssociation);
+
+		assertEquals(tokenAssociation, subject.getNewTokenAssociations().get(0));
 	}
 }

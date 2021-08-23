@@ -329,8 +329,4 @@ public class AwareTransactionContext implements TransactionContext {
 	List<FcAssessedCustomFee> getAssessedCustomFees() {
 		return assessedCustomFees;
 	}
-
-	List<FcTokenAssociation> getNewTokenAssociations() {
-		return newTokenAssociations;
-	}
 }
