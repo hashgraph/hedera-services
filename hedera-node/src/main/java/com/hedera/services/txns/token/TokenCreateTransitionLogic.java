@@ -161,7 +161,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		associatedAccounts.add(treasury.getId());
 
 		for (var fee : customFees) {
-			if (fee.shouldCollectorBeAutoAssociated()) {
+			if (fee.shouldCollectorBeAutoAssociated(created.getId())) {
 				final var collector = fee.getCollector();
 				if (!associatedAccounts.contains(collector.getId())) {
 					final var collectorRelation = created.newEnabledRelationship(collector);

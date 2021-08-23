@@ -114,6 +114,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 class TokenCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -348,7 +349,7 @@ class TokenCreateTransitionLogicTest {
 
 		assertNotNull(newProvisionalToken.getCustomFees());
 		verify(typedTokenStore).persistTokenRelationships(anyList());
-		verify(feeCollectorModel).associateWith(anyList(), anyInt(), anyBoolean());
+		verify(feeCollectorModel, times(2)).associateWith(anyList(), anyInt(), anyBoolean());
 	}
 
 	@Test
@@ -787,27 +788,6 @@ class TokenCreateTransitionLogicTest {
 												.setDenominatingTokenId(denomId.asGrpcToken())
 												.build()))
 						.setFeeCollectorAccountId(feeCollector)
-						.build(),
-				CustomFee.newBuilder()
-						.setRoyaltyFee(RoyaltyFee.newBuilder()
-								.setExchangeValueFraction(Fraction.newBuilder()
-										.setNumerator(5)
-										.setDenominator(10)
-										.build())
-								.setFallbackFee(FixedFee.newBuilder()
-										.setAmount(10)
-										.setDenominatingTokenId(Id.DEFAULT.asGrpcToken())
-										.build()))
-						.build(),
-				CustomFee.newBuilder()
-						.setRoyaltyFee(RoyaltyFee.newBuilder()
-								.setExchangeValueFraction(Fraction.newBuilder()
-										.setNumerator(5)
-										.setDenominator(10)
-										.build())
-								.setFallbackFee(FixedFee.newBuilder()
-										.setAmount(10)
-										.build()))
 						.build()
 				));
 		tokenCreateTxn = builder.build();
