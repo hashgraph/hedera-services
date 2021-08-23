@@ -115,7 +115,7 @@ class TokenMintTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(token).mint(treasuryRel, amount);
+		verify(token).mint(treasuryRel, amount, false);
 		verify(store).persistToken(token);
 		verify(store).persistTokenRelationships(List.of(treasuryRel));
 	}

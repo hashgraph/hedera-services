@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -42,7 +43,10 @@ public class EntityIdUtils {
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
 	public static String readableId(Object o) {
-		if (o instanceof AccountID) {
+		if (o instanceof Id) {
+			Id id = (Id) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShard(), id.getRealm(), id.getNum());
+		} else if (o instanceof AccountID) {
 			AccountID id = (AccountID) o;
 			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 		} else if (o instanceof FileID) {

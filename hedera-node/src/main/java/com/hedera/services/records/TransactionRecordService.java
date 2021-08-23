@@ -56,16 +56,18 @@ public class TransactionRecordService {
 	 * <li>The token is of type {@link com.hedera.services.state.enums.TokenType} NON_FUNGIBLE_UNIQUE and Mint
 	 * operation was executed </li>
 	 * </ol>
-	 * Only the second and third is implemented at this time.
+	 *
 	 *
 	 * @param token
-	 * 		the model of a changed token
+	 * 				the model of a changed token
 	 */
 	public void includeChangesToToken(Token token) {
+		if (token.isNew()) {
+			txnCtx.setCreated(token.getId().asGrpcToken());
+		}
 		if (token.hasChangedSupply()) {
 			txnCtx.setNewTotalSupply(token.getTotalSupply());
 		}
-
 		if (token.hasMintedUniqueTokens()) {
 			List<Long> serialNumbers = new ArrayList<>();
 			for (UniqueToken uniqueToken : token.mintedUniqueTokens()) {
@@ -84,7 +86,7 @@ public class TransactionRecordService {
 	 * valid when CryptoTransfer is refactored!
 	 *
 	 * @param tokenRels
-	 * 		List of models of the changed relationships
+	 * 					List of models of the changed relationships
 	 */
 	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
 		final Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
@@ -120,7 +122,7 @@ public class TransactionRecordService {
 	 * valid when CryptoTransfer is refactored!
 	 *
 	 * @param ownershipTracker
-	 * 		the model of ownership changes
+	 * 					the model of ownership changes
 	 */
 	public void includeOwnershipChanges(OwnershipTracker ownershipTracker) {
 		if (ownershipTracker.isEmpty()) {

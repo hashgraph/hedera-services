@@ -38,6 +38,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -91,6 +92,7 @@ public class TypedTokenStore {
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
 	private final LegacyTreasuryRemover delegate;
+	private final LegacyTreasuryAdder addKnownTreasury;
 
 	@Inject
 	public TypedTokenStore(
@@ -101,7 +103,8 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
-            LegacyTreasuryRemover delegate
+			LegacyTreasuryAdder legacyStoreDelegate,
+			LegacyTreasuryRemover delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -109,10 +112,16 @@ public class TypedTokenStore {
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
+		this.delegate = delegate;
+		this.backingTokenRels = backingTokenRels;
+		this.addKnownTreasury = legacyStoreDelegate;
+	}
 
-        this.backingTokenRels = backingTokenRels;
-        this.delegate = delegate;
-    }
+	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
+		final var tokenId = rel.getToken().getId();
+		final var accountId = rel.getAccount().getId();
+		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
+	}
 
 	/**
 	 * Returns the number of NFTs currently in the ledger state. (That is, the
@@ -278,7 +287,7 @@ public class TypedTokenStore {
 	}
 
 	/**
-	 * Use carefully. Returns a model of the requested token which may be marked as deleted---or
+	 * Use carefully. Returns a model of the requested token which may be marked as deleted or
 	 * even marked as auto-removed if the Merkle state has no token with that id.
 	 *
 	 * @param id
@@ -297,6 +306,27 @@ public class TypedTokenStore {
 			token.markAutoRemoved();
 		}
 
+		return token;
+	}
+
+	/**
+	 * Loads a token from the swirlds state. Throws the given response code upon unusable token.
+	 *
+	 * @param id
+	 * 		- id of the token to be loaded
+	 * @param code
+	 * 		- the {@link ResponseCodeEnum} code to fail with if the token is not present or is erroneous
+	 * @return - the loaded token
+	 */
+	public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
+		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var merkleToken = tokens.get().get(key);
+
+		validateUsable(merkleToken, code);
+
+		final var token = new Token(id);
+		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
+		initModelFields(token, merkleToken);
 		return token;
 	}
 
@@ -328,6 +358,36 @@ public class TypedTokenStore {
 			final TokenID mutatedToken = token.getId().asGrpcToken();
 			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
 		}
+		transactionRecordService.includeChangesToToken(token);
+	}
+
+	/**
+	 * Instantiates a new {@link MerkleToken} and a {@link MerkleEntityId} based on the given new mutable {@link Token}.
+	 * Maps the properties between the mutable and immutable token, and later puts the immutable one in state.
+	 * Adds the token's treasury to the known treasuries map.
+	 *
+	 * @param token
+	 * 		- the model of the token to be persisted in state.
+	 */
+	public void persistNew(Token token) {
+		/* create new merkle token */
+		final var newMerkleTokenId = token.getId().asMerkle();
+		final var newMerkleToken = new MerkleToken(
+				token.getExpiry(),
+				token.getTotalSupply(),
+				token.getDecimals(),
+				token.getSymbol(),
+				token.getName(),
+				token.isFrozenByDefault(),
+				!token.hasKycKey(),
+				token.getTreasury().getId().asEntityId()
+		);
+		/* map changes */
+		mapModelChangesToMutable(token, newMerkleToken);
+
+		tokens.get().put(newMerkleTokenId, newMerkleToken);
+		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
+
 		transactionRecordService.includeChangesToToken(token);
 	}
 
@@ -363,6 +423,11 @@ public class TypedTokenStore {
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
 	}
 
+	private void validateUsable(MerkleToken merkleToken, ResponseCodeEnum code) {
+		validateTrue(merkleToken != null, code);
+		validateFalse(merkleToken.isDeleted(), code);
+	}
+
 	private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
 		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
 	}
@@ -371,13 +436,34 @@ public class TypedTokenStore {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();
 		if (newAutoRenewAccount != null) {
 			mutableToken.setAutoRenewAccount(new EntityId(newAutoRenewAccount.getId()));
+			mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
 		}
 		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
-        mutableToken.setDeleted(token.isDeleted());
-    }
+
+		mutableToken.setTokenType(token.getType());
+		mutableToken.setSupplyType(token.getSupplyType());
+
+		mutableToken.setMemo(token.getMemo());
+
+		mutableToken.setAdminKey(token.getAdminKey());
+		mutableToken.setSupplyKey(token.getSupplyKey());
+		mutableToken.setWipeKey(token.getWipeKey());
+		mutableToken.setFreezeKey(token.getFreezeKey());
+		mutableToken.setKycKey(token.getKycKey());
+		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
+
+		mutableToken.setMaxSupply(token.getMaxSupply());
+		mutableToken.setDeleted(token.isDeleted());
+
+		if (token.getCustomFees() != null) {
+			mutableToken.setFeeSchedule(token.getCustomFeesAsMerkle());
+		}
+
+		mutableToken.setExpiry(token.getExpiry());
+	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
 		if (_autoRenewId != null) {
@@ -397,12 +483,14 @@ public class TypedTokenStore {
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setWipeKey(immutableToken.getWipeKey());
-        token.setAdminKey(immutableToken.getAdminKey());
-        token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+		token.setAdminKey(immutableToken.getAdminKey());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
 		token.setExpiry(immutableToken.expiry());
+		token.setMemo(immutableToken.memo());
+		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
 	}
 
 	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
@@ -415,14 +503,13 @@ public class TypedTokenStore {
 		backingTokenRels.addToExistingRels(legacyReprOf(newRel));
 	}
 
-	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
-		final var tokenId = rel.getToken().getId();
-		final var accountId = rel.getAccount().getId();
-		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
+	@FunctionalInterface
+	public interface LegacyTreasuryAdder {
+		void perform(final AccountID aId, final TokenID tId);
 	}
 
-    @FunctionalInterface
-    public interface LegacyTreasuryRemover {
-        void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
-    }
+	@FunctionalInterface
+	public interface LegacyTreasuryRemover {
+		void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
+	}
 }

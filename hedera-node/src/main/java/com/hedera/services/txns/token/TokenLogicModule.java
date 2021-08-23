@@ -136,4 +136,10 @@ public abstract class TokenLogicModule {
 	public static TypedTokenStore.LegacyTreasuryRemover provideLegacyTreasuryRemover(TokenStore tokenStore) {
 		return tokenStore::removeKnownTreasuryForToken;
 	}
+
+	@Provides
+	@Singleton
+	public static TypedTokenStore.LegacyTreasuryAdder provideLegacyTreasuryAdder(TokenStore tokenStore) {
+		return tokenStore::addKnownTreasury;
+	}
 }
