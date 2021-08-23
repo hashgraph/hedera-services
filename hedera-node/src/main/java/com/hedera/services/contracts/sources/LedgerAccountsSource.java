@@ -100,8 +100,8 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 		var id = accountParsedFromSolidityAddress(key);
 
 		if (evmState == null) {
-			String id_str = asLiteralString(id);
-			log.warn("Ignoring null state put to account {}!", id_str);
+			String idStr = asLiteralString(id);
+			log.warn("Ignoring null state put to account {}!", idStr);
 			return;
 		}
 

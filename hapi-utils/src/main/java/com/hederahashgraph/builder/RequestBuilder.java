@@ -431,14 +431,14 @@ public final class RequestBuilder {
       long transactionFee, Timestamp timestamp, Duration transactionDuration,
       boolean generateRecord, String memo,
       FileID fileID) {
-    FileDeleteTransactionBody FileDeleteTransaction = FileDeleteTransactionBody.newBuilder()
+    FileDeleteTransactionBody fileDeleteTransaction = FileDeleteTransactionBody.newBuilder()
         .setFileID(fileID)
         .build();
     TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum,
         nodeRealmNum, nodeShardNum, transactionFee, timestamp,
         transactionDuration, generateRecord, memo);
-    body.setFileDelete(FileDeleteTransaction);
+    body.setFileDelete(fileDeleteTransaction);
     byte[] bodyBytesArr = body.build().toByteArray();
     ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
     return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
