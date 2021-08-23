@@ -29,7 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -96,7 +98,7 @@ class RawTokenRelationshipTest {
 
 	@Test
 	void grpcConversionRecognizesApplicableUnfozen() {
-		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false, true);
+		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false, false);
 		given(token.hasFreezeKey()).willReturn(true);
 
 		final var desc = subject.asGrpcFor(token);
@@ -104,6 +106,7 @@ class RawTokenRelationshipTest {
 		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.Unfrozen, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.KycNotApplicable, desc.getKycStatus());
+		assertFalse(desc.getAutomaticAssociation());
 	}
 
 	@Test
@@ -127,6 +130,19 @@ class RawTokenRelationshipTest {
 		commonAssertions(desc);
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, desc.getKycStatus());
+		assertFalse(desc.getAutomaticAssociation());
+		assertEquals("HEYMA", desc.getSymbol());
+	}
+
+	@Test
+	void grpcConversionRecognizesApplicableAutomaticAssociation() {
+		subject = new RawTokenRelationship(subject.getBalance(), 0,0, subject.getTokenNum(), false, false, true);
+
+		final var desc = subject.asGrpcFor(token);
+		commonAssertions(desc);
+		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
+		assertEquals(TokenKycStatus.KycNotApplicable, desc.getKycStatus());
+		assertTrue(desc.getAutomaticAssociation());
 		assertEquals("HEYMA", desc.getSymbol());
 	}
 

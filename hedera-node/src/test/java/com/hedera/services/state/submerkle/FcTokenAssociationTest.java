@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,5 +83,18 @@ class FcTokenAssociationTest {
 	void fromGrpcWorks() {
 		final var newSubject = FcTokenAssociation.fromGrpc(grpc);
 		assertEquals(subject, newSubject);
+		assertEquals(subject.token(), newSubject.token());
+		assertEquals(subject.account(), newSubject.account());
+	}
+
+	@Test
+	void hashCodeWorks() {
+		assertDoesNotThrow(subject::hashCode);
+	}
+
+	@Test
+	void merkleMethodsWork() {
+		assertEquals(FcTokenAssociation.CURRENT_VERSION, subject.getVersion());
+		assertEquals(FcTokenAssociation.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }

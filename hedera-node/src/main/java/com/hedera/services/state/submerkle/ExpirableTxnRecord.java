@@ -267,7 +267,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
 		}
 		if (version >= RELEASE_0180_VERSION) {
-			newTokenAssociations = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
+			// TODO get the right max : currently using maxCustom fee collectors + treasury
+			newTokenAssociations = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES+1);
 		}
 	}
 

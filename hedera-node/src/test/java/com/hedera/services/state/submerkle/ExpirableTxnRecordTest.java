@@ -109,6 +109,21 @@ class ExpirableTxnRecordTest {
 		return s;
 	}
 
+	private static ExpirableTxnRecord subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
+		final var s = ExpirableTxnRecordTestHelper.fromGprc(
+				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+						.setTransactionHash(ByteString.copyFrom(pretendHash))
+						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
+						.setScheduleRef(scheduleID)
+						.addAssessedCustomFees(balanceChange.toGrpc())
+						.addAllAutomaticTokenAssociations(newRelationships)
+						.build());
+		s.setExpiry(expiry);
+		s.setSubmittingMember(submittingMember);
+		return s;
+	}
+
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
 		final var s = fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
@@ -211,6 +226,45 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
+	void v0180DeserializeWorks() throws IOException {
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		final var fin = mock(SerializableDataInputStream.class);
+		given(serdes.readNullableSerializable(fin))
+				.willReturn(subject.getReceipt())
+				.willReturn(subject.getTxnId())
+				.willReturn(subject.getHbarAdjustments())
+				.willReturn(subject.getContractCallResult())
+				.willReturn(subject.getContractCreateResult())
+				.willReturn(subject.getScheduleRef());
+		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
+				.willReturn(List.of(
+						subject.getTokens().get(0),
+						subject.getTokens().get(1)))
+				.willReturn(List.of(
+						subject.getTokenAdjustments().get(0),
+						subject.getTokenAdjustments().get(1)))
+				.willReturn(null);
+		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
+				.willReturn(subject.getTxnHash());
+		given(serdes.readNullableInstant(fin))
+				.willReturn(subject.getConsensusTimestamp());
+		given(fin.readLong()).willReturn(subject.getFee())
+				.willReturn(subject.getExpiry())
+				.willReturn(subject.getSubmittingMember());
+		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+				.willReturn(subject.getMemo());
+		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
+				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
+		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES+1))
+				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
+		final var deserializedRecord = new ExpirableTxnRecord();
+
+		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0180_VERSION);
+
+		assertEquals(subject, deserializedRecord);
+	}
+
+	@Test
 	void serializeWorks() throws IOException {
 		final var fout = mock(SerializableDataOutputStream.class);
 		final var inOrder = Mockito.inOrder(serdes, fout);
@@ -267,6 +321,7 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void toStringWorks() {
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		final var desired = "ExpirableTxnRecord{receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
 				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, " +
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
@@ -281,7 +336,8 @@ class ExpirableTxnRecordTest {
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
-				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=}";
+				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=(FcTokenAssociation" +
+				"{token=EntityId{shard=1, realm=2, num=10}, account=EntityId{shard=1, realm=2, num=11}})}";
 
 		assertEquals(desired, subject.toString());
 	}
