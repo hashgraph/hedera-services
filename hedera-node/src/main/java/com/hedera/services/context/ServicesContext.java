@@ -2059,7 +2059,7 @@ public class ServicesContext {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
 					nodeLocalProperties(),
-					List.of(
+					Set.of(
 							cryptoGrpc(),
 							filesGrpc(),
 							freezeGrpc(),
@@ -2068,8 +2068,7 @@ public class ServicesContext {
 							networkGrpc(),
 							tokenGrpc(),
 							scheduleGrpc()),
-					new ConfigDrivenNettyFactory(nodeLocalProperties()),
-					Collections.emptyList());
+					new ConfigDrivenNettyFactory(nodeLocalProperties()));
 		}
 		return grpc;
 	}
