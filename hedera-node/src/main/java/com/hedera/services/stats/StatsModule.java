@@ -46,6 +46,20 @@ public abstract class StatsModule {
 
 	@Provides
 	@Singleton
+	public static HapiOpSpeedometers provideHapiOpSpeedometers(
+			HapiOpCounters counters,
+			NodeLocalProperties nodeLocalProperties
+	) {
+		return new HapiOpSpeedometers(
+				counters,
+				new SpeedometerFactory() {
+				},
+				nodeLocalProperties,
+				MiscUtils::baseStatNameOf);
+	}
+
+	@Provides
+	@Singleton
 	public static HapiOpCounters provideHapiOpCounters(MiscRunningAvgs runningAvgs, TransactionContext txnCtx) {
 		return new HapiOpCounters(new CounterFactory() {
 		}, runningAvgs, txnCtx, MiscUtils::baseStatNameOf);

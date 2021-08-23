@@ -25,6 +25,7 @@ import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -33,9 +34,12 @@ import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.logic.StandardProcessLogic;
+import com.hedera.services.state.validation.BasedLedgerValidator;
+import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -58,6 +62,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -121,15 +126,20 @@ class ServicesAppTest {
 		assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		// and:
+		assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
 		assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
 		assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
 		assertThat(subject.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
 		assertThat(subject.networkCtxManager(), instanceOf(NetworkCtxManager.class));
 		assertThat(subject.sysFilesManager(), instanceOf(HfsSystemFilesManager.class));
 		assertThat(subject.backingAccounts(), instanceOf(BackingAccounts.class));
+		assertThat(subject.statsManager(), instanceOf(ServicesStatsManager.class));
+		assertThat(subject.issListener(), instanceOf(IssListener.class));
+		assertThat(subject.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
 		// and:
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
+		assertTrue(subject.consoleOut().isEmpty());
 		assertSame(subject.nodeAddress(), address);
 		assertEquals(STAKED_NODE, subject.nodeType());
 	}

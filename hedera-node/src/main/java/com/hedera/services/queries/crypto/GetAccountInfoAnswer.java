@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -41,9 +43,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 
+	@Inject
 	public GetAccountInfoAnswer(OptionValidator optionValidator) {
 		this.optionValidator = optionValidator;
 	}

@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,11 +42,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetContractInfoAnswer implements AnswerService {
 	public static final String CONTRACT_INFO_CTX_KEY = GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
 
 	private final OptionValidator validator;
 
+	@Inject
 	public GetContractInfoAnswer(OptionValidator validator) {
 		this.validator = validator;
 	}

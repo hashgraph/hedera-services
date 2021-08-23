@@ -31,13 +31,20 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetStakersAnswer implements AnswerService {
+	@Inject
+	public GetStakersAnswer() {
+	}
+
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
 		CryptoGetStakersQuery op = query.getCryptoGetProxyStakers();

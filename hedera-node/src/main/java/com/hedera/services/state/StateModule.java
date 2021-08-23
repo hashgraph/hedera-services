@@ -39,6 +39,7 @@ import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
+import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -59,6 +60,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.validation.BasedLedgerValidator;
+import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
@@ -67,6 +70,7 @@ import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -76,6 +80,8 @@ import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
+import java.io.PrintStream;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -85,6 +91,10 @@ import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 @Module(includes = HandleLogicModule.class)
 public abstract class StateModule {
+	@Binds
+	@Singleton
+	public abstract LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
+
 	@Binds
 	@Singleton
 	public abstract EntityCreator bindEntityCreator(ExpiringCreations creator);
@@ -105,10 +115,21 @@ public abstract class StateModule {
 	@Singleton
 	public abstract SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
 
+	@Binds
+	@Singleton
+	public abstract InvalidSignedStateListener bindIssListener(IssListener issListener);
+
 	@Provides
 	@Singleton
 	public static Pause providePause() {
 		return SleepingPause.SLEEPING_PAUSE;
+	}
+
+	@Provides
+	@Singleton
+	public static Optional<PrintStream> providePrintStream(Platform platform) {
+		final var console = platform.createConsole(true);
+		return Optional.ofNullable(console).map(c -> c.out);
 	}
 
 	@Provides

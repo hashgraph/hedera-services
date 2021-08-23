@@ -20,6 +20,10 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class CryptoAnswers {
 	private final GetLiveHashAnswer liveHash;
 	private final GetStakersAnswer stakers;
@@ -27,6 +31,7 @@ public class CryptoAnswers {
 	private final GetAccountBalanceAnswer accountBalance;
 	private final GetAccountRecordsAnswer accountRecords;
 
+	@Inject
 	public CryptoAnswers(
 			GetLiveHashAnswer liveHash,
 			GetStakersAnswer stakers,

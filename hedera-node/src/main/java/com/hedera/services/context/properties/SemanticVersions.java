@@ -25,14 +25,21 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+@Singleton
 public class SemanticVersions {
 	private static final Logger log = LogManager.getLogger(SemanticVersions.class);
+
+	@Inject
+	public SemanticVersions() {
+	}
 
 	/* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
 	private static final Pattern SEMVER_SPEC_REGEX = Pattern.compile(

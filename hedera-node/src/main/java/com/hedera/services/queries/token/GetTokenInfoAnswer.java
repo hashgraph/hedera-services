@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetInfoResponse;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,8 +42,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetTokenInfoAnswer implements AnswerService {
 	public static final String TOKEN_INFO_CTX_KEY = GetTokenInfoAnswer.class.getSimpleName() + "_tokenInfo";
+
+	@Inject
+	public GetTokenInfoAnswer() {
+	}
 
 	@Override
 	public boolean needsAnswerOnlyCost(Query query) {

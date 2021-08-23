@@ -42,8 +42,9 @@ import com.swirlds.fcmap.FCMap;
 import java.util.Objects;
 
 /**
- * Manages the state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
- * intention of this class is to avoid making repetitive calls to get the state when we know it has not yet been updated.
+ * Manages the state of the services. This gets updated in {@link com.hedera.services.ServicesState} callbacks
+ * on a regular interval. The intention of this class is to avoid making repetitive calls to get the state when
+ * we know it has not yet been updated.
  */
 public class StateChildren {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
