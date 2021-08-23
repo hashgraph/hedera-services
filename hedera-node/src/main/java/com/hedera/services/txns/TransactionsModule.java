@@ -36,6 +36,7 @@ import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -61,6 +62,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 		ConsensusLogicModule.class
 })
 public abstract class TransactionsModule {
+	@Binds
+	@Singleton
+	public abstract SubmissionFlow bindSubmissionFlow(BasicSubmissionFlow basicSubmissionFlow);
+
 	@Binds
 	@Singleton
 	public abstract OptionValidator bindOptionValidator(ContextOptionValidator contextOptionValidator);

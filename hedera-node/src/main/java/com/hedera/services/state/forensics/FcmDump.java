@@ -30,12 +30,15 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 
+@Singleton
 public class FcmDump {
 	private static final Logger log = LogManager.getLogger(FcmDump.class);
 
@@ -43,6 +46,10 @@ public class FcmDump {
 			MerkleTreeSerializationOptions.defaults().setAbbreviated(true);
 	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
 	static final String DUMP_IO_WARNING = "Couldn't dump %s FCM!";
+
+	@Inject
+	public FcmDump() {
+	}
 
 	private final List<Pair<String, Function<ServicesState, MerkleNode>>> fcmFuncs = List.of(
 			Pair.of("accounts", ServicesState::accounts),

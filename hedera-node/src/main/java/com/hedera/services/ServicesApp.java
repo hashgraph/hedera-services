@@ -33,9 +33,11 @@ import com.hedera.services.contracts.ContractsModule;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
 import com.hedera.services.grpc.GrpcModule;
+import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
 import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.SigsModule;
@@ -51,6 +53,8 @@ import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.stream.RecordStreamManager;
@@ -62,12 +66,15 @@ import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
+import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
 
 import javax.inject.Singleton;
+import java.io.PrintStream;
+import java.util.Optional;
 
 @Singleton
 @Component(modules = {
@@ -82,6 +89,7 @@ import javax.inject.Singleton;
 		StoresModule.class,
 		ContextModule.class,
 		RecordsModule.class,
+		QueriesModule.class,
 		ContractsModule.class,
 		PropertiesModule.class,
 		ThrottlingModule.class,
@@ -106,12 +114,17 @@ public interface ServicesApp {
 	Pause pause();
 	NodeId nodeId();
 	Address nodeAddress();
+	LedgerValidator ledgerValidator();
 	ServicesNodeType nodeType();
 	AccountsExporter accountsExporter();
 	BalancesExporter balancesExporter();
 	NetworkCtxManager networkCtxManager();
+	GrpcServerManager grpc();
 	SystemFilesManager sysFilesManager();
+	ServicesStatsManager statsManager();
 	CurrentPlatformStatus platformStatus();
+	Optional<PrintStream> consoleOut();
+	InvalidSignedStateListener issListener();
 	BackingStore<AccountID, MerkleAccount> backingAccounts();
 
 	@Component.Builder

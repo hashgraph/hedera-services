@@ -31,9 +31,13 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class TxnResponseHelper {
 	private static final Logger log = LogManager.getLogger(QueryResponseHelper.class);
 
@@ -44,6 +48,7 @@ public class TxnResponseHelper {
 	private final SubmissionFlow submissionFlow;
 	private final HapiOpCounters opCounters;
 
+	@Inject
 	public TxnResponseHelper(SubmissionFlow submissionFlow, HapiOpCounters opCounters) {
 		this.opCounters = opCounters;
 		this.submissionFlow = submissionFlow;

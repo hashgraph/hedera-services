@@ -30,6 +30,9 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -39,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
+@Singleton
 public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	private final FileAnswers fileAnswers;
 	private final TxnResponseHelper txnHelper;
@@ -51,6 +55,7 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	public static final String DELETE_FILE_METRIC = "deleteFile";
 	public static final String FILE_APPEND_METRIC = "appendContent";
 
+	@Inject
 	public FileController(
 			FileAnswers fileAnswers,
 			TxnResponseHelper txnHelper,

@@ -21,21 +21,27 @@ package com.hedera.services.state.validation;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class BasedLedgerValidator implements LedgerValidator {
 	private final long expectedFloat;
 
 	private final HederaNumbers hederaNums;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public BasedLedgerValidator(
 			HederaNumbers hederaNums,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");

@@ -33,8 +33,11 @@ import com.swirlds.common.events.Event;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 
+@Singleton
 public class IssListener implements InvalidSignedStateListener {
 	private static final Logger log = LogManager.getLogger(IssListener.class);
 
@@ -48,6 +51,7 @@ public class IssListener implements InvalidSignedStateListener {
 	private final IssEventInfo issEventInfo;
 	private final NodeLocalProperties nodeLocalProperties;
 
+	@Inject
 	public IssListener(FcmDump fcmDump, IssEventInfo issEventInfo, NodeLocalProperties nodeLocalProperties) {
 		this.fcmDump = fcmDump;
 		this.issEventInfo = issEventInfo;

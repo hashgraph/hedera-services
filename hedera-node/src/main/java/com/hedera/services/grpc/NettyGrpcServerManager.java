@@ -28,6 +28,8 @@ import io.grpc.netty.NettyServerBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
@@ -36,7 +38,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
-
+@Singleton
 public class NettyGrpcServerManager implements GrpcServerManager {
 	private static final Logger log = LogManager.getLogger(NettyGrpcServerManager.class);
 
@@ -51,6 +53,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 	private final Set<BindableService> bindableServices;
 	private final ConfigDrivenNettyFactory nettyBuilder;
 
+	@Inject
 	public NettyGrpcServerManager(
 			Consumer<Thread> hookAdder,
 			NodeLocalProperties nodeProperties,

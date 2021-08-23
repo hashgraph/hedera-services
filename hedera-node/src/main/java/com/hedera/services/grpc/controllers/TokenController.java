@@ -30,6 +30,9 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -48,12 +51,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevoke
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
+@Singleton
 public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
-
 	private final TokenAnswers tokenAnswers;
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
 
+	@Inject
 	public TokenController(
 			TokenAnswers tokenAnswers,
 			TxnResponseHelper txnHelper,
