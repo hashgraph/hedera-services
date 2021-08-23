@@ -33,7 +33,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 public abstract class TxnUsage {
 	protected static final int AMOUNT_REPR_BYTES = 8;
 
-	public static final EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
+	public static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
 	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
 
 	protected final TransactionBody op;
