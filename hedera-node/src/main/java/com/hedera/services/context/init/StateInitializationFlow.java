@@ -63,7 +63,9 @@ public class StateInitializationFlow {
 		recordStreamManager.setInitialHash(activeHash);
 		log.info("Record running hash initialized");
 
-		fileUpdateInterceptors.forEach(hfs::register);
-		log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
+		if (hfs.numRegisteredInterceptors() == 0) {
+			fileUpdateInterceptors.forEach(hfs::register);
+			log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
+		}
 	}
 }

@@ -67,8 +67,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.salted;
-
 public class TxnVerbs {
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
@@ -136,7 +134,7 @@ public class TxnVerbs {
 		return new HapiTokenAssociate(account, tokens);
 	}
 	public static HapiTokenCreate tokenCreate(String token) {
-		return new HapiTokenCreate(token).name(salted(token));
+		return new HapiTokenCreate(token).name(token);
 	}
 	public static HapiTokenUpdate tokenUpdate(String token) {
 		return new HapiTokenUpdate(token);

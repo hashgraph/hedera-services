@@ -23,6 +23,7 @@ package com.hedera.services.fees.calculation.contract;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
@@ -50,9 +51,14 @@ public abstract class ContractFeesModule {
 	public static Set<QueryResourceUsageEstimator> provideContractQueryEstimators(
 			GetBytecodeResourceUsage getBytecodeResourceUsage,
 			GetContractInfoResourceUsage getContractInfoResourceUsage,
-			GetContractRecordsResourceUsage getContractRecordsResourceUsage
+			GetContractRecordsResourceUsage getContractRecordsResourceUsage,
+			ContractCallLocalResourceUsage contractCallLocalResourceUsage
 	) {
-		return Set.of(getBytecodeResourceUsage, getContractInfoResourceUsage, getContractRecordsResourceUsage);
+		return Set.of(
+				getBytecodeResourceUsage,
+				getContractInfoResourceUsage,
+				getContractRecordsResourceUsage,
+				contractCallLocalResourceUsage);
 	}
 
 	@Provides

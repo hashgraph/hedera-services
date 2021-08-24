@@ -36,7 +36,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,7 +74,7 @@ class StateInitializationFlowTest {
 	}
 
 	@Test
-	void performsAsExpected() {
+	void performsAsExpectedWithNoInterceptorsRegistered() {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
@@ -85,5 +87,21 @@ class StateInitializationFlowTest {
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs).register(aFileInterceptor);
 		verify(hfs).register(bFileInterceptor);
+	}
+
+	@Test
+	void performsAsExpectedWithInterceptorsRegistered() {
+		given(runningHash.getHash()).willReturn(hash);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(hfs.numRegisteredInterceptors()).willReturn(5);
+
+		// when:
+		subject.runWith(activeState);
+
+		// then:
+		verify(stateAccessor).updateFrom(activeState);
+		verify(recordStreamManager).setInitialHash(hash);
+		verify(hfs, never()).register(any());
 	}
 }

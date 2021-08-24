@@ -121,6 +121,11 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	@Override
+	public int numRegisteredInterceptors() {
+		return updateInterceptors.size();
+	}
+
+	@Override
 	public FileID create(byte[] contents, HFileMeta attr, AccountID sponsor) {
 		assertValid(attr);
 		assertWithinSizeLimits(contents);

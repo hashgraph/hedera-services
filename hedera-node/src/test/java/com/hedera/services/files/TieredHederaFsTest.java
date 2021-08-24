@@ -119,6 +119,8 @@ class TieredHederaFsTest {
 		// expect:
 		assertEquals(lowInterceptor, subject.updateInterceptors.get(0));
 		assertEquals(highInterceptor, subject.updateInterceptors.get(1));
+		// and:
+		assertEquals(2, subject.numRegisteredInterceptors());
 	}
 
 	@Test

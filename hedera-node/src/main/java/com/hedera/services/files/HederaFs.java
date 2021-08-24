@@ -42,6 +42,13 @@ public interface HederaFs {
 	}
 
 	/**
+	 * Gives the number of registered interceptors.
+	 *
+	 * @return the number of registered interceptors
+	 */
+	int numRegisteredInterceptors();
+
+	/**
 	 * Registers a new {@link FileUpdateInterceptor} with the file system.
 	 *
 	 * @param updateInterceptor the interceptor to register
