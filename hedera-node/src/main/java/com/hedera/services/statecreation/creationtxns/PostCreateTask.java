@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -19,9 +20,11 @@ public class PostCreateTask implements Runnable {
 
 	final ServicesContext ctx;
 	private final AtomicBoolean allCreated;
-
-	public PostCreateTask(final AtomicBoolean allCreated, final ServicesContext ctx) {
+	private final Properties properties;
+	public PostCreateTask(final AtomicBoolean allCreated,
+			final ServicesContext ctx, final Properties properties) {
 		this.allCreated = allCreated;
+		this.properties = properties;
 		this.ctx = ctx;
 	}
 
@@ -30,7 +33,7 @@ public class PostCreateTask implements Runnable {
 		while (!allCreated.get()) {
 			try {
 				log.info("Wait for builtin client to finish...");
-				Thread.sleep(240000);
+				Thread.sleep(10000);
 			} catch (InterruptedException e) {
 
 			}
@@ -56,17 +59,22 @@ public class PostCreateTask implements Runnable {
 
 		log.info("Sent the freeze command to server");
 
-		// wait a little bit or check swirlds.log to find the "MAINTENANCE" flag,
-		// then gzip and upload the generated saved files
 		try {
-			Thread.sleep(75000);
-		} catch (InterruptedException e) {
-
-		}
+			Thread.sleep(30000);
+		} catch (InterruptedException e) { }
 
 		SavedStateHandler.zipState();
 
-		// TODO: fix this: Exception in thread "pool-3-thread-2" com.google.cloud.storage.StorageException: No trusted certificate found
+		String bucketName = properties.getProperty("cloud.bucketname");
+		if(bucketName.isEmpty()) {
+			bucketName = "services-regression-jrs-files";
+		}
+		String targetDir = properties.getProperty("cloud.dirForStateFile");
+		if(targetDir.isEmpty()) {
+			targetDir = "auto-upload-test-dir";
+		}
+		SavedStateHandler.uploadStateFileGsutil(bucketName, targetDir);
+
 		//SavedStateHandler.uploadStateFile();
 	}
 }

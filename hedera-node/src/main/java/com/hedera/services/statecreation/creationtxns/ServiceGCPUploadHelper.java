@@ -18,17 +18,20 @@ import java.nio.file.Paths;
 public class ServiceGCPUploadHelper {
 	private static Logger log = LogManager.getLogger(PostCreateTask.class);
 
-	private static String CREDENTIALS_PATH = ".ssh/gcp-credit.json";
 	private Storage storage;
 	private Bucket bucket;
 
+	private static String CREDENTIALS_PATH = ".ssh/gcp-credit.json";
 	private static String HEDERA_SERVICES_PROJECTID = "hedera-regression";
 	private static String SERVICES_REGRESSION_BUCKET = "services-regression-jrs-files";
 
 	public ServiceGCPUploadHelper(String pathToConfig, String projectId)  {
 		try {
-			String absolutePathToConfig = Paths.get(System.getProperty("user.home")).resolve(CREDENTIALS_PATH).toString();
-			log.info("Path: " + absolutePathToConfig);
+			System.out.println("User.home: " + System.getProperty("user.home"));
+			String absolutePathToConfig = Paths.get(System.getProperty("user.home")).resolve(pathToConfig).toString();
+			System.out.println("Path to credential file: " + absolutePathToConfig);
+
+			//Credentials credentials = GoogleCredentials.getApplicationDefault();
 
 			Credentials credentials = GoogleCredentials.fromStream(new FileInputStream(absolutePathToConfig));
 			storage = StorageOptions.newBuilder().setCredentials(credentials).setProjectId(
@@ -46,13 +49,13 @@ public class ServiceGCPUploadHelper {
 
 		Path currentDir = FileSystems.getDefault().getPath(".").toAbsolutePath();
 
-		String fileToUpload = currentDir.resolve("hedera-node/9382.gz").toString();
+		String fileToUpload = currentDir.resolve("hedera-node/15589.gz").toString();
 		String absolutePathToFile = Paths.get(System.getProperty("user.home")).resolve(fileToUpload).toString();
 
-		log.info("file to upload: " + absolutePathToFile);
+		System.out.println("file to upload: " + absolutePathToFile);
 
 		String tmpFileName = FilenameUtils.getName(absolutePathToFile);
-		log.info("Just file name: " + tmpFileName);
+		System.out.println("Just file name: " + tmpFileName);
 		String targetFileName = "auto-upload-test-dir/" + tmpFileName;
 		gcpUploader.uploadFile(targetFileName, absolutePathToFile, "text/plain", SERVICES_REGRESSION_BUCKET);
 	}
@@ -74,6 +77,22 @@ public class ServiceGCPUploadHelper {
 			log.warn("Bucket name " + bucketName + "Doesn't exist!");
 		}
 		return bucket;
+	}
+
+	public void uploadFileWithGsutil(final String gzFile, final String bucketName,
+			final String targetDir) {
+		ProcessBuilder pb = new ProcessBuilder( "gsutil", "-m", "cp", gzFile, "gs://"+bucketName + "/" + targetDir);
+
+		try {
+			Process process = pb.start();
+			process.waitFor();
+		} catch(IOException e) {
+			log.warn("Error while starting the process to upload state file {}", gzFile, e);
+		} catch (InterruptedException ie) {
+			log.warn("Upload process was interrupted while uploading state file {}:", gzFile, ie);
+		}
+
+		log.info("Done uploading state file {}", gzFile);
 	}
 }
 

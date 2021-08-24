@@ -73,14 +73,12 @@ public class StateCreationManager {
 
 		BuiltinClient client = new BuiltinClient(properties, processOrders, ctx, allCreated);
 
-		executorService.execute(client);
-
 		log.info("kicked off builtin client to send creation traffic");
 
-		PostCreateTask waiter = new PostCreateTask(allCreated, ctx);
+		executorService.execute(client);
+
+		PostCreateTask waiter = new PostCreateTask(allCreated, ctx, properties);
 
 		executorService.execute(waiter);
 	}
-
-
 }
