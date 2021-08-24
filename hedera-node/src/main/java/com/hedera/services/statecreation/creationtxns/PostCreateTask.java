@@ -8,6 +8,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,6 +18,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class PostCreateTask implements Runnable {
 	private static Logger log = LogManager.getLogger(PostCreateTask.class);
+
+	private final static int HALF_MINUE = 30000;
+	private final static int TWO_MINUTES = 120000;
 
 	final ServicesContext ctx;
 	private final AtomicBoolean allCreated;
@@ -33,13 +37,13 @@ public class PostCreateTask implements Runnable {
 		while (!allCreated.get()) {
 			try {
 				log.info("Wait for builtin client to finish...");
-				Thread.sleep(10000);
+				Thread.sleep(HALF_MINUE);
 			} catch (InterruptedException e) {
 
 			}
 		}
 
-		log.info("Done create the state file and let's shutdown the server.");
+		log.info("Done create the state file and shut down the server.");
 
 		try {
 			Transaction txn = FreezeTxnFactory.newFreezeTxn().
@@ -57,10 +61,21 @@ public class PostCreateTask implements Runnable {
 			e.printStackTrace();
 		}
 
-		log.info("Sent the freeze command to server");
+		log.info("Sent the freeze command to server and wait its final state file export to finish...");
+
+		int finalWaitTime = 0;
+		try {
+			finalWaitTime = Integer.parseInt(properties.getProperty("millseconds.waiting.server.down"));
+		} catch (NumberFormatException nfe) {
+			finalWaitTime = 0;
+		}
+		if(finalWaitTime <= 0) {
+			finalWaitTime = TWO_MINUTES;
+		}
+
 
 		try {
-			Thread.sleep(30000);
+			Thread.sleep(finalWaitTime);
 		} catch (InterruptedException e) { }
 
 		SavedStateHandler.zipState();
@@ -75,6 +90,5 @@ public class PostCreateTask implements Runnable {
 		}
 		SavedStateHandler.uploadStateFileGsutil(bucketName, targetDir);
 
-		//SavedStateHandler.uploadStateFile();
 	}
 }

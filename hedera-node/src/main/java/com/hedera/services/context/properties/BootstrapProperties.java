@@ -277,7 +277,8 @@ public class BootstrapProperties implements PropertySource {
 			"precheck.account.lookupRetryBackoffIncrementMs",
 			"stats.hapiOps.speedometerUpdateIntervalMs",
 			"stats.runningAvgHalfLifeSecs",
-			"stats.speedometerHalfLifeSecs"
+			"stats.speedometerHalfLifeSecs",
+			"create.state.file"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -393,6 +394,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
 			entry("consensus.message.maxBytesAllowed", AS_INT),
-			entry("tokens.nfts.areEnabled", AS_BOOLEAN)
+			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
+			entry("create.state.file", AS_BOOLEAN)
 	);
 }

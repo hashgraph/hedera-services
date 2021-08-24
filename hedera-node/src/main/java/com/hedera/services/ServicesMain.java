@@ -103,8 +103,8 @@ public class ServicesMain implements SwirldMain {
 			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
 			systemExits.fail(1);
 		}
-		// TODO: add a property to control the creation
-		if(Files.exists(Path.of("data/config/entity-layout.properties"))) {
+		if(ctx.properties().getBooleanProperty("create.state.file")
+				&& Files.exists(Path.of("data/config/entity-layout.properties"))) {
 			StateCreationManager stateCreationManager = new StateCreationManager(ctx);
 			stateCreationManager.create();
 		}

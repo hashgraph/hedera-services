@@ -53,6 +53,7 @@ public class NodeLocalProperties {
 	private int nettyStartRetries;
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
+	private boolean createStateFile;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -91,6 +92,7 @@ public class NodeLocalProperties {
 		nettyStartRetries = properties.getIntProperty("netty.startRetries");
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
+		createStateFile = properties.getBooleanProperty("create.state.file");
 	}
 
 	public int port() {
@@ -212,4 +214,6 @@ public class NodeLocalProperties {
 	public boolean shouldDumpFcmsOnIss() {
 		return dumpFcmsOnIss;
 	}
+
+	public boolean isCreateStateFile() { return createStateFile; }
 }

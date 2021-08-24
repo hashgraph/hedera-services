@@ -1634,11 +1634,11 @@ workflows:
   GCP-Create-SavedState-With-Layout:
     triggers:
       - schedule:
-          cron: "50 4 * * *"
+          cron: "46 18 * * *"
           filters:
             branches:
               only:
-                - 01956-D-state-creation-from-server
+                - Disabled-01956-D-state-creation-from-server
     jobs:
       - build-platform-and-services
       - jrs-regression:
