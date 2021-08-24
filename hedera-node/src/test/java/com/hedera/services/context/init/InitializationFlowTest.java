@@ -9,9 +9,9 @@ package com.hedera.services.context.init;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,11 +39,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 
@@ -83,10 +83,13 @@ class InitializationFlowTest {
 	}
 
 	@Test
-	void initializesContextAsExpectedWhenBlobStoreNotInitializing() {
-		// setup:
-		final InOrder inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiryManager, networkCtxManager);
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, InitializationFlow::new);
+	}
 
+	@Test
+	void initializesContextAsExpectedWhenBlobStoreNotInitializing() {
+		final var inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiryManager, networkCtxManager);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.tokens()).willReturn(tokens);
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
@@ -96,10 +99,8 @@ class InitializationFlowTest {
 		given(ctx.expiries()).willReturn(expiryManager);
 		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 
-		// when:
 		InitializationFlow.accept(state, ctx);
 
-		// then:
 		inOrder.verify(ctx).update(state);
 		inOrder.verify(ctx).setRecordsInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
@@ -114,9 +115,7 @@ class InitializationFlowTest {
 	@Test
 	void initializesContextAsExpectedWhenBlobStoreInitializing() {
 		given(blobStore.isInitializing()).willReturn(true);
-
-		// setup:
-		final InOrder inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiryManager, networkCtxManager);
+		final var inOrder = Mockito.inOrder(ctx, uniqTokenViewsManager, expiryManager, networkCtxManager);
 
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.tokens()).willReturn(tokens);
@@ -127,10 +126,8 @@ class InitializationFlowTest {
 		given(ctx.expiries()).willReturn(expiryManager);
 		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 
-		// when:
 		InitializationFlow.accept(state, ctx);
 
-		// then:
 		inOrder.verify(ctx).update(state);
 		inOrder.verify(ctx).setRecordsInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();

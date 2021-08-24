@@ -46,6 +46,10 @@ import static java.util.Collections.emptyList;
 import static org.ethereum.core.BlockchainImpl.EMPTY_LIST_HASH;
 
 public class DomainUtils {
+	DomainUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	public static Block fakeBlock(Instant at) {
 		return new Block(
 				EMPTY_LIST_HASH,

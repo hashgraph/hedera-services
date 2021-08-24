@@ -30,6 +30,10 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 public class FixedUsageEstimates {
 	private static final int BYTES_PER_SEMANTIC_VERSION = 12;
 
+	FixedUsageEstimates() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	private static final FeeComponents ZERO_USAGE = FeeComponents.getDefaultInstance();
 
 	static final FeeComponents GET_VERSION_INFO_NODE_USAGE = FeeComponents.newBuilder()

@@ -9,9 +9,9 @@ package com.hedera.services.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,28 +33,32 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 public class StandardSyncActivationCheck {
-	public static boolean allKeysAreActive(
-			List<JKey> keys,
-			SyncVerifier syncVerifier,
-			TxnAccessor accessor,
-			PlatformSigsFactory sigsFactory,
-			PubKeyToSigBytes sigBytes,
-			Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
-			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
-			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
-	) {
-		var sigFactory = scopedSigProvider.apply(accessor);
+	StandardSyncActivationCheck() {
+		throw new IllegalStateException("Utility Class");
+	}
 
-		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
+	public static boolean allKeysAreActive(
+			final List<JKey> keys,
+			final SyncVerifier syncVerifier,
+			final TxnAccessor accessor,
+			final PlatformSigsFactory sigsFactory,
+			final PubKeyToSigBytes sigBytes,
+			final Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
+			final BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
+			final Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
+	) {
+		final var sigFactory = scopedSigProvider.apply(accessor);
+
+		final var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {
 			return false;
 		}
-		var sigs = creationResult.getPlatformSigs();
+		final var sigs = creationResult.getPlatformSigs();
 
 		syncVerifier.verifySync(sigs);
 
-		var sigsFn = sigsFnProvider.apply(sigs);
-		for (JKey key : keys) {
+		final var sigsFn = sigsFnProvider.apply(sigs);
+		for (final var key : keys) {
 			if (!isActive.test(key, sigsFn)) {
 				return false;
 			}

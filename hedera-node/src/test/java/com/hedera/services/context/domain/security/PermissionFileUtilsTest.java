@@ -68,8 +68,14 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PermissionFileUtilsTest {
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, PermissionFileUtils::new);
+	}
+
 	@Test
 	void returnsEmptyKeyForBlankTxn() {
 		assertEquals("", permissionFileKeyForTxn(TransactionBody.getDefaultInstance()));

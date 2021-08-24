@@ -9,9 +9,9 @@ package com.hedera.services.sigs.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,19 +32,24 @@ import java.util.function.Predicate;
  * @author Michael Tinker
  */
 public class PrecheckUtils {
+	PrecheckUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	/**
 	 * Constructs a predicate testing whether a {@link TransactionBody} should be
 	 * considered a query payment for the given node.
 	 *
-	 * @param deservingNode the id of a node's account.
+	 * @param deservingNode
+	 * 		the id of a node's account.
 	 * @return a predicate testing if a txn is a query payment for the given node.
 	 */
-	public static Predicate<TransactionBody> queryPaymentTestFor(AccountID deservingNode) {
+	public static Predicate<TransactionBody> queryPaymentTestFor(final AccountID deservingNode) {
 		return txn ->
-			txn.hasCryptoTransfer() &&
-					txn.getCryptoTransfer().getTransfers().getAccountAmountsList().stream()
-							.filter(aa -> aa.getAmount() > 0)
-							.map(AccountAmount::getAccountID)
-							.anyMatch(deservingNode::equals);
+				txn.hasCryptoTransfer() &&
+						txn.getCryptoTransfer().getTransfers().getAccountAmountsList().stream()
+								.filter(aa -> aa.getAmount() > 0)
+								.map(AccountAmount::getAccountID)
+								.anyMatch(deservingNode::equals);
 	}
 }

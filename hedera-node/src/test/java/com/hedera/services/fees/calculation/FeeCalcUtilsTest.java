@@ -49,23 +49,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 public class FeeCalcUtilsTest {
-	public static String ARTIFACTS_PREFIX_FILE_CONTENT = "f";
-	/**
-	 * Default value for the prefix for the virtual metadata file
-	 */
-	public static String ARTIFACTS_PREFIX_FILE_INFO = "k";
-	public static String LEDGER_PATH = "/{0}/";
-	private final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
+	private static final String ARTIFACTS_PREFIX_FILE_CONTENT = "f";
+	private static final String ARTIFACTS_PREFIX_FILE_INFO = "k";
+	private static final String LEDGER_PATH = "/{0}/";
+	private static final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
 
-	public static String pathOf(FileID fid) {
+	public static String pathOf(final FileID fid) {
 		return path(ARTIFACTS_PREFIX_FILE_CONTENT, fid);
 	}
 
-	public static String pathOfMeta(FileID fid) {
+	public static String pathOfMeta(final FileID fid) {
 		return path(ARTIFACTS_PREFIX_FILE_INFO, fid);
 	}
 
-	private static String path(String buildMarker, FileID fid) {
+	private static String path(final String buildMarker, final FileID fid) {
 		return String.format(
 				"%s%s%d",
 				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
@@ -73,141 +70,99 @@ public class FeeCalcUtilsTest {
 				fid.getFileNum());
 	}
 
-	public static String buildPath(String path, Object... params) {
+	public static String buildPath(final String path, final Object... params) {
 		try {
 			return MessageFormat.format(path, params);
-		} catch (final MissingResourceException e) {
+		} catch (final MissingResourceException ignore) {
 		}
 		return path;
 	}
 
 	@Test
 	void returnsAccountExpiryIfAvail() {
-		// setup:
-		MerkleAccount account = mock(MerkleAccount.class);
-		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
-		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
-
+		final var account = mock(MerkleAccount.class);
+		final FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
+		final var expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
 		given(accounts.get(key)).willReturn(account);
 
-		// when:
-		Timestamp actual = lookupAccountExpiry(key, accounts);
-
-		// then:
-		assertEquals(expected, actual);
+		assertEquals(expected, lookupAccountExpiry(key, accounts));
 	}
 
 	@Test
 	void returnsZeroFileExpiryIfUnavail() {
-		// setup:
-		StateView view = mock(StateView.class);
-		FileID fid = IdUtils.asFile("1.2.3");
-
+		final var view = mock(StateView.class);
+		final var fid = IdUtils.asFile("1.2.3");
 		given(view.attrOf(fid)).willReturn(Optional.empty());
 
-		// when:
-		Timestamp actual = lookupFileExpiry(fid, view);
-
-		// then:
-		assertEquals(ZERO_EXPIRY, actual);
+		assertEquals(ZERO_EXPIRY, lookupFileExpiry(fid, view));
 	}
 
 	@Test
 	void returnsZeroAccountExpiryIfUnavail() {
-		// when:
-		Timestamp actual = lookupAccountExpiry(null, null);
-
-		// then:
-		assertEquals(ZERO_EXPIRY, actual);
+		assertEquals(ZERO_EXPIRY, lookupAccountExpiry(null, null));
 	}
 
 	@Test
 	void returnsFileExpiryIfAvail() throws Exception {
-		// setup:
-		StateView view = mock(StateView.class);
-		FileID fid = IdUtils.asFile("1.2.3");
-		// and:
-		JKey wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
-		HFileMeta jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
-
+		final var view = mock(StateView.class);
+		final var fid = IdUtils.asFile("1.2.3");
+		final var wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
+		final var jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
+		final var expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 		given(view.attrOf(fid)).willReturn(Optional.of(jInfo));
 
-		// when:
-		Timestamp actual = lookupFileExpiry(fid, view);
-		// and:
-		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
-
-		// then:
-		assertEquals(expected, actual);
+		assertEquals(expected, lookupFileExpiry(fid, view));
 	}
 
 	@Test
 	void constructsExpectedPath() {
-		// given:
-		FileID fid = IdUtils.asFile("1.2.3");
-		// and:
-		String expected = String.format(
+		final var fid = IdUtils.asFile("1.2.3");
+		final var expected = String.format(
 				"%s%s%d",
 				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
 				ARTIFACTS_PREFIX_FILE_CONTENT,
 				fid.getFileNum());
 
-		// when:
-		String actual = pathOf(fid);
-
-		// then:
-		assertEquals(expected, actual);
+		assertEquals(expected, pathOf(fid));
 	}
 
 	@Test
 	void constructsExpectedMetaPath() {
-		// given:
-		FileID fid = IdUtils.asFile("1.2.3");
-		// and:
-		String expected = String.format(
+		final var fid = IdUtils.asFile("1.2.3");
+		final var expected = String.format(
 				"%s%s%d",
 				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
 				ARTIFACTS_PREFIX_FILE_INFO,
 				fid.getFileNum());
 
-		// when:
-		String actual = pathOfMeta(fid);
-
-		// then:
-		assertEquals(expected, actual);
+		assertEquals(expected, pathOfMeta(fid));
 	}
 
 	@Test
 	void sumsAsExpected() {
-		// given:
-		FeeComponents aComp = FeeComponents.newBuilder()
+		final var aComp = FeeComponents.newBuilder()
 				.setMin(2).setMax(1_234_567)
-				.setConstant(1).setBpt(2).setVpt(3).setRbh(4).setSbh(5).setGas(6).setTv(7).setBpr(8).setSbpr(9)
-				.build();
-		FeeComponents bComp = FeeComponents.newBuilder()
+				.setConstant(1).setBpt(2).setVpt(3).setRbh(4).setSbh(5).setGas(6).setTv(7).setBpr(8).setSbpr(9);
+		final var bComp = FeeComponents.newBuilder()
 				.setMin(1).setMax(1_234_566)
-				.setConstant(9).setBpt(8).setVpt(7).setRbh(6).setSbh(5).setGas(4).setTv(3).setBpr(2).setSbpr(1)
-				.build();
-		FeeData a = FeeData.newBuilder()
+				.setConstant(9).setBpt(8).setVpt(7).setRbh(6).setSbh(5).setGas(4).setTv(3).setBpr(2).setSbpr(1);
+		final var a = FeeData.newBuilder()
 				.setNetworkdata(aComp)
 				.setNodedata(aComp)
 				.setServicedata(aComp)
 				.build();
-		FeeData b = FeeData.newBuilder()
+		final var b = FeeData.newBuilder()
 				.setNetworkdata(bComp)
 				.setNodedata(bComp)
 				.setServicedata(bComp)
 				.build();
 
-		// when:
-		var c = sumOfUsages(a, b);
-		// and:
-		var scopedUsages = new FeeComponents[] {
+		final var c = sumOfUsages(a, b);
+		final var scopedUsages = new FeeComponents[] {
 				c.getNodedata(), c.getNetworkdata(), c.getServicedata()
 		};
 
-		// then:
 		for (FeeComponents scopedUsage : scopedUsages) {
 			assertEquals(1, scopedUsage.getMin());
 			assertEquals(1_234_567, scopedUsage.getMax());
@@ -225,6 +180,6 @@ public class FeeCalcUtilsTest {
 
 	@Test
 	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, () -> new FeeCalcUtils());
+		assertThrows(IllegalStateException.class, FeeCalcUtils::new);
 	}
 }

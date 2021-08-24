@@ -40,34 +40,37 @@ import org.apache.logging.log4j.Logger;
 public class FeeCalcUtils {
 	private static final Logger log = LogManager.getLogger(FeeCalcUtils.class);
 
-	public static final Timestamp ZERO_EXPIRY = Timestamp.newBuilder().setSeconds(0).build();
+	static final Timestamp ZERO_EXPIRY = Timestamp.newBuilder().setSeconds(0).build();
 
 	FeeCalcUtils() {
 		throw new IllegalStateException("Utility class");
 	}
 
-	public static Timestamp lookupAccountExpiry(MerkleEntityId key, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public static Timestamp lookupAccountExpiry(
+			final MerkleEntityId key,
+			final FCMap<MerkleEntityId, MerkleAccount> accounts
+	) {
 		try {
-			MerkleAccount account = accounts.get(key);
-			long expiration = account.getExpiry();
-			return Timestamp.newBuilder().setSeconds(expiration).build();
+			final var account = accounts.get(key);
+			final var expiration = account.getExpiry();
+			return asTimestamp(expiration);
 		} catch (Exception ignore) {
 			log.debug("Ignoring expiry in fee calculation for {}", key);
 			return ZERO_EXPIRY;
 		}
 	}
 
-	private static Timestamp asTimestamp(long expiry) {
+	private static Timestamp asTimestamp(final long expiry) {
 		return Timestamp.newBuilder().setSeconds(expiry).build();
 	}
 
-	public static Timestamp lookupFileExpiry(FileID fid, StateView view) {
+	public static Timestamp lookupFileExpiry(final FileID fid, final StateView view) {
 		return view.attrOf(fid)
 				.map(info -> asTimestamp(info.getExpiry()))
 				.orElse(ZERO_EXPIRY);
 	}
 
-	public static FeeData sumOfUsages(FeeData a, FeeData b) {
+	public static FeeData sumOfUsages(final FeeData a, final FeeData b) {
 		return FeeData.newBuilder()
 				.setNodedata(sumOfScopedUsages(a.getNodedata(), b.getNodedata()))
 				.setNetworkdata(sumOfScopedUsages(a.getNetworkdata(), b.getNetworkdata()))
@@ -75,7 +78,7 @@ public class FeeCalcUtils {
 				.build();
 	}
 
-	private static FeeComponents sumOfScopedUsages(FeeComponents a, FeeComponents b) {
+	private static FeeComponents sumOfScopedUsages(final FeeComponents a, final FeeComponents b) {
 		return FeeComponents.newBuilder()
 				.setMin(Math.min(a.getMin(), b.getMin()))
 				.setMax(Math.max(a.getMax(), b.getMax()))

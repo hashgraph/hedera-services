@@ -9,9 +9,9 @@ package com.hedera.services.exceptions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,8 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ValidationUtilsTest {
 	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, ValidationUtils::new);
+	}
+
+	@Test
 	void factoriesWorkAsExpected() {
-		// when:
 		final var falseExCapturedByCode = assertThrows(InvalidTransactionException.class, () ->
 				validateTrue(false, MEMO_TOO_LONG));
 		final var falseExCapturedByCodeAndMsg = assertThrows(InvalidTransactionException.class, () ->
@@ -44,7 +48,6 @@ class ValidationUtilsTest {
 		final var trueExCapturedByCodeAndMsg = assertThrows(InvalidTransactionException.class, () ->
 				validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
 
-		// then:
 		assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());
 		assertEquals(INVALID_TOKEN_BURN_AMOUNT, falseExCapturedByCodeAndMsg.getResponseCode());
 		assertEquals("Should be true!", falseExCapturedByCodeAndMsg.getMessage());

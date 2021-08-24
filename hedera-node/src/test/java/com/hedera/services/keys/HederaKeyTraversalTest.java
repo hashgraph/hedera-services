@@ -21,11 +21,8 @@ package com.hedera.services.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyTree;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -40,71 +37,56 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HederaKeyTraversalTest {
-	static KeyTree kt;
-
-	@BeforeAll
-	private static void setupAll() {
-		kt = KeyTree.withRoot(
-				list(
-						ed25519(),
-						threshold(1, list(list(ed25519(), ed25519()), ed25519()), ed25519()),
-						ed25519(),
-						list(threshold(2, ed25519(), ed25519(), ed25519(), ed25519()))
-				)
-		);
-	}
+	private static final KeyTree kt = KeyTree.withRoot(
+			list(
+					ed25519(),
+					threshold(1, list(list(ed25519(), ed25519()), ed25519()), ed25519()),
+					ed25519(),
+					list(threshold(2, ed25519(), ed25519(), ed25519(), ed25519()))
+			)
+	);
 
 	@Test
 	void visitsAllSimpleKeys() throws Exception {
-		// given:
-		JKey jKey = kt.asJKey();
-		List<ByteString> expectedEd25519 = ed25519KeysFromKt(kt);
+		final var jKey = kt.asJKey();
+		final var expectedEd25519 = ed25519KeysFromKt(kt);
 
-		// when:
-		List<ByteString> visitedEd25519 = new ArrayList<>();
+		final List<ByteString> visitedEd25519 = new ArrayList<>();
 		HederaKeyTraversal.visitSimpleKeys(jKey, simpleJKey ->
 				visitedEd25519.add(ByteString.copyFrom(simpleJKey.getEd25519())));
 
-		// expect:
-		assertThat(visitedEd25519, contains(expectedEd25519.toArray(new ByteString[0])));
+		assertThat(visitedEd25519, contains(expectedEd25519.toArray()));
 	}
 
 	@Test
 	void countsSimpleKeys() throws Exception {
-		// given:
-		JKey jKey = kt.asJKey();
+		final var jKey = kt.asJKey();
 
-		// expect:
 		assertEquals(10, HederaKeyTraversal.numSimpleKeys(jKey));
 	}
 
 	@Test
 	void countsSimpleKeysForValidAccount() throws Exception {
-		// given:
-		JKey jKey = kt.asJKey();
-		MerkleAccount account = MerkleAccountFactory.newAccount().accountKeys(jKey).get();
+		final var jKey = kt.asJKey();
+		final var account = MerkleAccountFactory.newAccount().accountKeys(jKey).get();
 
-		// expect:
 		assertEquals(10, HederaKeyTraversal.numSimpleKeys(account));
 	}
 
 	@Test
-	void countsZeroSimpleKeysForWeirdAccount() throws Exception {
-		// given:
-		JKey jKey = kt.asJKey();
-		MerkleAccount account = MerkleAccountFactory.newAccount().get();
+	void countsZeroSimpleKeysForWeirdAccount() {
+		final var account = MerkleAccountFactory.newAccount().get();
 
-		// expect:
 		assertEquals(0, HederaKeyTraversal.numSimpleKeys(account));
 	}
 
 	@Test
 	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, () -> new HederaKeyTraversal());
+		assertThrows(IllegalStateException.class, HederaKeyTraversal::new);
 	}
 
-	private List<ByteString> ed25519KeysFromKt(KeyTree kt) {
-		List<ByteString> keys = new ArrayList<>();
+	private List<ByteString> ed25519KeysFromKt(final KeyTree kt) {
+		final List<ByteString> keys = new ArrayList<>();
 		kt.traverseLeaves(leaf -> keys.add(leaf.asKey().getEd25519()));
 		return keys;
 	}

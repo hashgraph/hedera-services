@@ -95,7 +95,11 @@ public class PermissionFileUtils {
 	private static final EnumMap<HederaFunctionality, String> permissionKeys = new EnumMap<>(HederaFunctionality.class);
 	static final Map<String, HederaFunctionality> legacyKeys;
 
-	public static String permissionFileKeyForTxn(TransactionBody txn) {
+	PermissionFileUtils() {
+		throw new IllegalStateException("Utility Class");
+	}
+
+	public static String permissionFileKeyForTxn(final TransactionBody txn) {
 		try {
 			return permissionKeys.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality ignore) {
@@ -103,7 +107,7 @@ public class PermissionFileUtils {
 		}
 	}
 
-	public static String permissionFileKeyForQuery(Query query) {
+	public static String permissionFileKeyForQuery(final Query query) {
 		if (query.getQueryCase() == TRANSACTIONGETFASTRECORD) {
 			return "getFastTransactionRecord";
 		} else {

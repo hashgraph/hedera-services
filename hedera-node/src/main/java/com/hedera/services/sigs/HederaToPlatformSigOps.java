@@ -51,6 +51,10 @@ import java.time.Instant;
  * is called with {@code isConsensus=true}.
  */
 public class HederaToPlatformSigOps {
+	HederaToPlatformSigOps() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	/**
 	 * Try to set the {@link Signature} list on the accessible platform txn to exactly
 	 * the base-level signatures of the signing hierarchy for each Hedera {@link JKey}
@@ -72,9 +76,9 @@ public class HederaToPlatformSigOps {
 	 * @return a representation of the outcome
 	 */
 	public static ResponseCodeEnum expandIn(
-			PlatformTxnAccessor txnAccessor,
-			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytes pkToSigFn
+			final PlatformTxnAccessor txnAccessor,
+			final HederaSigningOrder keyOrderer,
+			final PubKeyToSigBytes pkToSigFn
 	) {
 		txnAccessor.getPlatformTxn().clear();
 

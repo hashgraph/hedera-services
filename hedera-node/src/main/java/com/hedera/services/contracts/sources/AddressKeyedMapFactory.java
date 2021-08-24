@@ -9,9 +9,9 @@ package com.hedera.services.contracts.sources;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,30 +34,34 @@ import static java.lang.Long.parseLong;
 public class AddressKeyedMapFactory {
 	static final String LEGACY_BYTECODE_PATH_TEMPLATE = "/%d/s%d";
 	static final Pattern LEGACY_BYTECODE_PATH_PATTERN = Pattern.compile("/(\\d+)/s(\\d+)");
-	static final String LEGACY_STORAGE_PATH_TEMPLATE = "/%d/d%d";
-	static final Pattern LEGACY_STORAGE_PATH_PATTERN = Pattern.compile("/(\\d+)/d(\\d+)");
+	private static final String LEGACY_STORAGE_PATH_TEMPLATE = "/%d/d%d";
+	private static final Pattern LEGACY_STORAGE_PATH_PATTERN = Pattern.compile("/(\\d+)/d(\\d+)");
 
-	public static Map<byte[], byte[]> bytecodeMapFrom(Map<String, byte[]> store) {
-		var storageMap = new BytesStoreAdapter<>(
-				byte[].class,
-				Function.identity(),
-				Function.identity(),
-				toAddressMapping(LEGACY_BYTECODE_PATH_PATTERN),
-				toKeyMapping(LEGACY_BYTECODE_PATH_TEMPLATE),
-				store);
-		storageMap.setDelegateEntryFilter(toRelevancyPredicate(LEGACY_BYTECODE_PATH_PATTERN));
-		return storageMap;
+	AddressKeyedMapFactory() {
+		throw new IllegalStateException("Utility Class");
 	}
 
-	public static Map<byte[], byte[]> storageMapFrom(Map<String, byte[]> store) {
-		var storageMap = new BytesStoreAdapter<>(
+	public static Map<byte[], byte[]> bytecodeMapFrom(final Map<String, byte[]> store) {
+		return mapFrom(store, LEGACY_BYTECODE_PATH_PATTERN, LEGACY_BYTECODE_PATH_TEMPLATE);
+	}
+
+	public static Map<byte[], byte[]> storageMapFrom(final Map<String, byte[]> store) {
+		return mapFrom(store, LEGACY_STORAGE_PATH_PATTERN, LEGACY_STORAGE_PATH_TEMPLATE);
+	}
+
+	private static Map<byte[], byte[]> mapFrom(
+			final Map<String, byte[]> store,
+			final Pattern legacyPathPattern,
+			final String legacyPathTemplate
+	) {
+		final var storageMap = new BytesStoreAdapter<>(
 				byte[].class,
 				Function.identity(),
 				Function.identity(),
-				toAddressMapping(LEGACY_STORAGE_PATH_PATTERN),
-				toKeyMapping(LEGACY_STORAGE_PATH_TEMPLATE),
+				toAddressMapping(legacyPathPattern),
+				toKeyMapping(legacyPathTemplate),
 				store);
-		storageMap.setDelegateEntryFilter(toRelevancyPredicate(LEGACY_STORAGE_PATH_PATTERN));
+		storageMap.setDelegateEntryFilter(toRelevancyPredicate(legacyPathPattern));
 		return storageMap;
 	}
 
@@ -67,16 +71,15 @@ public class AddressKeyedMapFactory {
 
 	static Function<byte[], String> toKeyMapping(final String legacyPathTemplate) {
 		return address -> {
-			var id = accountParsedFromSolidityAddress(address);
+			final var id = accountParsedFromSolidityAddress(address);
 			return String.format(legacyPathTemplate, id.getRealmNum(), id.getAccountNum());
 		};
 	}
 
 	static Function<String, byte[]> toAddressMapping(final Pattern legacyPathPattern) {
 		return key -> {
-			var matcher = legacyPathPattern.matcher(key);
-			var flag = matcher.matches();
-			assert flag;
+			final var matcher = legacyPathPattern.matcher(key);
+			assert matcher.matches();
 
 			return asSolidityAddress(0, parseLong(matcher.group(1)), parseLong(matcher.group(2)));
 		};

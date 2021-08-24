@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.utils;
+package com.hedera.services.fees.calculation.meta;
 
 /*-
  * ‌
@@ -20,26 +20,25 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.FeeComponents;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static com.hedera.services.fees.calculation.meta.FixedUsageEstimates.GET_VERSION_INFO_NODE_USAGE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ImmutableKeyUtilsTest {
+public class FixedUsageEstimatesTest {
 	@Test
 	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ImmutableKeyUtils::new);
+		assertThrows(IllegalStateException.class, FixedUsageEstimates::new);
 	}
 
 	@Test
-	void recognizesSentinelKey() {
-		assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));
-		assertFalse(signalsKeyRemoval(Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build()));
-		assertTrue(signalsKeyRemoval(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
+	void getVersionInfoUsageWorks() {
+		final var feeData = FixedUsageEstimates.getVersionInfoUsage();
+
+		assertEquals(FeeComponents.getDefaultInstance(), feeData.getNetworkdata());
+		assertEquals(FeeComponents.getDefaultInstance(), feeData.getServicedata());
+		assertEquals(GET_VERSION_INFO_NODE_USAGE, feeData.getNodedata());
 	}
 }

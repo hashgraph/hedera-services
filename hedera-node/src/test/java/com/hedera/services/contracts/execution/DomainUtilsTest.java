@@ -9,9 +9,9 @@ package com.hedera.services.contracts.execution;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,6 +49,7 @@ import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccou
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.booleanThat;
@@ -58,21 +59,28 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class DomainUtilsTest {
-	long gas = 1_234_567L;
-	String error = "I don't like any of this!";
-	byte[] hr = "Not really a result!".getBytes();
-	byte[] data = "Not really data!".getBytes();
-	byte[] primaryCreatedAddress = null;
-	byte[] executionResult = "Not really an exection result!".getBytes();
-	byte[] senderAddr = "01234567890123456789".getBytes();
-	ContractID primaryCreated = IdUtils.asContract("0.0.13257");
-	Transaction ofMention;
-	ProgramResult result;
-	List<ContractID> some = List.of(IdUtils.asContract("0.0.13257"), IdUtils.asContract("0.0.13258"));
+	private static final long gas = 1_234_567L;
+	private static final String error = "I don't like any of this!";
+	private static final byte[] hr = "Not really a result!".getBytes();
+	private static final byte[] data = "Not really data!".getBytes();
+	private byte[] primaryCreatedAddress = null;
+	private static final byte[] executionResult = "Not really an exection result!".getBytes();
+	private static final byte[] senderAddr = "01234567890123456789".getBytes();
+	private static final ContractID primaryCreated = IdUtils.asContract("0.0.13257");
+	private Transaction ofMention;
+	private ProgramResult result;
+	private static final List<ContractID> some = List.of(
+			IdUtils.asContract("0.0.13257"),
+			IdUtils.asContract("0.0.13258"));
 
-	LogInfo logInfo;
-	TransactionReceipt receipt;
-	Optional<List<ContractID>> created;
+	private static final LogInfo logInfo = new LogInfo(
+			EntityIdUtils.asSolidityAddress(0, 0, primaryCreated.getContractNum()),
+			List.of(
+					DataWord.of(CommonUtils.hex("First".getBytes())),
+					DataWord.of(CommonUtils.hex("Second".getBytes()))),
+			data);
+	private TransactionReceipt receipt;
+	private Optional<List<ContractID>> created;
 
 	@BeforeEach
 	private void setup() {
@@ -87,37 +95,30 @@ class DomainUtilsTest {
 		ofMention = mock(Transaction.class);
 		receipt.setTransaction(ofMention);
 
-		logInfo = new LogInfo(
-				EntityIdUtils.asSolidityAddress(0, 0, primaryCreated.getContractNum()),
-				List.of(
-						DataWord.of(CommonUtils.hex("First".getBytes())),
-						DataWord.of(CommonUtils.hex("Second".getBytes()))),
-				data);
 		receipt.setLogInfoList(List.of(logInfo));
 	}
 
 	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, DomainUtils::new);
+	}
+
+	@Test
 	void initsAccountAsExpected() {
-		// setup:
-		long startTime = Instant.now().getEpochSecond();
-		long contractDurationSecs = 1_234_567L;
-		// and:
-		AccountState sponsorAccount = mock(AccountState.class);
+		final long startTime = Instant.now().getEpochSecond();
+		final long contractDurationSecs = 1_234_567L;
+		final var sponsorAccount = mock(AccountState.class);
 		given(sponsorAccount.getShardId()).willReturn(1L);
 		given(sponsorAccount.getRealmId()).willReturn(2L);
-		// and:
-		ServicesRepositoryImpl repository = mock(ServicesRepositoryImpl.class);
+		final var repository = mock(ServicesRepositoryImpl.class);
 		given(repository.getAccount(argThat((byte[] addr) -> Arrays.equals(senderAddr, addr))))
 				.willReturn(sponsorAccount);
-		// and:
-		var address = EntityIdUtils.asSolidityAddress(0, 0, 13257);
+		final var address = EntityIdUtils.asSolidityAddress(0, 0, 13257);
 
-		// given:
-		var scopedInitializer = newScopedAccountInitializer(startTime, contractDurationSecs, senderAddr, repository);
-		// and:
+		final var scopedInitializer =
+				newScopedAccountInitializer(startTime, contractDurationSecs, senderAddr, repository);
 		scopedInitializer.accept(address);
 
-		// then:
 		verify(repository).setSmartContract(
 				argThat((byte[] addr) -> Arrays.equals(address, addr)),
 				booleanThat(Boolean.TRUE::equals));
@@ -140,14 +141,11 @@ class DomainUtilsTest {
 
 	@Test
 	void constructsExpectedReceipt() {
-		// setup:
-		byte[] gasUsedBytes = BigIntegers.asUnsignedByteArray(BigInteger.valueOf(gas));
-		List<LogInfo> vmLogs = List.of(logInfo);
+		final var gasUsedBytes = BigIntegers.asUnsignedByteArray(BigInteger.valueOf(gas));
+		final var vmLogs = List.of(logInfo);
 
-		// given:
-		var receipt = DomainUtils.asReceipt(gas, error, ofMention, vmLogs, result);
+		final var receipt = DomainUtils.asReceipt(gas, error, ofMention, vmLogs, result);
 
-		// expect:
 		assertArrayEquals(gasUsedBytes, receipt.getGasUsed());
 		assertEquals(gas, receipt.getCumulativeGasLong());
 		assertEquals(error, receipt.getError());
@@ -158,25 +156,19 @@ class DomainUtilsTest {
 
 	@Test
 	void fakeBlockTimedPrecisely() {
-		// setup:
-		var now = Instant.now();
+		final var now = Instant.now();
 
-		// given:
-		var block = fakeBlock(now);
+		final var block = fakeBlock(now);
 
-		// expect:
 		assertEquals(now.getEpochSecond(), block.getTimestamp());
 	}
 
 	@Test
 	void mapsLogInfoAsExpected() {
-		// given:
-		var bloom = logInfo.getBloom();
+		final var bloom = logInfo.getBloom();
 
-		// when:
-		var log = asHapiLog(logInfo);
+		final var log = asHapiLog(logInfo);
 
-		// then:
 		assertEquals(primaryCreated, log.getContractID());
 		assertArrayEquals(bloom.getData(), log.getBloom().toByteArray());
 		assertArrayEquals(data, log.getData().toByteArray());
@@ -187,31 +179,24 @@ class DomainUtilsTest {
 
 	@Test
 	void includesAnyLogInfo() {
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertEquals(List.of(asHapiLog(logInfo)), result.getLogInfoList());
 	}
 
 	@Test
 	void mapsExecutionResult() {
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertArrayEquals(executionResult, result.getContractCallResult().toByteArray());
 	}
 
 	@Test
 	void ignoresNullExecutionResult() {
-		// given:
 		receipt.setExecutionResult(null);
 
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertTrue(result.getContractCallResult().isEmpty());
 	}
 
@@ -219,10 +204,8 @@ class DomainUtilsTest {
 	void mapsPrimaryCreation() {
 		givenContractCreate();
 
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertEquals(primaryCreated, result.getContractID());
 	}
 
@@ -230,10 +213,8 @@ class DomainUtilsTest {
 	void mapsGasUsed() {
 		givenError();
 
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertEquals(gas, result.getGasUsed());
 	}
 
@@ -241,10 +222,8 @@ class DomainUtilsTest {
 	void mapsErrorMessage() {
 		givenError();
 
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertEquals(error, result.getErrorMessage());
 	}
 
@@ -252,10 +231,8 @@ class DomainUtilsTest {
 	void addsCreatedIfPresent() {
 		givenCreations();
 
-		// when:
-		var result = asHapiResult(receipt, created);
+		final var result = asHapiResult(receipt, created);
 
-		// then:
 		assertEquals(some, result.getCreatedContractIDsList());
 	}
 

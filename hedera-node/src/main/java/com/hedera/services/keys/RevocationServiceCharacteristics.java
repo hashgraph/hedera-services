@@ -26,15 +26,19 @@ import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 
 public class RevocationServiceCharacteristics {
-	public static KeyActivationCharacteristics forTopLevelFile(JKeyList wacl) {
+	RevocationServiceCharacteristics() {
+		throw new IllegalStateException("Utility Class");
+	}
+
+	public static KeyActivationCharacteristics forTopLevelFile(final JKeyList wacl) {
 		return new KeyActivationCharacteristics() {
 			@Override
-			public int sigsNeededForList(JKeyList l) {
+			public int sigsNeededForList(final JKeyList l) {
 				return equalUpToDecodability(l, wacl) ? 1 : l.getKeysList().size();
 			}
 
 			@Override
-			public int sigsNeededForThreshold(JThresholdKey t) {
+			public int sigsNeededForThreshold(final JThresholdKey t) {
 				return t.getThreshold();
 			}
 		};
