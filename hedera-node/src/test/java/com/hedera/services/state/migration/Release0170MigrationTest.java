@@ -9,9 +9,9 @@ package com.hedera.services.state.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,14 +21,11 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.org.LegacyStateChildIndices;
-import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.org.StateVersions;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.fcmap.FCMap;
@@ -72,29 +69,28 @@ class Release0170MigrationTest {
 	@Test
 	void swapsChildrenAsExpected() {
 		given(addressBook.copy()).willReturn(addressBook);
-		given(state.getChild(LegacyStateChildIndices.ADDRESS_BOOK))	.willReturn(addressBook);
-		// and:
+		given(state.getChild(LegacyStateChildIndices.ADDRESS_BOOK)).willReturn(addressBook);
 		given(networkContext.copy()).willReturn(networkContext);
 		given(state.getChild(LegacyStateChildIndices.NETWORK_CTX)).willReturn(networkContext);
-		// and:
 		given(state.getChild(LegacyStateChildIndices.UNIQUE_TOKENS)).willReturn(nfts);
 		given(state.getChild(LegacyStateChildIndices.TOKEN_ASSOCIATIONS)).willReturn(tokenRels);
 
-		// when:
 		moveLargeFcmsToBinaryRoutePositions(state, StateVersions.RELEASE_0160_VERSION);
 
-		// then:
 		verify(addressBook).copy();
 		verify(state).setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		verify(treeCopier).copyToLocation(state, StateChildIndices.UNIQUE_TOKENS, nfts);
-		// and:
+
 		verify(networkContext).copy();
 		verify(state).setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		verify(treeCopier).copyToLocation(state, StateChildIndices.TOKEN_ASSOCIATIONS, tokenRels);
 	}
 
 	@Test
-	void isUninstantiable() {
+	void throwsInConstructor() {
 		assertThrows(IllegalStateException.class, Release0170Migration::new);
+		assertThrows(IllegalStateException.class, LegacyStateChildIndices::new);
+		assertThrows(IllegalStateException.class, StateChildIndices::new);
+		assertThrows(IllegalStateException.class, StateVersions::new);
 	}
 }

@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ProtoCommonUtilsTest {
+class ProtoCommonUtilsTest {
 	@Test
 	void throwsInConstructor() {
 		assertThrows(IllegalStateException.class, ProtoCommonUtils::new);

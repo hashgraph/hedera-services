@@ -27,7 +27,7 @@ import static com.hedera.services.fees.calculation.meta.FixedUsageEstimates.GET_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FixedUsageEstimatesTest {
+class FixedUsageEstimatesTest {
 	@Test
 	void throwsInConstructor() {
 		assertThrows(IllegalStateException.class, FixedUsageEstimates::new);

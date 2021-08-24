@@ -1,4 +1,4 @@
-package com.hedera.services.state.org;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
@@ -30,4 +30,8 @@ public class LegacyStateChildIndices {
 	public static final int UNIQUE_TOKENS = 10;
 
 	public static final int NUM_0160_CHILDREN = 11;
+
+	LegacyStateChildIndices() {
+		throw new IllegalStateException("Utility Class");
+	}
 }

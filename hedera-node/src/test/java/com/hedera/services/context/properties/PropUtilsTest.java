@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class PropUtilsTest {
+class PropUtilsTest {
 	@Test
 	void throwsInConstructor() {
 		assertThrows(IllegalStateException.class, PropUtils::new);

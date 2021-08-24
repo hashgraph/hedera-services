@@ -1,4 +1,4 @@
-package com.hedera.services.state.org;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
@@ -38,4 +38,8 @@ public class StateChildIndices {
 
 	public static final int NUM_PRE_0160_CHILDREN = 10;
 	public static final int NUM_POST_0160_CHILDREN = 11;
+
+	StateChildIndices() {
+		throw new IllegalStateException("Utility Class");
+	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.state.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,6 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.org.LegacyStateChildIndices;
-import com.hedera.services.state.org.StateChildIndices;
-import com.hedera.services.state.org.StateVersions;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
@@ -45,7 +42,10 @@ public class Release0170Migration {
 
 	private static TreeCopier treeCopier = MerkleCopy::copyTreeToLocation;
 
-	public static void moveLargeFcmsToBinaryRoutePositions(ServicesState initializingState, int deserializedVersion) {
+	public static void moveLargeFcmsToBinaryRoutePositions(
+			final ServicesState initializingState,
+			final int deserializedVersion
+	) {
 		log.info("Migrating from 0.16.0 state (version {} to {})",
 				deserializedVersion, StateVersions.RELEASE_0170_VERSION);
 
@@ -72,7 +72,7 @@ public class Release0170Migration {
 				LegacyStateChildIndices.TOKEN_ASSOCIATIONS, StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
-	static void setTreeCopier(TreeCopier treeCopier) {
+	static void setTreeCopier(final TreeCopier treeCopier) {
 		Release0170Migration.treeCopier = treeCopier;
 	}
 

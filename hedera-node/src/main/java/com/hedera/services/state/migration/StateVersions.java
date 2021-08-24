@@ -1,4 +1,4 @@
-package com.hedera.services.state.org;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
@@ -41,4 +41,8 @@ public class StateVersions {
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0120_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0170_VERSION;
+
+	StateVersions() {
+		throw new IllegalStateException("Utility Class");
+	}
 }
