@@ -65,6 +65,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -145,7 +146,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				)
 				.then(
 						cryptoTransfer(moving(1, tokenB).between(treasury, firstUser))
-								.hasKnownStatus(FAIL_INVALID)
+								.hasKnownStatus(NO_REMAINING_AUTO_ASSOCIATIONS)
 								.via("failedTransfer"),
 						getAccountInfo(firstUser)
 								.hasAlreadyUsedAutomaticAssociations(1)
