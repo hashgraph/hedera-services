@@ -132,7 +132,7 @@ class TokenCreateTransitionLogicTest {
 	private Token newProvisionalToken;
 	private Token denom;
 	private final Id denomId = Id.fromGrpcToken(IdUtils.asToken("17.71.77"));
-	private final Id modelTreasuryId = IdUtils.asModelId("1.2.3");
+	private final Id modelTreasuryId = IdUtils.asModelId("1.2.4");
 	private Account modelTreasury;
 	private final Id autoRenewId = IdUtils.asModelId("12.13.12");
 	private CopyOnWriteIds treasuryAssociatedTokenIds;
@@ -788,6 +788,29 @@ class TokenCreateTransitionLogicTest {
 												.setDenominatingTokenId(denomId.asGrpcToken())
 												.build()))
 						.setFeeCollectorAccountId(feeCollector)
+						.build(),
+				CustomFee.newBuilder()
+						.setRoyaltyFee(RoyaltyFee.newBuilder()
+								.setExchangeValueFraction(Fraction.newBuilder()
+										.setNumerator(5)
+										.setDenominator(10)
+										.build())
+								.setFallbackFee(FixedFee.newBuilder()
+										.setAmount(10)
+										.setDenominatingTokenId(Id.DEFAULT.asGrpcToken())
+										.build()))
+						.setFeeCollectorAccountId(feeCollector)
+						.build(),
+				CustomFee.newBuilder()
+						.setRoyaltyFee(RoyaltyFee.newBuilder()
+								.setExchangeValueFraction(Fraction.newBuilder()
+										.setNumerator(5)
+										.setDenominator(10)
+										.build())
+								.setFallbackFee(FixedFee.newBuilder()
+										.setAmount(10)
+										.build()))
+						.setFeeCollectorAccountId(hbarFeeCollector)
 						.build()
 				));
 		tokenCreateTxn = builder.build();
@@ -809,6 +832,10 @@ class TokenCreateTransitionLogicTest {
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
 		given(treasuryRelMock.getAccount()).willReturn(modelTreasury);
 		given(treasuryRelMock.getToken()).willReturn(newProvisionalToken);
+		final var feeCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(feeCollectorModel)).willReturn(feeCollectorRel);
+		given(feeCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(feeCollectorRel.getAccount()).willReturn(feeCollectorModel);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
 
 		subject.doStateTransition();
