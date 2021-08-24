@@ -23,11 +23,9 @@ package com.hedera.services.sysfiles.validation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 public class ErrorCodeUtils {
 	private static final String EXC_MSG_TPL = "%s :: %s";
-	private static final Pattern ERROR_CODE_PATTERN = Pattern.compile("(.*) :: .*");
 
 	ErrorCodeUtils() {
 		throw new IllegalStateException("Utility Class");
@@ -38,10 +36,10 @@ public class ErrorCodeUtils {
 	}
 
 	public static Optional<ResponseCodeEnum> errorFrom(final String exceptionMsg) {
-		final var matcher = ERROR_CODE_PATTERN.matcher(exceptionMsg);
-		if (!matcher.matches()) {
+		final var parts = exceptionMsg.split(" :: ");
+		if (parts.length != 2) {
 			return Optional.empty();
 		}
-		return Optional.of(ResponseCodeEnum.valueOf(matcher.group(1)));
+		return Optional.of(ResponseCodeEnum.valueOf(parts[0]));
 	}
 }
