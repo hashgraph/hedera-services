@@ -57,9 +57,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
 
 /**
  * Provides a managing store for Scheduled Entities.
- *
- * @author Daniel Ivanov
- * @author Michael Tinker
  */
 @Singleton
 public class HederaScheduleStore extends HederaStore implements ScheduleStore {

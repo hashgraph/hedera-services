@@ -35,7 +35,6 @@ import static java.util.Collections.EMPTY_LIST;
  * be unchecked. This makes it easier to read and understand client code.
  *
  * @param <T> the type of error report that may be contained in this summary.
- * @author Michael Tinker
  */
 public class SigningOrderResult<T> {
 	private final List<JKey> orderedKeys;

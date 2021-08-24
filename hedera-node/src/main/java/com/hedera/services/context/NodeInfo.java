@@ -59,6 +59,17 @@ public class NodeInfo {
 	}
 
 	/**
+	 * For a staked node, validates presence of a self-account in the address book.
+	 *
+	 * @throws IllegalStateException if the node is staked but has no account
+	 */
+	public void validateSelfAccountIfStaked() {
+		if (!isSelfZeroStake() && !hasSelfAccount()) {
+			throw new IllegalStateException("Node is not zero-stake, but has no known account");
+		}
+	}
+
+	/**
 	 * Returns true if the node in the address book at the given index (casting
 	 * the argument as an {@code int}) has zero stake.
 	 *

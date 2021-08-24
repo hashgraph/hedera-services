@@ -21,6 +21,8 @@ package com.hedera.services.context.init;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.files.FileUpdateInterceptor;
+import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -32,6 +34,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Set;
+
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -39,6 +43,8 @@ import static org.mockito.Mockito.verify;
 class StateInitializationFlowTest {
 	@Mock
 	private Hash hash;
+	@Mock
+	private HederaFs hfs;
 	@Mock
 	private RunningHash runningHash;
 	@Mock
@@ -49,12 +55,20 @@ class StateInitializationFlowTest {
 	private StateAccessor stateAccessor;
 	@Mock
 	private RecordStreamManager recordStreamManager;
+	@Mock
+	private FileUpdateInterceptor aFileInterceptor;
+	@Mock
+	private FileUpdateInterceptor bFileInterceptor;
 
 	private StateInitializationFlow subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateInitializationFlow(stateAccessor, recordStreamManager);
+		subject = new StateInitializationFlow(
+				hfs,
+				recordStreamManager,
+				stateAccessor,
+				Set.of(aFileInterceptor, bFileInterceptor));
 	}
 
 	@Test
@@ -69,5 +83,7 @@ class StateInitializationFlowTest {
 		// then:
 		verify(stateAccessor).updateFrom(activeState);
 		verify(recordStreamManager).setInitialHash(hash);
+		verify(hfs).register(aFileInterceptor);
+		verify(hfs).register(bFileInterceptor);
 	}
 }

@@ -40,9 +40,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
  * delegating the lookup to its superclass instance up to {@code maxRetries} times,
  * with {@code Pause} invocations that increase by {@code retryWaitIncrementMs} between
  * each failed lookup.
- *
- * @author Nathan Klick
- * @author Michael Tinker
  */
 public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	private static final int DEFAULT_MAX_RETRIES = 10;

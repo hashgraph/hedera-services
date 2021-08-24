@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.ContextModule;
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.annotations.BootstrapProps;
 import com.hedera.services.context.init.ServicesInitFlow;
@@ -34,6 +35,7 @@ import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
 import com.hedera.services.grpc.GrpcModule;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -50,6 +52,7 @@ import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,6 +64,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
+import com.hedera.services.txns.network.UpdateHelper;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -71,6 +75,8 @@ import com.swirlds.common.Address;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import dagger.BindsInstance;
 import dagger.Component;
 
@@ -118,7 +124,11 @@ public interface ServicesApp {
 	Pause pause();
 	NodeId nodeId();
 	Address nodeAddress();
+	Platform platform();
+	NodeInfo nodeInfo();
 	SystemExits systemExits();
+	GrpcStarter grpcStarter();
+	UpdateHelper updateHelper();
 	LedgerValidator ledgerValidator();
 	ServicesNodeType nodeType();
 	AccountsExporter accountsExporter();
@@ -130,8 +140,11 @@ public interface ServicesApp {
 	SystemFilesManager sysFilesManager();
 	ServicesStatsManager statsManager();
 	CurrentPlatformStatus platformStatus();
+	SystemAccountsCreator sysAccountsCreator();
 	Optional<PrintStream> consoleOut();
+	ReconnectCompleteListener reconnectListener();
 	InvalidSignedStateListener issListener();
+	Supplier<NotificationEngine> notificationEngine();
 	BackingStore<AccountID, MerkleAccount> backingAccounts();
 
 	@Component.Builder

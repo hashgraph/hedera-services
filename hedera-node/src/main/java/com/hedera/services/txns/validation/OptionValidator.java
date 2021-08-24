@@ -40,8 +40,6 @@ import java.time.Instant;
 
 /**
  * Defines a type able to divine the validity of various options that can appear in HAPI gRPC transactions.
- *
- * @author Michael Tinker
  */
 
 public interface OptionValidator {

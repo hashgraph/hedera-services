@@ -21,6 +21,8 @@ package com.hedera.services.context.init;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.files.FileUpdateInterceptor;
+import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.stream.RecordStreamManager;
@@ -29,21 +31,28 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Set;
 
 @Singleton
 public class StateInitializationFlow {
 	private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
 
+	private final HederaFs hfs;
 	private final StateAccessor stateAccessor;
 	private final RecordStreamManager recordStreamManager;
+	private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
 
 	@Inject
 	public StateInitializationFlow(
+			HederaFs hfs,
+			RecordStreamManager recordStreamManager,
 			@WorkingState StateAccessor stateAccessor,
-			RecordStreamManager recordStreamManager
+			Set<FileUpdateInterceptor> fileUpdateInterceptors
 	) {
+		this.hfs = hfs;
 		this.stateAccessor = stateAccessor;
 		this.recordStreamManager = recordStreamManager;
+		this.fileUpdateInterceptors = fileUpdateInterceptors;
 	}
 
 	public void runWith(ServicesState activeState) {
@@ -53,5 +62,8 @@ public class StateInitializationFlow {
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);
 		log.info("Record running hash initialized");
+
+		fileUpdateInterceptors.forEach(hfs::register);
+		log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
 	}
 }

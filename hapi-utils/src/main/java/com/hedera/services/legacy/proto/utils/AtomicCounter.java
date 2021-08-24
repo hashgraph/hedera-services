@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Implements an atomic counter.
- *
- * @author hua
  */
 public class AtomicCounter {
 

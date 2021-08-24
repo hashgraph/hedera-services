@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 /**
  * Defines a simple type that is able to recover metadata about signing activity
  * associated with a given Hedera cryptocurrency account.
- *
- * @author Michael Tinker
  */
 public interface AccountSigMetaLookup {
 	SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);

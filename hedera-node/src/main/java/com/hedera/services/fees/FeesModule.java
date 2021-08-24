@@ -26,23 +26,17 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
-import com.hedera.services.fees.calculation.contract.txns.ContractCallResourceUsage;
-import com.hedera.services.fees.calculation.contract.txns.ContractCreateResourceUsage;
-import com.hedera.services.fees.calculation.contract.txns.ContractDeleteResourceUsage;
-import com.hedera.services.fees.calculation.contract.txns.ContractUpdateResourceUsage;
-import com.hedera.services.fees.calculation.crypto.queries.GetAccountInfoResourceUsage;
-import com.hedera.services.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
+import com.hedera.services.fees.calculation.consensus.ConsensusFeesModule;
+import com.hedera.services.fees.calculation.contract.ContractFeesModule;
+import com.hedera.services.fees.calculation.crypto.CryptoFeesModule;
 import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
-import com.hedera.services.fees.calculation.crypto.txns.CryptoCreateResourceUsage;
-import com.hedera.services.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
-import com.hedera.services.fees.calculation.crypto.txns.CryptoUpdateResourceUsage;
-import com.hedera.services.fees.calculation.file.queries.GetFileContentsResourceUsage;
-import com.hedera.services.fees.calculation.file.queries.GetFileInfoResourceUsage;
+import com.hedera.services.fees.calculation.file.FileFeesModule;
+import com.hedera.services.fees.calculation.file.txns.SystemDeleteFileResourceUsage;
+import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResourceUsage;
 import com.hedera.services.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
+import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
+import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.TokenFeesModule;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import dagger.Binds;
@@ -55,15 +49,18 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
-@Module
+@Module(includes = {
+		FileFeesModule.class,
+		TokenFeesModule.class,
+		CryptoFeesModule.class,
+		ContractFeesModule.class,
+		ScheduleFeesModule.class,
+		ConsensusFeesModule.class,
+})
 public abstract class FeesModule {
 	@Binds
 	@Singleton
@@ -99,101 +96,29 @@ public abstract class FeesModule {
 	}
 
 	@Provides
-	@ElementsIntoSet
-	public static Set<QueryResourceUsageEstimator> provideCryptoQueryEstimators(
-			GetAccountInfoResourceUsage getAccountInfoResourceUsage,
-			GetAccountRecordsResourceUsage getAccountRecordsResourceUsage
+	@IntoMap
+	@FunctionKey(Freeze)
+	public static List<TxnResourceUsageEstimator> provideFreezeEstimator(
+			FreezeResourceUsage freezeResourceUsage
 	) {
-		return Set.of(getAccountInfoResourceUsage, getAccountRecordsResourceUsage);
-	}
-
-	@Provides
-	@ElementsIntoSet
-	public static Set<QueryResourceUsageEstimator> provideFileQueryEstimators(
-			GetFileInfoResourceUsage getFileInfoResourceUsage,
-			GetFileContentsResourceUsage getFileContentsResourceUsage
-	) {
-		return Set.of(getFileInfoResourceUsage, getFileContentsResourceUsage);
-	}
-
-	@Provides
-	@ElementsIntoSet
-	public static Set<QueryResourceUsageEstimator> provideConsensusQueryEstimators(
-			GetTopicInfoResourceUsage getTopicInfoResourceUsage
-	) {
-		return Set.of(getTopicInfoResourceUsage);
-	}
-
-	@Provides
-	@ElementsIntoSet
-	public static Set<QueryResourceUsageEstimator> provideContractQueryEstimators(
-			GetBytecodeResourceUsage getBytecodeResourceUsage,
-			GetContractInfoResourceUsage getContractInfoResourceUsage,
-			GetContractRecordsResourceUsage getContractRecordsResourceUsage
-	) {
-		return Set.of(getBytecodeResourceUsage, getContractInfoResourceUsage, getContractRecordsResourceUsage);
+		return List.of(freezeResourceUsage);
 	}
 
 	@Provides
 	@IntoMap
-	@FunctionKey(CryptoCreate)
-	public static List<TxnResourceUsageEstimator> provideCryptoCreateEstimator(
-			CryptoCreateResourceUsage cryptoCreateResourceUsage
+	@FunctionKey(SystemDelete)
+	public static List<TxnResourceUsageEstimator> provideSystemDeleteEstimator(
+			SystemDeleteFileResourceUsage systemDeleteFileResourceUsage
 	) {
-		return List.of(cryptoCreateResourceUsage);
+		return List.of(systemDeleteFileResourceUsage);
 	}
 
 	@Provides
 	@IntoMap
-	@FunctionKey(CryptoDelete)
-	public static List<TxnResourceUsageEstimator> provideCryptoDeleteEstimator(
-			CryptoDeleteResourceUsage cryptoDeleteResourceUsage
+	@FunctionKey(SystemUndelete)
+	public static List<TxnResourceUsageEstimator> provideSystemUndeleteEstimator(
+			SystemUndeleteFileResourceUsage systemUndeleteFileResourceUsage
 	) {
-		return List.of(cryptoDeleteResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(CryptoUpdate)
-	public static List<TxnResourceUsageEstimator> provideCryptoUpdateEstimator(
-			CryptoUpdateResourceUsage cryptoUpdateResourceUsage
-	) {
-		return List.of(cryptoUpdateResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(ContractCall)
-	public static List<TxnResourceUsageEstimator> provideContractCallUpdateEstimator(
-			ContractCallResourceUsage contractCallResourceUsage
-	) {
-		return List.of(contractCallResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(ContractCreate)
-	public static List<TxnResourceUsageEstimator> provideContractCreateUpdateEstimator(
-			ContractCreateResourceUsage contractCreateResourceUsage
-	) {
-		return List.of(contractCreateResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(ContractDelete)
-	public static List<TxnResourceUsageEstimator> provideContractDeleteEstimator(
-			ContractDeleteResourceUsage contractDeleteResourceUsage
-	) {
-		return List.of(contractDeleteResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(ContractUpdate)
-	public static List<TxnResourceUsageEstimator> provideContractUpdateEstimator(
-			ContractUpdateResourceUsage contractUpdateResourceUsage
-	) {
-		return List.of(contractUpdateResourceUsage);
+		return List.of(systemUndeleteFileResourceUsage);
 	}
 }

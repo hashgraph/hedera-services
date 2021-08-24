@@ -20,7 +20,7 @@ package com.hedera.services.state.org;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ServicesApp;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.common.Archivable;
 import com.swirlds.common.FastCopyable;
@@ -31,14 +31,14 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
  * handling of consensus transactions, but is not hashed or serialized.
  */
 public class StateMetadata implements FastCopyable, Archivable {
-	private final ServicesContext ctx;
+	private final ServicesApp app;
 
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
 
-	public StateMetadata(ServicesContext ctx) {
-		this.ctx = ctx;
+	public StateMetadata(ServicesApp app) {
+		this.app = app;
 		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
 		this.uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 		this.uniqueTreasuryOwnershipAssociations = new FCOneToManyRelation<>();
@@ -48,7 +48,7 @@ public class StateMetadata implements FastCopyable, Archivable {
 		this.uniqueTokenAssociations = that.uniqueTokenAssociations.copy();
 		this.uniqueOwnershipAssociations = that.uniqueOwnershipAssociations.copy();
 		this.uniqueTreasuryOwnershipAssociations = that.uniqueTreasuryOwnershipAssociations.copy();
-		this.ctx = that.ctx;
+		this.app = that.app;
 	}
 
 	@Override
@@ -68,8 +68,8 @@ public class StateMetadata implements FastCopyable, Archivable {
 		uniqueTreasuryOwnershipAssociations.release();
 	}
 
-	public ServicesContext getCtx() {
-		return ctx;
+	public ServicesApp app() {
+		return app;
 	}
 
 	public FCOneToManyRelation<PermHashInteger, Long> getUniqueTokenAssociations() {

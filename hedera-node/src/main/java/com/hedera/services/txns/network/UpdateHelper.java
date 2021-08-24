@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.metadata.lookups;
+package com.hedera.services.txns.network;
 
 /*-
  * ‌
@@ -20,13 +20,26 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.sigs.metadata.FileSigningMetadata;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.services.legacy.handler.FreezeHandler;
+import com.swirlds.common.NodeId;
 
-/**
- * Defines a simple type that is able to recover metadata about signing activity
- * associated with a given Hedera file.
- */
-public interface FileSigMetaLookup {
-	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
+public class UpdateHelper {
+	private final NodeId nodeId;
+	private final FreezeHandler delegate;
+
+	@Inject
+	public UpdateHelper(NodeId nodeId, FreezeHandler delegate) {
+		this.nodeId = nodeId;
+		this.delegate = delegate;
+	}
+
+	public void runIfAppropriateOn(String os) {
+		if (nodeId.getId() == 0 || !os.contains("mac")) {
+			delegate.handleUpdateFeature();
+		}
+	}
 }

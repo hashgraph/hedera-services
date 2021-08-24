@@ -41,8 +41,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 /**
  * Defines a type able to look up metadata associated to the signing activities
  * of any Hedera entity (account, smart contract, file, topic, or token).
- *
- * @author Michael Tinker
  */
 public interface SigMetadataLookup {
 	Function<
