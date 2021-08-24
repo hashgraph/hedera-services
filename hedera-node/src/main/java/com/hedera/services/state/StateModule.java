@@ -45,6 +45,7 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
+import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -66,13 +67,17 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.JvmSystemExits;
+import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import dagger.Binds;
@@ -81,6 +86,8 @@ import dagger.Provides;
 
 import javax.inject.Singleton;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -91,6 +98,14 @@ import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 @Module(includes = HandleLogicModule.class)
 public abstract class StateModule {
+	@Binds
+	@Singleton
+	public abstract SystemExits bindSystemExits(JvmSystemExits systemExits);
+
+	@Binds
+	@Singleton
+	public abstract ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+
 	@Binds
 	@Singleton
 	public abstract LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
@@ -123,6 +138,18 @@ public abstract class StateModule {
 	@Singleton
 	public static Pause providePause() {
 		return SleepingPause.SLEEPING_PAUSE;
+	}
+
+	@Provides
+	@Singleton
+	public static Supplier<Charset> provideNativeCharset() {
+		return Charset::defaultCharset;
+	}
+
+	@Provides
+	@Singleton
+	public static NamedDigestFactory provideDigestFactory() {
+		return MessageDigest::getInstance;
 	}
 
 	@Provides

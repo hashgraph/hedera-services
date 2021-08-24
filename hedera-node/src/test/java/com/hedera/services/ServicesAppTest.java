@@ -43,6 +43,7 @@ import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.JvmSystemExits;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -136,6 +137,7 @@ class ServicesAppTest {
 		assertThat(subject.statsManager(), instanceOf(ServicesStatsManager.class));
 		assertThat(subject.issListener(), instanceOf(IssListener.class));
 		assertThat(subject.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
+		assertThat(subject.systemExits(), instanceOf(JvmSystemExits.class));
 		// and:
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);

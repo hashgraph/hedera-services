@@ -49,7 +49,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 class HapiOpPermissionsTest {
 	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private HapiOpPermissions subject;
 

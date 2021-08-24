@@ -63,7 +63,9 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
+import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
+import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.InvalidSignedStateListener;
@@ -74,7 +76,9 @@ import dagger.Component;
 
 import javax.inject.Singleton;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Singleton
 @Component(modules = {
@@ -114,12 +118,15 @@ public interface ServicesApp {
 	Pause pause();
 	NodeId nodeId();
 	Address nodeAddress();
+	SystemExits systemExits();
 	LedgerValidator ledgerValidator();
 	ServicesNodeType nodeType();
 	AccountsExporter accountsExporter();
 	BalancesExporter balancesExporter();
+	Supplier<Charset> nativeCharset();
 	NetworkCtxManager networkCtxManager();
 	GrpcServerManager grpc();
+	NamedDigestFactory digestFactory();
 	SystemFilesManager sysFilesManager();
 	ServicesStatsManager statsManager();
 	CurrentPlatformStatus platformStatus();
