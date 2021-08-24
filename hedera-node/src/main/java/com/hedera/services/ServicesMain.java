@@ -39,18 +39,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.swirlds.common.PlatformStatus.ACTIVE;
 import static com.swirlds.common.PlatformStatus.MAINTENANCE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Drives the major state transitions for a Hedera Node via its {@link ServicesContext}.
@@ -66,6 +65,8 @@ public class ServicesMain implements SwirldMain {
 	Supplier<Charset> defaultCharset = Charset::defaultCharset;
 	ServicesContext ctx;
 
+	private ServicesApp app;
+
 	/**
 	 * Convenience launcher for dev env.
 	 *
@@ -78,26 +79,30 @@ public class ServicesMain implements SwirldMain {
 
 	@Override
 	public void init(Platform ignore, NodeId nodeId) {
-		if (!StandardCharsets.UTF_8.equals(defaultCharset.get())) {
-			log.error("Default charset is {}, not UTF-8! Exiting.", defaultCharset.get());
-			systemExits.fail(1);
+		app = APPS.getInit(nodeId.getId());
+
+		if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
+			try {
+				Locale.setDefault(Locale.US);
+				appDrivenInit();
+			} catch (Exception e) {
+				log.error("Fatal precondition violated in HederaNode#{}!", app.nodeId(), e);
+				app.systemExits().fail(1);
+			}
+		} else {
+			app.systemExits().fail(1);
 		}
-		try {
-			MessageDigest.getInstance("SHA-384");
-		} catch (NoSuchAlgorithmException nsae) {
-			log.error(nsae);
-			systemExits.fail(1);
-		}
-		try {
-			Locale.setDefault(Locale.US);
-			ctx = CONTEXTS.lookup(nodeId.getId());
-			logInfoWithConsoleEcho(String.format(START_INIT_MSG_PATTERN, ctx.id().getId()));
-			contextDrivenInit();
-			log.info("init finished.");
-		} catch (IllegalStateException ise) {
-			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
-			systemExits.fail(1);
-		}
+
+//		try {
+//			Locale.setDefault(Locale.US);
+//			ctx = CONTEXTS.lookup(nodeId.getId());
+//			logInfoWithConsoleEcho(String.format(START_INIT_MSG_PATTERN, ctx.id().getId()));
+//			contextDrivenInit();
+//			log.info("init finished.");
+//		} catch (IllegalStateException ise) {
+//			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
+//			systemExits.fail(1);
+//		}
 	}
 
 	@Override
@@ -146,9 +151,12 @@ public class ServicesMain implements SwirldMain {
 		/* No-op. */
 	}
 
-	private void contextDrivenInit() {
+	private void appDrivenInit() {
 		initSystemFiles();
-		log.info("System files rationalized.");
+		log.info("System files rationalized");
+	}
+
+	private void contextDrivenInit() {
 		createSystemAccountsIfNeeded();
 		log.info("System accounts initialized.");
 		validateLedgerState();
@@ -181,20 +189,16 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void initSystemFiles() {
-		try {
-			ctx.systemFilesManager().createAddressBookIfMissing();
-			ctx.systemFilesManager().createNodeDetailsIfMissing();
-			ctx.systemFilesManager().createUpdateZipFileIfMissing();
-			ctx.networkCtxManager().loadObservableSysFilesIfNeeded();
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not initialize system files!", e);
-		}
+		final var sysFilesManager = app.sysFilesManager();
+		sysFilesManager.createAddressBookIfMissing();
+		sysFilesManager.createNodeDetailsIfMissing();
+		sysFilesManager.createUpdateZipFileIfMissing();
+		app.networkCtxManager().loadObservableSysFilesIfNeeded();
 	}
 
 	private void createSystemAccountsIfNeeded() {
 		try {
 			ctx.systemAccountsCreator().ensureSystemAccounts(ctx.backingAccounts(), ctx.addressBook());
-			ctx.pause().forMs(SUGGESTED_POST_CREATION_PAUSE_MS);
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not create system accounts!", e);
 		}
@@ -250,13 +254,6 @@ public class ServicesMain implements SwirldMain {
 		}
 	}
 
-	private void logInfoWithConsoleEcho(String s) {
-		log.info(s);
-		if (ctx.consoleOut() != null) {
-			ctx.consoleOut().println(s);
-		}
-	}
-
 	private void registerIssListener() {
 		ctx.platform().addSignedStateListener(
 				new IssListener(new FcmDump(), ctx.issEventInfo(), ctx.nodeLocalProperties()));
@@ -265,14 +262,41 @@ public class ServicesMain implements SwirldMain {
 	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {
 		notificationEngine.register(ReconnectCompleteListener.class,
 				(notification) -> {
-					log.info(String.format("Notification Received: Reconnect Finished." +
-									" consensusTimestamp: %s, roundNumber: %s, sequence: %s",
+					log.info(
+							"Notification Received: Reconnect Finished. " +
+									"consensusTimestamp: {}, roundNumber: {}, sequence: {}",
 							notification.getConsensusTimestamp(),
 							notification.getRoundNumber(),
-							notification.getSequence()));
+							notification.getSequence());
 					ServicesState state = (ServicesState) notification.getState();
 					state.logSummary();
 					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
 				});
+	}
+
+	private boolean defaultCharsetIsCorrect() {
+		final var charset = app.nativeCharset().get();
+		if (!UTF_8.equals(charset)) {
+			log.error("Default charset is {}, not UTF-8", charset);
+			return false;
+		}
+		return true;
+	}
+
+	private boolean sha384DigestIsAvailable() {
+		try {
+			app.digestFactory().forName("SHA-384");
+			return true;
+		} catch (NoSuchAlgorithmException nsae) {
+			log.error(nsae);
+			return false;
+		}
+	}
+
+	private void logInfoWithConsoleEcho(String s) {
+		log.info(s);
+		if (ctx.consoleOut() != null) {
+			ctx.consoleOut().println(s);
+		}
 	}
 }
