@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +39,13 @@ import java.util.function.Function;
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetTokenNftInfosAnswer.TOKEN_NFT_INFOS_CTX_KEY;
 
+@Singleton
 public class GetTokenNftInfosResourceUsage implements QueryResourceUsageEstimator {
-
 	static Function<Query, TokenGetNftInfosUsage> factory = TokenGetNftInfosUsage::newEstimate;
+
+	@Inject
+	public GetTokenNftInfosResourceUsage() {
+	}
 
 	@Override
 	public boolean applicableTo(Query query) {

@@ -22,7 +22,6 @@ package com.hedera.services.state.exports;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -117,7 +116,7 @@ class SignedStateBalancesExporterTest {
 
 	private MerkleAccount thisNodeAccount, anotherNodeAccount, firstNonNodeAccount, secondNonNodeAccount, deletedAccount;
 
-	private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
+	private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
 
 	private Instant now = Instant.now();
 
@@ -130,7 +129,6 @@ class SignedStateBalancesExporterTest {
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private SignedStateBalancesExporter subject;
 
@@ -394,6 +392,15 @@ class SignedStateBalancesExporterTest {
 	@Test
 	void initsAsExpected() {
 		assertEquals(ledgerFloat, subject.expectedFloat);
+	}
+
+	@Test
+	void neverTimeToExportIfNotConfigured() {
+		// given:
+		dynamicProperties.turnOffBalancesExport();
+
+		// expect:
+		assertFalse(subject.isTimeToExport(now));
 	}
 
 	@Test

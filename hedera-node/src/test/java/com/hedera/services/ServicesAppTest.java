@@ -21,10 +21,12 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.sigs.ExpansionHelper;
@@ -35,13 +37,16 @@ import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.forensics.IssListener;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.txns.network.UpdateHelper;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.JvmSystemExits;
 import com.swirlds.common.Address;
@@ -138,6 +143,12 @@ class ServicesAppTest {
 		assertThat(subject.issListener(), instanceOf(IssListener.class));
 		assertThat(subject.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
 		assertThat(subject.systemExits(), instanceOf(JvmSystemExits.class));
+		assertThat(subject.sysAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
+		assertThat(subject.nodeInfo(), instanceOf(NodeInfo.class));
+		assertThat(subject.platform(), instanceOf(Platform.class));
+		assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
+		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
+		assertThat(subject.updateHelper(), instanceOf(UpdateHelper.class));
 		// and:
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);

@@ -34,7 +34,6 @@ import java.util.List;
  * on the level of detail required by the type of error report.
  *
  * @param <T> the type of error report this factory produces.
- * @author Michael Tinker
  * @see SigRequirements
  */
 public interface SigningOrderResultFactory<T> {

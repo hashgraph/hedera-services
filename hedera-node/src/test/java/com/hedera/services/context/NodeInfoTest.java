@@ -37,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -128,6 +129,30 @@ class NodeInfoTest {
 
 		// then:
 		assertTrue(logCaptor.errorLogs().isEmpty());
+	}
+
+	@Test
+	void throwsIseOnStakedNodeNoAccount() {
+		givenEntryWithMemoAndStake(nodeId, "LULZ", 1L);
+
+		// expect:
+		assertThrows(IllegalStateException.class, subject::validateSelfAccountIfStaked);
+	}
+
+	@Test
+	void doesntThrowIseOnZeroStakeNodeNoAccount() {
+		givenEntryWithMemoAndStake(nodeId, "LULZ", 0L);
+
+		// expect:
+		assertDoesNotThrow(subject::validateSelfAccountIfStaked);
+	}
+
+	@Test
+	void doesntThrowIseOnStakedNodeWithAccount() {
+		givenEntryWithMemoAndStake(nodeId, "0.0.3", 1L);
+
+		// expect:
+		assertDoesNotThrow(subject::validateSelfAccountIfStaked);
 	}
 
 	@Test

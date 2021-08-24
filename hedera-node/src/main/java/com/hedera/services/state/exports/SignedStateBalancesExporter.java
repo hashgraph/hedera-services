@@ -123,6 +123,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
+		if (!dynamicProperties.shouldExportBalances()) {
+			return false;
+		}
 		if (nextExportTime == null) {
 			nextExportTime = getFirstExportTime(now, exportPeriod);
 		}

@@ -39,8 +39,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 /**
  * Defines a type able to look up metadata associated to the signing activities
  * of any Hedera entity (account, smart contract, or file).
- *
- * @author Michael Tinker
  */
 public class SafeLookupResult<T> {
 	private final Optional<T> metadata;

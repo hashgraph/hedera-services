@@ -23,7 +23,6 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -51,8 +50,6 @@ class EntityAutoRenewalTest {
 
 	@Mock
 	private SequenceNumber seqNo;
-	@Mock
-	private ServicesContext ctx;
 	@Mock
 	private RenewalProcess renewalProcess;
 	@Mock

@@ -20,7 +20,7 @@ package com.hedera.services.state.org;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ServicesApp;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class StateMetadataTest {
 	@Mock
-	private ServicesContext ctx;
+	private ServicesApp app;
 	@Mock
 	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
 	@Mock
@@ -49,7 +49,7 @@ class StateMetadataTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateMetadata(ctx);
+		subject = new StateMetadata(app);
 	}
 
 	@Test
@@ -64,7 +64,7 @@ class StateMetadataTest {
 		final var copy = subject.copy();
 
 		// then:
-		assertSame(ctx, copy.getCtx());
+		assertSame(app, copy.app());
 		// and:
 		assertSame(uniqueTokenAssociations, copy.getUniqueTokenAssociations());
 		verify(uniqueTokenAssociations).copy();
@@ -109,7 +109,7 @@ class StateMetadataTest {
 	@Test
 	void gettersWork() {
 		// expect:
-		assertSame(ctx, subject.getCtx());
+		assertSame(app, subject.app());
 		assertNotNull(subject.getUniqueTokenAssociations());
 		assertNotNull(subject.getUniqueOwnershipAssociations());
 		assertNotNull(subject.getUniqueTreasuryOwnershipAssociations());

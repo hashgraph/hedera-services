@@ -21,15 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.init.InitializationFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.ScreenedNodeFileProps;
-import com.hedera.services.context.properties.ScreenedSysFileProps;
-import com.hedera.services.context.properties.StandardizedPropertySources;
-import com.hedera.services.sigs.ExpansionHelper;
-import com.hedera.services.sigs.HederaToPlatformSigOps;
-import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -70,9 +62,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.function.BiConsumer;
 
-import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -86,11 +77,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
-	private static HashLogger hashLogger = new HashLogger();
-	private static ExpansionHelper expansionHelper = HederaToPlatformSigOps::expandIn;
-	private static BiConsumer<ServicesState, ServicesContext> contextInitializer = InitializationFlow::accept;
-
-	/* Will only be over-written when Platform deserializes a legacy version of the state */
+	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = StateVersions.CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
@@ -195,18 +182,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			SwirldDualState dualState
 	) {
 		if (isConsensus) {
-			final var ctx = metadata.getCtx();
-			ctx.setDualState(dualState);
-			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
+			final var app = metadata.app();
+			app.dualStateAccessor().setDualState(dualState);
+			app.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
 		}
 	}
 
 	@Override
 	public void expandSignatures(SwirldTransaction platformTxn) {
 		try {
-			final var ctx = metadata.getCtx();
-			final var accessor = ctx.expandHandleSpan().track(platformTxn);
-			expansionHelper.expandIn(accessor, ctx.lookupRetryingKeyOrder(), accessor.getPkToSigsFn());
+			final var app = metadata.app();
+			final var accessor = app.expandHandleSpan().track(platformTxn);
+			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {
@@ -226,7 +213,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.getCtx().update(that);
+			metadata.app().workingState().updateFrom(that);
 		}
 
 		return that;
@@ -258,7 +245,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public void logSummary() {
-		hashLogger.logHashesFor(this);
+		if (metadata != null) {
+			metadata.app().hashLogger().logHashesFor(this);
+		}
 		log.info(networkCtx());
 	}
 
@@ -322,27 +311,29 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
 		diskFs().checkHashesAgainstDiskContents();
 
-		final var selfId = platform.getSelfId();
-		ServicesContext ctx;
-		if (CONTEXTS.isInitialized(selfId.getId())) {
-			ctx = CONTEXTS.lookup(selfId.getId());
+		final var selfId = platform.getSelfId().getId();
+
+		ServicesApp app;
+		if (APPS.includes(selfId)) {
+			app = APPS.get(selfId);
 		} else {
-			final var properties = new StandardizedPropertySources(
-					bootstrapProps,
-					new ScreenedSysFileProps(),
-					new ScreenedNodeFileProps());
-			ctx = new ServicesContext(selfId, platform, this, properties);
+			app = DaggerServicesApp.builder()
+					.bootstrapProps(bootstrapProps)
+					.initialState(this)
+					.platform(platform)
+					.selfId(selfId)
+					.build();
+			APPS.save(selfId, app);
 		}
-		metadata = new StateMetadata(ctx);
 
-		contextInitializer.accept(this, ctx);
-		CONTEXTS.store(ctx);
+		metadata = new StateMetadata(app);
+		app.initializationFlow().runWith(this);
+
 		logSummary();
-
 		log.info("  --> Context initialized accordingly on Services node {}", selfId);
 	}
 
-	private void createGenesisChildren(AddressBook addressBook, long seqStart) {
+	void createGenesisChildren(AddressBook addressBook, long seqStart) {
 		setChild(StateChildIndices.UNIQUE_TOKENS, new FCMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 		setChild(StateChildIndices.TOPICS, new FCMap<>());
@@ -371,18 +362,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	/* --- Only used by unit tests --- */
-	static void setContextInitializer(BiConsumer<ServicesState, ServicesContext> contextInitializer) {
-		ServicesState.contextInitializer = contextInitializer;
-	}
-
-	static void setHashLogger(HashLogger hashLogger) {
-		ServicesState.hashLogger = hashLogger;
-	}
-
-	static void setExpansionHelper(ExpansionHelper expansionHelper) {
-		ServicesState.expansionHelper = expansionHelper;
-	}
-
 	StateMetadata getMetadata() {
 		return metadata;
 	}

@@ -2248,7 +2248,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 02047-M-MigrateToDagger2
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

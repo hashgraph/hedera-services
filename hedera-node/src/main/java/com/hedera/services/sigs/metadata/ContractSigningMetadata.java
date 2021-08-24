@@ -25,8 +25,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 
 /**
  * Represents metadata about the signing activities of a Hedera smart contract.
- *
- * @author Michael Tinker
  */
 public class ContractSigningMetadata {
 	private final JKey key;

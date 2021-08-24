@@ -69,9 +69,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var freezeTxn = txnCtx.accessor().getTxn();
-
 			var legacyRecord = delegate.perform(freezeTxn, txnCtx.consensusTime());
-
 			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);

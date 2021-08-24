@@ -28,7 +28,15 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class CreateTopicResourceUsage implements TxnResourceUsageEstimator {
+    @Inject
+    public CreateTopicResourceUsage() {
+    }
+
     @Override
     public boolean applicableTo(TransactionBody txn) {
         return txn.hasConsensusCreateTopic();

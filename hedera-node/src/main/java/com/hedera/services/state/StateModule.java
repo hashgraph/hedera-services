@@ -77,6 +77,8 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -150,6 +152,12 @@ public abstract class StateModule {
 	@Singleton
 	public static NamedDigestFactory provideDigestFactory() {
 		return MessageDigest::getInstance;
+	}
+
+	@Provides
+	@Singleton
+	public static Supplier<NotificationEngine> provideNotificationEngine() {
+		return NotificationFactory::getEngine;
 	}
 
 	@Provides

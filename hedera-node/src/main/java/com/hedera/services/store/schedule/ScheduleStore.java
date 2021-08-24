@@ -35,9 +35,6 @@ import java.util.function.Consumer;
 
 /**
  * Defines a type able to manage Scheduled entities.
- *
- * @author Daniel Ivanov
- * @author Michael Tinker
  */
 public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
