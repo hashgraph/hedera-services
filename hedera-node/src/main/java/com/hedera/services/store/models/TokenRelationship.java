@@ -190,8 +190,8 @@ public class TokenRelationship {
 	}
 
 	/* The object methods below are only overridden to improve
-		readability of unit tests; model objects are not used in hash-based
-		collections, so the performance of these methods doesn't matter. */
+	readability of unit tests; model objects are not used in hash-based
+	collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

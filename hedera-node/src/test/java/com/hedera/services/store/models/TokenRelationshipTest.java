@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +70,15 @@ class TokenRelationshipTest {
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void automaticAssociationSetterWorks() {
+		subject.setAutomaticAssociation(false);
+		assertFalse(subject.isAutomaticAssociation());
+
+		subject.setAutomaticAssociation(true);
+		assertTrue(subject.isAutomaticAssociation());
 	}
 
 	@Test
