@@ -140,9 +140,10 @@ class AccountTest {
 		final var firstNewToken = new Token(new Id(0, 0, 888));
 		final var secondNewToken = new Token(new Id(0, 0, 999));
 		final var expectedFinalTokens = "[0.0.666, 0.0.777, 0.0.888, 0.0.999]";
+		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 
 		// when:
-		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, false);
+		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, true);
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
@@ -164,8 +165,7 @@ class AccountTest {
 		subject.initBalance(100L);
 		subject.setOwnedNfts(1L);
 		subject.incrementOwnedNfts();
-		subject.setMaxAutomaticAssociations(123);
-		subject.setAlreadyUsedAutomaticAssociations(12);
+		subject.setAutoAssociationMetadata(account.getAutoAssociationMetadata());
 
 		// when:
 		var actualResult = subject.equals(account);
@@ -177,7 +177,8 @@ class AccountTest {
 		// and:
 		assertEquals(account.getAssociatedTokens(), subject.getAssociatedTokens());
 		// and:
-		assertEquals(account.getAutoAssociationMetadata(), subject.getAutoAssociationMetadata());
+		assertEquals(account.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
+		assertEquals(account.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutomaticAssociations());
 		assertTrue(actualResult);
 	}
 

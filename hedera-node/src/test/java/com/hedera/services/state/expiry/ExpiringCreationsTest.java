@@ -243,6 +243,24 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
+	void validateBuildExpiringRecordWithNewTokenAssociationsFromCtx() {
+		setUpForExpiringRecordBuilder();
+		given(ctx.narratedCharging()).willReturn(narratedCharging);
+		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
+
+		given(ctx.ledger()).willReturn(ledger);
+		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
+		given(ctx.ledger().netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
+
+		ExpirableTxnRecord.Builder builder =
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged, newTokenAssociations);
+		ExpirableTxnRecord actualRecord = builder.build();
+
+		assertEquals(customFeesCharged.get(0), actualRecord.getCustomFeesCharged().get(0));
+		assertEquals(newTokenAssociations.get(0), actualRecord.getNewTokenAssociations().get(0));
+	}
+
+	@Test
 	void canOverrideTokenTransfers() {
 		//given:
 		setUpForExpiringRecordBuilder();
