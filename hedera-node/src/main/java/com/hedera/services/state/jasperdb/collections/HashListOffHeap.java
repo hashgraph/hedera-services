@@ -67,12 +67,12 @@ public final class HashListOffHeap implements HashList {
      * @return The ByteBuffer contain that index
      */
     private ByteBuffer getBuffer(long index) {
-        int bufferIndex = (int) (index / (long) HashListOffHeap.NUM_HASHES_PER_CHUNK);
+        int bufferIndex = (int) (index / (long) NUM_HASHES_PER_CHUNK);
         ByteBuffer buffer = data.get(bufferIndex).slice();
-        int subIndex = (int) (index % HashListOffHeap.NUM_HASHES_PER_CHUNK);
-        int offset = HashListOffHeap.HASH_SIZE * subIndex;
+        int subIndex = (int) (index % NUM_HASHES_PER_CHUNK);
+        int offset = HASH_SIZE * subIndex;
         buffer.position(offset);
-        buffer.limit(offset + HashListOffHeap.HASH_SIZE);
+        buffer.limit(offset + HASH_SIZE);
         return buffer;
     }
 

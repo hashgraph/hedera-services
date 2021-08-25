@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * It uses memory from 0 to the highest index used. If your use case starts at a high minimum index then this will
  * waste a load of ram.
  *
+ * This has to use sun.misc.Unsafe to be able to do atomic compare and swap on off heap memory.
+ *
  * It is thread safe for concurrent access.
  */
 public final class LongListOffHeap implements LongList {
@@ -94,7 +96,7 @@ public final class LongListOffHeap implements LongList {
         // get native memory address
         final long chunkPointer = address(chunk);
         final int subIndexBytes = subIndex * Long.BYTES;
-        boundsCheck(subIndexBytes, Long.BYTES);
+        boundsCheck(subIndexBytes);
         UNSAFE.putLongVolatile(null, chunkPointer + subIndexBytes,value);
     }
 
@@ -114,7 +116,7 @@ public final class LongListOffHeap implements LongList {
         // get native memory address
         final long chunkPointer = address(chunk);
         final int subIndexBytes = subIndex * Long.BYTES;
-        boundsCheck(subIndexBytes, Long.BYTES);
+        boundsCheck(subIndexBytes);
         return UNSAFE.compareAndSwapLong(null, chunkPointer + subIndexBytes, oldValue, newValue);
     }
 
@@ -160,12 +162,11 @@ public final class LongListOffHeap implements LongList {
      * Check if the given range is within the memory bounds of a memory chunk
      *
      * @param index the offset index from start of memory chunk
-     * @param length the number of bytes to check
      */
-    private void boundsCheck(final long index, final long length) {
-        final long resultingPosition = index + length;
-        if (index < 0 || length < 0 || resultingPosition > memoryChunkSize) {
-            throw new IndexOutOfBoundsException("index=" + index + " length=" + length + " capacity=" + memoryChunkSize);
+    private void boundsCheck(final long index) {
+        final long resultingPosition = index + (long) Long.BYTES;
+        if (index < 0 || resultingPosition > memoryChunkSize) {
+            throw new IndexOutOfBoundsException("index=" + index + " length=" + (long) Long.BYTES + " capacity=" + memoryChunkSize);
         }
     }
 

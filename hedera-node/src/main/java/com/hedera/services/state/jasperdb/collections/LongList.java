@@ -13,10 +13,11 @@ import java.util.stream.StreamSupport;
  * functionality very simple we can implement a bunch of optimizations to allow cheep high concurrency without locks.
  */
 public interface LongList {
+
     /**
-     * Load hash for a node with given index
+     * Get the long with given index
      *
-     * @param index         the index to get hash for
+     * @param index         the index to get long for
      * @param notFoundValue the value to use if not found
      * @return loaded long or -1 if long is not stored
      */
@@ -136,5 +137,4 @@ public interface LongList {
             throw new IllegalStateException();
         }
     }
-
 }

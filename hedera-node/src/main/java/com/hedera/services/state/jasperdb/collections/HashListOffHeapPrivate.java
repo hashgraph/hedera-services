@@ -2,7 +2,6 @@ package com.hedera.services.state.jasperdb.collections;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -14,7 +13,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An off-heap in memory store of hashes, it stores them in 46Mb direct buffers and adds buffers as needed
+ *
+ * TODO This differs from HashListOffHeap in the way it interacts with Hash objects. It uses a VarHandle to directly access
+ * TODO internal byte[] in hash object in attempt to get better performance. This can be replaces with a method on Hash class
+ * TODO but will need a change in Swirlds.
  */
+@SuppressWarnings("unused")
 public final class HashListOffHeapPrivate implements HashList {
     /** The size in bytes for a serialized hash. TODO this should be better defined somewhere */
     private static final int HASH_SIZE =  DigestType.SHA_384.digestLength();
@@ -26,9 +30,12 @@ public final class HashListOffHeapPrivate implements HashList {
     private final List<ByteBuffer> data = new CopyOnWriteArrayList<>();
     /** The current maximum index that can be stored */
     private final AtomicLong maxIndexThatCanBeStored = new AtomicLong(-1);
-
+    /** VarHandle to the hash byte[] field in the Hash class */
     private final VarHandle hashField;
 
+    /**
+     * Create a new HashListOffHeapPrivate
+     */
     public HashListOffHeapPrivate() {
         try {
             hashField = MethodHandles
@@ -96,7 +103,7 @@ public final class HashListOffHeapPrivate implements HashList {
      */
     @Override
     public String toString() {
-        return "OffHeapHashList{" +
+        return "HashListOffHeapPrivate{" +
                 "num of chunks=" + data.size() +
                 ", maxIndexThatCanBeStored=" + maxIndexThatCanBeStored +
                 '}';
