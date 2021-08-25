@@ -102,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
@@ -111,6 +112,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -821,6 +823,24 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(true);
 
 		final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
+	void changingOwnerRejectsFromFreezeAndKYC() {
+		given(tokenRelsLedger.get(treasuryNft, IS_FROZEN)).willReturn(true);
+
+		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
+
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
+	void changingOwnerRejectsToFreezeAndKYC() {
+		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(true);
+
+		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
 		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
 	}
@@ -1546,6 +1566,25 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void rejectsFeesUpdatedWithMissingFeeCollector() {
+		given(accountsLedger.exists(feeCollector)).willReturn(false);
+		final var op = updateFeeScheduleWith();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, result);
+	}
+
+	@Test
+	void rejectsFeesUpdatedWithIncompleteFee() {
+		final var op = updateFeeScheduleWithIncompleteFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEE_NOT_FULLY_SPECIFIED, result);
+	}
+
+	@Test
 	void canOnlyUpdateTokensWithFeeScheduleKey() {
 		given(token.hasFeeScheduleKey()).willReturn(false);
 		final var op = updateFeeScheduleWith();
@@ -1787,6 +1826,13 @@ class HederaTokenStoreTest {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(grpcCustomFees);
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithIncompleteFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(builder.withOnlyFeeCollector()));
 		return op.build();
 	}
 
