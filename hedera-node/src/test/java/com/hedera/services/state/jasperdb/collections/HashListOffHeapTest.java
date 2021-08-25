@@ -8,12 +8,12 @@ import static com.hedera.services.state.jasperdb.JasperDbTestUtils.toLongsString
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class OffHeapHashListTest {
+public class HashListOffHeapTest {
 
     @Test
     public void createDataAndCheck() {
         try {
-            OffHeapHashList hashStore = new OffHeapHashList();
+            HashListOffHeap hashStore = new HashListOffHeap();
             for (int i = 0; i < 3_000_000; i++) {
                 hashStore.put(i, hash(i));
             }

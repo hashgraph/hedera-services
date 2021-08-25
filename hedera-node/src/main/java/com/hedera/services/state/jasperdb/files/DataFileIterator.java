@@ -32,6 +32,12 @@ public final class DataFileIterator implements AutoCloseable {
     private long nextDataItemByteOffset = 0;
     private long key;
 
+    /**
+     * Create a new DataFileIterator on a existing file.
+     *
+     * @param path The path to the file to read.
+     * @param metadata The metadata read from the file.
+     */
     public DataFileIterator(Path path, DataFileMetadata metadata) {
         try {
             this.path = path;

@@ -1,6 +1,6 @@
 package lmdb;
 
-import com.hedera.services.state.jasperdb.collections.OffHeapHashList;
+import com.hedera.services.state.jasperdb.collections.HashListOffHeap;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
@@ -31,7 +31,7 @@ public final class VFCDataSourceLmdbHashesRam<K extends VirtualKey, V extends Vi
     private final Dbi<ByteBuffer> leafPathToKeyMap;
     private final Dbi<ByteBuffer> leafKeyToPathMap;
     private final Dbi<ByteBuffer> leafKeyToValueMap;
-    private final OffHeapHashList hashStore = new OffHeapHashList();
+    private final HashListOffHeap hashStore = new HashListOffHeap();
 
     private final ThreadLocal<ByteBuffer> pathBytes;
     private final ThreadLocal<ByteBuffer> hashData;

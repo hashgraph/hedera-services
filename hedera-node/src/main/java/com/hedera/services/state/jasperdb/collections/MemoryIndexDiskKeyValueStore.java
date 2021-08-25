@@ -16,8 +16,12 @@ import java.util.function.Function;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
 
 /**
- * A map like data store with long keys. The index is in RAM and the data is stored in a set o files on disk. It assumes
- * that the keys long start at 0. If they do not then a lot of RAM will be wasted.
+ * A specialized map like data store with long keys. The index is in RAM and the data is stored in a set o files on
+ * disk. It assumes that the keys long start at 0. If they do not then a lot of RAM will be wasted.
+ *
+ * There is an assumption that keys are a contiguous range of incrementing numbers. This allows easy deletion during
+ * merging by accepting any key/value with a key outside this range is not needed any more. This design comes from being
+ * used where keys are leaf paths in a binary tree.
  */
 public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     /**
@@ -28,7 +32,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
      * Off-heap index mapping, it uses our key as the index within the list and the value is the dataLocation in
      * fileCollection where the key/value pair is stored.
      */
-    private final OffHeapLongList index = new OffHeapLongList();
+    private final LongListOffHeap index = new LongListOffHeap();
     /** On disk set of DataFiles that contain our key/value pairs */
     private final DataFileCollection fileCollection;
     /**
@@ -92,7 +96,6 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
                 }),
                 filesToMerge);
         if (ENABLE_DEEP_VALIDATION) endChecking(filesToMerge);
-
         System.out.printf("Merged %,.2f Gb files in %,.2f seconds\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
                 totalSize,
                 (double) (System.currentTimeMillis() - START) / 1000d,
@@ -102,29 +105,55 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         );
     }
 
+    /**
+     * Start a writing session ready for calls to put()
+     *
+     * @throws IOException If there was a problem opening a writing session
+     */
     public void startWriting() throws IOException {
         fileCollection.startWriting();
     }
 
+    /**
+     * Put a value into this store, you must be in a writing session started with startWriting()
+     *
+     * @param key The key to store value for
+     * @param data Buffer containing the data's value, it should have its position and limit set correctly
+     * @throws IOException If there was a problem write key/value to the store
+     */
     public void put(long key, ByteBuffer data) throws IOException {
         long dataLocation = fileCollection.storeData(key,data);
         // store data location in index
         index.put(key,dataLocation);
     }
 
+    /**
+     * End s a session of writing
+     *
+     * @param minimumValidKey The minimum valid key at this point in time.
+     * @param maximumValidKey The maximum valid key at this point in time.
+     * @throws IOException If there was a problem closing the writing session
+     */
     public void endWriting(long minimumValidKey, long maximumValidKey) throws IOException {
         fileCollection.endWriting(minimumValidKey, maximumValidKey);
     }
 
+    /**
+     * Get a value by reading it from disk and storing it into toReadDataInto
+     *
+     * @param key The key to find and read value for
+     * @param toReadDataInto The buffer to fill with value
+     * @return true if the value was read or false if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
     public boolean get(long key, ByteBuffer toReadDataInto) throws IOException {
         // check if out of range
         if (key < fileCollection.getMinimumValidKey() || key > fileCollection.getMaximumValidKey()) {
-            if (key != 0) {
+            if (ENABLE_DEEP_VALIDATION && key != 0) {
                 System.err.println("get path ["+key+"] that is not in index any more."+
                         ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
                         ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
                 );
-                new Exception().printStackTrace();
             }
             return false;
         }
@@ -132,7 +161,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         long dataLocation = index.get(key, 0);
         // check if found
         if (dataLocation == 0) {
-            if (key != 0) {
+            if (ENABLE_DEEP_VALIDATION && key != 0) {
                 System.err.println("get path ["+key+"] that is not in index any more."+
                         ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
                         ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
@@ -152,6 +181,11 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         }
     }
 
+    /**
+     * Close all files being used
+     *
+     * @throws IOException If there was a problem closing files
+     */
     public void close() throws IOException {
         fileCollection.close();
     }
@@ -159,14 +193,18 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     // =================================================================================================================
     // Debugging Tools, these can be enabled with the ENABLE_DEEP_VALIDATION flag above
 
+    /** Debugging store of misses that failed compare and swap */
     private LongObjectHashMap<CasMiss> casMisses;
+    /** Debugging store of how many keys were checked */
     private LongLongHashMap keyCount;
 
+    /** Start collecting data for debugging integrity checking */
     private void startChecking() {
         casMisses = new LongObjectHashMap<>();
         keyCount = new LongLongHashMap();
     }
 
+    /** Check a item for debugging integrity checking */
     private void checkItem(boolean casSuccessful, long key, long oldValue, long newValue) {
         if (!casSuccessful) {
             CasMiss miss = new CasMiss(
@@ -179,6 +217,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         keyCount.addToValue(key,1);
     }
 
+    /** End debugging integrity checking and print results */
     private void endChecking(List<DataFileReader> filesToMerge) {
         // set of merged files
         SortedSet<Integer> mergedFileIds = new TreeSet<>();
@@ -202,20 +241,15 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
                 }
             }
         }
-
-//        for (var missEntry : casMisses.entrySet()) {
-//            System.out.println("MISS "+
-//                    "from = " + dataLocationToString(missEntry.getKey().fileMovingFrom)+
-//                    ", to = "+dataLocationToString(missEntry.getKey().fileMovingTo)+
-//                    ", current = "+dataLocationToString(missEntry.getKey().currentFile)+
-//                    ", count = "+missEntry.getValue());
-//        }
-//        keyCount.forEachKeyValue((key, count) -> {
-//            if(count > 1) System.out.println("OH DEAR! Key ["+key+"] has count of ["+count+"]");
-//        });
-//        printDataLinkValidation(index,allFilesAfter);
+        keyCount.forEachKeyValue((key, count) -> {
+            if(count > 1) System.out.println("OH DEAR! Key ["+key+"] has count of ["+count+"]");
+        });
+        printDataLinkValidation(index,fileCollection.getAllFullyWrittenFiles());
     }
 
+    /**
+     * POJO for storing a miss when compare and swap fails
+     */
     private static class CasMiss {
         public long fileMovingFrom;
         public long fileMovingTo;

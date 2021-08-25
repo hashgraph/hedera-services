@@ -12,6 +12,7 @@ import java.util.stream.Stream;
  *
  * @param <T> the type of the IndexedObject we are collecting
  */
+@SuppressWarnings("unused")
 public class ImmutableIndexedObjectListUsingMap<T extends IndexedObject> extends ImmutableIndexedObjectList<T> {
 
     /** Array of data objects, index in array is offset by firstObjectIndex */

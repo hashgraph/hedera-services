@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class OffHeapLongListTest {
-    public static final OffHeapLongList longList = new OffHeapLongList();
+public class LongListHeapTest {
+    public static final LongList longList = new LongListHeap();
 
     @Test
     @Order(1)
@@ -47,21 +47,6 @@ public class OffHeapLongListTest {
         assertNotEquals(42,longList.get(13_000_123, 0),"putIfEqual put when it should have not");
         longList.putIfEqual(13_000_123, 13_000_123,42);
         assertEquals(42,longList.get(13_000_123, 0),"putIfEqual did not put when it should have");
-    }
-
-    @Test
-    @Order(5)
-    public void testClear() throws Exception {
-        // check the first 10 million are correct
-        checkRange(0,10_000_000,false);
-        printIndexes(999_999,1_000_000,1_000_001,1_000_999,1_001_000,1_001_001);
-        // now clear the 1000 at offset 1 million, should be in a single memory chunk
-        longList.clear(1_000_000,1000);
-        // now check the data
-        printIndexes(999_999,1_000_000,1_000_001,1_000_999,1_001_000,1_001_001);
-        checkRange(0,1_000_000,false);
-        checkRange(1_000_000,1_001_000,true);
-        checkRange(1_001_000,10_000_000,false);
     }
 
     private void printIndexes(long ... indexes) {

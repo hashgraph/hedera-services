@@ -13,6 +13,7 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZ
 /**
  * DataFile's metadata that is stored in the data file's footer
  */
+@SuppressWarnings("unused")
 public final class DataFileMetadata {
     /** The file format version, this is ready in case we need to change file format and support multiple versions. */
     private final int fileFormatVersion;
@@ -23,12 +24,46 @@ public final class DataFileMetadata {
     private final int dataItemValueSize;
     /** The number of data items the file contains */
     private final long dataItemCount;
+    /** The file index, in a data file collection */
     private final int index;
+    /**
+     * The creation data of this file, this is critical as it is used when merging two files to know which files data
+     * is newer.
+     */
     private final Instant creationDate;
-    private final long minimumValidKey; // minLeafPath at the time this file was created (assuming key==path)
-    private final long maximumValidKey; // maxLeafPath at the time this file was created (assuming key==path)
+    /**
+     * The minimum valid key at the time this file was created. It is assumed valid keys are in a range from min to max
+     * that changes over time. In most of our use cases this key is a leaf path so this is minLeafPath in that case.
+     */
+    private final long minimumValidKey;
+    /** The maximum valid key at the time this file was created. */
+    private final long maximumValidKey;
+    /**
+     * True if this file was created as part of a merge, false if it was fresh data. This can be used during merging to
+     * select if we want to include previously merged files in a merging round or not.
+     */
     private final boolean isMergeFile;
 
+    /**
+     * Create a new DataFileMetadata with complete set of data
+     *
+     * @param fileFormatVersion The file format version, this is ready in case we need to change file format and support
+     *                          multiple versions.
+     * @param dataItemValueSize The data item value's size, if the file contains fixed size data items then this is the
+     *                          size in bytes of those items. If the file contains variable size items then this is the
+     *                          constant VARIABLE_DATA_SIZE.
+     * @param dataItemCount The number of data items the file contains
+     * @param index The file index, in a data file collection
+     * @param creationDate The creation data of this file, this is critical as it is used when merging two files to know
+     *                     which files data is newer.
+     * @param minimumValidKey The minimum valid key at the time this file was created. It is assumed valid keys are in a
+     *                        range from min to max that changes over time. In most of our use cases this key is a leaf
+     *                        path so this is minLeafPath in that case.
+     * @param maximumValidKey The maximum valid key at the time this file was created.
+     * @param isMergeFile True if this file was created as part of a merge, false if it was fresh data. This can be used
+     *                    during merging to select if we want to include previously merged files in a merging round or
+     *                    not.
+     */
     public DataFileMetadata(int fileFormatVersion, int dataItemValueSize, long dataItemCount, int index,
                             Instant creationDate, long minimumValidKey, long maximumValidKey,
                             boolean isMergeFile) {
@@ -42,6 +77,12 @@ public final class DataFileMetadata {
         this.isMergeFile = isMergeFile;
     }
 
+    /**
+     * Create a DataFileMetadata loading it from a existing file
+     *
+     * @param file The file to read metadata from
+     * @throws IOException If there was a problem reading metadata footer from the file
+     */
     public DataFileMetadata(Path file) throws IOException {
         try (SeekableByteChannel channel = Files.newByteChannel(file, StandardOpenOption.READ)) {
             // read footer from end of file
@@ -61,6 +102,11 @@ public final class DataFileMetadata {
         }
     }
 
+    /**
+     * Get the metadata in the form of a one page 4k bytebuffer ready to write at the end of a file.
+     *
+     * @return ByteBuffer containing the metadata
+     */
     public ByteBuffer getFooterForWriting() {
         ByteBuffer buf = ByteBuffer.allocate(FOOTER_SIZE);
         buf.putInt(this.fileFormatVersion);

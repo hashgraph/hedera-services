@@ -1,6 +1,6 @@
 package com.hedera.services.state.jasperdb.files;
 
-import com.hedera.services.state.jasperdb.collections.OffHeapLongList;
+import com.hedera.services.state.jasperdb.collections.LongListOffHeap;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -30,6 +30,7 @@ public class DataFileCommon {
      *
      * TODO: At the moment there is no support for file indexes to wrap so if we write data more often than once a
      * TODO: minute or longer than 30 years this will have to be fixed.
+     * TODO: Thinking maybe this should be 36 which would give us a max file size of 128Gb but give us 85 years of one file every 10 seconds.
      */
     static final int DATA_ITEM_OFFSET_BITS = 40;
     /** The maximum size a data file can be, 1Tb with DATA_ITEM_OFFSET_BITS = 40 */
@@ -176,7 +177,7 @@ public class DataFileCommon {
     /**
      * print debug info showing if all links in index are still valid
      */
-    public static void printDataLinkValidation(OffHeapLongList index, List<DataFileReader> fileList) {
+    public static void printDataLinkValidation(LongListOffHeap index, List<DataFileReader> fileList) {
         System.out.println("DataFileCommon.printDataLinkValidation");
         SortedSet<Integer> validFileIds = new TreeSet<>();
         for(var file:fileList) validFileIds.add(file.getMetadata().getIndex());

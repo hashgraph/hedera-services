@@ -46,12 +46,12 @@ public final class DataFileWriter {
     /** The path to the lock file for data file we are writing */
     private final Path lockFilePath;
     /**
-     * The current offset in bytes from teh beginning of the file where we are writing. This is very important as it
+     * Position in the file to write next. The current offset in bytes from the beginning of the file where we are writing. This is very important as it
      * used to calculate the data location pointers to the data items we have written.
      */
-    private long writePosition = 0; // position in the file to write next
-    /** Count of the number of data items we have written to be stored in footer metadata */
-    private long dataItemCount = 0; // number if items already written to the file
+    private long writePosition = 0;
+    /** Count of the number of data items we have written so far. Ready to be stored in footer metadata */
+    private long dataItemCount = 0;
 
     /**
      * Create a new data file in the given directory, in append mode. Puts the object into "writing" mode

@@ -36,7 +36,7 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> exten
             dataArray = null;
         } else {
             // sort the incoming data just in case it was not sorted
-            Collections.sort(objects, Comparator.comparingInt(IndexedObject::getIndex));
+            objects.sort(Comparator.comparingInt(IndexedObject::getIndex));
             // now get first and last indexes
             firstIndexOffset = objects.get(0).getIndex();
             final int lastIndex = objects.get(objects.size()-1).getIndex();
@@ -44,7 +44,6 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> exten
             // create new array
             //noinspection unchecked
             dataArray = (T[]) Array.newInstance(objects.get(0).getClass(), range);
-                    SortedMap < Integer, T > map = new TreeMap<>();
             for (var object : objects) {
                 if (object != null) dataArray[object.getIndex()-firstIndexOffset] = object;
             }
