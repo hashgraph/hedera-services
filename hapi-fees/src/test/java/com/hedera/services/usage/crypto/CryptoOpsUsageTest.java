@@ -142,12 +142,31 @@ class CryptoOpsUsageTest {
 	}
 
 	@Test
-	void estimatesCreationAsExpected() {
-		givenCreationOp();
+	void estimatesCreationWithMaxAutoAssociationsAsExpected() {
+		givenCreationOpWithMaxAutoAssociaitons();
 		// and given:
 		long rb = basicReprBytes() + INT_SIZE;
 		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 				+ 2 * LONG_SIZE + BOOL_SIZE + INT_SIZE;
+
+		// when:
+		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, estimate);
+		// and:
+		verify(base).addBpt(bytesUsed);
+		verify(base).addRbs(rb * secs);
+		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void estimatesCreationWithOutMaxAutoAssociationsAsExpected() {
+		givenCreationOpWithOutMaxAutoAssociaitons();
+		// and given:
+		long rb = basicReprBytes();
+		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+				+ 2 * LONG_SIZE + BOOL_SIZE;
 
 		// when:
 		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
@@ -183,7 +202,7 @@ class CryptoOpsUsageTest {
 	}
 
 	@Test
-	void estimatesUpdateAsExpected() {
+	void estimatesUpdateWithAutoAssociationsAsExpected() {
 		// setup:
 		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
 		long oldExpiry = expiry - 1_234L;
@@ -202,7 +221,7 @@ class CryptoOpsUsageTest {
 						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
 						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 
-		givenUpdateOp();
+		givenUpdateOpWithMaxAutoAssociations();
 		// and:
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(oldExpiry)
@@ -222,6 +241,46 @@ class CryptoOpsUsageTest {
 		verify(base).addRbs(newRbs - oldRbs);
 	}
 
+	@Test
+	void estimatesUpdateWithOutAutoAssociationsAsExpected() {
+		// setup:
+		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
+		long oldExpiry = expiry - 1_234L;
+		boolean oldWasUsingProxy = false;
+		String oldMemo = "Lettuce";
+		// and:
+		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+		// and:
+		long oldRbs = (oldExpiry - now) *
+				(oldMemo.length() + getAccountKeyStorageSize(oldKey)
+						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
+						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
+		// and:
+		long newRbs = (expiry - now) *
+				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE
+						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
+						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
+
+		givenUpdateOpWithOutMaxAutoAssociations();
+		// and:
+		var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(oldExpiry)
+				.setCurrentMemo(oldMemo)
+				.setCurrentKey(oldKey)
+				.setCurrentlyHasProxy(oldWasUsingProxy)
+				.setCurrentNumTokenRels(numTokenRels)
+				.build();
+
+		// when:
+		var estimate = subject.cryptoUpdateUsage(txn, sigUsage, ctx);
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, estimate);
+		// and:
+		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
+		verify(base).addRbs(newRbs - oldRbs);
+	}
+
 	private long basicReprBytes() {
 		return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 				/* The proxy account */
@@ -230,7 +289,17 @@ class CryptoOpsUsageTest {
 				+ FeeBuilder.getAccountKeyStorageSize(key);
 	}
 
-	private void givenUpdateOp() {
+	private void givenUpdateOpWithOutMaxAutoAssociations() {
+		updateOp = CryptoUpdateTransactionBody.newBuilder()
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+				.setProxyAccountID(proxy)
+				.setMemo(StringValue.newBuilder().setValue(memo))
+				.setKey(key)
+				.build();
+		setUpdateTxn();
+	}
+
+	private void givenUpdateOpWithMaxAutoAssociations() {
 		updateOp = CryptoUpdateTransactionBody.newBuilder()
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setProxyAccountID(proxy)
@@ -250,7 +319,17 @@ class CryptoOpsUsageTest {
 				.build();
 	}
 
-	private void givenCreationOp() {
+	private void givenCreationOpWithOutMaxAutoAssociaitons() {
+		creationOp = CryptoCreateTransactionBody.newBuilder()
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build())
+				.setMemo(memo)
+				.setKey(key)
+				.build();
+		setCreateTxn();
+	}
+
+	private void givenCreationOpWithMaxAutoAssociaitons() {
 		creationOp = CryptoCreateTransactionBody.newBuilder()
 				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build())
