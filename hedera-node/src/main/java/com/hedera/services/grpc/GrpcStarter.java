@@ -86,7 +86,7 @@ public class GrpcStarter {
 		}
 	}
 
-	private void logInfoWithConsoleEcho(String s) {
+	void logInfoWithConsoleEcho(String s) {
 		log.info(s);
 		console.ifPresent(c -> c.println(s));
 	}

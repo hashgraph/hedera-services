@@ -69,14 +69,13 @@ class GrpcStarterTest {
 
 	@BeforeEach
 	void setUp() {
-		given(nodeLocalProperties.port()).willReturn(port);
-		given(nodeLocalProperties.tlsPort()).willReturn(tlsPort);
-
 		subject = new GrpcStarter(nodeId, nodeAddress, grpcServerManager, nodeLocalProperties, Optional.of(console));
 	}
 
 	@Test
 	void startsUnconditionallyWithProdProfile() {
+		withPorts();
+
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.PROD);
 
 		// when:
@@ -92,6 +91,8 @@ class GrpcStarterTest {
 
 	@Test
 	void weirdlyJustWarnsOnTestProfile() {
+		withPorts();
+
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.TEST);
 
 		// when:
@@ -106,6 +107,8 @@ class GrpcStarterTest {
 
 	@Test
 	void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
+		withPorts();
+
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
 		given(nodeAddress.getMemo()).willReturn("0.0.3");
@@ -120,6 +123,8 @@ class GrpcStarterTest {
 
 	@Test
 	void doesntStartIfNotBlessedOnDevProfileOnlyOneNodeListening() {
+		withPorts();
+
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
 		given(nodeAddress.getMemo()).willReturn("0.0.4");
@@ -134,6 +139,8 @@ class GrpcStarterTest {
 
 	@Test
 	void startsIfBlessedOnDevProfileAllNodesListening() {
+		withPorts();
+
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeAddress.getMemo()).willReturn("0.0.3");
 		given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
@@ -147,6 +154,8 @@ class GrpcStarterTest {
 
 	@Test
 	void startsIfUnblessedOnDevProfileAllNodesListening() {
+		withPorts();
+
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeAddress.getMemo()).willReturn("0.0.4");
 		given(nodeAddress.getPortExternalIpv4()).willReturn(50666);
@@ -157,5 +166,20 @@ class GrpcStarterTest {
 
 		// then:
 		verify(grpcServerManager).start(intThat(i -> i == port + 666), intThat(j -> j == tlsPort + 666), any());
+	}
+
+	@Test
+	void logWithConsoleInfoWorks() {
+		// when:
+		subject.logInfoWithConsoleEcho("NOOP");
+
+		// then:
+		assertThat(logCaptor.infoLogs(), contains(equalTo("NOOP")));
+		verify(console).println("NOOP");
+	}
+
+	private void withPorts() {
+		given(nodeLocalProperties.port()).willReturn(port);
+		given(nodeLocalProperties.tlsPort()).willReturn(tlsPort);
 	}
 }
