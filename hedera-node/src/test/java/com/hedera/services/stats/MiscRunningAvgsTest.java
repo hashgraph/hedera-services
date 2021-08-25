@@ -20,46 +20,40 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class MiscRunningAvgsTest {
-	double halfLife = 10.0;
-	Platform platform;
+	private static final double halfLife = 10.0;
 
-	RunningAvgFactory factory;
-	NodeLocalProperties properties;
+	private Platform platform;
+	private RunningAvgFactory factory;
 
-	MiscRunningAvgs subject;
+	private MiscRunningAvgs subject;
 
 	@BeforeEach
 	void setup() throws Exception {
 		factory = mock(RunningAvgFactory.class);
 		platform = mock(Platform.class);
 
-		properties = mock(NodeLocalProperties.class);
-		given(properties.statsRunningAvgHalfLifeSecs()).willReturn(halfLife);
-
-		subject = new MiscRunningAvgs(factory, properties);
+		subject = new MiscRunningAvgs(factory, halfLife);
 	}
 
 	@Test
 	void registersExpectedStatEntries() {
-		// setup:
-		StatEntry retries = mock(StatEntry.class);
-		StatEntry waitMs = mock(StatEntry.class);
-		StatEntry queueSizes = mock(StatEntry.class);
-		StatEntry submitSizes = mock(StatEntry.class);
-
+		final var retries = mock(StatEntry.class);
+		final var waitMs = mock(StatEntry.class);
+		final var queueSizes = mock(StatEntry.class);
+		final var submitSizes = mock(StatEntry.class);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES::equals),
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES::equals),
@@ -77,10 +71,8 @@ class MiscRunningAvgsTest {
 				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				argThat(subject.handledSubmitMessageSize::equals))).willReturn(submitSizes);
 
-		// when:
 		subject.registerWith(platform);
 
-		// then:
 		verify(platform).addAppStatEntry(retries);
 		verify(platform).addAppStatEntry(waitMs);
 		verify(platform).addAppStatEntry(queueSizes);
@@ -89,31 +81,33 @@ class MiscRunningAvgsTest {
 
 	@Test
 	void recordsToExpectedAvgs() {
-		// setup:
-		StatsRunningAverage retries = mock(StatsRunningAverage.class);
-		StatsRunningAverage waitMs = mock(StatsRunningAverage.class);
-		StatsRunningAverage queueSize = mock(StatsRunningAverage.class);
-		StatsRunningAverage submitSizes = mock(StatsRunningAverage.class);
-		StatsRunningAverage hashS = mock(StatsRunningAverage.class);
-		// and:
+		final var retries = mock(StatsRunningAverage.class);
+		final var waitMs = mock(StatsRunningAverage.class);
+		final var queueSize = mock(StatsRunningAverage.class);
+		final var submitSizes = mock(StatsRunningAverage.class);
+		final var hashS = mock(StatsRunningAverage.class);
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
 		subject.writeQueueSizeRecordStream = queueSize;
 		subject.hashQueueSizeRecordStream = hashS;
 
-		// when:
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
 		subject.recordHandledSubmitMessageSize(3);
 		subject.writeQueueSizeRecordStream(4);
 		subject.hashQueueSizeRecordStream(5);
 
-		// then:
 		verify(retries).recordValue(1.0);
 		verify(waitMs).recordValue(2.0);
 		verify(submitSizes).recordValue(3.0);
 		verify(queueSize).recordValue(4.0);
 		verify(hashS).recordValue(5);
+	}
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, MiscRunningAvgs.Names::new);
+		assertThrows(IllegalStateException.class, MiscRunningAvgs.Descriptions::new);
 	}
 }

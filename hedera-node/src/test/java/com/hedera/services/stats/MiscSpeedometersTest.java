@@ -20,13 +20,13 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsSpeedometer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -34,33 +34,27 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class MiscSpeedometersTest {
-	double halfLife = 10.0;
-	Platform platform;
+	private static final double halfLife = 10.0;
 
-	SpeedometerFactory factory;
-	NodeLocalProperties properties;
+	private Platform platform;
+	private SpeedometerFactory factory;
 
-	MiscSpeedometers subject;
+	private MiscSpeedometers subject;
 
 	@BeforeEach
 	void setup() throws Exception {
 		factory = mock(SpeedometerFactory.class);
 		platform = mock(Platform.class);
 
-		properties = mock(NodeLocalProperties.class);
-		given(properties.statsRunningAvgHalfLifeSecs()).willReturn(halfLife);
-
-		subject = new MiscSpeedometers(factory, properties);
+		subject = new MiscSpeedometers(factory, halfLife);
 	}
 
 	@Test
 	void registersExpectedStatEntries() {
-		// setup:
-		StatEntry sync = mock(StatEntry.class);
-		StatEntry async = mock(StatEntry.class);
-		StatEntry retries = mock(StatEntry.class);
-		StatEntry rejections = mock(StatEntry.class);
-
+		final var sync = mock(StatEntry.class);
+		final var async = mock(StatEntry.class);
+		final var retries = mock(StatEntry.class);
+		final var rejections = mock(StatEntry.class);
 		given(factory.from(
 				argThat(MiscSpeedometers.Names.SYNC_VERIFICATIONS::equals),
 				argThat(MiscSpeedometers.Descriptions.SYNC_VERIFICATIONS::equals),
@@ -78,10 +72,8 @@ class MiscSpeedometersTest {
 				argThat(MiscSpeedometers.Descriptions.PLATFORM_TXN_REJECTIONS::equals),
 				any())).willReturn(rejections);
 
-		// when:
 		subject.registerWith(platform);
 
-		// then:
 		verify(platform).addAppStatEntry(retries);
 		verify(platform).addAppStatEntry(sync);
 		verify(platform).addAppStatEntry(async);
@@ -90,27 +82,29 @@ class MiscSpeedometersTest {
 
 	@Test
 	void cyclesExpectedSpeedometers() {
-		// setup:
-		StatsSpeedometer retries = mock(StatsSpeedometer.class);
-		StatsSpeedometer sync = mock(StatsSpeedometer.class);
-		StatsSpeedometer async = mock(StatsSpeedometer.class);
-		StatsSpeedometer rejections = mock(StatsSpeedometer.class);
-		// and:
+		final var retries = mock(StatsSpeedometer.class);
+		final var sync = mock(StatsSpeedometer.class);
+		final var async = mock(StatsSpeedometer.class);
+		final var rejections = mock(StatsSpeedometer.class);
 		subject.accountLookupRetries = retries;
 		subject.syncVerifications = sync;
 		subject.platformTxnRejections = rejections;
 		subject.asyncVerifications = async;
 
-		// when:
 		subject.cycleAccountLookupRetries();
 		subject.cycleAsyncVerifications();
 		subject.cycleSyncVerifications();
 		subject.cyclePlatformTxnRejections();
 
-		// then:
 		verify(retries).update(1.0);
 		verify(rejections).update(1.0);
 		verify(sync).update(1.0);
 		verify(async).update(1.0);
+	}
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, MiscSpeedometers.Names::new);
+		assertThrows(IllegalStateException.class, MiscSpeedometers.Descriptions::new);
 	}
 }

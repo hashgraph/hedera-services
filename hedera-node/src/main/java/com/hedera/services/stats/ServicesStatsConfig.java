@@ -23,14 +23,13 @@ package com.hedera.services.stats;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.EnumSet;
-import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 
 public class ServicesStatsConfig {
-	public static final Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
+	public static final EnumSet<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
 			NONE,
 			UNRECOGNIZED,
 			GetByKey
@@ -56,4 +55,8 @@ public class ServicesStatsConfig {
 
 	public static final String SYSTEM_DELETE_METRIC = "systemDelete";
 	public static final String SYSTEM_UNDELETE_METRIC = "systemUndelete";
+
+	ServicesStatsConfig() {
+		throw new IllegalStateException("Utility Class");
+	}
 }

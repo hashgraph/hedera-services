@@ -20,7 +20,6 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsRunningAverage;
 
@@ -34,10 +33,8 @@ public class MiscRunningAvgs {
 	StatsRunningAverage writeQueueSizeRecordStream;
 	StatsRunningAverage hashQueueSizeRecordStream;
 
-	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
+	public MiscRunningAvgs(final RunningAvgFactory runningAvg, final double halfLife) {
 		this.runningAvg = runningAvg;
-
-		double halfLife = properties.statsRunningAvgHalfLifeSecs();
 
 		accountRetryWaitMs = new StatsRunningAverage(halfLife);
 		accountLookupRetries = new StatsRunningAverage(halfLife);
@@ -47,7 +44,7 @@ public class MiscRunningAvgs {
 		hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
 	}
 
-	public void registerWith(Platform platform) {
+	public void registerWith(final Platform platform) {
 		platform.addAppStatEntry(
 				runningAvg.from(
 						Names.ACCOUNT_LOOKUP_RETRIES,
@@ -77,45 +74,54 @@ public class MiscRunningAvgs {
 		);
 	}
 
-	public void recordAccountLookupRetries(int num) {
+	public void recordAccountLookupRetries(final int num) {
 		accountLookupRetries.recordValue(num);
 	}
 
-	public void recordAccountRetryWaitMs(double time) {
+	public void recordAccountRetryWaitMs(final double time) {
 		accountRetryWaitMs.recordValue(time);
 	}
 
-	public void recordHandledSubmitMessageSize(int bytes) {
+	public void recordHandledSubmitMessageSize(final int bytes) {
 		handledSubmitMessageSize.recordValue(bytes);
 	}
 
-	public void writeQueueSizeRecordStream(int num) {
+	public void writeQueueSizeRecordStream(final int num) {
 		writeQueueSizeRecordStream.recordValue(num);
 	}
 
-	public void hashQueueSizeRecordStream(int num) {
+	public void hashQueueSizeRecordStream(final int num) {
 		hashQueueSizeRecordStream.recordValue(num);
 	}
 
 	static class Names {
-		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
-		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
-		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
+		static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
+		static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
+		static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
 
-		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
-		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
+		static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
+		static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
+
+		Names() {
+			throw new IllegalStateException("Utility Class");
+		}
 	}
 
 	static class Descriptions {
-		public static final String ACCOUNT_RETRY_WAIT_MS =
+		static final String ACCOUNT_RETRY_WAIT_MS =
 				"average time is millis spent waiting to lookup the account number";
-		public static final String ACCOUNT_LOOKUP_RETRIES =
+		static final String ACCOUNT_LOOKUP_RETRIES =
 				"average number of retry attempts made to lookup the account number";
-		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
+		static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
 
-		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
+		static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
 				"size of the queue from which we take records and write to RecordStream file";
-		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "size of working queue for calculating hash and runningHash";
+		static final String HASH_QUEUE_SIZE_RECORD_STREAM =
+				"size of working queue for calculating hash and runningHash";
+
+		Descriptions() {
+			throw new IllegalStateException("Utility Class");
+		}
 	}
 }

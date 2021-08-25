@@ -752,7 +752,7 @@ public class ServicesContext {
 	public MiscRunningAvgs runningAvgs() {
 		if (runningAvgs == null) {
 			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {
-			}, nodeLocalProperties());
+			}, nodeLocalProperties().statsRunningAvgHalfLifeSecs());
 		}
 		return runningAvgs;
 	}
@@ -802,7 +802,7 @@ public class ServicesContext {
 	public MiscSpeedometers speedometers() {
 		if (speedometers == null) {
 			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
-			}, nodeLocalProperties());
+			}, nodeLocalProperties().statsSpeedometerHalfLifeSecs());
 		}
 		return speedometers;
 	}

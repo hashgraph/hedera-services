@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInf
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -48,16 +49,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
 class HapiOpCountersTest {
-	Platform platform;
-	CounterFactory factory;
-	MiscRunningAvgs runningAvgs;
-	TransactionContext txnCtx;
-	Function<HederaFunctionality, String> statNameFn;
+	private Platform platform;
+	private CounterFactory factory;
+	private MiscRunningAvgs runningAvgs;
+	private TransactionContext txnCtx;
+	private Function<HederaFunctionality, String> statNameFn;
 
-	HapiOpCounters subject;
+	private HapiOpCounters subject;
 
 	@BeforeEach
-	void setup() throws Exception {
+	void setup() {
 		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo,
@@ -75,23 +76,22 @@ class HapiOpCountersTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		HapiOpCounters.allFunctions = HederaFunctionality.class::getEnumConstants;
 	}
 
 	@Test
 	void beginsRationally() {
-		// expect:
 		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
 		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
 		assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
 		assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
-		// and:
+
 		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
 		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
 		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
 		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
-		// and:
+
 		assertFalse(subject.receivedOps.containsKey(NONE));
 		assertFalse(subject.submittedTxns.containsKey(NONE));
 		assertFalse(subject.answeredQueries.containsKey(NONE));
@@ -100,27 +100,21 @@ class HapiOpCountersTest {
 
 	@Test
 	void registersExpectedStatEntries() {
-		// setup:
-		StatEntry transferRcv = mock(StatEntry.class);
-		StatEntry transferSub = mock(StatEntry.class);
-		StatEntry transferHdl = mock(StatEntry.class);
-		StatEntry tokenInfoRcv = mock(StatEntry.class);
-		StatEntry tokenInfoAns = mock(StatEntry.class);
-		// and:
-		var xferRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
-		var xferSubName = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
-		var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
-		// and:
-		var xferRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
-		var xferSubDesc = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
-		var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
-		// and:
-		var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
-		var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
-		// and:
-		var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
-		var infoAnsDesc = String.format(ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL, "TokenGetInfo");
-
+		final var transferRcv = mock(StatEntry.class);
+		final var transferSub = mock(StatEntry.class);
+		final var transferHdl = mock(StatEntry.class);
+		final var tokenInfoRcv = mock(StatEntry.class);
+		final var tokenInfoAns = mock(StatEntry.class);
+		final var xferRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
+		final var xferSubName = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
+		final var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
+		final var xferRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
+		final var xferSubDesc = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
+		final var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
+		final var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
+		final var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
+		final var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
+		final var infoAnsDesc = String.format(ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL, "TokenGetInfo");
 		given(factory.from(
 				argThat(xferRcvName::equals),
 				argThat(xferRcvDesc::equals),
@@ -133,7 +127,6 @@ class HapiOpCountersTest {
 				argThat(xferHdlName::equals),
 				argThat(xferHdlDesc::equals),
 				any())).willReturn(transferHdl);
-		// and:
 		given(factory.from(
 				argThat(infoRcvName::equals),
 				argThat(infoRcvDesc::equals),
@@ -143,10 +136,8 @@ class HapiOpCountersTest {
 				argThat(infoAnsDesc::equals),
 				any())).willReturn(tokenInfoAns);
 
-		// when:
 		subject.registerWith(platform);
 
-		// then:
 		verify(platform).addAppStatEntry(transferRcv);
 		verify(platform).addAppStatEntry(transferSub);
 		verify(platform).addAppStatEntry(transferHdl);
@@ -156,77 +147,69 @@ class HapiOpCountersTest {
 
 	@Test
 	void updatesAvgSubmitMessageHdlSizeForHandled() {
-		// setup:
-		int expectedSize = 12345;
-		TransactionBody txn = mock(TransactionBody.class);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-
+		final var expectedSize = 12345;
+		final var txn = mock(TransactionBody.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
-		// when:
 		subject.countHandled(ConsensusSubmitMessage);
 
-		// then
 		verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
 	}
 
 	@Test
 	void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
-		// setup:
-		int expectedSize = 12345;
-		TransactionBody txn = mock(TransactionBody.class);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-
+		final var expectedSize = 12345;
+		final var txn = mock(TransactionBody.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
-		// when:
 		subject.countReceived(ConsensusSubmitMessage);
 		subject.countSubmitted(ConsensusSubmitMessage);
 
-		// then
 		verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
 	}
 
 	@Test
 	void updatesExpectedEntries() {
-		// when:
 		subject.countReceived(CryptoTransfer);
 		subject.countReceived(CryptoTransfer);
 		subject.countReceived(CryptoTransfer);
 		subject.countSubmitted(CryptoTransfer);
 		subject.countSubmitted(CryptoTransfer);
 		subject.countHandled(CryptoTransfer);
-		// and:
 		subject.countReceived(TokenGetInfo);
 		subject.countReceived(TokenGetInfo);
 		subject.countReceived(TokenGetInfo);
 		subject.countAnswered(TokenGetInfo);
 		subject.countAnswered(TokenGetInfo);
 
-		// then
 		assertEquals(3L, subject.receivedSoFar(CryptoTransfer));
 		assertEquals(2L, subject.submittedSoFar(CryptoTransfer));
 		assertEquals(1L, subject.handledSoFar(CryptoTransfer));
-		// and:
 		assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
 		assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
 	}
 
 	@Test
 	void ignoredOpsAreNoops() {
-		// expect:
 		assertDoesNotThrow(() -> subject.countReceived(NONE));
 		assertDoesNotThrow(() -> subject.countSubmitted(NONE));
 		assertDoesNotThrow(() -> subject.countHandled(NONE));
 		assertDoesNotThrow(() -> subject.countAnswered(NONE));
-		// and:
+
 		assertEquals(0L, subject.receivedSoFar(NONE));
 		assertEquals(0L, subject.submittedSoFar(NONE));
 		assertEquals(0L, subject.handledSoFar(NONE));
 		assertEquals(0L, subject.answeredSoFar(NONE));
+	}
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, ServicesStatsConfig::new);
 	}
 }
