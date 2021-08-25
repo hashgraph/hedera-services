@@ -426,12 +426,12 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 						cryptoCreate(civilian),
 						cryptoCreate(detachedAccount)
 								.balance(0L)
-								.autoRenewSecs(2),
+								.autoRenewSecs(3),
 						tokenCreate(aToken)
 								.treasury(detachedAccount),
 						tokenAssociate(civilian, aToken)
 				).when(
-						sleepFor(1_500L)
+						sleepFor(2_500L)
 				).then(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, detachedAccount, ONE_MILLION_HBARS))
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),

@@ -55,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class HapiApiClients {
@@ -76,13 +75,15 @@ public class HapiApiClients {
 	private final Map<AccountID, String> stubIds;
 	private final Map<AccountID, String> tlsStubIds;
 	private static Map<String, ManagedChannel> channels = new HashMap<>();
-	private static final String defaultNettyCiphers = HapiSpecSetup.getDefaultNodeProps().get("netty.ciphers");
 
 	private final ManagedChannel createNettyChannel(NodeConnectInfo node, boolean useTls) {
 		try {
 			ManagedChannel channel;
 			String[] protocols = new String[] { "TLSv1.2", "TLSv1.3" };
-			List<String> ciphers = Arrays.stream(defaultNettyCiphers.split(",")).collect(toList());
+			List<String> ciphers = Arrays.asList(
+					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+			);
 			SslContextBuilder contextBuilder = GrpcSslContexts.configure(SslContextBuilder.forClient());
 			contextBuilder
 					.protocols(protocols)

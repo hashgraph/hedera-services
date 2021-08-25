@@ -42,6 +42,10 @@ import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
 public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 	private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
 
+	private static final List<String> SUPPORTED_CIPHERS = List.of(
+			"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+			"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+	);
 	private static final List<String> SUPPORTED_PROTOCOLS = List.of(
 			"TLSv1.2",
 			"TLSv1.3"
@@ -102,7 +106,7 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 		}
 		var sslContext = GrpcSslContexts.configure(SslContextBuilder.forServer(crt, key))
 				.protocols(SUPPORTED_PROTOCOLS)
-				.ciphers(nodeProperties.nettyCiphers(), INSTANCE)
+				.ciphers(SUPPORTED_CIPHERS, INSTANCE)
 				.build();
 		builder.sslContext(sslContext);
 	}

@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,16 +36,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MerkleEntityIdUtilsTest {
@@ -120,6 +120,15 @@ class MerkleEntityIdUtilsTest {
 	void parsesValidLiteral(String goodLiteral) {
 		// expect:
 		assertEquals(asAccount(goodLiteral), parseAccount(goodLiteral));
+	}
+
+	@Test
+	void prettyPrintsIds() {
+		// given:
+		Id id = new Id(1, 2, 3);
+
+		// expect:
+		assertEquals("1.2.3", EntityIdUtils.readableId(id));
 	}
 
 	@Test
