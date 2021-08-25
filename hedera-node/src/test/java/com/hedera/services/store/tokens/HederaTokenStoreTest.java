@@ -118,6 +118,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -232,6 +233,10 @@ class HederaTokenStoreTest {
 			.withRoyaltyFee(royaltyNoFallback(11, 111));
 	private static final CustomFee customRoyaltyHtsFallback = new CustomFeeBuilder(anotherFeeCollector)
 			.withRoyaltyFee(royaltyWithFallback(11, 111, fixedHts(misc, 123)));
+	private static final CustomFee customRoyaltyHtsFallback_ZeroDiv = new CustomFeeBuilder(anotherFeeCollector)
+			.withRoyaltyFee(royaltyWithFallback(11, 0, fixedHts(misc, 123)));
+	private static final CustomFee customRoyaltyHtsFallback_InvalidFraction = new CustomFeeBuilder(anotherFeeCollector)
+			.withRoyaltyFee(royaltyWithFallback(11, 10, fixedHts(misc, 123)));
 	private static final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
 	private static final CustomFee customFractionalFee = builder.withFractionalFee(fractionalFee);
 	private static final CustomFee customFractionalFee_negative = builder.withFractionalFee(fractionalFee_negative);
@@ -646,6 +651,15 @@ class HederaTokenStoreTest {
 	@Test
 	void changingOwnerRejectsMissingSender() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsMissingReceiver() {
+		given(accountsLedger.exists(counterparty)).willReturn(false);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -1562,6 +1576,39 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void canUseRoyaltyFeeWithNoFallBackFees() {
+		given(token.tokenType())
+				.willReturn(TokenType.NON_FUNGIBLE_UNIQUE)
+				.willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithRoyaltyHtsNoFallback();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		verify(token).setFeeScheduleFrom(List.of(customRoyaltyNoFallback), EntityId.fromGrpcTokenId(misc));
+		assertEquals(OK, result);
+	}
+
+	@Test
+	void cannotUseRoyaltyFeeWithZeroDivFraction() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallbackZeroDiv();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(FRACTION_DIVIDES_BY_ZERO, result);
+	}
+
+	@Test
+	void cannotUseRoyaltyFeeWithInvalidFraction() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallbackInvalidFraction();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(ROYALTY_FRACTION_CANNOT_EXCEED_ONE, result);
+	}
+
+	@Test
 	void cannotUseNegativeAmountInCustomFee() {
 		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		final var op = updateFeeScheduleWithNegativeValue();
@@ -1653,6 +1700,19 @@ class HederaTokenStoreTest {
 		assertEquals(OK, result);
 	}
 
+	@Test
+	void happyPathCustomRoyaltyFeesUpdated() {
+		given(token.tokenType())
+				.willReturn(TokenType.NON_FUNGIBLE_UNIQUE)
+				.willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallback();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		verify(token).setFeeScheduleFrom(List.of(customRoyaltyHtsFallback), EntityId.fromGrpcTokenId(misc));
+		assertEquals(OK, result);
+	}
+
 	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithNegativeValue() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
@@ -1741,6 +1801,27 @@ class HederaTokenStoreTest {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(List.of(customRoyaltyHtsFallback));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithRoyaltyHtsNoFallback() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyNoFallback));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallbackZeroDiv() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyHtsFallback_ZeroDiv));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallbackInvalidFraction() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyHtsFallback_InvalidFraction));
 		return op.build();
 	}
 

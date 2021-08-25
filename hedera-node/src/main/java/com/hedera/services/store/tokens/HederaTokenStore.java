@@ -434,7 +434,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum validateFeeSchedule(
 			final List<CustomFee> feeSchedule,
-			final boolean isUpdate,
 			final TokenID targetTokenId,
 			final MerkleToken targetToken
 	) {
@@ -456,12 +455,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					return responseCode;
 				}
 			} else if (customFee.hasFractionalFee()) {
-				responseCode = validateFractional(customFee, isUpdate, targetToken, targetTokenId, feeCollector);
+				responseCode = validateFractional(customFee, targetToken, targetTokenId, feeCollector);
 				if (responseCode != OK) {
 					return responseCode;
 				}
 			} else if (customFee.hasRoyaltyFee()) {
-				responseCode = validateRoyalty(customFee, isUpdate, targetToken, targetTokenId, feeCollector);
+				responseCode = validateRoyalty(customFee, targetToken, targetTokenId, feeCollector);
 				if (responseCode != OK) {
 					return responseCode;
 				}
@@ -475,13 +474,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum validateRoyalty(
 			final CustomFee customFee,
-			final boolean isUpdate,
 			final MerkleToken targetToken,
 			final TokenID targetTokenId,
 			final AccountID feeCollector
 	) {
 		final var typeValidity = validateTypeConstraints(
-				isUpdate, NON_FUNGIBLE_UNIQUE, targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+				NON_FUNGIBLE_UNIQUE, targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
 		if (typeValidity != OK) {
 			return typeValidity;
 		}
@@ -507,17 +505,16 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum validateFractional(
 			final CustomFee customFee,
-			final boolean isUpdate,
 			final MerkleToken targetToken,
 			final TokenID targetTokenId,
 			final AccountID feeCollector
 	) {
 		final var typeValidity = validateTypeConstraints(
-				isUpdate, FUNGIBLE_COMMON, targetToken, CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+				FUNGIBLE_COMMON, targetToken, CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 		if (typeValidity != OK) {
 			return typeValidity;
 		}
-		if (isUpdate && !associationExists(feeCollector, targetTokenId)) {
+		if (!associationExists(feeCollector, targetTokenId)) {
 			return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 		}
 		final var spec = customFee.getFractionalFee();
@@ -536,19 +533,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum validateTypeConstraints(
-			final boolean isUpdate,
 			final TokenType requiredType,
 			final MerkleToken targetToken,
 			final ResponseCodeEnum failureCode
 	) {
-		if (!isUpdate) {
-			if (pendingCreation.tokenType() != requiredType) {
-				return failureCode;
-			}
-		} else {
-			if (targetToken.tokenType() != requiredType) {
-				return failureCode;
-			}
+		if (targetToken.tokenType() != requiredType) {
+			return failureCode;
 		}
 		return OK;
 	}
@@ -885,7 +875,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 		}
 
-		final var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId, token);
+		final var validity = validateFeeSchedule(changes.getCustomFeesList(), tId, token);
 		if (validity != OK) {
 			return validity;
 		}
