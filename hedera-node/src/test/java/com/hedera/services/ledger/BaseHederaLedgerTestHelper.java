@@ -129,6 +129,12 @@ public class BaseHederaLedgerTestHelper {
 			public void reclaimLastId() {
 				nextId--;
 			}
+
+			@Override
+			public void reclaimProvisionalIds() { }
+
+			@Override
+			public void resetProvisionalIds() { }
 		};
 	}
 

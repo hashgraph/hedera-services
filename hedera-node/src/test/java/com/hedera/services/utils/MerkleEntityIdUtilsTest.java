@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -114,6 +115,13 @@ class MerkleEntityIdUtilsTest {
 	@CsvSource({ "1.0.0", "0.1.0", "0.0.1", "1.2.3" })
 	void parsesValidLiteral(final String goodLiteral) {
 		assertEquals(asAccount(goodLiteral), parseAccount(goodLiteral));
+	}
+
+	@Test
+	void prettyPrintsIds() {
+		final var id = new Id(1, 2, 3);
+
+		assertEquals("1.2.3", EntityIdUtils.readableId(id));
 	}
 
 	@Test

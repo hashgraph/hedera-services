@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -46,6 +47,10 @@ public class EntityIdUtils {
 	}
 
 	public static String readableId(final Object o) {
+		if (o instanceof Id) {
+			final var id = (Id) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShard(), id.getRealm(), id.getNum());
+		}
 		if (o instanceof AccountID) {
 			final var id = (AccountID) o;
 			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());

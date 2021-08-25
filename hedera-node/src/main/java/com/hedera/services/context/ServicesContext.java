@@ -1093,6 +1093,7 @@ public class ServicesContext {
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels(),
 					uniqTokenViewsManager(),
+					tokenStore()::addKnownTreasury,
 					tokenStore()::removeKnownTreasuryForToken);
 		}
 		return typedTokenStore;
@@ -1545,8 +1546,13 @@ public class ServicesContext {
 								this::topics, validator(), txnCtx(), globalDynamicProperties()))),
 				/* Token */
 				entry(TokenCreate,
-						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(),
-								txnCtx(), globalDynamicProperties()))),
+						List.of(new TokenCreateTransitionLogic(
+								validator(),
+								typedTokenStore(),
+								accountStore(),
+								txnCtx(),
+								globalDynamicProperties(),
+								ids()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
 								shouldUseTreasuryWildcards(), validator(), tokenStore(),

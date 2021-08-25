@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- monitorInterval="600" , if any change to log level will be effective after 10 minute -->
 <Configuration status="WARN" monitorInterval="600">
-
-
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n"/>
@@ -49,8 +47,8 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="TRACE" additivity="false">
-      <AppenderRef ref="fileLog"/>
+    <Logger name="com.swirlds" level="INFO" additivity="false">
+      <AppenderRef ref="fileLog" />
       <!--
 	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
 	  to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
@@ -101,6 +99,7 @@
         <!-- Signed State Signatures -->
         <MarkerFilter marker="STATE_SIG_DIST"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_DELETER"          onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="OBJECT_STREAM_DETAIL"   onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <!-- Cryptography -->
         <MarkerFilter marker="OPENCL_INIT_EXCEPTIONS" onMatch="DENY"   onMismatch="NEUTRAL"/>
