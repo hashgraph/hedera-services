@@ -91,6 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -139,6 +140,8 @@ class ServicesStateTest {
 	private DualStateAccessor dualStateAccessor;
 	@Mock
 	private ServicesInitFlow initFlow;
+	@Mock
+	private ServicesApp.Builder appBuilder;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -364,8 +367,21 @@ class ServicesStateTest {
 
 	@Test
 	void genesisInitCreatesChildren() {
+		// setup:
+		ServicesState.setAppBuilder(() -> appBuilder);
+
+		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
+		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.platform(platform)).willReturn(appBuilder);
+		given(appBuilder.selfId(1L)).willReturn(appBuilder);
+		given(appBuilder.build()).willReturn(app);
+		// and:
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(platform.getSelfId()).willReturn(selfId);
+
 		// when:
-		subject.createGenesisChildren(addressBook, 1001L);
+		subject.genesisInit(platform, addressBook);
 
 		// then:
 		assertFalse(subject.isImmutable());
@@ -380,8 +396,20 @@ class ServicesStateTest {
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
+		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.diskFs());
+		// and:
+		verify(initFlow).runWith(subject);
+		verify(appBuilder).bootstrapProps(any());
+		verify(appBuilder).initialState(subject);
+		verify(appBuilder).platform(platform);
+		verify(appBuilder).selfId(selfId.getId());
+		// and:
+		assertTrue(APPS.includes(selfId.getId()));
+
+		// cleanup:
+		ServicesState.setAppBuilder(DaggerServicesApp::builder);
 	}
 
 	@Test

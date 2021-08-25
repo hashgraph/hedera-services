@@ -62,6 +62,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
@@ -130,7 +131,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion < StateVersions.CURRENT_VERSION) {
+		if (deserializedVersion < StateVersions.RELEASE_0170_VERSION) {
 			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
 				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new FCMap<>());
 			}
@@ -317,7 +318,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (APPS.includes(selfId)) {
 			app = APPS.get(selfId);
 		} else {
-			app = DaggerServicesApp.builder()
+			app = APP_BUILDER.get()
 					.bootstrapProps(bootstrapProps)
 					.initialState(this)
 					.platform(platform)
@@ -361,6 +362,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
+	private static Supplier<ServicesApp.Builder> APP_BUILDER = DaggerServicesApp::builder;
+
 	/* --- Only used by unit tests --- */
 	StateMetadata getMetadata() {
 		return metadata;
@@ -376,5 +379,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	int getDeserializedVersion() {
 		return deserializedVersion;
+	}
+
+	static void setAppBuilder(Supplier<ServicesApp.Builder> appBuilder) {
+		ServicesState.APP_BUILDER = appBuilder;
 	}
 }

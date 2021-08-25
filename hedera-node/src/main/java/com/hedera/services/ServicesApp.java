@@ -86,6 +86,9 @@ import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
+ */
 @Singleton
 @Component(modules = {
 		FeesModule.class,
