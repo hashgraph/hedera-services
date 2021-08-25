@@ -298,6 +298,7 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void grpcInterconversionWorks() {
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
 
