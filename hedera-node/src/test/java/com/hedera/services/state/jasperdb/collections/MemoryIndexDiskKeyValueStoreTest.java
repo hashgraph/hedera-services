@@ -1,6 +1,5 @@
-package com.hedera.services.state.jasperdb.files;
+package com.hedera.services.state.jasperdb.collections;
 
-import com.hedera.services.state.jasperdb.collections.MemoryIndexDiskKeyValueStore;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Test;
 

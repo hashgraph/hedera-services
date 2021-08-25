@@ -10,6 +10,7 @@ import java.util.stream.Stream;
  *
  * @param <T> the type of the IndexedObject we are collecting
  */
+@SuppressWarnings("unused")
 public abstract class ImmutableIndexedObjectList<T extends IndexedObject> {
 
     /**
@@ -22,7 +23,6 @@ public abstract class ImmutableIndexedObjectList<T extends IndexedObject> {
      * its index. If there was already an object at that index then it will be replaced.
      */
     public abstract ImmutableIndexedObjectList<T> withAddedObject(T newT);
-
 
     /**
      * Create a new ImmutableIndexedObjectList with all existing objects that

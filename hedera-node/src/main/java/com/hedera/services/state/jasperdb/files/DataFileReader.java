@@ -10,12 +10,19 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * Abstract base class for DataFileReaders
+ * Abstract base class for DataFileReaders. The aim for a DataFileReader is to facilitate fast highly concurrent random
+ * reading of items from a data file. This is base class so that we can create a range of different DataFileReader
+ * implementations to experiment with different IO libraries and threading strategies to find the fastest way to read
+ * items from data files with many concurrent threads.
  */
 public abstract class DataFileReader implements AutoCloseable, Comparable<DataFileReader>, IndexedObject {
+    /** Enum for read operation, you can read the key, value or both. */
     public enum DataToRead{KEY,VALUE,KEY_VALUE}
+    /** The path to the file on disk */
     protected final Path path;
+    /** The metadata for this file read from the footer */
     protected final DataFileMetadata metadata;
+    /** True if this file contains variable sized data rather than fixed size */
     protected final boolean hasVariableSizedData;
 
 
@@ -82,7 +89,7 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
     }
 
     /**
-     * Read a data ietm from file at dataLocation. The data returned is defined by DataToRead.
+     * Read a data item from file at dataLocation. The data returned is defined by DataToRead.
      *
      * @param bufferToReadInto a byte buffer big enough to contain the read data, that has been rewound. If it is too
      *                         small we read just bufferToReadInto.remaining() bytes.

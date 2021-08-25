@@ -1,4 +1,4 @@
-package com.hedera.services.state.jasperdb.files;
+package com.hedera.services.state.jasperdb.collections;
 
 import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
 import com.hedera.services.state.merkle.virtual.ContractKey;
