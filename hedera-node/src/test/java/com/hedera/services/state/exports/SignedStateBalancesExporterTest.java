@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -77,7 +78,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -126,6 +126,7 @@ class SignedStateBalancesExporterTest {
 	private SigFileWriter sigFileWriter;
 	private FileHashReader hashReader;
 	private DirectoryAssurance assurance;
+	private SystemExits systemExits;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -192,7 +193,10 @@ class SignedStateBalancesExporterTest {
 
 		signer = mock(UnaryOperator.class);
 		given(signer.apply(fileHash)).willReturn(sig);
-		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+
+		systemExits = mock(SystemExits.class);
+
+		subject = new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
 
 		sigFileWriter = mock(SigFileWriter.class);
 		hashReader = mock(FileHashReader.class);
@@ -208,7 +212,7 @@ class SignedStateBalancesExporterTest {
 				return "not/a/real/location";
 			}
 		};
-		subject = new SignedStateBalancesExporter(properties, signer, otherDynamicProperties);
+		subject = new SignedStateBalancesExporter(systemExits, properties, signer, otherDynamicProperties);
 		subject.directories = assurance;
 
 		subject.exportBalancesFrom(state, now, nodeId);
@@ -266,7 +270,7 @@ class SignedStateBalancesExporterTest {
 				return "not/a/real/location";
 			}
 		};
-		subject = new SignedStateBalancesExporter(properties, signer, otherDynamicProperties);
+		subject = new SignedStateBalancesExporter(systemExits, properties, signer, otherDynamicProperties);
 		subject.directories = assurance;
 
 		subject.exportBalancesFrom(state, now, nodeId);
@@ -366,12 +370,19 @@ class SignedStateBalancesExporterTest {
 
 	@Test
 	void throwsOnUnexpectedTotalFloat() throws NegativeAccountBalanceException {
+		// setup:
 		final var mutableAnotherNodeAccount = accounts.getForModify(fromAccountId(anotherNode));
+		final var desiredSuffix = "had total balance 1001 not 1000; exiting";
 
+		// given:
 		mutableAnotherNodeAccount.setBalance(anotherNodeBalance + 1);
 
-		assertThrows(IllegalStateException.class,
-				() -> subject.exportBalancesFrom(state, now, nodeId));
+		// when:
+		subject.exportBalancesFrom(state, now, nodeId);
+
+		// then:
+		assertThat(logCaptor.errorLogs(), contains(Matchers.endsWith(desiredSuffix)));
+		verify(systemExits).fail(1);
 	}
 
 	@Test
@@ -407,7 +418,7 @@ class SignedStateBalancesExporterTest {
 	void exportsWhenPeriodSecsHaveElapsed() {
 		final int exportPeriodInSecs = dynamicProperties.balancesExportPeriodSecs();
 		final var startTime = Instant.parse("2021-07-07T08:10:00.000Z");
-		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		subject = new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
 
 		// start from a time within 1 second of boundary time
 		var now = startTime.plusNanos(12340);
@@ -423,7 +434,7 @@ class SignedStateBalancesExporterTest {
 		assertEquals(startTime.plusSeconds(exportPeriodInSecs * 2), subject.getNextExportTime());
 
 		// start from a random time
-		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		subject = new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
 		now = Instant.parse("2021-07-07T08:12:38.123Z");
 		assertFalse(subject.isTimeToExport(now));
 		assertEquals(startTime.plusSeconds(exportPeriodInSecs), subject.getNextExportTime());

@@ -33,6 +33,7 @@ import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -83,6 +84,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private Instant nextExportTime = null;
 
 	final long expectedFloat;
+	private final SystemExits systemExits;
 	private final UnaryOperator<byte[]> signer;
 	private final GlobalDynamicProperties dynamicProperties;
 
@@ -100,11 +102,13 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	@Inject
 	public SignedStateBalancesExporter(
+			SystemExits systemExits,
 			@CompositeProps PropertySource properties,
 			UnaryOperator<byte[]> signer,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.signer = signer;
+		this.systemExits = systemExits;
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		this.dynamicProperties = dynamicProperties;
 		exportPeriod = dynamicProperties.balancesExportPeriodSecs();
@@ -143,15 +147,16 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 		var watch = StopWatch.createStarted();
 		summary = summarized(signedState);
-		var expected = BigInteger.valueOf(expectedFloat);
-		if (!expected.equals(summary.getTotalFloat())) {
-			throw new IllegalStateException(String.format(
-					"Signed state @ %s had total balance %d not %d!",
-					consensusTime, summary.getTotalFloat(), expectedFloat));
+		final var expected = BigInteger.valueOf(expectedFloat);
+		if (expected.equals(summary.getTotalFloat())) {
+			log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
+			toProtoFile(consensusTime);
+		} else {
+			log.error(
+					"Signed state @ {} had total balance {} not {}; exiting",
+					consensusTime, summary.getTotalFloat(), expectedFloat);
+			systemExits.fail(1);
 		}
-		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
-
-		toProtoFile(consensusTime);
 	}
 
 	private void toProtoFile(Instant exportTimeStamp) {

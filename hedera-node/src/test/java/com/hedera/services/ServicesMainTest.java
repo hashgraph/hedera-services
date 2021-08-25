@@ -72,7 +72,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ServicesMainAppTest {
+class ServicesMainTest {
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private final long round = 1_234_567L;
 	private final long selfId = 123L;

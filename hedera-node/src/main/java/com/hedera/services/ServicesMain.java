@@ -94,11 +94,7 @@ public class ServicesMain implements SwirldMain {
 
 		final var balancesExporter = app.balancesExporter();
 		if (balancesExporter.isTimeToExport(consensusTime)) {
-			try {
-				balancesExporter.exportBalancesFrom(servicesState, consensusTime, app.nodeId());
-			} catch (IllegalStateException ise) {
-				app.systemExits().fail(1);
-			}
+			balancesExporter.exportBalancesFrom(servicesState, consensusTime, app.nodeId());
 		}
 	}
 
