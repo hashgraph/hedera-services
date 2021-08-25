@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -92,6 +93,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
+						ensureDefaultFeeSchedules(),
 						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
@@ -182,6 +184,13 @@ public class RecordCreationSuite extends HapiApiSuite {
 						wipeTokenAccount(acceptedTokenAttempt, miscAccount, List.of(1L)),
 						getAccountBalance(miscAccount).hasTokenBalance(acceptedTokenAttempt, 0L),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(acceptedTokenAttempt, 1L)
+				);
+	}
+
+	private HapiApiSpec ensureDefaultFeeSchedules() {
+		return defaultHapiSpec("EnsureDefaultFeeSchedules")
+				.given( ).when( ).then(
+						uploadDefaultFeeSchedules(GENESIS)
 				);
 	}
 
