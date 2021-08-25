@@ -10,8 +10,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * An off-heap in memory store of hashes, it stores them in 46Mb direct buffers and adds buffers as needed
+ * An on-heap in memory store of hashes, it stores them in 46Mb heap buffers and adds buffers as needed
  */
+@SuppressWarnings("unused")
 public final class HashListHeap implements HashList {
     /** The size in bytes for a serialized hash. TODO this should be better defined somewhere */
     private static final int HASH_SIZE =  Integer.BYTES+ DigestType.SHA_384.digestLength();
@@ -67,12 +68,12 @@ public final class HashListHeap implements HashList {
      * @return The ByteBuffer contain that index
      */
     private ByteBuffer getBuffer(long index) {
-        int bufferIndex = (int) (index / (long) HashListHeap.NUM_HASHES_PER_CHUNK);
+        int bufferIndex = (int) (index / (long) NUM_HASHES_PER_CHUNK);
         ByteBuffer buffer = data.get(bufferIndex).slice();
-        int subIndex = (int) (index % HashListHeap.NUM_HASHES_PER_CHUNK);
-        int offset = HashListHeap.HASH_SIZE * subIndex;
+        int subIndex = (int) (index % NUM_HASHES_PER_CHUNK);
+        int offset = HASH_SIZE * subIndex;
         buffer.position(offset);
-        buffer.limit(offset + HashListHeap.HASH_SIZE);
+        buffer.limit(offset + HASH_SIZE);
         return buffer;
     }
 

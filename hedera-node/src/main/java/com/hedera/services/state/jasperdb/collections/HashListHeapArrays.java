@@ -6,15 +6,18 @@ import com.swirlds.common.crypto.Hash;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An off-heap in memory store of hashes, it stores them in 46Mb direct buffers and adds buffers as needed
+ *
+ * TODO This differs from  interacts with Hash objects using VarHandle to directly access internal byte[] in hash object
+ * TODO in attempt to get better performance. This can be replaces with a method on Hash class but will need a change
+ * TODO in Swirlds.
  */
+@SuppressWarnings("unused")
 public final class HashListHeapArrays implements HashList {
     /** The size in bytes for a serialized hash. TODO this should be better defined somewhere */
     private static final int HASH_SIZE =  DigestType.SHA_384.digestLength();
@@ -27,8 +30,12 @@ public final class HashListHeapArrays implements HashList {
     /** The current maximum index that can be stored */
     private final AtomicLong maxIndexThatCanBeStored = new AtomicLong(-1);
 
+    /** VarHandle to the hash byte[] field in the Hash class */
     private final VarHandle hashField;
 
+    /**
+     * Create new HashListHeapArrays
+     */
     public HashListHeapArrays() {
         try {
             hashField = MethodHandles
