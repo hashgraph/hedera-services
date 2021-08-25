@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountAmountOrBuilder;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.TransferListOrBuilder;
 
@@ -35,15 +34,19 @@ import static java.math.BigInteger.ZERO;
  * @author Michael Tinker
  */
 public class TransferListChecks {
-	public static boolean isNetZeroAdjustment(TransferListOrBuilder wrapper) {
+	TransferListChecks() {
+		throw new IllegalStateException("Utility Class");
+	}
+
+	public static boolean isNetZeroAdjustment(final TransferListOrBuilder wrapper) {
 		var net = ZERO;
-		for (AccountAmountOrBuilder adjustment : wrapper.getAccountAmountsOrBuilderList()) {
+		for (final var adjustment : wrapper.getAccountAmountsOrBuilderList()) {
 			net = net.add(BigInteger.valueOf(adjustment.getAmount()));
 		}
 		return net.equals(ZERO);
 	}
 
-	public static boolean hasRepeatedAccount(TransferList wrapper) {
+	public static boolean hasRepeatedAccount(final TransferList wrapper) {
 		final int n = wrapper.getAccountAmountsCount();
 		if (n < 2) {
 			return false;

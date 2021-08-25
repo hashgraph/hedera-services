@@ -47,6 +47,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class TokenListChecks {
 	static Predicate<Key> adminKeyRemoval = ImmutableKeyUtils::signalsKeyRemoval;
 
+	TokenListChecks() {
+		throw new IllegalStateException("Utility Class");
+	}
+
 	public static boolean repeatsItself(final List<TokenID> tokens) {
 		return new HashSet<>(tokens).size() < tokens.size();
 	}
@@ -135,7 +139,6 @@ public class TokenListChecks {
 		validity = checkKeyOfType(hasFeeScheduleKey, feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY);
 		return validity;
 	}
-
 
 	private static ResponseCodeEnum checkAdminKey(final boolean hasAdminKey, final Key adminKey) {
 		if (hasAdminKey && !adminKeyRemoval.test(adminKey)) {

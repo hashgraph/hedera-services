@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,17 +47,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
 public class PureValidation {
-	public static ResponseCodeEnum queryableFileStatus(FileID id, StateView view) {
-		Optional<FileGetInfoResponse.FileInfo> info = view.infoForFile(id);
+	PureValidation() {
+		throw new IllegalStateException("Utility Class");
+	}
+
+	public static ResponseCodeEnum queryableFileStatus(final FileID id, final StateView view) {
+		final var info = view.infoForFile(id);
 		if (info.isEmpty()) {
 			return INVALID_FILE_ID;
 		} else {
-			return  OK;
+			return OK;
 		}
 	}
 
-	public static ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
+	public static ResponseCodeEnum queryableAccountStatus(
+			final AccountID id,
+			final FCMap<MerkleEntityId, MerkleAccount> accounts
+	) {
+		final var account = accounts.get(MerkleEntityId.fromAccountId(id));
 
 		return Optional.ofNullable(account)
 				.map(v -> v.isDeleted()
@@ -67,8 +73,11 @@ public class PureValidation {
 				.orElse(INVALID_ACCOUNT_ID);
 	}
 
-	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
-		MerkleAccount contract = contracts.get(fromContractId(cid));
+	public static ResponseCodeEnum queryableContractStatus(
+			final ContractID cid,
+			final FCMap<MerkleEntityId, MerkleAccount> contracts
+	) {
+		final var contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)
 				.map(v -> v.isDeleted()
@@ -77,7 +86,11 @@ public class PureValidation {
 				.orElse(INVALID_CONTRACT_ID);
 	}
 
-	public static ResponseCodeEnum chronologyStatus(Instant consensusTime, Instant validStart, long validDuration) {
+	public static ResponseCodeEnum chronologyStatus(
+			final Instant consensusTime,
+			final Instant validStart,
+			long validDuration
+	) {
 		validDuration = Math.min(validDuration, Instant.MAX.getEpochSecond() - validStart.getEpochSecond());
 		if (validStart.plusSeconds(validDuration).isBefore(consensusTime)) {
 			return TRANSACTION_EXPIRED;
@@ -88,15 +101,15 @@ public class PureValidation {
 		}
 	}
 
-	public static Instant asCoercedInstant(Timestamp when) {
+	public static Instant asCoercedInstant(final Timestamp when) {
 		return Instant.ofEpochSecond(
-			Math.min(Math.max(Instant.MIN.getEpochSecond(), when.getSeconds()), Instant.MAX.getEpochSecond()),
-			Math.min(Math.max(Instant.MIN.getNano(), when.getNanos()), Instant.MAX.getNano()));
+				Math.min(Math.max(Instant.MIN.getEpochSecond(), when.getSeconds()), Instant.MAX.getEpochSecond()),
+				Math.min(Math.max(Instant.MIN.getNano(), when.getNanos()), Instant.MAX.getNano()));
 	}
 
-	public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {
+	public static ResponseCodeEnum checkKey(final Key key, final ResponseCodeEnum failure) {
 		try {
-			var fcKey = JKey.mapKey(key);
+			final var fcKey = JKey.mapKey(key);
 			if (!fcKey.isValid()) {
 				return failure;
 			}

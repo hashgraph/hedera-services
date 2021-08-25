@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,19 +28,23 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.txns.validation.TransferListChecks.hasRepeatedAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TransferListChecksTest {
-	private final AccountID a = IdUtils.asAccount("0.0.2");
-	private final long A = 1_000L;
-	private final AccountID b = IdUtils.asAccount("0.0.4");
-	private final long B = 1_001L;
-	private final AccountID c = IdUtils.asAccount("0.0.6");
-	private final long C = 1_002L;
+	private static final AccountID a = IdUtils.asAccount("0.0.2");
+	private static final long A = 1_000L;
+	private static final AccountID b = IdUtils.asAccount("0.0.4");
+	private static final AccountID c = IdUtils.asAccount("0.0.6");
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, TransferListChecks::new);
+	}
 
 	@Test
 	void acceptsDegenerateCases() {
-		// expect:
 		assertFalse(hasRepeatedAccount(TransferList.getDefaultInstance()));
 		assertFalse(hasRepeatedAccount(TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(A).build())
@@ -49,7 +53,6 @@ class TransferListChecksTest {
 
 	@Test
 	void distinguishesRepeated() {
-		// expect:
 		assertFalse(hasRepeatedAccount(withAdjustments(a, -4L, b, +2L, c, +2L)));
 		assertTrue(hasRepeatedAccount(withAdjustments(a, -4L, b, +2L, a, +2L)));
 		assertTrue(hasRepeatedAccount(withAdjustments(a, -4L, b, +2L, b, +2L)));

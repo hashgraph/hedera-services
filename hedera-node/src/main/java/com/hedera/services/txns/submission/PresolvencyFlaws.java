@@ -50,7 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
  */
 class PresolvencyFlaws {
 	private static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureWithUnknownFeeReq(
-			ResponseCodeEnum error
+			final ResponseCodeEnum error
 	) {
 		return Pair.of(new TxnValidityAndFeeReq(error), Optional.empty());
 	}
@@ -80,10 +80,14 @@ class PresolvencyFlaws {
 		WELL_KNOWN_FLAWS.put(DUPLICATE_TRANSACTION, failureWithUnknownFeeReq(DUPLICATE_TRANSACTION));
 	}
 
-	static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> responseForFlawed(ResponseCodeEnum status) {
-		Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response;
+	static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> responseForFlawed(final ResponseCodeEnum status) {
+		final Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response;
 		return (response = WELL_KNOWN_FLAWS.get(status)) != null
 				? response
 				: Pair.of(new TxnValidityAndFeeReq(status), Optional.empty());
+	}
+
+	PresolvencyFlaws() {
+		throw new IllegalStateException("Utility Class");
 	}
 }

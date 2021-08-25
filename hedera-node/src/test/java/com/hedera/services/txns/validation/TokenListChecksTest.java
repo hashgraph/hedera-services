@@ -36,11 +36,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class TokenListChecksTest {
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, TokenListChecks::new);
+	}
+
 	@Test
 	void permitsAdminKeyRemoval() {
 		final Predicate<Key> adminKeyRemoval = mock(Predicate.class);
