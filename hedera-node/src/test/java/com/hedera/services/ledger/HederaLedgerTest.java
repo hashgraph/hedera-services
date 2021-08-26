@@ -24,7 +24,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
@@ -422,9 +421,9 @@ public class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void persistsNewTokenAssociationsAsExpected() {
-		var tokenId = new EntityId(1,2,3);
-		var accountId = new EntityId(2,3,4);
-		var tokenAssociation = new FcTokenAssociation(tokenId, accountId);
+		var tokenNum = 3;
+		var accountNum = 4;
+		var tokenAssociation = new FcTokenAssociation(tokenNum, accountNum);
 		subject.addNewAssociationToList(tokenAssociation);
 
 		assertEquals(tokenAssociation, subject.getNewTokenAssociations().get(0));

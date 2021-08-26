@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -66,7 +67,8 @@ class MerkleAccountStateTest {
 	private static final EntityId proxy = new EntityId(1L, 2L, 3L);
 	private static final int maxAutoAssociaitons = 1234;
 	private static final int alreadyUsedAutoAssociations = 123;
-	private static final int autoAssociationMetadata = buildMeta(maxAutoAssociaitons, alreadyUsedAutoAssociations);
+	private static final int autoAssociationMetadata =
+			buildAutomaticAssociationMetaData(maxAutoAssociaitons, alreadyUsedAutoAssociations);
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -405,9 +407,5 @@ class MerkleAccountStateTest {
 		defaultSubject.setMaxAutomaticAssociations(changeMax);
 
 		assertEquals(changeMax, defaultSubject.getMaxAutomaticAssociations());
-	}
-
-	static int buildMeta(int maxAutoAssociaitons, int alreadyUsedAutoAssociations) {
-		return (alreadyUsedAutoAssociations << 16) | maxAutoAssociaitons;
 	}
 }

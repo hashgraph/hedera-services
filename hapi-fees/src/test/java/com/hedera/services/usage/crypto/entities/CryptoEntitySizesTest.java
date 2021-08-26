@@ -42,6 +42,6 @@ class CryptoEntitySizesTest {
 		var actual = subject.bytesInTokenAssocRepr();
 
 		// then:
-		assertEquals(LONG_SIZE + 2 * BOOL_SIZE, actual);
+		assertEquals(LONG_SIZE + 3 * BOOL_SIZE, actual);
 	}
 }

@@ -126,7 +126,7 @@ class ExpiringCreationsTest {
 	private final List<FcAssessedCustomFee> customFeesCharged = List.of(
 			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, new long[] { 123L }));
 	private final List<FcTokenAssociation> newTokenAssociations = List.of(
-			new FcTokenAssociation(customFeeToken, customFeeCollector));
+			new FcTokenAssociation(customFeeToken.num(), customFeeCollector.num()));
 
 
 	@BeforeEach

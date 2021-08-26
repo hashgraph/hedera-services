@@ -58,6 +58,7 @@ public class CryptoUpdateResourceUsage implements TxnResourceUsageEstimator {
 					.setCurrentExpiry(details.getExpirationTime().getSeconds())
 					.setCurrentlyHasProxy(details.hasProxyAccountID())
 					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
 					.build();
 			return cryptoOpsUsage.cryptoUpdateUsage(txn, sigUsage, ctx);
 		} else {
@@ -73,6 +74,7 @@ public class CryptoUpdateResourceUsage implements TxnResourceUsageEstimator {
 				.setCurrentKey(Key.getDefaultInstance())
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
 				.build();
 	}
 }

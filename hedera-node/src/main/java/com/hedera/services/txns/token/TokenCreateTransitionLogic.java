@@ -130,7 +130,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 		for (final var rel : relationsToPersist) {
 			newTokenAssociations.add(new FcTokenAssociation(
-					rel.getToken().getId().asEntityId(), rel.getAccount().getId().asEntityId()));
+					rel.getToken().getId().getNum(), rel.getAccount().getId().getNum()));
 			accountStore.persistAccount(rel.getAccount());
 		}
 		txnCtx.setNewTokenAssociations(newTokenAssociations);

@@ -35,6 +35,7 @@ import com.swirlds.fcqueue.FCQueueElement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -49,7 +50,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final List<NftAdjustments> NO_NFT_TOKEN_ADJUSTMENTS = null;
 	static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = null;
 	static final EntityId NO_SCHEDULE_REF = null;
-	static final List<FcTokenAssociation> NO_NEW_TOKEN_ASSOCIATIONS = new ArrayList<>();
+	static final List<FcTokenAssociation> NO_NEW_TOKEN_ASSOCIATIONS = Collections.emptyList();
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
@@ -267,8 +268,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
 		}
 		if (version >= RELEASE_0180_VERSION) {
-			// TODO get the right max : currently using maxCustom fee collectors + treasury
-			newTokenAssociations = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES+1);
+			newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
 		}
 	}
 

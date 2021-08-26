@@ -34,6 +34,10 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -50,9 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
  * memo field, for example, is not yet present.
  */
 public class Account {
-	private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
-	private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK << 16;
-
 	private final Id id;
 
 	private long expiry;
@@ -99,20 +100,20 @@ public class Account {
 	}
 
 	public int getMaxAutomaticAssociations() {
-		return autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK;
+		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
 	public int getAlreadyUsedAutomaticAssociations() {
-		return (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) >> 16;
+		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
-		autoAssociationMetadata = (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
+		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
 		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTO_ASSOCIATIONS );
-		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
+		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
 	public void incrementUsedAutomaticAssocitions() {

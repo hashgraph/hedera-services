@@ -152,7 +152,7 @@ class AwareTransactionContextTest {
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	private JKey payerKey;
 	private List<FcTokenAssociation> newTokenAssociations = List.of(new FcTokenAssociation(
-			EntityId.fromGrpcTokenId(tokenCreated), EntityId.fromGrpcAccountId(payer)));
+			tokenCreated.getTokenNum(), payer.getAccountNum()));
 
 	@Inject
 	private LogCaptor logCaptor;

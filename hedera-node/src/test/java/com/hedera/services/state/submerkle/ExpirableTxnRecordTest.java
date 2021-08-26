@@ -65,7 +65,7 @@ class ExpirableTxnRecordTest {
 	private static final AccountID beneficiary = IdUtils.asAccount("1.2.6");
 	private static final AccountID magician = IdUtils.asAccount("1.2.7");
 	private static final List<TokenAssociation> newRelationships = List.of(new FcTokenAssociation(
-			new EntityId(1, 2, 10), new EntityId(1, 2, 11)).toGrpc());
+			10, 11).toGrpc());
 
 	private static final EntityId feeCollector = new EntityId(1, 2, 8);
 	private static final EntityId token = new EntityId(1, 2, 9);
@@ -255,7 +255,7 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getMemo());
 		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
 				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES+1))
+		given(fin.readSerializableList(Integer.MAX_VALUE))
 				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
 		final var deserializedRecord = new ExpirableTxnRecord();
 
@@ -338,7 +338,7 @@ class ExpirableTxnRecordTest {
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
 				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=(FcTokenAssociation" +
-				"{token=EntityId{shard=1, realm=2, num=10}, account=EntityId{shard=1, realm=2, num=11}})}";
+				"{token=10, account=11})}";
 
 		assertEquals(desired, subject.toString());
 	}

@@ -240,7 +240,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 								automaticAssociation);
 
 						hederaLedger.addNewAssociationToList(
-								new FcTokenAssociation(EntityId.fromGrpcTokenId(id), EntityId.fromGrpcAccountId(aId)));
+								new FcTokenAssociation(id.getTokenNum(), aId.getAccountNum()));
 						if (automaticAssociation) {
 							hederaLedger.setAlreadyUsedAutomaticAssociations(aId, alreadyUsedAutomaticAssociations + 1);
 						}

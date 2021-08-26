@@ -122,6 +122,7 @@ class CryptoOpsUsageTest {
 				.setCurrentKey(key)
 				.setCurrentlyHasProxy(true)
 				.setCurrentNumTokenRels(numTokenRels)
+				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.build();
 		// and:
 		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
@@ -145,9 +146,9 @@ class CryptoOpsUsageTest {
 	void estimatesCreationWithMaxAutoAssociationsAsExpected() {
 		givenCreationOpWithMaxAutoAssociaitons();
 		// and given:
-		long rb = basicReprBytes() + INT_SIZE;
+		long rb = basicReprBytes();
 		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE + INT_SIZE;
+				+ 2 * LONG_SIZE + BOOL_SIZE;
 
 		// when:
 		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
@@ -164,9 +165,9 @@ class CryptoOpsUsageTest {
 	void estimatesCreationWithOutMaxAutoAssociationsAsExpected() {
 		givenCreationOpWithOutMaxAutoAssociaitons();
 		// and given:
-		long rb = basicReprBytes();
+		long rb = basicReprBytes() - INT_SIZE;
 		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ 2 * LONG_SIZE + BOOL_SIZE;
+				+ 2 * LONG_SIZE + BOOL_SIZE - INT_SIZE;
 
 		// when:
 		var estimate = subject.cryptoCreateUsage(txn, sigUsage);
@@ -192,6 +193,7 @@ class CryptoOpsUsageTest {
 				.setCurrentKey(key)
 				.setCurrentlyHasProxy(true)
 				.setCurrentNumTokenRels(numTokenRels)
+				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.build();
 
 		// when:
@@ -208,11 +210,12 @@ class CryptoOpsUsageTest {
 		long oldExpiry = expiry - 1_234L;
 		boolean oldWasUsingProxy = false;
 		String oldMemo = "Lettuce";
+		int oldMaxAutoAssociations = maxAutoAssociations - 5;
 		// and:
 		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 		// and:
 		long oldRbs = (oldExpiry - now) *
-				(oldMemo.length() + getAccountKeyStorageSize(oldKey)
+				(oldMemo.length() + getAccountKeyStorageSize(oldKey) + INT_SIZE
 						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
 						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 		// and:
@@ -229,6 +232,7 @@ class CryptoOpsUsageTest {
 				.setCurrentKey(oldKey)
 				.setCurrentlyHasProxy(oldWasUsingProxy)
 				.setCurrentNumTokenRels(numTokenRels)
+				.setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
 				.build();
 
 		// when:
@@ -237,7 +241,7 @@ class CryptoOpsUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE + INT_SIZE);
+		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
 		verify(base).addRbs(newRbs - oldRbs);
 	}
 
@@ -249,10 +253,10 @@ class CryptoOpsUsageTest {
 		boolean oldWasUsingProxy = false;
 		String oldMemo = "Lettuce";
 		// and:
-		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() - INT_SIZE;
 		// and:
 		long oldRbs = (oldExpiry - now) *
-				(oldMemo.length() + getAccountKeyStorageSize(oldKey)
+				(oldMemo.length() + getAccountKeyStorageSize(oldKey) + INT_SIZE
 						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
 						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 		// and:
@@ -269,6 +273,7 @@ class CryptoOpsUsageTest {
 				.setCurrentKey(oldKey)
 				.setCurrentlyHasProxy(oldWasUsingProxy)
 				.setCurrentNumTokenRels(numTokenRels)
+				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.build();
 
 		// when:
@@ -286,7 +291,8 @@ class CryptoOpsUsageTest {
 				/* The proxy account */
 				+ BASIC_ENTITY_ID_SIZE
 				+ memo.length()
-				+ FeeBuilder.getAccountKeyStorageSize(key);
+				+ FeeBuilder.getAccountKeyStorageSize(key)
+				+ (maxAutoAssociations != 0 ? INT_SIZE : 0);
 	}
 
 	private void givenUpdateOpWithOutMaxAutoAssociations() {

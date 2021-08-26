@@ -140,6 +140,14 @@ public class CryptoOpsUsage {
 			estimate.addRbs(rbsDelta);
 		}
 
+		long maxAutoAssociationsDelta = op.hasMaxAutomaticTokenAssociations() ?
+				((op.getMaxAutomaticTokenAssociations().getValue() * newLifetime)
+						- (ctx.currentMaxAutomaticAssociations() * oldLifetime)) : 0L;
+
+		if (maxAutoAssociationsDelta > 0) {
+			estimate.addRbs(maxAutoAssociationsDelta * INT_SIZE);
+		}
+
 		return estimate.get();
 	}
 
@@ -163,6 +171,7 @@ public class CryptoOpsUsage {
 		   plus a boolean for receiver sig required. */
 		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
 		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
+		estimate.addRbs(op.getMaxAutomaticTokenAssociations() * INT_SIZE * lifetime);
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();

@@ -34,17 +34,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
-
-	/* This will mask the most significant 16 bits and just give us the least sig 16
-	which represent Max auto associations */
-	private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
-	/* This will mask the least significant 16 bits and just give us the most sig 16
-	which represent already used auto associations */
-	private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK << 16;
 
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
 
@@ -311,21 +308,21 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public int getMaxAutomaticAssociations() {
-		return autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK;
+		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
 	public int getAlreadyUsedAutomaticAssociations() {
-		return (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) >> 16;
+		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
 	}
 
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
 		assertMutable("maxAutomaticAssociations");
-		autoAssociationMetadata = (autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
+		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
 		assertMutable("alreadyUsedAutomaticAssociations");
-		autoAssociationMetadata = (alreadyUsedCount << 16) | getMaxAutomaticAssociations();
+		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
 	private void assertMutable(String proximalField) {

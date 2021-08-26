@@ -21,7 +21,9 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -41,25 +43,25 @@ public class FcTokenAssociation implements SelfSerializable {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x41a2569130b01d2fL;
 
-	private EntityId tokenId;
-	private EntityId accountId;
+	private long tokenId;
+	private long accountId;
 
 	public FcTokenAssociation() {
 		/* For RuntimeConstructable */
 	}
 
 	public FcTokenAssociation(
-			final EntityId tokenId,
-			final EntityId accountId
+			final long tokenId,
+			final long accountId
 	) {
 		this.tokenId = tokenId;
 		this.accountId = accountId;
 	}
-	public EntityId token() {
+	public long token() {
 		return tokenId;
 	}
 
-	public EntityId account() {
+	public long account() {
 		return accountId;
 	}
 
@@ -83,28 +85,27 @@ public class FcTokenAssociation implements SelfSerializable {
 
 	public TokenAssociation toGrpc() {
 		return TokenAssociation.newBuilder()
-							.setAccountId(accountId.toGrpcAccountId())
-							.setTokenId(tokenId.toGrpcTokenId())
+							.setAccountId(AccountID.newBuilder().setAccountNum(accountId).build())
+							.setTokenId(TokenID.newBuilder().setTokenNum(tokenId).build())
 							.build();
 	}
 
 	public static FcTokenAssociation fromGrpc(TokenAssociation tokenAssociation) {
 		return new FcTokenAssociation(
-				EntityId.fromGrpcTokenId(tokenAssociation.getTokenId()),
-				EntityId.fromGrpcAccountId(tokenAssociation.getAccountId()));
+				tokenAssociation.getTokenId().getTokenNum(), tokenAssociation.getAccountId().getAccountNum());
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in,
 			final int version) throws IOException {
-		tokenId = in.readSerializable();
-		accountId = in.readSerializable();
+		tokenId = in.readLong();
+		accountId = in.readLong();
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
-		out.writeSerializable(tokenId, true);
-		out.writeSerializable(accountId, true);
+		out.writeLong(tokenId);
+		out.writeLong(accountId);
 	}
 
 	@Override

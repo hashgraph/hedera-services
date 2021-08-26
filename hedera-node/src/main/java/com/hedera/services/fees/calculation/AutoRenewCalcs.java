@@ -123,6 +123,7 @@ public class AutoRenewCalcs {
 				.setCurrentlyHasProxy(account.getProxy() != null)
 				.setCurrentMemo(account.getMemo())
 				.setCurrentNumTokenRels(account.tokens().numAssociations())
+				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.build();
 		return cryptoOpsUsage.cryptoAutoRenewRb(extantCtx);
 	}

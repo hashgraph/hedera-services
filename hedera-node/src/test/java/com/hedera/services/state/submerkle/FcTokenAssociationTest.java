@@ -20,7 +20,9 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -39,12 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class FcTokenAssociationTest {
-	private final EntityId accountId = new EntityId(4, 5, 6);
-	private final EntityId tokenId = new EntityId(1, 2, 3);
-	private final FcTokenAssociation subject = new FcTokenAssociation(tokenId, accountId);
+	private final long accountNum = 6;
+	private final long tokenNum = 3;
+	private final FcTokenAssociation subject = new FcTokenAssociation(tokenNum, accountNum);
 	private final TokenAssociation grpc = TokenAssociation.newBuilder()
-			.setTokenId(tokenId.toGrpcTokenId())
-			.setAccountId(accountId.toGrpcAccountId())
+			.setTokenId(TokenID.newBuilder().setTokenNum(tokenNum).build())
+			.setAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
 			.build();
 
 	@Test
@@ -70,7 +72,7 @@ class FcTokenAssociationTest {
 
 	@Test
 	void toStringWorks() {
-		assertEquals("FcTokenAssociation{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, num=6}}",
+		assertEquals("FcTokenAssociation{token=3, account=6}",
 				subject.toString());
 	}
 
