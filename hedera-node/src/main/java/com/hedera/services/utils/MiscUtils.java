@@ -40,9 +40,9 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
 import java.math.BigInteger;
@@ -692,14 +692,14 @@ public class MiscUtils {
 		return x;
 	}
 
-	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
-			FCMap<K, V> map,
+	public static <K, V extends MerkleNode & Keyed<K>> void forEach(
+			MerkleMap<K, V> map,
 			BiConsumer<? super K, ? super V> action
 	) {
 		map.forEachNode((final MerkleNode node) -> {
-			if (node != null && node.getClassId() == MerklePair.CLASS_ID) {
-				final MerklePair<K, V> pair = node.cast();
-				action.accept(pair.getKey(), pair.getValue());
+			if (node != null && node.isLeaf()) {
+				final V leaf = node.cast();
+				action.accept(leaf.getKey(), leaf);
 			}
 		});
 	}

@@ -34,11 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.MerkleAccount.ChildIndices.RELEASE_090_ASSOCIATED_TOKENS;
-import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -162,7 +158,7 @@ class MerkleAccountTest {
 		assertEquals(state.isReceiverSigRequired(), subject.isReceiverSigRequired());
 		assertEquals(state.memo(), subject.getMemo());
 		assertEquals(state.proxy(), subject.getProxy());
-		assertTrue(equalUpToDecodability(state.key(), subject.getKey()));
+		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
 	}
 
@@ -194,7 +190,7 @@ class MerkleAccountTest {
 		subject.setReceiverSigRequired(otherReceiverSigRequired);
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
-		subject.setKey(otherKey);
+		subject.setAccountKey(otherKey);
 
 		// then:
 		verify(delegate).setExpiry(otherExpiry);

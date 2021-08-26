@@ -21,10 +21,10 @@ package com.hedera.services.txns.customfees;
  */
 
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -37,10 +37,10 @@ import java.util.function.Supplier;
  */
 @Singleton
 public class FcmCustomFeeSchedules implements CustomFeeSchedules {
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
 
 	@Inject
-	public FcmCustomFeeSchedules(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
+	public FcmCustomFeeSchedules(Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens) {
 		this.tokens = tokens;
 	}
 
@@ -54,7 +54,7 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 		return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
 	}
 
-	public Supplier<FCMap<MerkleEntityId, MerkleToken>> getTokens() {
+	public Supplier<MerkleMap<PermHashInteger, MerkleToken>> getTokens() {
 		return tokens;
 	}
 

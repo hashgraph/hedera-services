@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -202,6 +203,6 @@ class MerkleUniqueTokenIdTest {
 		);
 
 		// expect:
-		assertEquals(expected, MerkleUniqueTokenId.fromNftId(new NftId(0, 0, 1, 1)));
+		assertEquals(expected, PermHashLong.fromNftId(new NftId(0, 0, 1, 1)));
 	}
 }

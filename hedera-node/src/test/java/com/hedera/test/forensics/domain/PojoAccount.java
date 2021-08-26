@@ -87,7 +87,7 @@ public class PojoAccount {
 		pojo.setId(asAccountString(fromKey(mk)));
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
-		pojo.setKeys(value.getKey().toString());
+		pojo.setKeys(value.getAccountKey().toString());
 		pojo.setNumPayerRecords(value.records().size());
 		pojo.setHasMutablePayerRecords(!value.records().isImmutable());
 		if (pojo.getNumPayerRecords() > 0) {

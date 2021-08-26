@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -60,10 +61,6 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 			long serialNumber
 	) {
 		this.nftCode = nftCodeFrom(tokenId.num(), serialNumber);
-	}
-
-	public static MerkleUniqueTokenId fromNftId(NftId id) {
-		return new MerkleUniqueTokenId(nftCodeFrom(id.num(), id.serialNo()));
 	}
 
 	/**

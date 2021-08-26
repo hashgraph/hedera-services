@@ -47,10 +47,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -58,7 +55,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
@@ -67,6 +63,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
@@ -81,7 +78,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -233,7 +230,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleAccount>> provideWorkingAccounts(
+	public static Supplier<MerkleMap<PermHashInteger, MerkleAccount>> provideWorkingAccounts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::accounts;
@@ -241,7 +238,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> provideWorkingStorage(
+	public static Supplier<MerkleMap<String, MerkleOptionalBlob>> provideWorkingStorage(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::storage;
@@ -249,7 +246,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleTopic>> provideWorkingTopics(
+	public static Supplier<MerkleMap<PermHashInteger, MerkleTopic>> provideWorkingTopics(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::topics;
@@ -257,7 +254,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleToken>> provideWorkingTokens(
+	public static Supplier<MerkleMap<PermHashInteger, MerkleToken>> provideWorkingTokens(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokens;
@@ -265,7 +262,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
+	public static Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokenAssociations;
@@ -273,7 +270,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleEntityId, MerkleSchedule>> provideWorkingSchedules(
+	public static Supplier<MerkleMap<PermHashInteger, MerkleSchedule>> provideWorkingSchedules(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::schedules;
@@ -281,7 +278,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> provideWorkingNfts(
+	public static Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> provideWorkingNfts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokens;

@@ -23,10 +23,10 @@ package com.hedera.services.fees.calculation.consensus.txns;
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.DurationConverter;
 import com.hedera.test.utils.Ed25519KeyConverter;
@@ -122,7 +122,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
                 new JEd25519Key(CommonUtils.unhex(submitKeyString)),
                 0, new EntityId(0,1,2), new RichInstant(36_000, 0));
 
-        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+        given(topics.get(PermHashInteger.fromTopicId(topicId))).willReturn(merkleTopic);
         MockedStatic<JKey> mockedJkey = mockStatic(JKey.class);
         mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new DecoderException());
 
@@ -140,7 +140,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
                 IdUtils.asAccount("0.1.2"),
                 null,
                 null);
-        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(null);
+        given(topics.get(PermHashInteger.fromTopicId(topicId))).willReturn(null);
 
         // when
         FeeData feeData = subject.usageGiven(txBody, sigValueObj, view);
@@ -188,7 +188,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
                 Optional.ofNullable(newExpirationTimestamp).map(RichInstant::toGrpc).orElse(null));
 
         // when:
-        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+        given(topics.get(PermHashInteger.fromTopicId(topicId))).willReturn(merkleTopic);
         FeeData feeData = subject.usageGiven(txBody, sigValueObj, view);
 
         // expect:

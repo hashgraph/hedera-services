@@ -20,11 +20,11 @@ package com.hedera.services.txns.customfees;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 @ExtendWith(MockitoExtension.class)
 class FcmCustomFeeSchedulesTest {
 	private FcmCustomFeeSchedules subject;
-	FCMap<MerkleEntityId, MerkleToken> tokenFCMap = new FCMap<>();
+	MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
 
 	private final EntityId aTreasury = new EntityId(10, 11, 12);
 	private final EntityId bTreasury = new EntityId(11, 12, 13);
@@ -61,9 +61,9 @@ class FcmCustomFeeSchedulesTest {
 		bToken.setFeeScheduleFrom(tokenBFees, null);
 		bToken.setTreasury(bTreasury);
 
-		tokenFCMap.put(tokenA.asMerkle(), aToken);
-		tokenFCMap.put(tokenB.asMerkle(), bToken);
-		subject = new FcmCustomFeeSchedules(() -> tokenFCMap);
+		tokens.put(PermHashInteger.asPhi(tokenA.num()), aToken);
+		tokens.put(PermHashInteger.asPhi(tokenB.num()), bToken);
+		subject = new FcmCustomFeeSchedules(() -> tokens);
 	}
 
 	@Test
@@ -83,20 +83,20 @@ class FcmCustomFeeSchedulesTest {
 
 	@Test
 	void getterWorks() {
-		assertEquals(tokenFCMap, subject.getTokens().get());
+		assertEquals(tokens, subject.getTokens().get());
 	}
 
 	@Test
 	void testObjectContract() {
 		// given:
-		FCMap<MerkleEntityId, MerkleToken> secondFCMap = new FCMap<>();
+		MerkleMap<PermHashInteger, MerkleToken> secondMerkleMap = new MerkleMap<>();
 		MerkleToken token = new MerkleToken();
 		final var missingFees = List.of(
 				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
 		token.setFeeScheduleFrom(missingFees, null);
-		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
-		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
-		final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);
+		secondMerkleMap.put(PermHashInteger.asPhi(missingToken.num()), new MerkleToken());
+		final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
+		final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
 
 		// expect:
 		assertNotEquals(fees1, fees2);

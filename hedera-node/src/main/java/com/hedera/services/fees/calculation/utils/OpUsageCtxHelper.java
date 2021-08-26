@@ -20,13 +20,13 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,15 +43,15 @@ public class OpUsageCtxHelper {
 
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
 
 	@Inject
-	public OpUsageCtxHelper(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
+	public OpUsageCtxHelper(Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens) {
 		this.tokens = tokens;
 	}
 
 	public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {
-		final var key = MerkleEntityId.fromTokenId(op.getTokenId());
+		final var key = PermHashInteger.fromTokenId(op.getTokenId());
 		final var token = tokens.get().get(key);
 		if (token == null) {
 			return MISSING_FEE_SCHEDULE_UPDATE_CTX;

@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
@@ -83,7 +84,7 @@ class OpUsageCtxHelperTest {
 		extant.setFeeSchedule(fcFees());
 		final var expBytes = tokenOpsUsage.bytesNeededToRepr(1, 2, 3, 1, 1, 1);
 
-		given(tokens.get(MerkleEntityId.fromTokenId(target))).willReturn(extant);
+		given(tokens.get(PermHashInteger.fromTokenId(target))).willReturn(extant);
 
 		// when:
 		final var ctx = subject.ctxForFeeScheduleUpdate(op());

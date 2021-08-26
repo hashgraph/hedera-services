@@ -20,18 +20,18 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -52,13 +52,13 @@ import static com.hedera.services.store.tokens.views.internals.PermHashInteger.a
  * and builds the {@link TokenNftInfo} accordingly.
  */
 public abstract class AbstractUniqTokenView implements UniqTokenView {
-	protected final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	protected final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
+	protected final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
+	protected final Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts;
 	protected final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
 
 	protected AbstractUniqTokenView(
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
+			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
+			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts,
 			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType
 	) {
 		this.tokens = tokens;
@@ -120,7 +120,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		return answer;
 	}
 
-	private AccountID treasuryOf(FCMap<MerkleEntityId, MerkleToken> curTokens, EntityId tokenId) {
+	private AccountID treasuryOf(MerkleMap<PermHashInteger, MerkleToken> curTokens, EntityId tokenId) {
 		final var token = curTokens.get(tokenId.asMerkle());
 		if (token == null) {
 			throw new ConcurrentModificationException(

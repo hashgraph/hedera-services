@@ -21,6 +21,11 @@ package com.hedera.services.store.tokens.views.internals;
  */
 
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces
@@ -39,6 +44,46 @@ public class PermHashInteger {
 
 	public static PermHashInteger asPhi(int i) {
 		return new PermHashInteger(i);
+	}
+
+	public static PermHashInteger asPhi(long i) {
+		return new PermHashInteger((int) i);
+	}
+
+	public static PermHashInteger fromAccountId(AccountID grpc) {
+		return asPhi(grpc.getAccountNum());
+	}
+
+	public static PermHashInteger fromTokenId(TokenID grpc) {
+		return asPhi(grpc.getTokenNum());
+	}
+
+	public static PermHashInteger fromTopicId(TopicID grpc) {
+		return asPhi(grpc.getTopicNum());
+	}
+
+	public static PermHashInteger fromContractId(ContractID grpc) {
+		return asPhi(grpc.getContractNum());
+	}
+
+	public static PermHashInteger fromScheduleId(ScheduleID grpc) {
+		return asPhi(grpc.getScheduleNum());
+	}
+
+	public ScheduleID asGrpcScheduleId() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public AccountID asGrpcAccountId() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public TokenID asGrpcTokenId() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public String asAbbrevString() {
+		throw new AssertionError("Not implemented!");
 	}
 
 	@Override

@@ -42,7 +42,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	static final int RELEASE_090_VERSION = 4;
 	static final int RELEASE_0160_VERSION = 5;
-	private static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+	static final int RELEASE_0180_VERSION = 6;
+	private static final int MERKLE_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -59,6 +60,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private boolean receiverSigRequired;
 	private EntityId proxy;
 	private long nftsOwned;
+	private int number;
 
 	public MerkleAccountState() {
 	}
@@ -197,6 +199,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("proxy", proxy)
 				.add("nftsOwned", nftsOwned)
 				.toString();
+	}
+
+	public int number() {
+		return number;
 	}
 
 	public JKey key() {

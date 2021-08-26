@@ -36,7 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
 
 @Singleton
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
@@ -57,7 +57,7 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
 		try {
-			MerkleEntityId id = fromContractId(txn.getContractUpdateInstance().getContractID());
+			final var id = fromContractId(txn.getContractUpdateInstance().getContractID());
 			Timestamp expiry = lookupAccountExpiry(id, view.accounts());
 			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
 		} catch (Exception e) {

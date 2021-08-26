@@ -22,12 +22,12 @@ package com.hedera.services.fees.calculation;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,7 +44,10 @@ public class FeeCalcUtils {
 		throw new IllegalStateException("Utility class");
 	}
 
-	public static Timestamp lookupAccountExpiry(MerkleEntityId key, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public static Timestamp lookupAccountExpiry(
+			PermHashInteger key,
+			MerkleMap<PermHashInteger, MerkleAccount> accounts
+	) {
 		try {
 			MerkleAccount account = accounts.get(key);
 			long expiration = account.getExpiry();

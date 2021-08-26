@@ -21,8 +21,8 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,24 +30,24 @@ import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.time.Instant;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromTopicId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -56,12 +56,12 @@ import static org.mockito.BDDMockito.verify;
 
 class MerkleTopicDeleteTransitionLogicTest {
 	final private String TOPIC_ID = "8.6.75309";
-	final private MerkleEntityId topicFcKey = fromTopicId(asTopic(TOPIC_ID));
+	final private PermHashInteger topicFcKey = fromTopicId(asTopic(TOPIC_ID));
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
 	private PlatformTxnAccessor accessor;
-	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
+	private MerkleMap<PermHashInteger, MerkleTopic> topics = new MerkleMap<>();
 	private OptionValidator validator;
 	private TopicDeleteTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
@@ -117,7 +117,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(validator.queryableTopicStatus(any(), any())).willReturn(OK);
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 
-		topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
+		topics = (MerkleMap<PermHashInteger, MerkleTopic>) mock(MerkleMap.class);
 
 		given(topics.get(topicFcKey)).willReturn(deletableTopic);
 		given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);

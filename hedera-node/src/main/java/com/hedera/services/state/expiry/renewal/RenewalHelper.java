@@ -24,16 +24,16 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,7 +51,7 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
@@ -63,24 +63,24 @@ public class RenewalHelper {
 	private final long shard, realm;
 	private final TokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels;
 
 	/* Only needed for interoperability, will be removed during refactor */
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	private MerkleAccount lastClassifiedAccount = null;
-	private MerkleEntityId lastClassifiedEntityId;
+	private PermHashInteger lastClassifiedEntityId;
 
 	@Inject
 	public RenewalHelper(
 			TokenStore tokenStore,
 			HederaNumbers hederaNumbers,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
+			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
+			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
+			Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels,
 			BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		this.shard = hederaNumbers.shard();
@@ -94,7 +94,7 @@ public class RenewalHelper {
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
-		lastClassifiedEntityId = new MerkleEntityId(shard, realm, candidateNum);
+		lastClassifiedEntityId = PermHashInteger.asPhi(candidateNum);
 		var currentAccounts = accounts.get();
 
 		if (!currentAccounts.containsKey(lastClassifiedEntityId)) {
@@ -121,7 +121,7 @@ public class RenewalHelper {
 			if (gracePeriodEnd > now) {
 				return DETACHED_ACCOUNT;
 			}
-			final var grpcId = lastClassifiedEntityId.toAccountId();
+			final var grpcId = lastClassifiedEntityId.asGrpcAccountId();
 			if (tokenStore.isKnownTreasury(grpcId)) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 			}
@@ -139,7 +139,7 @@ public class RenewalHelper {
 		Pair<List<EntityId>, List<CurrencyAdjustments>> displacements = Pair.of(new ArrayList<>(), new ArrayList<>());
 		final var lastClassifiedTokens = lastClassifiedAccount.tokens();
 		if (lastClassifiedTokens.numAssociations() > 0) {
-			final var grpcId = lastClassifiedEntityId.toAccountId();
+			final var grpcId = lastClassifiedEntityId.asGrpcAccountId();
 			final var currentTokens = tokens.get();
 			for (var tId : lastClassifiedTokens.asTokenIds()) {
 				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
@@ -147,7 +147,7 @@ public class RenewalHelper {
 		}
 
 		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
-		backingAccounts.remove(lastClassifiedEntityId.toAccountId());
+		backingAccounts.remove(lastClassifiedEntityId.asGrpcAccountId());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
@@ -182,7 +182,7 @@ public class RenewalHelper {
 			AccountID expired,
 			TokenID scopedToken,
 			Pair<List<EntityId>, List<CurrencyAdjustments>> displacements,
-			FCMap<MerkleEntityId, MerkleToken> currentTokens
+			MerkleMap<PermHashInteger, MerkleToken> currentTokens
 	) {
 		final var currentTokenRels = tokenRels.get();
 		final var expiredRel = fromAccountTokenRel(expired, scopedToken);
@@ -191,7 +191,7 @@ public class RenewalHelper {
 
 		currentTokenRels.remove(expiredRel);
 
-		final var tKey = MerkleEntityId.fromTokenId(scopedToken);
+		final var tKey = PermHashInteger.fromTokenId(scopedToken);
 		if (!currentTokens.containsKey(tKey)) {
 			return;
 		}
@@ -229,7 +229,7 @@ public class RenewalHelper {
 
 	private void assertLastClassifiedAccountCanAfford(long fee) {
 		if (lastClassifiedAccount.getBalance() < fee) {
-			var msg = "Cannot charge " + fee + " to " + lastClassifiedEntityId.toAbbrevString() + "!";
+			var msg = "Cannot charge " + fee + " to account number " + lastClassifiedEntityId.getValue() + "!";
 			throw new IllegalStateException(msg);
 		}
 	}

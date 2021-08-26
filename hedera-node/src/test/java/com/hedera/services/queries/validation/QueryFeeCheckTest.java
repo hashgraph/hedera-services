@@ -23,6 +23,7 @@ package com.hedera.services.queries.validation;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -68,13 +69,13 @@ class QueryFeeCheckTest {
 	private static final long aLittle = 2L;
 	private static final long aLot = Long.MAX_VALUE - 1L;
 	private static final long aFew = 100L;
-	private static final MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
-	private static final MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
-	private static final MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
-	private static final MerkleEntityId nodeKey = MerkleEntityId.fromAccountId(aNode);
-	private static final MerkleEntityId anotherNodeKey = MerkleEntityId.fromAccountId(anotherNode);
-	private static final MerkleEntityId queryPayerKey = MerkleEntityId.fromAccountId(aQueryPayer);
-	private static final MerkleEntityId testPayerKey = MerkleEntityId.fromAccountId(aTestPayer);
+	private static final MerkleEntityId missingKey = PermHashInteger.fromAccountId(aMissing);
+	private static final MerkleEntityId richKey = PermHashInteger.fromAccountId(aRich);
+	private static final MerkleEntityId brokeKey = PermHashInteger.fromAccountId(aBroke);
+	private static final MerkleEntityId nodeKey = PermHashInteger.fromAccountId(aNode);
+	private static final MerkleEntityId anotherNodeKey = PermHashInteger.fromAccountId(anotherNode);
+	private static final MerkleEntityId queryPayerKey = PermHashInteger.fromAccountId(aQueryPayer);
+	private static final MerkleEntityId testPayerKey = PermHashInteger.fromAccountId(aTestPayer);
 
 	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
@@ -104,7 +105,7 @@ class QueryFeeCheckTest {
 		given(accounts.get(argThat(brokeKey::equals))).willReturn(broke);
 		given(accounts.get(argThat(testPayerKey::equals))).willReturn(testPayer);
 		given(accounts.get(argThat(queryPayerKey::equals))).willReturn(queryPayer);
-		given(accounts.get(MerkleEntityId.fromAccountId(aDetached))).willReturn(detached);
+		given(accounts.get(PermHashInteger.fromAccountId(aDetached))).willReturn(detached);
 
 		given(accounts.containsKey(argThat(missingKey::equals))).willReturn(false);
 		given(accounts.containsKey(argThat(richKey::equals))).willReturn(true);

@@ -117,12 +117,12 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	KEY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, k) -> a.setKey((JKey) k);
+			return (a, k) -> a.setAccountKey((JKey) k);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getKey;
+			return MerkleAccount::getAccountKey;
 		}
 	},
 	MEMO {

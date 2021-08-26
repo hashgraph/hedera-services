@@ -37,18 +37,18 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.logic.PayerSigValidity;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -93,8 +93,8 @@ public abstract class SigsModule {
 			SignatureWaivers signatureWaivers,
 			GlobalDynamicProperties dynamicProperties,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = backedLookupsFor(
 				hfs,
@@ -118,8 +118,8 @@ public abstract class SigsModule {
 			MiscSpeedometers speedometers,
 			NodeLocalProperties nodeLocalProperties,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = defaultAccountRetryingLookupsFor(
 				hfs,
@@ -142,8 +142,8 @@ public abstract class SigsModule {
 			ScheduleStore scheduleStore,
 			SignatureWaivers signatureWaivers,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = defaultLookupsFor(
 				hfs,

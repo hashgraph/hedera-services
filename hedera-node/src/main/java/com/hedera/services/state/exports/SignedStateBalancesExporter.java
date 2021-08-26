@@ -25,10 +25,10 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -36,11 +36,9 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.NodeId;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +61,7 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 @Singleton
@@ -218,7 +216,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var id = entry.getKey();
 			var account = entry.getValue();
 			if (!account.isDeleted()) {
-				var accountId = id.toAccountId();
+				var accountId = id.asGrpcAccountId();
 				var balance = account.getBalance();
 				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
 					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,
@@ -227,8 +225,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
-				sabBuilder.setHbarBalance(balance)
-						.setAccountID(accountId);
+				sabBuilder.setHbarBalance(balance).setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
 					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
 				}
@@ -243,8 +240,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			AccountID id,
 			MerkleAccount account,
 			SingleAccountBalances.Builder sabBuilder,
-			FCMap<MerkleEntityId, MerkleToken> tokens,
-			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations
+			MerkleMap<PermHashInteger, MerkleToken> tokens,
+			MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
 		for (TokenID tokenId : accountTokens.asTokenIds()) {
@@ -258,16 +255,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	private TokenUnitBalance tb(TokenID id, long balance) {
 		return TokenUnitBalance.newBuilder().setTokenId(id).setBalance(balance).build();
-	}
-
-	static String b64Encode(SingleAccountBalances accountBalances) {
-		var wrapper = TokenBalances.newBuilder();
-		for (TokenUnitBalance tokenUnitBalance : accountBalances.getTokenUnitBalancesList()) {
-			wrapper.addTokenBalances(TokenBalance.newBuilder()
-					.setTokenId(tokenUnitBalance.getTokenId())
-					.setBalance(tokenUnitBalance.getBalance()));
-		}
-		return encoder.encodeToString(wrapper.build().toByteArray());
 	}
 
 	private boolean ensureExportDir(AccountID node) {

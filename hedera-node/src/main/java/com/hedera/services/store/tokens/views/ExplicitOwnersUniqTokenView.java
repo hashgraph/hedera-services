@@ -20,16 +20,15 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -43,8 +42,8 @@ public class ExplicitOwnersUniqTokenView extends AbstractUniqTokenView {
 	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
 
 	public ExplicitOwnersUniqTokenView(
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
+			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
+			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts,
 			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
 			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner
 	) {

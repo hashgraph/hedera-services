@@ -21,9 +21,9 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -31,16 +31,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 
 @Singleton
 public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	Set<AccountID> existingAccounts = new HashSet<>();
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> delegate;
 
 	@Inject
-	public BackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
+	public BackingAccounts(Supplier<MerkleMap<PermHashInteger, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -48,7 +48,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	public void rebuildFromSources() {
 		existingAccounts.clear();
 		delegate.get().keySet().stream()
-				.map(MerkleEntityId::toAccountId)
+				.map(PermHashInteger::asGrpcAccountId)
 				.forEach(existingAccounts::add);
 	}
 

@@ -27,10 +27,12 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,7 +47,7 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleToken extends AbstractMerkleLeaf {
+public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
@@ -85,6 +87,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
 	private List<FcCustomFee> feeSchedule = Collections.emptyList();
+	private int number;
 
 	public MerkleToken() {
 		/* No-op. */
@@ -613,5 +616,15 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public JKey getFeeScheduleKey() {
 		return feeScheduleKey;
+	}
+
+	@Override
+	public PermHashInteger getKey() {
+		return new PermHashInteger(number);
+	}
+
+	@Override
+	public void setKey(PermHashInteger permHashInteger) {
+		throw new UnsupportedOperationException();
 	}
 }

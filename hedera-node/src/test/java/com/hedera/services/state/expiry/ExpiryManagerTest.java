@@ -32,6 +32,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -61,8 +62,8 @@ class ExpiryManagerTest {
 	private final long secondThen = now + 1;
 	private final AccountID aGrpcId = IdUtils.asAccount("0.0.2");
 	private final AccountID bGrpcId = IdUtils.asAccount("0.0.4");
-	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(aGrpcId);
-	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(bGrpcId);
+	private final MerkleEntityId aKey = PermHashInteger.fromAccountId(aGrpcId);
+	private final MerkleEntityId bKey = PermHashInteger.fromAccountId(bGrpcId);
 	private final MerkleAccount anAccount = new MerkleAccount();
 	private final MerkleSchedule aSchedule = new MerkleSchedule();
 	private final MerkleSchedule bSchedule = new MerkleSchedule();

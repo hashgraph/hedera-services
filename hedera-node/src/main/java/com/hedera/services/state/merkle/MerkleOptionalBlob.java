@@ -28,12 +28,13 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf {
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf, Keyed<String> {
 	static final int MERKLE_VERSION = BinaryObject.ClassVersion.ORIGINAL;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
@@ -56,6 +57,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	static Supplier<BinaryObject> blobSupplier = BinaryObject::new;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
+	private String path;
 	private BinaryObject delegate;
 
 	public MerkleOptionalBlob() {
@@ -68,6 +70,16 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	public MerkleOptionalBlob(BinaryObject delegate) {
 		this.delegate = delegate;
+	}
+
+	@Override
+	public String getKey() {
+		return path;
+	}
+
+	@Override
+	public void setKey(String path) {
+		throw new UnsupportedOperationException();
 	}
 
 	public void modify(byte[] newContents) {

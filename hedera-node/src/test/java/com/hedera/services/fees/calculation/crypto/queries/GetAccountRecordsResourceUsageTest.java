@@ -27,6 +27,7 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
@@ -98,7 +99,7 @@ class GetAccountRecordsResourceUsageTest {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
-		MerkleEntityId key = MerkleEntityId.fromAccountId(asAccount(a));
+		MerkleEntityId key = PermHashInteger.fromAccountId(asAccount(a));
 
 		// given:
 		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);

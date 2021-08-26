@@ -763,8 +763,8 @@ class SmartContractRequestHandlerPayableTest {
     mk.setShard(contractId.getShardNum());
     MerkleAccount mv = fcMap.get(mk);
     Assertions.assertNotNull(mv);
-    Assertions.assertNotNull(mv.getKey());
-    Assertions.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv.getAccountKey());
+    Assertions.assertNotNull(mv.getAccountKey());
     long mapValueExpiration = mv.getExpiry();
     Assertions.assertNotEquals(0, mapValueExpiration);
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());

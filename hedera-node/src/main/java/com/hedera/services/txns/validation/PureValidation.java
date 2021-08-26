@@ -23,7 +23,7 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
@@ -31,13 +31,13 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -57,8 +57,11 @@ public class PureValidation {
 		}
 	}
 
-	public static ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
+	public static ResponseCodeEnum queryableAccountStatus(
+			AccountID id,
+			MerkleMap<PermHashInteger, MerkleAccount> accounts
+	) {
+		MerkleAccount account = accounts.get(PermHashInteger.fromAccountId(id));
 
 		return Optional.ofNullable(account)
 				.map(v -> v.isDeleted()
@@ -67,7 +70,10 @@ public class PureValidation {
 				.orElse(INVALID_ACCOUNT_ID);
 	}
 
-	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
+	public static ResponseCodeEnum queryableContractStatus(
+			ContractID cid,
+			MerkleMap<PermHashInteger, MerkleAccount> contracts
+	) {
 		MerkleAccount contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)

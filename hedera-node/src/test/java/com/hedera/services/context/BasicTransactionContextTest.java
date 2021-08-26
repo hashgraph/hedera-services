@@ -36,6 +36,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -195,8 +196,8 @@ class BasicTransactionContextTest {
 
 	@Test
 	void getsPayerKeyIfSigActive() {
-		given(payerAccount.getKey()).willReturn(payerKey);
-		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
+		given(payerAccount.getAccountKey()).willReturn(payerKey);
+		given(accounts.get(PermHashInteger.fromAccountId(payer))).willReturn(payerAccount);
 		given(accessor.getPayer()).willReturn(payer);
 
 		// when:

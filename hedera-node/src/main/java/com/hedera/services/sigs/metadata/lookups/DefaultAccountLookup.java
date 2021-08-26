@@ -22,22 +22,22 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 
 /**
  * Trivial account signing metadata lookup backed by a {@code FCMap<MapKey, MapValue>}.
  */
-public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+public class DefaultAccountLookup implements AccountSigMetaLookup {
+	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
 
-	public DefaultFCMapAccountLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public DefaultAccountLookup(Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -48,7 +48,7 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 				? SafeLookupResult.failure(MISSING_ACCOUNT)
 				: new SafeLookupResult<>(
 						new AccountSigningMetadata(
-								account.getKey(),
+								account.getAccountKey(),
 								account.isReceiverSigRequired()));
 	}
 }

@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -235,7 +236,7 @@ class RenewalHelperTest {
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		givenRelPresent(expiredKey, deletedTokenId, 0);
 		givenRelPresent(expiredKey, survivedTokenId, 0);
-		givenRelPresent(expiredKey, MerkleEntityId.fromTokenId(missingTokenGrpcId), 0);
+		givenRelPresent(expiredKey, PermHashInteger.fromTokenId(missingTokenGrpcId), 0);
 
 		// when:
 		subject.classify(brokeExpiredAccountNum, now);
@@ -261,8 +262,8 @@ class RenewalHelperTest {
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		givenRelPresent(expiredKey, deletedTokenId, Long.MAX_VALUE);
 		givenRelPresent(expiredKey, survivedTokenId, tokenBalance);
-		givenRelPresent(expiredKey, MerkleEntityId.fromTokenId(missingTokenGrpcId), 0);
-		givenModifiableRelPresent(MerkleEntityId.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
+		givenRelPresent(expiredKey, PermHashInteger.fromTokenId(missingTokenGrpcId), 0);
+		givenModifiableRelPresent(PermHashInteger.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 
 		// when:
 		subject.classify(brokeExpiredAccountNum, now);

@@ -36,10 +36,11 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 public class StateAccessor {
 	private final StateChildren children = new StateChildren();
@@ -65,31 +66,31 @@ public class StateAccessor {
 		children.setRunningHashLeaf(state.runningHashLeaf());
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public MerkleMap<PermHashInteger, MerkleAccount> accounts() {
 		return children.getAccounts();
 	}
 
-	public FCMap<MerkleEntityId, MerkleTopic> topics() {
+	public MerkleMap<PermHashInteger, MerkleTopic> topics() {
 		return children.getTopics();
 	}
 
-	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
+	public MerkleMap<String, MerkleOptionalBlob> storage() {
 		return children.getStorage();
 	}
 
-	public FCMap<MerkleEntityId, MerkleToken> tokens() {
+	public MerkleMap<PermHashInteger, MerkleToken> tokens() {
 		return children.getTokens();
 	}
 
-	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+	public MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations() {
 		return children.getTokenAssociations();
 	}
 
-	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
+	public MerkleMap<PermHashInteger, MerkleSchedule> schedules() {
 		return children.getSchedules();
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens() {
 		return children.getUniqueTokens();
 	}
 

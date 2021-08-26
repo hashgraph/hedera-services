@@ -21,15 +21,17 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
-public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
+public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
 	static final int RELEASE_090_VERSION = 1;
 
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
@@ -38,6 +40,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
+	private long numbers;
 
 	public MerkleTokenRelStatus() {
 	}
@@ -145,5 +148,15 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 				.add("isFrozen", frozen)
 				.add("hasKycGranted", kycGranted)
 				.toString();
+	}
+
+	@Override
+	public PermHashLong getKey() {
+		return new PermHashLong(numbers);
+	}
+
+	@Override
+	public void setKey(PermHashLong permHashInteger) {
+		throw new UnsupportedOperationException();
 	}
 }

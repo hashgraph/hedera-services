@@ -28,9 +28,9 @@ import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.Optional;
 import java.util.Set;
@@ -39,20 +39,20 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 import static java.util.stream.Collectors.toList;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
 	private final TransactionContext txnCtx;
 	private final SyncActivationCheck check;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
 
 	public TxnAwareSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
 			SyncActivationCheck check,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;
@@ -87,7 +87,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
-				.map(MerkleAccount::getKey)
+				.map(MerkleAccount::getAccountKey)
 				.stream();
 	}
 }

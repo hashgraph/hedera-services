@@ -304,8 +304,8 @@ class SmartContractRequestHandlerStorageTest {
     mk.setShard(contractId.getShardNum());
     MerkleAccount mv = contracts.get(mk);
     Assertions.assertNotNull(mv);
-    Assertions.assertNotNull(mv.getKey());
-    Assertions.assertNotNull(mv.getKey());
+    Assertions.assertNotNull(mv.getAccountKey());
+    Assertions.assertNotNull(mv.getAccountKey());
 
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertTrue(storageWrapper.fileExists(bytesPath));

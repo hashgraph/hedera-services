@@ -23,10 +23,7 @@ package com.hedera.services;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -34,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.org.LegacyStateChildIndices;
 import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -42,6 +38,7 @@ import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
@@ -56,7 +53,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,7 +130,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void initialize() {
 		if (deserializedVersion < StateVersions.RELEASE_0170_VERSION) {
 			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
-				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new FCMap<>());
+				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
 		}
@@ -224,7 +221,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void archive() {
 		/* NOTE: in the near future, likely SDK 0.19.0, it will be necessary
-		* to also propagate this .archive() call to the FCMs as well. */
+		* to also propagate this .archive() call to the MerkleMaps as well. */
 		if (metadata != null) {
 			metadata.archive();
 		}
@@ -252,27 +249,27 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		log.info(networkCtx());
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public MerkleMap<PermHashInteger, MerkleAccount> accounts() {
 		return getChild(StateChildIndices.ACCOUNTS);
 	}
 
-	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
+	public MerkleMap<String, MerkleOptionalBlob> storage() {
 		return getChild(StateChildIndices.STORAGE);
 	}
 
-	public FCMap<MerkleEntityId, MerkleTopic> topics() {
+	public MerkleMap<PermHashInteger, MerkleTopic> topics() {
 		return getChild(StateChildIndices.TOPICS);
 	}
 
-	public FCMap<MerkleEntityId, MerkleToken> tokens() {
+	public MerkleMap<PermHashInteger, MerkleToken> tokens() {
 		return getChild(StateChildIndices.TOKENS);
 	}
 
-	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+	public MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations() {
 		return getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
-	public FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs() {
+	public MerkleMap<PermHashInteger, MerkleSchedule> scheduleTxs() {
 		return getChild(StateChildIndices.SCHEDULE_TXS);
 	}
 
@@ -292,7 +289,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
@@ -335,15 +332,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
-		setChild(StateChildIndices.UNIQUE_TOKENS, new FCMap<>());
-		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-		setChild(StateChildIndices.TOPICS, new FCMap<>());
-		setChild(StateChildIndices.STORAGE, new FCMap<>());
-		setChild(StateChildIndices.ACCOUNTS, new FCMap<>());
-		setChild(StateChildIndices.TOKENS, new FCMap<>());
+		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
+		setChild(StateChildIndices.TOPICS, new MerkleMap<>());
+		setChild(StateChildIndices.STORAGE, new MerkleMap<>());
+		setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
+		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
 		setChild(StateChildIndices.DISK_FS, new MerkleDiskFs());
-		setChild(StateChildIndices.SCHEDULE_TXS, new FCMap<>());
+		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 	}

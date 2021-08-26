@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -48,26 +49,6 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 		this.shard = shard;
 		this.realm = realm;
 		this.num = num;
-	}
-
-	public static MerkleEntityId fromAccountId(AccountID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
-	}
-
-	public static MerkleEntityId fromTokenId(TokenID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTokenNum());
-	}
-
-	public static MerkleEntityId fromTopicId(TopicID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTopicNum());
-	}
-
-	public static MerkleEntityId fromContractId(ContractID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getContractNum());
-	}
-
-	public static MerkleEntityId fromScheduleId(ScheduleID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getScheduleNum());
 	}
 
 	/* --- MerkleLeaf --- */

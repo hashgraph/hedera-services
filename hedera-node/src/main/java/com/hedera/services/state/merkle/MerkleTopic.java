@@ -28,12 +28,14 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -67,7 +69,7 @@ import static com.swirlds.common.CommonUtils.hex;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleLeaf {
+public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 
@@ -88,6 +90,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	// Before the first message is submitted to this topic, its sequenceNumber is 0 and runningHash is 48 bytes of '\0'
 	private long sequenceNumber;
 	private byte[] runningHash;
+	private int number;
 
 	@Override
 	public String toString() {
@@ -278,6 +281,16 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 			out.flush();
 			runningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
 		}
+	}
+
+	@Override
+	public PermHashInteger getKey() {
+		return new PermHashInteger(number);
+	}
+
+	@Override
+	public void setKey(PermHashInteger permHashInteger) {
+		throw new UnsupportedOperationException();
 	}
 
 	public static class KeySerializationException extends RuntimeException {

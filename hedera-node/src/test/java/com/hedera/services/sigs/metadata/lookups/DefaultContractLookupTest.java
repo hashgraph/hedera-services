@@ -25,30 +25,30 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
-import static com.hedera.test.factories.accounts.MockFCMapFactory.newAccounts;
+import static com.hedera.test.factories.accounts.MockMMapFactory.newAccounts;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DefaultFCMapContractLookupTest {
+class DefaultContractLookupTest {
 	private final String id = "0.0.1337";
 	private final ContractID contract = IdUtils.asContract(id);
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private DefaultFCMapContractLookup subject;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private DefaultContractLookup subject;
 
 	@Test
 	void failsSafelyOnMissingAccount() {
 		// given:
 		accounts = newAccounts().get();
-		subject = new DefaultFCMapContractLookup(() -> accounts);
+		subject = new DefaultContractLookup(() -> accounts);
 
 		// when:
 		var result = subject.safeLookup(contract);
@@ -62,7 +62,7 @@ class DefaultFCMapContractLookupTest {
 	void failsOnDeletedAccount() {
 		// given:
 		accounts = newAccounts().withAccount(id, newContract().deleted(true).get()).get();
-		subject = new DefaultFCMapContractLookup(() -> accounts);
+		subject = new DefaultContractLookup(() -> accounts);
 
 		// when:
 		var result = subject.safeLookup(contract);
@@ -76,7 +76,7 @@ class DefaultFCMapContractLookupTest {
 	void failsNormalAccountInsteadOfSmartContract() {
 		// given:
 		accounts = newAccounts().withAccount(id, newAccount().get()).get();
-		subject = new DefaultFCMapContractLookup(() -> accounts);
+		subject = new DefaultContractLookup(() -> accounts);
 
 		// when:
 		var result = subject.safeLookup(contract);
@@ -90,7 +90,7 @@ class DefaultFCMapContractLookupTest {
 	void failsOnNullAccountKeys() {
 		// given:
 		accounts = newAccounts().withAccount(id, newContract().get()).get();
-		subject = new DefaultFCMapContractLookup(() -> accounts);
+		subject = new DefaultContractLookup(() -> accounts);
 
 		// when:
 		var result = subject.safeLookup(contract);
@@ -104,7 +104,7 @@ class DefaultFCMapContractLookupTest {
 	void failsOnContractIdKey() {
 		// given:
 		accounts = newAccounts().withAccount(id, newContract().accountKeys(new JContractIDKey(contract)).get()).get();
-		subject = new DefaultFCMapContractLookup(() -> accounts);
+		subject = new DefaultContractLookup(() -> accounts);
 
 		// when:
 		var result = subject.safeLookup(contract);
@@ -119,7 +119,7 @@ class DefaultFCMapContractLookupTest {
 		// given:
 		JKey desiredKey = new JKeyList();
 		accounts = newAccounts().withAccount(id, newContract().accountKeys(desiredKey).get()).get();
-		subject = new DefaultFCMapContractLookup(() -> accounts);
+		subject = new DefaultContractLookup(() -> accounts);
 
 		// when:
 		var result = subject.safeLookup(contract);

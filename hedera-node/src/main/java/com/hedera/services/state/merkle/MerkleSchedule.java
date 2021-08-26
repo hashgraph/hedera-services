@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -35,10 +36,11 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -54,7 +56,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleSchedule extends AbstractMerkleLeaf {
+public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
 	static final int MERKLE_VERSION = 1;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
@@ -77,6 +79,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
 	private RichInstant resolutionTime = UNRESOLVED_TIME;
+
+	private int number;
 
 	private byte[] bodyBytes;
 	private TransactionBody ordinaryScheduledTxn;
@@ -259,6 +263,15 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 		return fc;
 	}
 
+	@Override
+	public PermHashInteger getKey() {
+		return new PermHashInteger(number);
+	}
+
+	@Override
+	public void setKey(PermHashInteger permHashInteger) {
+		throw new UnsupportedOperationException();
+	}
 	public MerkleSchedule toContentAddressableView() {
 		var cav = new MerkleSchedule();
 

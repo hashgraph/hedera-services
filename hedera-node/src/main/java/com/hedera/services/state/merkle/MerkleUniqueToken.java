@@ -24,9 +24,11 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -40,7 +42,7 @@ import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.secon
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
-public class MerkleUniqueToken extends AbstractMerkleLeaf {
+public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
 	private static final int TREASURY_OWNER_CODE = 0;
 
 	static final int MERKLE_VERSION = 1;
@@ -51,6 +53,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	private int ownerCode;
 	private long packedCreationTime;
 	private byte[] metadata;
+	private long numbers;
 
 	/**
 	 * Constructs a Merkle-usable unique token from an explicit owner id.
@@ -178,5 +181,15 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 
 	public boolean isTreasuryOwned() {
 		return ownerCode == TREASURY_OWNER_CODE;
+	}
+
+	@Override
+	public PermHashLong getKey() {
+		return new PermHashLong(numbers);
+	}
+
+	@Override
+	public void setKey(PermHashLong permHashLong) {
+		throw new UnsupportedOperationException();
 	}
 }

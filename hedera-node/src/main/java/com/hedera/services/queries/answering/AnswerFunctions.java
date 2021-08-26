@@ -23,9 +23,9 @@ package com.hedera.services.queries.answering;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Query;
@@ -44,7 +44,7 @@ public class AnswerFunctions {
 
 	public List<TransactionRecord> accountRecords(StateView view, Query query) {
 		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
-		MerkleEntityId key = MerkleEntityId.fromAccountId(op.getAccountID());
+		final var key = PermHashInteger.fromAccountId(op.getAccountID());
 		MerkleAccount account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
 	}
@@ -57,7 +57,7 @@ public class AnswerFunctions {
 		} else {
 			try {
 				AccountID id = txnId.getAccountID();
-				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
+				MerkleAccount account = view.accounts().get(PermHashInteger.fromAccountId(id));
 				TxnId searchableId = TxnId.fromGrpc(txnId);
 				return account.recordList()
 						.stream()

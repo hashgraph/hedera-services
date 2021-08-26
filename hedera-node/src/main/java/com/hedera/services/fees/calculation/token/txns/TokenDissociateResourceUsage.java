@@ -33,7 +33,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 
 @Singleton
 public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {

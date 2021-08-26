@@ -30,13 +30,12 @@ import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -63,7 +62,7 @@ public abstract class FilesModule {
 
 	@Provides
 	@Singleton
-	public static Map<String, byte[]> provideBlobStore(Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage) {
+	public static Map<String, byte[]> provideBlobStore(Supplier<MerkleMap<String, MerkleOptionalBlob>> storage) {
 		return new FcBlobsBytesStore(MerkleOptionalBlob::new, storage);
 	}
 

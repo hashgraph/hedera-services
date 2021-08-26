@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -122,7 +123,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 				.setNetworkdata(FeeComponents.getDefaultInstance())
 				.setServicedata(FeeComponents.getDefaultInstance())
 				.build();
-		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(PermHashInteger.fromTopicId(topicId))).willReturn(merkleTopic);
 
 		final var costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);
 		final var answerOnlyEstimate = subject.usageGiven(topicInfoQuery(topicId, ANSWER_ONLY), view);

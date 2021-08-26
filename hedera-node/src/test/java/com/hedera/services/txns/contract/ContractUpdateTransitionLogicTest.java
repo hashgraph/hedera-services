@@ -26,6 +26,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -217,7 +218,7 @@ class ContractUpdateTransitionLogicTest {
 		contractUpdateTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(contracts.get(MerkleEntityId.fromContractId(target))).willReturn(contract);
+		given(contracts.get(PermHashInteger.fromContractId(target))).willReturn(contract);
 	}
 
 	private TransactionID ourTxnId() {

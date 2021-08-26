@@ -37,6 +37,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -116,7 +117,7 @@ import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.junit.jupiter.api.Assertions;
@@ -245,20 +246,25 @@ class MiscUtilsTest {
 	@Test
 	void forEachDropInWorksAsExpected() {
 		// setup:
-		final FCMap<MerkleLong, MerkleLong> testFcm = new FCMap<>();
+		final MerkleMap<PermHashInteger, KeyedMerkleLong> testMm = new MerkleMap<>();
 		@SuppressWarnings("unchecked")
-		final BiConsumer<MerkleLong, MerkleLong> mockConsumer = BDDMockito.mock(BiConsumer.class);
+		final BiConsumer<PermHashInteger, MerkleLong> mockConsumer = BDDMockito.mock(BiConsumer.class);
 
 		// given:
-		testFcm.put(new MerkleLong(1L), new MerkleLong(1L));
-		testFcm.put(new MerkleLong(2L), new MerkleLong(2L));
+		putValue(1L, testMm);
+		putValue(2L, testMm);
 
 		// when:
-		MiscUtils.forEach(testFcm, mockConsumer);
+		MiscUtils.forEach(testMm, mockConsumer);
 
 		// then:
-		verify(mockConsumer).accept(new MerkleLong(1L), new MerkleLong(1L));
-		verify(mockConsumer).accept(new MerkleLong(2L), new MerkleLong(2L));
+		verify(mockConsumer).accept(new PermHashInteger(1), new KeyedMerkleLong(1L));
+		verify(mockConsumer).accept(new PermHashInteger(2), new KeyedMerkleLong(2L));
+	}
+
+	private void putValue(long value, MerkleMap<PermHashInteger, KeyedMerkleLong> mm) {
+		final var newValue = new KeyedMerkleLong(value);
+		mm.put(newValue.getKey(), newValue);
 	}
 
 	@Test

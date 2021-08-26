@@ -129,7 +129,7 @@ public class AutoRenewCalcs {
 	long rbUsedBy(MerkleAccount account) {
 		final var extantCtx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(0L)
-				.setCurrentKey(asKeyUnchecked(account.getKey()))
+				.setCurrentKey(asKeyUnchecked(account.getAccountKey()))
 				.setCurrentlyHasProxy(account.getProxy() != null)
 				.setCurrentMemo(account.getMemo())
 				.setCurrentNumTokenRels(account.tokens().numAssociations())

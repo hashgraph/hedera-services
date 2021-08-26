@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -63,14 +64,12 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
 	}
 
-	public static MerkleEntityAssociation fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
-		return fromAccountTokenRel(rel.getLeft(), rel.getRight());
+	public static PermHashLong fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
+		return PermHashLong.asPhl(rel.getLeft().getAccountNum(), rel.getRight().getTokenNum());
 	}
 
-	public static MerkleEntityAssociation fromAccountTokenRel(AccountID account, TokenID token) {
-		return new MerkleEntityAssociation(
-				account.getShardNum(), account.getRealmNum(), account.getAccountNum(),
-				token.getShardNum(), token.getRealmNum(), token.getTokenNum());
+	public static PermHashLong fromAccountTokenRel(AccountID account, TokenID token) {
+		return PermHashLong.asPhl(account.getAccountNum(), token.getTokenNum());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {

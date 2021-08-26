@@ -27,18 +27,18 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -96,7 +96,7 @@ class TxnAwareRecordsHistorianTest {
 	private ExpiringCreations creator;
 	private ExpiringEntity expiringEntity;
 	private TransactionContext txnCtx;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private TxnAwareRecordsHistorian subject;
 
@@ -192,7 +192,7 @@ class TxnAwareRecordsHistorianTest {
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
 		given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));
 
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 
 		recordCache = mock(RecordCache.class);
 

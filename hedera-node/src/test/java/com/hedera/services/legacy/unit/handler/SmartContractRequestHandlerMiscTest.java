@@ -320,8 +320,8 @@ class SmartContractRequestHandlerMiscTest {
     mk.setShard(contractId.getShardNum());
     MerkleAccount mv = fcMap.get(mk);
     Assertions.assertNotNull(mv);
-    Assertions.assertNotNull(mv.getKey());
-    Assertions.assertTrue(mv.getKey() instanceof JContractIDKey);
+    Assertions.assertNotNull(mv.getAccountKey());
+    Assertions.assertTrue(mv.getAccountKey() instanceof JContractIDKey);
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
     Assertions.assertTrue(storageWrapper.fileExists(bytesPath));
   }

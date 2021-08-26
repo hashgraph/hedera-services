@@ -21,20 +21,20 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 import static java.util.stream.Collectors.toSet;
 
 public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
+	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> delegate;
 
-	public PureBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
+	public PureBackingAccounts(Supplier<MerkleMap<PermHashInteger, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -65,6 +65,6 @@ public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccoun
 
 	@Override
 	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(MerkleEntityId::toAccountId).collect(toSet());
+		return delegate.get().keySet().stream().map(PermHashInteger::asGrpcAccountId).collect(toSet());
 	}
 }

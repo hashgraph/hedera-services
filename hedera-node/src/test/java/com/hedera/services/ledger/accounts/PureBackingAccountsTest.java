@@ -22,6 +22,7 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
@@ -46,8 +47,8 @@ import static org.mockito.Mockito.verify;
 class PureBackingAccountsTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("3.2.1");
-	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(a);
-	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
+	private final MerkleEntityId aKey = PermHashInteger.fromAccountId(a);
+	private final MerkleEntityId bKey = PermHashInteger.fromAccountId(b);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 
 	private FCMap<MerkleEntityId, MerkleAccount> map;

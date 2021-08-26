@@ -27,8 +27,8 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -56,7 +56,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -129,8 +129,8 @@ class ContextOptionValidatorTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
 		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(a))).willReturn(aV);
-		given(accounts.get(MerkleEntityId.fromAccountId(deleted))).willReturn(deletedV);
+		given(accounts.get(PermHashInteger.fromAccountId(a))).willReturn(aV);
+		given(accounts.get(PermHashInteger.fromAccountId(deleted))).willReturn(deletedV);
 		given(accounts.get(fromContractId(contract))).willReturn(contractV);
 		given(accounts.get(fromContractId(deletedContract))).willReturn(deletedContractV);
 
@@ -143,10 +143,10 @@ class ContextOptionValidatorTest {
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
 		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
-		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
-		given(topics.get(MerkleEntityId.fromTopicId(missingTopicId))).willReturn(null);
-		given(topics.get(MerkleEntityId.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
-		given(topics.get(MerkleEntityId.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
+		given(topics.get(PermHashInteger.fromTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(PermHashInteger.fromTopicId(missingTopicId))).willReturn(null);
+		given(topics.get(PermHashInteger.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
+		given(topics.get(PermHashInteger.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		attr = new HFileMeta(false, wacl, expiry);

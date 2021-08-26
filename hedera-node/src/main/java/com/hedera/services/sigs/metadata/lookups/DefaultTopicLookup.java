@@ -21,20 +21,20 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromTopicId;
 
-public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+public class DefaultTopicLookup implements TopicSigMetaLookup {
+	private final Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics;
 
-	public DefaultFCMapTopicLookup(Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics) {
+	public DefaultTopicLookup(Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics) {
 		this.topics = topics;
 	}
 

@@ -31,9 +31,6 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -47,6 +44,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -69,8 +67,9 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,8 +83,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -104,7 +103,7 @@ public class StateView {
 	static BiFunction<StateView, AccountID, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	static final byte[] EMPTY_BYTES = new byte[0];
-	static final FCMap<?, ?> EMPTY_FCM = new FCMap<>();
+	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
 	static final FCOneToManyRelation<?, ?> EMPTY_FCOTMR = new FCOneToManyRelation<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
@@ -400,7 +399,7 @@ public class StateView {
 		}
 
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
-				.setKey(asKeyUnchecked(account.getKey()))
+				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(id)
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
@@ -473,7 +472,7 @@ public class StateView {
 		}
 
 		try {
-			var adminKey = JKey.mapJKey(contract.getKey());
+			var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
 		}
@@ -481,32 +480,32 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getTopics();
+	public MerkleMap<PermHashInteger, MerkleTopic> topics() {
+		return stateChildren == null ? emptyMm() : stateChildren.getTopics();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getAccounts();
+	public MerkleMap<PermHashInteger, MerkleAccount> accounts() {
+		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getAccounts();
+	public MerkleMap<PermHashInteger, MerkleAccount> contracts() {
+		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
 	}
 
-	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getTokenAssociations();
+	public MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations() {
+		return stateChildren == null ? emptyMm() : stateChildren.getTokenAssociations();
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getUniqueTokens();
+	public MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens() {
+		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
 	}
 
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getStorage();
+	MerkleMap<String, MerkleOptionalBlob> storage() {
+		return stateChildren == null ? emptyMm() : stateChildren.getStorage();
 	}
 
-	FCMap<MerkleEntityId, MerkleToken> tokens() {
-		return stateChildren == null ? emptyFcm() : stateChildren.getTokens();
+	MerkleMap<PermHashInteger, MerkleToken> tokens() {
+		return stateChildren == null ? emptyMm() : stateChildren.getTokens();
 	}
 
 	FCOneToManyRelation<PermHashInteger, Long> nftsByType() {
@@ -554,8 +553,8 @@ public class StateView {
 		return relationships;
 	}
 
-	private static <K extends MerkleNode, V extends MerkleNode> FCMap<K, V> emptyFcm() {
-		return (FCMap<K, V>) EMPTY_FCM;
+	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
+		return (MerkleMap<K, V>) EMPTY_FCM;
 	}
 
 	private static <K, V> FCOneToManyRelation<K, V> emptyFcotmr() {
