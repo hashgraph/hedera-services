@@ -21,66 +21,75 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.fees.CustomFee;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.CustomFeeValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.services.store.AccountStore;
 
+import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 
+/**
+ * Provides the state transition for updating token fee schedule.
+ */
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateTransitionLogic.class);
-	private final TokenStore store;
+	private final TypedTokenStore typedTokenStore;
+	private final AccountStore accountStore;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties globalDynamicProperties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx) {
-		this.store = tokenStore;
+	public TokenFeeScheduleUpdateTransitionLogic(
+			final TypedTokenStore tokenStore,
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final GlobalDynamicProperties globalDynamicProperties) {
+		this.typedTokenStore = tokenStore;
+		this.accountStore = accountStore;
 		this.txnCtx = txnCtx;
+		this.globalDynamicProperties = globalDynamicProperties;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			transitionFor(txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate());
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			abortWith(FAIL_INVALID);
-		}
+		/* --- Translate from gRPC types --- */
+		var op = txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate();
+		var grpcTokenId = op.getTokenId();
+		var targetTokenId = Id.fromGrpcToken(grpcTokenId);
 
-	}
+		/* --- Load the model objects --- */
+		var token = typedTokenStore.loadToken(targetTokenId);
 
-	private void transitionFor(TokenFeeScheduleUpdateTransactionBody op) {
-		final var id = store.resolve(op.getTokenId());
-		if (id == MISSING_TOKEN) {
-			txnCtx.setStatus(INVALID_TOKEN_ID);
-			return;
-		}
+		/* --- Validate and initialize custom fees list --- */
+		validateFalse(op.getCustomFeesCount() > globalDynamicProperties.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+		final var customFeesList = new ArrayList<CustomFee>();
+		for (final var grpcFee : op.getCustomFeesList()) {
+			final var collectorId = Id.fromGrpcAccount(grpcFee.getFeeCollectorAccountId());
+			final var collector = accountStore.loadAccountOrFailWith(collectorId, INVALID_CUSTOM_FEE_COLLECTOR);
 
-		final var token = store.get(id);
-		if (token.isDeleted()) {
-			txnCtx.setStatus(TOKEN_WAS_DELETED);
-			return;
+			var fee = validateAndInitCustomFee(grpcFee, collector, token.getType());
+			customFeesList.add(fee);
 		}
+		token.setCustomFees(customFeesList);
 
-		final var outcome = store.updateFeeSchedule(op);
-		if (outcome != OK) {
-			abortWith(outcome);
-			return;
-		}
-		txnCtx.setStatus(SUCCESS);
+		/* --- Persist the updated models --- */
+		this.typedTokenStore.persistToken(token);
 	}
 
 	@Override
@@ -102,7 +111,53 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private void abortWith(ResponseCodeEnum cause) {
-		txnCtx.setStatus(cause);
+	private CustomFee validateAndInitCustomFee(com.hederahashgraph.api.proto.java.CustomFee grpcFee, Account collector, TokenType tokenType){
+		final var fee = CustomFee.fromGrpc(grpcFee, collector);
+
+		if (grpcFee.hasFixedFee()) {
+			if(grpcFee.getFixedFee().hasDenominatingTokenId()){
+				final var grpcDenomId = grpcFee.getFixedFee().getDenominatingTokenId();
+				final var denominatingToken = typedTokenStore.loadTokenOrFailWith(
+						Id.fromGrpcToken(grpcDenomId), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+				CustomFeeValidator.validateFixedFee(grpcFee, fee, denominatingToken, collector);
+				CustomFeeValidator.initFixedFee(grpcFee, fee, denominatingToken.getId());
+			}else{
+				CustomFeeValidator.validateFixedFee(grpcFee, fee, null, collector);
+			}
+
+		} else if (grpcFee.hasRoyaltyFee()) {
+			var grpcRoyaltyFee = grpcFee.getRoyaltyFee();
+			if(grpcRoyaltyFee.getFallbackFee().hasDenominatingTokenId()){
+				typedTokenStore.loadTokenOrFailWith(
+						Id.fromGrpcToken(grpcRoyaltyFee.getFallbackFee().getDenominatingTokenId()),
+						INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+			} else {
+				if(fee.getRoyaltyFee().getFallbackFee() != null) {
+					fee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(null);
+				}
+			}
+			CustomFeeValidator.validateRoyaltyFee(grpcFee, tokenType, collector);
+			initRoyaltyFee(grpcFee, fee);
+		}
+
+		return fee;
+	}
+
+	private void initRoyaltyFee(
+			com.hederahashgraph.api.proto.java.CustomFee grpcFee,
+			CustomFee fee
+	) {
+		final var grpcRoyaltyFee = grpcFee.getRoyaltyFee();
+		final var fallbackGrpc = grpcRoyaltyFee.getFallbackFee();
+		if (fallbackGrpc.hasDenominatingTokenId()) {
+			final var denomTokenId = fallbackGrpc.getDenominatingTokenId();
+			if (denomTokenId.getTokenNum() != 0) {
+				fee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(Id.fromGrpcToken(denomTokenId));
+			} else {
+				fee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(null);
+			}
+		}else{
+			fee.getRoyaltyFee().getFallbackFee().setDenominatingTokenId(null);
+		}
 	}
 }

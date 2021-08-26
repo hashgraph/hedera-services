@@ -1558,7 +1558,7 @@ public class ServicesContext {
 								shouldUseTreasuryWildcards(), validator(), tokenStore(),
 								ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFeeScheduleUpdate,
-						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenFeeScheduleUpdateTransitionLogic(typedTokenStore(), txnCtx(),accountStore(), globalDynamicProperties()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
 				entry(TokenUnfreezeAccount,
