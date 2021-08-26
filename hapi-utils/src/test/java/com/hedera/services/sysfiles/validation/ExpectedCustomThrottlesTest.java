@@ -73,15 +73,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExpectedCustomThrottlesTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ExpectedCustomThrottles::new);
-	}
-
 	@Test
 	void release0160HasExpected() {
 		assertEquals(50, OPS_FOR_RELEASE_0160.size());

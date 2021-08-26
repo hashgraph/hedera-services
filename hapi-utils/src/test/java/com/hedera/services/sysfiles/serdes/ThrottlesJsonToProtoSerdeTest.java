@@ -39,14 +39,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ThrottlesJsonToProtoSerdeTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ThrottlesJsonToProtoSerde::new);
-	}
-
 	@Test
 	void loadsExpectedDefs() throws IOException {
 		final var actual = TestUtils.protoDefs("bootstrap/throttles.json");

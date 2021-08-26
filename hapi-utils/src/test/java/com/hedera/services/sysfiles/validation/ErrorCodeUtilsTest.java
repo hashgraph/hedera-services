@@ -26,14 +26,8 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ErrorCodeUtilsTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ErrorCodeUtils::new);
-	}
-
 	@Test
 	void usesTplForExceptionMsg() {
 		final var details = "YIKES!";

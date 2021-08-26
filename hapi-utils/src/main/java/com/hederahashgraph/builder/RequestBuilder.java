@@ -76,9 +76,9 @@ import java.util.List;
 /**
  * @author Akshay
  */
-public class RequestBuilder {
-  RequestBuilder() {
-    throw new IllegalStateException("Utility Class");
+public final class RequestBuilder {
+  private RequestBuilder() {
+    throw new UnsupportedOperationException("Utility Class");
   }
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,

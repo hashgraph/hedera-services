@@ -26,9 +26,9 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class ThrottlesJsonToProtoSerde {
-	ThrottlesJsonToProtoSerde() {
-		throw new IllegalStateException("Utility Class");
+public final class ThrottlesJsonToProtoSerde {
+	private ThrottlesJsonToProtoSerde() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static ThrottleDefinitions loadProtoDefs(InputStream in) throws IOException {

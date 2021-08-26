@@ -25,15 +25,9 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CommonUtilsTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, CommonUtils::new);
-	}
-
 	@Test
 	void testNap() throws InterruptedException, IOException {
 		final String filePath = "./src/test/resources/test.txt";

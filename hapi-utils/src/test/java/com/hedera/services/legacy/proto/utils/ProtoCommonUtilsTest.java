@@ -27,15 +27,9 @@ import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.addSeconds
 import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.getCurrentInstantUTC;
 import static com.hedera.services.legacy.proto.utils.ProtoCommonUtils.getCurrentTimestampUTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProtoCommonUtilsTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ProtoCommonUtils::new);
-	}
-
 	@Test
 	void shouldWindTheClock() {
 		final var now = getCurrentInstantUTC();

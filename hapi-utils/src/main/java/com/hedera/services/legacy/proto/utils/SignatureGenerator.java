@@ -27,9 +27,9 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 
-public class SignatureGenerator {
-	SignatureGenerator() {
-		throw new IllegalStateException("Utility Class");
+public final class SignatureGenerator {
+	private SignatureGenerator() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

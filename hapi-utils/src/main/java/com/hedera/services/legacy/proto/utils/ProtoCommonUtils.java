@@ -29,9 +29,9 @@ import java.time.Instant;
 /**
  * Protobuf related utilities shared by client and server.
  */
-public class ProtoCommonUtils {
-	ProtoCommonUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class ProtoCommonUtils {
+	private ProtoCommonUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

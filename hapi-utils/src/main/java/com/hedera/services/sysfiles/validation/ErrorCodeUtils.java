@@ -24,11 +24,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.Optional;
 
-public class ErrorCodeUtils {
+public final class ErrorCodeUtils {
 	private static final String EXC_MSG_TPL = "%s :: %s";
 
-	ErrorCodeUtils() {
-		throw new IllegalStateException("Utility Class");
+	private ErrorCodeUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static String exceptionMsgFor(final ResponseCodeEnum error, final String details) {
