@@ -20,7 +20,15 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class JvmSystemExits implements SystemExits {
+	@Inject
+	public JvmSystemExits() {
+	}
+
 	@Override
 	public void fail(int returnCode) {
 		System.exit(returnCode);

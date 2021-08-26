@@ -42,8 +42,10 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -66,6 +68,11 @@ class AccountStoreTest {
 		setupAccounts();
 
 		subject = new AccountStore(validator, dynamicProperties, () -> accounts);
+	}
+
+	@Test
+	void objectContractWorks() {
+		assertNotNull(subject.getValidator());
 	}
 
 	/* --- Account loading --- */
@@ -102,6 +109,9 @@ class AccountStoreTest {
 
 		// then:
 		assertEquals(miscAccount, actualAccount);
+
+		final var actualAccount2 = subject.loadAccountOrFailWith(miscId, FAIL_INVALID);
+		assertEquals(miscAccount, actualAccount2);
 	}
 
 	@Test
@@ -130,6 +140,25 @@ class AccountStoreTest {
 		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 		// and:
 		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokens());
+	}
+
+	@Test
+	void failsWithGivenCause() throws NegativeAccountBalanceException {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		miscMerkleAccount.setDeleted(true);
+
+		var ex = assertThrows(
+				InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, FAIL_INVALID));
+		assertEquals(FAIL_INVALID, ex.getResponseCode());
+
+		miscMerkleAccount.setDeleted(false);
+		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		miscMerkleAccount.setBalance(0L);
+
+		var ex2 = assertThrows(
+				InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, ex2.getResponseCode());
 	}
 
 	private void setupWithAccount(MerkleEntityId anId, MerkleAccount anAccount) {

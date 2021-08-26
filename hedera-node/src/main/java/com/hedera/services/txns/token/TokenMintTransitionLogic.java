@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,9 +53,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for token minting.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TokenMintTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -63,6 +64,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public TokenMintTransitionLogic(
 			OptionValidator validator,
 			AccountStore accountStore,
@@ -94,7 +96,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 		/* --- Do the business logic --- */
 		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
-			token.mint(treasuryRel, op.getAmount());
+			token.mint(treasuryRel, op.getAmount(), false);
 		} else {
 			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(txnCtx.consensusTime()));
 		}

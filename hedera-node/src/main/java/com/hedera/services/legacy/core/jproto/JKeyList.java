@@ -25,8 +25,6 @@ import java.util.List;
 
 /**
  * Maps to proto Key of type KeyList.
- *
- * @author hua Created on 2018-11-02
  */
 public class JKeyList extends JKey {
 

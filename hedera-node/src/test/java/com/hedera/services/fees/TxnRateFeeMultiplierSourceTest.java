@@ -26,6 +26,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -61,7 +61,7 @@ class TxnRateFeeMultiplierSourceTest {
 
 	private MockGlobalDynamicProps mockProps;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private TxnRateFeeMultiplierSource subject;

@@ -41,8 +41,6 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
  *
  * In particular, lets a visitor traverse these Ed25519 keys along with
  * their expanded {@code TransactionSignature}s (if present).
- *
- * @author Michael Tinker
  */
 public class InHandleActivationHelper {
 	private static final List<JKey> NO_OTHER_PARTIES = null;

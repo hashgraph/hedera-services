@@ -23,26 +23,28 @@ package com.hedera.services.txns;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * Provides logic to identify what {@link TransitionLogic} applies to the
  * active node and transaction context.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TransitionLogicLookup {
 	private final EnumMap<HederaFunctionality, Optional<TransitionLogic>> unambiguousLookups =
 			new EnumMap<>(HederaFunctionality.class);
-	private final Function<HederaFunctionality, List<TransitionLogic>> transitions;
+	private final Map<HederaFunctionality, List<TransitionLogic>> transitions;
 
-	public TransitionLogicLookup(Function<HederaFunctionality, List<TransitionLogic>> transitions) {
+	@Inject
+	public TransitionLogicLookup(Map<HederaFunctionality, List<TransitionLogic>> transitions) {
 		this.transitions = transitions;
 		for (var function : HederaFunctionality.class.getEnumConstants()) {
-			final var allTransitions = transitions.apply(function);
+			final var allTransitions = transitions.get(function);
 			if (allTransitions != null && allTransitions.size() == 1) {
 				unambiguousLookups.put(function, Optional.of(allTransitions.get(0)));
 			}
@@ -64,7 +66,7 @@ public class TransitionLogicLookup {
 			}
 			return Optional.empty();
 		}
-		return Optional.ofNullable(transitions.apply(function))
+		return Optional.ofNullable(transitions.get(function))
 				.flatMap(transitions -> from(transitions, txn));
 	}
 

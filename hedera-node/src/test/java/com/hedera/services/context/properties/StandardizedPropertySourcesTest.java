@@ -23,58 +23,52 @@ package com.hedera.services.context.properties;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-class StandardizedPropertySourcesTest {
+@ExtendWith(MockitoExtension.class)
+public class StandardizedPropertySourcesTest {
+	@Mock
 	private PropertySource bootstrapProps;
+	@Mock
+	private ScreenedSysFileProps dynamicGlobalProps;
+	@Mock
+	private ScreenedNodeFileProps nodeProps;
 
 	private StandardizedPropertySources subject;
 
 	@BeforeEach
 	private void setup() {
-		bootstrapProps = mock(PropertySource.class);
+		subject = new StandardizedPropertySources(bootstrapProps, dynamicGlobalProps, nodeProps);
 	}
 
 	@Test
 	void usesDynamicGlobalAsPriority() {
 		// setup:
-		ScreenedSysFileProps source = mock(ScreenedSysFileProps.class);
-		given(source.containsProperty("testProp")).willReturn(true);
-		given(source.getProperty("testProp")).willReturn("perfectAnswer");
-		StandardizedPropertySources.dynamicGlobalPropsSupplier = () -> source;
-
-		givenImpliedSubject();
+		given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
+		given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
 
 		// when:
 		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
 		// expect:
 		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
-
-		// cleanup:
-		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
 	}
 
 	@Test
 	void usesNodeAsSecondPriority() {
 		// setup:
-		var localSource = mock(ScreenedNodeFileProps.class);
-		given(localSource.containsProperty("testProp")).willReturn(true);
-		given(localSource.getProperty("testProp")).willReturn("imperfectAnswer");
-		given(localSource.containsProperty("testProp2")).willReturn(true);
-		given(localSource.getProperty("testProp2")).willReturn("goodEnoughForMe");
-		var source = mock(ScreenedSysFileProps.class);
-		given(source.containsProperty("testProp")).willReturn(true);
-		given(source.getProperty("testProp")).willReturn("perfectAnswer");
-		StandardizedPropertySources.dynamicGlobalPropsSupplier = () -> source;
-		StandardizedPropertySources.nodePropertiesSupplier = () -> localSource;
-
-		givenImpliedSubject();
+		given(nodeProps.containsProperty("testProp2")).willReturn(true);
+		given(nodeProps.getProperty("testProp2")).willReturn("goodEnoughForMe");
+		// and:
+		given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
+		given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
 
 		// when:
 		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
@@ -82,34 +76,19 @@ class StandardizedPropertySourcesTest {
 		// expect:
 		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
 		assertEquals("goodEnoughForMe", subject.asResolvingSource().getStringProperty("testProp2"));
-
-		// cleanup:
-		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
-		StandardizedPropertySources.nodePropertiesSupplier = ScreenedNodeFileProps::new;
 	}
 
 	@Test
 	void propagatesReloadToDynamicGlobalProps() {
-		// setup:
-		ScreenedSysFileProps source = mock(ScreenedSysFileProps.class);
-		StandardizedPropertySources.dynamicGlobalPropsSupplier = () -> source;
-
-		givenImpliedSubject();
-
 		// when:
 		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
 		// expect:
-		verify(source).screenNew(ServicesConfigurationList.getDefaultInstance());
-
-		// cleanup:
-		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+		verify(dynamicGlobalProps).screenNew(ServicesConfigurationList.getDefaultInstance());
 	}
 
 	@Test
 	void usesBootstrapSourceAsApropos() {
-		givenImpliedSubject();
-		// and:
 		subject.getNodeProps().getFromFile().clear();
 
 		// when:
@@ -121,9 +100,5 @@ class StandardizedPropertySourcesTest {
 		for (String bootstrapProp : BOOTSTRAP_PROP_NAMES) {
 			verify(bootstrapProps).getProperty(bootstrapProp);
 		}
-	}
-
-	private void givenImpliedSubject() {
-		subject = new StandardizedPropertySources(bootstrapProps);
 	}
 }

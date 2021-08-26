@@ -32,6 +32,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -54,7 +55,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -129,7 +129,7 @@ class HfsSystemFilesManagerTest {
 	private Consumer<CurrentAndNextFeeSchedule> schedulesCb;
 	private SysFileCallbacks callbacks;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
@@ -206,7 +206,7 @@ class HfsSystemFilesManagerTest {
 
 		callbacks = mock(SysFileCallbacks.class);
 
-		subject = new HfsSystemFilesManager(currentBook, fileNumbers, properties, hfs, () -> masterKey, callbacks);
+		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, () -> masterKey, callbacks);
 	}
 
 	@Test

@@ -22,6 +22,8 @@ package com.hedera.services.stream;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
+@Singleton
 public class NonBlockingHandoff {
 	private static final int MIN_CAPACITY = 5_000;
 
@@ -38,6 +41,7 @@ public class NonBlockingHandoff {
 	private final RecordStreamManager recordStreamManager;
 	private final BlockingQueue<RecordStreamObject> queue;
 
+	@Inject
 	public NonBlockingHandoff(RecordStreamManager recordStreamManager, NodeLocalProperties nodeLocalProperties) {
 		this.recordStreamManager = recordStreamManager;
 

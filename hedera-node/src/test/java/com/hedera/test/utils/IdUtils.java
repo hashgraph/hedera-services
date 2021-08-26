@@ -44,6 +44,11 @@ public class IdUtils {
 				.build();
 	}
 
+	public static Id asModelId(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
+	}
+
 	public static TopicID asTopic(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return TopicID.newBuilder()

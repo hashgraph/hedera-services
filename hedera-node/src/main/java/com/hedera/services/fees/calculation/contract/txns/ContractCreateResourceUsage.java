@@ -28,9 +28,14 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class ContractCreateResourceUsage implements TxnResourceUsageEstimator {
 	private final SmartContractFeeBuilder usageEstimator;
 
+	@Inject
 	public ContractCreateResourceUsage(SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

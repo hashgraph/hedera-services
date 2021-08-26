@@ -36,6 +36,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -62,6 +64,7 @@ import static java.util.Calendar.MINUTE;
  * 		FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
  * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
  */
+@Singleton
 public class FreezeHandler {
 	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
 
@@ -81,6 +84,7 @@ public class FreezeHandler {
 	private FileID updateFeatureFile;
 	private byte[] updateFileHash;
 
+	@Inject
 	public FreezeHandler(
 			final HederaFs hfs,
 			final Platform platform,

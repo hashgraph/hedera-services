@@ -52,8 +52,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A runnable object that executes a random Hedera service API.
- *
- * @author Hua Li Created on 2018-11-19
  */
 public class UmbrellaServiceRunnable implements Runnable {
 

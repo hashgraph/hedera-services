@@ -38,6 +38,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.validation.PureValidation.queryableAccountStatus;
@@ -57,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class SolvencyPrecheck {
 	private static final Logger log = LogManager.getLogger(SolvencyPrecheck.class);
 
@@ -71,6 +74,7 @@ public class SolvencyPrecheck {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	@Inject
 	public SolvencyPrecheck(
 			FeeExemptions feeExemptions,
 			FeeCalculator feeCalculator,

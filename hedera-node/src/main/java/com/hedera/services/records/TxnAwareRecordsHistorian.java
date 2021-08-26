@@ -27,13 +27,14 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private ExpirableTxnRecord lastExpirableRecord;
 
@@ -43,6 +44,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private final ExpiryManager expiries;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;

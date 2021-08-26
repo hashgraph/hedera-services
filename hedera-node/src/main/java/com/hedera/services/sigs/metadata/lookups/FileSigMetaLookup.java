@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 /**
  * Defines a simple type that is able to recover metadata about signing activity
  * associated with a given Hedera file.
- *
- * @author Michael Tinker
  */
 public interface FileSigMetaLookup {
 	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);

@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
@@ -39,10 +41,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 
+@Singleton
 public class GetTxnReceiptAnswer implements AnswerService {
 	private final TransactionID DEFAULT_TXN_ID = TransactionID.getDefaultInstance();
 	private final RecordCache recordCache;
 
+	@Inject
 	public GetTxnReceiptAnswer(RecordCache recordCache) {
 		this.recordCache = recordCache;
 	}

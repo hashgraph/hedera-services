@@ -49,8 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * make the syntax check evaluate only conditions which are known
  * pre-consensus. Ultimately we may move all syntax checking outside the
  * {@link ProcessLogic}.
- *
- * @author Michael Tinker
  */
 public interface TransitionLogic {
 	Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
@@ -88,4 +86,16 @@ public interface TransitionLogic {
 	default ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		return semanticCheck().apply(accessor.getTxn());
 	}
+
+	/**
+	 * Reclaims the created entity IDs from {@link com.hedera.services.ledger.ids.EntityIdSource} generated during the execution of the Transaction
+	 * If a given {@link TransitionLogic} allocates new {@link com.hedera.services.ledger.ids.EntityIdSource} it must override the default implementation
+	 */
+	default void reclaimCreatedIds () {}
+
+	/**
+	 * Resets the provisional IDs created from {@link com.hedera.services.ledger.ids.EntityIdSource}
+	 * If a given {@link TransitionLogic} allocates new {@link com.hedera.services.ledger.ids.EntityIdSource} it must override the default implementation
+	 */
+	default void resetCreatedIds () { }
 }

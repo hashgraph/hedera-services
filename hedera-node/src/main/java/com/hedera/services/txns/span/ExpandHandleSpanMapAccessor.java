@@ -24,12 +24,20 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /**
  * Minimal helper class for getting/setting entries in a span map.
  */
+@Singleton
 public class ExpandHandleSpanMapAccessor {
 	private static final String IMPLIED_TRANSFERS_KEY = "impliedTransfers";
 	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
+
+	@Inject
+	public ExpandHandleSpanMapAccessor() {
+	}
 
 	public void setFeeScheduleUpdateMeta(TxnAccessor accessor, FeeScheduleUpdateMeta feeScheduleUpdateMeta) {
 		accessor.getSpanMap().put(FEE_SCHEDULE_UPDATE_META_KEY, feeScheduleUpdateMeta);

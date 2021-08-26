@@ -25,14 +25,13 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith({ LogCaptureExtension.class })
 class BootstrapPropertiesTest {
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private BootstrapProperties subject = new BootstrapProperties();
@@ -124,7 +123,6 @@ class BootstrapPropertiesTest {
 			entry("hedera.transaction.maxValidDuration", 180L),
 			entry("hedera.transaction.minValidityBufferSecs", 10),
 			entry("ledger.fundingAccount", 98L),
-			entry("ledger.keepRecordsInState", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
 			entry("ledger.transfers.maxLen", 10),
@@ -138,9 +136,6 @@ class BootstrapPropertiesTest {
 			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
 			entry("iss.dumpFcms", false),
-			entry("netty.ciphers", List.of(
-					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")),
 			entry("netty.mode", Profile.PROD),
 			entry("netty.prod.flowControlWindow", 10240),
 			entry("netty.prod.maxConcurrentCalls", 10),

@@ -28,12 +28,15 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 
+@Singleton
 public class OpUsageCtxHelper {
 	private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX =
 			new ExtantFeeScheduleContext(0, 0);
@@ -42,6 +45,7 @@ public class OpUsageCtxHelper {
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
+	@Inject
 	public OpUsageCtxHelper(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
 		this.tokens = tokens;
 	}

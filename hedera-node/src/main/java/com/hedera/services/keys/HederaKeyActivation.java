@@ -39,8 +39,6 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
 /**
  * Provides a static method to determine if a Hedera key is <i>active</i> relative to
  * a set of platform signatures corresponding to its simple keys.
- *
- * @author Michael Tinker
  * @see JKey
  */
 public class HederaKeyActivation {

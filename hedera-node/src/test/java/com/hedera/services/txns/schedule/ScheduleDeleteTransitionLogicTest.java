@@ -31,18 +31,22 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class ScheduleDeleteTransitionLogicTest {
+    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+
     private ScheduleStore store;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
@@ -67,13 +71,13 @@ class ScheduleDeleteTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.delete(schedule)).willReturn(OK);
+        given(store.deleteAt(schedule, consensusNow)).willReturn(OK);
 
         // when:
         subject.doStateTransition();
 
         // then
-        verify(store).delete(schedule);
+        verify(store).deleteAt(schedule, consensusNow);
         verify(txnCtx).setStatus(SUCCESS);
     }
 
@@ -83,13 +87,13 @@ class ScheduleDeleteTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.delete(schedule)).willReturn(NOT_OK);
+        given(store.deleteAt(schedule, consensusNow)).willReturn(NOT_OK);
 
         // when:
         subject.doStateTransition();
 
         // then
-        verify(store).delete(schedule);
+        verify(store).deleteAt(schedule, consensusNow);
         verify(txnCtx).setStatus(NOT_OK);
     }
 
@@ -97,13 +101,13 @@ class ScheduleDeleteTransitionLogicTest {
     void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
-        given(store.delete(schedule)).willThrow(IllegalArgumentException.class);
+        given(store.deleteAt(schedule, consensusNow)).willThrow(IllegalArgumentException.class);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        verify(store).delete(schedule);
+        verify(store).deleteAt(schedule, consensusNow);
         // and:
         verify(txnCtx).setStatus(FAIL_INVALID);
     }
@@ -167,5 +171,6 @@ class ScheduleDeleteTransitionLogicTest {
         scheduleDeleteTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
         given(txnCtx.accessor()).willReturn(accessor);
+        given(txnCtx.consensusTime()).willReturn(consensusNow);
     }
 }

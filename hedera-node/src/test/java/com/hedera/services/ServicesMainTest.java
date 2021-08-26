@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,598 +22,338 @@ package com.hedera.services;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.Profile;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.context.properties.PropertySources;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.FeeMultiplierSource;
-import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
-import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.utils.Pause;
+import com.hedera.services.txns.network.UpdateHelper;
+import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.Console;
+import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
-import com.swirlds.common.PlatformStatus;
-import com.swirlds.common.SwirldState;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
-import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.any;
+import static com.hedera.services.context.AppsManager.APPS;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.MAINTENANCE;
+import static com.swirlds.common.PlatformStatus.STARTING_UP;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.intThat;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class ServicesMainTest {
-	private final long NODE_ID = 1L;
-	private final String PATH = "/this/was/mr/bleaneys/room";
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private final long round = 1_234_567L;
+	private final long selfId = 123L;
+	private final long unselfId = 666L;
+	private final NodeId nodeId = new NodeId(false, selfId);
+	private final NodeId edonId = new NodeId(false, unselfId);
 
-	private FCMap topics;
-	private FCMap accounts;
-	private FCMap storage;
-	private Pause pause;
-	private Console console;
+	@Mock
 	private Platform platform;
+	@Mock
 	private SystemExits systemExits;
-	private AddressBook addressBook;
+	@Mock
 	private PrintStream consoleOut;
-	private FeeCalculator fees;
-	private ServicesMain subject;
-	private ServicesContext ctx;
-	private PropertySource properties;
-	private LedgerValidator ledgerValidator;
-	private AccountsExporter accountsExporter;
-	private PropertySources propertySources;
-	private BalancesExporter balancesExporter;
-	private MerkleNetworkContext networkCtx;
-	private FeeMultiplierSource feeMultiplierSource;
-	private ServicesStatsManager statsManager;
-	private GrpcServerManager grpc;
-	private NodeLocalProperties nodeLocalProps;
+	@Mock
+	private Supplier<Charset> nativeCharset;
+	@Mock
+	private ServicesApp app;
+	@Mock
+	private NamedDigestFactory namedDigestFactory;
+	@Mock
 	private SystemFilesManager systemFilesManager;
-	private SystemAccountsCreator systemAccountsCreator;
-	private CurrentPlatformStatus platformStatus;
-	private AccountRecordsHistorian recordsHistorian;
-	private GlobalDynamicProperties globalDynamicProperties;
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
-	private RecordStreamManager recordStreamManager;
+	@Mock
 	private NetworkCtxManager networkCtxManager;
+	@Mock
+	private StateAccessor stateAccessor;
+	@Mock
+	private AddressBook book;
+	@Mock
+	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	@Mock
+	private SystemAccountsCreator systemAccountsCreator;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	@Mock
+	private LedgerValidator ledgerValidator;
+	@Mock
 	private NodeInfo nodeInfo;
+	@Mock
+	private ReconnectCompleteListener reconnectListener;
+	@Mock
+	private InvalidSignedStateListener issListener;
+	@Mock
+	private NotificationEngine notificationEngine;
+	@Mock
+	private ServicesStatsManager statsManager;
+	@Mock
+	private AccountsExporter accountsExporter;
+	@Mock
+	private GrpcStarter grpcStarter;
+	@Mock
+	private CurrentPlatformStatus currentPlatformStatus;
+	@Mock
+	private RecordStreamManager recordStreamManager;
+	@Mock
+	private UpdateHelper updateHelper;
+	@Mock
+	private ServicesState signedState;
+	@Mock
+	private BalancesExporter balancesExporter;
 
-	@BeforeEach
-	private void setup() {
-		fees = mock(FeeCalculator.class);
-		grpc = mock(GrpcServerManager.class);
-		pause = mock(Pause.class);
-		accounts = mock(FCMap.class);
-		topics = mock(FCMap.class);
-		storage = mock(FCMap.class);
-		console = mock(Console.class);
-		consoleOut = mock(PrintStream.class);
-		platform = mock(Platform.class);
-		systemExits = mock(SystemExits.class);
-		recordStreamManager = mock(RecordStreamManager.class);
-		backingAccounts = (BackingStore<AccountID, MerkleAccount>) mock(BackingStore.class);
-		statsManager = mock(ServicesStatsManager.class);
-		balancesExporter = mock(BalancesExporter.class);
-		nodeLocalProps = mock(NodeLocalProperties.class);
-		recordsHistorian = mock(AccountRecordsHistorian.class);
-		ledgerValidator = mock(LedgerValidator.class);
-		accountsExporter = mock(AccountsExporter.class);
-		platformStatus = mock(CurrentPlatformStatus.class);
-		properties = mock(PropertySource.class);
-		propertySources = mock(PropertySources.class);
-		addressBook = mock(AddressBook.class);
-		systemFilesManager = mock(SystemFilesManager.class);
-		systemAccountsCreator = mock(SystemAccountsCreator.class);
-		globalDynamicProperties = mock(GlobalDynamicProperties.class);
-		networkCtx = mock(MerkleNetworkContext.class);
-		feeMultiplierSource = mock(FeeMultiplierSource.class);
-		networkCtxManager = mock(NetworkCtxManager.class);
-		nodeInfo = mock(NodeInfo.class);
-		given(nodeInfo.hasSelfAccount()).willReturn(true);
+	private ServicesMain subject = new ServicesMain();
 
-		ctx = mock(ServicesContext.class);
-
-		given(nodeLocalProps.devListeningAccount()).willReturn("0.0.3");
-		given(nodeLocalProps.port()).willReturn(50211);
-		given(nodeLocalProps.tlsPort()).willReturn(50212);
-		given(ctx.fees()).willReturn(fees);
-		given(ctx.grpc()).willReturn(grpc);
-		given(ctx.globalDynamicProperties()).willReturn(globalDynamicProperties);
-		given(ctx.pause()).willReturn(pause);
-		given(ctx.nodeLocalProperties()).willReturn(nodeLocalProps);
-		given(ctx.accounts()).willReturn(accounts);
-		given(ctx.id()).willReturn(new NodeId(false, NODE_ID));
-		given(ctx.nodeInfo()).willReturn(nodeInfo);
-		given(ctx.console()).willReturn(console);
-		given(ctx.consoleOut()).willReturn(consoleOut);
-		given(ctx.addressBook()).willReturn(addressBook);
-		given(ctx.platform()).willReturn(platform);
-		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
-		given(ctx.platformStatus()).willReturn(platformStatus);
-		given(ctx.ledgerValidator()).willReturn(ledgerValidator);
-		given(ctx.propertySources()).willReturn(propertySources);
-		given(ctx.properties()).willReturn(properties);
-		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
-		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
-		given(ctx.backingAccounts()).willReturn(backingAccounts);
-		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
-		given(ctx.systemAccountsCreator()).willReturn(systemAccountsCreator);
-		given(ctx.accountsExporter()).willReturn(accountsExporter);
-		given(ctx.balancesExporter()).willReturn(balancesExporter);
-		given(ctx.statsManager()).willReturn(statsManager);
-		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
-		given(ctx.networkCtx()).willReturn(networkCtx);
-		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
-		given(ctx.feeMultiplierSource()).willReturn(feeMultiplierSource);
-		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
-		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
-
-		subject = new ServicesMain();
-		subject.systemExits = systemExits;
-		subject.defaultCharset = () -> StandardCharsets.UTF_8;
-		CONTEXTS.store(ctx);
+	@Test
+	void throwsErrorOnMissingApp() {
+		// expect:
+		Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, edonId));
 	}
 
 	@Test
-	void failsFastOnNonUtf8DefaultCharset() {
-		// setup:
-		subject.defaultCharset = () -> StandardCharsets.US_ASCII;
+	void failsOnWrongNativeCharset() {
+		withDoomedApp();
+
+		given(nativeCharset.get()).willReturn(StandardCharsets.US_ASCII);
 
 		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
+		subject.init(platform, nodeId);
 
 		// then:
 		verify(systemExits).fail(1);
 	}
 
 	@Test
-	void failsFastOnMissingNodeAccountIdIfNotSkippingExits() {
-		given(nodeInfo.hasSelfAccount()).willReturn(false);
+	void failsOnUnavailableDigest() throws NoSuchAlgorithmException {
+		withDoomedApp();
+
+		given(nativeCharset.get()).willReturn(UTF_8);
+		given(namedDigestFactory.forName("SHA-384")).willThrow(NoSuchAlgorithmException.class);
+		given(app.digestFactory()).willReturn(namedDigestFactory);
 
 		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
+		subject.init(platform, nodeId);
 
 		// then:
 		verify(systemExits).fail(1);
 	}
 
 	@Test
-	void exitsOnAddressBookCreationFailure() {
-		willThrow(IllegalStateException.class)
-				.given(systemFilesManager).createAddressBookIfMissing();
+	void doesAppDrivenInit() throws NoSuchAlgorithmException {
+		withRunnableApp();
 
 		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits).fail(1);
-	}
-
-	@Test
-	void exitsOnCreationFailure() {
-		willThrow(IllegalStateException.class)
-				.given(systemAccountsCreator).ensureSystemAccounts(any(), any());
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits).fail(1);
-	}
-
-	@Test
-	void initializesSanelyGivenPreconditions() {
-		var throttling = mock(FunctionalityThrottling.class);
-
-		// given:
-		InOrder inOrder = inOrder(
-				systemFilesManager,
-				networkCtxManager,
-				platform,
-				ledgerValidator,
-				recordsHistorian,
-				fees,
-				grpc,
-				statsManager,
-				ctx,
-				networkCtx,
-				feeMultiplierSource);
-		given(ctx.handleThrottling()).willReturn(throttling);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
-		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
-		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
-		inOrder.verify(platform).setSleepAfterSync(0L);
-		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
-		inOrder.verify(statsManager).initializeFor(platform);
-		inOrder.verify(ctx).initRecordStreamManager();
-	}
-
-	@Test
-	void runsOnDefaultPortInProduction() {
-		given(nodeLocalProps.activeProfile()).willReturn(Profile.PROD);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(grpc).start(intThat(i -> i == 50211), intThat(i -> i == 50212), any());
-	}
-
-	@Test
-	void runsOnDefaultPortInDevIfBlessedInSingleNodeListeningNode() {
-		// setup:
-		Address address = mock(Address.class);
-
-		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
-		given(address.getMemo()).willReturn("0.0.3");
-		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(true);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(grpc).start(intThat(i -> i == 50211), intThat(i -> i == 50212), any());
-	}
-
-	@Test
-	void doesntRunInDevIfNotBlessedInSingleNodeListeningNode() {
-		// setup:
-		Address address = mock(Address.class);
-
-		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
-		given(address.getMemo()).willReturn("0.0.4");
-		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(true);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verifyNoInteractions(grpc);
-	}
-
-	@Test
-	void runsOnDefaultPortInDevIfNotInSingleNodeListeningNodeAndDefault() {
-		// setup:
-		Address address = mock(Address.class);
-
-		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
-		given(address.getMemo()).willReturn("0.0.3");
-		given(address.getPortExternalIpv4()).willReturn(50001);
-		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(grpc).start(intThat(i -> i == 50211), intThat(i -> i == 50212), any());
-	}
-
-	@Test
-	void runsOnOffsetPortInDevIfNotInSingleNodeListeningNodeAndNotDefault() {
-		// setup:
-		Address address = mock(Address.class);
-
-		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
-		given(address.getMemo()).willReturn("0.0.4");
-		given(address.getPortExternalIpv4()).willReturn(50001);
-		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(grpc).start(intThat(i -> i == 50212), intThat(i -> i == 50213), any());
-	}
-
-	@Test
-	void loadsSystemFilesIfNotAlreadyDone() {
-		given(systemFilesManager.areObservableFilesLoaded()).willReturn(true);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
+		subject.init(platform, nodeId);
 
 		// then:
 		verify(systemFilesManager).createAddressBookIfMissing();
 		verify(systemFilesManager).createNodeDetailsIfMissing();
 		verify(systemFilesManager).createUpdateZipFileIfMissing();
-		// and:
-		verify(systemFilesManager, never()).loadObservableSystemFiles();
-	}
-
-	@Test
-	void managesSystemFiles() {
-		given(systemFilesManager.areObservableFilesLoaded()).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemFilesManager).createAddressBookIfMissing();
-		verify(systemFilesManager).createNodeDetailsIfMissing();
-		verify(systemFilesManager).createUpdateZipFileIfMissing();
-		// and:
 		verify(networkCtxManager).loadObservableSysFilesIfNeeded();
+		// and:
+		verify(systemAccountsCreator).ensureSystemAccounts(backingAccounts, book);
+		// and:
+		verify(ledgerValidator).validate(accounts);
+		verify(nodeInfo).validateSelfAccountIfStaked();
+		// and:
+		verify(platform).setSleepAfterSync(0L);
+		verify(platform).addSignedStateListener(issListener);
+		verify(statsManager).initializeFor(platform);
+		verify(accountsExporter).toFile(accounts);
+		verify(notificationEngine).register(ReconnectCompleteListener.class, reconnectListener);
+		verify(grpcStarter).startIfAppropriate();
 	}
 
 	@Test
-	void createsSystemAccountsIfRequested() {
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemAccountsCreator).ensureSystemAccounts(backingAccounts, addressBook);
-		verify(pause).forMs(ServicesMain.SUGGESTED_POST_CREATION_PAUSE_MS);
+	void noopsAsExpected() {
+		// expect:
+		Assertions.assertDoesNotThrow(subject::run);
+		Assertions.assertDoesNotThrow(subject::preEvent);
 	}
 
 	@Test
-	void rethrowsAccountsCreationFailureAsIse() {
-		given(ctx.systemAccountsCreator()).willReturn(null);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits).fail(1);
+	void createsNewState() {
+		// expect:
+		assertThat(subject.newState(), instanceOf(ServicesState.class));
 	}
 
 	@Test
-	void exportsAccountsIfRequested() throws Exception {
-		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
-		given(nodeLocalProps.exportAccountsOnStartup()).willReturn(true);
+	void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
+		withRunnableApp();
+		withChangeableApp();
 
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(accountsExporter).toFile(PATH, accounts);
-	}
-
-	@Test
-	void rethrowsAccountsExportFailureAsIse() {
-		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
-		given(nodeLocalProps.exportAccountsOnStartup()).willReturn(true);
-		given(ctx.accountsExporter()).willReturn(null);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits).fail(1);
-	}
-
-	@Test
-	void updatesCurrentStatusOnChangeOnlyIfBehind() {
 		// given:
-		subject.ctx = ctx;
-		PlatformStatus newStatus = PlatformStatus.BEHIND;
+		subject.init(platform, nodeId);
 
 		// when:
-		subject.platformStatusChange(newStatus);
+		subject.platformStatusChange(STARTING_UP);
 
 		// then:
-		verify(platformStatus).set(newStatus);
-		verifyNoInteractions(recordStreamManager);
+		verify(currentPlatformStatus).set(STARTING_UP);
 	}
 
 	@Test
-	void updatesCurrentStatusAndFreezesRecordStreamOnMaintenance() {
-		// given:
-		subject.ctx = ctx;
-		PlatformStatus newStatus = PlatformStatus.MAINTENANCE;
+	void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
+		withRunnableApp();
+		withChangeableApp();
+
+		given(app.recordStreamManager()).willReturn(recordStreamManager);
+		// and:
+		subject.init(platform, nodeId);
 
 		// when:
-		subject.platformStatusChange(newStatus);
+		subject.platformStatusChange(ACTIVE);
 
 		// then:
-		verify(platformStatus).set(newStatus);
-		verify(recordStreamManager).setInFreeze(true);
-	}
-
-	@Test
-	void updatesCurrentStatusAndFreezesRecordStreamOnActive() {
-		// given:
-		subject.ctx = ctx;
-		PlatformStatus newStatus = PlatformStatus.ACTIVE;
-
-		// when:
-		subject.platformStatusChange(newStatus);
-
-		// then:
-		verify(platformStatus).set(newStatus);
+		verify(currentPlatformStatus).set(ACTIVE);
 		verify(recordStreamManager).setInFreeze(false);
 	}
 
 	@Test
-	void doesLogSummaryIfNotInMaintenance() {
+	void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
 		// setup:
-		subject.ctx = ctx;
-		var signedState = mock(ServicesState.class);
-		var currentPlatformStatus = mock(CurrentPlatformStatus.class);
+		final var os = System.getProperty("os.name").toLowerCase();
 
-		given(currentPlatformStatus.get()).willReturn(PlatformStatus.DISCONNECTED);
-		given(ctx.platformStatus()).willReturn(currentPlatformStatus);
+		withRunnableApp();
+		withChangeableApp();
+
+		given(app.updateHelper()).willReturn(updateHelper);
+		given(app.recordStreamManager()).willReturn(recordStreamManager);
+		// and:
+		subject.init(platform, nodeId);
 
 		// when:
-		subject.newSignedState(signedState, Instant.now(), 1L);
+		subject.platformStatusChange(MAINTENANCE);
 
 		// then:
-		verify(signedState, never()).logSummary();
+		verify(currentPlatformStatus).set(MAINTENANCE);
+		verify(recordStreamManager).setInFreeze(true);
+		verify(updateHelper).runIfAppropriateOn(os);
 	}
 
 	@Test
-	void onlyLogsSummary() {
-		// setup:
-		subject.ctx = ctx;
-		var signedState = mock(ServicesState.class);
-		var currentPlatformStatus = mock(CurrentPlatformStatus.class);
+	void justLogsIfMaintenanceAndNotTimeToExport() throws NoSuchAlgorithmException {
+		withRunnableApp();
 
-		given(currentPlatformStatus.get()).willReturn(PlatformStatus.MAINTENANCE);
-		given(ctx.platformStatus()).willReturn(currentPlatformStatus);
+		given(app.platformStatus()).willReturn(currentPlatformStatus);
+		given(app.balancesExporter()).willReturn(balancesExporter);
+		given(currentPlatformStatus.get()).willReturn(MAINTENANCE);
+		// and:
+		subject.init(platform, nodeId);
 
 		// when:
-		subject.newSignedState(signedState, Instant.now(), 1L);
+		subject.newSignedState(signedState, consensusNow, round);
 
 		// then:
 		verify(signedState).logSummary();
 	}
 
 	@Test
-	void doesntExportBalanceIfNotTime() throws Exception {
-		// setup:
-		subject.ctx = ctx;
-		Instant when = Instant.now();
-		ServicesState signedState = mock(ServicesState.class);
+	void exportsIfTime() throws NoSuchAlgorithmException {
+		withRunnableApp();
 
-		given(properties.getBooleanProperty("hedera.exportBalancesOnNewSignedState")).willReturn(true);
-		given(balancesExporter.isTimeToExport(when)).willReturn(false);
+		given(app.platformStatus()).willReturn(currentPlatformStatus);
+		given(app.balancesExporter()).willReturn(balancesExporter);
+		given(app.nodeId()).willReturn(nodeId);
+		given(balancesExporter.isTimeToExport(consensusNow)).willReturn(true);
+		given(currentPlatformStatus.get()).willReturn(ACTIVE);
+		// and:
+		subject.init(platform, nodeId);
 
 		// when:
-		subject.newSignedState(signedState, when, 1L);
+		subject.newSignedState(signedState, consensusNow, round);
 
 		// then:
-		verify(balancesExporter, never()).exportBalancesFrom(any(), any(), any());
+		verify(balancesExporter).exportBalancesFrom(signedState, consensusNow, nodeId);
 	}
 
 	@Test
-	void exportsBalancesIfPropertySet() throws Exception {
-		// setup:
-		subject.ctx = ctx;
-		Instant when = Instant.now();
-		ServicesState signedState = mock(ServicesState.class);
-
-		given(globalDynamicProperties.shouldExportBalances()).willReturn(true);
-		given(balancesExporter.isTimeToExport(when)).willReturn(true);
+	void failsHardIfCannotInit() throws NoSuchAlgorithmException {
+		withFailingApp();
 
 		// when:
-		subject.newSignedState(signedState, when, 1L);
-
-		// then:
-		verify(balancesExporter).exportBalancesFrom(signedState, when, ctx.id());
-	}
-
-	@Test
-	void doesntExportBalancesIfPropertyNotSet() {
-		// setup:
-		subject.ctx = ctx;
-		Instant when = Instant.now();
-		ServicesState signedState = mock(ServicesState.class);
-
-		given(globalDynamicProperties.shouldExportBalances()).willReturn(false);
-
-		// when:
-		subject.newSignedState(signedState, when, 1L);
-
-		// then:
-		verifyNoInteractions(balancesExporter);
-	}
-
-	@Test
-	void failsFastIfBalanceExportDetectedInvalidState() throws Exception {
-		// setup:
-		subject.ctx = ctx;
-		var nodeId = ctx.id();
-		Instant when = Instant.now();
-		ServicesState signedState = mock(ServicesState.class);
-
-		given(globalDynamicProperties.shouldExportBalances()).willReturn(true);
-		given(balancesExporter.isTimeToExport(when)).willReturn(true);
-		willThrow(IllegalStateException.class)
-				.given(balancesExporter)
-				.exportBalancesFrom(signedState, when, nodeId);
-
-		// when:
-		subject.newSignedState(signedState, when, 1L);
+		subject.init(platform, nodeId);
 
 		// then:
 		verify(systemExits).fail(1);
 	}
 
-	@Test
-	void noOpsRun() {
-		// expect:
-		assertDoesNotThrow(() -> {
-			subject.run();
-			subject.preEvent();
-		});
+	private void withDoomedApp() {
+		APPS.save(selfId, app);
+		given(app.nativeCharset()).willReturn(nativeCharset);
+		given(app.systemExits()).willReturn(systemExits);
 	}
 
-	@Test
-	void returnsAppState() {
-		// expect:
-		assertTrue(subject.newState() instanceof ServicesState);
+	private void withFailingApp() throws NoSuchAlgorithmException {
+		APPS.save(selfId, app);
+		given(nativeCharset.get()).willReturn(UTF_8);
+		given(namedDigestFactory.forName("SHA-384")).willReturn(null);
+		given(app.nativeCharset()).willReturn(nativeCharset);
+		given(app.digestFactory()).willReturn(namedDigestFactory);
+		given(app.sysFilesManager()).willReturn(systemFilesManager);
+		given(app.systemExits()).willReturn(systemExits);
+		willThrow(IllegalStateException.class).given(systemFilesManager).createAddressBookIfMissing();
 	}
 
-	@Test
-	void registerReconnectCompleteListenerTest() {
-		NotificationEngine engineMock = mock(NotificationEngine.class);
-		subject.registerReconnectCompleteListener(engineMock);
-		verify(engineMock).register(eq(ReconnectCompleteListener.class), any());
+	private void withRunnableApp() throws NoSuchAlgorithmException {
+		APPS.save(selfId, app);
+		given(nativeCharset.get()).willReturn(UTF_8);
+		given(namedDigestFactory.forName("SHA-384")).willReturn(null);
+		given(app.nativeCharset()).willReturn(nativeCharset);
+		given(app.digestFactory()).willReturn(namedDigestFactory);
+		given(app.sysFilesManager()).willReturn(systemFilesManager);
+		given(app.networkCtxManager()).willReturn(networkCtxManager);
+		given(app.consoleOut()).willReturn(Optional.of(consoleOut));
+		given(app.workingState()).willReturn(stateAccessor);
+		given(stateAccessor.addressBook()).willReturn(book);
+		given(app.workingState()).willReturn(stateAccessor);
+		given(app.backingAccounts()).willReturn(backingAccounts);
+		given(app.sysAccountsCreator()).willReturn(systemAccountsCreator);
+		given(stateAccessor.accounts()).willReturn(accounts);
+		given(app.ledgerValidator()).willReturn(ledgerValidator);
+		given(app.nodeInfo()).willReturn(nodeInfo);
+		given(app.platform()).willReturn(platform);
+		given(app.issListener()).willReturn(issListener);
+		given(app.notificationEngine()).willReturn(() -> notificationEngine);
+		given(app.reconnectListener()).willReturn(reconnectListener);
+		given(app.statsManager()).willReturn(statsManager);
+		given(app.accountsExporter()).willReturn(accountsExporter);
+		given(app.grpcStarter()).willReturn(grpcStarter);
 	}
 
-	@Test
-	void reconnectCompleteListenerTest() {
-		// setup
-		subject.ctx = ctx;
-		// register
-		subject.registerReconnectCompleteListener(NotificationFactory.getEngine());
-		final long roundNumber = RandomUtils.nextLong();
-		final Instant consensusTimestamp = Instant.now();
-		final SwirldState state = mock(ServicesState.class);
-		// dispatch a notification
-		final ReconnectCompleteNotification notification = new ReconnectCompleteNotification(roundNumber,
-				consensusTimestamp, state);
-		NotificationFactory.getEngine().dispatch(ReconnectCompleteListener.class, notification);
-		// should receive this notification
-		verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
+	private void withChangeableApp() {
+		given(app.platformStatus()).willReturn(currentPlatformStatus);
+		given(app.nodeId()).willReturn(nodeId);
 	}
 }

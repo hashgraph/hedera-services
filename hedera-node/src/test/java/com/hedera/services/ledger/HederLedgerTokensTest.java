@@ -139,6 +139,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		// expect:
 		verify(tokenStore).setAccountsLedger(accountsLedger);
 		verify(tokenStore).setHederaLedger(subject);
+		verify(creator).setLedger(subject);
 	}
 
 	@Test

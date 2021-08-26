@@ -47,8 +47,14 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="TRACE" additivity="false">
+    <Logger name="com.swirlds" level="INFO" additivity="false">
       <AppenderRef ref="fileLog" />
+      <!--
+	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
+	  to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
+	  future is to use a top-level <Filter> and <Logger> specific filters in combination to achieve the desired
+	  multi-logger setup for diagnostic logging.
+	  -->
       <Filters>
         <!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
         <!-- Intentially left disabled by default -->
@@ -93,6 +99,7 @@
         <!-- Signed State Signatures -->
         <MarkerFilter marker="STATE_SIG_DIST"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_DELETER"          onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="OBJECT_STREAM_DETAIL"   onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <!-- Cryptography -->
         <MarkerFilter marker="OPENCL_INIT_EXCEPTIONS" onMatch="DENY"   onMismatch="NEUTRAL"/>

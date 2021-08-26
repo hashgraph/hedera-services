@@ -20,18 +20,23 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
+import com.hedera.services.contracts.annotations.BytecodeSource;
 import org.ethereum.datasource.DbSettings;
 import org.ethereum.datasource.DbSource;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Set;
 
+@Singleton
 public class BlobStorageSource implements DbSource<byte[]> {
 	private String name = "<N/A>";
 
 	private final Map<byte[], byte[]> blobDelegate;
 
-	public BlobStorageSource(Map<byte[], byte[]> blobDelegate) {
+	@Inject
+	public BlobStorageSource(@BytecodeSource Map<byte[], byte[]> blobDelegate) {
 		this.blobDelegate = blobDelegate;
 	}
 

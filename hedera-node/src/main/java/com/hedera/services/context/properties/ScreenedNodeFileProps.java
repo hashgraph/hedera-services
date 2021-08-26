@@ -23,6 +23,8 @@ package com.hedera.services.context.properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import static com.hedera.services.context.properties.Profile.TEST;
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static java.util.Map.entry;
 
+@Singleton
 public class ScreenedNodeFileProps implements PropertySource {
 	static Logger log = LogManager.getLogger(ScreenedNodeFileProps.class);
 
@@ -79,6 +82,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 
 	private Map<String, Object> fromFile = new HashMap<>();
 
+	@Inject
 	public ScreenedNodeFileProps() {
 		loadFrom(legacyNodePropsLoc, false);
 		loadFrom(nodePropsLoc, true);

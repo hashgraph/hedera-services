@@ -23,8 +23,6 @@ package com.hedera.services.context.properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
@@ -84,7 +82,6 @@ class NodeLocalPropertiesTest {
 		assertEquals(23, subject.nettyStartRetries());
 		assertEquals(24L, subject.nettyStartRetryIntervalMs());
 		assertTrue(subject.shouldDumpFcmsOnIss());
-		assertEquals(List.of("C", "D"), subject.nettyCiphers());
 	}
 
 	@Test
@@ -125,7 +122,6 @@ class NodeLocalPropertiesTest {
 		assertEquals(24, subject.nettyStartRetries());
 		assertEquals(25L, subject.nettyStartRetryIntervalMs());
 		assertFalse(subject.shouldDumpFcmsOnIss());
-		assertEquals(List.of("A", "B"), subject.nettyCiphers());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -160,8 +156,6 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
 		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
 		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
-		given(properties.getListProperty("netty.ciphers"))
-				.willReturn(i % 2 == 0 ? List.of("A", "B") : List.of("C", "D"));
 	}
 
 	static String logDir(int num) {

@@ -24,8 +24,6 @@ import java.util.HashMap;
 
 /**
  *  Mapping of Class name and Object Id
- *
- * @author Akshay
  */
 public enum JObjectType {
 

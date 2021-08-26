@@ -27,7 +27,15 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class GetVersionInfoResourceUsage implements QueryResourceUsageEstimator {
+	@Inject
+	public GetVersionInfoResourceUsage() {
+	}
+
 	@Override
 	public boolean applicableTo(Query query) {
 		return query.hasNetworkGetVersionInfo();

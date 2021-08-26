@@ -83,8 +83,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Integration tests for file APIs.
- *
- * @author hua
  */
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @Disabled

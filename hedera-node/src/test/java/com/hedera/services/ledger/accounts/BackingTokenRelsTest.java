@@ -147,13 +147,6 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	void syncsFromInjectedMap() {
-		// expect:
-		assertTrue(subject.existingRels.contains(asTokenRel(a, at)));
-		assertTrue(subject.existingRels.contains(asTokenRel(b, bt)));
-	}
-
-	@Test
 	void rebuildsFromChangedSources() {
 		// when:
 		rels.clear();
@@ -170,6 +163,9 @@ class BackingTokenRelsTest {
 
 	@Test
 	void containsWorks() {
+		// given:
+		subject.rebuildFromSources();
+
 		// expect:
 		assertTrue(subject.contains(asTokenRel(a, at)));
 		assertTrue(subject.contains(asTokenRel(b, bt)));

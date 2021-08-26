@@ -106,11 +106,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-/**
- * @author oc/peter
- * @version Junit5 Tests the SmartContractRequestHandler class features
- */
-
 class SmartContractRequestHandlerStorageTest {
   private static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
   private static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
@@ -141,13 +136,15 @@ class SmartContractRequestHandlerStorageTest {
   private LedgerAccountsSource ledgerSource;
   private FCStorageWrapper storageWrapper;
   private HederaLedger ledger;
+  private BackingAccounts backingAccounts;
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    backingAccounts = new BackingAccounts(() -> contracts);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             MerkleAccount::new,
-			new BackingAccounts(() -> contracts),
+			backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
@@ -219,6 +216,8 @@ class SmartContractRequestHandlerStorageTest {
     payerMerkleEntityId.setNum(payerAccount);
     payerMerkleEntityId.setRealm(0);
     payerMerkleEntityId.setShard(0);
+
+    backingAccounts.rebuildFromSources();
   }
 
   private void createAccount(AccountID payerAccount, long balance)

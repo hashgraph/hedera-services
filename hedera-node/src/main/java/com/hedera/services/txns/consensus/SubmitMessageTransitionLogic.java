@@ -32,6 +32,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -45,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-
+@Singleton
 public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
 
@@ -56,6 +58,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final GlobalDynamicProperties globalDynamicProperties;
 
+	@Inject
 	public SubmitMessageTransitionLogic(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			OptionValidator validator,

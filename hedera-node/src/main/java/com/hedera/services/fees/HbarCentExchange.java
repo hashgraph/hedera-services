@@ -25,14 +25,14 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
+import java.time.Instant;
+
 /**
  * Defines a type able to provide exchange rates and rate sets
  * applicable to the current transaction being processed.
- *
- * @author Michael Tinker
  */
 public interface HbarCentExchange {
-	ExchangeRate activeRate();
+	ExchangeRate activeRate(Instant now);
 	ExchangeRate rate(Timestamp at);
 	ExchangeRates fcActiveRates();
 	ExchangeRateSet activeRates();

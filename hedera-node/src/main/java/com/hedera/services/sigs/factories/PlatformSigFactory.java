@@ -32,8 +32,6 @@ import static java.util.stream.Collectors.joining;
 /**
  * Provides a static method to create {@link com.swirlds.common.crypto.Signature} instances
  * from the raw bytes constituting a public key, cryptographic signature, and signed data.
- *
- * @author Michael Tinker
  */
 public class PlatformSigFactory {
 	/**

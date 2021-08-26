@@ -34,9 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -71,7 +69,7 @@ class BasedLedgerValidatorTest {
 		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(50L));
 
 		// expect:
-		assertTrue(subject.hasExpectedTotalBalance(accounts));
+		assertDoesNotThrow(() -> subject.validate(accounts));
 	}
 
 	@Test
@@ -81,7 +79,17 @@ class BasedLedgerValidatorTest {
 		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(51L));
 
 		// expect:
-		assertFalse(subject.hasExpectedTotalBalance(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
+	}
+
+	@Test
+	void recognizesExcessFloat() throws NegativeAccountBalanceException {
+		// given:
+		accounts.put(new MerkleEntityId(shard, realm, 1L), expectedWith(Long.MAX_VALUE));
+		accounts.put(new MerkleEntityId(shard, realm, 2L), expectedWith(51L));
+
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	@Test
@@ -90,7 +98,7 @@ class BasedLedgerValidatorTest {
 		accounts.put(new MerkleEntityId(shard, realm, 3L), expectedWith(100L));
 
 		// expect:
-		assertDoesNotThrow(() -> subject.assertIdsAreValid(accounts));
+		assertDoesNotThrow(() -> subject.validate(accounts));
 	}
 
 	@Test
@@ -101,7 +109,7 @@ class BasedLedgerValidatorTest {
 				expectedWith(dynamicProperties.maxAccountNum()));
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	@Test
@@ -110,7 +118,7 @@ class BasedLedgerValidatorTest {
 		accounts.put(new MerkleEntityId(shard, realm, 0L), expectedWith(100L));
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	@Test
@@ -121,7 +129,7 @@ class BasedLedgerValidatorTest {
 				expectedWith(100L));
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	@Test
@@ -130,7 +138,7 @@ class BasedLedgerValidatorTest {
 		accounts.put(new MerkleEntityId(shard, realm - 1, 3L), expectedWith(100L));
 
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
+		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
 	}
 
 	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {

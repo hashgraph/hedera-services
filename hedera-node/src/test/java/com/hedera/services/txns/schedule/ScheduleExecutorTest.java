@@ -35,6 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +46,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleExecutorTest {
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private ScheduleID id = IdUtils.asSchedule("0.0.1234");
 
 	@Mock
@@ -62,7 +65,8 @@ class ScheduleExecutorTest {
 
 	@Test
 	void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException {
-		given(store.markAsExecuted(id)).willReturn(OK);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(store.markAsExecuted(id, consensusNow)).willReturn(OK);
 		given(store.get(id)).willReturn(schedule);
 		given(schedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
 		given(schedule.effectivePayer()).willReturn(new EntityId(0, 0, 4321));
@@ -91,7 +95,8 @@ class ScheduleExecutorTest {
 
 	@Test
 	void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException {
-		given(store.markAsExecuted(id)).willReturn(SCHEDULE_ALREADY_EXECUTED);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(store.markAsExecuted(id, consensusNow)).willReturn(SCHEDULE_ALREADY_EXECUTED);
 
 		// when:
 		var result = subject.processExecution(id, store, txnCtx);

@@ -70,6 +70,8 @@ import org.ethereum.core.Transaction;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.spongycastle.util.encoders.DecoderException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
@@ -103,6 +105,7 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionRecord;
 /**
  * Post-consensus execution of smart contract api calls
  */
+@Singleton
 public class SmartContractRequestHandler {
 	private static final Logger log = LogManager.getLogger(SmartContractRequestHandler.class);
 
@@ -119,6 +122,7 @@ public class SmartContractRequestHandler {
 	private SoliditySigsVerifier sigsVerifier;
 	private GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
 			HederaLedger ledger,

@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -42,7 +44,11 @@ import java.util.List;
  * This class includes methods for generating Fee Matrices and calculating Fee for Smart Contract
  * related Transactions and Query.
  */
+@Singleton
 public class SmartContractFeeBuilder extends FeeBuilder {
+	@Inject
+	public SmartContractFeeBuilder() {
+	}
 
 	/**
 	 * This method returns fee matrices for contract create transaction

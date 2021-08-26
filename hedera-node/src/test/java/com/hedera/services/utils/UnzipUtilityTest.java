@@ -23,13 +23,13 @@ package com.hedera.services.utils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -37,22 +37,21 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.zip.ZipInputStream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class UnzipUtilityTest {
 	@Mock
 	private ZipInputStream zipIn;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private UnzipUtility subject;
 

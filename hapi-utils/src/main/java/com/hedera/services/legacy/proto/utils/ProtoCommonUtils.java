@@ -28,8 +28,6 @@ import java.time.Instant;
 
 /**
  * Protobuf related utilities shared by client and server.
- *
- * @author hua Created on 2018-09-29
  */
 public class ProtoCommonUtils {
   /**

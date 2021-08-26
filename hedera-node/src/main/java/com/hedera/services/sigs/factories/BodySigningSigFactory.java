@@ -27,8 +27,6 @@ import com.swirlds.common.crypto.TransactionSignature;
  * A trivial convenience implementation of a {@link TxnScopedPlatformSigFactory} that
  * creates {@link com.swirlds.common.crypto.TransactionSignature} objects representing ed25519 sigs
  * of the body bytes for a gRPC transaction.
- *
- * @author Michael Tinker
  */
 public class BodySigningSigFactory implements TxnScopedPlatformSigFactory {
 	private final TxnAccessor accessor;

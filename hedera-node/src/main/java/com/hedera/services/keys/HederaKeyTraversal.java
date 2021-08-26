@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 /**
  * Provides static helpers for interrogating the simple keys in a complex Hedera key.
  *
- * @author Michael Tinker
  * @see JKey
  */
 public class HederaKeyTraversal {

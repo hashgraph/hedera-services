@@ -23,6 +23,7 @@ package com.hedera.test.mocks;
 import com.google.common.io.Files;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
@@ -39,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 
 public enum TestUsagePricesProvider implements UsagePricesProvider {
 	TEST_USAGE_PRICES;
@@ -69,12 +70,7 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 	}
 
 	@Override
-	public Map<SubType, FeeData> activePrices() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public FeeData defaultActivePrices() {
+	public Map<SubType, FeeData> activePrices(TxnAccessor accessor) {
 		throw new UnsupportedOperationException();
 	}
 

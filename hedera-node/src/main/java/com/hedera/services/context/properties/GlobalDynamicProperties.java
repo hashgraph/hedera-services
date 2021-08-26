@@ -21,13 +21,17 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Set;
 
+@Singleton
 public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
@@ -50,7 +54,6 @@ public class GlobalDynamicProperties {
 	private long maxAccountNum;
 	private long nodeBalanceWarningThreshold;
 	private String pathToBalancesExportDir;
-	private boolean shouldKeepRecordsInState;
 	private boolean shouldExportBalances;
 	private boolean shouldExportTokenBalances;
 	private AccountID fundingAccount;
@@ -82,9 +85,10 @@ public class GlobalDynamicProperties {
 	private int maxCustomFeeDepth;
 	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 
+	@Inject
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
-			PropertySource properties
+			@CompositeProps PropertySource properties
 	) {
 		this.hederaNums = hederaNums;
 		this.properties = properties;
@@ -93,7 +97,6 @@ public class GlobalDynamicProperties {
 	}
 
 	public void reload() {
-		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
 		maxNftMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
 		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
@@ -199,10 +202,6 @@ public class GlobalDynamicProperties {
 
 	public int ratesIntradayChangeLimitPercent() {
 		return ratesIntradayChangeLimitPercent;
-	}
-
-	public boolean shouldKeepRecordsInState() {
-		return shouldKeepRecordsInState;
 	}
 
 	public int balancesExportPeriodSecs() {
