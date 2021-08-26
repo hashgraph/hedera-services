@@ -127,7 +127,7 @@ public final class IdentityCodeUtils {
 	}
 
 	/**
-	 * Set the lower-order 16 bits of {@param autoAssociationMetadata}
+	 * Set the lower-order 16 bits of automatic association Metadata
 	 *
 	 * @param autoAssociationMetadata
 	 * 		metadata of already used automatic associations and max allowed automatic associations
@@ -142,7 +142,7 @@ public final class IdentityCodeUtils {
 	}
 
 	/**
-	 * Set the higher-order 16 bits of {@param autoAssociationMetadata}
+	 * Set the higher-order 16 bits of automatic association Metadata
 	 *
 	 * @param autoAssociationMetadata
 	 * 		metadata of already used automatic associations and max allowed automatic associations
