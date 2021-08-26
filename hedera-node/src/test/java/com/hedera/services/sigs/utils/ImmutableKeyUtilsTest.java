@@ -27,15 +27,9 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ImmutableKeyUtilsTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ImmutableKeyUtils::new);
-	}
-
 	@Test
 	void recognizesSentinelKey() {
 		assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));

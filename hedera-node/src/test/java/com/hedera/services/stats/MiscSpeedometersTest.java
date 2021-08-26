@@ -26,7 +26,6 @@ import com.swirlds.platform.StatsSpeedometer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -100,11 +99,5 @@ class MiscSpeedometersTest {
 		verify(rejections).update(1.0);
 		verify(sync).update(1.0);
 		verify(async).update(1.0);
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, MiscSpeedometers.Names::new);
-		assertThrows(IllegalStateException.class, MiscSpeedometers.Descriptions::new);
 	}
 }

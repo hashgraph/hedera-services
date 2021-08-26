@@ -23,7 +23,6 @@ package com.hedera.services.utils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,18 +31,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.zip.ZipInputStream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class UnzipUtilityTest {
@@ -57,26 +55,10 @@ class UnzipUtilityTest {
 	private UnzipUtility subject;
 
 	@Test
-	void privateConstructorShallThrowException() {
-		Constructor<?> ctor;
-		try {
-			ctor = UnzipUtility.class.getDeclaredConstructor();
-			ctor.setAccessible(true);
-
-			ctor.newInstance();
-		} catch (Exception e) {
-			final var cause = e.getCause();
-			assertEquals(
-					"UnzipUtility is an utility class. Shouldn't create any instance!",
-					cause.getMessage());
-		}
-	}
-
-	@Test
 	void unzipAbortWithRiskyFile() throws Exception {
-		final String zipFile = "src/test/resources/testfiles/updateFeature/bad.zip";
-		final byte[] data = Files.readAllBytes(Paths.get(zipFile));
-		final String dstDir = "./temp";
+		final var zipFile = "src/test/resources/testfiles/updateFeature/bad.zip";
+		final var data = Files.readAllBytes(Paths.get(zipFile));
+		final var dstDir = "./temp";
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			UnzipUtility.unzip(data, dstDir);
@@ -85,30 +67,25 @@ class UnzipUtilityTest {
 
 	@Test
 	void unzipSuccessfully() throws Exception {
-		final String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
-		final byte[] data = Files.readAllBytes(Paths.get(zipFile));
-		final String dstDir = "./temp";
+		final var zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
+		final var data = Files.readAllBytes(Paths.get(zipFile));
+		final var dstDir = "./temp";
 
 		assertDoesNotThrow(() -> UnzipUtility.unzip(data, dstDir));
 
-		final File file3 = new File("./temp/sdk/new3.txt");
-		Assertions.assertTrue(file3.exists());
+		final var file3 = new File("./temp/sdk/new3.txt");
+		assertTrue(file3.exists());
 		file3.delete();
 	}
 
 	@Test
 	void logsAtErrorWhenUnableToExtractFile() throws IOException {
-		// setup:
 		final var tmpFile = "shortLived.txt";
-
 		given(zipIn.read(any())).willThrow(IOException.class);
 
-		// then:
-		Assertions.assertDoesNotThrow(() -> UnzipUtility.extractSingleFile(zipIn, tmpFile));
-		// and:
+		assertDoesNotThrow(() -> UnzipUtility.extractSingleFile(zipIn, tmpFile));
 		assertThat(logCaptor.errorLogs(), contains("Unable to write to file shortLived.txt java.io.IOException: null"));
 
-		// cleanup:
 		new File(tmpFile).delete();
 	}
 }

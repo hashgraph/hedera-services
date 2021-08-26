@@ -38,15 +38,9 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toRel
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AddressKeyedMapFactoryTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, AddressKeyedMapFactory::new);
-	}
-
 	@Test
 	void toAddressConversion() {
 		final var mapper = toAddressMapping(LEGACY_BYTECODE_PATH_PATTERN);

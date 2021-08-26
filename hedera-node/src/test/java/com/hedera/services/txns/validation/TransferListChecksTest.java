@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.txns.validation.TransferListChecks.hasRepeatedAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TransferListChecksTest {
@@ -37,11 +36,6 @@ class TransferListChecksTest {
 	private static final long A = 1_000L;
 	private static final AccountID b = IdUtils.asAccount("0.0.4");
 	private static final AccountID c = IdUtils.asAccount("0.0.6");
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, TransferListChecks::new);
-	}
 
 	@Test
 	void acceptsDegenerateCases() {

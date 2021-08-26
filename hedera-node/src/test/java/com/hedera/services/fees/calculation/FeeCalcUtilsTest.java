@@ -44,7 +44,6 @@ import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExp
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -176,10 +175,5 @@ public class FeeCalcUtilsTest {
 			assertEquals(10, scopedUsage.getBpr());
 			assertEquals(10, scopedUsage.getSbpr());
 		}
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, FeeCalcUtils::new);
 	}
 }

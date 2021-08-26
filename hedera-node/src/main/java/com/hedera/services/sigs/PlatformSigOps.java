@@ -34,9 +34,9 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
  *
  * @author Michael Tinker
  */
-public class PlatformSigOps {
-	PlatformSigOps() {
-		throw new IllegalStateException("Utility Class");
+public final class PlatformSigOps {
+	private PlatformSigOps() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

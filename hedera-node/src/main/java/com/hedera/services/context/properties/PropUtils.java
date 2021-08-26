@@ -25,9 +25,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.util.Properties;
 
-public class PropUtils {
-	PropUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class PropUtils {
+	private PropUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static void loadOverride(

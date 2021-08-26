@@ -48,7 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
 /**
  * Error response factory that caches well-known responses by status code.
  */
-class PresolvencyFlaws {
+public final class PresolvencyFlaws {
 	private static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureWithUnknownFeeReq(
 			final ResponseCodeEnum error
 	) {
@@ -87,7 +87,7 @@ class PresolvencyFlaws {
 				: Pair.of(new TxnValidityAndFeeReq(status), Optional.empty());
 	}
 
-	PresolvencyFlaws() {
-		throw new IllegalStateException("Utility Class");
+	private PresolvencyFlaws() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 }

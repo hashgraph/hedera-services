@@ -44,11 +44,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_K
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class TokenListChecks {
+public final class TokenListChecks {
 	static Predicate<Key> adminKeyRemoval = ImmutableKeyUtils::signalsKeyRemoval;
 
-	TokenListChecks() {
-		throw new IllegalStateException("Utility Class");
+	private TokenListChecks() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static boolean repeatsItself(final List<TokenID> tokens) {

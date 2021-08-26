@@ -56,14 +56,14 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	static DomainSerdes serdes = new DomainSerdes();
 
 	/* Order of Merkle node children */
-	static class ChildIndices {
+	public static final class ChildIndices {
 		private static final int STATE = 0;
 		private static final int RELEASE_090_RECORDS = 1;
 		private static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
 
-		ChildIndices() {
-			throw new IllegalStateException("Utility Class");
+		private ChildIndices() {
+			throw new UnsupportedOperationException("Utility Class");
 		}
 	}
 

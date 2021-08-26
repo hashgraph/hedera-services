@@ -28,9 +28,9 @@ import java.math.BigInteger;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 
-public class AdjustmentUtils {
-	AdjustmentUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class AdjustmentUtils {
+	private AdjustmentUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static BalanceChange adjustedChange(

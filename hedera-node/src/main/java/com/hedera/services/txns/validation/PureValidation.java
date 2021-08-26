@@ -46,9 +46,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
-public class PureValidation {
-	PureValidation() {
-		throw new IllegalStateException("Utility Class");
+public final class PureValidation {
+	private PureValidation() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static ResponseCodeEnum queryableFileStatus(final FileID id, final StateView view) {

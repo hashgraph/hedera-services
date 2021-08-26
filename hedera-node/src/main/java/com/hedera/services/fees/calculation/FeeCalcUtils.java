@@ -37,13 +37,13 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Michael Tinker
  */
-public class FeeCalcUtils {
+public final class FeeCalcUtils {
 	private static final Logger log = LogManager.getLogger(FeeCalcUtils.class);
 
 	static final Timestamp ZERO_EXPIRY = Timestamp.newBuilder().setSeconds(0).build();
 
-	FeeCalcUtils() {
-		throw new IllegalStateException("Utility class");
+	private FeeCalcUtils() {
+		throw new UnsupportedOperationException("Utility class");
 	}
 
 	public static Timestamp lookupAccountExpiry(

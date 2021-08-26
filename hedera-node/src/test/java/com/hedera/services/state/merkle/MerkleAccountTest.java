@@ -236,9 +236,4 @@ class MerkleAccountTest {
 
 		verify(payerRecords).decrementReferenceCount();
 	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, MerkleAccount.ChildIndices::new);
-	}
 }

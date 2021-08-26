@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
  * children to the "binary route" positions in the Merkle tree, hence reducing the
  * size of their Merkle routes.
  */
-public class Release0170Migration {
+public final class Release0170Migration {
 	private static final Logger log = LogManager.getLogger(Release0170Migration.class);
 
 	@FunctionalInterface
@@ -76,7 +76,7 @@ public class Release0170Migration {
 		Release0170Migration.treeCopier = treeCopier;
 	}
 
-	Release0170Migration() {
-		throw new IllegalStateException("Utility class");
+	private Release0170Migration() {
+		throw new UnsupportedOperationException("Utility class");
 	}
 }

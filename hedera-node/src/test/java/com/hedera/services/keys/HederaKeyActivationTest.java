@@ -160,10 +160,4 @@ class HederaKeyActivationTest {
 
 		assertFalse(HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
 	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, HederaKeyActivation::new);
-		assertThrows(IllegalStateException.class, RevocationServiceCharacteristics::new);
-	}
 }

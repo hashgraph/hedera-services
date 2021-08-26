@@ -53,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.eq;
@@ -324,10 +323,5 @@ class TransactionPrecheckTest {
 		public Object convert(Object arg, ParameterContext parameterContext) throws ArgumentConversionException {
 			return ResponseCodeEnum.valueOf((String) arg);
 		}
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, PresolvencyFlaws::new);
 	}
 }

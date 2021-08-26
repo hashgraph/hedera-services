@@ -38,12 +38,12 @@ import java.util.Optional;
 
 import static java.lang.System.arraycopy;
 
-public class EntityIdUtils {
+public final class EntityIdUtils {
 	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
-	EntityIdUtils() {
-		throw new IllegalStateException("Utility Class");
+	private EntityIdUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static String readableId(final Object o) {

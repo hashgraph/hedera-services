@@ -26,7 +26,6 @@ import com.swirlds.platform.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -103,11 +102,5 @@ class MiscRunningAvgsTest {
 		verify(submitSizes).recordValue(3.0);
 		verify(queueSize).recordValue(4.0);
 		verify(hashS).recordValue(5);
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, MiscRunningAvgs.Names::new);
-		assertThrows(IllegalStateException.class, MiscRunningAvgs.Descriptions::new);
 	}
 }

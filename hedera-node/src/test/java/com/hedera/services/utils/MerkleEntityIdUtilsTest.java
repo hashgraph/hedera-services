@@ -50,11 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MerkleEntityIdUtilsTest {
 	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, EntityIdUtils::new);
-	}
-
-	@Test
 	void correctLiteral() {
 		assertEquals("1.2.3", asLiteralString(asAccount("1.2.3")));
 		assertEquals("11.22.33", asLiteralString(IdUtils.asFile("11.22.33")));

@@ -33,9 +33,9 @@ import static java.math.BigInteger.ZERO;
  *
  * @author Michael Tinker
  */
-public class TransferListChecks {
-	TransferListChecks() {
-		throw new IllegalStateException("Utility Class");
+public final class TransferListChecks {
+	private TransferListChecks() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static boolean isNetZeroAdjustment(final TransferListOrBuilder wrapper) {

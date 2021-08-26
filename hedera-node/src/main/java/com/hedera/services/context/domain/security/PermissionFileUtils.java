@@ -91,12 +91,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 
-public class PermissionFileUtils {
+public final class PermissionFileUtils {
 	private static final EnumMap<HederaFunctionality, String> permissionKeys = new EnumMap<>(HederaFunctionality.class);
 	static final Map<String, HederaFunctionality> legacyKeys;
 
-	PermissionFileUtils() {
-		throw new IllegalStateException("Utility Class");
+	private PermissionFileUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static String permissionFileKeyForTxn(final TransactionBody txn) {

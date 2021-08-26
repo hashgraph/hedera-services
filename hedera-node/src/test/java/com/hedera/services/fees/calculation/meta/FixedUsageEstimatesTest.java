@@ -25,14 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.fees.calculation.meta.FixedUsageEstimates.GET_VERSION_INFO_NODE_USAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FixedUsageEstimatesTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, FixedUsageEstimates::new);
-	}
-
 	@Test
 	void getVersionInfoUsageWorks() {
 		final var feeData = FixedUsageEstimates.getVersionInfoUsage();

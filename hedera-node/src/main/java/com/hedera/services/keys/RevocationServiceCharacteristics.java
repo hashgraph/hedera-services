@@ -25,9 +25,9 @@ import com.hedera.services.legacy.core.jproto.JThresholdKey;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 
-public class RevocationServiceCharacteristics {
-	RevocationServiceCharacteristics() {
-		throw new IllegalStateException("Utility Class");
+public final class RevocationServiceCharacteristics {
+	private RevocationServiceCharacteristics() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static KeyActivationCharacteristics forTopLevelFile(final JKeyList wacl) {

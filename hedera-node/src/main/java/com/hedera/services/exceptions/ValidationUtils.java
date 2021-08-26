@@ -26,9 +26,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
  * A minimalist collection of helpers to improve readability of code
  * that throws an {@code InvalidTransactionException}.
  */
-public class ValidationUtils {
-	ValidationUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class ValidationUtils {
+	private ValidationUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static void validateTrue(final boolean flag, final ResponseCodeEnum code) {

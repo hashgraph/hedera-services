@@ -31,9 +31,9 @@ import java.util.function.Predicate;
  *
  * @author Michael Tinker
  */
-public class PrecheckUtils {
-	PrecheckUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class PrecheckUtils {
+	private PrecheckUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

@@ -33,11 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ValidationUtilsTest {
 	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ValidationUtils::new);
-	}
-
-	@Test
 	void factoriesWorkAsExpected() {
 		final var falseExCapturedByCode = assertThrows(InvalidTransactionException.class, () ->
 				validateTrue(false, MEMO_TOO_LONG));

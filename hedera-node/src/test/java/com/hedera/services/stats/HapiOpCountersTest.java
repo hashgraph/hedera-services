@@ -39,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInf
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -206,10 +205,5 @@ class HapiOpCountersTest {
 		assertEquals(0L, subject.submittedSoFar(NONE));
 		assertEquals(0L, subject.handledSoFar(NONE));
 		assertEquals(0L, subject.answeredSoFar(NONE));
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, ServicesStatsConfig::new);
 	}
 }

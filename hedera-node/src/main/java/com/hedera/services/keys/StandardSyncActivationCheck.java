@@ -32,9 +32,9 @@ import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-public class StandardSyncActivationCheck {
-	StandardSyncActivationCheck() {
-		throw new IllegalStateException("Utility Class");
+public final class StandardSyncActivationCheck {
+	private StandardSyncActivationCheck() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static boolean allKeysAreActive(

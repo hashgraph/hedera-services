@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,6 @@ import com.hedera.services.state.enums.TokenType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TokenTypesMapperTest {
 	@Test
@@ -33,25 +32,23 @@ class TokenTypesMapperTest {
 		assertEquals(TokenType.FUNGIBLE_COMMON,
 				TokenTypesMapper.grpcTokenTypeToModelType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
 		assertEquals(TokenType.NON_FUNGIBLE_UNIQUE,
-				TokenTypesMapper.grpcTokenTypeToModelType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
+				TokenTypesMapper.grpcTokenTypeToModelType(
+						com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
 	}
 
 	@Test
 	void grpcTokenSupplyTypeToModelSupplyType() {
 		assertEquals(TokenSupplyType.FINITE,
-				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
+				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(
+						com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
 
 		assertEquals(TokenSupplyType.INFINITE,
-				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
+				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(
+						com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
 
 		/* ensure default is infinite */
 		assertEquals(TokenSupplyType.INFINITE,
-				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
-	}
-
-	@Test
-	void cannotConstruct() {
-		// expect:
-		assertThrows(IllegalStateException.class, TokenTypesMapper::new);
+				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(
+						com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
 	}
 }

@@ -35,9 +35,9 @@ import static java.util.stream.Collectors.joining;
  *
  * @author Michael Tinker
  */
-public class PlatformSigFactory {
-	PlatformSigFactory() {
-		throw new IllegalStateException("Utility Class");
+public final class PlatformSigFactory {
+	private PlatformSigFactory() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

@@ -40,7 +40,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.keys.StandardSyncActivationCheck.allKeysAreActive;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -84,11 +83,6 @@ class StandardSyncActivationCheckTest {
 		given(scopedSigProvider.apply(any())).willReturn(scopedSig);
 		sigsFactory = mock(PlatformSigsFactory.class);
 		given(sigsFactory.createEd25519From(List.of(key), sigBytes, scopedSig)).willReturn(result);
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, StandardSyncActivationCheck::new);
 	}
 
 	@Test

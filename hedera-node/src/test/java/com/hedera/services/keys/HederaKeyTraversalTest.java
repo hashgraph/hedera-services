@@ -34,7 +34,6 @@ import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HederaKeyTraversalTest {
 	private static final KeyTree kt = KeyTree.withRoot(
@@ -78,11 +77,6 @@ class HederaKeyTraversalTest {
 		final var account = MerkleAccountFactory.newAccount().get();
 
 		assertEquals(0, HederaKeyTraversal.numSimpleKeys(account));
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, HederaKeyTraversal::new);
 	}
 
 	private List<ByteString> ed25519KeysFromKt(final KeyTree kt) {

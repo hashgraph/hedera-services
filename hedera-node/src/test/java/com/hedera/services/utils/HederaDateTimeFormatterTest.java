@@ -26,14 +26,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HederaDateTimeFormatterTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, HederaDateTimeFormatter::new);
-	}
-
 	@Test
 	void shouldFormatInstantCorrectly() {
 		final var instant = Instant.EPOCH

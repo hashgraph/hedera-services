@@ -94,7 +94,7 @@ public class MiscRunningAvgs {
 		hashQueueSizeRecordStream.recordValue(num);
 	}
 
-	static class Names {
+	public static final class Names {
 		static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
 		static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
@@ -102,12 +102,12 @@ public class MiscRunningAvgs {
 		static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
 		static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
 
-		Names() {
-			throw new IllegalStateException("Utility Class");
+		private Names() {
+			throw new UnsupportedOperationException("Utility Class");
 		}
 	}
 
-	static class Descriptions {
+	public static final class Descriptions {
 		static final String ACCOUNT_RETRY_WAIT_MS =
 				"average time is millis spent waiting to lookup the account number";
 		static final String ACCOUNT_LOOKUP_RETRIES =
@@ -120,8 +120,8 @@ public class MiscRunningAvgs {
 		static final String HASH_QUEUE_SIZE_RECORD_STREAM =
 				"size of working queue for calculating hash and runningHash";
 
-		Descriptions() {
-			throw new IllegalStateException("Utility Class");
+		private Descriptions() {
+			throw new UnsupportedOperationException("Utility Class");
 		}
 	}
 }

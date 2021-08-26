@@ -32,7 +32,6 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd2551
 import static com.hedera.services.sigs.factories.PlatformSigFactory.pkSigRepr;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.varyingMaterialEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -56,11 +55,6 @@ public class PlatformSigFactoryTest {
 			0, sig.length,
 			pk, 0, pk.length,
 			sig.length, data.length);
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, PlatformSigFactory::new);
-	}
 
 	@Test
 	void createsExpectedSig() {

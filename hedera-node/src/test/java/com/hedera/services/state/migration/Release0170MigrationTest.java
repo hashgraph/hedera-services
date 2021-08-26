@@ -37,7 +37,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -84,13 +83,5 @@ class Release0170MigrationTest {
 		verify(networkContext).copy();
 		verify(state).setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		verify(treeCopier).copyToLocation(state, StateChildIndices.TOKEN_ASSOCIATIONS, tokenRels);
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, Release0170Migration::new);
-		assertThrows(IllegalStateException.class, LegacyStateChildIndices::new);
-		assertThrows(IllegalStateException.class, StateChildIndices::new);
-		assertThrows(IllegalStateException.class, StateVersions::new);
 	}
 }

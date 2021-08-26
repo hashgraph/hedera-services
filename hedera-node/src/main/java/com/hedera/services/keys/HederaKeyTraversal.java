@@ -34,12 +34,12 @@ import java.util.function.Consumer;
  * @author Michael Tinker
  * @see JKey
  */
-public class HederaKeyTraversal {
+public final class HederaKeyTraversal {
 
 	private static final Logger log = LogManager.getLogger(HederaKeyTraversal.class);
 
-	HederaKeyTraversal() {
-		throw new IllegalStateException("Utility Class");
+	private HederaKeyTraversal() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

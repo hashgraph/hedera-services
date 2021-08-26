@@ -79,18 +79,18 @@ public class MiscSpeedometers {
 		platformTxnRejections.update(1);
 	}
 
-	static class Names {
+	public static final class Names {
 		static final String SYNC_VERIFICATIONS = "sigVerifySync/sec";
 		static final String ASYNC_VERIFICATIONS = "sigVerifyAsync/sec";
 		static final String ACCOUNT_LOOKUP_RETRIES = "acctLookupRetries/sec";
 		static final String PLATFORM_TXN_REJECTIONS = "platformTxnNotCreated/sec";
 
-		Names() {
-			throw new IllegalStateException("Utility Class");
+		private Names() {
+			throw new UnsupportedOperationException("Utility Class");
 		}
 	}
 
-	static class Descriptions {
+	public static final class Descriptions {
 		static final String SYNC_VERIFICATIONS =
 				"number of transactions received per second that must be verified synchronously in handleTransaction";
 		static final String ASYNC_VERIFICATIONS =
@@ -100,8 +100,8 @@ public class MiscSpeedometers {
 		static final String PLATFORM_TXN_REJECTIONS =
 				"number of platform transactions not created per second";
 
-		Descriptions() {
-			throw new IllegalStateException("Utility Class");
+		private Descriptions() {
+			throw new UnsupportedOperationException("Utility Class");
 		}
 	}
 }

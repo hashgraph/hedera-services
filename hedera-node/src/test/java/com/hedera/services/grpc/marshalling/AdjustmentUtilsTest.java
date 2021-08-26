@@ -29,7 +29,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -37,11 +36,6 @@ import static org.mockito.Mockito.verify;
 class AdjustmentUtilsTest {
 	@Mock
 	private BalanceChangeManager changeManager;
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, AdjustmentUtils::new);
-	}
 
 	@Test
 	void includesNewHtsChange() {

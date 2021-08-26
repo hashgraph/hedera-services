@@ -32,13 +32,13 @@ import java.util.function.Supplier;
  * Static helper to run the initialization sequence for a {@link ServicesContext}
  * given a newly initialized {@link ServicesState}.
  */
-public class InitializationFlow {
+public final class InitializationFlow {
 	private static final Logger log = LogManager.getLogger(InitializationFlow.class);
 
 	private static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
-	InitializationFlow() {
-		throw new IllegalStateException("Utility Class");
+	private InitializationFlow() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static void accept(final ServicesState state, final ServicesContext ctx) {

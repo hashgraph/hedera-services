@@ -47,12 +47,13 @@ import java.time.Instant;
  * and creates the cryptographic signatures at the bases of the signing hierarchies
  * for these keys. This implicitly requests the Platform to verify these cryptographic
  * signatures, by setting them in the sigs list of the platform txn, <b>before</b>
- * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)}
+ * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction,
+ * SwirldDualState)}
  * is called with {@code isConsensus=true}.
  */
-public class HederaToPlatformSigOps {
-	HederaToPlatformSigOps() {
-		throw new IllegalStateException("Utility Class");
+public final class HederaToPlatformSigOps {
+	private HederaToPlatformSigOps() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**
@@ -70,9 +71,12 @@ public class HederaToPlatformSigOps {
 	 *     it silently. </li>
 	 * </ul>
 	 *
-	 * @param txnAccessor the accessor for the platform txn
-	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn
-	 * @param pkToSigFn source of crypto sigs for the simple keys in the Hedera key leaves
+	 * @param txnAccessor
+	 * 		the accessor for the platform txn
+	 * @param keyOrderer
+	 * 		facility for listing Hedera keys required to sign the gRPC txn
+	 * @param pkToSigFn
+	 * 		source of crypto sigs for the simple keys in the Hedera key leaves
 	 * @return a representation of the outcome
 	 */
 	public static ResponseCodeEnum expandIn(

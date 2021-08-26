@@ -34,17 +34,11 @@ import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCrypto
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PrecheckUtilsTest {
 	private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
 	private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
 	private static final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, PrecheckUtils::new);
-	}
 
 	@Test
 	void queryPaymentsMustBeCryptoTransfers() throws Throwable {

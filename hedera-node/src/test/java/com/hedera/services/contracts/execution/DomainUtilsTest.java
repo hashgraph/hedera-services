@@ -49,7 +49,6 @@ import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccou
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.booleanThat;
@@ -96,11 +95,6 @@ class DomainUtilsTest {
 		receipt.setTransaction(ofMention);
 
 		receipt.setLogInfoList(List.of(logInfo));
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, DomainUtils::new);
 	}
 
 	@Test

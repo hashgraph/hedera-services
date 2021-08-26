@@ -23,7 +23,7 @@ package com.hedera.services.state.migration;
 /**
  * Gives the versions of the current and previous world states.
  */
-public class StateVersions {
+public final class StateVersions {
 	/* For the record,
 	     - Release 0.7.0 was state version 1
 	     - Release 0.8.0 was state version 2
@@ -42,7 +42,7 @@ public class StateVersions {
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0120_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0170_VERSION;
 
-	StateVersions() {
-		throw new IllegalStateException("Utility Class");
+	private StateVersions() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 }

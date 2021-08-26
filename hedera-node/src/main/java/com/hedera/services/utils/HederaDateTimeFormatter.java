@@ -25,9 +25,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 
-public class HederaDateTimeFormatter {
-	HederaDateTimeFormatter() {
-		throw new IllegalStateException("Utility Class");
+public final class HederaDateTimeFormatter {
+	private HederaDateTimeFormatter() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	private static final DateTimeFormatter formatter = new DateTimeFormatterBuilder()

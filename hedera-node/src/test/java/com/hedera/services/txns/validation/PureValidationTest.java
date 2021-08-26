@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PureValidationTest {
 	private static final Instant now = Instant.now();
@@ -34,11 +33,6 @@ class PureValidationTest {
 	private static final int impossiblySmallNanos = -1;
 	private static final long impossiblyBigSecs = Instant.MAX.getEpochSecond() + 1;
 	private static final int impossiblyBigNanos = 1_000_000_000;
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, PureValidation::new);
-	}
 
 	@Test
 	void mapsSensibleTimestamp() {

@@ -43,7 +43,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 
@@ -80,11 +79,6 @@ class InitializationFlowTest {
 	@AfterEach
 	void cleanup() {
 		InitializationFlow.setBlobStoreSupplier(BinaryObjectStore::getInstance);
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, InitializationFlow::new);
 	}
 
 	@Test

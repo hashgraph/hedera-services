@@ -28,17 +28,11 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class PropUtilsTest {
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, PropUtils::new);
-	}
-
 	@Test
 	void shouldLoadOverride() throws IOException {
 		final var loc = "";
