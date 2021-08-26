@@ -30,12 +30,16 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
+@Singleton
 public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceImplBase {
 	private final HcsAnswers hcsAnswers;
 	private final TxnResponseHelper txnHelper;
@@ -47,6 +51,7 @@ public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceIm
 	public static final String DELETE_TOPIC_METRIC = "deleteTopic";
 	public static final String SUBMIT_MESSAGE_METRIC = "submitMessage";
 
+	@Inject
 	public ConsensusController(
 			HcsAnswers hcsAnswers,
 			TxnResponseHelper txnHelper,

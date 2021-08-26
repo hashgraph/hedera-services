@@ -32,13 +32,20 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+@Singleton
 public class TokenMintResourceUsage implements TxnResourceUsageEstimator {
 	private static final ResourceUsageSubtypeHelper subtypeHelper = new ResourceUsageSubtypeHelper();
 
 	static BiFunction<TransactionBody, SigUsage, TokenMintUsage> factory = TokenMintUsage::newEstimate;
+
+	@Inject
+	public TokenMintResourceUsage() {
+	}
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {

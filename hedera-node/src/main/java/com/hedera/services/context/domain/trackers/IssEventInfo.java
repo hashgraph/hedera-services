@@ -20,11 +20,15 @@ package com.hedera.services.context.domain.trackers;
  * ‍
  */
 
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
+@Singleton
 public class IssEventInfo {
 	private final PropertySource properties;
 
@@ -32,7 +36,8 @@ public class IssEventInfo {
 	private IssEventStatus status = IssEventStatus.NO_KNOWN_ISS;
 	private Optional<Instant> consensusTimeOfRecentAlert = Optional.empty();
 
-	public IssEventInfo(PropertySource properties) {
+	@Inject
+	public IssEventInfo(@CompositeProps PropertySource properties) {
 		this.properties = properties;
 	}
 

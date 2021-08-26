@@ -40,6 +40,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -71,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 /**
  * Provides the state transition for token creation.
  */
+@Singleton
 public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -80,6 +83,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore typedTokenStore;
 	private final AccountStore accountStore;
 
+	@Inject
 	public TokenCreateTransitionLogic(
 			OptionValidator validator,
 			TypedTokenStore typedTokenStore,

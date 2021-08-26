@@ -20,7 +20,6 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -43,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -70,10 +70,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class HederaScheduleStoreTest {
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final String entityMemo = "Some memo here";
 	private static final RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 	private static final long expectedExpiry = 1_234_567L;
@@ -96,7 +96,6 @@ class HederaScheduleStoreTest {
 
 	private MerkleSchedule schedule;
 	private MerkleSchedule anotherSchedule;
-	private TransactionContext txnCtx;
 
 	private HederaScheduleStore subject;
 
@@ -116,7 +115,6 @@ class HederaScheduleStoreTest {
 		given(ids.newScheduleId(schedulingAccount)).willReturn(created);
 
 		hederaLedger = mock(HederaLedger.class);
-		txnCtx = mock(TransactionContext.class);
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
@@ -130,7 +128,7 @@ class HederaScheduleStoreTest {
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
-		subject = new HederaScheduleStore(globalDynamicProperties, ids, txnCtx, () -> schedules);
+		subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 	}
@@ -149,8 +147,8 @@ class HederaScheduleStoreTest {
 
 		subject.rebuildViews();
 
-		verify(schedules, times(2)).forEachNode(captor.capture());
-		final var visitor = captor.getAllValues().get(1);
+		verify(schedules).forEachNode(captor.capture());
+		final var visitor = captor.getValue();
 
 		visitor.accept(new MerklePair<>(fromScheduleId(created), expected));
 
@@ -434,9 +432,8 @@ class HederaScheduleStoreTest {
 	void deletesAsExpected() {
 		final var now = schedulingTXValidStart.toJava();
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
-		given(txnCtx.consensusTime()).willReturn(now);
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, now);
 
 		verify(schedule).markDeleted(now);
 		assertEquals(OK, outcome);
@@ -446,7 +443,7 @@ class HederaScheduleStoreTest {
 	void rejectsDeletionMissingAdminKey() {
 		given(schedule.adminKey()).willReturn(Optional.empty());
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, schedulingTXValidStart.toJava());
 
 		verify(schedules, never()).remove(fromScheduleId(created));
 		assertEquals(SCHEDULE_IS_IMMUTABLE, outcome);
@@ -456,7 +453,7 @@ class HederaScheduleStoreTest {
 	void rejectsDeletionAlreadyDeleted() {
 		given(schedule.isDeleted()).willReturn(true);
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, schedulingTXValidStart.toJava());
 
 		assertEquals(SCHEDULE_ALREADY_DELETED, outcome);
 	}
@@ -465,7 +462,7 @@ class HederaScheduleStoreTest {
 	void rejectsExecutionWhenDeleted() {
 		given(schedule.isDeleted()).willReturn(true);
 
-		final var outcome = subject.markAsExecuted(created);
+		final var outcome = subject.markAsExecuted(created, consensusNow);
 
 		assertEquals(SCHEDULE_ALREADY_DELETED, outcome);
 	}
@@ -474,7 +471,7 @@ class HederaScheduleStoreTest {
 	void rejectsExecutionWhenExecuted() {
 		given(schedule.isExecuted()).willReturn(true);
 
-		final var outcome = subject.markAsExecuted(created);
+		final var outcome = subject.markAsExecuted(created, consensusNow);
 
 		assertEquals(SCHEDULE_ALREADY_EXECUTED, outcome);
 	}
@@ -483,7 +480,7 @@ class HederaScheduleStoreTest {
 	void rejectsDeletionMissingSchedule() {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
-		final var outcome = subject.delete(created);
+		final var outcome = subject.deleteAt(created, schedulingTXValidStart.toJava());
 
 		verify(schedules, never()).remove(fromScheduleId(created));
 		assertEquals(INVALID_SCHEDULE_ID, outcome);
@@ -493,20 +490,18 @@ class HederaScheduleStoreTest {
 	void rejectsExecutionMissingSchedule() {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
-		final var outcome = subject.markAsExecuted(created);
+		final var outcome = subject.markAsExecuted(created, consensusNow);
 
 		assertEquals(INVALID_SCHEDULE_ID, outcome);
 	}
 
 	@Test
 	void marksExecutedAsExpected() {
-		final var now = schedulingTXValidStart.toJava();
-		given(txnCtx.consensusTime()).willReturn(now);
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
 
-		subject.markAsExecuted(created);
+		subject.markAsExecuted(created, consensusNow);
 
-		verify(schedule).markExecuted(now.plusNanos(1L));
+		verify(schedule).markExecuted(consensusNow.plusNanos(1L));
 		verify(schedules, never()).remove(fromScheduleId(created));
 	}
 
@@ -541,5 +536,11 @@ class HederaScheduleStoreTest {
 
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.expire(EntityId.fromGrpcScheduleId(subject.pendingId)));
+	}
+
+	@Test
+	void throwsUsoOnDelete() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class, () -> subject.delete(created));
 	}
 }

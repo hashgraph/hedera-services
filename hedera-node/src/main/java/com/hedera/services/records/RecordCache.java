@@ -21,9 +21,8 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,6 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.stream.Collectors.toList;
 
+@Singleton
 public class RecordCache {
 	static final TxnReceipt UNKNOWN_RECEIPT = TxnReceipt.newBuilder()
 			.setStatus(UNKNOWN.name())
@@ -49,20 +51,19 @@ public class RecordCache {
 
 	public static final Boolean MARKER = Boolean.TRUE;
 
-	private ServicesContext ctx;
+	private EntityCreator creator;
 	private Cache<TransactionID, Boolean> timedReceiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
-	MonotonicFullQueueExpiries<TransactionID> recordExpiries = new MonotonicFullQueueExpiries<>();
-
-	public RecordCache(
-			ServicesContext ctx,
-			Cache<TransactionID, Boolean> timedReceiptCache,
-			Map<TransactionID, TxnIdRecentHistory> histories
-	) {
-		this.ctx = ctx;
+	@Inject
+	public RecordCache(Cache<TransactionID, Boolean> cache, Map<TransactionID, TxnIdRecentHistory> histories) {
 		this.histories = histories;
-		this.timedReceiptCache = timedReceiptCache;
+		this.timedReceiptCache = cache;
+	}
+
+	@Inject
+	public void setCreator(EntityCreator creator) {
+		this.creator = creator;
 	}
 
 	public void addPreConsensus(TransactionID txnId) {
@@ -84,15 +85,15 @@ public class RecordCache {
 			Instant consensusTimestamp,
 			long submittingMember
 	) {
-		var recordBuilder = ctx.creator().buildFailedExpiringRecord(accessor,
-				consensusTimestamp);
-		var expiringRecord = ctx.creator().saveExpiringRecord(
+		var recordBuilder = creator.buildFailedExpiringRecord(accessor, consensusTimestamp);
+		var expiringRecord = creator.saveExpiringRecord(
 				effectivePayer,
 				recordBuilder.build(),
 				consensusTimestamp.getEpochSecond(),
 				submittingMember);
 
-		var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
+		final var recentHistory = histories.computeIfAbsent(
+				accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
 		recentHistory.observe(expiringRecord, FAIL_INVALID);
 	}
 
@@ -140,26 +141,5 @@ public class RecordCache {
 					.orElse(null);
 		}
 		return null;
-	}
-
-	public void forgetAnyOtherExpiredHistory(long now) {
-		while (recordExpiries.hasExpiringAt(now)) {
-			var txnId = recordExpiries.expireNextAt(now);
-			var history = histories.get(txnId);
-			if (history != null) {
-				history.forgetExpiredAt(now);
-				if (history.isForgotten()) {
-					histories.remove(txnId);
-				}
-			}
-		}
-	}
-
-	public void trackForExpiry(ExpirableTxnRecord record) {
-		recordExpiries.track(record.getTxnId().toGrpc(), record.getExpiry());
-	}
-
-	public void reset() {
-		recordExpiries.reset();
 	}
 }

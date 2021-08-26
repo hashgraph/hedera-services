@@ -21,15 +21,20 @@ package com.hedera.services.fees;
  */
 
 import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.TxnAccessor;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
+
+@Singleton
 public class StandardExemptions implements FeeExemptions {
 	private final AccountNumbers accountNums;
 	private final SystemOpPolicies systemOpPolicies;
 
+	@Inject
 	public StandardExemptions(AccountNumbers accountNums, SystemOpPolicies systemOpPolicies) {
 		this.accountNums = accountNums;
 		this.systemOpPolicies = systemOpPolicies;

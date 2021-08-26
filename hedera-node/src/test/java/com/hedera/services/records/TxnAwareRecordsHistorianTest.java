@@ -111,7 +111,6 @@ class TxnAwareRecordsHistorianTest {
 	@Test
 	void addsRecordToAllQualifyingAccounts() {
 		setupForAdd();
-		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
 		// when:
 		subject.finalizeExpirableTransactionRecord();

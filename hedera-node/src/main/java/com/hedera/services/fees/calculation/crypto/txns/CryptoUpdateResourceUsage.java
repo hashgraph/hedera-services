@@ -31,11 +31,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
+@Singleton
 public class CryptoUpdateResourceUsage implements TxnResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
 
+	@Inject
 	public CryptoUpdateResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 	}

@@ -29,6 +29,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -37,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
@@ -45,9 +49,11 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	ScheduleStore store;
 	TransactionContext txnCtx;
 
+	@Inject
 	public ScheduleDeleteTransitionLogic(
 			ScheduleStore store,
-			TransactionContext txnCtx) {
+			TransactionContext txnCtx
+	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
 	}
@@ -55,15 +61,15 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
+			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete(), txnCtx.consensusTime());
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 
-	private void transitionFor(ScheduleDeleteTransactionBody op) {
-		var outcome = store.delete(op.getScheduleID());
+	private void transitionFor(ScheduleDeleteTransactionBody op, Instant consensusTime) {
+		var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 

@@ -33,8 +33,6 @@ import java.time.Instant;
  * if signing, fee, and other generic prerequisites are met. Hence the main
  * responsibility of the process logic is to validate these prerequisites,
  * and then delegate to the correct {@link TransitionLogic} implementation.
- *
- * @author Michael Tinker
  */
 public interface ProcessLogic {
 	/**

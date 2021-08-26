@@ -24,8 +24,6 @@ import java.util.function.Consumer;
 
 /**
  * Defines a type able to configure and start the gRPC servers.
- *
- * @author Michael Tinker
  */
 public interface GrpcServerManager {
 	void start(int port, int tlsPort, Consumer<String> println);

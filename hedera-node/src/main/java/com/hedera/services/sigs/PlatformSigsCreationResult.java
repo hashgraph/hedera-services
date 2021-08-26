@@ -35,8 +35,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Encapsulates a (mutable) result of an attempt to create {@link Signature}
  * instances from a list of public keys and a source of the cryptographic signatures
  * associated to those keys.
- *
- * @author Michael Tinker
  */
 public class PlatformSigsCreationResult {
 	private List<TransactionSignature> platformSigs = new ArrayList<>();

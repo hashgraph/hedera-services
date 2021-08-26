@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -43,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class ScheduleSignTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleSignTransitionLogic.class);
 
@@ -57,11 +60,13 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness = SignatoryUtils::witnessScoped;
 
+	@Inject
 	public ScheduleSignTransitionLogic(
 			ScheduleStore store,
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper,
-			ScheduleExecutor executor) {
+			ScheduleExecutor executor
+	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.executor = executor;

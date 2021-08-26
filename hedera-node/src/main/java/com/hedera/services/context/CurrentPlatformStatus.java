@@ -25,8 +25,6 @@ import com.swirlds.common.PlatformStatus;
 /**
  * Defines a type that sets and gets the status of the underlying {@link com.swirlds.common.Platform}.
  * Intended for use as a per-classloader singleton for all running nodes.
- *
- * @author Michael Tinker
  */
 public interface CurrentPlatformStatus {
 	/**

@@ -22,7 +22,7 @@ package com.hedera.services.files.sysfiles;
 
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.StandardizedPropertySources;
+import com.hedera.services.context.properties.PropertySources;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class ConfigCallbacksTest {
 	@Mock
 	GlobalDynamicProperties dynamicProps;
 	@Mock
-	StandardizedPropertySources propertySources;
+	PropertySources propertySources;
 	@Mock
 	HapiOpPermissions hapiOpPermissions;
 

@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfoResponse;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,8 +43,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetTokenNftInfoAnswer implements AnswerService {
 	public static final String NFT_INFO_CTX_KEY = GetTokenNftInfoAnswer.class.getSimpleName() + "_nftInfo";
+
+	@Inject
+	public GetTokenNftInfoAnswer() {
+	}
 
 	@Override
 	public boolean needsAnswerOnlyCost(Query query) {

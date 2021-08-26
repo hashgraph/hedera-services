@@ -29,8 +29,6 @@ import com.hederahashgraph.fee.SigValueObj;
 /**
  * Defines a type able to estimate the resource usage of one (or more)
  * transaction operations, relative to a particular state of the world.
- *
- * @author Michael Tinker
  */
 public interface TxnResourceUsageEstimator {
 	/**

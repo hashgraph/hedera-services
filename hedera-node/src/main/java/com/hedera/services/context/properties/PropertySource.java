@@ -38,8 +38,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Defines a source of arbitrary properties keyed by strings. Provides
  * strongly typed accessors for commonly used property types.
- *
- * @author Michael Tinker
  */
 public interface PropertySource {
 	Logger log = LogManager.getLogger(PropertySource.class);

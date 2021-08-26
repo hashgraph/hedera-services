@@ -25,6 +25,5 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 public interface LedgerValidator {
-	void assertIdsAreValid(FCMap<MerkleEntityId, MerkleAccount> accounts);
-	boolean hasExpectedTotalBalance(FCMap<MerkleEntityId, MerkleAccount> accounts);
+	void validate(FCMap<MerkleEntityId, MerkleAccount> accounts);
 }

@@ -22,10 +22,18 @@ package com.hedera.services.context;
 
 import com.swirlds.common.PlatformStatus;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.swirlds.common.PlatformStatus.STARTING_UP;
 
+@Singleton
 public class ContextPlatformStatus implements CurrentPlatformStatus {
 	private PlatformStatus current = STARTING_UP;
+
+	@Inject
+	public ContextPlatformStatus() {
+	}
 
 	@Override
 	public synchronized void set(PlatformStatus status) {

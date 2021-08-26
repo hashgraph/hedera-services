@@ -74,7 +74,8 @@ class NarratedLedgerChargingTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new NarratedLedgerCharging(nodeInfo, ledger, feeExemptions, dynamicProperties, () -> accounts);
+		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts);
+		subject.setLedger(ledger);
 	}
 
 	@Test

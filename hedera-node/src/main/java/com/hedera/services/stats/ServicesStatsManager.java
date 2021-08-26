@@ -24,10 +24,13 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.Pause;
 import com.swirlds.common.Platform;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
+@Singleton
 public class ServicesStatsManager {
 	static Pause pause = SLEEPING_PAUSE;
 	static Function<Runnable, Thread> loopFactory = loop -> new Thread(() -> {
@@ -44,6 +47,7 @@ public class ServicesStatsManager {
 	private final HapiOpSpeedometers opSpeedometers;
 	private final NodeLocalProperties properties;
 
+	@Inject
 	public ServicesStatsManager(
 			HapiOpCounters opCounters,
 			MiscRunningAvgs runningAvgs,

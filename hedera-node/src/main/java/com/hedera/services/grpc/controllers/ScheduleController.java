@@ -30,16 +30,21 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 
+@Singleton
 public class ScheduleController extends ScheduleServiceGrpc.ScheduleServiceImplBase {
 	private final ScheduleAnswers scheduleAnswers;
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
 
+	@Inject
 	public ScheduleController(
 			ScheduleAnswers scheduleAnswers,
 			TxnResponseHelper txnHelper,

@@ -67,8 +67,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implementation of File Service API Regression Tests to be mainly used by UmbrellaTest.
- *
- * @author hua
  */
 public class FileServiceTest extends CryptoServiceTest {
 

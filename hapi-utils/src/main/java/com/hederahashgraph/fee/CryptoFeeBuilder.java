@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
 /**
@@ -35,7 +37,11 @@ import java.util.List;
  * Transactions and Query.
  */
 
+@Singleton
 public class CryptoFeeBuilder extends FeeBuilder {
+  @Inject
+  public CryptoFeeBuilder() {
+  }
 
   /**
    * This method returns the fee matrices for crypto create transaction

@@ -29,6 +29,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.net.ssl.SSLException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,6 +41,7 @@ import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
 
+@Singleton
 public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 	private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
 
@@ -53,6 +56,7 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 
 	private final NodeLocalProperties nodeProperties;
 
+	@Inject
 	public ConfigDrivenNettyFactory(NodeLocalProperties nodeProperties) {
 		this.nodeProperties = nodeProperties;
 	}

@@ -28,9 +28,14 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class GetContractRecordsResourceUsage implements QueryResourceUsageEstimator {
 	private final SmartContractFeeBuilder usageEstimator;
 
+	@Inject
 	public GetContractRecordsResourceUsage(SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

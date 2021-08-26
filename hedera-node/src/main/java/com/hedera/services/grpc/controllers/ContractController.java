@@ -30,6 +30,8 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
@@ -59,6 +61,7 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
 
+	@Inject
 	public ContractController(
 			ContractAnswers contractAnswers,
 			TxnResponseHelper txnHelper,

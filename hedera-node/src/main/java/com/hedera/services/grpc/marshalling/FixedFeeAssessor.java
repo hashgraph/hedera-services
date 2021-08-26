@@ -25,12 +25,16 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
+@Singleton
 public class FixedFeeAssessor {
 	private final HtsFeeAssessor htsFeeAssessor;
 	private final HbarFeeAssessor hbarFeeAssessor;
 
+	@Inject
 	public FixedFeeAssessor(
 			HtsFeeAssessor htsFeeAssessor,
 			HbarFeeAssessor hbarFeeAssessor

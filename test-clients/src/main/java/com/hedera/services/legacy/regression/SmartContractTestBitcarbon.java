@@ -73,8 +73,6 @@ import java.util.Properties;
 
 /**
  * Test a multi-part smart contract
- *
- * @author Peter
  */
 public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 	private static final String ARBITRARY_ADDRESS = "1234567890123456789012345678901234567890";

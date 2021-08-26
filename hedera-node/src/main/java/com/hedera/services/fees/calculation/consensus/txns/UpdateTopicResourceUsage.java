@@ -34,11 +34,19 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 
+@Singleton
 public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
+
+    @Inject
+    public UpdateTopicResourceUsage() {
+    }
 
     @Override
     public boolean applicableTo(TransactionBody txn) {

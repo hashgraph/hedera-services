@@ -20,17 +20,24 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
+import com.hedera.services.state.annotations.NftsByOwner;
+import com.hedera.services.state.annotations.NftsByType;
+import com.hedera.services.state.annotations.TreasuryNftsByType;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.annotations.AreFcotmrQueriesDisabled;
+import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -57,6 +64,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
  * between an account owning an NFT it received it via a {@link com.hederahashgraph.api.proto.java.NftTransfer},
  * and an account owning an NFT because it is the designated treasury for the NFT's token type.
  */
+@Singleton
 public class UniqTokenViewsManager {
 	private static final Logger log = LogManager.getLogger(UniqTokenViewsManager.class);
 
@@ -72,26 +80,21 @@ public class UniqTokenViewsManager {
 	private boolean inTxn = false;
 	private List<PendingChange> changesInTxn = new ArrayList<>();
 
+	@Inject
 	public UniqTokenViewsManager(
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType,
-			boolean doNoops
+			@NftsByType Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
+			@NftsByOwner Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
+			@TreasuryNftsByType Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType,
+			@AreFcotmrQueriesDisabled boolean doNoops,
+			@AreTreasuryWildcardsEnabled boolean useWildcards
 	) {
 		this.nftsByType = nftsByType;
 		this.nftsByOwner = nftsByOwner;
-		this.treasuryNftsByType = treasuryNftsByType;
-		this.doNoops = doNoops;
-	}
-
-	public UniqTokenViewsManager(
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			boolean doNoops
-	) {
-		this.nftsByType = nftsByType;
-		this.nftsByOwner = nftsByOwner;
-		this.treasuryNftsByType = null;
+		if (useWildcards) {
+			this.treasuryNftsByType = treasuryNftsByType;
+		} else {
+			this.treasuryNftsByType = null;
+		}
 		this.doNoops = doNoops;
 	}
 

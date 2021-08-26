@@ -24,20 +24,21 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.Pause;
 import io.grpc.BindableService;
 import io.grpc.Server;
-import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
-
+@Singleton
 public class NettyGrpcServerManager implements GrpcServerManager {
 	private static final Logger log = LogManager.getLogger(NettyGrpcServerManager.class);
 
@@ -49,21 +50,19 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 	private final int startRetries;
 	private final long startRetryIntervalMs;
 	private final Consumer<Thread> hookAdder;
-	private final List<BindableService> bindableServices;
+	private final Set<BindableService> bindableServices;
 	private final ConfigDrivenNettyFactory nettyBuilder;
-	private final List<ServerServiceDefinition> serviceDefinitions;
 
+	@Inject
 	public NettyGrpcServerManager(
 			Consumer<Thread> hookAdder,
 			NodeLocalProperties nodeProperties,
-			List<BindableService> bindableServices,
-			ConfigDrivenNettyFactory nettyBuilder,
-			List<ServerServiceDefinition> serviceDefinitions
+			Set<BindableService> bindableServices,
+			ConfigDrivenNettyFactory nettyBuilder
 	) {
 		this.hookAdder = hookAdder;
 		this.nettyBuilder = nettyBuilder;
 		this.bindableServices = bindableServices;
-		this.serviceDefinitions = serviceDefinitions;
 
 		startRetries = nodeProperties.nettyStartRetries();
 		startRetryIntervalMs = nodeProperties.nettyStartRetryIntervalMs();
@@ -90,7 +89,6 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 
 		NettyServerBuilder builder = nettyBuilder.builderFor(port, sslEnabled);
 		bindableServices.forEach(builder::addService);
-		serviceDefinitions.forEach(builder::addService);
 		Server server = builder.build();
 
 		var retryNo = 1;

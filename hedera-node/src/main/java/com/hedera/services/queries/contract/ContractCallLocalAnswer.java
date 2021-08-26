@@ -30,6 +30,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class ContractCallLocalAnswer extends AbstractAnswer {
 	public static final String CONTRACT_CALL_LOCAL_CTX_KEY =
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
@@ -51,6 +54,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 
 	private final LegacyLocalCaller delegate;
 
+	@Inject
 	public ContractCallLocalAnswer(LegacyLocalCaller delegate, OptionValidator validator) {
 		super(
 				ContractCallLocal,

@@ -25,20 +25,23 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
+@Singleton
 public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	Set<AccountID> existingAccounts = new HashSet<>();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
+	@Inject
 	public BackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
-		rebuildFromSources();
 	}
 
 	@Override

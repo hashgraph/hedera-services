@@ -29,12 +29,19 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
+@Singleton
 public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {
 	static BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory = TokenDissociateUsage::newEstimate;
+
+	@Inject
+	public TokenDissociateResourceUsage() {
+	}
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {

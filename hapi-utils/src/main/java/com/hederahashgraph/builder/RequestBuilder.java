@@ -73,9 +73,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * @author Akshay
- */
 public class RequestBuilder {
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,

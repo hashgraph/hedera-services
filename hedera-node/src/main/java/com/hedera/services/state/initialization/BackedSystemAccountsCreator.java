@@ -23,6 +23,7 @@ package com.hedera.services.state.initialization;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -40,9 +41,13 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+@Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
@@ -54,10 +59,11 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private JKey genesisKey;
 	private String hexedABytes;
 
+	@Inject
 	public BackedSystemAccountsCreator(
 			HederaNumbers hederaNums,
 			AccountNumbers accountNums,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			LegacyEd25519KeyReader b64KeyReader
 	) {
 		this.hederaNums = hederaNums;

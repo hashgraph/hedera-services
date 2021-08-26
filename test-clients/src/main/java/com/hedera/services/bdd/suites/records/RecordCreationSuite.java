@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -92,6 +93,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
+						ensureDefaultFeeSchedules(),
 						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
@@ -182,6 +184,13 @@ public class RecordCreationSuite extends HapiApiSuite {
 						wipeTokenAccount(acceptedTokenAttempt, miscAccount, List.of(1L)),
 						getAccountBalance(miscAccount).hasTokenBalance(acceptedTokenAttempt, 0L),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(acceptedTokenAttempt, 1L)
+				);
+	}
+
+	private HapiApiSpec ensureDefaultFeeSchedules() {
+		return defaultHapiSpec("EnsureDefaultFeeSchedules")
+				.given( ).when( ).then(
+						uploadDefaultFeeSchedules(GENESIS)
 				);
 	}
 
@@ -371,28 +380,17 @@ public class RecordCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec accountsGetPayerRecordsIfSoConfigured() {
+		final var txn = "ofRecord";
+
 		return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
 				.given(
-						cryptoCreate("payer"),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("ledger.keepRecordsInState", "false"))
+						cryptoCreate("payer")
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("ledger.keepRecordsInState", "false")),
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, FUNDING, 1_000L)
-						).payingWith("payer").via("firstXfer"),
-						getAccountRecords("payer").has(inOrder()),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("ledger.keepRecordsInState", "true"))
+						).payingWith("payer").via(txn)
 				).then(
-						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, FUNDING, 1_000L)
-						).payingWith("payer").via("secondXfer"),
-						getAccountRecords("payer").has(inOrder(recordWith().txnId("secondXfer")))
+						getAccountRecords("payer").has(inOrder(recordWith().txnId(txn)))
 				);
 	}
 
@@ -424,12 +422,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer"),
 						cryptoCreate("lowSendThreshold").sendThreshold(1L),
-						cryptoCreate("lowReceiveThreshold").receiveThreshold(1L),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"ledger.keepRecordsInState", "true"
-								))
+						cryptoCreate("lowReceiveThreshold").receiveThreshold(1L)
 				).when(
 						cryptoTransfer(
 								tinyBarsFromTo(
@@ -440,12 +433,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 				).then(
 						getAccountRecords("payer").has(inOrder(recordWith().txnId("testTxn"))),
 						getAccountRecords("lowSendThreshold").has(inOrder()),
-						getAccountRecords("lowReceiveThreshold").has(inOrder()),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"ledger.keepRecordsInState", "false"
-								))
+						getAccountRecords("lowReceiveThreshold").has(inOrder())
 				);
 	}
 

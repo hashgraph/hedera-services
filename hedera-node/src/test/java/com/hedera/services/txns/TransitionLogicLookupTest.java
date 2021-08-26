@@ -57,7 +57,7 @@ class TransitionLogicLookupTest {
 			Map.entry(CryptoTransfer, List.of(b, a)),
 			Map.entry(TokenMint, List.of(c))
 	);
-	TransitionLogicLookup subject = new TransitionLogicLookup(transitionsMap::get);
+	TransitionLogicLookup subject = new TransitionLogicLookup(transitionsMap);
 	TransactionBody aTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())

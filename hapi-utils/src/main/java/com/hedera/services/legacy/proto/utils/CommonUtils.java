@@ -46,8 +46,6 @@ import java.util.Base64;
 
 /**
  * Common utilities.
- *
- * @author hua
  */
 public class CommonUtils {
 

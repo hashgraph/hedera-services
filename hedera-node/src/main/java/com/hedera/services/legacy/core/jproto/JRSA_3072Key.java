@@ -24,8 +24,6 @@ import com.swirlds.common.CommonUtils;
 
 /**
  * Maps to proto Key of type RSA_3072.
- *
- * @author hua Created on 2019-01-07
  */
 public class JRSA_3072Key extends JKey {
 

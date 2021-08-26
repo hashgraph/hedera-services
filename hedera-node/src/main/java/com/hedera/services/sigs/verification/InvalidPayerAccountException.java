@@ -27,8 +27,6 @@ package com.hedera.services.sigs.verification;
  *
  * This allows control flow in the {@link PrecheckVerifier} to maintain the
  * behavior of the existing implementation of synchronous verification.
- *
- * @author Michael Tinker
  */
 public class InvalidPayerAccountException extends Exception {
 }

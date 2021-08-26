@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -37,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -67,15 +68,15 @@ class RenewalRecordsHelperTest {
 	private final MerkleEntityId keyId = MerkleEntityId.fromAccountId(removedId);
 
 	@Mock
-	private ServicesContext ctx;
-	@Mock
 	private RecordStreamManager recordStreamManager;
+	@Mock
+	private Consumer<RunningHash> updateRunningHash;
 
 	private RenewalRecordsHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalRecordsHelper(ctx, recordStreamManager, new MockGlobalDynamicProps());
+		subject = new RenewalRecordsHelper(recordStreamManager, new MockGlobalDynamicProps(), updateRunningHash);
 	}
 
 	@Test
@@ -106,7 +107,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
-		verify(ctx).updateRecordRunningHash(any());
+		verify(updateRunningHash).accept(any());
 		verify(recordStreamManager).addRecordStreamObject(rso);
 
 		// and when:
@@ -130,7 +131,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRenewal(keyId, fee, newExpiry);
 
 		// then:
-		verify(ctx).updateRecordRunningHash(any());
+		verify(updateRunningHash).accept(any());
 		verify(recordStreamManager).addRecordStreamObject(rso);
 
 		// and when:

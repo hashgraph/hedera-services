@@ -29,10 +29,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.BiFunction;
 
+@Singleton
 public class TokenDeleteResourceUsage implements TxnResourceUsageEstimator {
 	static BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory = TokenDeleteUsage::newEstimate;
+
+	@Inject
+	public TokenDeleteResourceUsage() {
+	}
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {

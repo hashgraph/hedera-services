@@ -20,68 +20,67 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.function.BiConsumer;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesTxnManagerTest {
-	PlatformTxnAccessor accessor;
-	Instant consensusTime = Instant.now();
-	long submittingMember = 1;
-	AccountID effectivePayer = IdUtils.asAccount("0.0.75231");
+	private final long submittingMember = 1;
+	private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 890);
+	private final AccountID effectivePayer = IdUtils.asAccount("0.0.75231");
 
-	Runnable processLogic;
-	Runnable recordStreaming;
-	Runnable triggeredProcessLogic;
-	BiConsumer<Exception, String> warning;
+	@Mock
+	private Runnable processLogic;
+	@Mock
+	private Runnable recordStreaming;
+	@Mock
+	private Runnable triggeredProcessLogic;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private HederaLedger ledger;
+	@Mock
+	private RecordCache recordCache;
+	@Mock
+	private TransactionContext txnCtx;
 
-	HederaLedger ledger;
-	RecordCache recordCache;
-	TransactionContext txnCtx;
-	ServicesContext ctx;
-
-	ServicesTxnManager subject;
+	@LoggingTarget
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private ServicesTxnManager subject;
 
 	@BeforeEach
 	void setup() {
-		accessor = mock(PlatformTxnAccessor.class);
-
-		processLogic = mock(Runnable.class);
-		recordCache = mock(RecordCache.class);
-		recordStreaming = mock(Runnable.class);
-		triggeredProcessLogic = mock(Runnable.class);
-		warning = mock(BiConsumer.class);
-
-		subject = new ServicesTxnManager(processLogic, recordStreaming, triggeredProcessLogic, warning);
-
-		ledger = mock(HederaLedger.class);
-		txnCtx = mock(TransactionContext.class);
-		ctx = mock(ServicesContext.class);
-		given(ctx.ledger()).willReturn(ledger);
-		given(ctx.txnCtx()).willReturn(txnCtx);
-		given(txnCtx.effectivePayer()).willReturn(effectivePayer);
-		given(ctx.recordCache()).willReturn(recordCache);
+		subject = new ServicesTxnManager(
+				processLogic, recordStreaming, triggeredProcessLogic, recordCache, ledger, txnCtx);
 	}
 
 	@Test
@@ -90,7 +89,7 @@ class ServicesTxnManagerTest {
 		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming);
 
 		// when:
-		subject.process(accessor, consensusTime, submittingMember, ctx);
+		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
 		inOrder.verify(ledger).begin();
@@ -102,97 +101,135 @@ class ServicesTxnManagerTest {
 
 	@Test
 	void warnsOnFailedRecordStreaming() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
 		willThrow(IllegalStateException.class).given(recordStreaming).run();
 
 		// when:
-		subject.process(accessor, consensusTime, submittingMember, ctx);
+		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		verify(warning).accept(any(IllegalStateException.class), argThat("record streaming"::equals));
+		assertThat(logCaptor.errorLogs(), contains(
+				Matchers.startsWith("Possibly CATASTROPHIC failure in record streaming")));
+	}
+
+	@Test
+	void usesFallbackLoggingWhenNecessary() {
+		willThrow(IllegalStateException.class).given(recordStreaming).run();
+
+		// when:
+		subject.process(accessor, consensusTime, submittingMember);
+
+		// then:
+		assertThat(logCaptor.errorLogs(), contains(
+				Matchers.startsWith("Possibly CATASTROPHIC failure in record streaming"),
+				Matchers.startsWith("Full details could not be logged")));
 	}
 
 	@Test
 	void setsFailInvalidAndWarnsOnProcessFailure() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning);
+		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming);
 
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
 		willThrow(IllegalStateException.class).given(ledger).begin();
 
 		// when:
-		subject.process(accessor, consensusTime, submittingMember, ctx);
+		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
 		inOrder.verify(ledger).begin();
-		inOrder.verify(warning).accept(any(IllegalStateException.class), argThat("txn processing"::equals));
 		inOrder.verify(txnCtx).setStatus(ResponseCodeEnum.FAIL_INVALID);
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordStreaming).run();
+		// and:
+		assertThat(logCaptor.errorLogs(), contains(
+				Matchers.startsWith("Possibly CATASTROPHIC failure in txn processing")));
 	}
 
 	@Test
 	void retriesRecordCreationOnCommitFailureThenRollbacks() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning, recordCache);
+		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, recordCache);
 
+		given(txnCtx.effectivePayer()).willReturn(effectivePayer);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
+		// and:
 		willThrow(IllegalStateException.class).given(ledger).commit();
 
 		// when:
-		subject.process(accessor, consensusTime, submittingMember, ctx);
+		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
 		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
-		inOrder.verify(warning).accept(any(IllegalStateException.class), argThat("txn commit"::equals));
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
 		inOrder.verify(ledger).rollback();
 		inOrder.verify(recordStreaming, never()).run();
+		// and:
+		assertThat(logCaptor.errorLogs(), contains(
+				Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit")));
 	}
 
 	@Test
 	void warnsOnFailedRecordRecreate() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning, recordCache);
+		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, recordCache);
 
+		given(txnCtx.effectivePayer()).willReturn(effectivePayer);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
+		// and:
 		willThrow(IllegalStateException.class).given(ledger).commit();
 		willThrow(IllegalStateException.class).given(recordCache).setFailInvalid(any(), any(), any(), anyLong());
 
 		// when:
-		subject.process(accessor, consensusTime, submittingMember, ctx);
+		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
 		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
-		inOrder.verify(warning).accept(any(IllegalStateException.class), argThat("txn commit"::equals));
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
-		inOrder.verify(warning).accept(any(IllegalStateException.class), argThat("creating failure record"::equals));
 		inOrder.verify(ledger).rollback();
 		inOrder.verify(recordStreaming, never()).run();
+		// and:
+		assertThat(logCaptor.errorLogs(), contains(
+				Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit"),
+				Matchers.startsWith("Possibly CATASTROPHIC failure in failure record creation")));
 	}
 
 	@Test
 	void warnsOnFailedRollback() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, warning, recordCache);
+		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, recordCache);
 
+		given(txnCtx.effectivePayer()).willReturn(effectivePayer);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
+		// and:
 		willThrow(IllegalStateException.class).given(ledger).commit();
 		willThrow(IllegalStateException.class).given(ledger).rollback();
 
 		// when:
-		subject.process(accessor, consensusTime, submittingMember, ctx);
+		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
 		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
-		inOrder.verify(warning).accept(any(IllegalStateException.class), argThat("txn commit"::equals));
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
 		inOrder.verify(ledger).rollback();
-		inOrder.verify(warning).accept(any(IllegalStateException.class), argThat("txn rollback"::equals));
 		inOrder.verify(recordStreaming, never()).run();
+		// and:
+		assertThat(logCaptor.errorLogs(), contains(
+				Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit"),
+				Matchers.startsWith("Possibly CATASTROPHIC failure in txn rollback")));
 	}
 }
