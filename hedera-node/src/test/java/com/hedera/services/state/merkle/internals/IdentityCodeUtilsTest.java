@@ -91,7 +91,7 @@ class IdentityCodeUtilsTest {
 	@Test
 	void cantPackTooFarFuture() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
+		assertThrows(UnsupportedOperationException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
 	}
 
 	@Test
@@ -115,10 +115,5 @@ class IdentityCodeUtilsTest {
 
 		assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
 		assertEquals(newAlreadyAutoAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
-	}
-
-	@Test
-	void throwsAsExpected() {
-		assertThrows(UnsupportedOperationException.class, IdentityCodeUtils::new);
 	}
 }
