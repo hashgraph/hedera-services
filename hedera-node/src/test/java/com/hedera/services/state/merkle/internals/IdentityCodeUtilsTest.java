@@ -71,7 +71,7 @@ class IdentityCodeUtilsTest {
 
 	@Test
 	void isUninstantiable() {
-		assertThrows(IllegalStateException.class, IdentityCodeUtils::new);
+		assertThrows(UnsupportedOperationException.class, IdentityCodeUtils::new);
 	}
 
 	@Test
@@ -91,7 +91,7 @@ class IdentityCodeUtilsTest {
 	@Test
 	void cantPackTooFarFuture() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
+		assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
 	}
 
 	@Test
