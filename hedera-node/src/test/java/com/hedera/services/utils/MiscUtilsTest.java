@@ -167,7 +167,6 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
-import static com.hedera.services.utils.MiscUtils.initializeScheduleAndTransactionMethods;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
@@ -511,10 +510,6 @@ class MiscUtilsTest {
 			final var ordinary = asOrdinary(txn.build());
 			assertTrue(txnBodyHas(ordinary, bodyType), ordinary + " doesn't have " + bodyType + " as expected!");
 		});
-
-		final var unsupported = Set.of("Unsupported");
-		final var msg = asOrdinary(SchedulableTransactionBody.getDefaultInstance(), unsupported).getRight();
-		assertTrue(msg.startsWith("All exceptions should show up in the static initializer"));
 	}
 
 	private boolean txnBodyHas(final TransactionBody txn, final String bodyType) {
@@ -711,10 +706,6 @@ class MiscUtilsTest {
 				throw new IllegalStateException(uhf);
 			}
 		});
-
-		final var unsupported = Set.of(CryptoGetInfo);
-		final var msg = functionOf(TransactionBody.getDefaultInstance(), unsupported).getRight();
-		assertTrue(msg.startsWith("All exceptions should show up in the static initializer"));
 	}
 
 	@Test
@@ -755,13 +746,6 @@ class MiscUtilsTest {
 
 		final var tooDeep = TxnUtils.nestJKeys(15);
 		assertEquals("<N/A>", describe(tooDeep));
-	}
-
-	@Test
-	void throwsOnUnsupportedTransactionType() {
-		final var unsupported = Set.of("Unsupported");
-
-		assertThrows(IllegalArgumentException.class, () -> initializeScheduleAndTransactionMethods(unsupported));
 	}
 
 	@Test
