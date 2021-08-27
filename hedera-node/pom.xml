@@ -204,9 +204,9 @@
             <phase>generate-resources</phase>
             <id>empty-swirlds-jar-for-old-build-scripts</id>
             <configuration>
-              <tasks>
+              <target>
                 <touch file="swirlds.jar" />
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
