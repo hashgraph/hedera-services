@@ -21,7 +21,6 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.context.domain.security.PermissionFileUtils;
-import com.hedera.services.context.init.InitializationFlow;
 import com.hedera.services.context.properties.PropUtils;
 import com.hedera.services.contracts.execution.DomainUtils;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
@@ -63,7 +62,6 @@ import java.util.Set;
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
 			PermissionFileUtils.class,
-			InitializationFlow.class,
 			PropUtils.class,
 			DomainUtils.class,
 			AddressKeyedMapFactory.class,
@@ -99,7 +97,8 @@ class UtilsConstructorTest {
 			EntityIdUtils.class,
 			HederaDateTimeFormatter.class,
 			TokenTypesMapper.class,
-			UnzipUtility.class
+			UnzipUtility.class,
+			MiscUtils.class
 	));
 
 	@Test

@@ -748,11 +748,6 @@ class MiscUtilsTest {
 		assertEquals("<N/A>", describe(tooDeep));
 	}
 
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, MiscUtils::new);
-	}
-
 	public static class BodySetter<T, B> {
 		private final Class<T> type;
 
