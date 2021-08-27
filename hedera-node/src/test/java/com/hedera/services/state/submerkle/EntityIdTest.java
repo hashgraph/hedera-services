@@ -21,7 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -93,9 +93,9 @@ class EntityIdTest {
 
 	@Test
 	void fromIdentityCodeWorks() {
-		final var expected = new EntityId(0, 0, IdentityCodeUtils.MAX_NUM_ALLOWED);
+		final var expected = new EntityId(0, 0, BitPackUtils.MAX_NUM_ALLOWED);
 
-		final var actual = EntityId.fromIdentityCode((int) IdentityCodeUtils.MAX_NUM_ALLOWED);
+		final var actual = EntityId.fromIdentityCode((int) BitPackUtils.MAX_NUM_ALLOWED);
 
 		assertEquals(expected, actual);
 	}

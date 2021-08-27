@@ -68,7 +68,7 @@ public class IdUtils {
 	}
 
 	public static AccountID fromKey(PermHashInteger mk) {
-		return asAccount(String.format("0.0.%d", mk.getValue()));
+		return asAccount(String.format("0.0.%d", mk.longValue()));
 	}
 
 	public static ContractID asContract(String v) {

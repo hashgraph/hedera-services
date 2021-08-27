@@ -121,7 +121,7 @@ public class RenewalHelper {
 			if (gracePeriodEnd > now) {
 				return DETACHED_ACCOUNT;
 			}
-			final var grpcId = lastClassifiedEntityId.asGrpcAccountId();
+			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
 			if (tokenStore.isKnownTreasury(grpcId)) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 			}
@@ -139,7 +139,7 @@ public class RenewalHelper {
 		Pair<List<EntityId>, List<CurrencyAdjustments>> displacements = Pair.of(new ArrayList<>(), new ArrayList<>());
 		final var lastClassifiedTokens = lastClassifiedAccount.tokens();
 		if (lastClassifiedTokens.numAssociations() > 0) {
-			final var grpcId = lastClassifiedEntityId.asGrpcAccountId();
+			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
 			final var currentTokens = tokens.get();
 			for (var tId : lastClassifiedTokens.asTokenIds()) {
 				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
@@ -147,7 +147,7 @@ public class RenewalHelper {
 		}
 
 		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
-		backingAccounts.remove(lastClassifiedEntityId.asGrpcAccountId());
+		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 
@@ -229,7 +229,7 @@ public class RenewalHelper {
 
 	private void assertLastClassifiedAccountCanAfford(long fee) {
 		if (lastClassifiedAccount.getBalance() < fee) {
-			var msg = "Cannot charge " + fee + " to account number " + lastClassifiedEntityId.getValue() + "!";
+			var msg = "Cannot charge " + fee + " to account number " + lastClassifiedEntityId.longValue() + "!";
 			throw new IllegalStateException(msg);
 		}
 	}

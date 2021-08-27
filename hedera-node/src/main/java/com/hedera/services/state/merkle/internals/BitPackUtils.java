@@ -24,17 +24,17 @@ package com.hedera.services.state.merkle.internals;
  * Minimal helper class that "encodes" {@code int} values as non-negative
  * {@code long}s in the range 0 to 4,294,967,295.
  */
-public class IdentityCodeUtils {
-	private static final long MASK_AS_UNSIGNED_LONG = (1L << 32) - 1;
-	private static final long EPOCH_SECONDS_MASK = MASK_AS_UNSIGNED_LONG << 32;
+public class BitPackUtils {
+	private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
+	private static final long MASK_HI_ORDER_32 = MASK_INT_AS_UNSIGNED_LONG << 32;
 
-	public static final long MAX_NUM_ALLOWED = -1 & 0xFFFFFFFFL;
+	public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
 
 	/**
 	 * Returns a {@code long} whose high-order 32-bits "encode" an unsigned
 	 * integer value, and whose low-order 32-bits are a signed integer. For
-	 * use with the {@link IdentityCodeUtils#secondsFrom(long)} and
-	 * {@link IdentityCodeUtils#nanosFrom(long)} helpers below. This format
+	 * use with the {@link BitPackUtils#secondsFrom(long)} and
+	 * {@link BitPackUtils#nanosFrom(long)} helpers below. This format
 	 * can represent timestamps through January 2106.
 	 *
 	 * @param seconds some number of seconds since the epoch
@@ -43,7 +43,7 @@ public class IdentityCodeUtils {
 	 */
 	public static long packedTime(long seconds, int nanos) {
 		assertValid(seconds);
-		return seconds << 32 | (nanos & MASK_AS_UNSIGNED_LONG);
+		return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
 	}
 
 	/**
@@ -54,7 +54,7 @@ public class IdentityCodeUtils {
 	 * @return the high-order 32-bits as an unsigned integer
 	 */
 	public static long secondsFrom(long packedTime) {
-		return (packedTime & EPOCH_SECONDS_MASK) >>> 32;
+		return (packedTime & MASK_HI_ORDER_32) >>> 32;
 	}
 
 	/**
@@ -64,7 +64,7 @@ public class IdentityCodeUtils {
 	 * @return the low-order 32-bits as a signed integer
 	 */
 	public static int nanosFrom(long packedTime) {
-		return (int)(packedTime & MASK_AS_UNSIGNED_LONG);
+		return (int)(packedTime & MASK_INT_AS_UNSIGNED_LONG);
 	}
 
 	/**
@@ -74,7 +74,7 @@ public class IdentityCodeUtils {
 	 * @return the corresponding positive long
 	 */
 	public static long numFromCode(int code) {
-		return code & MASK_AS_UNSIGNED_LONG;
+		return code & MASK_INT_AS_UNSIGNED_LONG;
 	}
 
 	/**
@@ -100,7 +100,7 @@ public class IdentityCodeUtils {
 		}
 	}
 
-	IdentityCodeUtils() {
+	BitPackUtils() {
 		throw new IllegalStateException("Utility class");
 	}
 }

@@ -131,7 +131,7 @@ public class ExpiryManager {
 		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		final var currentAccounts = accounts.get();
 		forEach(currentAccounts, (id, account) ->
-				stageExpiringRecords((long) id.getValue(), account.records(), _payerExpiries));
+				stageExpiringRecords(id.longValue(), account.records(), _payerExpiries));
 		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
 		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 
@@ -153,7 +153,7 @@ public class ExpiryManager {
 		final var currentSchedules = schedules.get();
 		forEach(currentSchedules, (id, schedule) -> {
 			Consumer<EntityId> consumer = scheduleStore::expire;
-			var pair = Pair.of((long) id.getValue(), consumer);
+			var pair = Pair.of(id.longValue(), consumer);
 			_shortLivedEntityExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
 		});
 

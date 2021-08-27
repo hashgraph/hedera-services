@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

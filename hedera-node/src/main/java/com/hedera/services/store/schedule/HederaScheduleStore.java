@@ -191,7 +191,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 		if (extantSchedules.containsKey(schedule)) {
 			var extantId = extantSchedules.get(schedule);
-			return Pair.of(Optional.of(extantId.asGrpcScheduleId()), schedules.get().get(extantId));
+			return Pair.of(Optional.of(extantId.toGrpcScheduleId()), schedules.get().get(extantId));
 		}
 
 		return Pair.of(Optional.empty(), schedule);

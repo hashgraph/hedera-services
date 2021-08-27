@@ -101,7 +101,7 @@ class ExpiryManagerTest {
 		final var firstExpiry = resultingExpiries.expireNextAt(now);
 
 		// then:
-		assertEquals(aKey.getValue(), firstExpiry.getLeft());
+		assertEquals(aKey.longValue(), firstExpiry.getLeft());
 		assertEquals(1, resultingExpiries.getAllExpiries().size());
 	}
 
@@ -111,16 +111,16 @@ class ExpiryManagerTest {
 				mockScheduleStore, nums, mockTxnHistories, () -> mockAccounts, () -> mockSchedules);
 
 		// given:
-		subject.trackExpirationEvent(Pair.of((long) aKey.getValue(),
+		subject.trackExpirationEvent(Pair.of((long) aKey.longValue(),
 				entityId -> mockScheduleStore.expire(entityId)), firstThen);
-		subject.trackExpirationEvent(Pair.of((long) bKey.getValue(),
+		subject.trackExpirationEvent(Pair.of((long) bKey.longValue(),
 				entityId -> mockScheduleStore.expire(entityId)), secondThen);
 
 		// when:
 		subject.purge(now);
 
 		// then:
-		verify(mockScheduleStore).expire(new EntityId(0, 0, aKey.getValue()));
+		verify(mockScheduleStore).expire(new EntityId(0, 0, aKey.longValue()));
 		assertEquals(1, subject.getShortLivedEntityExpiries().getAllExpiries().size());
 	}
 

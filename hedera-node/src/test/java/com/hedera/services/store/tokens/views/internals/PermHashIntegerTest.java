@@ -20,10 +20,13 @@ package com.hedera.services.store.tokens.views.internals;
  * ‍
  */
 
+import com.hedera.test.utils.IdUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PermHashIntegerTest {
 	@Test
@@ -45,5 +48,64 @@ class PermHashIntegerTest {
 		assertNotEquals(null, a);
 		assertNotEquals(new Object(), a);
 		assertEquals(a, c);
+	}
+
+	@Test
+	void throwsOnUnusableNum() {
+		// expect:
+		Assertions.assertThrows(IllegalArgumentException.class, () -> PermHashInteger.fromLong(Long.MAX_VALUE));
+	}
+
+	@Test
+	void factoriesWork() {
+		// setup:
+		final var expected = PermHashInteger.fromInt(123);
+
+		// expect:
+		assertEquals(expected, PermHashInteger.fromLong(123L));
+		assertEquals(expected, PermHashInteger.fromAccountId(IdUtils.asAccount("0.0.123")));
+		assertEquals(expected, PermHashInteger.fromTokenId(IdUtils.asToken("0.0.123")));
+		assertEquals(expected, PermHashInteger.fromScheduleId(IdUtils.asSchedule("0.0.123")));
+		assertEquals(expected, PermHashInteger.fromTopicId(IdUtils.asTopic("0.0.123")));
+		assertEquals(expected, PermHashInteger.fromContractId(IdUtils.asContract("0.0.123")));
+	}
+
+	@Test
+	void viewsWork() {
+		// given:
+		final var subject = PermHashInteger.fromInt(123);
+
+		// expect:
+		assertEquals(123, subject.toGrpcAccountId().getAccountNum());
+		assertEquals(123, subject.toGrpcTokenId().getTokenNum());
+		assertEquals(123, subject.toGrpcScheduleId().getScheduleNum());
+		assertTrue(subject.toIdString().endsWith(".123"));
+	}
+
+	@Test
+	void viewsWorkEvenForNegativeNumCodes() {
+		// setup:
+		final long realNum = (long)Integer.MAX_VALUE + 10;
+
+		// given:
+		final var subject = PermHashInteger.fromLong(realNum);
+
+		// expect:
+		assertEquals(realNum, subject.toGrpcAccountId().getAccountNum());
+		assertEquals(realNum, subject.toGrpcTokenId().getTokenNum());
+		assertEquals(realNum, subject.toGrpcScheduleId().getScheduleNum());
+		assertTrue(subject.toIdString().endsWith("." + realNum));
+	}
+
+	@Test
+	void canGetLongValue() {
+		// setup:
+		final long realNum = (long)Integer.MAX_VALUE + 10;
+
+		// given:
+		final var subject = PermHashInteger.fromLong(realNum);
+
+		// expect:
+		assertEquals(realNum, subject.longValue());
 	}
 }

@@ -227,7 +227,7 @@ public class UniqTokenViewsManager {
 		}
 
 		if (isUsingTreasuryWildcards()) {
-			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.hiAsPhi().getValue(), nftId.getValue(), false);
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.hiAsPhi().intValue(), nftId.getValue(), false);
 		} else {
 			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), false);
 		}
@@ -253,7 +253,7 @@ public class UniqTokenViewsManager {
 
 		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.getValue(), false);
 		if (isUsingTreasuryWildcards()) {
-			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.hiAsPhi().getValue(), nftId.getValue(), true);
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.hiAsPhi().intValue(), nftId.getValue(), true);
 		} else {
 			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), true);
 		}

@@ -36,8 +36,8 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
 public class EntityId implements SelfSerializable {
 	private static final long DEFAULT_SHARD = 0L;

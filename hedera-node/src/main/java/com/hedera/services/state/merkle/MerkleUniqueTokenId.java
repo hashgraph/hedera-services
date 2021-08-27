@@ -22,8 +22,6 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -31,8 +29,8 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.assertValid;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.assertValid;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 
 /**
  * Represents the ID of {@link MerkleUniqueTokenId}

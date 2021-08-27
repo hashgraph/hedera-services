@@ -21,6 +21,8 @@ package com.hedera.services.context.init;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
@@ -35,7 +37,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
+import java.util.function.Consumer;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -43,6 +47,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class StateInitializationFlowTest {
+	private final HederaNumbers defaultNumbers = new MockHederaNumbers();
+
 	@Mock
 	private Hash hash;
 	@Mock
@@ -61,6 +67,8 @@ class StateInitializationFlowTest {
 	private FileUpdateInterceptor aFileInterceptor;
 	@Mock
 	private FileUpdateInterceptor bFileInterceptor;
+	@Mock
+	private Consumer<HederaNumbers> staticNumbersHolder;
 
 	private StateInitializationFlow subject;
 
@@ -68,6 +76,7 @@ class StateInitializationFlowTest {
 	void setUp() {
 		subject = new StateInitializationFlow(
 				hfs,
+				defaultNumbers,
 				recordStreamManager,
 				stateAccessor,
 				Set.of(aFileInterceptor, bFileInterceptor));
@@ -75,6 +84,8 @@ class StateInitializationFlowTest {
 
 	@Test
 	void performsAsExpectedWithNoInterceptorsRegistered() {
+		setupMockNumInitialization();
+
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
@@ -87,10 +98,15 @@ class StateInitializationFlowTest {
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs).register(aFileInterceptor);
 		verify(hfs).register(bFileInterceptor);
+		verify(staticNumbersHolder).accept(defaultNumbers);
+
+		cleanupMockNumInitialization();
 	}
 
 	@Test
 	void performsAsExpectedWithInterceptorsRegistered() {
+		setupMockNumInitialization();
+
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
@@ -103,5 +119,16 @@ class StateInitializationFlowTest {
 		verify(stateAccessor).updateFrom(activeState);
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs, never()).register(any());
+		verify(staticNumbersHolder).accept(defaultNumbers);
+
+		cleanupMockNumInitialization();
+	}
+
+	private void setupMockNumInitialization() {
+		StateInitializationFlow.setStaticNumbersHolder(staticNumbersHolder);
+	}
+
+	private void cleanupMockNumInitialization() {
+		StateInitializationFlow.setStaticNumbersHolder(STATIC_PROPERTIES_HOLDER::setNumbersFrom);
 	}
 }

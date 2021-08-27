@@ -24,45 +24,45 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.nanosFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.secondsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.nanosFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.secondsFrom;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class IdentityCodeUtilsTest {
+class BitPackUtilsTest {
 	@Test
 	void numFromCodeWorks() {
 		// expect:
-		assertEquals(MAX_NUM_ALLOWED, IdentityCodeUtils.numFromCode((int) MAX_NUM_ALLOWED));
+		assertEquals(MAX_NUM_ALLOWED, BitPackUtils.numFromCode((int) MAX_NUM_ALLOWED));
 	}
 
 	@Test
 	void codeFromNumWorks() {
 		// expect:
-		assertEquals((int) MAX_NUM_ALLOWED, IdentityCodeUtils.codeFromNum(MAX_NUM_ALLOWED));
+		assertEquals((int) MAX_NUM_ALLOWED, BitPackUtils.codeFromNum(MAX_NUM_ALLOWED));
 	}
 
 	@Test
 	void codeFromNumThrowsWhenOutOfRange() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(-1));
-		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
+		assertThrows(IllegalArgumentException.class, () -> BitPackUtils.codeFromNum(-1));
+		assertThrows(IllegalArgumentException.class, () -> BitPackUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
 	}
 
 	@Test
 	void throwsWhenArgOutOfRange() {
 		// expect:
-		assertDoesNotThrow(() -> IdentityCodeUtils.assertValid(MAX_NUM_ALLOWED));
-		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(-1));
-		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(MAX_NUM_ALLOWED + 1));
+		assertDoesNotThrow(() -> BitPackUtils.assertValid(MAX_NUM_ALLOWED));
+		assertThrows(IllegalArgumentException.class, () -> BitPackUtils.assertValid(-1));
+		assertThrows(IllegalArgumentException.class, () -> BitPackUtils.assertValid(MAX_NUM_ALLOWED + 1));
 	}
 
 	@Test
 	void isUninstantiable() {
-		assertThrows(IllegalStateException.class, IdentityCodeUtils::new);
+		assertThrows(IllegalStateException.class, BitPackUtils::new);
 	}
 
 	@Test

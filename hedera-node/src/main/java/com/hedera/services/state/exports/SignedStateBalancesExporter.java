@@ -216,7 +216,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var id = entry.getKey();
 			var account = entry.getValue();
 			if (!account.isDeleted()) {
-				var accountId = id.asGrpcAccountId();
+				var accountId = id.toGrpcAccountId();
 				var balance = account.getBalance();
 				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
 					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,

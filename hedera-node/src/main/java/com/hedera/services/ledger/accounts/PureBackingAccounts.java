@@ -65,6 +65,6 @@ public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccoun
 
 	@Override
 	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(PermHashInteger::asGrpcAccountId).collect(toSet());
+		return delegate.get().keySet().stream().map(PermHashInteger::toGrpcAccountId).collect(toSet());
 	}
 }

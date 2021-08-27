@@ -27,13 +27,14 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces
  * the risk of hash collisions in structured data using this type,
  * when compared to the {@code java.lang.Integer} boxed type.
- *
- * May no longer be necessary after {@link com.swirlds.fchashmap.FCOneToManyRelation}
- * improves internal hashing.
  */
 public class PermHashInteger {
 	private final int value;
@@ -46,8 +47,9 @@ public class PermHashInteger {
 		return new PermHashInteger(i);
 	}
 
-	public static PermHashInteger fromLong(long i) {
-		return new PermHashInteger((int) i);
+	public static PermHashInteger fromLong(long l) {
+		final var value = codeFromNum(l);
+		return new PermHashInteger(value);
 	}
 
 	public static PermHashInteger fromAccountId(AccountID grpc) {
@@ -70,29 +72,33 @@ public class PermHashInteger {
 		return fromLong(grpc.getScheduleNum());
 	}
 
-	public ScheduleID asGrpcScheduleId() {
-		throw new AssertionError("Not implemented!");
+	public int intValue() {
+		return value;
 	}
 
-	public AccountID asGrpcAccountId() {
-		throw new AssertionError("Not implemented!");
+	public long longValue() {
+		return numFromCode(value);
 	}
 
-	public TokenID asGrpcTokenId() {
-		throw new AssertionError("Not implemented!");
+	public AccountID toGrpcAccountId() {
+		return STATIC_PROPERTIES_HOLDER.scopedAccountWith(numFromCode(value));
 	}
 
-	public String asAbbrevString() {
-		throw new AssertionError("Not implemented!");
+	public TokenID toGrpcTokenId() {
+		return STATIC_PROPERTIES_HOLDER.scopedTokenWith(numFromCode(value));
+	}
+
+	public ScheduleID toGrpcScheduleId() {
+		return STATIC_PROPERTIES_HOLDER.scopedScheduleWith(numFromCode(value));
+	}
+
+	public String toIdString() {
+		return STATIC_PROPERTIES_HOLDER.scopedIdLiteralWith(numFromCode(value));
 	}
 
 	@Override
 	public int hashCode() {
 		return (int) MiscUtils.perm64(value);
-	}
-
-	public int getValue() {
-		return value;
 	}
 
 	@Override

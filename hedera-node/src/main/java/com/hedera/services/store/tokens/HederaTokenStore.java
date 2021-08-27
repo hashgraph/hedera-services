@@ -174,7 +174,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		forEach(tokens.get(), (key, value) -> {
 			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
 			if (!value.isDeleted()) {
-				addKnownTreasury(value.treasury().toGrpcAccountId(), key.asGrpcTokenId());
+				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toGrpcTokenId());
 			}
 		});
 	}

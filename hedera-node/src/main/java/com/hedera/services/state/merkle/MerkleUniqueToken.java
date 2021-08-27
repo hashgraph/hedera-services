@@ -21,7 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.views.internals.PermHashLong;
@@ -35,9 +35,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.nanosFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.secondsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.nanosFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.secondsFrom;
 
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
@@ -168,7 +168,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	}
 
 	public EntityId getOwner() {
-		return new EntityId(0, 0, IdentityCodeUtils.numFromCode(ownerCode));
+		return new EntityId(0, 0, BitPackUtils.numFromCode(ownerCode));
 	}
 
 	public byte[] getMetadata() {

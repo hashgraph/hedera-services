@@ -154,7 +154,7 @@ class HederaScheduleStoreTest {
 		final var extant = subject.getExtantSchedules();
 		assertEquals(1, extant.size());
 		assertTrue(extant.containsKey(expectedKey));
-		assertEquals(created, extant.get(expectedKey).asGrpcScheduleId());
+		assertEquals(created, extant.get(expectedKey).toGrpcScheduleId());
 	}
 
 	@Test

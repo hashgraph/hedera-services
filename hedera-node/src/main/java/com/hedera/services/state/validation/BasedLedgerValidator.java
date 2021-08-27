@@ -53,8 +53,9 @@ public class BasedLedgerValidator implements LedgerValidator {
 	public void validate(MerkleMap<PermHashInteger, MerkleAccount> accounts) {
 		var totalFloat = new AtomicReference<>(BigInteger.ZERO);
 		MiscUtils.forEach(accounts, (id, account) -> {
-			if (id.getValue() < 1 || id.getValue() > dynamicProperties.maxAccountNum()) {
-				throw new IllegalStateException(String.format("Invalid num in account %s", id.asAbbrevString()));
+			final var num = id.longValue();
+			if (num < 1 || num > dynamicProperties.maxAccountNum()) {
+				throw new IllegalStateException(String.format("Invalid num in account %s", id.toIdString()));
 			}
 			totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
 		});

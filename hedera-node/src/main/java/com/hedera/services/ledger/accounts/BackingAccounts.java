@@ -48,7 +48,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	public void rebuildFromSources() {
 		existingAccounts.clear();
 		delegate.get().keySet().stream()
-				.map(PermHashInteger::asGrpcAccountId)
+				.map(PermHashInteger::toGrpcAccountId)
 				.forEach(existingAccounts::add);
 	}
 

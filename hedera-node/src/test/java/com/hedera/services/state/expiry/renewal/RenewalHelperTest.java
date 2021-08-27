@@ -104,8 +104,8 @@ class RenewalHelperTest {
 	private final long deletedTokenNum = 1234L, survivedTokenNum = 4321L;
 	private final PermHashInteger deletedTokenId = PermHashInteger.fromLong(deletedTokenNum);
 	private final PermHashInteger survivedTokenId = PermHashInteger.fromLong(survivedTokenNum);
-	private final TokenID deletedTokenGrpcId = deletedTokenId.asGrpcTokenId();
-	private final TokenID survivedTokenGrpcId = survivedTokenId.asGrpcTokenId();
+	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
+	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
 	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
 
 	private final HederaNumbers nums = new MockHederaNumbers();
@@ -243,7 +243,7 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(backingAccounts).remove(expiredKey.asGrpcAccountId());
+		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
@@ -270,7 +270,7 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(backingAccounts).remove(expiredKey.asGrpcAccountId());
+		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
@@ -319,7 +319,7 @@ class RenewalHelperTest {
 	}
 
 	private PermHashLong assoc(PermHashInteger a, PermHashInteger b) {
-		return PermHashLong.asPhl(a.getValue(), b.getValue());
+		return PermHashLong.asPhl(a.longValue(), b.longValue());
 	}
 
 	private AccountID grpcIdWith(long num) {
@@ -341,7 +341,7 @@ class RenewalHelperTest {
 	}
 
 	private void givenModifiableRelPresent(PermHashInteger account, PermHashInteger token, long balance) {
-		var rel = PermHashLong.asPhl(account.getValue(), token.getValue());
+		var rel = PermHashLong.asPhl(account.longValue(), token.longValue());
 		given(tokenRels.getForModify(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false));
 	}
 

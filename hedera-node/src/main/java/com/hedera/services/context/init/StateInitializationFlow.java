@@ -21,6 +21,7 @@ package com.hedera.services.context.init;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
@@ -32,12 +33,16 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
+import java.util.function.Consumer;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
 
 @Singleton
 public class StateInitializationFlow {
 	private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
 
 	private final HederaFs hfs;
+	private final HederaNumbers hederaNums;
 	private final StateAccessor stateAccessor;
 	private final RecordStreamManager recordStreamManager;
 	private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
@@ -45,17 +50,21 @@ public class StateInitializationFlow {
 	@Inject
 	public StateInitializationFlow(
 			HederaFs hfs,
+			HederaNumbers hederaNums,
 			RecordStreamManager recordStreamManager,
 			@WorkingState StateAccessor stateAccessor,
 			Set<FileUpdateInterceptor> fileUpdateInterceptors
 	) {
 		this.hfs = hfs;
+		this.hederaNums = hederaNums;
 		this.stateAccessor = stateAccessor;
 		this.recordStreamManager = recordStreamManager;
 		this.fileUpdateInterceptors = fileUpdateInterceptors;
 	}
 
 	public void runWith(ServicesState activeState) {
+		staticNumbersHolder.accept(hederaNums);
+
 		stateAccessor.updateFrom(activeState);
 		log.info("Context updated with working state");
 
@@ -67,5 +76,12 @@ public class StateInitializationFlow {
 			fileUpdateInterceptors.forEach(hfs::register);
 			log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
 		}
+	}
+
+	private static Consumer<HederaNumbers> staticNumbersHolder = STATIC_PROPERTIES_HOLDER::setNumbersFrom;
+
+	/* --- Only used by unit tests --- */
+	static void setStaticNumbersHolder(Consumer<HederaNumbers> staticNumbersHolder) {
+		StateInitializationFlow.staticNumbersHolder = staticNumbersHolder;
 	}
 }
