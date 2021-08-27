@@ -24,6 +24,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class EntityNumbers {
 	public static final long UNKNOWN_NUMBER = Long.MIN_VALUE;
 
@@ -31,6 +35,7 @@ public class EntityNumbers {
 	private final HederaNumbers hederaNumbers;
 	private final AccountNumbers accountNumbers;
 
+	@Inject
 	public EntityNumbers(
 			FileNumbers fileNumbers,
 			HederaNumbers hederaNumbers,

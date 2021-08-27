@@ -28,8 +28,6 @@ import java.util.EnumMap;
  *
  * @param <A> the type of account being changed.
  * @param <P> the property family whose changesets are to be summarized.
- *
- * @author Michael Tinker
  */
 public class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> {
 	/**

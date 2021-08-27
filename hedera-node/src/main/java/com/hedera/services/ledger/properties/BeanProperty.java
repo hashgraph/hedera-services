@@ -29,8 +29,6 @@ import java.util.function.Function;
  * target type, of course.)
  *
  * @param <A> the type which the getter/setter apply to.
- *
- * @author Michael Tinker
  */
 public interface BeanProperty<A> {
 	/**

@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 /**
  * Defines a simple type that is able to recover metadata about signing activity
  * associated with a given Hedera smart contract.
- *
- * @author Michael Tinker
  */
 public interface ContractSigMetaLookup {
 	SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id);

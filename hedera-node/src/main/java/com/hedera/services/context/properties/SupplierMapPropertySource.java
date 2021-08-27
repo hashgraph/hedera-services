@@ -27,8 +27,6 @@ import java.util.function.Supplier;
 /**
  * Implements a {@link PropertySource} by looking up property values
  * in a {@link Map} of {@link Supplier} instances.
- *
- * @author Michael Tinker
  */
 public class SupplierMapPropertySource implements PropertySource {
 	private final Map<String, Supplier<Object>> source;

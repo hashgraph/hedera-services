@@ -94,8 +94,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * method); but it is necessary to provide "unsafe" single-booked
  * methods like {@link HederaLedger#adjustBalance(AccountID, long)} in
  * order to match transfer semantics the EVM expects.
- *
- * @author Michael Tinker
  */
 @SuppressWarnings("unchecked")
 public class HederaLedger {
@@ -154,6 +152,7 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 
+		creator.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);

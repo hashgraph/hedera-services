@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -52,9 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOU
  * possible that the <i>semantics</i> of the transaction will still be wrong;
  * for example, if the target account expired before this transaction reached
  * consensus.)
- *
- * @author Michael Tinker
  */
+@Singleton
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
 
@@ -63,6 +64,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public CryptoDeleteTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;

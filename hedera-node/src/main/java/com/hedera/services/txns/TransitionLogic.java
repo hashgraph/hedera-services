@@ -49,8 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * make the syntax check evaluate only conditions which are known
  * pre-consensus. Ultimately we may move all syntax checking outside the
  * {@link ProcessLogic}.
- *
- * @author Michael Tinker
  */
 public interface TransitionLogic {
 	Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;

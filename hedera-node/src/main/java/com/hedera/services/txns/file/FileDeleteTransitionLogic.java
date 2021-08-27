@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -37,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
+@Singleton
 public class FileDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileDeleteTransitionLogic.class);
 
@@ -45,6 +48,7 @@ public class FileDeleteTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public FileDeleteTransitionLogic(HederaFs hfs, TransactionContext txnCtx) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;

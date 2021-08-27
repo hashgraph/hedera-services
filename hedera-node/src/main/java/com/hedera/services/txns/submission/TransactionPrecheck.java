@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
@@ -48,6 +50,7 @@ import static com.swirlds.common.PlatformStatus.ACTIVE;
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class TransactionPrecheck {
 	private final QueryFeeCheck queryFeeCheck;
 	private final StagedPrechecks stagedPrechecks;
@@ -58,6 +61,7 @@ public class TransactionPrecheck {
 	private static final Set<Characteristic> QUERY_PAYMENT_CHARACTERISTICS =
 			EnumSet.of(Characteristic.MUST_BE_CRYPTO_TRANSFER, Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES);
 
+	@Inject
 	public TransactionPrecheck(
 			final QueryFeeCheck queryFeeCheck,
 			final StagedPrechecks stagedPrechecks,

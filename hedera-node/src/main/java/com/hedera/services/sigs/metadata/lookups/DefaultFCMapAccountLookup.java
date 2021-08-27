@@ -33,8 +33,6 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 /**
  * Trivial account signing metadata lookup backed by a {@code FCMap<MapKey, MapValue>}.
- *
- * @author Michael Tinker
  */
 public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;

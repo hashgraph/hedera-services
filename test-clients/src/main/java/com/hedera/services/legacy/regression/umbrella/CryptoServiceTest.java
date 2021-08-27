@@ -82,8 +82,6 @@ import static com.hedera.services.legacy.client.util.KeyExpansion.keyFromBytes;
 
 /**
  * Adds crypto related functions for regression tests.
- *
- * @author hua Created on 2018-10-19
  */
 public class CryptoServiceTest extends TestHelperComplex {
 

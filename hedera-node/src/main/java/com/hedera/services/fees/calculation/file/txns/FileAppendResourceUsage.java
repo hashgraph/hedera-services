@@ -28,11 +28,16 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 
+@Singleton
 public class FileAppendResourceUsage implements TxnResourceUsageEstimator {
 	private final FileFeeBuilder usageEstimator;
 
+	@Inject
 	public FileAppendResourceUsage(FileFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
@@ -39,6 +41,7 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 
+@Singleton
 public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	public static final TransactionRecord MISSING_RECORD_STANDIN = TransactionRecord.getDefaultInstance();
 
@@ -48,6 +51,7 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 
 	static BinaryOperator<FeeData> sumFn = FeeCalcUtils::sumOfUsages;
 
+	@Inject
 	public GetTxnRecordResourceUsage(
 			RecordCache recordCache,
 			AnswerFunctions answerFunctions,

@@ -31,11 +31,10 @@ import static java.util.Collections.EMPTY_LIST;
  * Summarize the outcome of trying to list, in canonical order, the Hedera keys
  * that must have active signatures for some gRCP transaction to be valid.
  *
- * The main purpose of this class is to let calls to methods of {@link HederaSigningOrder}
+ * The main purpose of this class is to let calls to methods of {@link SigRequirements}
  * be unchecked. This makes it easier to read and understand client code.
  *
  * @param <T> the type of error report that may be contained in this summary.
- * @author Michael Tinker
  */
 public class SigningOrderResult<T> {
 	private final List<JKey> orderedKeys;

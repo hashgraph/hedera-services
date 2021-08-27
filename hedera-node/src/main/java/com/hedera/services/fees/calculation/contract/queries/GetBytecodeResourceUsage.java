@@ -27,11 +27,16 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class GetBytecodeResourceUsage implements QueryResourceUsageEstimator {
 	private static final byte[] EMPTY_BYTECODE = new byte[0];
 
 	private final SmartContractFeeBuilder usageEstimator;
 
+	@Inject
 	public GetBytecodeResourceUsage(SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

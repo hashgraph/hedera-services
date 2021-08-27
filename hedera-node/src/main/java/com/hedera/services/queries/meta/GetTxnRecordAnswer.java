@@ -38,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetTxnRecordAnswer implements AnswerService {
 	private final RecordCache recordCache;
 	private final AnswerFunctions answerFunctions;
@@ -59,6 +62,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 	public static final String DUPLICATE_RECORDS_CTX_KEY =
 			GetTxnRecordAnswer.class.getSimpleName() + "_duplicateRecords";
 
+	@Inject
 	public GetTxnRecordAnswer(
 			RecordCache recordCache,
 			OptionValidator optionValidator,

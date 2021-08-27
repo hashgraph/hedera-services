@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +43,7 @@ import static com.hedera.services.context.properties.BootstrapProperties.transfo
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
+@Singleton
 public class ScreenedSysFileProps implements PropertySource {
 	private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
@@ -100,6 +103,10 @@ public class ScreenedSysFileProps implements PropertySource {
 	);
 
 	Map<String, Object> from121 = Collections.emptyMap();
+
+	@Inject
+	public ScreenedSysFileProps() {
+	}
 
 	void screenNew(ServicesConfigurationList rawProps) {
 		from121 = rawProps.getNameValueList()

@@ -25,8 +25,6 @@ import com.hedera.services.utils.TxnAccessor;
 /**
  * Defines a type able to judge if an account or txn (more specifically,
  * the txn's payer) is exempt from fee charging activity.
- *
- * @author Michael Tinker
  */
 public interface FeeExemptions {
 	boolean hasExemptPayer(TxnAccessor accessor);

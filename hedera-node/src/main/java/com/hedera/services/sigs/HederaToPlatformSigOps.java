@@ -22,7 +22,7 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -81,7 +81,7 @@ public final class HederaToPlatformSigOps {
 	 */
 	public static ResponseCodeEnum expandIn(
 			final PlatformTxnAccessor txnAccessor,
-			final HederaSigningOrder keyOrderer,
+			final SigRequirements keyOrderer,
 			final PubKeyToSigBytes pkToSigFn
 	) {
 		txnAccessor.getPlatformTxn().clear();

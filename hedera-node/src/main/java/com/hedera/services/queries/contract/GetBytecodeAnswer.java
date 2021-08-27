@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
@@ -38,11 +40,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetBytecodeAnswer implements AnswerService {
 	private static final byte[] EMPTY_BYTECODE = new byte[0];
 
 	private final OptionValidator validator;
 
+	@Inject
 	public GetBytecodeAnswer(OptionValidator validator) {
 		this.validator = validator;
 	}

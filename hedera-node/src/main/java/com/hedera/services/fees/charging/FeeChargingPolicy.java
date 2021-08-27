@@ -23,6 +23,9 @@ package com.hedera.services.fees.charging;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -38,12 +41,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *    <li>For a triggered txn; and,</li>
  *    <li>For a txn that was submitted responsibly, and is believed unique.</li>
  * </ol>
- *
- * @author Michael Tinker
  */
+@Singleton
 public class FeeChargingPolicy {
 	private final NarratedCharging narratedCharging;
 
+	@Inject
 	public FeeChargingPolicy(NarratedCharging narratedCharging) {
 		this.narratedCharging = narratedCharging;
 	}

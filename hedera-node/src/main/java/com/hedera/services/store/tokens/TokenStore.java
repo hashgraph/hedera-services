@@ -41,8 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 
 /**
  * Defines a type able to manage arbitrary tokens.
- *
- * @author Michael Tinker
  */
 public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();

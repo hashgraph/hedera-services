@@ -21,12 +21,12 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.SingletonContextsManager;
-import com.hedera.services.context.init.InitializationFlow;
-import com.hedera.services.sigs.HederaToPlatformSigOps;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.context.init.ServicesInitFlow;
+import com.hedera.services.sigs.ExpansionHelper;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.state.DualStateAccessor;
+import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -47,6 +47,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -67,18 +68,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.function.BiConsumer;
 
+import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.swirlds.common.constructable.ConstructableRegistry.registerConstructable;
@@ -92,7 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -106,15 +105,13 @@ class ServicesStateTest {
 	@Mock
 	private HashLogger hashLogger;
 	@Mock
-	private BiConsumer<ServicesState, ServicesContext> ctxInitializer;
-	@Mock
 	private Platform platform;
 	@Mock
 	private AddressBook addressBook;
 	@Mock
 	private Address address;
 	@Mock
-	private ServicesContext ctx;
+	private ServicesApp app;
 	@Mock
 	private MerkleDiskFs diskFs;
 	@Mock
@@ -128,32 +125,46 @@ class ServicesStateTest {
 	@Mock
 	private ProcessLogic logic;
 	@Mock
-	private ServicesState.ExpansionHelper expansionHelper;
+	private ExpansionHelper expansionHelper;
 	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
-	private HederaSigningOrder retryingKeyOrder;
+	private SigRequirements retryingKeyOrder;
 	@Mock
 	private PubKeyToSigBytes pubKeyToSigBytes;
+	@Mock
+	private StateAccessor workingState;
+	@Mock
+	private DualStateAccessor dualStateAccessor;
+	@Mock
+	private ServicesInitFlow initFlow;
+	@Mock
+	private ServicesApp.Builder appBuilder;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
 
+
 	@AfterEach
 	void cleanup() {
-		SingletonContextsManager.CONTEXTS.clear();
+		if (APPS.includes(selfId.getId())) {
+			APPS.clear(selfId.getId());
+		}
 	}
 
 	@Test
 	void logsSummaryAsExpected() {
-		setupMockHashLogger();
+		// setup:
+		subject.setMetadata(metadata);
+
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 
+		given(metadata.app()).willReturn(app);
+		given(app.hashLogger()).willReturn(hashLogger);
 		given(networkContext.toString()).willReturn("IMAGINE");
 
 		// when:
@@ -162,8 +173,6 @@ class ServicesStateTest {
 		// then:
 		verify(hashLogger).logHashesFor(subject);
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
-
-		cleanupMockHashLogger();
 	}
 
 	@Test
@@ -220,13 +229,13 @@ class ServicesStateTest {
 
 	@Test
 	void expandsSigsAsExpected() throws InvalidProtocolBufferException {
-		setupMockExpandHelper();
-		// and:
+		// setup:
 		subject.setMetadata(metadata);
 
-		given(metadata.getCtx()).willReturn(ctx);
-		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(ctx.lookupRetryingKeyOrder()).willReturn(retryingKeyOrder);
+		given(metadata.app()).willReturn(app);
+		given(app.expansionHelper()).willReturn(expansionHelper);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(app.retryingSigReqs()).willReturn(retryingKeyOrder);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
@@ -235,18 +244,15 @@ class ServicesStateTest {
 
 		// then:
 		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
-
-		cleanupMockExpandHelper();
 	}
 
 	@Test
 	void warnsOfIpbe() throws InvalidProtocolBufferException {
-		setupMockExpandHelper();
-		// and:
+		// setup:
 		subject.setMetadata(metadata);
 
-		given(metadata.getCtx()).willReturn(ctx);
-		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(metadata.app()).willReturn(app);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
 
 		// when:
@@ -256,18 +262,15 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));;
-
-		cleanupMockExpandHelper();
 	}
 
 	@Test
 	void warnsOfRace() throws InvalidProtocolBufferException {
-		setupMockExpandHelper();
-		// and:
+		// setup:
 		subject.setMetadata(metadata);
 
-		given(metadata.getCtx()).willReturn(ctx);
-		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(metadata.app()).willReturn(app);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 
 		// when:
@@ -277,8 +280,6 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Unable to expand signatures, will be verified synchronously")));
-
-		cleanupMockExpandHelper();
 	}
 
 	@Test
@@ -299,15 +300,16 @@ class ServicesStateTest {
 		// setup:
 		subject.setMetadata(metadata);
 
-		given(metadata.getCtx()).willReturn(ctx);
-		given(ctx.logic()).willReturn(logic);
+		given(metadata.app()).willReturn(app);
+		given(app.logic()).willReturn(logic);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 
 		// when:
 		subject.handleTransaction(
 				1L, true, creationTime, consensusTime, transaction, dualState);
 
 		// then:
-		verify(ctx).setDualState(dualState);
+		verify(dualStateAccessor).setDualState(dualState);
 		verify(logic).incorporateConsensusTxn(transaction, consensusTime, 1L);
 	}
 
@@ -365,8 +367,17 @@ class ServicesStateTest {
 
 	@Test
 	void genesisInitCreatesChildren() {
-		setupMockInitFlow();
+		// setup:
+		ServicesState.setAppBuilder(() -> appBuilder);
 
+		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
+		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.platform(platform)).willReturn(appBuilder);
+		given(appBuilder.selfId(1L)).willReturn(appBuilder);
+		given(appBuilder.build()).willReturn(app);
+		// and:
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -385,39 +396,43 @@ class ServicesStateTest {
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
+		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.diskFs());
 		// and:
-		assertInternalInitFor(platform);
+		verify(initFlow).runWith(subject);
+		verify(appBuilder).bootstrapProps(any());
+		verify(appBuilder).initialState(subject);
+		verify(appBuilder).platform(platform);
+		verify(appBuilder).selfId(selfId.getId());
+		// and:
+		assertTrue(APPS.includes(selfId.getId()));
 
-		cleanupMockInitFlow();
+		// cleanup:
+		ServicesState.setAppBuilder(DaggerServicesApp::builder);
 	}
 
 	@Test
 	void nonGenesisInitReusesContextIfPresent() {
-		setupMockInitFlow();
-		setupMockHashLogger();
-
 		subject.setChild(StateChildIndices.DISK_FS, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 
-		given(ctx.id()).willReturn(selfId);
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
-		SingletonContextsManager.CONTEXTS.store(ctx);
+		APPS.save(selfId.getId(), app);
 
 		// when:
 		subject.init(platform, addressBook);
 
 		// then:
 		assertSame(addressBook, subject.addressBook());
-		assertSame(ctx, subject.getMetadata().getCtx());
+		assertSame(app, subject.getMetadata().app());
 		// and:
+		verify(initFlow).runWith(subject);
 		verify(diskFs).checkHashesAgainstDiskContents();
 		verify(hashLogger).logHashesFor(subject);
-
-		cleanupMockInitFlow();
-		cleanupMockHashLogger();
 	}
 
 	@Test
@@ -546,13 +561,14 @@ class ServicesStateTest {
 		// setup:
 		subject.setMetadata(metadata);
 
-		given(metadata.getCtx()).willReturn(ctx);
+		given(metadata.app()).willReturn(app);
+		given(app.workingState()).willReturn(workingState);
 
 		// when:
 		final var copy = subject.copy();
 
 		// then:
-		verify(ctx).update(copy);
+		verify(workingState).updateFrom(copy);
 	}
 
 	@Test
@@ -569,7 +585,8 @@ class ServicesStateTest {
 		given(networkContext.copy()).willReturn(networkContext);
 		given(diskFs.copy()).willReturn(diskFs);
 		given(metadata.copy()).willReturn(metadata);
-		given(metadata.getCtx()).willReturn(ctx);
+		given(metadata.app()).willReturn(app);
+		given(app.workingState()).willReturn(workingState);
 
 		// when:
 		final var copy = subject.copy();
@@ -606,43 +623,5 @@ class ServicesStateTest {
 			legacyChildren.add(nfts);
 		}
 		return legacyChildren;
-	}
-
-	private void setupMockExpandHelper() {
-		ServicesState.setExpansionHelper(expansionHelper);
-	}
-
-	private void cleanupMockExpandHelper() {
-		ServicesState.setExpansionHelper(HederaToPlatformSigOps::expandIn);
-	}
-
-	private void setupMockInitFlow() {
-		ServicesState.setContextInitializer(ctxInitializer);
-	}
-
-	private void cleanupMockInitFlow() {
-		ServicesState.setContextInitializer(InitializationFlow::accept);
-	}
-
-	private void setupMockHashLogger() {
-		ServicesState.setHashLogger(hashLogger);
-	}
-
-	private void cleanupMockHashLogger() {
-		ServicesState.setHashLogger(new HashLogger());
-	}
-
-	private void assertInternalInitFor(Platform platform) {
-		// setup:
-		final ArgumentCaptor<ServicesContext> captor = ArgumentCaptor.forClass(ServicesContext.class);
-
-		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
-		// and:
-		verify(ctxInitializer).accept(eq(subject), captor.capture());
-		final var initCtx = captor.getValue();
-		assertSame(SingletonContextsManager.CONTEXTS.lookup(selfId.getId()), initCtx);
-		assertSame(platform, initCtx.platform());
-		assertSame(selfId, initCtx.id());
-		assertSame(initCtx, subject.getMetadata().getCtx());
 	}
 }

@@ -30,8 +30,6 @@ import static java.math.BigInteger.ZERO;
 /**
  * Offers a few static helpers to evaluate {@link TransferList} instances
  * presented by incoming gRPC transactions.
- *
- * @author Michael Tinker
  */
 public final class TransferListChecks {
 	private TransferListChecks() {

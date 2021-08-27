@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -41,7 +43,11 @@ import java.util.List;
  * This class includes methods for generating Fee Matrices and calculating Fee for File related
  * Transactions and Query.
  */
+@Singleton
 public class FileFeeBuilder extends FeeBuilder {
+  @Inject
+  public FileFeeBuilder() {
+  }
 
   /**
    * This method returns fee matrices for file append transaction

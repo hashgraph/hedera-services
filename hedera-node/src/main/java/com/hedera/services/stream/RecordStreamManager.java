@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
@@ -52,7 +53,7 @@ public class RecordStreamManager {
 	private static final Logger log = LogManager.getLogger(RecordStreamManager.class);
 
 	/**
-	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
+	 * receives {@link RecordStreamObject}s from {@link StandardProcessLogic}
 	 * * .addForStreaming,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
@@ -195,7 +196,7 @@ public class RecordStreamManager {
 	}
 
 	/**
-	 * receives a consensus record from {@link com.hedera.services.legacy.services.state.AwareProcessLogic} each time,
+	 * receives a consensus record from {@link StandardProcessLogic} each time,
 	 * sends it to multiStream which then sends to two queueThread for calculating runningHash and writing to file
 	 *
 	 * @param recordStreamObject

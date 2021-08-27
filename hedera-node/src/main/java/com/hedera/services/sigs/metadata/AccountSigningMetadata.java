@@ -24,8 +24,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 
 /**
  * Represents metadata about the signing activities of a Hedera cryptocurrency account.
- *
- * @author Michael Tinker
  */
 public class AccountSigningMetadata {
 	private final JKey key;

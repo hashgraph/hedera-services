@@ -73,9 +73,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * @author Akshay
- */
 public final class RequestBuilder {
   private RequestBuilder() {
     throw new UnsupportedOperationException("Utility Class");

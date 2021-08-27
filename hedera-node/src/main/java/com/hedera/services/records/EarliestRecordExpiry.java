@@ -30,8 +30,6 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 /**
  * Provides a process object useful for tracking the time of the
  * earliest-expiring record associated to an {@link AccountID}.
- *
- * @author Michael Tinker
  */
 public class EarliestRecordExpiry implements Comparable<EarliestRecordExpiry> {
 	private final long earliestExpiry;

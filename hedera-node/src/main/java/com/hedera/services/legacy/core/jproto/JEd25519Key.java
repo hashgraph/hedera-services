@@ -24,8 +24,6 @@ import com.swirlds.common.CommonUtils;
 
 /**
  * Maps to proto Key of type ed25519.
- *
- * @author hua Created on 2018-11-02
  */
 public class JEd25519Key extends JKey {
 

@@ -31,8 +31,6 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 
 /**
  * Provides static methods to work with {@link com.swirlds.common.crypto.Signature} objects.
- *
- * @author Michael Tinker
  */
 public final class PlatformSigOps {
 	private PlatformSigOps() {

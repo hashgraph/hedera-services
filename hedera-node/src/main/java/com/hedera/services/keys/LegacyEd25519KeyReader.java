@@ -22,6 +22,8 @@ package com.hedera.services.keys;
 
 import com.hedera.services.legacy.core.AccountKeyListObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
@@ -31,7 +33,12 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+@Singleton
 public class LegacyEd25519KeyReader {
+	@Inject
+	public LegacyEd25519KeyReader() {
+	}
+
 	public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
 		try {
 			var b64Encoded = Files.readString(Paths.get(b64EncodedKeyPairLoc));

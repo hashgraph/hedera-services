@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -29,12 +28,13 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
@@ -57,7 +57,12 @@ import static java.math.BigInteger.ZERO;
  * during {@link com.hedera.services.txns.span.SpanMapManager#expandSpan(TxnAccessor)},
  * we can accept some inefficient use of gRPC types.
  */
+@Singleton
 public class PureTransferSemanticChecks {
+	@Inject
+	public PureTransferSemanticChecks() {
+	}
+
 	public ResponseCodeEnum fullPureValidation(
 			TransferList hbarAdjustsWrapper,
 			List<TokenTransferList> tokenAdjustsList,

@@ -34,8 +34,6 @@ import org.apache.logging.log4j.Logger;
 /**
  * Provides various helpers useful for estimating resource usage
  * while calculating fees for transactions or queries.
- *
- * @author Michael Tinker
  */
 public final class FeeCalcUtils {
 	private static final Logger log = LogManager.getLogger(FeeCalcUtils.class);

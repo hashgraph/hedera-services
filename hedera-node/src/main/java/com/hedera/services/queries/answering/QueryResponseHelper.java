@@ -32,10 +32,14 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.context.primitives.StateView.EMPTY_VIEW;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class QueryResponseHelper {
 	private static final Logger log = LogManager.getLogger(QueryResponseHelper.class);
 	private static final Marker ALL_QUERIES_MARKER = MarkerManager.getMarker("ALL_QUERIES");
@@ -43,6 +47,7 @@ public class QueryResponseHelper {
 	private final AnswerFlow answerFlow;
 	private final HapiOpCounters opCounters;
 
+	@Inject
 	public QueryResponseHelper(
 			AnswerFlow answerFlow,
 			HapiOpCounters opCounters

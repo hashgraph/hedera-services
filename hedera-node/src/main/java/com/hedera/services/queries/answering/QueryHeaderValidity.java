@@ -24,6 +24,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 
 import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
@@ -33,8 +35,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
 
+@Singleton
 public class QueryHeaderValidity {
 	private EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES = EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
+
+	@Inject
+	public QueryHeaderValidity() {
+	}
 
 	public ResponseCodeEnum checkHeader(Query query) {
 		final var bestGuessHeader = activeHeaderFrom(query);

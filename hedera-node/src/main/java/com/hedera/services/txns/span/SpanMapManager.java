@@ -27,6 +27,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,12 +53,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
  * Other operations will certainly be able to benefit from the same infrastructure
  * over time.
  */
+@Singleton
 public class SpanMapManager {
 	private final CustomFeeSchedules customFeeSchedules;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
+	@Inject
 	public SpanMapManager(
 			ImpliedTransfersMarshal impliedTransfersMarshal,
 			GlobalDynamicProperties dynamicProperties,

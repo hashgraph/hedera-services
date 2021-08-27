@@ -22,11 +22,6 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.swirlds.common.CommonUtils;
 
-/**
- * Maps to proto KeyList.
- *
- * @author hua Created on 2018-11-02
- */
 public class JECDSA_384Key extends JKey {
 
 	private static final long serialVersionUID = 1L;

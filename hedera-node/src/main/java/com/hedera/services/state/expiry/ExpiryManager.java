@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -35,6 +34,8 @@ import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -55,6 +56,7 @@ import static java.util.Comparator.comparing;
  *    <li>At the first consensus second an entity is expired, remove it from its parent collection.</li>
  * </ol>
  */
+@Singleton
 public class ExpiryManager {
 	/* Since the key in Pair<Long, Consumer<EntityId>> is the schedule entity number---and
 	entity numbers are unique---the downstream comparator below will guarantee a fixed
@@ -66,7 +68,6 @@ public class ExpiryManager {
 
 	private final long shard, realm;
 
-	private final RecordCache recordCache;
 	private final ScheduleStore scheduleStore;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -77,8 +78,8 @@ public class ExpiryManager {
 	private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
 			new PriorityQueueExpiries<>(PQ_CMP);
 
+	@Inject
 	public ExpiryManager(
-			RecordCache recordCache,
 			ScheduleStore scheduleStore,
 			HederaNumbers hederaNums,
 			Map<TransactionID, TxnIdRecentHistory> txnHistories,
@@ -87,7 +88,6 @@ public class ExpiryManager {
 	) {
 		this.accounts = accounts;
 		this.schedules = schedules;
-		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
 		this.scheduleStore = scheduleStore;
 
@@ -125,7 +125,6 @@ public class ExpiryManager {
 	 * from records in state.
 	 */
 	public void reviewExistingPayerRecords() {
-		recordCache.reset();
 		txnHistories.clear();
 		payerRecordExpiries.reset();
 
@@ -175,7 +174,6 @@ public class ExpiryManager {
 			final var mutableRecords = mutableAccount.records();
 			purgeExpiredFrom(mutableRecords, now);
 		}
-		recordCache.forgetAnyOtherExpiredHistory(now);
 	}
 
 	private void purgeExpiredFrom(FCQueue<ExpirableTxnRecord> records, long now) {
