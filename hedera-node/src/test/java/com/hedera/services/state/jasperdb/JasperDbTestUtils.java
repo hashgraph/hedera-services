@@ -3,7 +3,6 @@ package com.hedera.services.state.jasperdb;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 
 import java.io.*;
@@ -79,7 +78,7 @@ public class JasperDbTestUtils {
         byte b1 = (byte)(value >>> 16);
         byte b2 = (byte)(value >>> 8);
         byte b3 = (byte)value;
-        return new TestHash(new byte[] {
+        return new HashTools.NoCopyHash(new byte[] {
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
@@ -87,12 +86,6 @@ public class JasperDbTestUtils {
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3
         });
-    }
-
-    public static final class TestHash extends Hash {
-        public TestHash(byte[] bytes) {
-            super(bytes, DigestType.SHA_384, true, false);
-        }
     }
 
     public static void hexDump(PrintStream out, Path file) throws IOException {

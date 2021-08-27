@@ -3,23 +3,24 @@ package com.hedera.services.state.jasperdb;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.swirlds.virtualmap.datasource.VirtualRecord;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.state.merkle.v2.VFCDataSourceTestUtils.*;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.newContractKey;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static com.hedera.services.state.merkle.v2.VFCDataSourceTestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class VFCDataSourceJasperDBContractKeyTest {
     private static final Random RANDOM = new Random(1234);
     private static final Path STORE_PATH = Path.of("data-store");
@@ -29,10 +30,11 @@ public class VFCDataSourceJasperDBContractKeyTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 10, 31, 128, 10_000, 1_000_000})
+    @Order(1)
     public void createAndCheckInternalNodeHashes(int count) throws Exception {
         var dataSource = createDataSource(count);
         // create some node hashes
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,count,
                 IntStream.range(0,count).mapToObj(this::createVirtualInternalRecord).collect(Collectors.toList()),
                 Collections.emptyList()
         );
@@ -43,16 +45,17 @@ public class VFCDataSourceJasperDBContractKeyTest {
     }
 
     @Test
+    @Order(2)
     public void testRandomHashUpdates() throws Exception {
         var dataSource = createDataSource(1000);
         // create some node hashes
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 IntStream.range(0,1000).mapToObj(this::createVirtualInternalRecord).collect(Collectors.toList()),
                 Collections.emptyList()
         );
         // create some *10 hashes
         int[] randomInts = shuffle(RANDOM,IntStream.range(0,1000).toArray());
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Arrays.stream(randomInts).mapToObj(i -> new VirtualInternalRecord(i,hash(i*10))).collect(Collectors.toList()),
                 Collections.emptyList()
         );
@@ -64,10 +67,11 @@ public class VFCDataSourceJasperDBContractKeyTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 10, 31, 128, 10_000, 1_000_000})
+    @Order(3)
     public void createAndCheckLeaves(int count) throws Exception {
         var dataSource = createDataSource(count);
         // create some leaves
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,count,
                 Collections.emptyList(),
                 IntStream.range(0,count).mapToObj(this::createVirtualLeafRecord).collect(Collectors.toList())
         );
@@ -78,10 +82,11 @@ public class VFCDataSourceJasperDBContractKeyTest {
     }
 
     @Test
+    @Order(4)
     public void updateLeaves() throws Exception {
         var dataSource = createDataSource(1000);
         // create some leaves
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
                 IntStream.range(0,1000).mapToObj(this::createVirtualLeafRecord).collect(Collectors.toList())
         );
@@ -89,11 +94,13 @@ public class VFCDataSourceJasperDBContractKeyTest {
         IntStream.range(0,1000).forEach(i -> assertLeaf(dataSource,i,i));
         // update all to i+10,000 in a random order
         int[] randomInts = shuffle(RANDOM,IntStream.range(0,1000).toArray());
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
-                Arrays.stream(randomInts).mapToObj(
-                        i -> createVirtualLeafRecord(i, i,i+10_000)
-                    ).collect(Collectors.toList())
+                Arrays
+                        .stream(randomInts)
+                        .mapToObj(i -> createVirtualLeafRecord(i, i,i+10_000))
+                        .sorted(Comparator.comparingLong(VirtualRecord::getPath))
+                        .collect(Collectors.toList())
         );
         assertEquals(createVirtualLeafRecord(100,100,100+10_000), createVirtualLeafRecord(100,100,100+10_000));
         // check all the leaf data
@@ -103,10 +110,11 @@ public class VFCDataSourceJasperDBContractKeyTest {
     }
 
     @Test
+    @Order(5)
     public void moveLeaf() throws Exception {
         var dataSource = createDataSource(1000);
         // create some leaves
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
                 IntStream.range(0,1000).mapToObj(this::createVirtualLeafRecord).collect(Collectors.toList())
         );
@@ -114,7 +122,7 @@ public class VFCDataSourceJasperDBContractKeyTest {
         assertLeaf(dataSource,250,250);
         assertLeaf(dataSource, 500,500);
         // move a leaf from 500 to 250, under new API there is no move as such so we just write 500 leaf at 250 path
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
                 Collections.singletonList(new VirtualLeafRecord<>(250,hash(500),newContractKey(500),new TestLeafData(500)))
         );
@@ -154,8 +162,9 @@ public class VFCDataSourceJasperDBContractKeyTest {
                                 ContractKey.SERIALIZED_SIZE, ContractKey::new,
                                 TestLeafData.SIZE_BYTES, TestLeafData::new,
                                 STORE_PATH,
-                                size
-                        )));
+                                size*10,
+                                false,
+                                Long.MAX_VALUE)));
     }
 
     public void assertLeaf(VFCDataSourceExceptionWrapper<ContractKey,TestLeafData>  dataSource, long path, int i) {
@@ -177,6 +186,8 @@ public class VFCDataSourceJasperDBContractKeyTest {
 
     @SuppressWarnings("rawtypes")
     public void assertEqualsAndPrint(VirtualLeafRecord recordA, VirtualLeafRecord recordB) {
+        assertNotNull(recordA);
+        assertNotNull(recordB);
         boolean equals = recordA.equals(recordB);
         if (!equals) {
             System.out.println("** assertEqualsAndPrint = " + equals);

@@ -16,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.jasperdb.HashTools.*;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.hash;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZE;
@@ -27,8 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DataFileReaderCollectionFixedSizeDataTest {
     protected static final Instant TEST_START = Instant.now();
-    protected static final int HASH_SIZE = 48+4;
-    protected static final int DATA_ITEM_VALUE_SIZE = HASH_SIZE + Integer.BYTES;
+    protected static final int DATA_ITEM_VALUE_SIZE = HASH_SIZE_BYTES + Integer.BYTES;
     protected static Path tempFileDir;
     protected static DataFileCollection fileCollection;
     protected static List<Long> storedOffsets;
@@ -70,7 +70,7 @@ public class DataFileReaderCollectionFixedSizeDataTest {
             for (int i = count; i < count+100; i++) {
                 // prep data buffer
                 tempData.clear();
-                Hash.toByteBuffer(hash(i), tempData);
+                hashToByteBuffer(hash(i), tempData);
                 tempData.putInt(i);
                 tempData.flip();
                 // store in file
@@ -200,7 +200,7 @@ public class DataFileReaderCollectionFixedSizeDataTest {
             // check all the data
             tempResult.rewind();
             assertEquals(i, tempResult.getLong()); // key
-            Hash readHash = Hash.fromByteBuffer(tempResult);
+            Hash readHash = byteBufferToHash(tempResult);
             assertEquals(hash(i), readHash); // hash
             assertEquals(i, tempResult.getInt()); // value data
         }

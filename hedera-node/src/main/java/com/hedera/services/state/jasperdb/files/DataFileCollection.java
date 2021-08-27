@@ -15,7 +15,6 @@ import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -42,13 +41,6 @@ public class DataFileCollection {
     private final AtomicReference<ImmutableIndexedObjectList<DataFileReader>> indexedFileList = new AtomicReference<>();
     private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
     private final AtomicReference<Instant> lastMerge = new AtomicReference<>(Instant.ofEpochSecond(0));
-    /**
-     * Lock to prevent:
-     *   - two concurrent writers
-     *   - creating of new files by writers while we are getting a new file for merging
-     *   - concurrent index updates by writers and merge call-back
-     */
-//    private final ReentrantLock writeLock = new ReentrantLock();
 
     /**
      * Construct a new DataFileCollection with the default DataFileReaderFactory
@@ -183,7 +175,9 @@ public class DataFileCollection {
      * Get a list of all files in this collection that have been fully finished writing and are read only
      */
     public List<DataFileReader> getAllFullyWrittenFiles() {
-        return this.indexedFileList.get().stream().collect(Collectors.toList());
+        var indexedFileList = this.indexedFileList.get();
+        if (indexedFileList == null) return Collections.emptyList();
+        return indexedFileList.stream().collect(Collectors.toList());
     }
 
     /**
@@ -406,6 +400,34 @@ public class DataFileCollection {
         return true;
     }
 
+    /**
+     * Read a data item from any file that has finished being written. This is needed because in variable size data a
+     * pre-sized buffer can not be provided
+     *
+     * @param dataLocation the location of the data item to read. This contains both the file and the location within
+     *                     the file.
+     * @param dataToRead What data you want to read, key, value or both
+     * @return ByteBuffer containing data or null if not found
+     * @throws IOException If there was a problem reading the data item.
+     */
+    public ByteBuffer readData(long dataLocation, DataFileReader.DataToRead dataToRead) throws IOException {
+        // check if found
+        if (dataLocation == 0) return null;
+        // split up location
+        int fileIndex = fileIndexFromDataLocation(dataLocation);
+        // check if file for fileIndex exists
+        DataFileReader file;
+        final var currentIndexedFileList = this.indexedFileList.get();
+        if (fileIndex < 0 || currentIndexedFileList == null || (file  = currentIndexedFileList.get(fileIndex)) == null) {
+            throw new IOException("Got a data location from index for a file that doesn't exist. dataLocation=" +
+                   DataFileCommon.dataLocationToString(dataLocation) + " fileIndex=" + fileIndex +
+                    " minimumValidKey=" + minimumValidKey.get() + " maximumValidKey=" + maximumValidKey.get() +
+                    "\ncurrentIndexedFileList=" + currentIndexedFileList);
+        }
+        // read data
+        return file.readData(dataLocation,dataToRead);
+    }
+
     // =================================================================================================================
     // Index Callback Class
 
@@ -447,9 +469,6 @@ public class DataFileCollection {
                         return (currentFileList == null) ?
                             new ImmutableIndexedObjectListUsingArray<>(Collections.singletonList(newDataFileReader)) :
                             currentFileList.withAddedObject(newDataFileReader);
-//                        return (currentFileList == null) ?
-//                            new ImmutableIndexedObjectListUsingMap<>(Collections.singletonList(newDataFileReader)) :
-//                            currentFileList.withAddedObject(newDataFileReader);
                     } catch (IOException e) {
                         throw new RuntimeException(e); // TODO something better?
                     }

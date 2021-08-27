@@ -416,8 +416,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					DataFileCommon.VARIABLE_DATA_SIZE,
 					MerkleAccount::new,
 					Path.of("jasperdb"),
-					100000000
-			));
+					100000000,
+					Long.MAX_VALUE));
 		} catch (IOException e) {
 			throw new RuntimeException("error while creating VirtualMap", e);
 		}

@@ -4,10 +4,11 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.EnvFlags;
-import org.lmdbjava.PutFlags;
 import org.lmdbjava.Txn;
 
 import java.io.IOException;
@@ -15,29 +16,33 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
-@SuppressWarnings({"unchecked", "DuplicatedCode", "unused"})
+@SuppressWarnings("unused")
 public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValue> implements SequentialInsertsVFCDataSource<K, V> {
     private final static long GB = 1024*1024*1024;
     private final static long TB = GB*1024;
-    private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
+    private final static int HASH_SIZE = Integer.BYTES + DigestType.SHA_384.digestLength();
+    /** The size in bytes for serialized key objects */
+    private final int keySizeBytes;
     private final Supplier<K> keyConstructor;
     private final Supplier<V> valueConstructor;
     private final Env<ByteBuffer> env;
-    private final Dbi<ByteBuffer> pathToHashMap;
-    private final Dbi<ByteBuffer> leafPathToKeyMap;
+    private final Dbi<ByteBuffer> pathToInternalHashesMap;
     private final Dbi<ByteBuffer> leafKeyToPathMap;
-    private final Dbi<ByteBuffer> leafKeyToValueMap;
+    private final Dbi<ByteBuffer> leafPathToKeyHashValueMap;
 
+    private final ThreadLocal<ByteBuffer> pathNativeOrderBytes;
     private final ThreadLocal<ByteBuffer> pathBytes;
+    private final ThreadLocal<ByteBuffer> leafKeyBytes;
     private final ThreadLocal<ByteBuffer> hashData;
-    private final ThreadLocal<ByteBuffer> leafKey;
-    private final ThreadLocal<ByteBuffer> leafValue;
+    private final ThreadLocal<ByteBuffer> leafKeyHashValue;
 
     /**
      * Construct a new VFCDataSourceImpl, try the static factory methods if you want a simpler way of creating one.
@@ -49,21 +54,23 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
      */
     public VFCDataSourceLmdb(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
                              Path storageDir) throws IOException {
+        this.keySizeBytes = Integer.BYTES + keySizeBytes;
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
         // create thread local buffers
-        pathBytes = ThreadLocal.withInitial(() -> {
+        pathNativeOrderBytes = ThreadLocal.withInitial(() -> {
             ByteBuffer buf = allocateDirect(Long.BYTES);
             buf.order(ByteOrder.nativeOrder()); // the byte order is important to use MDB_INTEGERKEY as LMDB needs keys to be in native byte order
             return buf;
         });
+        pathBytes = ThreadLocal.withInitial(() -> allocateDirect(Long.BYTES));
+        leafKeyBytes = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
         hashData = ThreadLocal.withInitial(() -> allocateDirect(HASH_SIZE));
-        leafKey = ThreadLocal.withInitial(() -> allocateDirect(Integer.BYTES + keySizeBytes));
-        leafValue = ThreadLocal.withInitial(() -> allocateDirect(Integer.BYTES + valueSizeBytes));
+        leafKeyHashValue = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes + HASH_SIZE + Integer.BYTES + valueSizeBytes));
         // create storage dirs
         if (!Files.exists(storageDir)) Files.createDirectories(storageDir);
         // We always need an Env. An Env owns a physical on-disk storage file. One
-        // Env can store many different databases (ie sorted maps).
+        // Env can store multiple databases (ie sorted maps).
         env = Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
                 .setMapSize((long)(1.9d*TB))
@@ -77,21 +84,19 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
                 .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NORDAHEAD);
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
-        pathToHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
-        leafPathToKeyMap = env.openDbi("leafPathToKey", MDB_CREATE,MDB_INTEGERKEY);
+        pathToInternalHashesMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
         leafKeyToPathMap = env.openDbi("leafKeyToPath", MDB_CREATE);
-        leafKeyToValueMap = env.openDbi("leafKeyToValue", MDB_CREATE);
+        leafPathToKeyHashValueMap = env.openDbi("leafPathToKeyHashValue", MDB_CREATE,MDB_INTEGERKEY);
     }
 
     //==================================================================================================================
-    // Public API methods
+    // Public New API methods
 
     public void printStats() {
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            System.out.println("pathToHashMap.stat() = " + pathToHashMap.stat(txn));
+            System.out.println("pathToHashMap.stat() = " + pathToInternalHashesMap.stat(txn));
             System.out.println("leafKeyToPathMap.stat() = " + leafKeyToPathMap.stat(txn));
-            System.out.println("leafPathToKeyMap.stat() = " + leafPathToKeyMap.stat(txn));
-            System.out.println("leafKeyToValueMap.stat() = " + leafKeyToValueMap.stat(txn));
+            System.out.println("leafPathToKeyHashValueMap.stat() = " + leafPathToKeyHashValueMap.stat(txn));
         }
     }
 
@@ -101,6 +106,41 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
     @Override
     public void close() {
         env.close();
+    }
+
+    /**
+     * Load a leaf record by key
+     *
+     * @param key they to the leaf to load record for
+     * @return loaded record or null if not found
+     * @throws IOException If there was a problem reading record from db
+     */
+    @Override
+    public VirtualLeafRecord<K, V> loadLeafRecord(K key) throws IOException {
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            ByteBuffer pathBytes = leafKeyToPathMap.get(txn,getLeafKeyBytes(key));
+            if (pathBytes == null) {
+                return null;
+            }
+            Objects.requireNonNull(key);
+            final long path = pathBytes.rewind().getLong();
+            if (path == INVALID_PATH) return null;
+            return loadLeafRecord(txn, path,key);
+        }
+    }
+
+    /**
+     * Load a leaf record by path
+     *
+     * @param path the path for the leaf we are loading
+     * @return loaded record or null if not found
+     * @throws IOException If there was a problem reading record from db
+     */
+    @Override
+    public VirtualLeafRecord<K, V> loadLeafRecord(long path) throws IOException {
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            return loadLeafRecord(txn, path,null);
+        }
     }
 
     /**
@@ -114,341 +154,223 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
     public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer hashBytes = pathToHashMap.get(txn,getPathBytes(path));
-            if (hashBytes == null) return null;
-            return getHash(hashBytes);
+            ByteBuffer keyHashValueBuffer = leafPathToKeyHashValueMap.get(txn,getPathNativeOrderBytes(path));
+            if (keyHashValueBuffer == null) {
+                return null;
+            }
+            // deserialize
+            keyHashValueBuffer.rewind();
+            // deserialize hash
+            keyHashValueBuffer.rewind();
+            keyHashValueBuffer.position(keySizeBytes); // jump over key
+            return Hash.fromByteBuffer(keyHashValueBuffer);
         }
     }
 
+    /**
+     * Load hash for a leaf node with given path
+     *
+     * @param path the path to get hash for
+     * @return loaded hash or null if hash is not stored
+     * @throws IOException if there was a problem loading hash
+     */
+    @Override
+    public VirtualInternalRecord loadInternalRecord(long path) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            ByteBuffer hashBytes = pathToInternalHashesMap.get(txn,getPathNativeOrderBytes(path));
+            if (hashBytes == null) return null;
+            return new VirtualInternalRecord(path,getHash(hashBytes));
+        }
+    }
+
+    /**
+     * Load hash for a internal node with given path
+     *
+     * @param path the path to get hash for
+     * @return loaded hash or null if hash is not stored
+     * @throws IOException if there was a problem loading hash
+     */
     @Override
     public Hash loadInternalHash(long path) throws IOException {
-        return loadLeafHash(path);
-    }
-
-    /**
-     * Load leaf's value
-     *
-     * @param path the path for leaf to get value for
-     * @return loaded leaf value or null if none was saved
-     * @throws IOException if there was a problem loading leaf data
-     */
-    @Override
-    public V loadLeafValue(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer keyBytes = leafPathToKeyMap.get(txn,getPathBytes(path));
-            if (keyBytes == null) return null;
-            ByteBuffer valueBytes = leafKeyToValueMap.get(txn,keyBytes);
-            if (valueBytes == null) return null;
-            return getLeafValue(valueBytes);
+            ByteBuffer hashBytes = pathToInternalHashesMap.get(txn,getPathNativeOrderBytes(path));
+            if (hashBytes == null) return null;
+            return Hash.fromByteBuffer(hashBytes);
         }
     }
 
     /**
-     * Load leaf's value
+     * Save a batch of data to data store.
      *
-     * @param key the key for leaf to get value for
-     * @return loaded leaf value or null if none was saved
-     * @throws IOException if there was a problem loading leaf data
+     * @param firstLeafPath the tree path for first leaf
+     * @param lastLeafPath the tree path for last leaf
+     * @param internalRecords list of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
+     * @param virtualLeafRecords list of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
      */
     @Override
-    public V loadLeafValue(K key) throws IOException {
-        if (key == null) throw new IllegalArgumentException("key can not be null");
-        try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer valueBytes = leafKeyToValueMap.get(txn,getLeafKeyBytes(key));
-            if (valueBytes == null) return null;
-            return getLeafValue(valueBytes);
-        }
-    }
-
-    /**
-     * Load a leaf's key
-     *
-     * @param path the path to the leaf to load key for
-     * @return the loaded key for leaf or null if none was saved
-     * @throws IOException if there was a problem loading key
-     */
-    @Override
-    public K loadLeafKey(long path) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer keyBytes = leafPathToKeyMap.get(txn,getPathBytes(path));
-            if (keyBytes == null) return null;
-            return getLeafKey(keyBytes);
-        }
-    }
-
-    /**
-     * Load path for a leaf
-     *
-     * @param key the key for the leaf to get path for
-     * @return loaded path or null if none is stored for key
-     * @throws IOException if there was a problem loading leaf's path
-     */
-    @Override
-    public long loadLeafPath(K key) throws IOException {
-        try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer pathBytes = leafKeyToPathMap.get(txn,getLeafKeyBytes(key));
-            if (pathBytes == null) return INVALID_PATH;
-            return getPath(pathBytes);
-        }
-    }
-
-    /**
-     * Save a hash for a internal node
-     *
-     * @param path the path of the node to save hash for, if nothing has been stored for this path before it will be created.
-     * @param hash a non-null hash to write
-     */
-    @Override
-    public void saveInternal(long path, Hash hash) {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null)  throw new IllegalArgumentException("Hash is null");
-        // write hash
+    public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords, List<VirtualLeafRecord<K, V>> virtualLeafRecords) throws IOException {
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            pathToHashMap.put(txn,getPathBytes(path), getHashBytes(hash));
-            // commit transaction
-            txn.commit();
-        }
-    }
-
-    /**
-     * Update a leaf moving it from one path to another. Note! any existing node at the newPath will be overridden.
-     *
-     * @param oldPath Must be an existing valid path
-     * @param newPath Can be larger than current max path, allowing tree to grow
-     * @param key The key for the leaf so we can update key->path index
-     * @throws IOException if there was a problem saving leaf update
-     */
-    @Override
-    public void updateLeaf(long oldPath, long newPath, K key, Hash hash) throws IOException {
-        if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
-        if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
-
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            final ByteBuffer keyBytes = getLeafKeyBytes(key);
-            // now update everything
-            final ByteBuffer newPathKey = getPathBytes(newPath);
-            // write hash
-            pathToHashMap.put(txn, newPathKey, getHashBytes(hash));
-            // write key -> path
-            leafKeyToPathMap.put(txn, keyBytes, newPathKey);
-            // write path -> key
-            leafPathToKeyMap.put(txn, newPathKey, keyBytes);
-            // commit transaction
-            txn.commit();
-        }
-    }
-
-    /**
-     * Update a leaf at given path, the leaf must exist. Writes hash and value.
-     *
-     * @param path valid path to saved leaf
-     * @param key the leaf's key
-     * @param value the value for new leaf, can be null
-     * @param hash non-null hash for the leaf
-     * @throws IOException if there was a problem saving leaf update
-     */
-    @Override
-    public void updateLeaf(long path, K key, V value, Hash hash) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            final ByteBuffer pathBytes = getPathBytes(path);
-            // write hash
-            pathToHashMap.put(txn,pathBytes, getHashBytes(hash));
-            // write value
-            leafKeyToValueMap.put(txn, getLeafKeyBytes(key), getLeafValueBytes(value));
-            // commit transaction
-            txn.commit();
-        }
-    }
-
-    /**
-     * Add a new leaf to store
-     *
-     * @param path the path for the new leaf
-     * @param key the non-null key for the new leaf
-     * @param value the value for new leaf, can be null
-     * @param hash the non-null hash for new leaf
-     * @throws IOException if there was a problem writing leaf
-     */
-    @Override
-    public void addLeaf(long path, K key, V value, Hash hash) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
-        if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
-        final ByteBuffer pathBytes = getPathBytes(path);
-        final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            // write hash
-            pathToHashMap.put(txn,pathBytes, getHashBytes(hash));
-            // write key -> path
-            leafKeyToPathMap.put(txn, keyBytes, pathBytes);
-            // write path -> key
-            leafPathToKeyMap.put(txn, pathBytes, keyBytes);
-            // write value
-            leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
-            // commit transaction
+            for (var internalRecord: internalRecords) {
+                pathToInternalHashesMap.put(txn,
+                        getPathNativeOrderBytes(internalRecord.getPath()),
+                        getHashBytes(internalRecord.getHash())
+                );
+            }
+            for (var leaf: virtualLeafRecords) {
+                leafKeyToPathMap.put(txn,
+                        getLeafKeyBytes(leaf.getKey()),
+                        getPathBytes(leaf.getPath())
+                );
+                final ByteBuffer keyHashValueBytes = leafKeyHashValue.get().clear();
+                keyHashValueBytes.putInt(leaf.getKey().getVersion());
+                leaf.getKey().serialize(keyHashValueBytes);
+                Hash.toByteBuffer(leaf.getHash(),keyHashValueBytes);
+                keyHashValueBytes.putInt(leaf.getValue().getVersion());
+                leaf.getValue().serialize(keyHashValueBytes);
+                keyHashValueBytes.flip();
+                leafPathToKeyHashValueMap.put(txn,
+                        getPathNativeOrderBytes(leaf.getPath()),
+                        keyHashValueBytes
+                );
+            }
             txn.commit();
         } catch (Exception e) {
-            System.err.println("Exception addLeaf path="+path+", key="+key+", value="+value+", hash="+hash+", pathBytes="+pathBytes+", keyBytes="+keyBytes);
-            throw e;
+            e.printStackTrace();
         }
     }
 
     //==================================================================================================================
-    // Public API Transaction methods
+    // Private methods
+
+    /**
+     * load a leaf record by path, using the provided key or if null deserializing the key.
+     */
+    private VirtualLeafRecord<K, V> loadLeafRecord(Txn<ByteBuffer> txn, long path, K key) throws IOException {
+        ByteBuffer keyHashValueBuffer = leafPathToKeyHashValueMap.get(txn,getPathNativeOrderBytes(path));
+        if (keyHashValueBuffer == null) {
+            return null;
+        }
+        // deserialize
+        keyHashValueBuffer.clear();
+        // deserialize key
+        if (key != null) {
+            // jump past the key because we don't need to deserialize it
+            keyHashValueBuffer.position(keySizeBytes);
+        } else {
+            final int keySerializationVersion = keyHashValueBuffer.getInt();
+            key = keyConstructor.get();
+            key.deserialize(keyHashValueBuffer, keySerializationVersion);
+        }
+        // deserialize hash
+        final Hash hash = Hash.fromByteBuffer(keyHashValueBuffer);
+        // deserialize value
+        final int valueSerializationVersion = keyHashValueBuffer.getInt();
+        final V value = valueConstructor.get();
+        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
+        // return new VirtualLeafRecord
+        return new VirtualLeafRecord<>(path, hash, key, value);
+    }
+
+    //==================================================================================================================
+    // Public Old API methods
+
+
+    @Override
+    public V loadLeafValue(long path) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public V loadLeafValue(K key) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public K loadLeafKey(long path) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public long loadLeafPath(K key) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public void saveInternal(long path, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public void updateLeaf(long oldPath, long newPath, K key, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public void updateLeaf(long path, K key, V value, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
+
+    @Override
+    public void addLeaf(long path, K key, V value, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
+    }
 
     @Override
     public Object startTransaction() {
-        return env.txnWrite();
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
     @Override
     public void commitTransaction(Object handle) {
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        txn.commit();
-        txn.close();
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
-    /**
-     * Save a hash for a internal node
-     *
-     * @param path the path of the node to save hash for, if nothing has been stored for this path before it will be created.
-     * @param hash a non-null hash to write
-     */
     @Override
     public void saveInternal(Object handle, long path, Hash hash) {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null)  throw new IllegalArgumentException("Hash is null");
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        // write hash
-        pathToHashMap.put(txn,getPathBytes(path), getHashBytes(hash));
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
-    /**
-     * Update a leaf moving it from one path to another. Note! any existing node at the newPath will be overridden.
-     *
-     * @param oldPath Must be an existing valid path
-     * @param newPath Can be larger than current max path, allowing tree to grow
-     * @param key The key for the leaf so we can update key->path index
-     * @throws IOException if there was a problem saving leaf update
-     */
     @Override
-    public void updateLeaf(Object handle, long oldPath, long newPath, K key, Hash hash) throws IOException {
-        if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
-        if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        // now update everything
-        final ByteBuffer newPathKey = getPathBytes(newPath);
-        // write hash
-        try {
-            pathToHashMap.put(txn, newPathKey, getHashBytes(hash));
-        } catch (NullPointerException npe) {
-            System.out.println("handle = " + handle + ", key=" + key);
-        }
-        // write key -> path
-        leafKeyToPathMap.put(txn, keyBytes, newPathKey);
-        // write path -> key
-        leafPathToKeyMap.put(txn, newPathKey, keyBytes);
+    public void updateLeaf(Object handle, long oldPath, long newPath, K key, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
-    /**
-     * Update a leaf at given path, the leaf must exist. Writes hash and value.
-     *
-     * @param path valid path to saved leaf
-     * @param key the leaf's key
-     * @param value the value for new leaf, can be null
-     * @param hash non-null hash for the leaf
-     * @throws IOException if there was a problem saving leaf update
-     */
     @Override
-    public void updateLeaf(Object handle, long path, K key, V value, Hash hash) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path [" + path + "]");
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        final ByteBuffer pathBytes = getPathBytes(path);
-        // read key from path
-        ByteBuffer keyBytes = leafPathToKeyMap.get(txn, pathBytes);
-        // write hash
-        pathToHashMap.put(txn, pathBytes, getHashBytes(hash));
-        // write value
-        leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
+    public void updateLeaf(Object handle, long path, K key, V value, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
-    /**
-     * Add a new leaf to store
-     *
-     * @param path the path for the new leaf
-     * @param key the non-null key for the new leaf
-     * @param value the value for new leaf, can be null
-     * @param hash the non-null hash for new leaf
-     * @throws IOException if there was a problem writing leaf
-     */
     @Override
-    public void addLeaf(Object handle, long path, K key, V value, Hash hash) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
-        if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        final ByteBuffer pathBytes = getPathBytes(path);
-        final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        // write hash
-        pathToHashMap.put(txn,pathBytes, getHashBytes(hash));
-        // write key -> path
-        leafKeyToPathMap.put(txn, keyBytes, pathBytes);
-        // write path -> key
-        leafPathToKeyMap.put(txn, pathBytes, keyBytes);
-        // write value
-        leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
+    public void addLeaf(Object handle, long path, K key, V value, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
-
-    //==================================================================================================================
-    // Public Sequential Methods
-
-    /**
-     * Save a hash for a internal node
-     *
-     * @param path the path of the node to save hash for, if nothing has been stored for this path before it will be created.
-     * @param hash a non-null hash to write
-     */
     @Override
     public void saveInternalSequential(Object handle, long path, Hash hash) {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null)  throw new IllegalArgumentException("Hash is null");
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        // write hash
-        pathToHashMap.put(txn,getPathBytes(path), getHashBytes(hash), PutFlags.MDB_APPEND);
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
-    /**
-     * Add a new leaf to store
-     *
-     * @param path the path for the new leaf
-     * @param key the non-null key for the new leaf
-     * @param value the value for new leaf, can be null
-     * @param hash the non-null hash for new leaf
-     * @throws IOException if there was a problem writing leaf
-     */
     @Override
-    public void addLeafSequential(Object handle, long path, K key, V value, Hash hash) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
-        if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
-        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
-        final ByteBuffer pathBytes = getPathBytes(path);
-        final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        // write hash
-        pathToHashMap.put(txn,pathBytes, getHashBytes(hash), PutFlags.MDB_APPEND);
-        // write key -> path
-        leafKeyToPathMap.put(txn, keyBytes, pathBytes, PutFlags.MDB_APPEND);
-        // write path -> key
-        leafPathToKeyMap.put(txn, pathBytes, keyBytes, PutFlags.MDB_APPEND);
-        // write value
-        leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value), PutFlags.MDB_APPEND);
+    public void addLeafSequential(Object handle, long path, K key, V value, Hash hash) {
+        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
+        throw new IllegalStateException("Old API Called");
     }
 
     //==================================================================================================================
@@ -463,8 +385,7 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
     }
 
     private ByteBuffer getLeafKeyBytes(K key) throws IOException {
-        final ByteBuffer leafKey = this.leafKey.get();
-        leafKey.rewind();
+        final ByteBuffer leafKey = this.leafKeyBytes.get().clear();
         leafKey.putInt(key.getVersion());
         key.serialize(leafKey);
         return leafKey.flip();
@@ -478,21 +399,17 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
         return value;
     }
 
-    private ByteBuffer getLeafValueBytes(V value) throws IOException {
-        final ByteBuffer leafValue = this.leafValue.get();
-        leafValue.rewind();
-        leafValue.putInt(value.getVersion());
-        value.serialize(leafValue);
-        return leafValue.flip();
-    }
-
     private long getPath(ByteBuffer pathBytes) {
         return pathBytes.getLong(0);
     }
 
+    private ByteBuffer getPathNativeOrderBytes(long path) {
+        ByteBuffer pathBytes = this.pathBytes.get().clear();
+        pathBytes.putLong(path);
+        return pathBytes.flip();
+    }
     private ByteBuffer getPathBytes(long path) {
-        ByteBuffer pathBytes = this.pathBytes.get();
-        pathBytes.rewind();
+        ByteBuffer pathBytes = this.pathBytes.get().clear();
         pathBytes.putLong(path);
         return pathBytes.flip();
     }

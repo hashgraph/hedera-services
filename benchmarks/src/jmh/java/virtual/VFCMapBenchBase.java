@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualValue> {
     public enum DataSourceType {
-        lmdbMem, lmdb, rocksdb, jasperdb
+        lmdbMem, lmdb, rocksdb, jasperdbIhRam, jasperdbIhDisk, jasperdbIhHalf
     }
 
     protected static final Random rand = new Random(1234);
@@ -59,13 +59,30 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("rocksdb")));
-            case jasperdb -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
+            case jasperdbIhRam -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
                     valueConstructor,
-                    Path.of("jasperdb"),
-                    numEntities));
+                    Path.of("jasperdb_ih_ram"),
+                    numEntities,
+                    Long.MAX_VALUE));
+            case jasperdbIhDisk -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
+                    keySizeBytes,
+                    keyConstructor,
+                    valueSizeBytes,
+                    valueConstructor,
+                    Path.of("jasperdb_ih_disk"),
+                    numEntities,
+                    0));
+            case jasperdbIhHalf -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
+                    keySizeBytes,
+                    keyConstructor,
+                    valueSizeBytes,
+                    valueConstructor,
+                    Path.of("jasperdb_ih_half"),
+                    numEntities,
+                    numEntities/2));
         };
     }
 

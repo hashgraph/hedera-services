@@ -92,7 +92,8 @@ public class VirtualDataSourceNewAPIBench {
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,
-                            numEntities+10_000_000); // TODO see if 10 millionls extra is enough for add method
+                            numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
+                            Long.MAX_VALUE);
                 default ->
                     throw new IllegalStateException("Unexpected value: " + impl);
             };
