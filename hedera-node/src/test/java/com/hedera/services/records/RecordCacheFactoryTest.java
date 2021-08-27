@@ -51,7 +51,7 @@ class RecordCacheFactoryTest {
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(1);
 
 		// when:
-		var cache = subject.getRecordCache();
+		var cache = subject.getCache();
 		cache.put(txnIdA, RecordCache.MARKER);
 
 		// then:

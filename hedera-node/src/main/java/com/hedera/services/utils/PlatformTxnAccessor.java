@@ -29,8 +29,6 @@ import com.swirlds.common.SwirldTransaction;
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
  * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)
- *
- * @author Michael Tinker
  */
 public class PlatformTxnAccessor extends SignedTxnAccessor {
 	private final SwirldTransaction platformTxn;

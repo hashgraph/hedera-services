@@ -38,6 +38,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -55,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Math.max;
 
+@Singleton
 public class FileUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileUpdateTransitionLogic.class);
 
@@ -65,6 +68,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public FileUpdateTransitionLogic(
 			HederaFs hfs,
 			EntityNumbers entityNums,

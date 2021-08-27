@@ -24,9 +24,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -34,6 +37,7 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
+@Singleton
 public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	private static final Logger log = LogManager.getLogger(TxnRateFeeMultiplierSource.class);
 
@@ -52,7 +56,11 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
-	public TxnRateFeeMultiplierSource(GlobalDynamicProperties properties, FunctionalityThrottling throttling) {
+	@Inject
+	public TxnRateFeeMultiplierSource(
+			GlobalDynamicProperties properties,
+			@HandleThrottle FunctionalityThrottling throttling
+	) {
 		this.properties = properties;
 		this.throttling = throttling;
 	}

@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.store.AccountStore;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -55,6 +57,9 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
+	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx) {
+		this.store = tokenStore;
 	public TokenFeeScheduleUpdateTransitionLogic(
 			final TypedTokenStore tokenStore,
 			final TransactionContext txnCtx,

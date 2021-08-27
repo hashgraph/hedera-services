@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.Map;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TxnChargingPolicyAgentTest {
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private final long submittingNode = 1L;
 	private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
@@ -153,6 +155,7 @@ class TxnChargingPolicyAgentTest {
 
 	private void givenBaseCtx() {
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
-		given(fees.computeFee(accessor, payerKey, currentView)).willReturn(mockFees);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(fees.computeFee(accessor, payerKey, currentView, consensusNow)).willReturn(mockFees);
 	}
 }

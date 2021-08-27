@@ -33,9 +33,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
  * readable; however, files are only purged from the system after they expire.
  *
  * The system's behavior can be extended by registering {@link FileUpdateInterceptor} instances.
- *
- * @since 0.5.0
- * @author Michael Tinker
  */
 public interface HederaFs {
 	interface UpdateResult {
@@ -43,6 +40,13 @@ public interface HederaFs {
 		boolean attrChanged();
 		ResponseCodeEnum outcome();
 	}
+
+	/**
+	 * Gives the number of registered interceptors.
+	 *
+	 * @return the number of registered interceptors
+	 */
+	int numRegisteredInterceptors();
 
 	/**
 	 * Registers a new {@link FileUpdateInterceptor} with the file system.

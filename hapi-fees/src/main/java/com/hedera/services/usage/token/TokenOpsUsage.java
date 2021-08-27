@@ -27,12 +27,15 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
+@Singleton
 public class TokenOpsUsage {
 	/* Sizes of various fee types, _not_ including the collector entity id */
 	private static final int FIXED_HBAR_REPR_SIZE = LONG_SIZE;
@@ -43,6 +46,10 @@ public class TokenOpsUsage {
 	private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
 
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+
+	@Inject
+	public TokenOpsUsage() {
+	}
 
 	public void feeScheduleUpdateUsage(
 			SigUsage sigUsage,

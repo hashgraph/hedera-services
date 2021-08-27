@@ -34,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -41,8 +42,9 @@ import com.swirlds.fcmap.FCMap;
 import java.util.Objects;
 
 /**
- * Manages the state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
- * intention of this class is to avoid making repetitive calls to get the state when we know it has not yet been updated.
+ * Manages the state of the services. This gets updated in {@link com.hedera.services.ServicesState} callbacks
+ * on a regular interval. The intention of this class is to avoid making repetitive calls to get the state when
+ * we know it has not yet been updated.
  */
 public class StateChildren {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -58,6 +60,7 @@ public class StateChildren {
 	private MerkleNetworkContext networkCtx;
 	private AddressBook addressBook;
 	private MerkleDiskFs diskFs;
+	private RecordsRunningHashLeaf runningHashLeaf;
 
 	public FCMap<MerkleEntityId, MerkleAccount> getAccounts() {
 		Objects.requireNonNull(accounts);
@@ -178,6 +181,15 @@ public class StateChildren {
 			FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations
 	) {
 		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
+	}
+
+	public RecordsRunningHashLeaf getRunningHashLeaf() {
+		Objects.requireNonNull(runningHashLeaf);
+		return runningHashLeaf;
+	}
+
+	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
+		this.runningHashLeaf = runningHashLeaf;
 	}
 }
 

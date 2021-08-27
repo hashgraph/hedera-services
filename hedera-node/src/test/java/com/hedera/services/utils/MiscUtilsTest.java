@@ -38,6 +38,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -61,6 +62,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
+import com.hederahashgraph.api.proto.java.CryptoGetStakersQuery;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
@@ -78,6 +80,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -100,7 +103,6 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -109,19 +111,19 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcqueue.FCQueue;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.jupiter.api.Assertions;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -131,7 +133,7 @@ import java.lang.reflect.Method;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -161,10 +163,12 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.services.utils.MiscUtils.baseStatNameOf;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.MiscUtils.canonicalRepr;
+import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
@@ -237,85 +241,76 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class MiscUtilsTest {
 	@Test
 	void forEachDropInWorksAsExpected() {
-		// setup:
 		final FCMap<MerkleLong, MerkleLong> testFcm = new FCMap<>();
-		@SuppressWarnings("unchecked")
-		final BiConsumer<MerkleLong, MerkleLong> mockConsumer = BDDMockito.mock(BiConsumer.class);
-
-		// given:
-		testFcm.put(new MerkleLong(1L), new MerkleLong(1L));
+		final BiConsumer<MerkleLong, MerkleLong> mockConsumer = mock(BiConsumer.class);
+		testFcm.put(new MerkleLong(1L), null);
 		testFcm.put(new MerkleLong(2L), new MerkleLong(2L));
 
-		// when:
 		MiscUtils.forEach(testFcm, mockConsumer);
 
-		// then:
-		verify(mockConsumer).accept(new MerkleLong(1L), new MerkleLong(1L));
+		verify(mockConsumer, times(2)).accept(any(), any());
+		verify(mockConsumer).accept(new MerkleLong(1L), null);
 		verify(mockConsumer).accept(new MerkleLong(2L), new MerkleLong(2L));
+
+		final var l3 = new MerkleLong(3L);
+		assertThrows(NullPointerException.class, () -> testFcm.put(null, l3));
 	}
 
 	@Test
 	void retrievesExpectedStatNames() {
-		// expect:
 		assertEquals(ContractController.CALL_CONTRACT_METRIC, MiscUtils.baseStatNameOf(ContractCall));
 		assertEquals(GetByKey.toString(), baseStatNameOf(GetByKey));
 	}
 
 	@Test
 	void getsNodeAccounts() {
-		var address = mock(Address.class);
+		final var address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
-
-		var book = mock(AddressBook.class);
+		final var book = mock(AddressBook.class);
 		given(book.getSize()).willReturn(1);
 		given(book.getAddress(0)).willReturn(address);
 
-		// when:
-		var accounts = MiscUtils.getNodeAccounts(book);
+		final var accounts = MiscUtils.getNodeAccounts(book);
 
-		// then:
 		assertEquals(Set.of(IdUtils.asAccount("0.0.3")), accounts);
 	}
 
 	@Test
 	void asFcKeyUncheckedTranslatesExceptions() {
-		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> MiscUtils.asFcKeyUnchecked(Key.getDefaultInstance()));
 	}
 
 	@Test
 	void asFcKeyReturnsEmptyOnUnparseableKey() {
-		// expect:
 		assertTrue(asUsableFcKey(Key.getDefaultInstance()).isEmpty());
 	}
 
 	@Test
 	void asFcKeyReturnsEmptyOnEmptyKey() {
-		// expect:
 		assertTrue(asUsableFcKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()).isEmpty());
 	}
 
 	@Test
 	void asFcKeyReturnsEmptyOnInvalidKey() {
-		// expect:
 		assertTrue(asUsableFcKey(Key.newBuilder().setEd25519(ByteString.copyFrom("1".getBytes())).build()).isEmpty());
 	}
 
 	@Test
 	void asFcKeyReturnsExpected() {
-		// given:
-		var key = Key.newBuilder().setEd25519(ByteString.copyFrom(
-				"01234567890123456789012345678901".getBytes())).build();
+		final var key = Key.newBuilder()
+				.setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
+				.build();
 
-		// expect:
 		assertTrue(JKey.equalUpToDecodability(
 				asUsableFcKey(key).get(),
 				MiscUtils.asFcKeyUnchecked(key)));
@@ -323,24 +318,18 @@ class MiscUtilsTest {
 
 	@Test
 	void asFcKeyUncheckedWorks() {
-		// setup:
-		byte[] fakePrivateKey = "not-really-a-key!".getBytes();
-		// and:
-		Key matchingKey = Key.newBuilder().setEd25519(ByteString.copyFrom(fakePrivateKey)).build();
+		final var fakePrivateKey = "not-really-a-key!".getBytes();
+		final var matchingKey = Key.newBuilder().setEd25519(ByteString.copyFrom(fakePrivateKey)).build();
 
-		// given:
-		var expected = new JEd25519Key(fakePrivateKey);
+		final var expected = new JEd25519Key(fakePrivateKey);
 
-		// expect:
 		assertTrue(JKey.equalUpToDecodability(expected, MiscUtils.asFcKeyUnchecked(matchingKey)));
 	}
 
 	@Test
 	void translatesDecoderException() {
-		// setup:
-		String tmpLoc = "src/test/resources/PretendKeystore.txt";
+		final String tmpLoc = "src/test/resources/PretendKeystore.txt";
 
-		// when:
 		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(new LegacyEd25519KeyReader() {
 			@Override
 			public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
@@ -351,44 +340,33 @@ class MiscUtilsTest {
 
 	@Test
 	void recoversKeypair() throws Exception {
-		// setup:
-		String tmpLoc = "src/test/resources/PretendKeystore.txt";
-
-		// given:
-		KeyPair kp = new KeyPairGenerator().generateKeyPair();
-		byte[] expected = ((EdDSAPublicKey) kp.getPublic()).getAbyte();
-		// and:
+		final String tmpLoc = "src/test/resources/PretendKeystore.txt";
+		final var kp = new KeyPairGenerator().generateKeyPair();
+		final var expected = ((EdDSAPublicKey) kp.getPublic()).getAbyte();
 		writeB64EncodedKeyPair(new File(tmpLoc), kp);
 
-		// when:
-		var masterKey = lookupInCustomStore(new LegacyEd25519KeyReader(), tmpLoc, "START_ACCOUNT");
+		final var masterKey = lookupInCustomStore(new LegacyEd25519KeyReader(), tmpLoc, "START_ACCOUNT");
 
-		// then:
 		assertArrayEquals(expected, masterKey.getEd25519());
 		(new File(tmpLoc)).delete();
 	}
 
 	@Test
 	void getsCanonicalDiff() {
-		AccountID a = asAccount("1.2.3");
-		AccountID b = asAccount("2.3.4");
-		AccountID c = asAccount("3.4.5");
-
-		// given:
-		List<AccountAmount> canonicalA = List.of(
+		final var a = asAccount("1.2.3");
+		final var b = asAccount("2.3.4");
+		final var c = asAccount("3.4.5");
+		final var canonicalA = List.of(
 				aa(a, 300),
 				aa(b, -500),
 				aa(c, 200));
-		// and:
-		List<AccountAmount> canonicalB = List.of(
+		final var canonicalB = List.of(
 				aa(a, 150),
 				aa(b, 50),
 				aa(c, -200));
 
-		// when:
-		List<AccountAmount> canonicalDiff = canonicalDiffRepr(canonicalA, canonicalB);
+		final var canonicalDiff = canonicalDiffRepr(canonicalA, canonicalB);
 
-		// then:
 		assertThat(
 				canonicalDiff,
 				contains(aa(a, 150), aa(b, -550), aa(c, 400)));
@@ -396,79 +374,78 @@ class MiscUtilsTest {
 
 	@Test
 	void getsCanonicalRepr() {
-		AccountID a = asAccount("1.2.3");
-		AccountID b = asAccount("2.3.4");
-		AccountID c = asAccount("3.4.5");
-
-		// given:
-		List<AccountAmount> adhocRepr = List.of(
+		final var a = asAccount("1.2.3");
+		final var b = asAccount("2.3.4");
+		final var c = asAccount("3.4.5");
+		final var adhocRepr = List.of(
 				aa(a, 500),
 				aa(c, 100),
 				aa(a, -500),
 				aa(b, -500),
 				aa(c, 400));
 
-		// when:
-		List<AccountAmount> canonicalRepr = canonicalRepr(adhocRepr);
+		final var canonicalRepr = canonicalRepr(adhocRepr);
 
-		// then:
 		assertThat(
 				canonicalRepr,
 				contains(aa(b, -500), aa(c, 500)));
 	}
 
-	private AccountAmount aa(AccountID who, long what) {
+	private AccountAmount aa(final AccountID who, final long what) {
 		return AccountAmount.newBuilder().setAccountID(who).setAmount(what).build();
 	}
 
 	@Test
 	void prettyPrintsTransferList() {
-		// given:
-		TransferList transfers = withAdjustments(
+		final var transfers = withAdjustments(
 				asAccount("0.1.2"), 500L,
 				asAccount("1.0.2"), -250L,
 				asAccount("1.2.0"), Long.MIN_VALUE);
 
-		// when:
-		String s = readableTransferList(transfers);
+		final var s = readableTransferList(transfers);
 
 		assertEquals("[0.1.2 <- +500, 1.0.2 -> -250, 1.2.0 -> -9223372036854775808]", s);
 	}
 
 	@Test
 	void prettyPrintsNFTTransferList() {
-		// given:
-		TokenTransferList transfers = withNftAdjustments(
+		final var transfers = withNftAdjustments(
 				asToken("0.2.3"), asAccount("0.1.2"), asAccount("0.1.3"), 1L,
 				asAccount("1.0.4"), asAccount("1.0.5"), 2L,
 				asAccount("1.2.6"), asAccount("1.0.7"), 3L);
 
-		// when:
-		String s = readableNftTransferList(transfers);
+		final var s = readableNftTransferList(transfers);
 
 		assertEquals("[1 0.1.2 0.1.3, 2 1.0.4 1.0.5, 3 1.2.6 1.0.7]", s);
 	}
 
 	@Test
-	void prettyPrintsJTransactionRecordFcll() {
-		// given:
-		LinkedList<ExpirableTxnRecord> records = new LinkedList<>();
-		records.add(fromGprc(
-				TransactionRecord.newBuilder()
-						.setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS))
-						.build()));
-		records.add(fromGprc(
-				TransactionRecord.newBuilder()
-						.setReceipt(TransactionReceipt.newBuilder().setStatus(INVALID_ACCOUNT_ID))
-						.build()));
+	void prettyPrintsExpirableTransactionRecord() {
+		final var grpcRecord1 = recordWith(SUCCESS);
+		final var grpcRecord2 = recordWith(INVALID_ACCOUNT_ID);
+		final var record1 = fromGprc(grpcRecord1);
+		final var record2 = fromGprc(grpcRecord2);
+		final FCQueue<ExpirableTxnRecord> recordsFCQ = new FCQueue<>();
+		recordsFCQ.add(record1);
+		recordsFCQ.add(record2);
 
-		// expect:
-		Assertions.assertDoesNotThrow(() -> readableProperty(records));
+		final var expected = List.of(grpcRecord1, grpcRecord2).toString();
+		assertEquals(expected, readableProperty(recordsFCQ));
+
+		final var records = List.of(record1, record2);
+		assertEquals(records.toString(), readableProperty(records));
+	}
+
+	private TransactionRecord recordWith(final ResponseCodeEnum code) {
+		return TransactionRecord.newBuilder()
+				.setReceipt(TransactionReceipt.newBuilder().setStatus(code))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+				.setConsensusTimestamp(Timestamp.getDefaultInstance())
+				.build();
 	}
 
 	@Test
 	void throwsOnUnexpectedFunctionality() {
-		// expect:
 		assertThrows(UnknownHederaFunctionality.class, () -> {
 			functionOf(TransactionBody.getDefaultInstance());
 		});
@@ -476,473 +453,81 @@ class MiscUtilsTest {
 
 	@Test
 	void convertsMetadata() {
-		// setup:
-		long fee = 123L;
-		String memo = "Hi there!";
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
+		final long fee = 123L;
+		final String memo = "Hi there!";
+		final var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTransactionFee(fee)
 				.setMemo(memo)
 				.build();
 
-		// when:
-		var ordinaryTxn = asOrdinary(scheduledTxn);
+		final var ordinaryTxn = asOrdinary(scheduledTxn);
 
-		// then:
 		assertEquals(memo, ordinaryTxn.getMemo());
 		assertEquals(fee, ordinaryTxn.getTransactionFee());
 	}
 
 	@Test
-	void convertsContractCall() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setContractCall(ContractCallTransactionBody.getDefaultInstance())
-				.build();
+	void getExpectedOrdinaryTxn() {
+		final Map<String, BodySetter<? extends GeneratedMessageV3, SchedulableTransactionBody.Builder>>
+				setters = new HashMap<>() {{
+			put("ContractCall", new BodySetter<>(ContractCallTransactionBody.class));
+			put("ContractCreateInstance", new BodySetter<>(ContractCreateTransactionBody.class));
+			put("ContractUpdateInstance", new BodySetter<>(ContractUpdateTransactionBody.class));
+			put("ContractDeleteInstance", new BodySetter<>(ContractDeleteTransactionBody.class));
+			put("CryptoCreateAccount", new BodySetter<>(CryptoCreateTransactionBody.class));
+			put("CryptoDelete", new BodySetter<>(CryptoDeleteTransactionBody.class));
+			put("CryptoTransfer", new BodySetter<>(CryptoTransferTransactionBody.class));
+			put("CryptoUpdateAccount", new BodySetter<>(CryptoUpdateTransactionBody.class));
+			put("FileAppend", new BodySetter<>(FileAppendTransactionBody.class));
+			put("FileCreate", new BodySetter<>(FileCreateTransactionBody.class));
+			put("FileDelete", new BodySetter<>(FileDeleteTransactionBody.class));
+			put("FileUpdate", new BodySetter<>(FileUpdateTransactionBody.class));
+			put("SystemDelete", new BodySetter<>(SystemDeleteTransactionBody.class));
+			put("SystemUndelete", new BodySetter<>(SystemUndeleteTransactionBody.class));
+			put("Freeze", new BodySetter<>(FreezeTransactionBody.class));
+			put("ConsensusCreateTopic", new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
+			put("ConsensusUpdateTopic", new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
+			put("ConsensusDeleteTopic", new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
+			put("ConsensusSubmitMessage", new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put("TokenCreation", new BodySetter<>(TokenCreateTransactionBody.class));
+			put("TokenFreeze", new BodySetter<>(TokenFreezeAccountTransactionBody.class));
+			put("TokenUnfreeze", new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
+			put("TokenGrantKyc", new BodySetter<>(TokenGrantKycTransactionBody.class));
+			put("TokenRevokeKyc", new BodySetter<>(TokenRevokeKycTransactionBody.class));
+			put("TokenDeletion", new BodySetter<>(TokenDeleteTransactionBody.class));
+			put("TokenUpdate", new BodySetter<>(TokenUpdateTransactionBody.class));
+			put("TokenMint", new BodySetter<>(TokenMintTransactionBody.class));
+			put("TokenBurn", new BodySetter<>(TokenBurnTransactionBody.class));
+			put("TokenWipe", new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put("TokenAssociate", new BodySetter<>(TokenAssociateTransactionBody.class));
+			put("TokenDissociate", new BodySetter<>(TokenDissociateTransactionBody.class));
+			put("ScheduleDelete", new BodySetter<>(ScheduleDeleteTransactionBody.class));
+		}};
 
-		// when:
-		var ordinaryTxn = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinaryTxn.hasContractCall());
+		setters.forEach((bodyType, setter) -> {
+			final var txn = SchedulableTransactionBody.newBuilder();
+			setter.setDefaultInstanceFor(txn);
+			final var ordinary = asOrdinary(txn.build());
+			assertTrue(txnBodyHas(ordinary, bodyType), ordinary + " doesn't have " + bodyType + " as expected!");
+		});
 	}
 
-	@Test
-	void convertsContractCreateInstance() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasContractCreateInstance());
-	}
-
-	@Test
-	void convertsContractUpdateInstance() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setContractUpdateInstance(ContractUpdateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasContractUpdateInstance());
-	}
-
-	@Test
-	void convertsContractDeleteInstance() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setContractDeleteInstance(ContractDeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasContractDeleteInstance());
-	}
-
-	@Test
-	void convertsCryptoCreateAccount() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasCryptoCreateAccount());
-	}
-
-	@Test
-	void convertsCryptoDelete() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasCryptoDelete());
-	}
-
-	@Test
-	void convertsCryptoTransfer() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasCryptoTransfer());
-	}
-
-	@Test
-	void convertsCryptoUpdateAccount() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasCryptoUpdateAccount());
-	}
-
-	@Test
-	void convertsFileAppend() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setFileAppend(FileAppendTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasFileAppend());
-	}
-
-	@Test
-	void convertsFileCreate() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setFileCreate(FileCreateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasFileCreate());
-	}
-
-	@Test
-	void convertsFileDelete() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setFileDelete(FileDeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasFileDelete());
-	}
-
-	@Test
-	void convertsFileUpdate() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setFileUpdate(FileUpdateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasFileUpdate());
-	}
-
-	@Test
-	void convertsSystemDelete() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setSystemDelete(SystemDeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasSystemDelete());
-	}
-
-	@Test
-	void convertsSystemUndelete() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setSystemUndelete(SystemUndeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasSystemUndelete());
-	}
-
-	@Test
-	void convertsFreeze() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setFreeze(FreezeTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasFreeze());
-	}
-
-	@Test
-	void convertsConsensusCreateTopic() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasConsensusCreateTopic());
-	}
-
-	@Test
-	void convertsConsensusUpdateTopic() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasConsensusUpdateTopic());
-	}
-
-	@Test
-	void convertsConsensusDeleteTopic() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasConsensusDeleteTopic());
-	}
-
-	@Test
-	void convertsConsensusSubmitMessage() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasConsensusSubmitMessage());
-	}
-
-	@Test
-	void convertsTokenCreation() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenCreation());
-	}
-
-	@Test
-	void convertsTokenFreeze() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenFreeze(TokenFreezeAccountTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenFreeze());
-	}
-
-	@Test
-	void convertsTokenUnfreeze() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenUnfreeze());
-	}
-
-	@Test
-	void convertsTokenGrantKyc() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenGrantKyc());
-	}
-
-	@Test
-	void convertsTokenRevokeKyc() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenRevokeKyc(TokenRevokeKycTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenRevokeKyc());
-	}
-
-	@Test
-	void convertsTokenDeletion() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenDeletion());
-	}
-
-	@Test
-	void convertsTokenUpdate() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenUpdate());
-	}
-
-	@Test
-	void convertsTokenMint() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenMint(TokenMintTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenMint());
-	}
-
-	@Test
-	void convertsTokenBurn() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenBurn());
-	}
-
-	@Test
-	void convertsTokenWipe() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenWipe());
-	}
-
-	@Test
-	void convertsTokenAssociate() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenAssociate(TokenAssociateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenAssociate());
-	}
-
-	@Test
-	void convertsTokenDissociate() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTokenDissociate(TokenDissociateTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasTokenDissociate());
-	}
-
-	@Test
-	void convertsScheduleDelete() {
-		// setup:
-		var scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setScheduleDelete(ScheduleDeleteTransactionBody.getDefaultInstance())
-				.build();
-
-		// when:
-		var ordinary = asOrdinary(scheduledTxn);
-
-		// then:
-		assertTrue(ordinary.hasScheduleDelete());
+	private boolean txnBodyHas(final TransactionBody txn, final String bodyType) {
+		try {
+			final var method = Stream.of(TransactionBody.class.getDeclaredMethods())
+					.filter(m -> m.getName().equals("has" + bodyType))
+					.findFirst()
+					.get();
+			return (boolean) method.invoke(txn);
+		} catch (Exception ignore) {
+		}
+		return false;
 	}
 
 	@Test
 	void getExpectedTxnStat() {
-		Map<String, BodySetter<? extends GeneratedMessageV3>> setters = new HashMap<>() {{
+		final Map<String, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
+				setters = new HashMap<>() {{
 			put(CryptoController.CRYPTO_CREATE_METRIC, new BodySetter<>(CryptoCreateTransactionBody.class));
 			put(CryptoController.CRYPTO_UPDATE_METRIC, new BodySetter<>(CryptoUpdateTransactionBody.class));
 			put(CryptoController.CRYPTO_TRANSFER_METRIC, new BodySetter<>(CryptoTransferTransactionBody.class));
@@ -983,26 +568,24 @@ class MiscUtilsTest {
 			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
 		}};
 
-		// expect:
 		setters.forEach((stat, setter) -> {
-			TransactionBody.Builder txn = TransactionBody.newBuilder();
-			setter.setDefaultInstanceOnTxn(txn);
+			final var txn = TransactionBody.newBuilder();
+			setter.setDefaultInstanceFor(txn);
 			assertEquals(stat, getTxnStat(txn.build()));
 		});
-		// and:
+
 		assertEquals("NotImplemented", getTxnStat(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
 	void recognizesMissingQueryCase() {
-		// expect:
 		assertTrue(functionalityOfQuery(Query.getDefaultInstance()).isEmpty());
 	}
 
 	@Test
 	void getsExpectedQueryFunctionality() {
-		// setup:
-		Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3>> setters = new HashMap<>() {{
+		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, Query.Builder>>
+				setters = new HashMap<>() {{
 			put(GetVersionInfo, new BodySetter<>(NetworkGetVersionInfoQuery.class));
 			put(GetByKey, new BodySetter<>(GetByKeyQuery.class));
 			put(ConsensusGetTopicInfo, new BodySetter<>(ConsensusGetTopicInfoQuery.class));
@@ -1023,212 +606,11 @@ class MiscUtilsTest {
 			put(ScheduleGetInfo, new BodySetter<>(ScheduleGetInfoQuery.class));
 		}};
 
-		// expect:
 		setters.forEach((function, setter) -> {
-			Query.Builder query = Query.newBuilder();
-			setter.setDefaultInstanceOnQuery(query);
+			final var query = Query.newBuilder();
+			setter.setDefaultInstanceFor(query);
 			assertEquals(function, functionalityOfQuery(query.build()).get());
 		});
-	}
-
-	@Test
-	void worksForGetTokenInfo() {
-		var op = TokenGetInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTokenGetInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetScheduleInfo() {
-		var op = ScheduleGetInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setScheduleGetInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetVersionInfo() {
-		var op = NetworkGetVersionInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setNetworkGetVersionInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetTopicInfo() {
-		var op = ConsensusGetTopicInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setConsensusGetTopicInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetSolidityId() {
-		var op = GetBySolidityIDQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setGetBySolidityID(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetContractCallLocal() {
-		var op = ContractCallLocalQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setContractCallLocal(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetContractInfo() {
-		var op = ContractGetInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setContractGetInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetContractBytecode() {
-		var op = ContractGetBytecodeQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setContractGetBytecode(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetContractRecords() {
-		var op = ContractGetRecordsQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setContractGetRecords(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetCryptoBalance() {
-		var op = CryptoGetAccountBalanceQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setCryptogetAccountBalance(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetCryptoRecords() {
-		var op = CryptoGetAccountRecordsQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setCryptoGetAccountRecords(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetCryptoInfo() {
-		var op = CryptoGetInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setCryptoGetInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForTokenGetNftInfo() {
-		var op = TokenGetNftInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTokenGetNftInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForTokenGetNftInfos() {
-		var op = TokenGetNftInfosQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTokenGetNftInfos(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForTokenGetAccountNftInfos() {
-		var op = TokenGetAccountNftInfosQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTokenGetAccountNftInfos(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetLiveHash() {
-		var op = CryptoGetLiveHashQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setCryptoGetLiveHash(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetFileContents() {
-		var op = FileGetContentsQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setFileGetContents(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForGetFileinfo() {
-		var op = FileGetInfoQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setFileGetInfo(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForReceipt() {
-		var op = TransactionGetReceiptQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTransactionGetReceipt(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
-	}
-
-	@Test
-	void worksForRecord() {
-		var op = TransactionGetRecordQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTransactionGetRecord(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
 	}
 
 	@Test
@@ -1237,19 +619,44 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void worksForFastRecord() {
-		var op = TransactionGetFastRecordQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
-		var query = Query.newBuilder()
-				.setTransactionGetFastRecord(op)
-				.build();
-		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	void getsExpectedActiveHeader() {
+		final Set<BodySetter<? extends GeneratedMessageV3, Query.Builder>>
+				setters = new HashSet<>() {{
+			add(new BodySetter<>(TokenGetNftInfoQuery.class));
+			add(new BodySetter<>(TokenGetNftInfosQuery.class));
+			add(new BodySetter<>(TokenGetAccountNftInfosQuery.class));
+			add(new BodySetter<>(TokenGetInfoQuery.class));
+			add(new BodySetter<>(ScheduleGetInfoQuery.class));
+			add(new BodySetter<>(ConsensusGetTopicInfoQuery.class));
+			add(new BodySetter<>(GetBySolidityIDQuery.class));
+			add(new BodySetter<>(ContractCallLocalQuery.class));
+			add(new BodySetter<>(ContractGetInfoQuery.class));
+			add(new BodySetter<>(ContractGetBytecodeQuery.class));
+			add(new BodySetter<>(ContractGetRecordsQuery.class));
+			add(new BodySetter<>(CryptoGetAccountBalanceQuery.class));
+			add(new BodySetter<>(CryptoGetAccountRecordsQuery.class));
+			add(new BodySetter<>(CryptoGetInfoQuery.class));
+			add(new BodySetter<>(CryptoGetLiveHashQuery.class));
+			add(new BodySetter<>(CryptoGetStakersQuery.class));
+			add(new BodySetter<>(FileGetContentsQuery.class));
+			add(new BodySetter<>(FileGetInfoQuery.class));
+			add(new BodySetter<>(TransactionGetReceiptQuery.class));
+			add(new BodySetter<>(TransactionGetRecordQuery.class));
+			add(new BodySetter<>(TransactionGetFastRecordQuery.class));
+			add(new BodySetter<>(NetworkGetVersionInfoQuery.class));
+		}};
+
+		for (var setter : setters) {
+			final var query = Query.newBuilder();
+			setter.setActiveHeaderFor(query);
+			assertEquals(ANSWER_ONLY, activeHeaderFrom(query.build()).get().getResponseType());
+		}
 	}
 
 	@Test
-	void getsExpectedTxnFunctionality() {
-		// setup:
-		Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3>> setters = new HashMap<>() {{
+	void getsExpectedTxnFunctionality() throws UnknownHederaFunctionality {
+		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
+				setters = new HashMap<>() {{
 			put(SystemDelete, new BodySetter<>(SystemDeleteTransactionBody.class));
 			put(SystemUndelete, new BodySetter<>(SystemUndeleteTransactionBody.class));
 			put(ContractCall, new BodySetter<>(ContractCallTransactionBody.class));
@@ -1290,10 +697,9 @@ class MiscUtilsTest {
 			put(TokenFeeScheduleUpdate, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
 		}};
 
-		// expect:
 		setters.forEach((function, setter) -> {
-			TransactionBody.Builder txn = TransactionBody.newBuilder();
-			setter.setDefaultInstanceOnTxn(txn);
+			final var txn = TransactionBody.newBuilder();
+			setter.setDefaultInstanceFor(txn);
 			try {
 				assertEquals(function, functionOf(txn.build()));
 			} catch (UnknownHederaFunctionality uhf) {
@@ -1304,12 +710,12 @@ class MiscUtilsTest {
 
 	@Test
 	void hashCorrectly() throws IllegalArgumentException {
-		byte[] testBytes = "test bytes".getBytes();
-		byte[] expectedHash = com.swirlds.common.CommonUtils.unhex(
+		final var testBytes = "test bytes".getBytes();
+		final var expectedHash = com.swirlds.common.CommonUtils.unhex(
 				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
 		);
-		Transaction transaction = mock(Transaction.class);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+		final var transaction = mock(Transaction.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 		given(transaction.toByteArray()).willReturn(testBytes);
 		given(accessor.getSignedTxnWrapper()).willReturn(transaction);
 
@@ -1319,64 +725,87 @@ class MiscUtilsTest {
 
 	@Test
 	void asTimestampTest() {
-		final Instant instant = Instant.now();
-		final Timestamp timestamp = MiscUtils.asTimestamp(instant);
+		final var instant = Instant.now();
+		final var timestamp = MiscUtils.asTimestamp(instant);
 		assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
 	}
 
 	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, () -> new MiscUtils());
+	void perm64Test() {
+		assertEquals(0L, perm64(0L));
+		assertEquals(-4328535976359616544L, perm64(1L));
+		assertEquals(2657016865369639288L, perm64(7L));
 	}
 
-	public static class BodySetter<T> {
+	@Test
+	void describesCorrectly() throws DecoderException {
+		assertEquals("<N/A>", describe(null));
+
+		final var key = Key.newBuilder().setEd25519(ByteString.copyFrom("abcd".getBytes())).build();
+		assertEquals(key.toString(), describe(JKey.mapKey(key)));
+
+		final var tooDeep = TxnUtils.nestJKeys(15);
+		assertEquals("<N/A>", describe(tooDeep));
+	}
+
+	@Test
+	void throwsInConstructor() {
+		assertThrows(IllegalStateException.class, MiscUtils::new);
+	}
+
+	public static class BodySetter<T, B> {
 		private final Class<T> type;
 
 		public BodySetter(Class<T> type) {
 			this.type = type;
 		}
 
-		void setDefaultInstanceOnQuery(Query.Builder query) {
+		void setDefaultInstanceFor(final B builder) {
 			try {
-				Method setter = Stream.of(Query.Builder.class.getDeclaredMethods())
-						.filter(m -> m.getName().startsWith("set") && m.getParameterTypes()[0].equals(type))
-						.findFirst()
-						.get();
-				Method defaultGetter = type.getMethod("getDefaultInstance");
-				T defaultInstance = (T) defaultGetter.invoke(null);
-				setter.invoke(query, defaultInstance);
+				final var setter = getSetter(builder, type);
+				final var defaultGetter = type.getDeclaredMethod("getDefaultInstance");
+				final T defaultInstance = (T) defaultGetter.invoke(null);
+				setter.invoke(builder, defaultInstance);
 			} catch (Exception e) {
 				throw new IllegalStateException(e);
 			}
 		}
 
-		void setDefaultInstanceOnTxn(TransactionBody.Builder txn) {
+		void setActiveHeaderFor(final B builder) {
 			try {
-				Method setter = Stream.of(TransactionBody.Builder.class.getDeclaredMethods())
-						.filter(m -> m.getName().startsWith("set") && m.getParameterTypes()[0].equals(type))
-						.findFirst()
-						.get();
-				Method defaultGetter = type.getMethod("getDefaultInstance");
-				T defaultInstance = (T) defaultGetter.invoke(null);
-				setter.invoke(txn, defaultInstance);
+				final var newBuilderMethod = type.getDeclaredMethod("newBuilder");
+				final var opBuilder = newBuilderMethod.invoke(null);
+				final var opBuilderClass = opBuilder.getClass();
+				final var setHeaderMethod = opBuilderClass
+						.getDeclaredMethod("setHeader", QueryHeader.Builder.class);
+				setHeaderMethod.invoke(opBuilder, QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+				final var setter = getSetter(builder, opBuilderClass);
+				setter.invoke(builder, opBuilder);
 			} catch (Exception e) {
 				throw new IllegalStateException(e);
 			}
+		}
+
+		private Method getSetter(final B builder, final Class type) {
+			return Stream.of(builder.getClass().getDeclaredMethods())
+					.filter(m -> m.getName().startsWith("set") && m.getParameterTypes()[0].equals(type))
+					.findFirst()
+					.get();
 		}
 	}
 
-	private static void writeB64EncodedKeyPair(File file, KeyPair keyPair) throws IOException {
-		var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
-		var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
-		var keys = new AccountKeyListObj(asAccount("0.0.2"), List.of(keyPairObj));
+	private static void writeB64EncodedKeyPair(final File file, final KeyPair keyPair) throws IOException {
+		final var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
+		final var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
+		final var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
+		final var keys = new AccountKeyListObj(asAccount("0.0.2"), List.of(keyPairObj));
 
-		var baos = new ByteArrayOutputStream();
-		var oos = new ObjectOutputStream(baos);
+		final var baos = new ByteArrayOutputStream();
+		final var oos = new ObjectOutputStream(baos);
 		oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
 		oos.close();
 
-		var byteSink = Files.asByteSink(file);
+		final var byteSink = Files.asByteSink(file);
 		byteSink.write(CommonUtils.base64encode(baos.toByteArray()).getBytes());
 	}
 }

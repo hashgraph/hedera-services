@@ -36,6 +36,8 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +46,7 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
@@ -51,6 +54,7 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 	private final SmartContractFeeBuilder usageEstimator;
 	private final GlobalDynamicProperties properties;
 
+	@Inject
 	public ContractCallLocalResourceUsage(
 			ContractCallLocalAnswer.LegacyLocalCaller delegate,
 			SmartContractFeeBuilder usageEstimator,

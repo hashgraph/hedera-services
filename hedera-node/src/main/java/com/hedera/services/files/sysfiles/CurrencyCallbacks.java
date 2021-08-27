@@ -26,14 +26,18 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+@Singleton
 public class CurrencyCallbacks {
 	private final FeeCalculator fees;
 	private final HbarCentExchange exchange;
 	private final Supplier<ExchangeRates> midnightRates;
 
+	@Inject
 	public CurrencyCallbacks(FeeCalculator fees, HbarCentExchange exchange, Supplier<ExchangeRates> midnightRates) {
 		this.fees = fees;
 		this.exchange = exchange;

@@ -20,53 +20,32 @@ package com.hedera.services;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.properties.Profile;
-import com.hedera.services.state.forensics.FcmDump;
-import com.hedera.services.state.forensics.IssListener;
-import com.hedera.services.utils.JvmSystemExits;
-import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.SwirldMain;
 import com.swirlds.common.SwirldState;
-import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.function.Supplier;
 
-import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.context.properties.Profile.DEV;
-import static com.hedera.services.context.properties.Profile.PROD;
+import static com.hedera.services.context.AppsManager.APPS;
 import static com.swirlds.common.PlatformStatus.ACTIVE;
 import static com.swirlds.common.PlatformStatus.MAINTENANCE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Drives the major state transitions for a Hedera Node via its {@link ServicesContext}.
- *
- * @author Michael Tinker
+ * Implements callbacks to bind gRPC services, react to platform status changes, and incorporate new signed states.
  */
 public class ServicesMain implements SwirldMain {
 	private static final Logger log = LogManager.getLogger(ServicesMain.class);
 
-	private static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
-
-	static final long SUGGESTED_POST_CREATION_PAUSE_MS = 0L;
-
-	SystemExits systemExits = new JvmSystemExits();
-	Supplier<Charset> defaultCharset = Charset::defaultCharset;
-	ServicesContext ctx;
+	private ServicesApp app;
 
 	/**
 	 * Convenience launcher for dev env.
@@ -80,62 +59,48 @@ public class ServicesMain implements SwirldMain {
 
 	@Override
 	public void init(Platform ignore, NodeId nodeId) {
-		if (!StandardCharsets.UTF_8.equals(defaultCharset.get())) {
-			log.error("Default charset is {}, not UTF-8! Exiting.", defaultCharset.get());
-			systemExits.fail(1);
-		}
 		try {
-			MessageDigest.getInstance("SHA-384");
-		} catch (NoSuchAlgorithmException nsae) {
-			log.error(nsae);
-			systemExits.fail(1);
+			app = APPS.get(nodeId.getId());
+			initApp();
+		} catch (IllegalArgumentException iae) {
+			log.error("No app present for {}", nodeId, iae);
+			throw new AssertionError("Cannot continue without an app");
 		}
-		try {
-			Locale.setDefault(Locale.US);
-			ctx = CONTEXTS.lookup(nodeId.getId());
-			logInfoWithConsoleEcho(String.format(START_INIT_MSG_PATTERN, ctx.id().getId()));
-			contextDrivenInit();
-			log.info("init finished.");
-		} catch (IllegalStateException ise) {
-			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
-			systemExits.fail(1);
+	}
+
+	@Override
+	public void platformStatusChange(PlatformStatus status) {
+		final var nodeId = app.nodeId();
+		log.info("Now current platform status = {} in HederaNode#{}.", status, nodeId);
+		app.platformStatus().set(status);
+		if (status == ACTIVE) {
+			app.recordStreamManager().setInFreeze(false);
+		} else if (status == MAINTENANCE) {
+			app.recordStreamManager().setInFreeze(true);
+			final var os = System.getProperty("os.name").toLowerCase();
+			app.updateHelper().runIfAppropriateOn(os);
+		} else {
+			log.info("Platform {} status set to : {}", nodeId, status);
+		}
+	}
+
+	@Override
+	public void newSignedState(SwirldState signedState, Instant consensusTime, long round) {
+		final var servicesState = (ServicesState) signedState;
+
+		if (app.platformStatus().get() == MAINTENANCE) {
+			servicesState.logSummary();
+		}
+
+		final var balancesExporter = app.balancesExporter();
+		if (balancesExporter.isTimeToExport(consensusTime)) {
+			balancesExporter.exportBalancesFrom(servicesState, consensusTime, app.nodeId());
 		}
 	}
 
 	@Override
 	public ServicesState newState() {
 		return new ServicesState();
-	}
-
-	@Override
-	public void platformStatusChange(PlatformStatus status) {
-		log.info("Now current platform status = {} in HederaNode#{}.", status, ctx.id());
-		ctx.platformStatus().set(status);
-		if (status == ACTIVE) {
-			ctx.recordStreamManager().setInFreeze(false);
-		} else if (status == MAINTENANCE) {
-			ctx.recordStreamManager().setInFreeze(true);
-			ctx.updateFeature();
-		} else {
-			log.info("Platform {} status set to : {}", ctx.id(), status);
-		}
-	}
-
-	@Override
-	public void newSignedState(SwirldState signedState, Instant consensusTime, long round) {
-		if (ctx.platformStatus().get() == MAINTENANCE) {
-			((ServicesState) signedState).logSummary();
-		}
-		final var exportIsEnabled = ctx.globalDynamicProperties().shouldExportBalances();
-		if (exportIsEnabled && ctx.balancesExporter().isTimeToExport(consensusTime)) {
-			try {
-				final var servicesState = (ServicesState) signedState;
-				ctx.balancesExporter().exportBalancesFrom(servicesState, consensusTime, ctx.id());
-			} catch (IllegalStateException ise) {
-				log.error("HederaNode#{} has invalid total balance in signed state, exiting!", ctx.id(), ise);
-				systemExits.fail(1);
-			}
-		}
 	}
 
 	@Override
@@ -148,133 +113,95 @@ public class ServicesMain implements SwirldMain {
 		/* No-op. */
 	}
 
-	private void contextDrivenInit() {
-		initSystemFiles();
-		log.info("System files rationalized.");
-		createSystemAccountsIfNeeded();
-		log.info("System accounts initialized.");
-		validateLedgerState();
-		log.info("Ledger state ok.");
-		configurePlatform();
-		log.info("Platform is configured.");
-		registerIssListener();
-		log.info("Platform callbacks registered.");
-		registerReconnectCompleteListener(NotificationFactory.getEngine());
-		log.info("ReconnectCompleteListener registered.");
-		exportAccountsIfDesired();
-		log.info("Accounts exported.");
-		initializeStats();
-		log.info("Stats initialized.");
-		startNettyIfAppropriate();
-		log.info("Netty started.");
+	private void initApp() {
+		if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
+			try {
+				Locale.setDefault(Locale.US);
+				consoleLog(String.format("Using context to initialize HederaNode#%s...", app.nodeId()));
+				doStagedInit();
+			} catch (Exception e) {
+				log.error("Fatal precondition violated in HederaNode#{}", app.nodeId(), e);
+				app.systemExits().fail(1);
+			}
+		} else {
+			app.systemExits().fail(1);
+		}
+	}
 
-		ctx.initRecordStreamManager();
-		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
+	private void doStagedInit() {
+		initSystemFiles();
+		log.info("System files rationalized");
+
+		createSystemAccountsIfNeeded();
+		log.info("System accounts initialized");
+
+		validateLedgerState();
+		log.info("Ledger state ok");
+
+		configurePlatform();
+		log.info("Platform is configured w/ callbacks and stats registered");
+
+		exportAccountsIfDesired();
+		log.info("Accounts exported (if requested)");
+
+		startNettyIfAppropriate();
+		log.info("Netty started (if appropriate)");
 	}
 
 	private void exportAccountsIfDesired() {
-		try {
-			if (ctx.nodeLocalProperties().exportAccountsOnStartup()) {
-				ctx.accountsExporter().toFile(ctx.nodeLocalProperties().accountsExportPath(), ctx.accounts());
-			}
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not export accounts!", e);
-		}
+		app.accountsExporter().toFile(app.workingState().accounts());
 	}
 
 	private void initSystemFiles() {
-		try {
-			ctx.systemFilesManager().createAddressBookIfMissing();
-			ctx.systemFilesManager().createNodeDetailsIfMissing();
-			ctx.systemFilesManager().createUpdateZipFileIfMissing();
-			ctx.networkCtxManager().loadObservableSysFilesIfNeeded();
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not initialize system files!", e);
-		}
+		final var sysFilesManager = app.sysFilesManager();
+		sysFilesManager.createAddressBookIfMissing();
+		sysFilesManager.createNodeDetailsIfMissing();
+		sysFilesManager.createUpdateZipFileIfMissing();
+		app.networkCtxManager().loadObservableSysFilesIfNeeded();
 	}
 
 	private void createSystemAccountsIfNeeded() {
-		try {
-			ctx.systemAccountsCreator().ensureSystemAccounts(ctx.backingAccounts(), ctx.addressBook());
-			ctx.pause().forMs(SUGGESTED_POST_CREATION_PAUSE_MS);
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not create system accounts!", e);
-		}
+		app.sysAccountsCreator().ensureSystemAccounts(app.backingAccounts(), app.workingState().addressBook());
 	}
 
 	private void startNettyIfAppropriate() {
-		int port = ctx.nodeLocalProperties().port();
-		final int PORT_MODULUS = 1000;
-		int tlsPort = ctx.nodeLocalProperties().tlsPort();
-		log.info("TLS is turned on by default on node {}", ctx.id());
-		Profile activeProfile = ctx.nodeLocalProperties().activeProfile();
-		log.info("Active profile: {}", activeProfile);
-		if (activeProfile == DEV) {
-			if (ctx.nodeLocalProperties().devOnlyDefaultNodeListens()) {
-				if (thisNodeIsDefaultListener()) {
-					ctx.grpc().start(port, tlsPort, this::logInfoWithConsoleEcho);
-				}
-			} else {
-				int portOffset = thisNodeIsDefaultListener()
-						? 0
-						: ctx.addressBook().getAddress(ctx.id().getId()).getPortExternalIpv4() % PORT_MODULUS;
-				ctx.grpc().start(port + portOffset, tlsPort + portOffset, this::logInfoWithConsoleEcho);
-			}
-		} else if (activeProfile == PROD) {
-			ctx.grpc().start(port, tlsPort, this::logInfoWithConsoleEcho);
-		} else {
-			log.warn("No Netty config for profile {}, skipping gRPC startup!", activeProfile);
-		}
-	}
-
-	private boolean thisNodeIsDefaultListener() {
-		String myNodeAccount = ctx.addressBook().getAddress(ctx.id().getId()).getMemo();
-		String blessedNodeAccount = ctx.nodeLocalProperties().devListeningAccount();
-		return myNodeAccount.equals(blessedNodeAccount);
-	}
-
-	private void initializeStats() {
-		ctx.statsManager().initializeFor(ctx.platform());
+		app.grpcStarter().startIfAppropriate();
 	}
 
 	private void configurePlatform() {
-		ctx.platform().setSleepAfterSync(0L);
+		final var platform = app.platform();
+		platform.setSleepAfterSync(0L);
+		platform.addSignedStateListener(app.issListener());
+		app.statsManager().initializeFor(platform);
 	}
 
 	private void validateLedgerState() {
-		ctx.ledgerValidator().assertIdsAreValid(ctx.accounts());
-		if (!ctx.ledgerValidator().hasExpectedTotalBalance(ctx.accounts())) {
-			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
-			throw new IllegalStateException("Invalid total ℏ float!");
+		app.ledgerValidator().validate(app.workingState().accounts());
+		app.nodeInfo().validateSelfAccountIfStaked();
+		app.notificationEngine().get().register(ReconnectCompleteListener.class, app.reconnectListener());
+	}
+
+	private boolean defaultCharsetIsCorrect() {
+		final var charset = app.nativeCharset().get();
+		if (!UTF_8.equals(charset)) {
+			log.error("Default charset is {}, not UTF-8", charset);
+			return false;
 		}
-		if (!ctx.nodeInfo().isSelfZeroStake() && !ctx.nodeInfo().hasSelfAccount()) {
-			throw new IllegalStateException("Node is not zero-stake, but has no known account!");
+		return true;
+	}
+
+	private boolean sha384DigestIsAvailable() {
+		try {
+			app.digestFactory().forName("SHA-384");
+			return true;
+		} catch (NoSuchAlgorithmException nsae) {
+			log.error(nsae);
+			return false;
 		}
 	}
 
-	private void logInfoWithConsoleEcho(String s) {
+	private void consoleLog(String s) {
 		log.info(s);
-		if (ctx.consoleOut() != null) {
-			ctx.consoleOut().println(s);
-		}
-	}
-
-	private void registerIssListener() {
-		ctx.platform().addSignedStateListener(
-				new IssListener(new FcmDump(), ctx.issEventInfo(), ctx.nodeLocalProperties()));
-	}
-
-	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {
-		notificationEngine.register(ReconnectCompleteListener.class,
-				(notification) -> {
-					log.info(String.format("Notification Received: Reconnect Finished." +
-									" consensusTimestamp: %s, roundNumber: %s, sequence: %s",
-							notification.getConsensusTimestamp(),
-							notification.getRoundNumber(),
-							notification.getSequence()));
-					ServicesState state = (ServicesState) notification.getState();
-					state.logSummary();
-					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
-				});
+		app.consoleOut().ifPresent(c -> c.println(s));
 	}
 }

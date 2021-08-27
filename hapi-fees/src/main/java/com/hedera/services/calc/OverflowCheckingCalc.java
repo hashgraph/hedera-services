@@ -27,6 +27,9 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 
@@ -37,9 +40,14 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
  * (Because all prices and usage estimates are known to be non-negative,
  * checking for an overflow means just checking for a number less than zero.)
  */
+@Singleton
 public class OverflowCheckingCalc {
 	private static final String OVERFLOW_ERROR = "A fee calculation step overflowed; " +
 			"the operation cannot be priced, and therefore cannot be performed";
+
+	@Inject
+	public OverflowCheckingCalc() {
+	}
 
 	/**
 	 * Returns the network, node, and services fees for an operation given four inputs.

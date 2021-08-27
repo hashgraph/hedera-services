@@ -31,10 +31,17 @@ import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
+@Singleton
 public class AnswerFunctions {
+	@Inject
+	public AnswerFunctions() {
+	}
+
 	public List<TransactionRecord> accountRecords(StateView view, Query query) {
 		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
 		MerkleEntityId key = MerkleEntityId.fromAccountId(op.getAccountID());

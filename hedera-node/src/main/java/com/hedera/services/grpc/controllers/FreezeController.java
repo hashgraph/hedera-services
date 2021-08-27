@@ -26,13 +26,18 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 
+@Singleton
 public class FreezeController extends FreezeServiceGrpc.FreezeServiceImplBase {
 	public static final String FREEZE_METRIC = "freeze";
 
 	private final TxnResponseHelper txnHelper;
 
+	@Inject
 	public FreezeController(TxnResponseHelper txnHelper) {
 		this.txnHelper = txnHelper;
 	}

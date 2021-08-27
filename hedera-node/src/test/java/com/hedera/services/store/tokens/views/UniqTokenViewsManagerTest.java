@@ -9,9 +9,9 @@ package com.hedera.services.store.tokens.views;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -478,19 +478,23 @@ class UniqTokenViewsManagerTest {
 	}
 
 	private void setupTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, false);
+		subject = new UniqTokenViewsManager(
+				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, false, true);
 	}
 
 	private void setupNonTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(() -> nftsByType, () -> nftsByOwner, false);
+		subject = new UniqTokenViewsManager(
+				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, false, false);
 	}
 
 	private void setupNoopTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, true);
+		subject = new UniqTokenViewsManager(
+				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, true, true);
 	}
 
 	private void setupNoopNonTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(() -> nftsByType, () -> nftsByOwner, true);
+		subject = new UniqTokenViewsManager(
+				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, true, false);
 	}
 
 	private UniqTokenViewsManager.PendingChange change(
@@ -520,10 +524,12 @@ class UniqTokenViewsManagerTest {
 			false, true, secondOwner);
 	private byte[] someMeta = "SOMETHING".getBytes(StandardCharsets.UTF_8);
 	private byte[] otherMeta = "ELSE".getBytes(StandardCharsets.UTF_8);
-	private final MerkleUniqueToken firstOwnedANft = new MerkleUniqueToken(MISSING_ENTITY_ID, someMeta, MISSING_INSTANT);
+	private final MerkleUniqueToken firstOwnedANft = new MerkleUniqueToken(MISSING_ENTITY_ID, someMeta,
+			MISSING_INSTANT);
 	private final MerkleUniqueToken firstOwnedBNft = new MerkleUniqueToken(firstOwner, otherMeta, MISSING_INSTANT);
-	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(MISSING_ENTITY_ID, otherMeta, MISSING_INSTANT);
-	
+	private final MerkleUniqueToken tokenDeletedNft = new MerkleUniqueToken(MISSING_ENTITY_ID, otherMeta,
+			MISSING_INSTANT);
+
 	private PermHashInteger asPhi(int i) {
 		return new PermHashInteger(i);
 	}

@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -47,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class FileCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
 
@@ -56,6 +59,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public FileCreateTransitionLogic(
 			HederaFs hfs,
 			OptionValidator validator,

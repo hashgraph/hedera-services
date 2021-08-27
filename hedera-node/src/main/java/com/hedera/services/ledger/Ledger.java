@@ -30,8 +30,6 @@ package com.hedera.services.ledger;
  * @param <K> the type of an account id.
  * @param <P> the type of the property family associated to an account.
  * @param <A> the account type.
- *
- * @author Michael Tinker
  */
 public interface Ledger<K, P extends Enum<P>, A> {
 	/**

@@ -22,8 +22,6 @@ package com.hedera.services.utils;
 
 /**
  * Minimal implementation of {@link Pause}.
- *
- * @author Michael Tinker
  */
 public enum SleepingPause implements Pause {
 	SLEEPING_PAUSE;

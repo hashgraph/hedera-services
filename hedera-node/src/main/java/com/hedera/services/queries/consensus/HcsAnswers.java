@@ -20,9 +20,14 @@ package com.hedera.services.queries.consensus;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class HcsAnswers {
 	private final GetTopicInfoAnswer getTopicInfo;
 
+	@Inject
 	public HcsAnswers(GetTopicInfoAnswer getTopicInfo) {
 		this.getTopicInfo = getTopicInfo;
 	}

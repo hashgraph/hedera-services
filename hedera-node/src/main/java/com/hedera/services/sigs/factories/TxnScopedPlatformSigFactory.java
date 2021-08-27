@@ -25,8 +25,6 @@ import com.swirlds.common.crypto.TransactionSignature;
 /**
  * Defines a type of {@link com.swirlds.common.crypto.TransactionSignature} factory that does not
  * require the {@code byte[]} data to sign, because it is assumed to be scoped to a gRPC transaction.
- *
- * @author Michael Tinker
  */
 public interface TxnScopedPlatformSigFactory {
 	/**

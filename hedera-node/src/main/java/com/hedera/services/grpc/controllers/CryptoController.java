@@ -31,6 +31,9 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -46,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
+@Singleton
 public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	public static final String GET_ACCOUNT_INFO_METRIC = "getAccountInfo";
 	public static final String GET_ACCOUNT_BALANCE_METRIC = "cryptoGetBalance";
@@ -65,6 +69,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
 
+	@Inject
 	public CryptoController(
 			MetaAnswers metaAnswers,
 			CryptoAnswers cryptoAnswers,

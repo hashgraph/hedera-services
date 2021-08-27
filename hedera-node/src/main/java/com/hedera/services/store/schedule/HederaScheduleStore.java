@@ -20,7 +20,6 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -34,6 +33,9 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -55,10 +57,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
 
 /**
  * Provides a managing store for Scheduled Entities.
- *
- * @author Daniel Ivanov
- * @author Michael Tinker
  */
+@Singleton
 public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
@@ -67,20 +67,18 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
-	TransactionContext txnCtx;
 	Map<MerkleSchedule, MerkleEntityId> extantSchedules = new HashMap<>();
 
+	@Inject
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
-			TransactionContext txnCtx,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		super(ids);
-		this.txnCtx = txnCtx;
 		this.schedules = schedules;
 		this.properties = properties;
-		buildContentAddressableViewOfExtantSchedules();
+		/* Content-addressable view is re-built on restart or reconnect */
 	}
 
 	@Override
@@ -139,14 +137,19 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public ResponseCodeEnum delete(ScheduleID id) {
+	public ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime) {
 		var status = usabilityCheck(id, true);
 		if (status != OK) {
 			return status;
 		}
 
-		apply(id, schedule -> schedule.markDeleted(txnCtx.consensusTime()));
+		apply(id, schedule -> schedule.markDeleted(consensusTime));
 		return OK;
+	}
+
+	@Override
+	public ResponseCodeEnum delete(ScheduleID id) {
+		throw new UnsupportedOperationException("Only deleteAt() is usable with schedules");
 	}
 
 	@Override
@@ -169,22 +172,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	@Override
 	public boolean isCreationPending() {
 		return pendingId != NO_PENDING_ID;
-	}
-
-	private void resetPendingCreation() {
-		pendingId = NO_PENDING_ID;
-		pendingCreation = null;
-	}
-
-	private void throwIfNoCreationPending() {
-		if (pendingId == NO_PENDING_ID) {
-			throw new IllegalStateException("No pending schedule creation!");
-		}
-	}
-
-	private void buildContentAddressableViewOfExtantSchedules() {
-		final var curSchedules = schedules.get();
-		forEach(curSchedules, (key, value) -> extantSchedules.put(value.toContentAddressableView(), key));
 	}
 
 	@Override
@@ -211,12 +198,13 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public ResponseCodeEnum markAsExecuted(ScheduleID id) {
+	public ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime) {
 		var status = usabilityCheck(id, false);
 		if (status != OK) {
 			return status;
 		}
-		apply(id, schedule -> schedule.markExecuted(txnCtx.consensusTime().plusNanos(1L)));
+		final var executionTime = consensusTime.plusNanos(1L);
+		apply(id, schedule -> schedule.markExecuted(executionTime));
 		return OK;
 	}
 
@@ -233,8 +221,20 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		extantSchedules.remove(schedule);
 	}
 
-	public Map<MerkleSchedule, MerkleEntityId> getExtantSchedules() {
-		return extantSchedules;
+	private void resetPendingCreation() {
+		pendingId = NO_PENDING_ID;
+		pendingCreation = null;
+	}
+
+	private void throwIfNoCreationPending() {
+		if (pendingId == NO_PENDING_ID) {
+			throw new IllegalStateException("No pending schedule creation!");
+		}
+	}
+
+	private void buildContentAddressableViewOfExtantSchedules() {
+		final var curSchedules = schedules.get();
+		forEach(curSchedules, (key, value) -> extantSchedules.put(value.toContentAddressableView(), key));
 	}
 
 	private ResponseCodeEnum usabilityCheck(
@@ -268,5 +268,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 					"Argument 'id=%s' does not refer to an extant scheduled entity!",
 					readableId(id)));
 		}
+	}
+
+	/* --- Only used by unit tests --- */
+	Map<MerkleSchedule, MerkleEntityId> getExtantSchedules() {
+		return extantSchedules;
 	}
 }

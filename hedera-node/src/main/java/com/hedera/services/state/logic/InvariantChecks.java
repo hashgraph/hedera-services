@@ -26,6 +26,8 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Supplier;
 
@@ -36,12 +38,14 @@ import java.util.function.Supplier;
  *     <li>Zero-stake nodes cannot submit transactions.</li>
  * </ol>
  */
+@Singleton
 public class InvariantChecks {
 	private static final Logger log = LogManager.getLogger(InvariantChecks.class);
 
 	private final NodeInfo nodeInfo;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
+	@Inject
 	public InvariantChecks(NodeInfo nodeInfo, Supplier<MerkleNetworkContext> networkCtx) {
 		this.nodeInfo = nodeInfo;
 		this.networkCtx = networkCtx;

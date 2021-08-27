@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -57,9 +59,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  * possible that the <i>semantics</i> of the transaction will still be wrong;
  * for example, if the sponsor account can no longer afford to fund the
  * initial balance of the new account.)
- *
- * @author Michael Tinker
  */
+@Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
@@ -69,6 +70,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public CryptoCreateTransitionLogic(
 			HederaLedger ledger,
 			OptionValidator validator,

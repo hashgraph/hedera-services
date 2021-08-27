@@ -24,8 +24,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 
 /**
  * Maps to proto Key of type contractID.
- *
- * @author hua Created on 2019-01-07
  */
 public class JContractIDKey extends JKey {
 

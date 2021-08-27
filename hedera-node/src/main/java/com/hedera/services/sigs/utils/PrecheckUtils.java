@@ -28,8 +28,6 @@ import java.util.function.Predicate;
 
 /**
  * Contains static helpers used during precheck to validate signatures.
- *
- * @author Michael Tinker
  */
 public class PrecheckUtils {
 	/**

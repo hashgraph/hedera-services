@@ -38,8 +38,6 @@ import java.util.Optional;
  * Note this type is implicitly assumed to have access to the context
  * of the active transaction, which is somewhat confusing and will be
  * addressed in a future refactor.
- *
- * @author Michael Tinker
  */
 public interface AccountRecordsHistorian {
 	/**

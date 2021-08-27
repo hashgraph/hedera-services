@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -47,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Provides the state transition for token burning.
  */
+@Singleton
 public class TokenBurnTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
@@ -56,6 +59,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public TokenBurnTransitionLogic(
 			OptionValidator validator,
 			AccountStore accountStore,

@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -46,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 /**
  * Provides the state transition for dissociating tokens from an account.
  */
+@Singleton
 public class TokenDissociateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -55,6 +58,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final DissociationFactory dissociationFactory;
 
+	@Inject
 	public TokenDissociateTransitionLogic(
 			TypedTokenStore tokenStore,
 			AccountStore accountStore,

@@ -67,7 +67,6 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertFalse(subject.shouldKeepRecordsInState());
 		assertTrue(subject.shouldExportBalances());
 		assertTrue(subject.shouldExportTokenBalances());
 		assertTrue(subject.autoRenewEnabled());
@@ -163,7 +162,6 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertTrue(subject.shouldKeepRecordsInState());
 		assertFalse(subject.shouldExportBalances());
 		assertFalse(subject.shouldExportTokenBalances());
 		assertFalse(subject.autoRenewEnabled());

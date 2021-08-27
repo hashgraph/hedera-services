@@ -58,8 +58,6 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
  * actually an invalid signature with a linked key. See for example the
  * {@code ScheduleSignSpecs.overlappingKeysTreatedAsExpected()} in
  * the {@code test-clients} module.
- *
- * @author Michael Tinker
  */
 public class SigMapScheduleClassifier {
 	/**

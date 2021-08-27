@@ -34,8 +34,6 @@ import java.util.Random;
 
 /**
  * A time sensitive data structure for maintaining transaction ID.
- *
- * @author Hua, Akshay
  */
 public class TransactionIDCache {
 

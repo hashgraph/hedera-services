@@ -28,6 +28,9 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
@@ -39,7 +42,12 @@ import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hederahashgraph.fee.FeeBuilder.getStateProofSize;
 
+@Singleton
 public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
+	@Inject
+	public GetTopicInfoResourceUsage() {
+	}
+
 	@Override
 	public boolean applicableTo(Query query) {
 		return query.hasConsensusGetTopicInfo();

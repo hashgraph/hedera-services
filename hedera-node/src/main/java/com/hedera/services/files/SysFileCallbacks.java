@@ -28,13 +28,17 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Consumer;
 
+@Singleton
 public class SysFileCallbacks {
 	private final ConfigCallbacks configCallbacks;
 	private final ThrottlesCallback throttlesCallback;
 	private final CurrencyCallbacks currencyCallbacks;
 
+	@Inject
 	public SysFileCallbacks(
 			ConfigCallbacks configCallbacks,
 			ThrottlesCallback throttlesCallback,

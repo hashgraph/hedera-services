@@ -39,6 +39,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -56,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
+@Singleton
 public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
 
@@ -68,6 +71,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	@Inject
 	public TopicUpdateTransitionLogic(
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,

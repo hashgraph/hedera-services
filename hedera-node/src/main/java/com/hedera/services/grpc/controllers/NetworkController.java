@@ -30,9 +30,13 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
+@Singleton
 public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase {
 	private final MetaAnswers metaAnswers;
 	private final TxnResponseHelper txnResponseHelper;
@@ -41,6 +45,7 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	public static final String GET_VERSION_INFO_METRIC = "getVersionInfo";
 	public static final String UNCHECKED_SUBMIT_METRIC = "uncheckedSubmit";
 
+	@Inject
 	public NetworkController(
 			final MetaAnswers metaAnswers,
 			final TxnResponseHelper txnResponseHelper,

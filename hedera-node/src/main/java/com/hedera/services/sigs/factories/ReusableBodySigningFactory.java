@@ -23,8 +23,16 @@ package com.hedera.services.sigs.factories;
 import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
 	private TxnAccessor accessor;
+
+	@Inject
+	public ReusableBodySigningFactory() {
+	}
 
 	public void resetFor(TxnAccessor accessor) {
 		this.accessor = accessor;

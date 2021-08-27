@@ -23,10 +23,14 @@ package com.hedera.services.txns.submission;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
+import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class StructuralPrecheck {
 	private static final TxnValidityAndFeeReq OK_STRUCTURALLY = new TxnValidityAndFeeReq(OK);
 	public static final int HISTORICAL_MAX_PROTO_MESSAGE_DEPTH = 50;
@@ -52,7 +57,11 @@ public class StructuralPrecheck {
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;
 
-	public StructuralPrecheck(int maxSignedTxnSize, int maxProtoMessageDepth) {
+	@Inject
+	public StructuralPrecheck(
+			@MaxSignedTxnSize int maxSignedTxnSize,
+			@MaxProtoMsgDepth int maxProtoMessageDepth
+	) {
 		this.maxSignedTxnSize = maxSignedTxnSize;
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
 	}
