@@ -43,7 +43,12 @@ public class TopicDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicDeleteSuite.class);
 
 	public static void main(String... args) {
-		new TopicDeleteSuite().runSuiteSync();
+		new TopicDeleteSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

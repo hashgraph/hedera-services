@@ -63,7 +63,12 @@ public class SubmitMessageSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SubmitMessageSuite.class);
 
 	public static void main(String... args) {
-		new SubmitMessageSuite().runSuiteSync();
+		new SubmitMessageSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

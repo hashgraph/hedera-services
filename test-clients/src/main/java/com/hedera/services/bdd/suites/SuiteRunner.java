@@ -451,12 +451,10 @@ public class SuiteRunner {
 					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
 					otherOverrides);
 		}
-		boolean prohibitAsync = !Stream.of(effArgs).anyMatch("-A"::equals);
 		Map<Boolean, List<String>> statefulCategories = Stream
 				.of(effArgs)
 				.filter(CATEGORY_MAP::containsKey)
-				.collect(groupingBy(cat -> prohibitAsync ||
-						SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat).get())));
+				.collect(groupingBy(cat -> SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat).get())));
 
 		Map<String, List<CategoryResult>> byRunType = new HashMap<>();
 		if (statefulCategories.get(Boolean.FALSE) != null) {
@@ -530,13 +528,13 @@ public class SuiteRunner {
 		Set<String> effectiveArgs = new HashSet<>();
 		String[] ciArgs = realArgs.split("\\s+");
 
-		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {
+		if (Arrays.asList(ciArgs).contains("ALL_SUITES")) {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
 			effectiveArgs.addAll(Stream.of(ciArgs).
 					filter(e -> !e.equals("ALL_SUITES")).
 					collect(Collectors.toList()));
-			log.info("Effective args when running ALL_SUITES : " + effectiveArgs.toString());
-			return effectiveArgs.toArray(new String[effectiveArgs.size()]);
+			log.info("Effective args when running ALL_SUITES : " + effectiveArgs);
+			return effectiveArgs.toArray(new String[0]);
 		}
 
 		return ciArgs;
@@ -567,7 +565,7 @@ public class SuiteRunner {
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {
-		return Stream.of(suites).anyMatch(HapiApiSuite::leaksState);
+		return Stream.of(suites).anyMatch(suite -> !suite.canRunAsync());
 	}
 
 	private static List<CategoryResult> runTargetCategories() {

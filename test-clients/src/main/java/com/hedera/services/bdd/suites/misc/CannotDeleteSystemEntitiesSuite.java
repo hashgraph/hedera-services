@@ -48,7 +48,12 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 
 	public static void main(String... args) {
 		CannotDeleteSystemEntitiesSuite suite = new CannotDeleteSystemEntitiesSuite();
-		suite.runSuiteSync();
+		suite.runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

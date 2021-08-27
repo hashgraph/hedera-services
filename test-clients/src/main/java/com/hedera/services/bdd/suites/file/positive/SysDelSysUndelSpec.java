@@ -48,7 +48,12 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 	byte[] ORIG_FILE = "SOMETHING".getBytes();
 
 	public static void main(String... args) {
-		new SysDelSysUndelSpec().runSuiteSync();
+		new SysDelSysUndelSpec().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

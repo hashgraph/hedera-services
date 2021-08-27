@@ -50,7 +50,7 @@ public class Issue1742Suite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean leaksState() {
+	public boolean canRunAsync() {
 		return true;
 	}
 

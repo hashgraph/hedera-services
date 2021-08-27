@@ -86,6 +86,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
+	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				List.of(new HapiApiSpec[] {

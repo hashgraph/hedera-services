@@ -50,7 +50,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean leaksState() {
+	public boolean canRunAsync() {
 		return true;
 	}
 

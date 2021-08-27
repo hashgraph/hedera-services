@@ -104,6 +104,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
+	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
