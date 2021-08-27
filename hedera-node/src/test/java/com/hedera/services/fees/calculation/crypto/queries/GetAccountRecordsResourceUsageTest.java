@@ -25,7 +25,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -37,7 +36,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ import static org.mockito.BDDMockito.mock;
 class GetAccountRecordsResourceUsageTest {
 	StateView view;
 	CryptoFeeBuilder usageEstimator;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<PermHashInteger, MerkleAccount> accounts;
 	GetAccountRecordsResourceUsage subject;
 	String a = "0.0.1234";
 	MerkleAccount aValue;
@@ -71,7 +70,7 @@ class GetAccountRecordsResourceUsageTest {
 		aValue.records().offer(recordOne());
 		aValue.records().offer(recordTwo());
 		usageEstimator = mock(CryptoFeeBuilder.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();
 		children.setAccounts(accounts);
@@ -99,7 +98,7 @@ class GetAccountRecordsResourceUsageTest {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
-		MerkleEntityId key = PermHashInteger.fromAccountId(asAccount(a));
+		final var key = PermHashInteger.fromAccountId(asAccount(a));
 
 		// given:
 		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);

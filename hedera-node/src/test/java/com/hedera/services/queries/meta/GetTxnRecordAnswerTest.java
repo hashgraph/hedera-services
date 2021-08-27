@@ -27,8 +27,8 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -43,7 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +97,7 @@ class GetTxnRecordAnswerTest {
 	private String node = "0.0.3";
 	private long fee = 1_234L;
 	private Transaction paymentTxn;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
 	private NodeLocalProperties nodeProps;
@@ -105,7 +105,7 @@ class GetTxnRecordAnswerTest {
 	@BeforeEach
 	private void setup() {
 		recordCache = mock(RecordCache.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();
 		children.setAccounts(accounts);

@@ -31,7 +31,7 @@ import com.hedera.services.sigs.metadata.lookups.DefaultContractLookup;
 import com.hedera.services.sigs.metadata.lookups.DefaultTopicLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.RetryingMMapAccountLookup;
+import com.hedera.services.sigs.metadata.lookups.RetryingAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -111,7 +111,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			MiscRunningAvgs runningAvgs,
 			MiscSpeedometers speedometers
 	) {
-		var accountLookup = new RetryingMMapAccountLookup(
+		var accountLookup = new RetryingAccountLookup(
 				accounts,
 				maxRetries,
 				retryWaitIncrementMs,
@@ -137,7 +137,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			MiscRunningAvgs runningAvgs,
 			MiscSpeedometers speedometers
 	) {
-		var accountLookup = new RetryingMMapAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
+		var accountLookup = new RetryingAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				accountLookup,

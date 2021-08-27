@@ -42,32 +42,32 @@ public class PermHashInteger {
 		this.value = value;
 	}
 
-	public static PermHashInteger asPhi(int i) {
+	public static PermHashInteger fromInt(int i) {
 		return new PermHashInteger(i);
 	}
 
-	public static PermHashInteger asPhi(long i) {
+	public static PermHashInteger fromLong(long i) {
 		return new PermHashInteger((int) i);
 	}
 
 	public static PermHashInteger fromAccountId(AccountID grpc) {
-		return asPhi(grpc.getAccountNum());
+		return fromLong(grpc.getAccountNum());
 	}
 
 	public static PermHashInteger fromTokenId(TokenID grpc) {
-		return asPhi(grpc.getTokenNum());
+		return fromLong(grpc.getTokenNum());
 	}
 
 	public static PermHashInteger fromTopicId(TopicID grpc) {
-		return asPhi(grpc.getTopicNum());
+		return fromLong(grpc.getTopicNum());
 	}
 
 	public static PermHashInteger fromContractId(ContractID grpc) {
-		return asPhi(grpc.getContractNum());
+		return fromLong(grpc.getContractNum());
 	}
 
 	public static PermHashInteger fromScheduleId(ScheduleID grpc) {
-		return asPhi(grpc.getScheduleNum());
+		return fromLong(grpc.getScheduleNum());
 	}
 
 	public ScheduleID asGrpcScheduleId() {

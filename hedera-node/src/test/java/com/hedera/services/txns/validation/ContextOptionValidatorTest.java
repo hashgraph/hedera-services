@@ -48,7 +48,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -109,8 +109,8 @@ class ContextOptionValidatorTest {
 	private MerkleTopic deletedMerkleTopic;
 	private MerkleTopic expiredMerkleTopic;
 	private MerkleTopic merkleTopic;
-	private FCMap topics;
-	private FCMap accounts;
+	private MerkleMap topics;
+	private MerkleMap accounts;
 	private TransactionContext txnCtx;
 	private ContextOptionValidator subject;
 	private JKey wacl;
@@ -128,7 +128,7 @@ class ContextOptionValidatorTest {
 	private void setup() throws Exception {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		given(accounts.get(PermHashInteger.fromAccountId(a))).willReturn(aV);
 		given(accounts.get(PermHashInteger.fromAccountId(deleted))).willReturn(deletedV);
 		given(accounts.get(fromContractId(contract))).willReturn(contractV);
@@ -139,7 +139,7 @@ class ContextOptionValidatorTest {
 		properties = mock(PropertySource.class);
 		given(properties.getLongProperty("entities.maxLifetime")).willReturn(maxLifetime);
 
-		topics = mock(FCMap.class);
+		topics = mock(MerkleMap.class);
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
 		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();

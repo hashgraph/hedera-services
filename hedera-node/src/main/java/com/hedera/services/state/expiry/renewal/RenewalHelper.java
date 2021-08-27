@@ -94,7 +94,7 @@ public class RenewalHelper {
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
-		lastClassifiedEntityId = PermHashInteger.asPhi(candidateNum);
+		lastClassifiedEntityId = PermHashInteger.fromLong(candidateNum);
 		var currentAccounts = accounts.get();
 
 		if (!currentAccounts.containsKey(lastClassifiedEntityId)) {

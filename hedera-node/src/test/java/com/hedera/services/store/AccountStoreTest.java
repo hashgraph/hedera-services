@@ -24,14 +24,14 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +59,7 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private AccountStore subject;
 
@@ -161,11 +161,11 @@ class AccountStoreTest {
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, ex2.getResponseCode());
 	}
 
-	private void setupWithAccount(MerkleEntityId anId, MerkleAccount anAccount) {
+	private void setupWithAccount(PermHashInteger anId, MerkleAccount anAccount) {
 		given(accounts.get(anId)).willReturn(anAccount);
 	}
 
-	private void setupWithMutableAccount(MerkleEntityId anId, MerkleAccount anAccount) {
+	private void setupWithMutableAccount(PermHashInteger anId, MerkleAccount anAccount) {
 		given(accounts.getForModify(anId)).willReturn(anAccount);
 	}
 
@@ -198,7 +198,7 @@ class AccountStoreTest {
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final MerkleEntityId miscMerkleId = new MerkleEntityId(0, 0, miscAccountNum);
+	private final PermHashInteger miscMerkleId = PermHashInteger.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);
 

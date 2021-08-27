@@ -25,7 +25,6 @@ import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -37,7 +36,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,14 +61,14 @@ class ExpiryManagerTest {
 	private final long secondThen = now + 1;
 	private final AccountID aGrpcId = IdUtils.asAccount("0.0.2");
 	private final AccountID bGrpcId = IdUtils.asAccount("0.0.4");
-	private final MerkleEntityId aKey = PermHashInteger.fromAccountId(aGrpcId);
-	private final MerkleEntityId bKey = PermHashInteger.fromAccountId(bGrpcId);
+	private final PermHashInteger aKey = PermHashInteger.fromAccountId(aGrpcId);
+	private final PermHashInteger bKey = PermHashInteger.fromAccountId(bGrpcId);
 	private final MerkleAccount anAccount = new MerkleAccount();
 	private final MerkleSchedule aSchedule = new MerkleSchedule();
 	private final MerkleSchedule bSchedule = new MerkleSchedule();
 
-	private FCMap<MerkleEntityId, MerkleAccount> liveAccounts = new FCMap<>();
-	private FCMap<MerkleEntityId, MerkleSchedule> liveSchedules = new FCMap<>();
+	private MerkleMap<PermHashInteger, MerkleAccount> liveAccounts = new MerkleMap<>();
+	private MerkleMap<PermHashInteger, MerkleSchedule> liveSchedules = new MerkleMap<>();
 	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
 	private final HederaNumbers nums = new MockHederaNumbers();
@@ -79,9 +78,9 @@ class ExpiryManagerTest {
 	@Mock
 	private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> mockAccounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> mockAccounts;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleSchedule> mockSchedules;
+	private MerkleMap<PermHashInteger, MerkleSchedule> mockSchedules;
 
 	private ExpiryManager subject;
 
@@ -102,7 +101,7 @@ class ExpiryManagerTest {
 		final var firstExpiry = resultingExpiries.expireNextAt(now);
 
 		// then:
-		assertEquals(aKey.getNum(), firstExpiry.getLeft());
+		assertEquals(aKey.getValue(), firstExpiry.getLeft());
 		assertEquals(1, resultingExpiries.getAllExpiries().size());
 	}
 
@@ -112,14 +111,16 @@ class ExpiryManagerTest {
 				mockScheduleStore, nums, mockTxnHistories, () -> mockAccounts, () -> mockSchedules);
 
 		// given:
-		subject.trackExpirationEvent(Pair.of(aKey.getNum(), entityId -> mockScheduleStore.expire(entityId)), firstThen);
-		subject.trackExpirationEvent(Pair.of(bKey.getNum(), entityId -> mockScheduleStore.expire(entityId)), secondThen);
+		subject.trackExpirationEvent(Pair.of((long) aKey.getValue(),
+				entityId -> mockScheduleStore.expire(entityId)), firstThen);
+		subject.trackExpirationEvent(Pair.of((long) bKey.getValue(),
+				entityId -> mockScheduleStore.expire(entityId)), secondThen);
 
 		// when:
 		subject.purge(now);
 
 		// then:
-		verify(mockScheduleStore).expire(new EntityId(0, 0, aKey.getNum()));
+		verify(mockScheduleStore).expire(new EntityId(0, 0, aKey.getValue()));
 		assertEquals(1, subject.getShortLivedEntityExpiries().getAllExpiries().size());
 	}
 
@@ -195,7 +196,7 @@ class ExpiryManagerTest {
 		assertFalse(liveTxnHistories.containsKey(newTxnId));
 	}
 
-	private void addLiveRecord(MerkleEntityId key, ExpirableTxnRecord record) {
+	private void addLiveRecord(PermHashInteger key, ExpirableTxnRecord record) {
 		final var mutableAccount = liveAccounts.getForModify(key);
 		mutableAccount.records().offer(record);
 		liveAccounts.replace(aKey, mutableAccount);

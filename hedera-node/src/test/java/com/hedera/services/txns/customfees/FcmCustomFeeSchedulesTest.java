@@ -61,8 +61,8 @@ class FcmCustomFeeSchedulesTest {
 		bToken.setFeeScheduleFrom(tokenBFees, null);
 		bToken.setTreasury(bTreasury);
 
-		tokens.put(PermHashInteger.asPhi(tokenA.num()), aToken);
-		tokens.put(PermHashInteger.asPhi(tokenB.num()), bToken);
+		tokens.put(PermHashInteger.fromLong(tokenA.num()), aToken);
+		tokens.put(PermHashInteger.fromLong(tokenB.num()), bToken);
 		subject = new FcmCustomFeeSchedules(() -> tokens);
 	}
 
@@ -94,7 +94,7 @@ class FcmCustomFeeSchedulesTest {
 		final var missingFees = List.of(
 				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
 		token.setFeeScheduleFrom(missingFees, null);
-		secondMerkleMap.put(PermHashInteger.asPhi(missingToken.num()), new MerkleToken());
+		secondMerkleMap.put(PermHashInteger.fromLong(missingToken.num()), new MerkleToken());
 		final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
 		final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
 

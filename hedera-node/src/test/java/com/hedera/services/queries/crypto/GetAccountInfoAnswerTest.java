@@ -27,8 +27,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
@@ -37,6 +35,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -51,10 +50,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -88,8 +84,8 @@ class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
 	private String node = "0.0.3";
@@ -116,10 +112,7 @@ class GetAccountInfoAnswerTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
-		tokenRels = new FCMap<>();
+		tokenRels = new MerkleMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(payerId, firstToken),
 				new MerkleTokenRelStatus(firstBalance, true, true));
@@ -178,7 +171,7 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		given(accounts.get(PermHashInteger.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);

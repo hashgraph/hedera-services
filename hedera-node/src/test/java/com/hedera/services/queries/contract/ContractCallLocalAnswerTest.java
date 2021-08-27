@@ -23,7 +23,7 @@ package com.hedera.services.queries.contract;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,8 +56,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,11 +82,11 @@ class ContractCallLocalAnswerTest {
 	ContractCallLocalAnswer subject;
 	OptionValidator validator;
 	ContractCallLocalAnswer.LegacyLocalCaller delegate;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	MerkleMap<PermHashInteger, MerkleAccount> contracts;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+		contracts = (MerkleMap<PermHashInteger, MerkleAccount>) mock(MerkleMap.class);
 		view = mock(StateView.class);
 
 		delegate = mock(ContractCallLocalAnswer.LegacyLocalCaller.class);

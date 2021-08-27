@@ -322,7 +322,7 @@ public class TypedTokenStore {
 	 * @return - the loaded token
 	 */
 	public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
-		final var key = PermHashInteger.asPhi(id.getNum());
+		final var key = PermHashInteger.fromLong(id.getNum());
 		final var merkleToken = tokens.get().get(key);
 
 		validateUsable(merkleToken, code);
@@ -342,7 +342,7 @@ public class TypedTokenStore {
 	 * 		the token to save
 	 */
 	public void persistToken(Token token) {
-		final var key = PermHashInteger.asPhi(token.getId().getNum());
+		final var key = PermHashInteger.fromLong(token.getId().getNum());
 		final var mutableToken = tokens.get().getForModify(key);
 		mapModelChangesToMutable(token, mutableToken);
 
@@ -374,7 +374,7 @@ public class TypedTokenStore {
 	 */
 	public void persistNew(Token token) {
 		/* create new merkle token */
-		final var newMerkleTokenId = PermHashInteger.asPhi(token.getId().getNum());
+		final var newMerkleTokenId = PermHashInteger.fromLong(token.getId().getNum());
 		final var newMerkleToken = new MerkleToken(
 				token.getExpiry(),
 				token.getTotalSupply(),

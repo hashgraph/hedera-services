@@ -40,7 +40,7 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
 
 /**
  * Provides implementation support for a {@link UniqTokenView} via a method able to
@@ -105,7 +105,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	) {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
-		relation.get(asPhi(key.identityCode()), start, end).forEachRemaining(nftIdCode -> {
+		relation.get(fromInt(key.identityCode()), start, end).forEachRemaining(nftIdCode -> {
 			final var nftId = MerkleUniqueTokenId.fromIdentityCode(nftIdCode);
 			final var nft = curNfts.get(nftId);
 			if (nft == null) {

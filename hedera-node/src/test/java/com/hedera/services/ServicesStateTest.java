@@ -29,11 +29,9 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.org.LegacyStateChildIndices;
 import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -41,6 +39,7 @@ import com.hedera.services.state.org.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -55,14 +54,10 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerkleBinaryTree;
-import com.swirlds.merkletree.MerklePair;
-import com.swirlds.merkletree.MerkleTreeInternalNode;
+import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -80,7 +75,6 @@ import java.util.List;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.swirlds.common.constructable.ConstructableRegistry.registerConstructable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -436,22 +430,17 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
+	void migratesFromRelease0160AsExpected() {
 		// setup:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
-		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
-		final var nftKey = new MerkleUniqueTokenId(MISSING_ENTITY_ID, 1L);
+		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var nftKey = PermHashLong.asPhl(MISSING_ENTITY_ID.num(), 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
-		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final var tokenRelsKey = PermHashLong.asPhl(2,3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
 		nfts.put(nftKey, nftVal);
@@ -474,12 +463,12 @@ class ServicesStateTest {
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				nftVal,
-				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
+				((MerkleMap<PermHashLong, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
 		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
 		assertEquals(
 				tokenRelsVal,
-				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+				((MerkleMap<PermHashLong, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
@@ -487,19 +476,14 @@ class ServicesStateTest {
 
 	@Test
 	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
-		// setup:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
 		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
-		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
-		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var tokenRelsKey = PermHashLong.asPhl(2, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -521,7 +505,7 @@ class ServicesStateTest {
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				tokenRelsVal,
-				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+				((MerkleMap<PermHashLong, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
@@ -604,8 +588,8 @@ class ServicesStateTest {
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
-			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts,
-			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels,
+			MerkleMap<PermHashLong, MerkleUniqueToken> nfts,
+			MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels,
 			boolean withNfts
 	) {
 		final List<MerkleNode> legacyChildren = new ArrayList<>();

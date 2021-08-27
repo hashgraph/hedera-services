@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenAssociateUsage;
@@ -33,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +50,7 @@ class TokenAssociateResourceUsageTest {
 
 	AccountID target = IdUtils.asAccount("1.2.3");
 	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private TransactionBody nonTokenAssociateTxn;
 	private TransactionBody tokenAssociateTxn;
@@ -75,7 +74,7 @@ class TokenAssociateResourceUsageTest {
 
 		account = mock(MerkleAccount.class);
 		given(account.getExpiry()).willReturn(expiry);
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		given(accounts.get(PermHashInteger.fromAccountId(target))).willReturn(account);
 		view = mock(StateView.class);
 		given(view.accounts()).willReturn(accounts);

@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,13 +25,13 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,8 +54,8 @@ class NarratedLedgerChargingTest {
 	private final AccountID grpcNodeId = IdUtils.asAccount("0.0.3");
 	private final AccountID grpcPayerId = IdUtils.asAccount("0.0.1234");
 	private final AccountID grpcFundingId = IdUtils.asAccount("0.0.98");
-	private final MerkleEntityId nodeId = new MerkleEntityId(0, 0, 3L);
-	private final MerkleEntityId payerId = new MerkleEntityId(0, 0, 1_234L);
+	private final PermHashInteger nodeId = PermHashInteger.fromLong(3L);
+	private final PermHashInteger payerId = PermHashInteger.fromLong(1_234L);
 
 	@Mock
 	private NodeInfo nodeInfo;
@@ -68,7 +68,7 @@ class NarratedLedgerChargingTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private NarratedLedgerCharging subject;
 
@@ -231,7 +231,7 @@ class NarratedLedgerChargingTest {
 		given(accounts.get(nodeId)).willReturn(nodeAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
-		given(nodeInfo.accountOf(submittingNodeId)).willReturn(nodeId.toAccountId());
+		given(nodeInfo.accountOf(submittingNodeId)).willReturn(nodeId.asGrpcAccountId());
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);

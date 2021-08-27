@@ -23,7 +23,6 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -33,6 +32,7 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -49,7 +49,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.time.Instant;
 import java.util.List;
@@ -81,7 +81,7 @@ public interface TxnHandlingScenario {
 
 	KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
-	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
+	default MerkleMap<PermHashInteger, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
 				.withAccount(FIRST_TOKEN_SENDER_ID,
 						newAccount()
@@ -186,8 +186,8 @@ public interface TxnHandlingScenario {
 		return hfs;
 	}
 
-	default FCMap<MerkleEntityId, MerkleTopic> topics() {
-		var topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
+	default MerkleMap<PermHashInteger, MerkleTopic> topics() {
+		var topics = (MerkleMap<PermHashInteger, MerkleTopic>) mock(MerkleMap.class);
 		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
 		return topics;
 	}

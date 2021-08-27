@@ -137,8 +137,8 @@ class ToStringAccountsExporterTest {
 		// given:
 		MerkleMap<PermHashInteger, MerkleAccount> accounts = new MerkleMap<>();
 		// and:
-		accounts.put(PermHashInteger.asPhi(2), account2);
-		accounts.put(PermHashInteger.asPhi(1), account1);
+		accounts.put(PermHashInteger.fromInt(2), account2);
+		accounts.put(PermHashInteger.fromInt(1), account1);
 		// and:
 		given(nodeLocalProperties.exportAccountsOnStartup()).willReturn(true);
 		given(nodeLocalProperties.accountsExportPath()).willReturn(testExportLoc);

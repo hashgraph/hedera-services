@@ -41,7 +41,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
  * with {@code Pause} invocations that increase by {@code retryWaitIncrementMs} between
  * each failed lookup.
  */
-public class RetryingMMapAccountLookup extends DefaultAccountLookup {
+public class RetryingAccountLookup extends DefaultAccountLookup {
 	private static final int DEFAULT_MAX_RETRIES = 10;
 	private static final int DEFAULT_RETRY_WAIT_INCREMENT_MS = 10;
 
@@ -53,7 +53,7 @@ public class RetryingMMapAccountLookup extends DefaultAccountLookup {
 
 	private Optional<NodeLocalProperties> properties;
 
-	public RetryingMMapAccountLookup(
+	public RetryingAccountLookup(
 			final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
 			final int maxRetries,
 			final int retryWaitIncrementMs,
@@ -70,7 +70,7 @@ public class RetryingMMapAccountLookup extends DefaultAccountLookup {
 		this.retryWaitIncrementMs = retryWaitIncrementMs;
 	}
 
-	public RetryingMMapAccountLookup(
+	public RetryingAccountLookup(
 			final Pause pause,
 			final NodeLocalProperties properties,
 			final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,

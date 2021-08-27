@@ -20,7 +20,6 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -30,7 +29,7 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,13 +49,13 @@ import static org.mockito.BDDMockito.given;
 class OpUsageCtxHelperTest {
 	private final long now = 1_234_567L;
 	private final MerkleToken extant = new MerkleToken(now, 1, 2,
-			"Three", "FOUR", false, true,
+			"shLong.asPhlThree", "FOUR", false, true,
 			EntityId.MISSING_ENTITY_ID);
 	private final TokenID target = IdUtils.asToken("1.2.3");
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private MerkleMap<PermHashInteger, MerkleToken> tokens;
 
 	private OpUsageCtxHelper subject;
 

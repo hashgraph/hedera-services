@@ -36,7 +36,6 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -55,12 +54,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +86,7 @@ class LedgerBalanceChangesTest {
 			new HashMapBackingTokenRels();
 
 	private TokenStore tokenStore;
-	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+	private final MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
 	private final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations = new FCOneToManyRelation<>();
@@ -118,9 +114,6 @@ class LedgerBalanceChangesTest {
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
@@ -233,8 +226,8 @@ class LedgerBalanceChangesTest {
 	void rejectsMissingToken() {
 		// setup:
 		tokens.clear();
-		tokens.put(anotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
+		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
+		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
 		final var viewManager = new UniqTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
@@ -544,11 +537,11 @@ class LedgerBalanceChangesTest {
 	private final NftId aaNft = new NftId(aNft.getShard(), aNft.getRealm(), aNft.getNum(), aSerialNo);
 	private final NftId baNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), aSerialNo);
 	private final NftId bbNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), bSerialNo);
-	private final MerkleEntityId aNftKey = new MerkleEntityId(0, 0, 9999);
-	private final MerkleEntityId bNftKey = new MerkleEntityId(0, 0, 10000);
-	private final MerkleEntityId tokenKey = new MerkleEntityId(0, 0, 75231);
-	private final MerkleEntityId anotherTokenKey = new MerkleEntityId(0, 0, 75232);
-	private final MerkleEntityId yetAnotherTokenKey = new MerkleEntityId(0, 0, 75233);
+	private final PermHashInteger aNftKey = PermHashInteger.fromLong(9999);
+	private final PermHashInteger bNftKey = PermHashInteger.fromLong(10000);
+	private final PermHashInteger tokenKey = PermHashInteger.fromLong(75231);
+	private final PermHashInteger anotherTokenKey = PermHashInteger.fromLong(75232);
+	private final PermHashInteger yetAnotherTokenKey = PermHashInteger.fromLong(75233);
 
 	private final long aStartBalance = 1_000L;
 	private final long bStartBalance = 0L;

@@ -21,17 +21,16 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.org.LegacyStateChildIndices;
-import com.hedera.services.state.org.StateChildIndices;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.org.LegacyStateChildIndices;
+import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateVersions;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.copy.MerkleCopy;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,9 +52,9 @@ class Release0170MigrationTest {
 	@Mock
 	private MerkleNetworkContext networkContext;
 	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+	private MerkleMap<PermHashLong, MerkleUniqueToken> nfts;
 	@Mock
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private Release0170Migration.TreeCopier treeCopier;
 

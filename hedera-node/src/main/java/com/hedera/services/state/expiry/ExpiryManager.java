@@ -169,7 +169,7 @@ public class ExpiryManager {
 	private void purgeExpiredRecordsAt(long now) {
 		final var currentAccounts = accounts.get();
 		while (payerRecordExpiries.hasExpiringAt(now)) {
-			final var key = PermHashInteger.asPhi(payerRecordExpiries.expireNextAt(now));
+			final var key = PermHashInteger.fromLong(payerRecordExpiries.expireNextAt(now));
 
 			final var mutableAccount = currentAccounts.getForModify(key);
 			final var mutableRecords = mutableAccount.records();

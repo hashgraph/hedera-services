@@ -118,7 +118,7 @@ public class AccountStore {
 	 */
 	public void persistAccount(Account account) {
 		final var id = account.getId();
-		final var key = PermHashInteger.asPhi(id.getNum());
+		final var key = PermHashInteger.fromLong(id.getNum());
 
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);

@@ -65,8 +65,8 @@ class BasedLedgerValidatorTest {
 	@Test
 	void recognizesRightFloat() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(PermHashInteger.asPhi(1L), expectedWith(50L));
-		accounts.put(PermHashInteger.asPhi(2L), expectedWith(50L));
+		accounts.put(PermHashInteger.fromLong(1L), expectedWith(50L));
+		accounts.put(PermHashInteger.fromLong(2L), expectedWith(50L));
 
 		// expect:
 		assertDoesNotThrow(() -> subject.validate(accounts));
@@ -75,8 +75,8 @@ class BasedLedgerValidatorTest {
 	@Test
 	void recognizesWrongFloat() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(PermHashInteger.asPhi(1L), expectedWith(50L));
-		accounts.put(PermHashInteger.asPhi(2L), expectedWith(51L));
+		accounts.put(PermHashInteger.fromLong(1L), expectedWith(50L));
+		accounts.put(PermHashInteger.fromLong(2L), expectedWith(51L));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
@@ -85,8 +85,8 @@ class BasedLedgerValidatorTest {
 	@Test
 	void recognizesExcessFloat() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(PermHashInteger.asPhi(1L), expectedWith(Long.MAX_VALUE));
-		accounts.put(PermHashInteger.asPhi(2L), expectedWith(51L));
+		accounts.put(PermHashInteger.fromLong(1L), expectedWith(Long.MAX_VALUE));
+		accounts.put(PermHashInteger.fromLong(2L), expectedWith(51L));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
@@ -95,7 +95,7 @@ class BasedLedgerValidatorTest {
 	@Test
 	void doesntThrowWithValidIds() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(PermHashInteger.asPhi(3L), expectedWith(100L));
+		accounts.put(PermHashInteger.fromLong(3L), expectedWith(100L));
 
 		// expect:
 		assertDoesNotThrow(() -> subject.validate(accounts));
@@ -104,7 +104,7 @@ class BasedLedgerValidatorTest {
 	@Test
 	void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(PermHashInteger.asPhi(0L), expectedWith(100L));
+		accounts.put(PermHashInteger.fromLong(0L), expectedWith(100L));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
@@ -113,7 +113,7 @@ class BasedLedgerValidatorTest {
 	@Test
 	void throwsOnIdWithNumTooLarge() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(PermHashInteger.asPhi(dynamicProperties.maxAccountNum() + 1), expectedWith(100L));
+		accounts.put(PermHashInteger.fromLong(dynamicProperties.maxAccountNum() + 1), expectedWith(100L));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));

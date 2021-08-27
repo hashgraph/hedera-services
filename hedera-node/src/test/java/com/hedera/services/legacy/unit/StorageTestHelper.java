@@ -22,20 +22,19 @@ package com.hedera.services.legacy.unit;
 
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.ArrayUtils;
 
-public class FCStorageWrapper {
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+public class StorageTestHelper {
+	private MerkleMap<String, MerkleOptionalBlob> storageMap;
 
-	public FCStorageWrapper(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
+	public StorageTestHelper(final MerkleMap<String, MerkleOptionalBlob> storageMap) {
 		this.storageMap = storageMap;
 	}
 
 	public void fileCreate(final String path, final byte[] content) {
-		final var sKey = new MerkleBlobMeta(path);
 		final var sVal = new MerkleOptionalBlob(content);
-		storageMap.put(sKey, sVal);
+		storageMap.put(path, sVal);
 	}
 
 	public byte[] fileRead(final String path) {

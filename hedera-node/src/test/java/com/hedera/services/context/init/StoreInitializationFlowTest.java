@@ -23,18 +23,18 @@ package com.hedera.services.context.init;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,9 +63,9 @@ class StoreInitializationFlowTest {
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private MerkleMap<PermHashInteger, MerkleToken> tokens;
 	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+	private MerkleMap<PermHashLong, MerkleUniqueToken> nfts;
 
 	private StoreInitializationFlow subject;
 

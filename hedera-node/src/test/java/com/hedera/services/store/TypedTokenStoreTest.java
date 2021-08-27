@@ -520,7 +520,7 @@ class TypedTokenStoreTest {
 	private final String name = "Testing123";
 	private final String symbol = "T123";
 	private final String memo = "memo";
-	private final PermHashInteger merkleTokenId = PermHashInteger.asPhi(tokenNum);
+	private final PermHashInteger merkleTokenId = PermHashInteger.fromLong(tokenNum);
 	private final Id tokenId = new Id(0, 0, tokenNum);
 	private final Token token = new Token(tokenId);
 

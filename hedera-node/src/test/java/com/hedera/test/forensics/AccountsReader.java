@@ -29,27 +29,25 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.merkle.io.MerkleDataInputStream;
 import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class AccountsReader {
-	public static FCMap<MerkleEntityId, MerkleAccount> from(String loc) throws Exception {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
+	public static MerkleMap<PermHashInteger, MerkleAccount> from(String loc) throws Exception {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCQueue.class, FCQueue::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FCMap.class, FCMap::new));
+				new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleEntityId.class, MerkleEntityId::new));
 		ConstructableRegistry.registerConstructable(
@@ -70,7 +68,7 @@ public class AccountsReader {
 				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
 
 		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)), false)) {
-			FCMap<MerkleEntityId, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+			MerkleMap<PermHashInteger, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
 			return fcm;
 		}
 	}

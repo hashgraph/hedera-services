@@ -22,7 +22,6 @@ package com.hedera.services.queries.validation;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -31,7 +30,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -69,18 +67,18 @@ class QueryFeeCheckTest {
 	private static final long aLittle = 2L;
 	private static final long aLot = Long.MAX_VALUE - 1L;
 	private static final long aFew = 100L;
-	private static final MerkleEntityId missingKey = PermHashInteger.fromAccountId(aMissing);
-	private static final MerkleEntityId richKey = PermHashInteger.fromAccountId(aRich);
-	private static final MerkleEntityId brokeKey = PermHashInteger.fromAccountId(aBroke);
-	private static final MerkleEntityId nodeKey = PermHashInteger.fromAccountId(aNode);
-	private static final MerkleEntityId anotherNodeKey = PermHashInteger.fromAccountId(anotherNode);
-	private static final MerkleEntityId queryPayerKey = PermHashInteger.fromAccountId(aQueryPayer);
-	private static final MerkleEntityId testPayerKey = PermHashInteger.fromAccountId(aTestPayer);
+	private static final PermHashInteger missingKey = PermHashInteger.fromAccountId(aMissing);
+	private static final PermHashInteger richKey = PermHashInteger.fromAccountId(aRich);
+	private static final PermHashInteger brokeKey = PermHashInteger.fromAccountId(aBroke);
+	private static final PermHashInteger nodeKey = PermHashInteger.fromAccountId(aNode);
+	private static final PermHashInteger anotherNodeKey = PermHashInteger.fromAccountId(anotherNode);
+	private static final PermHashInteger queryPayerKey = PermHashInteger.fromAccountId(aQueryPayer);
+	private static final PermHashInteger testPayerKey = PermHashInteger.fromAccountId(aTestPayer);
 
 	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
 	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private QueryFeeCheck subject;
 
@@ -99,21 +97,21 @@ class QueryFeeCheckTest {
 		queryPayer = mock(MerkleAccount.class);
 		given(queryPayer.getBalance()).willReturn(aLot);
 
-		accounts = mock(FCMap.class);
-		given(accounts.get(argThat(missingKey::equals))).willReturn(null);
-		given(accounts.get(argThat(richKey::equals))).willReturn(rich);
-		given(accounts.get(argThat(brokeKey::equals))).willReturn(broke);
-		given(accounts.get(argThat(testPayerKey::equals))).willReturn(testPayer);
-		given(accounts.get(argThat(queryPayerKey::equals))).willReturn(queryPayer);
+		accounts = mock(MerkleMap.class);
+		given(accounts.get(missingKey)).willReturn(null);
+		given(accounts.get(richKey)).willReturn(rich);
+		given(accounts.get(brokeKey)).willReturn(broke);
+		given(accounts.get(testPayerKey)).willReturn(testPayer);
+		given(accounts.get(queryPayerKey)).willReturn(queryPayer);
 		given(accounts.get(PermHashInteger.fromAccountId(aDetached))).willReturn(detached);
 
-		given(accounts.containsKey(argThat(missingKey::equals))).willReturn(false);
-		given(accounts.containsKey(argThat(richKey::equals))).willReturn(true);
-		given(accounts.containsKey(argThat(brokeKey::equals))).willReturn(true);
-		given(accounts.containsKey(argThat(nodeKey::equals))).willReturn(true);
-		given(accounts.containsKey(argThat(anotherNodeKey::equals))).willReturn(true);
-		given(accounts.containsKey(argThat(testPayerKey::equals))).willReturn(true);
-		given(accounts.containsKey(argThat(testPayerKey::equals))).willReturn(true);
+		given(accounts.containsKey(missingKey)).willReturn(false);
+		given(accounts.containsKey(richKey)).willReturn(true);
+		given(accounts.containsKey(brokeKey)).willReturn(true);
+		given(accounts.containsKey(nodeKey)).willReturn(true);
+		given(accounts.containsKey(anotherNodeKey)).willReturn(true);
+		given(accounts.containsKey(testPayerKey)).willReturn(true);
+		given(accounts.containsKey(testPayerKey)).willReturn(true);
 
 		validator = mock(OptionValidator.class);
 

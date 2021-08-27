@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 
 import java.util.Collections;
 import java.util.List;
@@ -75,15 +76,12 @@ public class PojoAccount {
 	private boolean deleted;
 	private boolean receiverSigRequired;
 
-	public static PojoAccount fromEntry(Map.Entry<MerkleEntityId, MerkleAccount> e) {
+	public static PojoAccount fromEntry(Map.Entry<PermHashInteger, MerkleAccount> e) {
 		return from(e.getKey(), e.getValue());
 	}
 
-	public static PojoAccount from(MerkleEntityId mk, MerkleAccount value) {
+	public static PojoAccount from(PermHashInteger mk, MerkleAccount value) {
 		var pojo = new PojoAccount();
-		if (mk.getNum() == 6237) {
-			System.out.println(value);
-		}
 		pojo.setId(asAccountString(fromKey(mk)));
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());

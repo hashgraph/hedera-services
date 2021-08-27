@@ -33,17 +33,16 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.ethereum.core.AccountState;
 import org.ethereum.core.Repository;
 import org.ethereum.datasource.DbSource;
@@ -61,9 +60,8 @@ import static org.mockito.BDDMockito.mock;
 class RepoNewCacheTest {
 	@Disabled
 	public void test() {
-		FCMap<MerkleEntityId, MerkleAccount> accountMap =
-				new FCMap<>();
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
+		MerkleMap<PermHashInteger, MerkleAccount> accountMap = new MerkleMap<>();
+		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
@@ -142,9 +140,8 @@ class RepoNewCacheTest {
 
 	@Test
 	void rollbackTest() {
-		FCMap<MerkleEntityId, MerkleAccount> accountMap =
-				new FCMap<>();
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
+		MerkleMap<PermHashInteger, MerkleAccount> accountMap = new MerkleMap<>();
+		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
 		BackingAccounts backingAccounts = new BackingAccounts(() -> accountMap);

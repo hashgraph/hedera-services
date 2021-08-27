@@ -55,7 +55,7 @@ public class FeeCalcUtilsTest {
 	 */
 	public static String ARTIFACTS_PREFIX_FILE_INFO = "k";
 	public static String LEDGER_PATH = "/{0}/";
-	private final PermHashInteger key = PermHashInteger.asPhi(1234);
+	private final PermHashInteger key = PermHashInteger.fromInt(1234);
 
 	public static String pathOf(FileID fid) {
 		return path(ARTIFACTS_PREFIX_FILE_CONTENT, fid);

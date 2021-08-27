@@ -21,8 +21,8 @@ package com.hedera.test.utils;
  */
 
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -67,8 +67,8 @@ public class IdUtils {
 				.build();
 	}
 
-	public static AccountID fromKey(MerkleEntityId mk) {
-		return asAccount(String.format("%d.%d.%d", mk.getShard(), mk.getRealm(), mk.getNum()));
+	public static AccountID fromKey(PermHashInteger mk) {
+		return asAccount(String.format("0.0.%d", mk.getValue()));
 	}
 
 	public static ContractID asContract(String v) {

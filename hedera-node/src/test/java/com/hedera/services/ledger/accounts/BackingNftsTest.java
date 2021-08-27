@@ -21,15 +21,12 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,12 +46,9 @@ class BackingNftsTest {
 	private NftId aNftId = new NftId(0, 0, 3, 4);
 	private NftId bNftId = new NftId(0, 0, 4, 5);
 	private NftId cNftId = new NftId(0, 0, 5, 6);
-	private MerkleUniqueTokenId aKey =
-			new MerkleUniqueTokenId(new EntityId(0, 0, 3), 4);
-	private MerkleUniqueTokenId bKey =
-			new MerkleUniqueTokenId(new EntityId(0, 0, 4), 5);
-	private MerkleUniqueTokenId cKey =
-			new MerkleUniqueTokenId(new EntityId(0, 0, 5), 6);
+	private PermHashLong aKey = PermHashLong.asPhl(3, 4);
+	private PermHashLong bKey = PermHashLong.asPhl(4, 5);
+	private PermHashLong cKey = PermHashLong.asPhl(5, 6);
 	private MerkleUniqueToken aValue = new MerkleUniqueToken(
 			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),
@@ -68,16 +62,13 @@ class BackingNftsTest {
 			"IH".getBytes(StandardCharsets.UTF_8),
 			MISSING_INSTANT);
 
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> delegate;
+	private MerkleMap<PermHashLong, MerkleUniqueToken> delegate;
 
 	private BackingNfts subject;
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
-		delegate = new FCMap<>();
+		delegate = new MerkleMap<>();
 
 		delegate.put(aKey, theToken);
 		delegate.put(bKey, notTheToken);

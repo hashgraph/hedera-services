@@ -22,7 +22,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,16 +85,16 @@ public class RenewalProcess {
 			case DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN:
 				break;
 			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER:
-				processDetachedAccountGracePeriodOver(new MerkleEntityId(shard, realm, entityNum));
+				processDetachedAccountGracePeriodOver(PermHashInteger.fromLong(entityNum));
 				return true;
 			case EXPIRED_ACCOUNT_READY_TO_RENEW:
-				processExpiredAccountReadyToRenew(new MerkleEntityId(shard, realm, entityNum));
+				processExpiredAccountReadyToRenew(PermHashInteger.fromLong(entityNum));
 				return true;
 		}
 		return false;
 	}
 
-	private void processExpiredAccountReadyToRenew(MerkleEntityId accountId) {
+	private void processExpiredAccountReadyToRenew(PermHashInteger accountId) {
 		final var lastClassified = helper.getLastClassifiedAccount();
 		final long reqPeriod = lastClassified.getAutoRenewSecs();
 		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
@@ -105,7 +105,7 @@ public class RenewalProcess {
 		recordsHelper.streamCryptoRenewal(accountId, renewalFee, lastClassified.getExpiry() + effPeriod);
 	}
 
-	private void processDetachedAccountGracePeriodOver(MerkleEntityId accountId) {
+	private void processDetachedAccountGracePeriodOver(PermHashInteger accountId) {
 		final var tokensDisplaced = helper.removeLastClassifiedAccount();
 		recordsHelper.streamCryptoRemoval(accountId, tokensDisplaced.getLeft(), tokensDisplaced.getRight());
 	}

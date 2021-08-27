@@ -26,19 +26,18 @@ import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,10 +102,10 @@ class RenewalHelperTest {
 			"HERE", "Dreams never die",
 			true, true, treasuryId);
 	private final long deletedTokenNum = 1234L, survivedTokenNum = 4321L;
-	private final MerkleEntityId deletedTokenId = new MerkleEntityId(0, 0, deletedTokenNum);
-	private final MerkleEntityId survivedTokenId = new MerkleEntityId(0, 0, survivedTokenNum);
-	private final TokenID deletedTokenGrpcId = deletedTokenId.toTokenId();
-	private final TokenID survivedTokenGrpcId = survivedTokenId.toTokenId();
+	private final PermHashInteger deletedTokenId = PermHashInteger.fromLong(deletedTokenNum);
+	private final PermHashInteger survivedTokenId = PermHashInteger.fromLong(survivedTokenNum);
+	private final TokenID deletedTokenGrpcId = deletedTokenId.asGrpcTokenId();
+	private final TokenID survivedTokenGrpcId = survivedTokenId.asGrpcTokenId();
 	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
 
 	private final HederaNumbers nums = new MockHederaNumbers();
@@ -119,11 +118,11 @@ class RenewalHelperTest {
 	}
 
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private MerkleMap<PermHashInteger, MerkleToken> tokens;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 	@Mock
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private BackingAccounts backingAccounts;
 	@Mock
@@ -229,7 +228,7 @@ class RenewalHelperTest {
 	@Test
 	void shortCircuitsToJustRemovingRelIfZeroBalance() {
 		// setup:
-		final var expiredKey = new MerkleEntityId(0, 0, brokeExpiredAccountNum);
+		final var expiredKey = PermHashInteger.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
 		givenTokenPresent(deletedTokenId, deletedToken);
@@ -244,7 +243,7 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(backingAccounts).remove(expiredKey.toAccountId());
+		verify(backingAccounts).remove(expiredKey.asGrpcAccountId());
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
@@ -255,7 +254,7 @@ class RenewalHelperTest {
 	@Test
 	void removesLastClassifiedIfAppropriate() {
 		// setup:
-		final var expiredKey = new MerkleEntityId(0, 0, brokeExpiredAccountNum);
+		final var expiredKey = PermHashInteger.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
 		givenTokenPresent(deletedTokenId, deletedToken);
@@ -271,7 +270,7 @@ class RenewalHelperTest {
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		// then:
-		verify(backingAccounts).remove(expiredKey.toAccountId());
+		verify(backingAccounts).remove(expiredKey.asGrpcAccountId());
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
@@ -285,8 +284,8 @@ class RenewalHelperTest {
 	@Test
 	void renewsLastClassifiedAsRequested() {
 		// setup:
-		var key = new MerkleEntityId(0, 0, fundedExpiredAccountNum);
-		var fundingKey = new MerkleEntityId(0, 0, 98);
+		var key = PermHashInteger.fromLong(fundedExpiredAccountNum);
+		var fundingKey = PermHashInteger.fromInt(98);
 
 		givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, true);
 		givenPresent(98, fundingAccount, true);
@@ -319,8 +318,8 @@ class RenewalHelperTest {
 				() -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));
 	}
 
-	private MerkleEntityAssociation assoc(MerkleEntityId a, MerkleEntityId b) {
-		return fromAccountTokenRel(a.toAccountId(), b.toTokenId());
+	private PermHashLong assoc(PermHashInteger a, PermHashInteger b) {
+		return PermHashLong.asPhl(a.getValue(), b.getValue());
 	}
 
 	private AccountID grpcIdWith(long num) {
@@ -331,23 +330,23 @@ class RenewalHelperTest {
 		givenPresent(num, account,false);
 	}
 
-	private void givenTokenPresent(MerkleEntityId id, MerkleToken token) {
+	private void givenTokenPresent(PermHashInteger id, MerkleToken token) {
 		given(tokens.containsKey(id)).willReturn(true);
 		given(tokens.get(id)).willReturn(token);
 	}
 
-	private void givenRelPresent(MerkleEntityId account, MerkleEntityId token, long balance) {
+	private void givenRelPresent(PermHashInteger account, PermHashInteger token, long balance) {
 		var rel = assoc(account, token);
 		given(tokenRels.get(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false));
 	}
 
-	private void givenModifiableRelPresent(MerkleEntityId account, MerkleEntityId token, long balance) {
-		var rel = assoc(account, token);
+	private void givenModifiableRelPresent(PermHashInteger account, PermHashInteger token, long balance) {
+		var rel = PermHashLong.asPhl(account.getValue(), token.getValue());
 		given(tokenRels.getForModify(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false));
 	}
 
 	private void givenPresent(long num, MerkleAccount account, boolean modifiable) {
-		var key = new MerkleEntityId(0, 0, num);
+		var key = PermHashInteger.fromLong(num);
 		if (num != 98) {
 			given(accounts.containsKey(key)).willReturn(true);
 			given(accounts.get(key)).willReturn(account);

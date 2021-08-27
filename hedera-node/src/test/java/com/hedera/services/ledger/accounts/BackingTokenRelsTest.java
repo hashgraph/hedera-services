@@ -20,15 +20,12 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,20 +59,20 @@ class BackingTokenRelsTest {
 	private TokenID bt = asToken("9.8.6");
 	private TokenID ct = asToken("9.8.5");
 
-	private MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
-	private MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
-	private MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
+	private PermHashLong aKey = fromAccountTokenRel(a, at);
+	private PermHashLong bKey = fromAccountTokenRel(b, bt);
+	private PermHashLong cKey = fromAccountTokenRel(c, ct);
 	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
 	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
 	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
 
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> rels;
+	private MerkleMap<PermHashLong, MerkleTokenRelStatus> rels;
 
 	private BackingTokenRels subject;
 
 	@BeforeEach
 	private void setup() {
-		rels = new FCMap<>();
+		rels = new MerkleMap<>();
 		rels.put(aKey, aValue);
 		rels.put(bKey, bValue);
 
@@ -114,9 +111,6 @@ class BackingTokenRelsTest {
 
 	@Test
 	void delegatesPutForNewRelIfMissing() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerklePair.class, MerklePair::new));
-
 		// when:
 		subject.put(asTokenRel(c, ct), cValue);
 
@@ -198,7 +192,7 @@ class BackingTokenRelsTest {
 	}
 
 	private void setupMocked() {
-		rels = mock(FCMap.class);
+		rels = mock(MerkleMap.class);
 		given(rels.keySet()).willReturn(Collections.emptySet());
 		given(rels.entrySet()).willReturn(Collections.emptySet());
 		subject = new BackingTokenRels(() -> rels);

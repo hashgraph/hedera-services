@@ -25,7 +25,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -35,14 +34,14 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -72,7 +71,7 @@ class AnswerFunctionsTest {
 	private String target = payer;
 	private StateView view;
 	private RecordCache recordCache;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private NodeLocalProperties nodeProps;
 
@@ -84,7 +83,7 @@ class AnswerFunctionsTest {
 		payerAccount.records().offer(recordOne());
 		payerAccount.records().offer(targetRecord);
 
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		given(accounts.get(PermHashInteger.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();

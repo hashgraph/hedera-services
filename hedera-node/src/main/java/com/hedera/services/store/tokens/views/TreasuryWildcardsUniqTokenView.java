@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
 
 /**
  * A {@link UniqTokenView} that answers requests for an account's unique tokens using
@@ -80,7 +80,7 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	public List<TokenNftInfo> ownedAssociations(@Nonnull AccountID owner, long start, long end) {
 		final var accountId = EntityId.fromGrpcAccountId(owner);
 		final var curNftsByOwner = nftsByOwner.get();
-		final var numOwnedViaTransfer = curNftsByOwner.getCount(asPhi(accountId.identityCode()));
+		final var numOwnedViaTransfer = curNftsByOwner.getCount(fromInt(accountId.identityCode()));
 		final var multiSourceRange = new MultiSourceRange((int) start, (int) end, numOwnedViaTransfer);
 
 		final var range = multiSourceRange.rangeForCurrentSource();
@@ -100,7 +100,7 @@ public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 		final var allServed = tokenStore.listOfTokensServed(owner);
 		for (var served : allServed) {
 			final var tokenId = EntityId.fromGrpcTokenId(served);
-			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(asPhi(tokenId.identityCode())));
+			multiSourceRange.moveToNewSource(curTreasuryNftsByType.getCount(fromInt(tokenId.identityCode())));
 			final var range = multiSourceRange.rangeForCurrentSource();
 			final var infoHere = accumulatedInfo(curTreasuryNftsByType, tokenId, range.getLeft(), range.getRight(), served, owner);
 			answer.addAll(infoHere);

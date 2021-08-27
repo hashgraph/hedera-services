@@ -25,7 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -37,7 +36,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,9 +51,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -79,7 +78,7 @@ class ContractUpdateTransitionLogicTest {
 	private TransactionBody contractUpdateTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private FCMap<MerkleEntityId, MerkleAccount> contracts;
+	private MerkleMap<PermHashInteger, MerkleAccount> contracts;
 	private ContractUpdateTransitionLogic subject;
 
 	@BeforeEach
@@ -87,7 +86,7 @@ class ContractUpdateTransitionLogicTest {
 		consensusTime = Instant.now();
 
 		ledger = mock(HederaLedger.class);
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+		contracts = (MerkleMap<PermHashInteger, MerkleAccount>) mock(MerkleMap.class);
 		customizerFactory = mock(UpdateCustomizerFactory.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);

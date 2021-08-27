@@ -22,12 +22,12 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -76,15 +76,15 @@ public class RenewalRecordsHelper {
 	}
 
 	public void streamCryptoRemoval(
-			MerkleEntityId id,
+			PermHashInteger id,
 			List<EntityId> tokens,
 			List<CurrencyAdjustments> tokenAdjustments
 	) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toAccountId();
-		final var memo = "Entity " + id.toAbbrevString() + " was automatically deleted.";
+		final var grpcId = id.asGrpcAccountId();
+		final var memo = "Entity " + id.asAbbrevString() + " was automatically deleted.";
 		final var record = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
@@ -95,13 +95,13 @@ public class RenewalRecordsHelper {
 		log.debug("Streamed crypto removal record {}", record);
 	}
 
-	public void streamCryptoRenewal(MerkleEntityId id, long fee, long newExpiry) {
+	public void streamCryptoRenewal(PermHashInteger id, long fee, long newExpiry) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toAccountId();
+		final var grpcId = id.asGrpcAccountId();
 		final var memo = "Entity " +
-				id.toAbbrevString() +
+				id.asAbbrevString() +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";

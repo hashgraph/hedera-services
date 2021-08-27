@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.asPhi;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -82,8 +82,8 @@ class TreasuryWildcardsUniqTokenViewTest {
 	void withNoTreasuriesWorksSameAsExplicitOwners() {
 		setupFirstMockRange();
 
-		given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end + 1);
-		given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end)).willReturn(firstMockRange);
+		given(nftsByOwner.getCount(fromInt(ownerId.identityCode()))).willReturn(end + 1);
+		given(nftsByOwner.get(fromInt(ownerId.identityCode()), start, end)).willReturn(firstMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 
@@ -97,10 +97,10 @@ class TreasuryWildcardsUniqTokenViewTest {
 		setupFirstMockRange();
 		setupSecondMockRange();
 
-		given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end - 1);
-		given(treasuryNftsByType.getCount(asPhi(treasuryTokenId.identityCode()))).willReturn(1);
-		given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end - 1)).willReturn(firstMockRange);
-		given(treasuryNftsByType.get(asPhi(treasuryTokenId.identityCode()), 0, 1)).willReturn(secondMockRange);
+		given(nftsByOwner.getCount(fromInt(ownerId.identityCode()))).willReturn(end - 1);
+		given(treasuryNftsByType.getCount(fromInt(treasuryTokenId.identityCode()))).willReturn(1);
+		given(nftsByOwner.get(fromInt(ownerId.identityCode()), start, end - 1)).willReturn(firstMockRange);
+		given(treasuryNftsByType.get(fromInt(treasuryTokenId.identityCode()), 0, 1)).willReturn(secondMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
@@ -116,10 +116,10 @@ class TreasuryWildcardsUniqTokenViewTest {
 	void getsAllAssociationsWithRangeToSpare() {
 		setupFirstMockRange();
 		setupSecondMockRange();
-		given(nftsByOwner.getCount(asPhi(ownerId.identityCode()))).willReturn(end - 1);
-		given(treasuryNftsByType.getCount(asPhi(treasuryTokenId.identityCode()))).willReturn(1);
-		given(nftsByOwner.get(asPhi(ownerId.identityCode()), start, end - 1)).willReturn(firstMockRange);
-		given(treasuryNftsByType.get(asPhi(treasuryTokenId.identityCode()), 0, 1)).willReturn(secondMockRange);
+		given(nftsByOwner.getCount(fromInt(ownerId.identityCode()))).willReturn(end - 1);
+		given(treasuryNftsByType.getCount(fromInt(treasuryTokenId.identityCode()))).willReturn(1);
+		given(nftsByOwner.get(fromInt(ownerId.identityCode()), start, end - 1)).willReturn(firstMockRange);
+		given(treasuryNftsByType.get(fromInt(treasuryTokenId.identityCode()), 0, 1)).willReturn(secondMockRange);
 		given(nfts.get(someExplicitNftId)).willReturn(someExplicitNft);
 		given(nfts.get(wildcardNftId)).willReturn(wildcardNft);
 		given(nfts.get(otherWildcardNftId)).willReturn(otherWildNft);
