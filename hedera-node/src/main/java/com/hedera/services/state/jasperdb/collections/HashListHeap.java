@@ -1,6 +1,5 @@
 package com.hedera.services.state.jasperdb.collections;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 
 import java.io.IOException;
@@ -9,17 +8,17 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hedera.services.state.jasperdb.HashTools.*;
+
 /**
  * An on-heap in memory store of hashes, it stores them in 46Mb heap buffers and adds buffers as needed
  */
 @SuppressWarnings("unused")
 public final class HashListHeap implements HashList {
-    /** The size in bytes for a serialized hash. TODO this should be better defined somewhere */
-    private static final int HASH_SIZE =  Integer.BYTES+ DigestType.SHA_384.digestLength();
     /** How many hashes to store in each buffer we allocate */
     private static final int NUM_HASHES_PER_CHUNK = 1_000_000;
     /** How much RAM is needed to store one buffer of hashes */
-    private static final int MEMORY_CHUNK_SIZE = NUM_HASHES_PER_CHUNK*HASH_SIZE;
+    private static final int MEMORY_CHUNK_SIZE = NUM_HASHES_PER_CHUNK*HASH_SIZE_BYTES;
     /** Copy-On-Write list of buffers of data */
     private final List<ByteBuffer> data = new CopyOnWriteArrayList<>();
     /** The current maximum index that can be stored */
@@ -35,7 +34,7 @@ public final class HashListHeap implements HashList {
     @Override
     public Hash get(long index) throws IOException {
         if (index <= maxIndexThatCanBeStored.get()) {
-            return Hash.fromByteBuffer(getBuffer(index));
+            return byteBufferToHash(getBuffer(index));
         } else {
             return null;
         }
@@ -58,7 +57,7 @@ public final class HashListHeap implements HashList {
             return currentValue;
         });
         // get the right buffer
-        Hash.toByteBuffer(hash,getBuffer(index));
+        hashToByteBuffer(hash,getBuffer(index));
     }
 
     /**
@@ -71,9 +70,9 @@ public final class HashListHeap implements HashList {
         int bufferIndex = (int) (index / (long) NUM_HASHES_PER_CHUNK);
         ByteBuffer buffer = data.get(bufferIndex).slice();
         int subIndex = (int) (index % NUM_HASHES_PER_CHUNK);
-        int offset = HASH_SIZE * subIndex;
+        int offset = HASH_SIZE_BYTES * subIndex;
         buffer.position(offset);
-        buffer.limit(offset + HASH_SIZE);
+        buffer.limit(offset + HASH_SIZE_BYTES);
         return buffer;
     }
 

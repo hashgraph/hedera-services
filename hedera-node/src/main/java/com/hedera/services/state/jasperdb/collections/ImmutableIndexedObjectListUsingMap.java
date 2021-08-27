@@ -76,7 +76,6 @@ public class ImmutableIndexedObjectListUsingMap<T extends IndexedObject> extends
         if (dataMap.isEmpty()) return this; // we are already empty
         SortedMap<Integer, T> map = new TreeMap<>(dataMap);
         for(var object: objectsToDelete) if (object != null) map.remove(object.getIndex());
-        new Exception().printStackTrace();
         return new ImmutableIndexedObjectListUsingMap<>(Collections.unmodifiableSortedMap(map));
     }
 

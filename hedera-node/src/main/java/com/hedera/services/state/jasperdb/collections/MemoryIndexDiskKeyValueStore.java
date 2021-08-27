@@ -182,6 +182,49 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
     }
 
     /**
+     * Get a value by reading it from disk into a byte buffer and returning it. This is needed for variable size data
+     * because we do not know the length to preallocate the buffer.
+     *
+     * @param key The key to find and read value for
+     * @return ByteBuffer buffer containing data if the value was read or null if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
+    public ByteBuffer get(long key) throws IOException {
+        // check if out of range
+        if (key < fileCollection.getMinimumValidKey() || key > fileCollection.getMaximumValidKey()) {
+            if (ENABLE_DEEP_VALIDATION && key != 0) {
+                System.err.println("get path ["+key+"] that is not in index any more."+
+                        ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
+                        ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
+                );
+            }
+            return null;
+        }
+        // get from index
+        long dataLocation = index.get(key, 0);
+        // check if found
+        if (dataLocation == 0) {
+            if (ENABLE_DEEP_VALIDATION && key != 0) {
+                System.err.println("get path ["+key+"] that is not in index any more."+
+                        ((key < fileCollection.getMinimumValidKey()) ? "\n      Key is less than min "+fileCollection.getMinimumValidKey()+". " : "") +
+                        ((key > fileCollection.getMaximumValidKey()) ? "\n      Key is greater than max "+fileCollection.getMaximumValidKey()+". " : "")
+                );
+                new Exception().printStackTrace();
+            }
+            return null;
+        }
+        // read data
+        try {
+            return fileCollection.readData(dataLocation, DataFileReader.DataToRead.VALUE);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("MemoryIndexDiskKeyValueStore.get key="+key);
+            printDataLinkValidation(index, fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE));
+            throw e;
+        }
+    }
+
+    /**
      * Close all files being used
      *
      * @throws IOException If there was a problem closing files

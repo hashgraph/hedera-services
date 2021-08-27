@@ -27,7 +27,7 @@ public class HashListBench {
     private HashList list;
     private int nextIndex = INITIAL_DATA_SIZE;
 
-    @Param({"HashListHeap","HashListOffHeap","HashListHeapArrays","HashListOffHeapPrivate"})
+    @Param({"HashListHeap","HashListOffHeap","HashListHeapArrays"})
     public String listImpl;
 
     @Setup(Level.Trial)
@@ -37,7 +37,6 @@ public class HashListBench {
             default -> new HashListHeap();
             case "HashListOffHeap" -> new HashListOffHeap();
             case "HashListHeapArrays" -> new HashListHeapArrays();
-            case "HashListOffHeapPrivate" -> new HashListOffHeapPrivate();
         };
         // fill with some data
         for (int i = 0; i < INITIAL_DATA_SIZE; i++) {

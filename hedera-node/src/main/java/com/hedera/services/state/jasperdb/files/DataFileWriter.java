@@ -30,7 +30,7 @@ public final class DataFileWriter {
     private final DataOutputStream writingStream;
     /** Might not need it. Was keeping track of "original" file vs. "merge" file */
     private final boolean isMergeFile;
-    /** size of value data or -1 if variable length (see commons for constant) */
+    /** size of value data or DataFileCommon.VARIABLE_DATA_SIZE if variable length (see commons for constant) */
     private final int dataSize;
     /** computed based on dataSize */
     private final boolean hasVariableDataSize;

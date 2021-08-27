@@ -49,7 +49,7 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
     @Param("true") // TODO Remove and replace with a benchmark that measures additions?
     public boolean preFill;
 
-    @Param({"lmdbMem", "lmdb", "rocksdb", "jasperdb"})
+    @Param({"lmdbMem", "lmdb", "rocksdb", "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
     public DataSourceType dsType;
 
     // This is the map we will be testing!

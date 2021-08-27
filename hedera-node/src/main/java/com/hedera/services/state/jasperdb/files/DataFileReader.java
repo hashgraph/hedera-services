@@ -15,6 +15,7 @@ import java.util.Objects;
  * implementations to experiment with different IO libraries and threading strategies to find the fastest way to read
  * items from data files with many concurrent threads.
  */
+@SuppressWarnings("DuplicatedCode")
 public abstract class DataFileReader implements AutoCloseable, Comparable<DataFileReader>, IndexedObject {
     /** Enum for read operation, you can read the key, value or both. */
     public enum DataToRead{KEY,VALUE,KEY_VALUE}
@@ -127,6 +128,43 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
         read(byteOffset,bufferToReadInto);
         // get buffer ready for a reader
         bufferToReadInto.rewind();
+    }
+
+    /**
+     * Read a data item from file at dataLocation. The data returned is defined by DataToRead.
+     *
+     * @param dataLocation     the file index combined with the offset for the starting block of the data in the file.
+     * @param dataToRead       The chosen data that should be read into bufferToReadInto
+     * @return ByteBuffer containing the data read or null if not found
+     * @throws IOException If there was a problem reading from data file
+     */
+    public final ByteBuffer readData(long dataLocation,
+                               DataFileReaderAsynchronous.DataToRead dataToRead) throws IOException {
+        long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
+        int bytesToRead;
+        if (dataToRead == DataToRead.KEY) {
+            if (hasVariableSizedData) byteOffset += Integer.BYTES; // jump over the data value size
+            bytesToRead = DataFileCommon.KEY_SIZE;
+        } else {
+            if (hasVariableSizedData) {
+                bytesToRead = readInt(byteOffset);
+                byteOffset += Integer.BYTES; // jump over the data value size
+            } else {
+                bytesToRead = metadata.getDataItemValueSize();
+            }
+            if (dataToRead == DataToRead.VALUE) {
+                // jump over key
+                byteOffset += DataFileCommon.KEY_SIZE;
+            } else { // reading KEY and VALUE
+                bytesToRead += DataFileCommon.KEY_SIZE;
+            }
+        }
+        // create buffer
+        ByteBuffer bufferToReadInto = ByteBuffer.allocate(bytesToRead);
+        // read data
+        read(byteOffset,bufferToReadInto);
+        // get buffer ready for a reader and return
+        return bufferToReadInto.flip();
     }
 
     /**

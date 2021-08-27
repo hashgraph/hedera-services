@@ -1,8 +1,8 @@
 package com.hedera.services.state.jasperdb;
 
-import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import org.eclipse.collections.api.block.comparator.primitive.LongComparator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -31,7 +32,7 @@ public class VFCDataSourceJasperDBLongKeyTest {
     public void createAndCheckInternalNodeHashes(int count) throws Exception {
         var dataSource = createDataSource(count);
         // create some node hashes
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,count,
                 IntStream.range(0,count).mapToObj(this::createVirtualInternalRecord).collect(Collectors.toList()),
                 Collections.emptyList()
         );
@@ -45,13 +46,13 @@ public class VFCDataSourceJasperDBLongKeyTest {
     public void testRandomHashUpdates() throws Exception {
         var dataSource = createDataSource(1000);
         // create some node hashes
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 IntStream.range(0,1000).mapToObj(this::createVirtualInternalRecord).collect(Collectors.toList()),
                 Collections.emptyList()
         );
         // create some *10 hashes
         int[] randomInts = shuffle(RANDOM,IntStream.range(0,1000).toArray());
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Arrays.stream(randomInts).mapToObj(i -> new VirtualInternalRecord(i,hash(i*10))).collect(Collectors.toList()),
                 Collections.emptyList()
         );
@@ -66,7 +67,7 @@ public class VFCDataSourceJasperDBLongKeyTest {
     public void createAndCheckLeaves(int count) throws Exception {
         var dataSource = createDataSource(count);
         // create some leaves
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,count,
                 Collections.emptyList(),
                 IntStream.range(0,count).mapToObj(this::createVirtualLeafRecord).collect(Collectors.toList())
         );
@@ -80,7 +81,7 @@ public class VFCDataSourceJasperDBLongKeyTest {
     public void updateLeaves() throws Exception {
         var dataSource = createDataSource(1000);
         // create some leaves
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
                 IntStream.range(0,1000).mapToObj(this::createVirtualLeafRecord).collect(Collectors.toList())
         );
@@ -88,11 +89,13 @@ public class VFCDataSourceJasperDBLongKeyTest {
         IntStream.range(0,1000).forEach(i -> assertLeaf(dataSource,i,i));
         // update all to i+10,000 in a random order
         int[] randomInts = shuffle(RANDOM,IntStream.range(0,1000).toArray());
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
-                Arrays.stream(randomInts).mapToObj(
-                        i -> createVirtualLeafRecord(i, i,i+10_000)
-                    ).collect(Collectors.toList())
+                Arrays
+                        .stream(randomInts)
+                        .mapToObj( i -> createVirtualLeafRecord(i, i,i+10_000))
+                        .sorted(Comparator.comparingLong(record -> record.getPath()))
+                        .collect(Collectors.toList())
         );
         assertEquals(createVirtualLeafRecord(100,100,100+10_000), createVirtualLeafRecord(100,100,100+10_000));
         // check all the leaf data
@@ -105,7 +108,7 @@ public class VFCDataSourceJasperDBLongKeyTest {
     public void moveLeaf() throws Exception {
         var dataSource = createDataSource(1000);
         // create some leaves
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
                 IntStream.range(0,1000).mapToObj(this::createVirtualLeafRecord).collect(Collectors.toList())
         );
@@ -113,7 +116,7 @@ public class VFCDataSourceJasperDBLongKeyTest {
         assertLeaf(dataSource,250,250);
         assertLeaf(dataSource, 500,500);
         // move a leaf from 500 to 250, under new API there is no move as such so we just write 500 leaf at 250 path
-        dataSource.saveRecords(0,0,
+        dataSource.saveRecords(0,1000,
                 Collections.emptyList(),
                 Collections.singletonList(new VirtualLeafRecord<>(250,hash(500),new LongVKeyImpl(500),new TestLeafData(500)))
         );
@@ -153,8 +156,8 @@ public class VFCDataSourceJasperDBLongKeyTest {
                                 LongVKeyImpl.SIZE_BYTES, LongVKeyImpl::new,
                                 TestLeafData.SIZE_BYTES, TestLeafData::new,
                                 STORE_PATH,
-                                size
-                        )));
+                                size*10,
+                                Long.MAX_VALUE)));
     }
 
     public void assertLeaf(VFCDataSourceExceptionWrapper<LongVKeyImpl,TestLeafData>  dataSource, long path, int i) {

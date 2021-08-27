@@ -36,7 +36,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     @Param("true") // TODO Remove and replace with a benchmark that measures additions?
     public boolean preFill;
 
-    @Param({"lmdbMem", "lmdb", "rocksdb", "jasperdb"})
+    @Param({"lmdbMem", "lmdb", "rocksdb", "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
     public DataSourceType dsType;
 
     @Param({"5"})
@@ -153,7 +153,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     public static void main(String[] args) throws Exception {
         final var test = new CryptoHbarBench();
         test.numEntities = 100_000;
-        test.dsType = DataSourceType.jasperdb;
+        test.dsType = DataSourceType.jasperdbIhRam;
         test.preFill = true;
         test.targetOpsPerSecond = 10_000;
         test.prepperThreadCount = 5;

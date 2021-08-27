@@ -175,12 +175,10 @@ public class DataFileReaderCollectionVariableSizeDataTest {
 
     private static void check1000Impl() throws Exception {
         // now read back all the data and check all data
-        ByteBuffer tempResult = ByteBuffer.allocate(KEY_SIZE + MAX_DATA_SIZE);
         for (int i = 0; i < 1000; i++) {
             long storedOffset = storedOffsets.get(i);
-            tempResult.clear();
             // read
-            fileCollection.readData(storedOffset,tempResult, DataFileReader.DataToRead.KEY_VALUE);
+            var tempResult= fileCollection.readData(storedOffset, DataFileReader.DataToRead.KEY_VALUE);
             // check all the data
             tempResult.rewind();
             assertEquals(i, tempResult.getLong()); // key

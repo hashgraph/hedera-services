@@ -15,6 +15,8 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -25,11 +27,7 @@ import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 
 @SuppressWarnings("unused")
@@ -492,113 +490,71 @@ public class VFCDataSourceTestUtils {
             this.dataSource = dataSource;
         }
 
-        @Override
-        public Object startTransaction() {
-            return dataSource.startTransaction();
-        }
-
-        @Override
-        public void commitTransaction(Object handle) {
-            dataSource.commitTransaction(handle);
-        }
+        //==================================================================================================================
+        // Legacy API methods
+        @Deprecated public V loadLeafValue(long path) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public V loadLeafValue(K key)  { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public K loadLeafKey(long path) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public long loadLeafPath(K key) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void saveInternal(long path, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void updateLeaf(long oldPath, long newPath, K key, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void updateLeaf(long path, K key, V value, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void addLeaf(long path, K key, V value, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void saveInternal(Object handle, long path, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void updateLeaf(Object handle, long oldPath, long newPath, K key, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void updateLeaf(Object handle, long path, K key, V value, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void addLeaf(Object handle, long path, K key, V value, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public Object startTransaction() { throw new IllegalArgumentException("Old API Called"); }
+        @Deprecated public void commitTransaction(Object handle) { throw new IllegalArgumentException("Old API Called"); }
 
         @Override
         public void close() {
             try {
                 dataSource.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            } catch (IOException e) { throw new RuntimeException(e); }
+        }
+
+        @Override
+        public VirtualLeafRecord<K, V> loadLeafRecord(K key) {
+            try {
+                return dataSource.loadLeafRecord(key);
+            } catch (IOException e) { throw new RuntimeException(e); }
+        }
+
+        @Override
+        public VirtualLeafRecord<K, V> loadLeafRecord(long path) {
+            try {
+                return dataSource.loadLeafRecord(path);
+            } catch (IOException e) { throw new RuntimeException(e); }
+        }
+
+        @Override
+        public VirtualInternalRecord loadInternalRecord(long path) {
+            try {
+                return dataSource.loadInternalRecord(path);
+            } catch (IOException e) { throw new RuntimeException(e); }
+        }
+
+        @Override
+        public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords, List<VirtualLeafRecord<K, V>> virtualLeafRecords) {
+            try {
+                dataSource.saveRecords(firstLeafPath, lastLeafPath, internalRecords, virtualLeafRecords);
+            } catch (IOException e) { throw new RuntimeException(e); }
         }
 
         @Override
         public Hash loadLeafHash(long path) {
             try {
                 return dataSource.loadLeafHash(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            } catch (IOException e) { throw new RuntimeException(e); }
         }
 
         @Override
         public Hash loadInternalHash(long path) {
             try {
                 return dataSource.loadInternalHash(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            } catch (IOException e) { throw new RuntimeException(e); }
         }
 
-        @Override
-        public V loadLeafValue(long path) {
-            try {
-                return dataSource.loadLeafValue(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public V loadLeafValue(K key) {
-            try {
-                return dataSource.loadLeafValue(key);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public K loadLeafKey(long path) {
-            try {
-                return dataSource.loadLeafKey(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public long loadLeafPath(K key) {
-            try {
-                return dataSource.loadLeafPath(key);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void saveInternal(long path, Hash hash) {
-            try {
-                dataSource.saveInternal(path,hash);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void updateLeaf(long oldPath, long newPath, K key, Hash hash) {
-            try {
-                dataSource.updateLeaf(oldPath,newPath, key, hash);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void updateLeaf(long path, K key, V value, Hash hash) {
-            try {
-                dataSource.updateLeaf(path, key, value, hash);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void addLeaf(long path, K key, V value, Hash hash) {
-            try {
-                dataSource.addLeaf(path,key, value,hash);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 }

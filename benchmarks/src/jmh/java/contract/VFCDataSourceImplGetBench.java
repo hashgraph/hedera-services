@@ -93,7 +93,8 @@ public class VFCDataSourceImplGetBench {
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,
-                            numEntities);
+                            numEntities,
+                            Long.MAX_VALUE);
                 default ->
                     throw new IllegalStateException("Unexpected value: " + impl);
             };

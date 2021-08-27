@@ -11,6 +11,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.jasperdb.HashTools.byteBufferToHash;
+import static com.hedera.services.state.jasperdb.HashTools.hashToByteBuffer;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.hash;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.KEY_SIZE;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,7 +31,7 @@ public class DataFileReaderCollectionFixedSizeMultiMergeDataTest extends DataFil
             int newI = i * 31;
             // prep data buffer
             tempData.clear();
-            Hash.toByteBuffer(hash(newI), tempData);
+            hashToByteBuffer(hash(newI), tempData);
             tempData.putInt(newI);
             tempData.flip();
             // store in file
@@ -104,7 +106,7 @@ public class DataFileReaderCollectionFixedSizeMultiMergeDataTest extends DataFil
             // check all the data
             tempResult.rewind();
             assertEquals(i, tempResult.getLong()); // key
-            Hash readHash = Hash.fromByteBuffer(tempResult);
+            Hash readHash = byteBufferToHash(tempResult);
             assertEquals(hash(newI), readHash); // hash
             assertEquals(newI, tempResult.getInt()); // value data
         }

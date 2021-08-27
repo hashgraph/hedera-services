@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.jasperdb.HashTools.*;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.*;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZE;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.KEY_SIZE;
@@ -27,8 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
-    private static final int HASH_SIZE = 48+4;
-    private static final int DATA_ITEM_SIZE = 1 + HASH_SIZE + Integer.BYTES;
+    private static final int DATA_ITEM_SIZE = 1 + HASH_SIZE_BYTES + Integer.BYTES;
     private static final int INDEX = 42;
     private static final Instant TEST_START = Instant.now();
     private static final byte MARKER_BYTE = (byte)0x40; // "@" in ascii , easy to spot in hex dump of file
@@ -72,7 +72,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
             // prep data buffer
             tempData.clear();
             tempData.put(MARKER_BYTE); // test marker
-            Hash.toByteBuffer(hash(i), tempData);
+            hashToByteBuffer(hash(i), tempData);
             tempData.putInt(i);
             tempData.flip();
             // store in file
@@ -113,7 +113,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
             tempResult.rewind();
             assertEquals(i, tempResult.getLong()); // key
             assertEquals(MARKER_BYTE, tempResult.get()); // test marker
-            Hash readHash = Hash.fromByteBuffer(tempResult);
+            Hash readHash = byteBufferToHash(tempResult);
             assertEquals(hash(i), readHash); // hash
             assertEquals(i, tempResult.getInt()); // value data
         }
@@ -135,7 +135,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
             tempResult.rewind();
             assertEquals(i, tempResult.getLong()); // key
             assertEquals(MARKER_BYTE, tempResult.get()); // test marker
-            Hash readHash = Hash.fromByteBuffer(tempResult);
+            Hash readHash = byteBufferToHash(tempResult);
             assertEquals(hash(i), readHash); // hash
             assertEquals(i, tempResult.getInt()); // value data
         }
@@ -157,7 +157,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
                 tempResult.rewind();
                 assertEquals(i.longValue(), tempResult.getLong()); // key
                 assertEquals(MARKER_BYTE, tempResult.get()); // test marker
-                Hash readHash = Hash.fromByteBuffer(tempResult);
+                Hash readHash = byteBufferToHash(tempResult);
                 assertEquals(hash(i), readHash); // hash
                 assertEquals(i, tempResult.getInt()); // value data
             } catch (Exception e) {
@@ -195,7 +195,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
             // check all the data
             tempResult.rewind();
             assertEquals(MARKER_BYTE, tempResult.get()); // test marker
-            Hash readHash = Hash.fromByteBuffer(tempResult);
+            Hash readHash = byteBufferToHash(tempResult);
             assertEquals(hash(i), readHash); // hash
             assertEquals(i, tempResult.getInt()); // value data
         }
@@ -219,7 +219,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
             // check all the data
             assertEquals(count, blockBuffer.getLong()); // key
             assertEquals(MARKER_BYTE, blockBuffer.get()); // test marker
-            Hash readHash = Hash.fromByteBuffer(blockBuffer);
+            Hash readHash = byteBufferToHash(blockBuffer);
             assertEquals(hash(count), readHash); // hash
             assertEquals(count, blockBuffer.getInt()); // value data
             count ++;
@@ -267,7 +267,7 @@ public class DataFileFixedSizeDataWithDataFileReaderThreadLocalTest {
             tempResult.rewind();
             assertEquals(i, tempResult.getLong()); // key
             assertEquals(MARKER_BYTE, tempResult.get()); // test marker
-            Hash readHash = Hash.fromByteBuffer(tempResult);
+            Hash readHash = byteBufferToHash(tempResult);
             assertEquals(hash(i), readHash); // hash
             assertEquals(i, tempResult.getInt()); // value data
         }
