@@ -509,7 +509,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								 * So we need this to stabilize CI. But if just testing locally, you may
 								 * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
 								 * >99.99% of the time. */
-								.hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, NO_NEW_VALID_SIGNATURES),
+								.hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
 						overriding("scheduling.whitelist", suiteWhitelist)
 				);
 	}
