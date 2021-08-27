@@ -50,11 +50,6 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
-		return true;
-	}
-
-	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				positiveTests(),
