@@ -14,7 +14,7 @@
   </parent>
 
   <properties>
-    <os.plugin.version>1.7.0</os.plugin.version>
+    <os.plugin.version>1.6.0</os.plugin.version>
   </properties>
 
   <dependencies>
