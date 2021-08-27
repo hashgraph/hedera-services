@@ -246,7 +246,7 @@ class StateViewTest {
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
-				PermHashLong.asPhl(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
+				PermHashLong.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
 				new MerkleTokenRelStatus(123L, false, true));
 
 		tokenStore = mock(TokenStore.class);
@@ -272,7 +272,7 @@ class StateViewTest {
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.listOfTokensServed(nftOwnerId)).willReturn(
-				Collections.singletonList(targetNftKey.hiAsGrpcTokenId()));
+				Collections.singletonList(targetNftKey.getHiPhi().toGrpcTokenId()));
 		given(tokenStore.get(tokenId)).willReturn(token);
 		given(tokenStore.get(IdUtils.asToken("0.0.3"))).willReturn(token);
 
@@ -963,7 +963,7 @@ class StateViewTest {
 
 		final var token = new MerkleToken();
 		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
-		given(tokens.get(targetNftKey.hiAsPhi())).willReturn(token);
+		given(tokens.get(targetNftKey.getHiPhi())).willReturn(token);
 
 		// when:
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
@@ -1079,8 +1079,8 @@ class StateViewTest {
 			.setTokenID(IdUtils.asToken("0.0.9"))
 			.setSerialNumber(5L)
 			.build();
-	private final PermHashLong targetNftKey = PermHashLong.asPhl(3, 4);
-	private final PermHashLong treasuryNftKey = PermHashLong.asPhl(3, 5);
+	private final PermHashLong targetNftKey = PermHashLong.fromLongs(3, 4);
+	private final PermHashLong treasuryNftKey = PermHashLong.fromLongs(3, 5);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
 			fromJava(nftCreation));
 	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),

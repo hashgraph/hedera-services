@@ -503,9 +503,9 @@ class UniqTokenViewsManagerTest {
 	private final EntityId aTokenId = new EntityId(0, 0, 5);
 	private final EntityId bTokenId = new EntityId(0, 0, 6);
 	private final EntityId cTokenId = new EntityId(0, 0, 7);
-	private final PermHashLong aOneNftId = PermHashLong.asPhl(aTokenId.num(), 1L);
-	private final PermHashLong bOneNftId = PermHashLong.asPhl(bTokenId.num(), 1L);
-	private final PermHashLong missingTokenNftId = PermHashLong.asPhl(cTokenId.num(), 666L);
+	private final PermHashLong aOneNftId = PermHashLong.fromLongs(aTokenId.num(), 1L);
+	private final PermHashLong bOneNftId = PermHashLong.fromLongs(bTokenId.num(), 1L);
+	private final PermHashLong missingTokenNftId = PermHashLong.fromLongs(cTokenId.num(), 666L);
 	private final MerkleToken aToken = new MerkleToken(
 			1_234_567L, 1_234L, 1,
 			"Hi", "EVERYBODY",

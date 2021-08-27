@@ -27,6 +27,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
+
 public class PermHashLong {
 	private final long value;
 
@@ -34,43 +39,31 @@ public class PermHashLong {
 		this.value = value;
 	}
 
-	public static PermHashLong fromModelRel(TokenRelationship tokenRelationship) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public static PermHashLong asPhl(long i) {
-		return new PermHashLong(i);
-	}
-
-	public static PermHashLong asPhl(int hi, int lo) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	public static PermHashLong asPhl(long hi, long lo) {
-		throw new AssertionError("Not implemented!");
+	public static PermHashLong fromLongs(long hi, long lo) {
+		final var value = packedNums(hi, lo);
+		return new PermHashLong(value);
 	}
 
 	public static PermHashLong fromNftId(NftId id) {
-		throw new AssertionError("Not implemented!");
+		return fromLongs(id.num(), id.serialNo());
 	}
 
-	public TokenID hiAsGrpcTokenId() {
-		throw new AssertionError("Not implemented!");
+	public PermHashInteger getHiPhi() {
+		return PermHashInteger.fromLong(unsignedHighOrder32From(value));
 	}
 
-	public PermHashInteger hiAsPhi() {
-		throw new AssertionError("Not implemented!");
+	public static PermHashLong fromModelRel(TokenRelationship tokenRelationship) {
+		final var token = tokenRelationship.getToken();
+		final var account = tokenRelationship.getAccount();
+		return fromLongs(token.getId().getNum(), account.getId().getNum());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {
 		return Pair.of(
-				AccountID.newBuilder()
-						.setAccountNum(-1)
-						.build(),
-				TokenID.newBuilder()
-						.setTokenNum(-1)
-						.build());
+				STATIC_PROPERTIES.scopedAccountWith(unsignedHighOrder32From(value)),
+				STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value)));
 	}
+
 	@Override
 	public int hashCode() {
 		return (int) MiscUtils.perm64(value);

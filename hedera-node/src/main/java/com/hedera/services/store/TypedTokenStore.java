@@ -55,7 +55,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.tokens.views.internals.PermHashLong.asPhl;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -397,7 +396,7 @@ public class TypedTokenStore {
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
-			final var merkleNftId = asPhl(nft.getTokenId().getNum(), nft.getSerialNumber());
+			final var merkleNftId = PermHashLong.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
 			curNfts.remove(merkleNftId);
 			if (treasury.matches(nft.getOwner())) {
 				uniqTokenViewsManager.burnNotice(merkleNftId, treasury);
@@ -410,7 +409,7 @@ public class TypedTokenStore {
 	private void persistMinted(List<UniqueToken> nfts, EntityId treasury) {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
-			final var merkleNftId = asPhl(nft.getTokenId().getNum(), nft.getSerialNumber());
+			final var merkleNftId = PermHashLong.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
 			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
 			curNfts.put(merkleNftId, merkleNft);
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);

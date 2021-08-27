@@ -438,9 +438,9 @@ class ServicesStateTest {
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
 		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
 		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
-		final var nftKey = PermHashLong.asPhl(MISSING_ENTITY_ID.num(), 1L);
+		final var nftKey = PermHashLong.fromLongs(MISSING_ENTITY_ID.num(), 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
-		final var tokenRelsKey = PermHashLong.asPhl(2,3);
+		final var tokenRelsKey = PermHashLong.fromLongs(2,3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
 		nfts.put(nftKey, nftVal);
@@ -483,7 +483,7 @@ class ServicesStateTest {
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
 		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
 		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
-		final var tokenRelsKey = PermHashLong.asPhl(2, 3);
+		final var tokenRelsKey = PermHashLong.fromLongs(2, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);

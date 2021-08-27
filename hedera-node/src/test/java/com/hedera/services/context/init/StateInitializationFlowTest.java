@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -129,6 +129,6 @@ class StateInitializationFlowTest {
 	}
 
 	private void cleanupMockNumInitialization() {
-		StateInitializationFlow.setStaticNumbersHolder(STATIC_PROPERTIES_HOLDER::setNumbersFrom);
+		StateInitializationFlow.setStaticNumbersHolder(STATIC_PROPERTIES::setNumbersFrom);
 	}
 }

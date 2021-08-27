@@ -368,7 +368,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
-		final var merkleNftId = PermHashLong.asPhl(nftId.tokenId().getTokenNum(), nftId.serialNo());
+		final var merkleNftId = PermHashLong.fromLongs(nftId.tokenId().getTokenNum(), nftId.serialNo());
 		final var receiver = fromGrpcAccountId(to);
 		if (isTreasuryReturn) {
 			uniqTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);

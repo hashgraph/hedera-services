@@ -105,6 +105,6 @@ class ExplicitOwnersUniqTokenViewTest {
 	private final AccountID grpcOwnerId = ownerId.toGrpcAccountId();
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
-	private final PermHashLong someExplicitNftId = PermHashLong.asPhl(tokenId.num(), someSerial);
-	private final PermHashLong wildcardNftId = PermHashLong.asPhl(otherTokenId.num(), wildcardSerial);
+	private final PermHashLong someExplicitNftId = PermHashLong.fromLongs(tokenId.num(), someSerial);
+	private final PermHashLong wildcardNftId = PermHashLong.fromLongs(otherTokenId.num(), wildcardSerial);
 }

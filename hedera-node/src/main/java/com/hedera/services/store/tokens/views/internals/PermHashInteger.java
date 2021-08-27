@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
@@ -81,19 +81,19 @@ public class PermHashInteger {
 	}
 
 	public AccountID toGrpcAccountId() {
-		return STATIC_PROPERTIES_HOLDER.scopedAccountWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
 	}
 
 	public TokenID toGrpcTokenId() {
-		return STATIC_PROPERTIES_HOLDER.scopedTokenWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedTokenWith(numFromCode(value));
 	}
 
 	public ScheduleID toGrpcScheduleId() {
-		return STATIC_PROPERTIES_HOLDER.scopedScheduleWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedScheduleWith(numFromCode(value));
 	}
 
 	public String toIdString() {
-		return STATIC_PROPERTIES_HOLDER.scopedIdLiteralWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(value));
 	}
 
 	@Override

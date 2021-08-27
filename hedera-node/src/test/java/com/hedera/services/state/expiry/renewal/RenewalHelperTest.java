@@ -319,7 +319,7 @@ class RenewalHelperTest {
 	}
 
 	private PermHashLong assoc(PermHashInteger a, PermHashInteger b) {
-		return PermHashLong.asPhl(a.longValue(), b.longValue());
+		return PermHashLong.fromLongs(a.longValue(), b.longValue());
 	}
 
 	private AccountID grpcIdWith(long num) {
@@ -341,7 +341,7 @@ class RenewalHelperTest {
 	}
 
 	private void givenModifiableRelPresent(PermHashInteger account, PermHashInteger token, long balance) {
-		var rel = PermHashLong.asPhl(account.longValue(), token.longValue());
+		var rel = PermHashLong.fromLongs(account.longValue(), token.longValue());
 		given(tokenRels.getForModify(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false));
 	}
 

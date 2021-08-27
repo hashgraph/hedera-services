@@ -65,11 +65,11 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 	}
 
 	public static PermHashLong fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
-		return PermHashLong.asPhl(rel.getLeft().getAccountNum(), rel.getRight().getTokenNum());
+		return PermHashLong.fromLongs(rel.getLeft().getAccountNum(), rel.getRight().getTokenNum());
 	}
 
 	public static PermHashLong fromAccountTokenRel(AccountID account, TokenID token) {
-		return PermHashLong.asPhl(account.getAccountNum(), token.getTokenNum());
+		return PermHashLong.fromLongs(account.getAccountNum(), token.getTokenNum());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {

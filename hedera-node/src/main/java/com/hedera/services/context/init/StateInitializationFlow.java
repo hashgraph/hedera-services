@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 @Singleton
 public class StateInitializationFlow {
@@ -78,7 +78,7 @@ public class StateInitializationFlow {
 		}
 	}
 
-	private static Consumer<HederaNumbers> staticNumbersHolder = STATIC_PROPERTIES_HOLDER::setNumbersFrom;
+	private static Consumer<HederaNumbers> staticNumbersHolder = STATIC_PROPERTIES::setNumbersFrom;
 
 	/* --- Only used by unit tests --- */
 	static void setStaticNumbersHolder(Consumer<HederaNumbers> staticNumbersHolder) {

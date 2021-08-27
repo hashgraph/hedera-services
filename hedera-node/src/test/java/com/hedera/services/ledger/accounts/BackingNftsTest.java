@@ -46,9 +46,9 @@ class BackingNftsTest {
 	private NftId aNftId = new NftId(0, 0, 3, 4);
 	private NftId bNftId = new NftId(0, 0, 4, 5);
 	private NftId cNftId = new NftId(0, 0, 5, 6);
-	private PermHashLong aKey = PermHashLong.asPhl(3, 4);
-	private PermHashLong bKey = PermHashLong.asPhl(4, 5);
-	private PermHashLong cKey = PermHashLong.asPhl(5, 6);
+	private PermHashLong aKey = PermHashLong.fromLongs(3, 4);
+	private PermHashLong bKey = PermHashLong.fromLongs(4, 5);
+	private PermHashLong cKey = PermHashLong.fromLongs(5, 6);
 	private MerkleUniqueToken aValue = new MerkleUniqueToken(
 			new EntityId(0, 0, 3),
 			"abcdefgh".getBytes(),

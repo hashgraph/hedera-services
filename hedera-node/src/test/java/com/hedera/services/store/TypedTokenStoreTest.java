@@ -337,11 +337,11 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
 		// and:
-		final var expectedNewUniqTokenId = PermHashLong.asPhl(tokenEntityId.num(), mintedSerialNo);
-		final var expectedNewUniqTokenId2 = PermHashLong.asPhl(tokenEntityId.num(), mintedSerialNo2);
+		final var expectedNewUniqTokenId = PermHashLong.fromLongs(tokenEntityId.num(), mintedSerialNo);
+		final var expectedNewUniqTokenId2 = PermHashLong.fromLongs(tokenEntityId.num(), mintedSerialNo2);
 		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
-		final var expectedPastUniqTokenId = PermHashLong.asPhl(tokenEntityId.num(), wipedSerialNo);
-		final var expectedPastUniqTokenId2 = PermHashLong.asPhl(tokenEntityId.num(), burnedSerialNo);
+		final var expectedPastUniqTokenId = PermHashLong.fromLongs(tokenEntityId.num(), wipedSerialNo);
+		final var expectedPastUniqTokenId2 = PermHashLong.fromLongs(tokenEntityId.num(), burnedSerialNo);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -527,7 +527,7 @@ class TypedTokenStoreTest {
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
 	private final boolean freezeDefault = true;
-	private final PermHashLong miscTokenRelId = PermHashLong.asPhl(miscAccountNum, tokenNum);
+	private final PermHashLong miscTokenRelId = PermHashLong.fromLongs(miscAccountNum, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
 	private MerkleToken merkleToken;
 	private MerkleTokenRelStatus miscTokenMerkleRel;

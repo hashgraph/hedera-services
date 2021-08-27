@@ -630,7 +630,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyANfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(sponsor);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
-		final var muti = PermHashLong.asPhl(aNft.tokenId().getTokenNum(), aNft.serialNo());
+		final var muti = PermHashLong.fromLongs(aNft.tokenId().getTokenNum(), aNft.serialNo());
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
@@ -656,7 +656,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(counterparty);
 		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
-		final var muti = PermHashLong.asPhl(tNft.tokenId().getShardNum(), tNft.serialNo());
+		final var muti = PermHashLong.fromLongs(tNft.tokenId().getShardNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
 		}});
@@ -686,7 +686,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
-		final var muti = PermHashLong.asPhl(tNft.tokenId().getTokenNum(), tNft.serialNo());
+		final var muti = PermHashLong.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
 		}});

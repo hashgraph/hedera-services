@@ -35,9 +35,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.nanosFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.secondsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
@@ -122,7 +122,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 
 	@Override
 	public String toString() {
-		final var then = Instant.ofEpochSecond(secondsFrom(packedCreationTime), nanosFrom(packedCreationTime));
+		final var then = Instant.ofEpochSecond(unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
 		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
 				.add("owner", EntityId.fromIdentityCode(ownerCode).toAbbrevString())
 				.add("creationTime", then)
@@ -176,7 +176,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	}
 
 	public RichInstant getCreationTime() {
-		return new RichInstant(secondsFrom(packedCreationTime), nanosFrom(packedCreationTime));
+		return new RichInstant(unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
 	}
 
 	public boolean isTreasuryOwned() {

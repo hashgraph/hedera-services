@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.nanosFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.secondsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,10 +73,39 @@ class BitPackUtilsTest {
 		// when:
 		final var packed = packedTime(distantFuture.getEpochSecond(), distantFuture.getNano());
 		// and:
-		final var unpacked = Instant.ofEpochSecond(secondsFrom(packed), nanosFrom(packed));
+		final var unpacked = Instant.ofEpochSecond(unsignedHighOrder32From(packed), signedLowOrder32From(packed));
 
 		// then:
 		assertEquals(distantFuture, unpacked);
+	}
+
+	@Test
+	void longPackingWorks() {
+		// setup:
+		final long bigNumA = MAX_NUM_ALLOWED;
+		final long bigNumB = MAX_NUM_ALLOWED - 1;
+
+		// given:
+		final var packed = BitPackUtils.packedNums(bigNumA, bigNumB);
+
+		// when:
+		final var unpackedA = BitPackUtils.unsignedHighOrder32From(packed);
+		final var unpackedB = BitPackUtils.unsignedLowOrder32From(packed);
+
+		// then:
+		assertEquals(bigNumA, unpackedA);
+		assertEquals(bigNumB, unpackedB);
+	}
+
+	@Test
+	void longPackingValidatesArgs() {
+		// setup:
+		final long overlyBigNum = MAX_NUM_ALLOWED + 1;
+		final long bigNum = MAX_NUM_ALLOWED;
+
+		// given:
+		assertThrows(IllegalArgumentException.class, () -> BitPackUtils.packedNums(overlyBigNum, bigNum));
+		assertThrows(IllegalArgumentException.class, () -> BitPackUtils.packedNums(bigNum, overlyBigNum));
 	}
 
 	@Test

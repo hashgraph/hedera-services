@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public enum StaticPropertiesHolder {
-	STATIC_PROPERTIES_HOLDER;
+	STATIC_PROPERTIES;
 
 	private long shard = 0;
 	private long realm = 0;

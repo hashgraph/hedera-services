@@ -138,7 +138,7 @@ public class UniqTokenViewsManager {
 			return;
 		}
 
-		final var tokenId = nftId.hiAsPhi();
+		final var tokenId = nftId.getHiPhi();
 		nftsByType.get().associate(tokenId, nftId.getValue());
 		if (isUsingTreasuryWildcards()) {
 			curTreasuryNftsByType().associate(tokenId, nftId.getValue());
@@ -162,7 +162,7 @@ public class UniqTokenViewsManager {
 		}
 
 		/* The treasury account cannot be wiped, so both cases are the same */
-		nftsByType.get().disassociate(nftId.hiAsPhi(), nftId.getValue());
+		nftsByType.get().disassociate(nftId.getHiPhi(), nftId.getValue());
 		nftsByOwner.get().disassociate(fromInt(fromAccount.identityCode()), nftId.getValue());
 	}
 
@@ -180,7 +180,7 @@ public class UniqTokenViewsManager {
 			return;
 		}
 
-		final var tokenId = nftId.hiAsPhi();
+		final var tokenId = nftId.getHiPhi();
 		nftsByType.get().disassociate(tokenId, nftId.getValue());
 		if (isUsingTreasuryWildcards()) {
 			curTreasuryNftsByType().disassociate(tokenId, nftId.getValue());
@@ -227,7 +227,7 @@ public class UniqTokenViewsManager {
 		}
 
 		if (isUsingTreasuryWildcards()) {
-			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.hiAsPhi().intValue(), nftId.getValue(), false);
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.getValue(), false);
 		} else {
 			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), false);
 		}
@@ -253,7 +253,7 @@ public class UniqTokenViewsManager {
 
 		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.getValue(), false);
 		if (isUsingTreasuryWildcards()) {
-			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.hiAsPhi().intValue(), nftId.getValue(), true);
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.getValue(), true);
 		} else {
 			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), true);
 		}
@@ -403,7 +403,7 @@ public class UniqTokenViewsManager {
 		final var curTreasuryNftsByType = curTreasuryNftsByType();
 		forEach(nfts, (nftId, nft) -> {
 			if (nft.isTreasuryOwned()) {
-				final var tokenId = nftId.hiAsPhi();
+				final var tokenId = nftId.getHiPhi();
 				if (!tokens.containsKey(tokenId)) {
 					return;
 				}
@@ -418,7 +418,7 @@ public class UniqTokenViewsManager {
 	) {
 		final var curNftsByOwner = nftsByOwner.get();
 		forEach(nfts, (nftId, nft) -> {
-			if (!tokens.containsKey(nftId.hiAsPhi())) {
+			if (!tokens.containsKey(nftId.getHiPhi())) {
 				return;
 			}
 			if (!nft.isTreasuryOwned()) {
@@ -433,7 +433,7 @@ public class UniqTokenViewsManager {
 	) {
 		final var curNftsByOwner = nftsByOwner.get();
 		forEach(nfts, (nftId, nft) -> {
-			final var tokenId = nftId.hiAsPhi();
+			final var tokenId = nftId.getHiPhi();
 			if (!tokens.containsKey(tokenId)) {
 				return;
 			}
@@ -452,7 +452,7 @@ public class UniqTokenViewsManager {
 	) {
 		final var curNftsByType = nftsByType.get();
 		forEach(nfts, (nftId, nft) -> {
-			final var tokenId = nftId.hiAsPhi();
+			final var tokenId = nftId.getHiPhi();
 			if (!tokens.containsKey(tokenId)) {
 				return;
 			}

@@ -26,7 +26,7 @@ import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES_HOLDER;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -46,20 +46,20 @@ class StaticPropertiesHolderTest {
 		given(pretendNumbers.realm()).willReturn(2L);
 
 		// when:
-		STATIC_PROPERTIES_HOLDER.setNumbersFrom(pretendNumbers);
+		STATIC_PROPERTIES.setNumbersFrom(pretendNumbers);
 
 		// then:
-		assertEquals(1L, STATIC_PROPERTIES_HOLDER.getShard());
-		assertEquals(2L, STATIC_PROPERTIES_HOLDER.getRealm());
-		assertEquals(expectedAccount, STATIC_PROPERTIES_HOLDER.scopedAccountWith(3L));
-		assertEquals(expectedToken, STATIC_PROPERTIES_HOLDER.scopedTokenWith(3L));
-		assertEquals(expectedSchedule, STATIC_PROPERTIES_HOLDER.scopedScheduleWith(3L));
-		assertEquals("1.2.3", STATIC_PROPERTIES_HOLDER.scopedIdLiteralWith(3L));
+		assertEquals(1L, STATIC_PROPERTIES.getShard());
+		assertEquals(2L, STATIC_PROPERTIES.getRealm());
+		assertEquals(expectedAccount, STATIC_PROPERTIES.scopedAccountWith(3L));
+		assertEquals(expectedToken, STATIC_PROPERTIES.scopedTokenWith(3L));
+		assertEquals(expectedSchedule, STATIC_PROPERTIES.scopedScheduleWith(3L));
+		assertEquals("1.2.3", STATIC_PROPERTIES.scopedIdLiteralWith(3L));
 	}
 
 
 	@AfterEach
 	void cleanup() {
-		STATIC_PROPERTIES_HOLDER.setNumbersFrom(defaultNumbers);
+		STATIC_PROPERTIES.setNumbersFrom(defaultNumbers);
 	}
 }
