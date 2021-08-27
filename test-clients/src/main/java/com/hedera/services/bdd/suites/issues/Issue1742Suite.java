@@ -51,7 +51,7 @@ public class Issue1742Suite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	public static HapiApiSpec cryptoTransferListShowsOnlyFeesAfterIAB() {

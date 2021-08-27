@@ -58,7 +58,7 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	HapiApiSpec contractCallPerf() {

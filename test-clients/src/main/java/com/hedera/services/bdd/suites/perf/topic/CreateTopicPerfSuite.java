@@ -54,7 +54,7 @@ public class CreateTopicPerfSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	private HapiApiSpec createTopicPerf() {

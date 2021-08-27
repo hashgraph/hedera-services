@@ -53,7 +53,7 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	private HapiApiSpec cryptoTransferPerf() {
