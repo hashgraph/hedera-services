@@ -44,6 +44,8 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
@@ -78,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * {@link TransactionRecordService} to inspect the entity for changes that
  * may need to be included in the record of the transaction.
  */
+@Singleton
 public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
@@ -88,9 +91,10 @@ public class TypedTokenStore {
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
-	private final RemoveKnownTreasuryDelegate delegate;
-	private final AddKnownTreasuryDelegate addKnownTreasury;
+	private final LegacyTreasuryRemover delegate;
+	private final LegacyTreasuryAdder addKnownTreasury;
 
+	@Inject
 	public TypedTokenStore(
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
@@ -99,8 +103,8 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
-			AddKnownTreasuryDelegate legacyStoreDelegate,
-			RemoveKnownTreasuryDelegate delegate
+			LegacyTreasuryAdder legacyStoreDelegate,
+			LegacyTreasuryRemover delegate
 	) {
 		this.tokens = tokens;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
@@ -110,7 +114,6 @@ public class TypedTokenStore {
 		this.transactionRecordService = transactionRecordService;
 		this.delegate = delegate;
 		this.backingTokenRels = backingTokenRels;
-
 		this.addKnownTreasury = legacyStoreDelegate;
 	}
 
@@ -355,7 +358,7 @@ public class TypedTokenStore {
 		if (token.isDeleted()) {
 			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
 			final TokenID mutatedToken = token.getId().asGrpcToken();
-			delegate.perform(affectedTreasury, mutatedToken);
+			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
 		}
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -503,12 +506,12 @@ public class TypedTokenStore {
 	}
 
 	@FunctionalInterface
-	public interface AddKnownTreasuryDelegate {
+	public interface LegacyTreasuryAdder {
 		void perform(final AccountID aId, final TokenID tId);
 	}
 
 	@FunctionalInterface
-	public interface RemoveKnownTreasuryDelegate {
-		void perform(final AccountID aId, final TokenID tId);
+	public interface LegacyTreasuryRemover {
+		void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
 	}
 }

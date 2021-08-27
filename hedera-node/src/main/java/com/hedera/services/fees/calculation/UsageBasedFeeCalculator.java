@@ -42,15 +42,19 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
@@ -63,9 +67,8 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
  * Implements a {@link FeeCalculator} in terms of injected usage prices,
  * exchange rates, and collections of estimators which can infer the
  * resource usage of various transactions and queries.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class UsageBasedFeeCalculator implements FeeCalculator {
 	private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
@@ -73,25 +76,26 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private final HbarCentExchange exchange;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final UsagePricesProvider usagePrices;
-	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
-	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 	private final PricedUsageCalculator pricedUsageCalculator;
+	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
+	private final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
+	@Inject
 	public UsageBasedFeeCalculator(
 			AutoRenewCalcs autoRenewCalcs,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
 			FeeMultiplierSource feeMultiplierSource,
 			PricedUsageCalculator pricedUsageCalculator,
-			List<QueryResourceUsageEstimator> queryUsageEstimators,
-			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
+			Set<QueryResourceUsageEstimator> queryUsageEstimators,
+			Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.autoRenewCalcs = autoRenewCalcs;
 		this.txnUsageEstimators = txnUsageEstimators;
-		this.queryUsageEstimators = queryUsageEstimators;
+		this.queryUsageEstimators = new ArrayList<>(queryUsageEstimators);
 		this.pricedUsageCalculator = pricedUsageCalculator;
 	}
 
@@ -107,7 +111,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			long requestedRenewal,
 			Instant now
 	) {
-		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now, exchange.activeRate());
+		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now, exchange.activeRate(now));
 	}
 
 	@Override
@@ -144,8 +148,9 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	@Override
-	public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view) {
-		return feeGiven(accessor, payerKey, view, usagePrices.activePrices(), exchange.activeRate(), true);
+	public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant now) {
+		return feeGiven(
+				accessor, payerKey, view, usagePrices.activePrices(accessor), exchange.activeRate(now), true);
 	}
 
 	@Override
@@ -153,11 +158,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		Map<SubType, FeeData> prices = uncheckedPricesGiven(accessor, at);
 
 		return feeGiven(accessor, payerKey, view, prices, exchange.rate(at), false);
-	}
-
-	@Override
-	public long activeGasPriceInTinybars() {
-		return gasPriceInTinybars(usagePrices.defaultActivePrices(), exchange.activeRate());
 	}
 
 	@Override
@@ -256,7 +256,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private TxnResourceUsageEstimator getTxnUsageEstimator(TxnAccessor accessor) {
 		var txn = accessor.getTxn();
 		var estimators = Optional
-				.ofNullable(txnUsageEstimators.apply(accessor.getFunction()))
+				.ofNullable(txnUsageEstimators.get(accessor.getFunction()))
 				.orElse(Collections.emptyList());
 		for (TxnResourceUsageEstimator estimator : estimators) {
 			if (estimator.applicableTo(txn)) {

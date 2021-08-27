@@ -38,6 +38,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -54,6 +56,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
  */
+@Singleton
 public class RenewalHelper {
 	private static final Logger log = LogManager.getLogger(RenewalHelper.class);
 
@@ -70,6 +73,7 @@ public class RenewalHelper {
 	private MerkleAccount lastClassifiedAccount = null;
 	private MerkleEntityId lastClassifiedEntityId;
 
+	@Inject
 	public RenewalHelper(
 			TokenStore tokenStore,
 			HederaNumbers hederaNumbers,

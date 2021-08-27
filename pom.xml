@@ -150,7 +150,7 @@
     <maven-license.version>2.0.0</maven-license.version>
     <maven-compiler.version>3.8.1</maven-compiler.version>
     <maven-surefire.version>3.0.0-M5</maven-surefire.version>
-    <maven-dependency.version>3.1.1</maven-dependency.version>
+    <maven-dependency.version>3.2.0</maven-dependency.version>
     <maven-versions.version>2.8.1</maven-versions.version>
     <maven-javadoc.version>3.3.0</maven-javadoc.version>
 
@@ -158,6 +158,7 @@
     <commons-codec.version>1.15</commons-codec.version>
     <commons-io.version>2.11.0</commons-io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
+    <dagger.version>2.37</dagger.version>
     <eddsa.version>0.3.0</eddsa.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.39.0</grpc.version>
@@ -172,7 +173,7 @@
     <!-- Test dependency properties in alphabetical order -->
     <hamcrest.version>2.2</hamcrest.version>
     <junit5.version>5.7.2</junit5.version>
-    <mockito.version>3.11.2</mockito.version>
+    <mockito.version>3.12.4</mockito.version>
 
     <!-- SonarCloud properties -->
     <jacoco.version>0.8.7</jacoco.version>
@@ -202,7 +203,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>3.0.0-M1</version>
+        <version>3.0.0-M4</version>
         <configuration>
           <releaseProfiles>release</releaseProfiles>
           <autoVersionSubmodules>true</autoVersionSubmodules>
@@ -331,6 +332,15 @@ ${git.signoff}
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler.version}</version>
+          <configuration>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>com.google.dagger</groupId>
+                <artifactId>dagger-compiler</artifactId>
+                <version>${dagger.version}</version>
+              </path>
+            </annotationProcessorPaths>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -461,6 +471,11 @@ ${git.signoff}
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>com.google.dagger</groupId>
+      <artifactId>dagger</artifactId>
+      <version>${dagger.version}</version>
+    </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>

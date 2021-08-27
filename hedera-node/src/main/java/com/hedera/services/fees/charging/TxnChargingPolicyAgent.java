@@ -28,6 +28,8 @@ import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -43,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * Please see {@link FeeChargingPolicy} for details.
  */
+@Singleton
 public class TxnChargingPolicyAgent {
 	private final FeeCalculator feeCalc;
 	private final FeeChargingPolicy chargingPolicy;
@@ -51,6 +54,7 @@ public class TxnChargingPolicyAgent {
 	private final AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
+	@Inject
 	public TxnChargingPolicyAgent(
 			FeeCalculator feeCalc,
 			FeeChargingPolicy chargingPolicy,
@@ -74,7 +78,8 @@ public class TxnChargingPolicyAgent {
 	 * @return whether or not handleTransaction can continue after policy application.
 	 */
 	public boolean applyPolicyFor(TxnAccessor accessor) {
-		final var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get());
+		final var now = txnCtx.consensusTime();
+		final var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
 		final var recentHistory = txnHistories.get(accessor.getTxnId());
 		var duplicity = (recentHistory == null)
 				? BELIEVED_UNIQUE

@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
 
@@ -38,6 +40,7 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
+@Singleton
 public class AutoRenewCalcs {
 	private static final Logger log = LogManager.getLogger(AutoRenewCalcs.class);
 
@@ -52,21 +55,28 @@ public class AutoRenewCalcs {
 	private long firstServiceRbhPrice = 0L;
 	private long secondServiceRbhPrice = 0L;
 
+	@Inject
 	public AutoRenewCalcs(CryptoOpsUsage cryptoOpsUsage) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 	}
 
-	public void setCryptoAutoRenewPriceSeq(Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoAutoRenewPriceSeq) {
+	public void setCryptoAutoRenewPriceSeq(
+			Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoAutoRenewPriceSeq
+	) {
 		this.cryptoAutoRenewPriceSeq = cryptoAutoRenewPriceSeq;
 
 		if (cryptoAutoRenewPriceSeq.getLeft() == null) {
 			log.warn("No prices known for CryptoAccountAutoRenew, will charge zero fees!");
 		} else {
-			this.firstConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getLeft().get(SubType.DEFAULT));
-			this.secondConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getRight().get(SubType.DEFAULT));
+			this.firstConstantCryptoAutoRenewFee = constantFeeFrom(
+					cryptoAutoRenewPriceSeq.getLeft().get(SubType.DEFAULT));
+			this.secondConstantCryptoAutoRenewFee = constantFeeFrom(
+					cryptoAutoRenewPriceSeq.getRight().get(SubType.DEFAULT));
 
-			this.firstServiceRbhPrice = cryptoAutoRenewPriceSeq.getLeft().get(SubType.DEFAULT).getServicedata().getRbh();
-			this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().get(SubType.DEFAULT).getServicedata().getRbh();
+			this.firstServiceRbhPrice =
+					cryptoAutoRenewPriceSeq.getLeft().get(SubType.DEFAULT).getServicedata().getRbh();
+			this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().get(
+					SubType.DEFAULT).getServicedata().getRbh();
 		}
 	}
 

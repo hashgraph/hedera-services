@@ -20,10 +20,15 @@ package com.hedera.services.config;
  * ‍
  */
 
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
+@Singleton
 public class AccountNumbers {
 	private final PropertySource properties;
 
@@ -36,7 +41,8 @@ public class AccountNumbers {
 	private long exchangeRatesAdmin = UNKNOWN_NUMBER;
 	private long systemUndeleteAdmin = UNKNOWN_NUMBER;
 
-	public AccountNumbers(PropertySource properties) {
+	@Inject
+	public AccountNumbers(@CompositeProps PropertySource properties) {
 		this.properties = properties;
 	}
 

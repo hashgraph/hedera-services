@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,8 +42,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetScheduleInfoAnswer implements AnswerService {
     public static final String SCHEDULE_INFO_CTX_KEY = GetScheduleInfoAnswer.class.getSimpleName() + "_scheduleInfo";
+
+    @Inject
+    public GetScheduleInfoAnswer() {
+    }
 
     @Override
     public boolean needsAnswerOnlyCost(Query query) {

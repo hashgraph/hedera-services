@@ -35,16 +35,20 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetAccountRecordsAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 	private final AnswerFunctions answerFunctions;
 
+	@Inject
 	public GetAccountRecordsAnswer(
 			AnswerFunctions answerFunctions,
 			OptionValidator optionValidator

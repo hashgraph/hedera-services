@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -38,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class FileSysUndelTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
@@ -45,6 +48,7 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final Map<EntityId, Long> expiries;
 
+	@Inject
 	public FileSysUndelTransitionLogic(
 			HederaFs hfs,
 			Map<EntityId, Long> expiries,

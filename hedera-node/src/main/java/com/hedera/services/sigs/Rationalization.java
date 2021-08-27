@@ -21,9 +21,10 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.annotations.HandleSigReqs;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
-import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -33,6 +34,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -42,12 +45,14 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMa
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class Rationalization {
+	private final SyncVerifier syncVerifier;
+	private final SigRequirements keyOrderer;
+	private final ReusableBodySigningFactory bodySigningFactory;
+
 	private TxnAccessor txnAccessor;
-	private SyncVerifier syncVerifier;
 	private PubKeyToSigBytes pkToSigFn;
-	private HederaSigningOrder keyOrderer;
-	private TxnScopedPlatformSigFactory sigFactory;
 
 	private JKey reqPayerSig;
 	private boolean verifiedSync;
@@ -58,14 +63,19 @@ public class Rationalization {
 	private List<TransactionSignature> realPayerSigs = new ArrayList<>();
 	private List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
 
-	public void performFor(
-			TxnAccessor txnAccessor,
+	@Inject
+	public Rationalization(
 			SyncVerifier syncVerifier,
-			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytes pkToSigFn,
-			TxnScopedPlatformSigFactory sigFactory
+			@HandleSigReqs SigRequirements keyOrderer,
+			ReusableBodySigningFactory bodySigningFactory
 	) {
-		resetFor(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
+		this.keyOrderer = keyOrderer;
+		this.syncVerifier = syncVerifier;
+		this.bodySigningFactory = bodySigningFactory;
+	}
+
+	public void performFor(TxnAccessor txnAccessor) {
+		resetFor(txnAccessor);
 		execute();
 	}
 
@@ -77,18 +87,11 @@ public class Rationalization {
 		return verifiedSync;
 	}
 
-	void resetFor(
-			TxnAccessor txnAccessor,
-			SyncVerifier syncVerifier,
-			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytes pkToSigFn,
-			TxnScopedPlatformSigFactory sigFactory
-	) {
-		this.pkToSigFn = pkToSigFn;
-		this.keyOrderer = keyOrderer;
-		this.sigFactory = sigFactory;
+	void resetFor(TxnAccessor txnAccessor) {
+		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
-		this.syncVerifier = syncVerifier;
+
+		bodySigningFactory.resetFor(txnAccessor);
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
 		realPayerSigs.clear();
@@ -166,7 +169,7 @@ public class Rationalization {
 			return lastOrderResult.getErrorReport();
 		}
 		final var creation =
-				createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+				createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
 		if (creation.hasFailed()) {
 			return creation.asCode();
 		}
@@ -187,12 +190,8 @@ public class Rationalization {
 		return pkToSigFn;
 	}
 
-	HederaSigningOrder getKeyOrderer() {
+	SigRequirements getKeyOrderer() {
 		return keyOrderer;
-	}
-
-	TxnScopedPlatformSigFactory getSigFactory() {
-		return sigFactory;
 	}
 
 	List<TransactionSignature> getRealPayerSigs() {

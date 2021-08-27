@@ -57,7 +57,6 @@ import static java.util.stream.Collectors.joining;
  * 		the family of properties associated to entities in the ledger.
  * @param <A>
  * 		the type of a ledger entity.
- * @author Michael Tinker
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
 	private static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 42;

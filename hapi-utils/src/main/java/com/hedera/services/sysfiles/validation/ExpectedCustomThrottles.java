@@ -76,7 +76,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
-public class ExpectedCustomThrottles {
+public final class ExpectedCustomThrottles {
 	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_0160 = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
@@ -129,4 +129,8 @@ public class ExpectedCustomThrottles {
 			ScheduleGetInfo,
 			TokenFeeScheduleUpdate
 	);
+
+	private ExpectedCustomThrottles() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 }

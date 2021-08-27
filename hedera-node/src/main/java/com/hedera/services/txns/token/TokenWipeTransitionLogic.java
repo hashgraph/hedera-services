@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -48,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Provides the state transition for wiping [part of] a token balance.
  */
+@Singleton
 public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
@@ -56,6 +59,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public TokenWipeTransitionLogic(
 			final OptionValidator validator,
 			final TypedTokenStore tokenStore,

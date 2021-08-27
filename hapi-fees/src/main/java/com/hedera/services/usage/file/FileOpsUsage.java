@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
@@ -44,6 +46,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+@Singleton
 public class FileOpsUsage {
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -56,6 +59,10 @@ public class FileOpsUsage {
 	static int bytesInBaseRepr() {
 		return NUM_FLAGS_IN_BASE_FILE_REPR * BOOL_SIZE
 				+ NUM_LONG_FIELDS_IN_BASE_FILE_REPR * LONG_SIZE;
+	}
+
+	@Inject
+	public FileOpsUsage() {
 	}
 
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {

@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,8 +29,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hedera.services.txns.submission.PresolvencyFlaws.responseForFlawed;
@@ -47,31 +50,33 @@ import static com.swirlds.common.PlatformStatus.ACTIVE;
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class TransactionPrecheck {
 	private final QueryFeeCheck queryFeeCheck;
 	private final StagedPrechecks stagedPrechecks;
 	private final CurrentPlatformStatus currentPlatformStatus;
 
-	private static final EnumSet<Characteristic> TOP_LEVEL_CHARACTERISTICS =
+	private static final Set<Characteristic> TOP_LEVEL_CHARACTERISTICS =
 			EnumSet.of(Characteristic.MUST_PASS_SYSTEM_SCREEN);
-	private static final EnumSet<Characteristic> QUERY_PAYMENT_CHARACTERISTICS =
+	private static final Set<Characteristic> QUERY_PAYMENT_CHARACTERISTICS =
 			EnumSet.of(Characteristic.MUST_BE_CRYPTO_TRANSFER, Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES);
 
+	@Inject
 	public TransactionPrecheck(
-			QueryFeeCheck queryFeeCheck,
-			StagedPrechecks stagedPrechecks,
-			CurrentPlatformStatus currentPlatformStatus
+			final QueryFeeCheck queryFeeCheck,
+			final StagedPrechecks stagedPrechecks,
+			final CurrentPlatformStatus currentPlatformStatus
 	) {
 		this.queryFeeCheck = queryFeeCheck;
 		this.stagedPrechecks = stagedPrechecks;
 		this.currentPlatformStatus = currentPlatformStatus;
 	}
 
-	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForTopLevel(Transaction signedTxn) {
+	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForTopLevel(final Transaction signedTxn) {
 		return performance(signedTxn, TOP_LEVEL_CHARACTERISTICS);
 	}
 
-	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForQueryPayment(Transaction signedTxn) {
+	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForQueryPayment(final Transaction signedTxn) {
 		final var prelim = performance(signedTxn, QUERY_PAYMENT_CHARACTERISTICS);
 		final var prelimOutcome = prelim.getLeft();
 		if (prelimOutcome.getValidity() != OK || prelim.getRight().isEmpty()) {
@@ -87,8 +92,8 @@ public class TransactionPrecheck {
 	}
 
 	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performance(
-			Transaction signedTxn,
-			EnumSet<Characteristic> characteristics
+			final Transaction signedTxn,
+			final Set<Characteristic> characteristics
 	) {
 		if (currentPlatformStatus.get() != ACTIVE) {
 			return WELL_KNOWN_FLAWS.get(PLATFORM_NOT_ACTIVE);
@@ -130,13 +135,13 @@ public class TransactionPrecheck {
 		return Pair.of(solvencyStatus, Optional.of(accessor));
 	}
 
-	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureFor(TxnValidityAndFeeReq feeReqStatus) {
+	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureFor(final TxnValidityAndFeeReq feeReqStatus) {
 		return Pair.of(feeReqStatus, Optional.empty());
 	}
 
 	private ResponseCodeEnum checkSemantics(
-			TxnAccessor accessor,
-			EnumSet<Characteristic> characteristics
+			final TxnAccessor accessor,
+			final Set<Characteristic> characteristics
 	) {
 		return characteristics.contains(Characteristic.MUST_BE_CRYPTO_TRANSFER)
 				? stagedPrechecks.validateSemantics(accessor, CryptoTransfer, INSUFFICIENT_TX_FEE)

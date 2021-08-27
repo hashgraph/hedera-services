@@ -33,8 +33,6 @@ import static java.lang.Boolean.parseBoolean;
 
 /**
  * Reads and maintains custom properties from a file.
- *
- * @author hua
  */
 public class CustomProperties {
 	private static final Logger log = LogManager.getLogger(CustomProperties.class);

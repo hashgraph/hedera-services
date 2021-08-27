@@ -31,8 +31,12 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.FeeObject;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 
+@Singleton
 public class PricedUsageCalculator {
 	private final UsageAccumulator handleScopedAccumulator = new UsageAccumulator();
 
@@ -40,6 +44,7 @@ public class PricedUsageCalculator {
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final OverflowCheckingCalc calculator;
 
+	@Inject
 	public PricedUsageCalculator(
 			AccessorBasedUsages accessorBasedUsages,
 			FeeMultiplierSource feeMultiplierSource,

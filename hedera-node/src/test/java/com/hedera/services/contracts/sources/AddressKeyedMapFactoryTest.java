@@ -9,9 +9,9 @@ package com.hedera.services.contracts.sources;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,64 +43,48 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AddressKeyedMapFactoryTest {
 	@Test
 	void toAddressConversion() {
-		// given:
-		var mapper = toAddressMapping(LEGACY_BYTECODE_PATH_PATTERN);
-		var key = "/666/s888";
-		// and:
-		var expected = EntityIdUtils.asSolidityAddress(0, 666, 888);
+		final var mapper = toAddressMapping(LEGACY_BYTECODE_PATH_PATTERN);
+		final var key = "/666/s888";
+		final var expected = EntityIdUtils.asSolidityAddress(0, 666, 888);
 
-		// when:
-		var actual = mapper.apply(key);
+		final var actual = mapper.apply(key);
 
-		// then:
 		assertArrayEquals(expected, actual);
 	}
 
 	@Test
 	void toKeyConversionWorks() {
-		// given:
-		var mapper = toKeyMapping(LEGACY_BYTECODE_PATH_TEMPLATE);
-		var address = EntityIdUtils.asSolidityAddress(0, 666, 888);
-		// and:
-		var expected = "/666/s888";
+		final var mapper = toKeyMapping(LEGACY_BYTECODE_PATH_TEMPLATE);
+		final var address = EntityIdUtils.asSolidityAddress(0, 666, 888);
+		final var expected = "/666/s888";
 
-		// when:
-		var actual = mapper.apply(address);
+		final var actual = mapper.apply(address);
 
-		// then:
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	void isRelevantWorks() {
-		// given:
-		var realKey = "/666/s888";
-		var fakeKey = "/a66/s888";
-		var pred = toRelevancyPredicate(LEGACY_BYTECODE_PATH_PATTERN);
+		final var realKey = "/666/s888";
+		final var fakeKey = "/a66/s888";
+		final var pred = toRelevancyPredicate(LEGACY_BYTECODE_PATH_PATTERN);
 
-		// expect:
 		assertTrue(pred.test(realKey));
 		assertFalse(pred.test(fakeKey));
 	}
 
 	@Test
 	void bytecodeProductHasMapSemantics() {
-		// setup:
-		Map<String, byte[]> delegate = new HashMap<>();
+		final Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(("/2/s7"), "APRIORI".getBytes());
-		// and:
-		var address1 = EntityIdUtils.asSolidityAddress(0,2,3);
-		var address2 = EntityIdUtils.asSolidityAddress(0,3333,4);
-		var address3 = EntityIdUtils.asSolidityAddress(0,4,555555);
-		// and:
-		var theData = "THE".getBytes();
-		var someData = "SOME".getBytes();
-		var moreData = "MORE".getBytes();
+		final var address1 = EntityIdUtils.asSolidityAddress(0, 2, 3);
+		final var address2 = EntityIdUtils.asSolidityAddress(0, 3333, 4);
+		final var address3 = EntityIdUtils.asSolidityAddress(0, 4, 555555);
+		final var theData = "THE".getBytes();
+		final var someData = "SOME".getBytes();
+		final var moreData = "MORE".getBytes();
+		final var storageMap = bytecodeMapFrom(delegate);
 
-		// given:
-		var storageMap = bytecodeMapFrom(delegate);
-
-		// when:
 		storageMap.put(address1, someData);
 		storageMap.put(address2, moreData);
 		storageMap.put(address3, theData);
@@ -129,35 +113,27 @@ class AddressKeyedMapFactoryTest {
 
 	@Test
 	void productHasFilterSet() {
-		// setup:
-		Map<String, byte[]> delegate = new HashMap<>();
+		final Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(("NOT-REAL-KEY"), "APRIORI".getBytes());
 
-		// given:
-		var storageMap = bytecodeMapFrom(delegate);
+		final var storageMap = bytecodeMapFrom(delegate);
 
-		// expect:
 		assertTrue(storageMap.entrySet().isEmpty());
 	}
 
 	@Test
 	void storageProductHasMapSemantics() {
-		// setup:
-		Map<String, byte[]> delegate = new HashMap<>();
+		final Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(("/2/d7"), "APRIORI".getBytes());
-		// and:
-		var address1 = EntityIdUtils.asSolidityAddress(0,2,3);
-		var address2 = EntityIdUtils.asSolidityAddress(0,3333,4);
-		var address3 = EntityIdUtils.asSolidityAddress(0,4,555555);
-		// and:
-		var theData = "THE".getBytes();
-		var someData = "SOME".getBytes();
-		var moreData = "MORE".getBytes();
+		final var address1 = EntityIdUtils.asSolidityAddress(0, 2, 3);
+		final var address2 = EntityIdUtils.asSolidityAddress(0, 3333, 4);
+		final var address3 = EntityIdUtils.asSolidityAddress(0, 4, 555555);
+		final var theData = "THE".getBytes();
+		final var someData = "SOME".getBytes();
+		final var moreData = "MORE".getBytes();
 
-		// given:
-		var storageMap = storageMapFrom(delegate);
+		final var storageMap = storageMapFrom(delegate);
 
-		// when:
 		storageMap.put(address1, someData);
 		storageMap.put(address2, moreData);
 		storageMap.put(address3, theData);

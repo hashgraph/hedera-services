@@ -26,6 +26,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -68,9 +68,8 @@ class TransitionRunnerTest {
 	@Mock
 	private TransitionLogicLookup lookup;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private TransitionRunner subject;
 

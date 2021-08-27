@@ -20,10 +20,10 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -41,6 +41,8 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,26 +51,33 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ExpiringCreations implements EntityCreator {
-	private RecordCache recordCache;
+	private HederaLedger ledger;
 
 	private final ExpiryManager expiries;
+	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	@Inject
 	public ExpiringCreations(
 			ExpiryManager expiries,
+			NarratedCharging narratedCharging,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;
+		this.narratedCharging = narratedCharging;
 		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	public void setRecordCache(RecordCache recordCache) {
-		this.recordCache = recordCache;
+	public void setLedger(HederaLedger ledger) {
+		this.ledger = ledger;
+
+		narratedCharging.setLedger(ledger);
 	}
 
 	@Override
@@ -82,13 +91,9 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 
-		if (dynamicProperties.shouldKeepRecordsInState()) {
-			final var key = MerkleEntityId.fromAccountId(payer);
-			addToState(key, expiringRecord);
-			expiries.trackRecordInState(payer, expiringRecord.getExpiry());
-		} else {
-			recordCache.trackForExpiry(expiringRecord);
-		}
+		final var key = MerkleEntityId.fromAccountId(payer);
+		addToState(key, expiringRecord);
+		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 
 		return expiringRecord;
 	}
@@ -101,15 +106,14 @@ public class ExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
 			List<FcAssessedCustomFee> customFeesCharged,
 			List<FcTokenAssociation> newTokenAssociations
 	) {
-		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		final long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
+		final TransferList transfersList = ledger.netTransfersInTxn();
 		final var tokenTransferList = explicitTokenTransfers != null
 				? explicitTokenTransfers
-				: ctx.ledger().netTokenTransfersInTxn();
+				: ledger.netTokenTransfersInTxn();
 		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
 				? CurrencyAdjustments.fromGrpc(transfersList) : null;
 
@@ -124,7 +128,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setCustomFeesCharged(customFeesCharged)
 				.setNewTokenAssociations(newTokenAssociations != null ?
-						newTokenAssociations : ctx.ledger().getNewTokenAssociations());
+						newTokenAssociations : ledger.getNewTokenAssociations());
 
 		if (!tokenTransferList.isEmpty()) {
 			setTokensAndTokenAdjustments(builder, tokenTransferList);

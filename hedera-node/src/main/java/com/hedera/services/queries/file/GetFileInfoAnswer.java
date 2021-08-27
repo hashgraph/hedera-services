@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
@@ -42,11 +44,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 
+@Singleton
 public class GetFileInfoAnswer implements AnswerService {
 	private static final Logger log = LogManager.getLogger(GetFileInfoAnswer.class);
 
 	private final OptionValidator validator;
 
+	@Inject
 	public GetFileInfoAnswer(OptionValidator validator) {
 		this.validator = validator;
 	}

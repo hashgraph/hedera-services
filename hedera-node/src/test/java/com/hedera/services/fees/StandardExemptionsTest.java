@@ -21,15 +21,15 @@ package com.hedera.services.fees;
  */
 
 import com.hedera.services.config.MockAccountNumbers;
-import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;

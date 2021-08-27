@@ -20,12 +20,17 @@ package com.hedera.services.queries.meta;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class MetaAnswers {
 	private final GetTxnRecordAnswer txnRecord;
 	private final GetTxnReceiptAnswer txnReceipt;
 	private final GetVersionInfoAnswer versionInfo;
 	private final GetFastTxnRecordAnswer fastTxnRecord;
 
+	@Inject
 	public MetaAnswers(
 			GetTxnRecordAnswer txnRecord,
 			GetTxnReceiptAnswer txnReceipt,

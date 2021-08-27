@@ -37,8 +37,6 @@ import java.util.Objects;
 
 /**
  * Maps to proto Key.
- *
- * @author hua Created on 2018-11-02
  */
 public abstract class JKey implements Serializable {
 	static final int MAX_KEY_DEPTH = 15;

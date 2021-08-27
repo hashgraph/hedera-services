@@ -29,14 +29,18 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
+@Singleton
 public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
 	private final AnswerFunctions answerFunctions;
 	private final CryptoFeeBuilder usageEstimator;
 
+	@Inject
 	public GetAccountRecordsResourceUsage(
 			AnswerFunctions answerFunctions,
 			CryptoFeeBuilder usageEstimator

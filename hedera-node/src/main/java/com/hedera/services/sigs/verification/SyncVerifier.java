@@ -28,8 +28,6 @@ import java.util.List;
  * Defines a type able to synchronously verify {@link com.swirlds.common.crypto.TransactionSignature} instances.
  * (In particular, able to resolve their {@link TransactionSignature#getSignatureStatus()} accessor to a value
  * other than {@link com.swirlds.common.crypto.VerificationStatus}.)
- *
- * @author Michael Tinker
  */
 public interface SyncVerifier {
 	/**

@@ -21,6 +21,7 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -32,6 +33,7 @@ import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -43,6 +45,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -62,6 +66,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
+@Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
@@ -79,6 +84,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private Instant nextExportTime = null;
 
 	final long expectedFloat;
+	private final SystemExits systemExits;
 	private final UnaryOperator<byte[]> signer;
 	private final GlobalDynamicProperties dynamicProperties;
 
@@ -94,12 +100,15 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
+	@Inject
 	public SignedStateBalancesExporter(
-			PropertySource properties,
+			SystemExits systemExits,
+			@CompositeProps PropertySource properties,
 			UnaryOperator<byte[]> signer,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.signer = signer;
+		this.systemExits = systemExits;
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		this.dynamicProperties = dynamicProperties;
 		exportPeriod = dynamicProperties.balancesExportPeriodSecs();
@@ -118,6 +127,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
+		if (!dynamicProperties.shouldExportBalances()) {
+			return false;
+		}
 		if (nextExportTime == null) {
 			nextExportTime = getFirstExportTime(now, exportPeriod);
 		}
@@ -135,15 +147,16 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 		var watch = StopWatch.createStarted();
 		summary = summarized(signedState);
-		var expected = BigInteger.valueOf(expectedFloat);
-		if (!expected.equals(summary.getTotalFloat())) {
-			throw new IllegalStateException(String.format(
-					"Signed state @ %s had total balance %d not %d!",
-					consensusTime, summary.getTotalFloat(), expectedFloat));
+		final var expected = BigInteger.valueOf(expectedFloat);
+		if (expected.equals(summary.getTotalFloat())) {
+			log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
+			toProtoFile(consensusTime);
+		} else {
+			log.error(
+					"Signed state @ {} had total balance {} not {}; exiting",
+					consensusTime, summary.getTotalFloat(), expectedFloat);
+			systemExits.fail(1);
 		}
-		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
-
-		toProtoFile(consensusTime);
 	}
 
 	private void toProtoFile(Instant exportTimeStamp) {

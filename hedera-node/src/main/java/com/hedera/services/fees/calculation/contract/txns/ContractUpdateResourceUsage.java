@@ -32,14 +32,19 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
+@Singleton
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractUpdateResourceUsage.class);
 
 	private final SmartContractFeeBuilder usageEstimator;
 
+	@Inject
 	public ContractUpdateResourceUsage(SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

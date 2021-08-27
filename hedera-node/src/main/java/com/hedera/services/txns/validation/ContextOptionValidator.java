@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -37,6 +38,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -51,21 +54,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 
 /**
- * Implements an {@link OptionValidator} that relies an injected instance
- * of the {@link TransactionContext} to determine whether various options are
- * permissible.
- *
- * @author Michael Tinker
+ * Implements an {@link OptionValidator} that relies an injected instance of the
+ * {@link TransactionContext} to determine whether various options are permissible.
  */
+@Singleton
 public class ContextOptionValidator implements OptionValidator {
 	private final long maxEntityLifetime;
 	private final AccountID nodeAccount;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public ContextOptionValidator(
 			AccountID nodeAccount,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			TransactionContext txnCtx,
 			GlobalDynamicProperties dynamicProperties
 	) {

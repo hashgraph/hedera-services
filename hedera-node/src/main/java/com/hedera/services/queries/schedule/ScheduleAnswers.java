@@ -20,9 +20,14 @@ package com.hedera.services.queries.schedule;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class ScheduleAnswers {
     private final GetScheduleInfoAnswer scheduleInfo;
 
+    @Inject
     public ScheduleAnswers(GetScheduleInfoAnswer scheduleInfo) {
         this.scheduleInfo = scheduleInfo;
     }

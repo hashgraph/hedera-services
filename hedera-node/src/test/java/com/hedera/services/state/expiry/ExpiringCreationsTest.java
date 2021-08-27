@@ -21,12 +21,10 @@ package com.hedera.services.state.expiry;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
@@ -44,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import javafx.util.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -63,11 +60,9 @@ import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRI
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -84,15 +79,11 @@ class ExpiringCreationsTest {
 	private ExpirableTxnRecord expectedRecord;
 
 	@Mock
-	private RecordCache recordCache;
-	@Mock
 	private ExpiryManager expiries;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	@Mock
-	private ServicesContext ctx;
 	@Mock
 	private NarratedCharging narratedCharging;
 	@Mock
@@ -131,13 +122,14 @@ class ExpiringCreationsTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
+		subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> accounts);
+		subject.setLedger(ledger);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);
 		expectedRecord.setSubmittingMember(submittingMember);
 
-		subject.setRecordCache(recordCache);
+		verify(narratedCharging).setLedger(ledger);
 	}
 
 	void setUpForExpiringRecordBuilder() {
@@ -148,28 +140,11 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
-	void ifNotCreatingStatePayerRecordsDirectlyTracksWithCache() {
-		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(false);
-		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
-
-		// when:
-		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);
-
-		// then:
-		verify(recordCache).trackForExpiry(expectedRecord);
-		// and:
-		verify(expiries, never()).trackRecordInState(effPayer, expectedExpiry);
-		// and:
-		assertEquals(expectedRecord, actual);
-	}
-
-	@Test
 	void addsToPayerRecordsAndTracks() {
 		// setup:
 		final var key = MerkleEntityId.fromAccountId(effPayer);
 		final var payerAccount = new MerkleAccount();
 		given(accounts.getForModify(key)).willReturn(payerAccount);
-		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
@@ -190,7 +165,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null, null, null, null, null));
+						0L, null, null, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -199,17 +174,15 @@ class ExpiringCreationsTest {
 	void validateBuildExpiringRecord() {
 		//given:
 		setUpForExpiringRecordBuilder();
-		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
-
-		given(ctx.ledger()).willReturn(ledger);
-		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
-		given(ctx.ledger().netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
-		given(ctx.ledger().getNewTokenAssociations()).willReturn(newTokenAssociations);
+		given(ledger.netTransfersInTxn()).willReturn(transfers);
+		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
+		given(ledger.getNewTokenAssociations()).willReturn(newTokenAssociations);
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged, null);
+				subject.buildExpiringRecord(
+						100L, hash, accessor, timestamp, receipt, null, customFeesCharged, null);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -245,15 +218,12 @@ class ExpiringCreationsTest {
 	@Test
 	void validateBuildExpiringRecordWithNewTokenAssociationsFromCtx() {
 		setUpForExpiringRecordBuilder();
-		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
-
-		given(ctx.ledger()).willReturn(ledger);
-		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
-		given(ctx.ledger().netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
+		given(ledger.netTransfersInTxn()).willReturn(transfers);
+		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
 
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged, newTokenAssociations);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, customFeesCharged, newTokenAssociations);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		assertEquals(customFeesCharged.get(0), actualRecord.getCustomFeesCharged().get(0));
@@ -264,9 +234,7 @@ class ExpiringCreationsTest {
 	void canOverrideTokenTransfers() {
 		//given:
 		setUpForExpiringRecordBuilder();
-		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(narratedCharging.totalFeesChargedToPayer()).willReturn(123L);
-		given(ctx.ledger()).willReturn(ledger);
 		given(ledger.netTransfersInTxn()).willReturn(transfers);
 		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
 				.setToken(IdUtils.asToken("1.2.3"))
@@ -278,37 +246,13 @@ class ExpiringCreationsTest {
 
 		//when:
 		final var builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null, null);
+				subject.buildExpiringRecord(
+						100L, hash, accessor, timestamp, receipt, someTokenXfers, null, null);
 		final var actualRecord = builder.build();
 
 		//then:
 		verify(ledger, never()).netTokenTransfersInTxn();
 		assertEquals(someTokenXfers, actualRecord.asGrpc().getTokenTransferListsList());
-	}
-
-	@Test
-	void validateBuildFailedExpiringRecord() {
-		//given:
-		setUpForExpiringRecordBuilder();
-		given(accessor.getHash()).willReturn(hash);
-		//when:
-		ExpirableTxnRecord.Builder builder =
-				subject.buildFailedExpiringRecord(accessor, timestamp);
-		ExpirableTxnRecord actualRecord = builder.build();
-
-		//then:
-		assertEquals(memo, actualRecord.getMemo());
-		assertEquals(FAIL_INVALID, ResponseCodeEnum.valueOf(actualRecord.getReceipt().getStatus()));
-		assertEquals(scheduleNum, actualRecord.getScheduleRef().num());
-		assertEquals(timestamp.getEpochSecond(), actualRecord.getConsensusTimestamp().getSeconds());
-		assertEquals(timestamp.getNano(), actualRecord.getConsensusTimestamp().getNanos());
-		assertEquals(asAccount(account).getAccountNum(), actualRecord.getTxnId().getPayerAccount().num());
-		assertEquals(CommonUtils.hex(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
-				CommonUtils.hex(actualRecord.getTxnHash()));
-		assertEquals(0L, actualRecord.getFee());
-		//and:
-		assertNull(actualRecord.getTokenAdjustments());
-		assertNull(actualRecord.getTokens());
 	}
 
 	private Pair<List<EntityId>, List<CurrencyAdjustments>> getTokenAdjustments(

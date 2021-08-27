@@ -30,8 +30,6 @@ import java.util.Set;
  *
  * @param <K> the type of id used to index the collection.
  * @param <A> the type of account stored in the collection.
- *
- * @author Michael Tinker
  */
 public interface BackingStore<K, A> {
 	/**

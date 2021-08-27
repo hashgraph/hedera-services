@@ -24,7 +24,6 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 
 /**
  * Contains various common checks and methods used by the Converter classes
- * @author abhishekpandey
  * */
 public final class ConverterUtils {
     /**

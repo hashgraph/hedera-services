@@ -38,6 +38,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -61,9 +63,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
  * possible that the transaction will still resolve to a status other than
  * success; for example if the target account has been deleted when the
  * update is handled.)
- *
- * @author Michael Tinker
  */
+@Singleton
 public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
 
@@ -75,6 +76,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 
+	@Inject
 	public CryptoUpdateTransitionLogic(
 			HederaLedger ledger,
 			OptionValidator validator,

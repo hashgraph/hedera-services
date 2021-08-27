@@ -47,8 +47,6 @@ import java.util.List;
  * is ultimately captured by a {@link ExpirableTxnRecord}, so the core
  * responsibility of this type is to construct an appropriate record in method
  * {@code recordSoFar}.
- *
- * @author Michael Tinker
  */
 public interface TransactionContext {
 	/**

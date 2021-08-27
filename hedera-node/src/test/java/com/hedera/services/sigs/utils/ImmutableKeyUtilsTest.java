@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ImmutableKeyUtilsTest {
 	@Test
 	void recognizesSentinelKey() {
-		// expect:
 		assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));
 		assertFalse(signalsKeyRemoval(Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build()));
 		assertTrue(signalsKeyRemoval(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));

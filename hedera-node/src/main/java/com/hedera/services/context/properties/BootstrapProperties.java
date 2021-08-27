@@ -20,9 +20,12 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.context.annotations.BootstrapProps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -42,6 +45,7 @@ import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+@Singleton
 public class BootstrapProperties implements PropertySource {
 	private static final Map<String, Object> MISSING_PROPS = null;
 
@@ -58,6 +62,10 @@ public class BootstrapProperties implements PropertySource {
 		return in;
 	};
 	private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+
+	@Inject
+	public BootstrapProperties() {
+	}
 
 	String bootstrapPropsResource = "bootstrap.properties";
 	String bootstrapOverridePropsLoc = "data/config/bootstrap.properties";
@@ -220,7 +228,6 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.autoRenewPeriod.maxDuration",
 			"ledger.autoRenewPeriod.minDuration",
 			"ledger.xferBalanceChanges.maxLen",
-			"ledger.keepRecordsInState",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
 			"ledger.transfers.maxLen",
@@ -352,7 +359,6 @@ public class BootstrapProperties implements PropertySource {
 			entry("files.maxSizeKb", AS_INT),
 			entry("ledger.xferBalanceChanges.maxLen", AS_INT),
 			entry("ledger.fundingAccount", AS_LONG),
-			entry("ledger.keepRecordsInState", AS_BOOLEAN),
 			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
 			entry("ledger.transfers.maxLen", AS_INT),

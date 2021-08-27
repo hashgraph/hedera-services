@@ -24,11 +24,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsCreationResult;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Function;
 
@@ -46,22 +46,16 @@ import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsF
  *    have valid signatures for all referenced accounts.</li>
  * </ul>
  * Note that this component verifies cryptographic signatures synchronously.
- *
- * @author Michael Tinker
  */
+@Singleton
 public class PrecheckVerifier {
 	private final SyncVerifier syncVerifier;
 	private final PrecheckKeyReqs precheckKeyReqs;
-	private final Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider;
 
-	public PrecheckVerifier(
-			SyncVerifier syncVerifier,
-			PrecheckKeyReqs precheckKeyReqs,
-			Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider
-	) {
+	@Inject
+	public PrecheckVerifier(SyncVerifier syncVerifier, PrecheckKeyReqs precheckKeyReqs) {
 		this.syncVerifier = syncVerifier;
 		this.precheckKeyReqs = precheckKeyReqs;
-		this.pkToSigFnProvider = pkToSigFnProvider;
 	}
 
 	/**
@@ -86,7 +80,7 @@ public class PrecheckVerifier {
 	}
 
 	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
-		final var pkToSigFn = pkToSigFnProvider.apply(accessor);
+		final var pkToSigFn = accessor.getPkToSigsFn();
 		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor);
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, pkToSigFn, sigFactory);
 		if (creationResult.hasFailed()) {

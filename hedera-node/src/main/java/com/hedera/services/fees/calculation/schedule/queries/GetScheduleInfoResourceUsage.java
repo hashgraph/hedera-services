@@ -28,15 +28,19 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 
+@Singleton
 public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final ScheduleOpsUsage scheduleOpsUsage;
 
+	@Inject
 	public GetScheduleInfoResourceUsage(ScheduleOpsUsage scheduleOpsUsage) {
 		this.scheduleOpsUsage = scheduleOpsUsage;
 	}

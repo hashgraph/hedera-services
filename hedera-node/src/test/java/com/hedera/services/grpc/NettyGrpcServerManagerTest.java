@@ -25,6 +25,7 @@ import com.hedera.services.utils.Pause;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
@@ -34,10 +35,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
-import javax.inject.Inject;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.test.CiConditions.outsideCircleCi;
@@ -72,11 +72,9 @@ class NettyGrpcServerManagerTest {
 	private NettyServerBuilder tlsBuilder;
 	private ConfigDrivenNettyFactory nettyFactory;
 	private BindableService a, b, c;
-	private List<BindableService> bindableServices;
-	private List<ServerServiceDefinition> serviceDefinitions;
-	private ServerServiceDefinition d;
+	private Set<BindableService> bindableServices;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
@@ -89,9 +87,7 @@ class NettyGrpcServerManagerTest {
 		a = mock(BindableService.class);
 		b = mock(BindableService.class);
 		c = mock(BindableService.class);
-		bindableServices = List.of(a, b, c);
-		d = mock(ServerServiceDefinition.class);
-		serviceDefinitions = List.of(d);
+		bindableServices = Set.of(a, b, c);
 
 		nettyBuilder = mock(NettyServerBuilder.class);
 		given(nettyBuilder.addService(any(BindableService.class))).willReturn(nettyBuilder);
@@ -115,7 +111,7 @@ class NettyGrpcServerManagerTest {
 		hookAdder = mock(Consumer.class);
 
 		subject = new NettyGrpcServerManager(
-				hookAdder, nodeProperties, bindableServices, nettyFactory, serviceDefinitions);
+				hookAdder, nodeProperties, bindableServices, nettyFactory);
 	}
 
 	@Test
@@ -171,7 +167,7 @@ class NettyGrpcServerManagerTest {
 
 		given(nodeProperties.nettyStartRetries()).willReturn(0);
 		subject = new NettyGrpcServerManager(
-				hookAdder, nodeProperties, bindableServices, nettyFactory, serviceDefinitions);
+				hookAdder, nodeProperties, bindableServices, nettyFactory);
 		given(server.start())
 				.willThrow(new IOException("Failed to bind"));
 
@@ -240,7 +236,6 @@ class NettyGrpcServerManagerTest {
 		verify(builder).addService(a);
 		verify(builder).addService(b);
 		verify(builder).addService(c);
-		verify(builder).addService(d);
 		verify(builder).build();
 	}
 

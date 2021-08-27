@@ -50,8 +50,6 @@ import static java.util.Collections.unmodifiableMap;
  * @param <A> the type of the account stored in the ledger.
  * @param <P> the type of the properties applicable to the account.
  * @param <T> the type of a customizer appropriate to {@code K}, {@code A}, {@code P}.
- *
- * @author Michael Tinker
  */
 public abstract class AccountCustomizer<
 		K,

@@ -31,8 +31,6 @@ import java.util.List;
 
 /**
  * Custom Serializer for JKey structure.
- *
- * @author Nathan Klick
  */
 public class JKeySerializer {
   private static final long LEGACY_VERSION = 1;

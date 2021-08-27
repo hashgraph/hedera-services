@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle.internals;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,26 +44,22 @@ class IdentityCodeUtilsTest {
 
 	@Test
 	void numFromCodeWorks() {
-		// expect:
 		assertEquals(MAX_NUM_ALLOWED, IdentityCodeUtils.numFromCode((int) MAX_NUM_ALLOWED));
 	}
 
 	@Test
 	void codeFromNumWorks() {
-		// expect:
 		assertEquals((int) MAX_NUM_ALLOWED, IdentityCodeUtils.codeFromNum(MAX_NUM_ALLOWED));
 	}
 
 	@Test
 	void codeFromNumThrowsWhenOutOfRange() {
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(-1));
 		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
 	}
 
 	@Test
 	void throwsWhenArgOutOfRange() {
-		// expect:
 		assertDoesNotThrow(() -> IdentityCodeUtils.assertValid(MAX_NUM_ALLOWED));
 		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(-1));
 		assertThrows(IllegalArgumentException.class, () -> IdentityCodeUtils.assertValid(MAX_NUM_ALLOWED + 1));
@@ -71,21 +67,16 @@ class IdentityCodeUtilsTest {
 
 	@Test
 	void timePackingWorks() {
-		// given:
 		final var distantFuture = Instant.ofEpochSecond(MAX_NUM_ALLOWED, 999_999_999);
 
-		// when:
 		final var packed = packedTime(distantFuture.getEpochSecond(), distantFuture.getNano());
-		// and:
 		final var unpacked = Instant.ofEpochSecond(secondsFrom(packed), nanosFrom(packed));
 
-		// then:
 		assertEquals(distantFuture, unpacked);
 	}
 
 	@Test
 	void cantPackTooFarFuture() {
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
 	}
 

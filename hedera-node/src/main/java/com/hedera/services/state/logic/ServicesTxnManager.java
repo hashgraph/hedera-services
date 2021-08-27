@@ -20,31 +20,47 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.annotations.RunRecordStreaming;
+import com.hedera.services.state.annotations.RunTopLevelTransition;
+import com.hedera.services.state.annotations.RunTriggeredTransition;
 import com.hedera.services.utils.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.function.BiConsumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class ServicesTxnManager {
 	private static final Logger log = LogManager.getLogger(ServicesTxnManager.class);
+
+	private static final String ERROR_LOG_TPL = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
 
 	private final Runnable scopedProcessing;
 	private final Runnable scopedRecordStreaming;
 	private final Runnable scopedTriggeredProcessing;
-	private final BiConsumer<Exception, String> warning;
+	private final RecordCache recordCache;
+	private final HederaLedger ledger;
+	private final TransactionContext txnCtx;
 
+	@Inject
 	public ServicesTxnManager(
-			Runnable scopedProcessing,
-			Runnable scopedRecordStreaming,
-			Runnable scopedTriggeredProcessing,
-			BiConsumer<Exception, String> warning
+			@RunTopLevelTransition Runnable scopedProcessing,
+			@RunRecordStreaming Runnable scopedRecordStreaming,
+			@RunTriggeredTransition Runnable scopedTriggeredProcessing,
+			RecordCache recordCache,
+			HederaLedger ledger,
+			TransactionContext txnCtx
 	) {
-		this.warning = warning;
+		this.txnCtx = txnCtx;
+		this.ledger = ledger;
+		this.recordCache = recordCache;
 		this.scopedProcessing = scopedProcessing;
 		this.scopedRecordStreaming = scopedRecordStreaming;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
@@ -52,27 +68,22 @@ public class ServicesTxnManager {
 
 	private boolean createdStreamableRecord;
 
-	public void process(
-			TxnAccessor accessor,
-			Instant consensusTime,
-			long submittingMember,
-			ServicesContext ctx
-	) {
+	public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		createdStreamableRecord = false;
 
 		try {
-			ctx.ledger().begin();
-			ctx.txnCtx().resetFor(accessor, consensusTime, submittingMember);
+			ledger.begin();
+			txnCtx.resetFor(accessor, consensusTime, submittingMember);
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();
 			} else {
 				scopedProcessing.run();
 			}
 		} catch (Exception processFailure) {
-			warning.accept(processFailure, "txn processing");
-			ctx.txnCtx().setStatus(FAIL_INVALID);
+			logContextualizedError(processFailure, "txn processing");
+			txnCtx.setStatus(FAIL_INVALID);
 		} finally {
-			attemptCommit(accessor, consensusTime, submittingMember, ctx);
+			attemptCommit(accessor, consensusTime, submittingMember);
 			if (createdStreamableRecord) {
 				attemptRecordStreaming();
 			}
@@ -82,46 +93,45 @@ public class ServicesTxnManager {
 	private void attemptRecordStreaming() {
 		try {
 			scopedRecordStreaming.run();
-		} catch (Exception streamingFailure) {
-			warning.accept(streamingFailure, "record streaming");
+		} catch (Exception e) {
+			logContextualizedError(e, "record streaming");
 		}
 	}
 
-	private void attemptCommit(
-			TxnAccessor accessor,
-			Instant consensusTime,
-			long submittingMember,
-			ServicesContext ctx
-	) {
+	private void attemptCommit(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		try {
-			ctx.ledger().commit();
+			ledger.commit();
 			createdStreamableRecord = true;
-		} catch (Exception commitFailure) {
-			warning.accept(commitFailure, "txn commit");
-			log.error(commitFailure);
-			attemptRollback(accessor, consensusTime, submittingMember, ctx);
+		} catch (Exception e) {
+			logContextualizedError(e, "txn commit");
+			attemptRollback(accessor, consensusTime, submittingMember);
 		}
 	}
 
-	private void attemptRollback(
-			TxnAccessor accessor,
-			Instant consensusTime,
-			long submittingMember,
-			ServicesContext ctx
-	) {
+	private void attemptRollback(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		try {
-			ctx.recordCache().setFailInvalid(
-					ctx.txnCtx().effectivePayer(),
+			recordCache.setFailInvalid(
+					txnCtx.effectivePayer(),
 					accessor,
 					consensusTime,
 					submittingMember);
-		} catch (Exception recordFailure) {
-			warning.accept(recordFailure, "creating failure record");
+		} catch (Exception e) {
+			logContextualizedError(e, "failure record creation");
 		}
 		try {
-			ctx.ledger().rollback();
-		} catch (Exception rollbackFailure) {
-			warning.accept(rollbackFailure, "txn rollback");
+			ledger.rollback();
+		} catch (Exception e) {
+			logContextualizedError(e, "txn rollback");
+		}
+	}
+
+	private void logContextualizedError(Exception e, String context) {
+		try {
+			final var accessor = txnCtx.accessor();
+			log.error(ERROR_LOG_TPL, context, accessor.getSignedTxnWrapper(), ledger.currentChangeSet(), e);
+		} catch (Exception f) {
+			log.error("Possibly CATASTROPHIC failure in {}", context, e);
+			log.error("Full details could not be logged", f);
 		}
 	}
 }

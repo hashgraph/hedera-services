@@ -20,7 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -35,12 +35,11 @@ import java.util.List;
 
 public interface EntityCreator {
 	/**
-	 * setter for {@link RecordCache} in {@link EntityCreator}
+	 * Sets the ledger for the entity creator.
 	 *
-	 * @param recordCache
-	 * 		record cache
+	 * @param ledger the ledger to use
 	 */
-	void setRecordCache(RecordCache recordCache);
+	void setLedger(HederaLedger ledger);
 
 	/**
 	 * Sets needed properties like expiry and submitting member to {@link ExpirableTxnRecord} and adds record to state
@@ -79,8 +78,6 @@ public interface EntityCreator {
 	 * 		transaction receipt
 	 * @param explicitTokenTransfers
 	 * 		explicit list of token transfers
-	 * @param ctx
-	 * 		services context
 	 * @param assessedCustomFees
 	 * 		the list of assessed custom fees
 	 * @param newTokenAssociations
@@ -94,7 +91,6 @@ public interface EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
 			List<FcAssessedCustomFee> assessedCustomFees,
 			List<FcTokenAssociation> newTokenAssociations);
 

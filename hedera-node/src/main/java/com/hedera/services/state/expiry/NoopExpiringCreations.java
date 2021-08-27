@@ -20,9 +20,8 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -38,7 +37,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 	NOOP_EXPIRING_CREATIONS;
 
 	@Override
-	public void setRecordCache(RecordCache recordCache) {
+	public void setLedger(HederaLedger ledger) {
 		/* No-op */
 	}
 
@@ -60,7 +59,6 @@ public enum NoopExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx,
 			List<FcAssessedCustomFee> customFeesCharged,
 			List<FcTokenAssociation> newTokenAssociations
 	) {

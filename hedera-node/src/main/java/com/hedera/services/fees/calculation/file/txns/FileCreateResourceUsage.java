@@ -29,9 +29,14 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class FileCreateResourceUsage implements TxnResourceUsageEstimator {
 	private final FileOpsUsage fileOpsUsage;
 
+	@Inject
 	public FileCreateResourceUsage(FileOpsUsage fileOpsUsage) {
 		this.fileOpsUsage = fileOpsUsage;
 	}

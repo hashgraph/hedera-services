@@ -55,8 +55,6 @@ import java.util.function.Supplier;
 /**
  * Convenience class that gives unified access to Hedera signing metadata by
  * delegating to type-specific lookups.
- *
- * @author Michael Tinker
  */
 public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final static Pause pause = SleepingPause.SLEEPING_PAUSE;

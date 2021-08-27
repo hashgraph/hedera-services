@@ -24,16 +24,20 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 
+@Singleton
 public class CharacteristicsFactory {
 	static Function<JKeyList, KeyActivationCharacteristics>	revocationServiceCharacteristicsFn =
 			RevocationServiceCharacteristics::forTopLevelFile;
 
 	private final HederaFs hfs;
 
+	@Inject
 	public CharacteristicsFactory(HederaFs hfs) {
 		this.hfs = hfs;
 	}

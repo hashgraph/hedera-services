@@ -30,11 +30,16 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
+@Singleton
 public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
 	private final FileOpsUsage fileOpsUsage;
 
+	@Inject
 	public FileUpdateResourceUsage(FileOpsUsage fileOpsUsage) {
 		this.fileOpsUsage = fileOpsUsage;
 	}

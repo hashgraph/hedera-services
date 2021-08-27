@@ -38,6 +38,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -48,8 +49,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.inject.Inject;
 
 import static org.mockito.BDDMockito.given;
 
@@ -83,7 +82,7 @@ class HashLoggerTest {
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

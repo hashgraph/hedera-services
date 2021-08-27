@@ -32,8 +32,6 @@ import java.util.function.Function;
 /**
  * Implements a property family whose instances can provide the
  * getter/setter pairs relevant to themselves on a {@link MerkleAccount} object.
- *
- * @author Michael Tinker
  */
 @SuppressWarnings("unchecked")
 public enum AccountProperty implements BeanProperty<MerkleAccount> {

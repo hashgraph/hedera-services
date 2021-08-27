@@ -100,7 +100,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAccountOwnerships,
 				() -> uniqueTokenTreasuryOwnerships,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
