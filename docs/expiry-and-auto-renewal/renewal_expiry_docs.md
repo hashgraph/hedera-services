@@ -12,6 +12,7 @@ The `HederaBackgroundWorker` will be a singleton, and will have 2 important meth
 - `executePreTransactionJobs` - where the jobs are atomic. We can also prepare other jobs before the actual transaction processing, and process them after the transaction.
 - `executePostTransactionJobs` - where the jobs are not atomic, and may span in multiple transactions.
 Both methods will iterate over the buckets and execute the said jobs in the bucket.
+May be configured to utilize dynamic `Capacity` configuration for the work done, regarding heavy entities.
 
 ## Bucket:
 The bucket is a logical group of executable tasks - jobs, grouped by common functionality. A bucket's responsibility may be lightweight entities, or heavyweight.
@@ -50,7 +51,6 @@ By implementing the `Job` interface properly, we are given absolute freedom to e
 * `Account Expiration` - expired accounts are classified as renewable or not. 
 The second type should be handled by clearing all relations to tokens, returning balances to treasuries and finally- deleting the account.
 **Problem:** the account may own `Unique` tokens. In this case, we cannot transfer all the balance in single transaction.
-This can be implemented in 1 or 2 jobs, one of which is specifically for the nfts. 
 
 * `Account Renewal` - expired accounts with balance - Renewable accounts. If the balance is sufficient, the account is enabled again. 
 
@@ -58,29 +58,60 @@ This can be implemented in 1 or 2 jobs, one of which is specifically for the nft
 
 
 ## Configuration:
+We have a wide variety of parameters to configure, regarding job execution. We've synthesised this list:
+- Max heavyweight jobs per txn - includes both old and new
+- Max entities to touch per job ( like max nfts to remove per `DetachedAccountRemoval.execute(now)` invocation )
+- Max entities to scan ( present in `GlobalDynamicProperties` )
+- ...
 
-Again, here we have a lot of flexibility regarding job configuration. We can setup, for example, a list of heavyweight jobs which can be spawned, and block the initialization of others (for example, we don't want to start expiring tokens right away if there's no need for that).
+This configuration can be done in 2 ways - dynamic or static. Suggested dynamic configuration:
+```java
+interface Capacity {
+  int entityTouches();
+  int entityMutations();
+}
 
+interface Bucket {
+  /* Returns the capacity used by this work. */
+  Capacity drain(long now, Capacity available);
+}
+```
+where `Capacity` may be based on the current usage level of the `CryptoTransfer` throttle (example). This is being explored now.
 
 ## Specific documentation of current buckets:
-- `ExpiryManager` -  responsible for executing jobs, related to lightweight expiry (pre-transaction jobs). The jobs of the `ExpiryManager` are singletons, as those jobs need to track entities - they are required in other scopes, except for the bucket.
+### `ExpiryManager` 
+- Responsible for executing jobs, related to lightweight expiry (pre-transaction jobs).
+- The jobs of the `ExpiryManager` are singletons, as those jobs need to track entities - they are required in other scopes, except for the bucket.
+![title](images/expiry-manager-bucket.png)
 
-- `AutoProcessing` - responsible for executing jobs, related to heavyweight entities - renewal/expiration of accounts and tokens (and possibly more).
-The jobs here are not singletons, but rather instantiated for a single entity by the bucket itself. They are instantiated upon scanning, where entities are classified based on their expiration status - `DETACHED_ACCOUNT_GRACE_PERIOD_OVER` or `EXPIRED_ACCOUNT_READY_TO_RENEW`. A separate job class will represent each entity handling operation. After scanning, jobs are queued and later executed. **Currently, there is no job pausing/resuming implemented**.
+### `AutoProcessing` 
+- Responsible for executing jobs, related to heavyweight entities - renewal/expiration of accounts and tokens (and possibly more).
+- The jobs here are not singletons, but rather instantiated for a single entity by the bucket itself.
+- They are instantiated upon scanning, where entities are classified based on their expiration status - `DETACHED_ACCOUNT_GRACE_PERIOD_OVER` or `EXPIRED_ACCOUNT_READY_TO_RENEW`.
+- A separate job class will represent each entity handling operation. After scanning, jobs are queued and later executed.
+![title](images/auto-processing-bucket.png)
 
 ## Specific documentation of current jobs:
-- ### Light:
-    - `ExpiringRecords` - singleton. Responsible for handling old transaction records. Tracks entities in `InitializationFlow` and `ExpiringCreations`. Holds a `MonotonicFullQueueExpiries<Long>` data structure for records.
-    - `ExpiringShortLivedEntities` singleton. Responsible for handling expiration of scheduled transactions. Tracks entities in `InitializationFlow` and `TxnAwareRecordsHistorian`. Holds a `PriorityQueueExpiries` for expirable entities.
-- ### Heavy:
-    - `DetachedAccountRemoval` - instantiated by `AutoProcessing` bucket. Gets all the data structures it requires to from the bucket. It gets assinged a classified entity to work on. Utilizes `RenewalRecordsHelper` to export transaction records.
-    Responsible for removing an expired account, removing token relationships and returning balance to treasury. **Only fungible tokens are considered at the time of writing**.
-    Non-atomic design must be considered if the account owns nfts, similar to the `TokenExpiration` design.
-    - `DetachedAccountRenewal` - instantiated by `AutoProcessing`, the same way as `DetachedAccountRemoval` Responsible for the renewal process for an expired account.
-    Calculates fee for renewal, as well as doing checks on whether the renewal is possible (sponsor acc may not have balance, for example).
-    - `TokenExpiration` - not yet implemented. Design: Identify all nfts to be deleted -> delete nfts (in multiple txns) -> dissociate from any accounts (and treasury) -> remove from `FCMap` 
+### Light:
+- `ExpiringRecords` - singleton. Responsible for handling old transaction records. Tracks entities in `InitializationFlow` and `ExpiringCreations`. Holds a `MonotonicFullQueueExpiries<Long>` data structure for records.
+- `ExpiringShortLivedEntities` singleton. Responsible for handling expiration of scheduled transactions. Tracks entities in `InitializationFlow` and `TxnAwareRecordsHistorian`. Holds a `PriorityQueueExpiries` for expirable entities.
 
-## Diagrams and visual documentation:
+### Heavy:
+#### `DetachedAccountRemoval`
+- Instantiated by `AutoProcessing` bucket. Gets all the data structures it requires to from the bucket. It gets assinged a classified entity to work on. Utilizes `RenewalRecordsHelper` to export transaction records.
+- Responsible for removing an expired account, removing token relationships and returning balance to treasury. **Only fungible tokens are considered at the time of writing**.
+- Non-atomic design must be considered if the account owns nfts, similar to the `TokenExpiration` design.
+![title](images/DetachedAccountRemoval.png)
+
+#### `DetachedAccountRenewal`
+- Instantiated by `AutoProcessing`, the same way as `DetachedAccountRemoval`.
+- Responsible for the renewal process for an expired account.
+- Performs check whether the account can be renewed, e.g. payer must have enough balance.
+![title](images/DetachedAccountRenewal.png)
+
+- `TokenExpiration` - not yet implemented. Design: Identify all nfts to be deleted -> delete nfts (in multiple txns) -> dissociate from any accounts (and treasury) -> remove from `FCMap` 
+
+## Higher-level diagrams and visual documentation:
 
 ### Bucket design:
 ![title](images/buckets_design.png)
