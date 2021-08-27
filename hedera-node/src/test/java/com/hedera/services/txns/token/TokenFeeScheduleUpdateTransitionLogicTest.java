@@ -33,10 +33,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.*;
@@ -44,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.time.Instant;
 
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -57,13 +54,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
@@ -71,7 +64,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@ExtendWith(LogCaptureExtension.class)
 class TokenFeeScheduleUpdateTransitionLogicTest {
     private long thisSecond = 1_234_567L;
     private Instant now = Instant.ofEpochSecond(thisSecond);
@@ -87,9 +79,6 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
     private TransactionContext txnCtx;
     private PlatformTxnAccessor accessor;
 
-	@LoggingTarget
-	private LogCaptor logCaptor;
-	@LoggingSubject
 	private TokenFeeScheduleUpdateTransitionLogic subject;
     private com.hederahashgraph.api.proto.java.CustomFee customFixedFee = new CustomFeeBuilder(IdUtils.asAccount("7.7.7")).withFixedFee(fixedHts(300L));
     private com.hederahashgraph.api.proto.java.CustomFee withOnlyFeeCollectorCustomFee = new CustomFeeBuilder(IdUtils.asAccount("7.7.7")).withOnlyFeeCollector();
@@ -100,12 +89,6 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
     private AccountID feeCollector = IdUtils.asAccount("6.6.6");
     private Account collector = mock(Account.class);
     private CopyOnWriteIds associatedTokens = mock(CopyOnWriteIds.class);
-
-    @Inject
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private TokenFeeScheduleUpdateTransitionLogic subject;
 
     @BeforeEach
     public void setup() {

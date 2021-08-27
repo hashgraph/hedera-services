@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LI
 /**
  * Provides the state transition for updating token fee schedule.
  */
+@Singleton
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore typedTokenStore;
 	private final AccountStore accountStore;
@@ -58,8 +59,6 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
-	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx) {
-		this.store = tokenStore;
 	public TokenFeeScheduleUpdateTransitionLogic(
 			final TypedTokenStore tokenStore,
 			final TransactionContext txnCtx,
