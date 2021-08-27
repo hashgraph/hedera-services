@@ -47,7 +47,10 @@ import java.util.Base64;
 /**
  * Common utilities.
  */
-public class CommonUtils {
+public final class CommonUtils {
+  private CommonUtils() {
+    throw new UnsupportedOperationException("Utility Class");
+  }
 
   /**
    * Sleep given seconds.

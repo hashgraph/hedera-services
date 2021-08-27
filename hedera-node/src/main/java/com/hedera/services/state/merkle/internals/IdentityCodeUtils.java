@@ -24,7 +24,7 @@ package com.hedera.services.state.merkle.internals;
  * Minimal helper class that "encodes" {@code int} values as non-negative
  * {@code long}s in the range 0 to 4,294,967,295.
  */
-public class IdentityCodeUtils {
+public final class IdentityCodeUtils {
 	private static final long MASK_AS_UNSIGNED_LONG = (1L << 32) - 1;
 	private static final long EPOCH_SECONDS_MASK = MASK_AS_UNSIGNED_LONG << 32;
 
@@ -100,7 +100,7 @@ public class IdentityCodeUtils {
 		}
 	}
 
-	IdentityCodeUtils() {
-		throw new IllegalStateException("Utility class");
+	private IdentityCodeUtils() {
+		throw new UnsupportedOperationException("Utility class");
 	}
 }

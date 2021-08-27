@@ -34,14 +34,14 @@ public abstract class StatsModule {
 	@Singleton
 	public static MiscRunningAvgs provideMiscRunningAvgs(NodeLocalProperties nodeLocalProperties) {
 		return new MiscRunningAvgs(new RunningAvgFactory() {
-		}, nodeLocalProperties);
+		}, nodeLocalProperties.statsRunningAvgHalfLifeSecs());
 	}
 
 	@Provides
 	@Singleton
 	public static MiscSpeedometers provideMiscSpeedometers(NodeLocalProperties nodeLocalProperties) {
 		return new MiscSpeedometers(new SpeedometerFactory() {
-		}, nodeLocalProperties);
+		}, nodeLocalProperties.statsSpeedometerHalfLifeSecs());
 	}
 
 	@Provides

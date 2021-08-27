@@ -1,4 +1,4 @@
-package com.hedera.services.utils;
+package com.hedera.services.fees.calculation.meta;
 
 /*-
  * ‌
@@ -20,22 +20,19 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.FeeComponents;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
+import static com.hedera.services.fees.calculation.meta.FixedUsageEstimates.GET_VERSION_INFO_NODE_USAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class HederaDateTimeFormatterTest {
+class FixedUsageEstimatesTest {
 	@Test
-	void shouldFormatInstantCorrectly() {
-		final var instant = Instant.EPOCH
-				.plus(18500, ChronoUnit.DAYS)
-				.plus(12, ChronoUnit.HOURS)
-				.plus(34, ChronoUnit.MINUTES)
-				.plus(56, ChronoUnit.SECONDS)
-				.plusNanos(78900);
-		assertEquals("2020-08-26T12_34_56.000078900Z", HederaDateTimeFormatter.format(instant));
+	void getVersionInfoUsageWorks() {
+		final var feeData = FixedUsageEstimates.getVersionInfoUsage();
+
+		assertEquals(FeeComponents.getDefaultInstance(), feeData.getNetworkdata());
+		assertEquals(FeeComponents.getDefaultInstance(), feeData.getServicedata());
+		assertEquals(GET_VERSION_INFO_NODE_USAGE, feeData.getNodedata());
 	}
 }

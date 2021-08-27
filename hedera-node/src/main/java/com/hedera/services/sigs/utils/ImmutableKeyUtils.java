@@ -23,7 +23,11 @@ package com.hedera.services.sigs.utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 
-public class ImmutableKeyUtils {
+public final class ImmutableKeyUtils {
+	private ImmutableKeyUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	public static final Key IMMUTABILITY_SENTINEL_KEY = Key.newBuilder()
 			.setKeyList(KeyList.getDefaultInstance()).build();
 

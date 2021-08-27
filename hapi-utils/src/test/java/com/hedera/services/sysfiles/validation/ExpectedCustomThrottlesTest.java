@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -72,17 +72,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExpectedCustomThrottlesTest {
 	@Test
 	void release0160HasExpected() {
-		assertDoesNotThrow(ExpectedCustomThrottles::new);
-
 		assertEquals(50, OPS_FOR_RELEASE_0160.size());
-		// and:
+
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoCreate), "Missing CryptoCreate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoTransfer), "Missing CryptoTransfer!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoUpdate), "Missing CryptoUpdate!");

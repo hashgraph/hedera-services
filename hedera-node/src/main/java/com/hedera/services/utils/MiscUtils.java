@@ -183,9 +183,9 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
-public class MiscUtils {
-	MiscUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class MiscUtils {
+	private MiscUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(

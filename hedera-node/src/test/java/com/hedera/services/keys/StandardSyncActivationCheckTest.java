@@ -9,9 +9,9 @@ package com.hedera.services.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,20 +47,20 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class StandardSyncActivationCheckTest {
-	JKey key;
-	Transaction signedTxn;
-	List<TransactionSignature> sigs;
-	PubKeyToSigBytes sigBytes;
-	PlatformSigsCreationResult result;
+	private JKey key;
+	private Transaction signedTxn;
+	private List<TransactionSignature> sigs;
+	private PubKeyToSigBytes sigBytes;
+	private PlatformSigsCreationResult result;
 
-	SyncVerifier syncVerifier;
-	PlatformTxnAccessor accessor;
-	PlatformSigsFactory sigsFactory;
-	TxnScopedPlatformSigFactory scopedSig;
-	Function<byte[], TransactionSignature> sigsFn;
-	Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
-	BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
-	Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
+	private SyncVerifier syncVerifier;
+	private PlatformTxnAccessor accessor;
+	private PlatformSigsFactory sigsFactory;
+	private TxnScopedPlatformSigFactory scopedSig;
+	private Function<byte[], TransactionSignature> sigsFn;
+	private Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
+	private BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
+	private Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -91,8 +91,7 @@ class StandardSyncActivationCheckTest {
 		given(result.getPlatformSigs()).willReturn(sigs);
 		given(isActive.test(any(), any())).willReturn(true);
 
-		// when:
-		boolean flag = allKeysAreActive(
+		final var flag = allKeysAreActive(
 				List.of(key),
 				syncVerifier,
 				accessor,
@@ -102,9 +101,7 @@ class StandardSyncActivationCheckTest {
 				isActive,
 				sigsFnProvider);
 
-		// then:
 		verify(isActive).test(key, sigsFn);
-		// and:
 		assertTrue(flag);
 	}
 
@@ -114,8 +111,7 @@ class StandardSyncActivationCheckTest {
 		given(result.getPlatformSigs()).willReturn(sigs);
 		given(isActive.test(any(), any())).willReturn(false);
 
-		// when:
-		boolean flag = allKeysAreActive(
+		final var flag = allKeysAreActive(
 				List.of(key),
 				syncVerifier,
 				accessor,
@@ -125,9 +121,7 @@ class StandardSyncActivationCheckTest {
 				isActive,
 				sigsFnProvider);
 
-		// then:
 		verify(isActive).test(key, sigsFn);
-		// and:
 		assertFalse(flag);
 	}
 
@@ -135,8 +129,7 @@ class StandardSyncActivationCheckTest {
 	void shortCircuitsOnCreationFailure() {
 		given(result.hasFailed()).willReturn(true);
 
-		// when:
-		boolean flag = allKeysAreActive(
+		final var flag = allKeysAreActive(
 				List.of(key),
 				syncVerifier,
 				accessor,
@@ -146,7 +139,6 @@ class StandardSyncActivationCheckTest {
 				isActive,
 				sigsFnProvider);
 
-		// then:
 		assertFalse(flag);
 	}
 }
