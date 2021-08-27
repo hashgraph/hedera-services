@@ -167,7 +167,7 @@ public final class IdentityCodeUtils {
 		}
 	}
 
-	IdentityCodeUtils() {
+	private IdentityCodeUtils() {
 		throw new UnsupportedOperationException("Utility class");
 	}
 }

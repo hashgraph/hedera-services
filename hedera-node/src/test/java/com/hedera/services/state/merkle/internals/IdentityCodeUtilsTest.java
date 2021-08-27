@@ -70,11 +70,6 @@ class IdentityCodeUtilsTest {
 	}
 
 	@Test
-	void isUninstantiable() {
-		assertThrows(UnsupportedOperationException.class, IdentityCodeUtils::new);
-	}
-
-	@Test
 	void timePackingWorks() {
 		// given:
 		final var distantFuture = Instant.ofEpochSecond(MAX_NUM_ALLOWED, 999_999_999);
