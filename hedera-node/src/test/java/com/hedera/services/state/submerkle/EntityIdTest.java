@@ -21,6 +21,8 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -33,117 +35,122 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.inOrder;
 
-public class EntityIdTest {
-	long shard = 1L, realm = 2L, num = 3L;
+class EntityIdTest {
+	private static final long shard = 1L;
+	private static final long realm = 2L;
+	private static final long num = 3L;
 
-	SerializableDataInputStream in;
-	SerializableDataOutputStream out;
+	private static final MerkleEntityId merkleId = new MerkleEntityId(shard, realm, num);
 
-	MerkleEntityId merkleId = new MerkleEntityId(shard, realm, num);
-
-	FileID fileId = FileID.newBuilder()
+	private static final FileID fileId = FileID.newBuilder()
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setFileNum(num)
 			.build();
-	AccountID accountId = AccountID.newBuilder()
+	private static final AccountID accountId = AccountID.newBuilder()
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setAccountNum(num)
 			.build();
-	ContractID contractId = ContractID.newBuilder()
+	private static final ContractID contractId = ContractID.newBuilder()
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setContractNum(num)
 			.build();
-	TopicID topicId = TopicID.newBuilder()
+	private static final TopicID topicId = TopicID.newBuilder()
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setTopicNum(num)
 			.build();
-	TokenID tokenId = TokenID.newBuilder()
+	private static final TokenID tokenId = TokenID.newBuilder()
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setTokenNum(num)
 			.build();
-	ScheduleID scheduleId = ScheduleID.newBuilder()
+	private static final ScheduleID scheduleId = ScheduleID.newBuilder()
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setScheduleNum(num)
 			.build();
 
-	EntityId subject;
+	private EntityId subject;
 
 	@BeforeEach
-	public void setup() {
-		in = mock(SerializableDataInputStream.class);
-
+	void setup() {
 		subject = new EntityId(shard, realm, num);
 	}
 
 	@Test
-	public void objectContractWorks() {
-		// given:
-		var one = subject;
-		var two = EntityId.MISSING_ENTITY_ID;
-		var three = subject.copy();
+	void fromIdentityCodeWorks() {
+		final var expected = new EntityId(0, 0, IdentityCodeUtils.MAX_NUM_ALLOWED);
 
-		// expect:
-		assertNotEquals(one, null);
-		assertNotEquals(one, new Object());
+		final var actual = EntityId.fromIdentityCode((int) IdentityCodeUtils.MAX_NUM_ALLOWED);
+
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void objectContractWorks() {
+		final var one = subject;
+		final var two = EntityId.MISSING_ENTITY_ID;
+		final var three = subject.copy();
+
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
 		assertEquals(one, three);
-		// and:
+
 		assertEquals(one.hashCode(), three.hashCode());
 		assertNotEquals(one.hashCode(), two.hashCode());
 	}
 
 	@Test
-	public void toStringWorks() {
-		// expect;
+	void toStringWorks() {
 		assertEquals(
 				"EntityId{shard=" + shard + ", realm=" + realm + ", num=" + num + "}",
 				subject.toString());
 	}
 
 	@Test
-	public void copyWorks() {
-		// given:
-		var copySubject = subject.copy();
+	void copyWorks() {
+		final var copySubject = subject.copy();
 
-		// then:
-		assertFalse(subject == copySubject);
+		assertNotSame(subject, copySubject);
 		assertEquals(subject, copySubject);
 	}
 
 	@Test
-	public void gettersWork() {
-		// expect:
+	void gettersWork() {
 		assertEquals(shard, subject.shard());
 		assertEquals(realm, subject.realm());
 		assertEquals(num, subject.num());
 	}
 
 	@Test
-	public void factoriesWork() {
-		// expect:
+	void identityCodeWorks() {
+		assertEquals((int) num, subject.identityCode());
+	}
+
+	@Test
+	void factoriesWork() {
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcAccountId(null));
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcFileId(null));
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcTopicId(null));
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcTokenId(null));
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcScheduleId(null));
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcContractId(null));
-		// and:
+
 		assertEquals(subject, EntityId.fromGrpcAccountId(accountId));
 		assertEquals(subject, EntityId.fromGrpcContractId(contractId));
 		assertEquals(subject, EntityId.fromGrpcTopicId(topicId));
@@ -153,46 +160,39 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void serializableDetWorks() {
-		// expect;
+	void serializableDetWorks() {
 		assertEquals(EntityId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(EntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
-		// setup:
-		var newSubject = new EntityId();
-
+	void deserializeWorks() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		final var newSubject = new EntityId();
 		given(in.readLong())
 				.willReturn(shard)
 				.willReturn(realm)
 				.willReturn(num);
 
-		// when:
 		newSubject.deserialize(in, EntityId.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, newSubject);
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
-		// setup:
-		out = mock(SerializableDataOutputStream.class);
+	void serializeWorks() throws IOException {
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
-		verify(out).writeLong(shard);
-		verify(out).writeLong(realm);
-		verify(out).writeLong(num);
+		inOrder.verify(out).writeLong(shard);
+		inOrder.verify(out).writeLong(realm);
+		inOrder.verify(out).writeLong(num);
 	}
 
 	@Test
-	public void viewsWork() {
-		// expect:
+	void viewsWork() {
 		assertEquals(accountId, subject.toGrpcAccountId());
 		assertEquals(contractId, subject.toGrpcContractId());
 		assertEquals(tokenId, subject.toGrpcTokenId());
@@ -201,13 +201,14 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void virtualSerialization() throws IOException {
-		ByteBuffer buffer = ByteBuffer.wrap(new byte[100]);
-		subject.serialize(buffer);
+	void matcherWorks() {
+		final var diffShard = IdUtils.asAccount("2.2.3");
+		final var diffRealm = IdUtils.asAccount("1.3.3");
+		final var diffNum = IdUtils.asAccount("1.2.4");
 
-		EntityId id = new EntityId();
-		id.deserialize(buffer, 0);
-
-		assertEquals(id.num(), num);
+		assertTrue(subject.matches(subject.toGrpcAccountId()));
+		assertFalse(subject.matches(diffShard));
+		assertFalse(subject.matches(diffRealm));
+		assertFalse(subject.matches(diffNum));
 	}
 }

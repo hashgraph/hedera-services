@@ -32,16 +32,14 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.numFromCode;
 
-public class EntityId implements SelfSerializable, ByteBufferSelfSerializable {
+public class EntityId implements SelfSerializable {
 	private static final long DEFAULT_SHARD = 0L;
 	private static final long DEFAULT_REALM = 0L;
 
@@ -250,17 +248,5 @@ public class EntityId implements SelfSerializable, ByteBufferSelfSerializable {
 
 	public Id asId() {
 		return new Id(shard, realm, num);
-	}
-
-	/* --- ByteBufferSelfSerializable --- */
-
-	public void serialize(ByteBuffer buffer) throws IOException {
-		// Skip the realm + shard for now as they are not used.
-		buffer.putLong(num);
-	}
-
-	public void deserialize(ByteBuffer buffer, int version) throws IOException {
-		// Only the entity number is used for now.
-		num = buffer.getLong();
 	}
 }

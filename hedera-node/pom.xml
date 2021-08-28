@@ -204,9 +204,9 @@
             <phase>generate-resources</phase>
             <id>empty-swirlds-jar-for-old-build-scripts</id>
             <configuration>
-              <tasks>
+              <target>
                 <touch file="swirlds.jar" />
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -271,10 +271,6 @@
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcmap</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.swirlds</groupId>
-      <artifactId>swirlds-virtualmap</artifactId>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>

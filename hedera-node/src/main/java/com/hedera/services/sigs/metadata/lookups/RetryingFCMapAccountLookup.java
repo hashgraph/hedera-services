@@ -28,7 +28,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -57,7 +57,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	private Optional<NodeLocalProperties> properties;
 
 	public RetryingFCMapAccountLookup(
-			final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
+			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			final int maxRetries,
 			final int retryWaitIncrementMs,
 			final Pause pause,
@@ -76,7 +76,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	public RetryingFCMapAccountLookup(
 			final Pause pause,
 			final NodeLocalProperties properties,
-			final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
+			final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			final MiscRunningAvgs runningAvgs,
 			final MiscSpeedometers speedometers
 	) {

@@ -47,7 +47,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
-import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,7 +90,7 @@ import static org.mockito.Mockito.verify;
 class SignedStateBalancesExporterTest {
 	private static final NodeId nodeId = new NodeId(false, 1);
 	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts = new VirtualMap<>();
+	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 
 	private MerkleToken token;

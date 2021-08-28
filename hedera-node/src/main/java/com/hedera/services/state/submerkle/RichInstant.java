@@ -22,19 +22,15 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-@ConstructableIgnored
-public class RichInstant implements ByteBufferSelfSerializable {
+public class RichInstant {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
 	private int nanos;
@@ -125,28 +121,5 @@ public class RichInstant implements ByteBufferSelfSerializable {
 
 	public boolean isMissing() {
 		return this == MISSING_INSTANT;
-	}
-
-	/* --- ByteBufferSelfSerializable --- */
-	@Override
-	public void serialize(ByteBuffer buffer) throws IOException {
-		buffer.putLong(seconds);
-		buffer.putInt(nanos);
-	}
-
-	@Override
-	public void deserialize(ByteBuffer buffer, int version) throws IOException {
-		seconds = buffer.getLong();
-		nanos = buffer.getInt();
-	}
-
-	@Override
-	public long getClassId() {
-		return 73713701;
-	}
-
-	@Override
-	public int getVersion() {
-		return 0;
 	}
 }

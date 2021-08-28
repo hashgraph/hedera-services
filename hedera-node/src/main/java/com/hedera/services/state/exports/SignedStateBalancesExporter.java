@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -191,37 +192,36 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		return true;
 	}
 
-	/* TODO: commented out logic since VirtualMap does not apply for iterations. Should think whether we want to move all queries over to mirror */
 	BalancesSummary summarized(ServicesState signedState) {
 		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
 		BigInteger totalFloat = BigInteger.valueOf(0L);
 		List<SingleAccountBalances> accountBalances = new ArrayList<>();
-//
-//		var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
-//		var tokens = signedState.tokens();
-//		var accounts = signedState.accounts();
-//		var tokenAssociations = signedState.tokenAssociations();
-//		for (var entry : accounts.entrySet()) {
-//			var id = entry.getKey();
-//			var account = entry.getValue();
-//			if (!account.isDeleted()) {
-//				var accountId = id.toAccountId();
-//				var balance = account.getBalance();
-//				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
-//					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,
-//							readableId(accountId),
-//							balance);
-//				}
-//				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
-//				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
-//				sabBuilder.setHbarBalance(balance)
-//						.setAccountID(accountId);
-//				if (dynamicProperties.shouldExportTokenBalances()) {
-//					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
-//				}
-//				accountBalances.add(sabBuilder.build());
-//			}
-//		}
+
+		var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
+		var tokens = signedState.tokens();
+		var accounts = signedState.accounts();
+		var tokenAssociations = signedState.tokenAssociations();
+		for (var entry : accounts.entrySet()) {
+			var id = entry.getKey();
+			var account = entry.getValue();
+			if (!account.isDeleted()) {
+				var accountId = id.toAccountId();
+				var balance = account.getBalance();
+				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
+					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,
+							readableId(accountId),
+							balance);
+				}
+				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
+				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
+				sabBuilder.setHbarBalance(balance)
+						.setAccountID(accountId);
+				if (dynamicProperties.shouldExportTokenBalances()) {
+					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
+				}
+				accountBalances.add(sabBuilder.build());
+			}
+		}
 		accountBalances.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
 		return new BalancesSummary(totalFloat, accountBalances);
 	}

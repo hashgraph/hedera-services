@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +44,7 @@ class BasedLedgerValidatorTest {
 	private long shard = 1;
 	private long realm = 2;
 
-	VirtualMap<MerkleEntityId, MerkleAccount> accounts = new VirtualMap<>();
+	FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 
 	HederaNumbers hederaNums;
 	PropertySource properties;

@@ -71,7 +71,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -167,7 +167,7 @@ class StateViewTest {
 
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
-	private VirtualMap<MerkleEntityId, MerkleAccount> contracts;
+	private FCMap<MerkleEntityId, MerkleAccount> contracts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
 	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
@@ -239,7 +239,7 @@ class StateViewTest {
 				.get();
 		nftOwner = MerkleAccountFactory.newAccount()
 				.get();
-		contracts = (VirtualMap<MerkleEntityId, MerkleAccount>) mock(VirtualMap.class);
+		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
 		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(MerkleEntityId.fromAccountId(nftOwnerId))).willReturn(nftOwner);
 		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);

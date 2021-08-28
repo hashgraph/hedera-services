@@ -75,8 +75,6 @@ import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -166,7 +164,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -212,7 +209,7 @@ class ServicesContextTest {
 	private StandardizedPropertySources propertySources;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
@@ -235,7 +232,7 @@ class ServicesContextTest {
 		schedules = mock(FCMap.class);
 		addresses = mock(AddressBook.class);
 		storage = mock(FCMap.class);
-		accounts = mock(VirtualMap.class);
+		accounts = mock(FCMap.class);
 		diskFs = mock(MerkleDiskFs.class);
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -279,7 +276,7 @@ class ServicesContextTest {
 	void updatesStateAsExpected() throws Exception {
 		// setup:
 		var newState = mock(ServicesState.class);
-		var newAccounts = mock(VirtualMap.class);
+		var newAccounts = mock(FCMap.class);
 		var newTopics = mock(FCMap.class);
 		var newStorage = mock(FCMap.class);
 		var newTokens = mock(FCMap.class);

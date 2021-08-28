@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +72,7 @@ class GetContractInfoAnswerTest {
 
 	OptionValidator optionValidator;
 	StateView view;
-	VirtualMap<MerkleEntityId, MerkleAccount> contracts;
+	FCMap<MerkleEntityId, MerkleAccount> contracts;
 
 	ContractGetInfoResponse.ContractInfo info;
 
@@ -87,7 +87,7 @@ class GetContractInfoAnswerTest {
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.build();
 
-		contracts = mock(VirtualMap.class);
+		contracts = mock(FCMap.class);
 
 		view = mock(StateView.class);
 		given(view.contracts()).willReturn(contracts);

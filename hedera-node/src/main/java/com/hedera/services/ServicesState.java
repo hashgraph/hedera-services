@@ -42,14 +42,10 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.merkle.v3.VFCDataSourceImplV3;
-import com.hedera.services.state.merkle.v3.files.DataFileCommon;
 import com.hedera.services.state.org.LegacyStateChildIndices;
 import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.org.StateVersions;
-import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
-import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -70,14 +66,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -411,20 +402,5 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	int getDeserializedVersion() {
 		return deserializedVersion;
-	}
-
-	MerkleNode createAccounts() {
-		try {
-			return new VirtualMap<MerkleEntityId, MerkleAccount>(new VFCDataSourceJasperDB<>(
-					Long.BYTES,
-					MerkleEntityId::new,
-					DataFileCommon.VARIABLE_DATA_SIZE,
-					MerkleAccount::new,
-					Path.of("jasperdb"),
-					100000000,
-					Long.MAX_VALUE));
-		} catch (IOException e) {
-			throw new RuntimeException("error while creating VirtualMap", e);
-		}
 	}
 }

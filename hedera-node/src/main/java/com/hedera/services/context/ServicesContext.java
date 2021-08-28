@@ -377,7 +377,6 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -2297,7 +2296,7 @@ public class ServicesContext {
 	 *
 	 * @return current working state of accounts
 	 */
-	public VirtualMap<MerkleEntityId, MerkleAccount> accounts() {
+	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
 		return workingState.getAccounts();
 	}
 

@@ -54,7 +54,6 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.merkletree.MerklePair;
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -88,7 +87,7 @@ class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
@@ -178,7 +177,7 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		accounts = mock(VirtualMap.class);
+		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);

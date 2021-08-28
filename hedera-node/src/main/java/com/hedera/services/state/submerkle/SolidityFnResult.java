@@ -28,10 +28,8 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,9 +37,8 @@ import java.util.Objects;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static com.hedera.services.state.merkle.SerializationHelper.*;
 
-public class SolidityFnResult implements SelfSerializable, ByteBufferSelfSerializable {
+public class SolidityFnResult implements SelfSerializable {
 	private static final byte[] MISSING_BYTES = new byte[0];
 
 	static final int MERKLE_VERSION = 1;
@@ -115,30 +112,6 @@ public class SolidityFnResult implements SelfSerializable, ByteBufferSelfSeriali
 		serdes.writeNullableSerializable(contractId, out);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
-	}
-
-	/* --- ByteBufferSelfSerializable --- */
-
-	@Override
-	public void serialize(ByteBuffer buffer) throws IOException {
-		buffer.putLong(gasUsed);
-		writeByteArray(buffer, bloom);
-		writeByteArray(buffer, result);
-		writeNullableString(buffer, error);
-		writeNullable(buffer, contractId);
-		writeSerializableList(buffer, logs, true, true);
-		writeSerializableList(buffer, createdContractIds, true, true);
-	}
-
-	@Override
-	public void deserialize(ByteBuffer buffer, int version) throws IOException {
-		gasUsed = buffer.getLong();
-		bloom = readByteArray(buffer, SolidityLog.MAX_BLOOM_BYTES);
-		result = readByteArray(buffer, MAX_RESULT_BYTES);
-		error = readNullableString(buffer, MAX_ERROR_BYTES);
-		contractId = readNullable(buffer, EntityId::new);
-		logs = readSerializableList(buffer, MAX_LOGS, true, SolidityLog::new);
-		createdContractIds = readSerializableList(buffer, MAX_CREATED_IDS, true, EntityId::new);
 	}
 
 	/* --- Object --- */

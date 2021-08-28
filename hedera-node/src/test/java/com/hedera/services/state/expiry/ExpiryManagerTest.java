@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,7 +68,7 @@ class ExpiryManagerTest {
 	private final MerkleSchedule aSchedule = new MerkleSchedule();
 	private final MerkleSchedule bSchedule = new MerkleSchedule();
 
-	private VirtualMap<MerkleEntityId, MerkleAccount> liveAccounts = new VirtualMap<>();
+	private FCMap<MerkleEntityId, MerkleAccount> liveAccounts = new FCMap<>();
 	private FCMap<MerkleEntityId, MerkleSchedule> liveSchedules = new FCMap<>();
 	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
@@ -82,7 +81,7 @@ class ExpiryManagerTest {
 	@Mock
 	private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
 	@Mock
-	private VirtualMap<MerkleEntityId, MerkleAccount> mockAccounts;
+	private FCMap<MerkleEntityId, MerkleAccount> mockAccounts;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleSchedule> mockSchedules;
 

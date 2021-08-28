@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,13 +66,13 @@ class GetBytecodeAnswerTest {
 
 	OptionValidator optionValidator;
 	StateView view;
-	VirtualMap<MerkleEntityId, MerkleAccount> contracts;
+	FCMap<MerkleEntityId, MerkleAccount> contracts;
 
 	GetBytecodeAnswer subject;
 
 	@BeforeEach
 	void setup() {
-		contracts = mock(VirtualMap.class);
+		contracts = mock(FCMap.class);
 
 		view = mock(StateView.class);
 		given(view.contracts()).willReturn(contracts);

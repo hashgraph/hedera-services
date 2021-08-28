@@ -36,7 +36,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,7 +67,7 @@ class FcmDumpTest {
 	@Mock
 	Function<String, MerkleDataOutputStream> merkleOutFn;
 	@Mock
-	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	@Mock
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	@Mock

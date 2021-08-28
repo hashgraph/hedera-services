@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.AbstractMap;
@@ -70,7 +69,7 @@ public class ExpiryManager {
 	private final RecordCache recordCache;
 	private final ScheduleStore scheduleStore;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 
 	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
@@ -83,7 +82,7 @@ public class ExpiryManager {
 			ScheduleStore scheduleStore,
 			HederaNumbers hederaNums,
 			Map<TransactionID, TxnIdRecentHistory> txnHistories,
-			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		this.accounts = accounts;
@@ -132,12 +131,7 @@ public class ExpiryManager {
 
 		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		final var currentAccounts = accounts.get();
-		//forEach(currentAccounts, (id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
-		System.out.println("ACCOUNTS " + accounts.get());
-		for (var iter = currentAccounts.entries(); iter.hasNext(); ) {
-			Map.Entry<MerkleEntityId, MerkleAccount> entry = iter.next();
-			stageExpiringRecords(entry.getKey().getNum(), entry.getValue().records(), _payerExpiries);
-		}
+		forEach(currentAccounts, (id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
 		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
 		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 

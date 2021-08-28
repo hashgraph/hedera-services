@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
 
 import java.time.Instant;
@@ -57,7 +57,7 @@ public class PureValidation {
 		}
 	}
 
-	public static ResponseCodeEnum queryableAccountStatus(AccountID id, VirtualMap<MerkleEntityId, MerkleAccount> accounts) {
+	public static ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
 
 		return Optional.ofNullable(account)
@@ -67,7 +67,7 @@ public class PureValidation {
 				.orElse(INVALID_ACCOUNT_ID);
 	}
 
-	public static ResponseCodeEnum queryableContractStatus(ContractID cid, VirtualMap<MerkleEntityId, MerkleAccount> contracts) {
+	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
 		MerkleAccount contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)

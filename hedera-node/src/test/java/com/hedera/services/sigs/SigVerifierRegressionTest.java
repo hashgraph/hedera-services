@@ -45,7 +45,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
@@ -79,7 +79,7 @@ class SigVerifierRegressionTest {
 	private HederaSigningOrder retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 

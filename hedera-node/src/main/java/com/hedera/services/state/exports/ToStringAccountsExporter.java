@@ -25,7 +25,7 @@ package com.hedera.services.state.exports;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,9 +36,9 @@ import static java.util.Comparator.comparing;
 
 public class ToStringAccountsExporter implements AccountsExporter {
 	@Override
-	public void toFile(String path, VirtualMap<MerkleEntityId, MerkleAccount> accounts) throws Exception {
+	public void toFile(String path, FCMap<MerkleEntityId, MerkleAccount> accounts) throws Exception {
 		try (var writer = Files.newBufferedWriter(Paths.get(path))) {
-			List<MerkleEntityId> keys = getKeys(accounts);
+			List<MerkleEntityId> keys = new ArrayList<>(accounts.keySet());
 			keys.sort(comparing(MerkleEntityId::toAccountId, HederaLedger.ACCOUNT_ID_COMPARATOR));
 			var first = true;
 			for (var key : keys) {
@@ -51,13 +51,5 @@ public class ToStringAccountsExporter implements AccountsExporter {
 				writer.write(accounts.get(key).toString() + "\n");
 			}
 		}
-	}
-
-	List<MerkleEntityId> getKeys(VirtualMap<MerkleEntityId, MerkleAccount> accounts) {
-		List<MerkleEntityId> keys = new ArrayList<>();
-		for (var iter = accounts.entries(); iter.hasNext(); ) {
-			keys.add(iter.next().getKey());
-		}
-		return keys;
 	}
 }

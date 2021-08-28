@@ -50,7 +50,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
 import java.util.List;
@@ -82,7 +81,7 @@ public interface TxnHandlingScenario {
 
 	KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
-	default VirtualMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
+	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
 				.withAccount(FIRST_TOKEN_SENDER_ID,
 						newAccount()

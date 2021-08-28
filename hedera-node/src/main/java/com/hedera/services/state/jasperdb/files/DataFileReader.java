@@ -1,7 +1,6 @@
 package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.collections.IndexedObject;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -200,7 +199,7 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
      * Compares this Data File to another based on index
      */
     @Override
-    public final int compareTo(@NotNull DataFileReader o) {
+    public final int compareTo(DataFileReader o) {
         return Integer.compare(metadata.getIndex(), Objects.requireNonNull(o).getMetadata().getIndex());
     }
 
