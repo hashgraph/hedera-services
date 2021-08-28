@@ -51,7 +51,7 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override
