@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -466,6 +467,7 @@ public class SuiteRunner {
 			byRunType.put("async", runCategories(statefulCategories.get(Boolean.FALSE)));
 		}
 		summarizeResults(byRunType);
+		HapiApiClients.tearDown();
 
 		System.exit(globalPassFlag ? 0 : 1);
 	}
@@ -583,6 +585,7 @@ public class SuiteRunner {
 				.stream()
 				.filter(k -> null != CATEGORY_MAP.get(k))
 				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k).get()))
+				.peek(cs -> List.of(cs.suites).forEach(HapiApiSuite::skipClientTearDown))
 				.collect(toList());
 	}
 
