@@ -457,13 +457,13 @@ public class SuiteRunner {
 				.collect(groupingBy(cat -> SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat).get())));
 
 		Map<String, List<CategoryResult>> byRunType = new HashMap<>();
-		if (statefulCategories.get(Boolean.FALSE) != null) {
-			runAsync = true;
-			byRunType.put("async", runCategories(statefulCategories.get(Boolean.FALSE)));
-		}
 		if (statefulCategories.get(Boolean.TRUE) != null) {
 			runAsync = false;
 			byRunType.put("sync", runCategories(statefulCategories.get(Boolean.TRUE)));
+		}
+		if (statefulCategories.get(Boolean.FALSE) != null) {
+			runAsync = true;
+			byRunType.put("async", runCategories(statefulCategories.get(Boolean.FALSE)));
 		}
 		summarizeResults(byRunType);
 
