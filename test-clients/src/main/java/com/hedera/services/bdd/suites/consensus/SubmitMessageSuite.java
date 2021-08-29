@@ -29,7 +29,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -44,7 +43,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -55,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 
@@ -77,7 +74,6 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				topicIdIsValidated(),
 				messageIsValidated(),
 				messageSubmissionSimple(),
-				messageSubmissionSizeChange(),
 				messageSubmissionIncreasesSeqNo(),
 				messageSubmissionWithSubmitKey(),
 				messageSubmissionMultiple(),
@@ -141,36 +137,6 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS)
-				);
-	}
-
-	private HapiApiSpec messageSubmissionSizeChange() {
-		return defaultHapiSpec("messageSubmissionSizeChange")
-				.given(
-						newKeyNamed("submitKey"),
-						createTopic("testTopic")
-								.submitKeyName("submitKey")
-				)
-				.when(
-						cryptoCreate("civilian"),
-						submitMessageTo("testTopic")
-								.message("testmessage")
-								.payingWith("civilian")
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(SUCCESS),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "20"))
-				)
-				.then(
-						submitMessageTo("testTopic")
-								.message("testmessagetestmessagetestmessagetestmessage")
-								.payingWith("civilian")
-								.hasRetryPrecheckFrom(BUSY)
-								.hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "1024"))
 				);
 	}
 
