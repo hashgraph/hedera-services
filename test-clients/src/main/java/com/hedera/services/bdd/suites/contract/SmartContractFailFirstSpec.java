@@ -60,7 +60,6 @@ public class SmartContractFailFirstSpec extends HapiApiSuite  {
 	}
 
 	HapiApiSpec smartContractFailFirst() {
-
 		return defaultHapiSpec("smartContractFailFirst")
 				.given(
 						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
