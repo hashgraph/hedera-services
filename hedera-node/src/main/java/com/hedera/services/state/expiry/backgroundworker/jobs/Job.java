@@ -49,7 +49,7 @@ public interface Job {
 	 * Useful for lightweight jobs, as their entities should be reviewed on startup. Example: transaction records.
 	 */
 	void reviewExistingEntities();
-	
-	EntityId getAffectedEntityId();
-	
+
+	long getAffectedId();
+
 }

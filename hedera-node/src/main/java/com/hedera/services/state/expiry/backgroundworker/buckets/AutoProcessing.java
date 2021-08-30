@@ -34,7 +34,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
@@ -268,7 +267,6 @@ public class AutoProcessing implements JobBucket {
 	}
 	
 	private boolean hasJobForEntity(long entityNum) {
-		final var entityId = new EntityId(shard, realm, entityNum);
-		return this.jobs.stream().anyMatch(j -> j.getAffectedEntityId().equals(entityId));
+		return this.jobs.stream().anyMatch(j -> (j.getAffectedId() == entityNum));
 	}
 }

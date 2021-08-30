@@ -132,8 +132,8 @@ public class DetachedAccountRenewal implements Job {
 	}
 
 	@Override
-	public EntityId getAffectedEntityId() {
-		return new EntityId(entityId.getShard(), entityId.getRealm(), entityId.getNum());
+	public long getAffectedId() {
+		return entityId.getNum();
 	}
 
 }

@@ -97,6 +97,7 @@ public class DetachedAccountRemoval implements Job {
 			recordsHelper.streamCryptoRemoval(entityId, tokensDisplaced.getLeft(), tokensDisplaced.getRight());
 			return true;
 		}catch (Exception ignore) {
+			log.warn("Failed execution of removal process for a detached account job: {}", ignore.getMessage());
 			setStatus(JobStatus.FAILED);
 			return false;
 		}
@@ -181,8 +182,8 @@ public class DetachedAccountRemoval implements Job {
 	}
 
 	@Override
-	public EntityId getAffectedEntityId() {
-		return new EntityId(entityId.getShard(), entityId.getRealm(), entityId.getNum());
+	public long getAffectedId() {
+		return entityId.getNum();
 	}
 
 }

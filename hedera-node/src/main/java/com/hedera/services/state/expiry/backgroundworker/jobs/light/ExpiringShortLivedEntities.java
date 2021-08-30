@@ -114,9 +114,9 @@ public class ExpiringShortLivedEntities implements Job {
 	}
 
 	@Override
-	public EntityId getAffectedEntityId() {
+	public long getAffectedId() {
 		// no-op for this job
-		return null;
+		return 0L;
 	}
 
 	@Override
