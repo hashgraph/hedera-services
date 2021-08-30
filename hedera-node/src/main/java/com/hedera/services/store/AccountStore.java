@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
 
@@ -41,12 +41,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public AccountStore(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;

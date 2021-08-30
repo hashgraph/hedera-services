@@ -1,9 +1,5 @@
 package com.hedera.services.state.merkle.virtualh;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
-
 /**
  */
 public final class VirtualTreePath {

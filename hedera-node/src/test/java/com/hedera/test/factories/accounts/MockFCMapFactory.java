@@ -22,7 +22,7 @@ package com.hedera.test.factories.accounts;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
@@ -37,7 +37,7 @@ public class MockFCMapFactory {
 	public static final long NODE_BALANCE = 1_000_000_000L;
 	public static final long GENESIS_BALANCE = 50_000_000_000_000L;
 
-	private final VirtualMap mock = mock(VirtualMap.class);
+	private final FCMap mock = mock(FCMap.class);
 
 	private MockFCMapFactory() {}
 
@@ -61,7 +61,7 @@ public class MockFCMapFactory {
 		return this;
 	}
 
-	public VirtualMap<MerkleEntityId, MerkleAccount> get() {
-		return (VirtualMap<MerkleEntityId, MerkleAccount>)mock;
+	public FCMap<MerkleEntityId, MerkleAccount> get() {
+		return (FCMap<MerkleEntityId, MerkleAccount>)mock;
 	}
 }

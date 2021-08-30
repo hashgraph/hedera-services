@@ -29,7 +29,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class ExchangeRates implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
@@ -224,25 +223,5 @@ public class ExchangeRates implements SelfSerializable {
 				grpc.getNextRate().getHbarEquiv(),
 				grpc.getNextRate().getCentEquiv(),
 				grpc.getNextRate().getExpirationTime().getSeconds());
-	}
-
-	public void serialize(ByteBuffer buffer) throws IOException {
-		buffer.putInt(currHbarEquiv);
-		buffer.putInt(currCentEquiv);
-		buffer.putLong(currExpiry);
-		buffer.putInt(nextHbarEquiv);
-		buffer.putInt(nextCentEquiv);
-		buffer.putLong(nextExpiry);
-	}
-
-	public void deserialize(ByteBuffer buffer, int version) throws IOException {
-		currHbarEquiv = buffer.getInt();
-		currCentEquiv = buffer.getInt();
-		currExpiry = buffer.getLong();
-		nextHbarEquiv = buffer.getInt();
-		nextCentEquiv = buffer.getInt();
-		nextExpiry = buffer.getLong();
-
-		initialized = true;
 	}
 }

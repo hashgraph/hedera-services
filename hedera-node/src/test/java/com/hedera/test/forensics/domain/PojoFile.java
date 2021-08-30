@@ -46,8 +46,8 @@ public class PojoFile {
 	public static PojoFile from(MerkleBlobMeta sk, MerkleOptionalBlob value) {
 		var pojo = new PojoFile();
 		pojo.setPath(sk.getPath());
-		pojo.setBlobHash(value.getBlobHash().toString());
-		pojo.setBlobDeleted(value.isReleased());
+		pojo.setBlobHash(value.getDelegate().getHash().toString());
+		pojo.setBlobDeleted(value.getDelegate().isReleased());
 		return pojo;
 	}
 

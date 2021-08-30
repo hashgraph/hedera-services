@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +62,7 @@ class GetContractRecordsAnswerTest {
 	String target = payer;
 	StateView view;
 	Transaction paymentTxn;
-	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	OptionValidator optionValidator;
 	GetContractRecordsAnswer subject;

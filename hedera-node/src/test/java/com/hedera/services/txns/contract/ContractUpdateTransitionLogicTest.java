@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class ContractUpdateTransitionLogicTest {
 	private TransactionBody contractUpdateTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private VirtualMap<MerkleEntityId, MerkleAccount> contracts;
+	private FCMap<MerkleEntityId, MerkleAccount> contracts;
 	private ContractUpdateTransitionLogic subject;
 
 	@BeforeEach
@@ -86,7 +86,7 @@ class ContractUpdateTransitionLogicTest {
 		consensusTime = Instant.now();
 
 		ledger = mock(HederaLedger.class);
-		contracts = (VirtualMap<MerkleEntityId, MerkleAccount>) mock(VirtualMap.class);
+		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
 		customizerFactory = mock(UpdateCustomizerFactory.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);

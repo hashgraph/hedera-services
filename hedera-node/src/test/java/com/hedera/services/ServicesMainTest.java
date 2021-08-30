@@ -60,7 +60,6 @@ import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,7 +88,7 @@ class ServicesMainTest {
 	private final String PATH = "/this/was/mr/bleaneys/room";
 
 	private FCMap topics;
-	private VirtualMap accounts;
+	private FCMap accounts;
 	private FCMap storage;
 	private Pause pause;
 	private Console console;
@@ -125,7 +124,7 @@ class ServicesMainTest {
 		fees = mock(FeeCalculator.class);
 		grpc = mock(GrpcServerManager.class);
 		pause = mock(Pause.class);
-		accounts = mock(VirtualMap.class);
+		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		console = mock(Console.class);

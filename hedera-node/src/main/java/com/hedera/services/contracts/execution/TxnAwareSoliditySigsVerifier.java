@@ -30,7 +30,7 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 
 import java.util.Optional;
 import java.util.Set;
@@ -46,13 +46,13 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
 	private final TransactionContext txnCtx;
 	private final SyncActivationCheck check;
-	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public TxnAwareSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
 			SyncActivationCheck check,
-			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;

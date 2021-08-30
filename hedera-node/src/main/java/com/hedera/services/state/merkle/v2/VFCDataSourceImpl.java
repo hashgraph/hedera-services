@@ -178,7 +178,8 @@ public class VFCDataSourceImpl<K extends VirtualKey, V extends VirtualValue> imp
     public Hash loadLeafHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         ByteBuffer buf = nodeStore.accessSlot(path,false);
-        return buf != null ? Hash.fromByteBuffer(buf) : null;
+//        return buf != null ? Hash.fromByteBuffer(buf) : null;
+        throw new RuntimeException("Not implemented");
     }
 
     @Override
@@ -287,7 +288,8 @@ public class VFCDataSourceImpl<K extends VirtualKey, V extends VirtualValue> imp
         // access slot
         ByteBuffer nodeDataBuf = nodeStore.accessSlot(path,true);
         // write hash
-        Hash.toByteBuffer(hash,nodeDataBuf);
+//        Hash.toByteBuffer(hash,nodeDataBuf);
+        throw new RuntimeException("Not implemented");
     }
 
     /**
@@ -349,21 +351,22 @@ public class VFCDataSourceImpl<K extends VirtualKey, V extends VirtualValue> imp
         if (nodeBuffer == null) throw new IllegalArgumentException("Can not update a non-existent leaf at path ["+path+"]");
         int basePos = nodeBuffer.position();
         // write hash
-        Hash.toByteBuffer(hash,nodeBuffer);
+//        Hash.toByteBuffer(hash,nodeBuffer);
         // skip over hash in case it did not use all its bytes
-        nodeBuffer.position(basePos+HASH_SIZE);
+//        nodeBuffer.position(basePos+HASH_SIZE);
         // read data index
-        long dataIndex = nodeBuffer.getLong();
+//        long dataIndex = nodeBuffer.getLong();
         // check there was some data stored
-        if (dataIndex == NULL_DATA_INDEX) throw new IOException("Tried to update leaf value when no previous value was saved. path ["+path+"]");
+//        if (dataIndex == NULL_DATA_INDEX) throw new IOException("Tried to update leaf value when no previous value was saved. path ["+path+"]");
         // write value
-        ByteBuffer leafDataBuf = leafDataStore.accessSlot(dataIndex,false);
-        int leafBasePos = leafDataBuf.position();
+//        ByteBuffer leafDataBuf = leafDataStore.accessSlot(dataIndex,false);
+//        int leafBasePos = leafDataBuf.position();
         // jump over key
-        leafDataBuf.position(leafBasePos+keySizeBytes);
+//        leafDataBuf.position(leafBasePos+keySizeBytes);
         // serialize data
-        leafDataBuf.putLong(value.getVersion());
-        value.serialize(leafDataBuf);
+//        leafDataBuf.putLong(value.getVersion());
+//        value.serialize(leafDataBuf);
+        throw new RuntimeException("Not implemented");
     }
 
     /**
@@ -386,24 +389,25 @@ public class VFCDataSourceImpl<K extends VirtualKey, V extends VirtualValue> imp
         ByteBuffer nodeBuffer = nodeStore.accessSlot(path,true);
         int basePos = nodeBuffer.position();
         // write hash
-        Hash.toByteBuffer(hash,nodeBuffer);
+//        Hash.toByteBuffer(hash,nodeBuffer);
         // skip over hash in case it did not use all its bytes
-        nodeBuffer.position(basePos+HASH_SIZE);
+//        nodeBuffer.position(basePos+HASH_SIZE);
         // new so create data index
-        long dataIndex = leafDataStore.getNewSlot();
+//        long dataIndex = leafDataStore.getNewSlot();
         // write new data index to node store
-        nodeBuffer.putLong(dataIndex);
+//        nodeBuffer.putLong(dataIndex);
         // write leaf data
-        ByteBuffer leafDataBuf = leafDataStore.accessSlot(dataIndex,true);
-        int leafBasePos = leafDataBuf.position();
+//        ByteBuffer leafDataBuf = leafDataStore.accessSlot(dataIndex,true);
+//        int leafBasePos = leafDataBuf.position();
         // serialize key
-        leafDataBuf.putLong(key.getVersion());
-        key.serialize(leafDataBuf);
+//        leafDataBuf.putLong(key.getVersion());
+//        key.serialize(leafDataBuf);
         // jump over key size in case key did not use all its bytes
-        leafDataBuf.position(leafBasePos+keySizeBytes);
+//        leafDataBuf.position(leafBasePos+keySizeBytes);
         // serialize value
-        leafDataBuf.putLong(value.getVersion());
-        value.serialize(leafDataBuf);
+//        leafDataBuf.putLong(value.getVersion());
+//        value.serialize(leafDataBuf);
+        throw new RuntimeException("Not implemented");
     }
 
 }

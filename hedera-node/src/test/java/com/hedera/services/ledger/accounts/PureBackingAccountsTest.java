@@ -24,15 +24,14 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -51,12 +50,12 @@ class PureBackingAccountsTest {
 	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 
-	private VirtualMap<MerkleEntityId, MerkleAccount> map;
+	private FCMap<MerkleEntityId, MerkleAccount> map;
 	private PureBackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
-		map = mock(VirtualMap.class);
+		map = mock(FCMap.class);
 
 		subject = new PureBackingAccounts(() -> map);
 	}
@@ -93,36 +92,7 @@ class PureBackingAccountsTest {
 		var ids = Set.of(aKey, bKey);
 		var expectedIds = Set.of(a, b);
 
-		int i = 0;
-		given(map.entries()).willReturn(
-			new Iterator<Map.Entry<MerkleEntityId, MerkleAccount>>() {
-				@Override
-				public boolean hasNext() {
-					return i < 2;
-				}
-
-				@Override
-				public Map.Entry<MerkleEntityId, MerkleAccount> next() {
-					MerkleEntityId key = (i == 0) ? aKey : bKey;
-
-					return new Map.Entry<MerkleEntityId, MerkleAccount>() {
-						@Override
-						public MerkleEntityId getKey() {
-							return key;
-						}
-
-						@Override
-						public MerkleAccount getValue() {
-							return null;
-						}
-
-						@Override
-						public MerkleAccount setValue(MerkleAccount value) {
-							return null;
-						}
-					};
-				}
-			});
+		given(map.keySet()).willReturn(ids);
 
 		// expect:
 		assertEquals(expectedIds, subject.idSet());

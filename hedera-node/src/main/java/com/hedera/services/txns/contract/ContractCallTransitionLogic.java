@@ -29,7 +29,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,7 +50,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final Supplier<SequenceNumber> seqNo;
-	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> contracts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -59,7 +59,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 			OptionValidator validator,
 			TransactionContext txnCtx,
 			Supplier<SequenceNumber> seqNo,
-			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> contracts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
 	) {
 		this.delegate = delegate;
 		this.validator = validator;

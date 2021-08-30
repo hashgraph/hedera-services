@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -319,7 +318,7 @@ class HederaSigningOrderTest {
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
 	private HederaSigningOrder subject;
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
 	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;

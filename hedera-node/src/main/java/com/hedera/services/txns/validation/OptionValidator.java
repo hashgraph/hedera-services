@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
 
@@ -70,11 +69,11 @@ public interface OptionValidator {
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 
-	default ResponseCodeEnum queryableAccountStatus(AccountID id, VirtualMap<MerkleEntityId, MerkleAccount> accounts) {
+	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);
 	}
 
-	default ResponseCodeEnum queryableContractStatus(ContractID cid, VirtualMap<MerkleEntityId, MerkleAccount> contracts) {
+	default ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
 		return PureValidation.queryableContractStatus(cid, contracts);
 	}
 

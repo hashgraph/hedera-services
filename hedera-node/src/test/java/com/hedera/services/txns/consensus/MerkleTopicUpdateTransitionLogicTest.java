@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +98,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts = new VirtualMap<>();
+	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
 	private TopicUpdateTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();

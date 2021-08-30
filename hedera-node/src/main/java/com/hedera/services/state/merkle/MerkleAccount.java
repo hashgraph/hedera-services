@@ -26,27 +26,18 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.virtualmap.VirtualValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.SerializationHelper.read;
-import static com.hedera.services.state.merkle.SerializationHelper.readInto;
-import static com.hedera.services.state.merkle.SerializationHelper.write;
-
-public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, VirtualValue {
+public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
@@ -63,7 +54,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
 	static DomainSerdes serdes = new DomainSerdes();
-
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -178,7 +168,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 
-	// TODO: get rid of these methods, these concerns belong to MerkleAccountState and should be fetched from there, leaking data
 	/* ----  Bean  ---- */
 
 	public long getNftsOwned() { return state().nftsOwned(); }
@@ -283,60 +272,5 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	/* --- Helpers --- */
 	public List<ExpirableTxnRecord> recordList() {
 		return new ArrayList<>(records());
-	}
-
-
-	/* --- VirtualValue --- */
-
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		// Workaround until wire ByteBuffer into general hash() call from platform side.
-		state().deserialize(in, version);
-		records().deserialize(in, version);
-		tokens().deserialize(in, version);
-	}
-
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		// Workaround until wire ByteBuffer into general hash() call from platform side.
-		state().serialize(out);
-		records().serialize(out);
-		tokens().serialize(out);
-	}
-
-	@Override
-	public void serialize(ByteBuffer buffer) throws IOException {
-		write(buffer, state());
-
-		FCQueue<ExpirableTxnRecord> records = records();
-		buffer.putInt(records.size());
-		for (ExpirableTxnRecord record : records) {
-			write(buffer, record);
-		}
-
-		write(buffer, tokens());
-	}
-
-	@Override
-	public void deserialize(ByteBuffer buffer, int version) throws IOException {
-		readInto(buffer, state());
-
-		FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
-		int size = buffer.getInt();
-		for (int i = 0; i < size; i++) {
-			records.add(read(buffer, ExpirableTxnRecord::new));
-		}
-		setRecords(records);
-		setTokens(read(buffer, MerkleAccountTokens::new));
-	}
-
-	@Override
-	public VirtualValue asReadOnly() {
-		MerkleAccount copy = new MerkleAccount(List.of(
-				state().copy(),
-				records().copy(),
-				tokens().copy()), this);
-		copy.setImmutable(true);
-		return copy;
 	}
 }

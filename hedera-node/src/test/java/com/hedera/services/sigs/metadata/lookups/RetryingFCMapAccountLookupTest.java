@@ -33,7 +33,7 @@ import com.hedera.services.utils.SleepingPause;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +56,7 @@ class RetryingFCMapAccountLookupTest {
 	private NodeLocalProperties properties;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
-	private VirtualMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private RetryingFCMapAccountLookup subject;
 	private Pause pause;
 	private final Pause defaultPause = SleepingPause.SLEEPING_PAUSE;
@@ -76,7 +76,7 @@ class RetryingFCMapAccountLookupTest {
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
 		pause = mock(Pause.class);
-		accounts = (VirtualMap<MerkleEntityId, MerkleAccount>)mock(VirtualMap.class);
+		accounts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
 		properties = mock(NodeLocalProperties.class);
 		given(properties.precheckLookupRetries()).willReturn(2);
 		given(properties.precheckLookupRetryBackoffMs()).willReturn(RETRY_WAIT_MS);

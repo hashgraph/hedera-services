@@ -20,14 +20,12 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -189,56 +187,4 @@ public class JKeySerializer {
 
 	  void accept(T stream) throws IOException;
 	}
-
-	/* VirtualValue */
-	public static void serialize(Object rootObject, ByteBuffer buffer) throws IOException {
-	  buffer.putLong(BPACK_VERSION);
-
-      JObjectType objectType = JObjectType.JKey;
-      if (rootObject instanceof JKeyList) {
-        objectType = JObjectType.JKeyList;
-      } else if (rootObject instanceof JThresholdKey) {
-        objectType = JObjectType.JThresholdKey;
-      } else if (rootObject instanceof JEd25519Key) {
-        objectType = JObjectType.JEd25519Key;
-      } else if (rootObject instanceof JECDSA_384Key) {
-        objectType = JObjectType.JECDSA_384Key;
-      } else if (rootObject instanceof JRSA_3072Key) {
-        objectType = JObjectType.JRSA_3072Key;
-      } else if (rootObject instanceof JContractIDKey) {
-        objectType = JObjectType.JContractIDKey;
-      }
-
-      final JObjectType finalObjectType = objectType;
-      buffer.putLong(objectType.longValue());
-
-      byte[] content = byteStream(os -> pack(os, finalObjectType, rootObject));
-      int length = (content != null) ? content.length : 0;
-
-      buffer.putLong(length);
-
-      if (length > 0) {
-        buffer.put(content);
-      }
-    }
-
-  public static <T> T deserialize(ByteBuffer buffer) throws IOException {
-	  long version = buffer.getLong();
-      long objectType = buffer.getLong();
-      long length = buffer.getLong();
-
-      if (version == LEGACY_VERSION) {
-        byte[] content = new byte[(int) length];
-        return SerializationUtils.deserialize(content);
-      }
-
-      JObjectType type = JObjectType.valueOf(objectType);
-      if (objectType < 0 || type == null) {
-        throw new IllegalStateException("Illegal JObjectType was read from the stream");
-      }
-
-      // TODO: once move everything to ByteBuffer, simplify this.
-      DataInputStream is = new DataInputStream(new ByteBufferBackedInputStream(buffer));
-      return unpack(is, type, length);
-  }
 }

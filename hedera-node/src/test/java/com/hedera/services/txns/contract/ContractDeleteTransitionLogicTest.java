@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,7 +67,7 @@ class ContractDeleteTransitionLogicTest {
 	private TransactionBody contractDeleteTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	VirtualMap<MerkleEntityId, MerkleAccount> contracts;
+	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	ContractDeleteTransitionLogic subject;
 
 	@BeforeEach

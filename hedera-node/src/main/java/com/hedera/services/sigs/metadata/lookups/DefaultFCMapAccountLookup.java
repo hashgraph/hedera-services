@@ -24,7 +24,7 @@ import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
 
@@ -37,9 +37,9 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
  * @author Michael Tinker
  */
 public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
-	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public DefaultFCMapAccountLookup(Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public DefaultFCMapAccountLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
