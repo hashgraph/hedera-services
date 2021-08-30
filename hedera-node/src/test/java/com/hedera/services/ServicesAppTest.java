@@ -117,7 +117,7 @@ class ServicesAppTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(platform.getCryptography()).willReturn(cryptography);
 		given(platform.getSelfId()).willReturn(selfNodeId);
-		if (!nodeProps.containsProperty(logDirKey) || !nodeProps.getStringProperty(logDirKey).matches(logDirVal)) {
+		if (!nodeProps.containsProperty(logDirKey)) {
 			given(overridingProps.containsProperty(any())).willReturn(false);
 			given(overridingProps.containsProperty(logDirKey)).willReturn(true);
 			given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
