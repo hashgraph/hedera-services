@@ -13,6 +13,12 @@ The `HederaBackgroundWorker` will be a singleton, and will have 2 important meth
 - `executePostTransactionJobs` - where the jobs are not atomic, and may span in multiple transactions.
 Both methods will iterate over the buckets and execute the said jobs in the bucket.
 May be configured to utilize dynamic `Capacity` configuration for the work done, regarding heavy entities.
+```java
+interface BackgroundWorker {
+	void doPreTransactionJobs(long now);
+	void doPostTransactionJobs(long now); // can use the Capacity config
+}
+```
 
 ## Bucket:
 The bucket is a logical group of executable tasks - jobs, grouped by common functionality. A bucket's responsibility may be lightweight entities, or heavyweight.
@@ -20,7 +26,14 @@ The bucket is a logical group of executable tasks - jobs, grouped by common func
 For migrating the current expiry/renewal, we must consider 2 types of bucket - `ExpiryManager` and `AutoProcessing` . The expiry bucket will be responsible of handling scheduled txns and txn records, while the auto-processing - expiry/renewal of tokens and accounts.
 By having the bucket abstraction, it is possible to define expiration or renewal for more entities - we're not limited to tokens/accounts.
 Each bucket should also be a singleton, but it's implementation regarding `job` organization and execution may vary a bit.
+```java
 
+interface Bucket {
+    /* Uses internal Capacity config. See below on Configuration section. */
+    void doPreTransactionJobs(long now);
+    void doPostTransactionJobs(long now);
+}
+```
 ## Job:
 A job is an abstraction of an executable task which should be performed in order to expire/renew an entity. The `Job` interface exposes a single method:
 ```java
@@ -28,18 +41,20 @@ interface Job {
 	boolean execute(long now);
 }
 ```
-which is responsible of handling all the business logic of the job.
+which is responsible for handling all the business logic of the job.
 Each job should be scoped to a single entity, or a set of **related** entities. We can assume there are 2 types of jobs - atomic and non-atomic. 
 
 **Each job should be represented by a different class, with it's business logic located in the `execute` method**.
 
-The atomic jobs can be handled in the scope of a single consensus transaction. They represent `lightweight` entities, which  the system no longer required - transaction records and expired scheduled transactions.
+The atomic jobs can be handled in the scope of a single consensus transaction. They represent `lightweight` entities, which the system no longer requires
+transaction records and expired scheduled transactions.
 
-The non-atomic jobs represent a heavy operation, or an operation cast upon a `heavyweight` entity. This operation may span in multiple transactions. Example of such scenario - removing an expired account, which owns 10k unique tokens.
+The non-atomic jobs represent a heavy operation, or an operation cast upon a `heavyweight` entity.
+This operation may span in multiple transactions. Example of such scenario - removing an expired account, which owns 10k unique tokens.
 
 It's important to note that jobs should be classifiable by more than 1 criterion. Each job should:
-- have a progress status - like `Completed`, `Failed`, `New`, `Paused` (open for suggestion)
-- have a classification, regarding the entity - `Lightweight` or `Heavyweight`
+- have a progress status - `DONE`, `FAILED`, `HEAVYWEIGHT_NEW`, `HEAVYWEIGHT_PARTIALLY_DONE`, `LIGHTWEIGHT`.
+- have a classification, regarding the entity - `LIGHTWEIGHT` or `HEAVYWEIGHT`.
 
 By implementing the `Job` interface properly, we are given absolute freedom to expire/renew/execute whatever "background" operation we need in the future.
 
@@ -54,7 +69,7 @@ The second type should be handled by clearing all relations to tokens, returning
 
 * `Account Renewal` - expired accounts with balance - Renewable accounts. If the balance is sufficient, the account is enabled again. 
 
-* `Token Expiration` - requires removing the NFTs from state, dissociating from accounts, dissociating from treasury, removing the token from state
+* `Token Expiration` - requires removing the NFTs from state, dissociating from accounts, dissociating from treasury, removing the token from state.
 
 
 ## Configuration:
@@ -64,21 +79,18 @@ We have a wide variety of parameters to configure, regarding job execution. We'v
 - Max entities to scan ( present in `GlobalDynamicProperties` )
 - ...
 
-This configuration can be done in 2 ways - dynamic or static. Suggested dynamic configuration:
+The buckets/worker can be enhanced with `Capacity` dynamic configuration, like:
 ```java
 interface Capacity {
   int entityTouches();
   int entityMutations();
 }
-
-interface Bucket {
-  /* Returns the capacity used by this work. */
-  Capacity drain(long now, Capacity available);
-}
 ```
 where `Capacity` may be based on the current usage level of the `CryptoTransfer` throttle (example). This is being explored now.
 
 ## Specific documentation of current buckets:
+![title](images/buckets_design.png)
+
 ### `ExpiryManager` 
 - Responsible for executing jobs, related to lightweight expiry (pre-transaction jobs).
 - The jobs of the `ExpiryManager` are singletons, as those jobs need to track entities - they are required in other scopes, except for the bucket.
@@ -104,21 +116,17 @@ where `Capacity` may be based on the current usage level of the `CryptoTransfer`
 ![title](images/DetachedAccountRemoval.png)
 
 #### `DetachedAccountRenewal`
-- Instantiated by `AutoProcessing`, the same way as `DetachedAccountRemoval`.
-- Responsible for the renewal process for an expired account.
-- Performs check whether the account can be renewed, e.g. payer must have enough balance.
+- Instantiated by `AutoProcessing`, the same way as `DetachedAccountRemoval`. Responsible for the renewal process for an expired account.
 ![title](images/DetachedAccountRenewal.png)
 
-- `TokenExpiration` - not yet implemented. Design: Identify all nfts to be deleted -> delete nfts (in multiple txns) -> dissociate from any accounts (and treasury) -> remove from `FCMap` 
+#### `TokenExpiration` 
+- not yet implemented.
+- Design: Identify all nfts to be deleted -> delete nfts (in multiple txns) -> dissociate from any accounts (and treasury) -> remove from `FCMap` 
 
 ## Higher-level diagrams and visual documentation:
-
-### Bucket design:
-![title](images/buckets_design.png)
-
 
 ### Expiry flow:
 ![title](images/expiry_diagrams_and_flow.png)
 
-### Object relations:
+### Worker - bucket - job hierarchy:
 ![title](images/expiry_uml.png)
