@@ -47,10 +47,11 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 	@Override
 	public CustomFeeMeta lookupMetaFor(Id tokenId) {
 		final var currentTokens = tokens.get();
-		if (!currentTokens.containsKey(tokenId.asMerkle())) {
+		final var key = PermHashInteger.fromLong(tokenId.getNum());
+		if (!currentTokens.containsKey(key)) {
 			return CustomFeeMeta.MISSING_META;
 		}
-		final var merkleToken = currentTokens.get(tokenId.asMerkle());
+		final var merkleToken = currentTokens.get(key);
 		return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
 	}
 

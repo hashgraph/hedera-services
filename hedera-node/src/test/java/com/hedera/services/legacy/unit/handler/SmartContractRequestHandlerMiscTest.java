@@ -307,11 +307,7 @@ class SmartContractRequestHandlerMiscTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(contractId.getContractNum());
-    mk.setRealm(contractId.getRealmNum());
-    mk.setShard(contractId.getShardNum());
-    MerkleAccount mv = mmap.get(mk);
+    MerkleAccount mv = mmap.get(PermHashInteger.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getAccountKey());
     Assertions.assertTrue(mv.getAccountKey() instanceof JContractIDKey);
@@ -1043,12 +1039,7 @@ class SmartContractRequestHandlerMiscTest {
   }
 
   private long getBalance(AccountID accountId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(accountId.getAccountNum());
-    mk.setRealm(0);
-    mk.setShard(0);
-
-    MerkleAccount mv = mmap.get(mk);
+    MerkleAccount mv = mmap.get(PermHashInteger.fromLong(accountId.getAccountNum()));
     if (mv == null) {
       return 0;
     } else {

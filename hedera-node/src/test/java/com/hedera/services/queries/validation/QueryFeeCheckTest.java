@@ -54,7 +54,7 @@ import static org.mockito.BDDMockito.mock;
 
 class QueryFeeCheckTest {
 	private static final long payerExpiry = 1_234_567L;
-	private static final AccountID aMissing = asAccount("1.2.3");
+	private static final AccountID aMissing = asAccount("0.0.321321");
 	private static final AccountID aRich = asAccount("0.0.2");
 	private static final AccountID aNode = asAccount("0.0.3");
 	private static final AccountID anotherNode = asAccount("0.0.4");

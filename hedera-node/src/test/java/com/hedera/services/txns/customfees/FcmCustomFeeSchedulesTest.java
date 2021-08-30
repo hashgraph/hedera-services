@@ -40,10 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 @ExtendWith(MockitoExtension.class)
 class FcmCustomFeeSchedulesTest {
 	private FcmCustomFeeSchedules subject;
+
 	MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
 
-	private final EntityId aTreasury = new EntityId(10, 11, 12);
-	private final EntityId bTreasury = new EntityId(11, 12, 13);
+	private final EntityId aTreasury = new EntityId(0, 0, 12);
+	private final EntityId bTreasury = new EntityId(0, 0, 13);
 	private final EntityId tokenA = new EntityId(0,0,1);
 	private final EntityId tokenB = new EntityId(0,0,2);
 	private final EntityId feeCollector = new EntityId(0,0,3);

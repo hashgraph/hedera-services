@@ -22,7 +22,6 @@ package com.hedera.services.store.tokens.views;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.TokenStore;
@@ -137,8 +136,8 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private void setupFirstMockRange() {
 		willAnswer(invocationOnMock -> {
 			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(someExplicitNftId.identityCode());
-			consumer.accept(wildcardNftId.identityCode());
+			consumer.accept(someExplicitNftId.getValue());
+			consumer.accept(wildcardNftId.getValue());
 			return null;
 		}).given(firstMockRange).forEachRemaining(any());
 	}
@@ -146,7 +145,7 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private void setupSecondMockRange() {
 		willAnswer(invocationOnMock -> {
 			final Consumer<Long> consumer = invocationOnMock.getArgument(0);
-			consumer.accept(otherWildcardNftId.identityCode());
+			consumer.accept(otherWildcardNftId.getValue());
 			return null;
 		}).given(secondMockRange).forEachRemaining(any());
 	}
@@ -169,11 +168,13 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueToken otherWildNft = new MerkleUniqueToken(MISSING_ENTITY_ID, om, someCreationTime);
-	private final MerkleUniqueTokenId someExplicitNftId = new MerkleUniqueTokenId(tokenId, someSerial);
-	private final MerkleUniqueTokenId wildcardNftId = new MerkleUniqueTokenId(otherTokenId, wildcardSerial);
-	private final MerkleUniqueTokenId otherWildcardNftId = new MerkleUniqueTokenId(treasuryTokenId, treasurySerial);
-	private final TokenNftInfo explicitInfo = GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
-	private final TokenNftInfo interpolatedInfo = GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft, grpcOwnerId);
-	private final TokenNftInfo treasuryInfo = GrpcUtils.reprOf(treasuryTokenId.toGrpcTokenId(), treasurySerial, otherWildNft, grpcOwnerId);
-
+	private final PermHashLong someExplicitNftId = PermHashLong.fromLongs(tokenId.num(), someSerial);
+	private final PermHashLong wildcardNftId = PermHashLong.fromLongs(otherTokenId.num(), wildcardSerial);
+	private final PermHashLong otherWildcardNftId = PermHashLong.fromLongs(treasuryTokenId.num(), treasurySerial);
+	private final TokenNftInfo explicitInfo =
+			GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
+	private final TokenNftInfo interpolatedInfo =
+			GrpcUtils.reprOf(otherTokenId.toGrpcTokenId(), wildcardSerial, wildcardNft, grpcOwnerId);
+	private final TokenNftInfo treasuryInfo =
+			GrpcUtils.reprOf(treasuryTokenId.toGrpcTokenId(), treasurySerial, otherWildNft, grpcOwnerId);
 }

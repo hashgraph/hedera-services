@@ -36,7 +36,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -83,13 +82,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
+import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -291,8 +289,9 @@ public class StateView {
 
 	public Optional<TokenNftInfo> infoForNft(NftID target) {
 		final var currentNfts = uniqueTokens();
-		final var tokenId = fromGrpcTokenId(target.getTokenID());
-		final var targetKey = new MerkleUniqueTokenId(tokenId, target.getSerialNumber());
+		final var tokenTypeNum = target.getTokenID().getTokenNum();
+		final var tokenId = PermHashInteger.fromLong(tokenTypeNum);
+		final var targetKey = PermHashLong.fromLongs(tokenTypeNum, target.getSerialNumber());
 		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
@@ -300,7 +299,7 @@ public class StateView {
 		var accountId = targetNft.getOwner().toGrpcAccountId();
 
 		if (accountId.equals(AccountID.getDefaultInstance())) {
-			var merkleToken = tokens().get(tokenId.asMerkle());
+			var merkleToken = tokens().get(tokenId);
 			if (merkleToken == null) {
 				return Optional.empty();
 			}
@@ -317,8 +316,8 @@ public class StateView {
 	}
 
 	public boolean nftExists(NftID id) {
-		return uniqueTokens().containsKey(
-				new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
+		final var key = PermHashLong.fromLongs(id.getTokenID().getTokenNum(), id.getSerialNumber());
+		return uniqueTokens().containsKey(key);
 	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {

@@ -621,12 +621,7 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private long getBalance(AccountID accountId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(accountId.getAccountNum());
-    mk.setRealm(0);
-    mk.setShard(0);
-
-    MerkleAccount mv = fcMap.get(mk);
+    MerkleAccount mv = fcMap.get(PermHashInteger.fromLong(accountId.getAccountNum()));
     if (mv == null) {
       return 0;
     } else {
@@ -635,12 +630,7 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private long getBalance(ContractID contractId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(contractId.getContractNum());
-    mk.setRealm(0);
-    mk.setShard(0);
-
-    MerkleAccount mv = fcMap.get(mk);
+    MerkleAccount mv = fcMap.get(PermHashInteger.fromLong(contractId.getContractNum()));
     if (mv == null) {
       return 0;
     } else {
@@ -749,11 +739,7 @@ class SmartContractRequestHandlerPayableTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(contractId.getContractNum());
-    mk.setRealm(contractId.getRealmNum());
-    mk.setShard(contractId.getShardNum());
-    MerkleAccount mv = fcMap.get(mk);
+    MerkleAccount mv = fcMap.get(PermHashInteger.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getAccountKey());
     Assertions.assertNotNull(mv.getAccountKey());

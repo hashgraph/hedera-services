@@ -291,11 +291,7 @@ class SmartContractRequestHandlerStorageTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(contractId.getContractNum());
-    mk.setRealm(contractId.getRealmNum());
-    mk.setShard(contractId.getShardNum());
-    MerkleAccount mv = contracts.get(mk);
+    MerkleAccount mv = contracts.get(PermHashInteger.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getAccountKey());
     Assertions.assertNotNull(mv.getAccountKey());

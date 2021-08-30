@@ -196,13 +196,9 @@ class MerkleUniqueTokenIdTest {
 
 	@Test
 	void fromNftIdWorks() {
-		// given
-		var expected = new MerkleUniqueTokenId(
-				new EntityId(0, 0, 1),
-				1
-		);
-
 		// expect:
-		assertEquals(expected, PermHashLong.fromNftId(new NftId(0, 0, 1, 1)));
+		assertEquals(
+				PermHashLong.fromLongs(1L, 1L),
+				PermHashLong.fromNftId(new NftId(0, 0, 1, 1)));
 	}
 }

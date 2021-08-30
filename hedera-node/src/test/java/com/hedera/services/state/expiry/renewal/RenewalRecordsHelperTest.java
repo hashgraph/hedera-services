@@ -63,7 +63,7 @@ class RenewalRecordsHelperTest {
 	private long fee = 1_234L;
 	private long newExpiry = 1_234_567L + 7776000L;
 	private final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
-	private final AccountID removedId = IdUtils.asAccount("1.2.3");
+	private final AccountID removedId = IdUtils.asAccount("0.0.3");
 	private final AccountID funding = IdUtils.asAccount("0.0.98");
 	private final PermHashInteger keyId = PermHashInteger.fromAccountId(removedId);
 
