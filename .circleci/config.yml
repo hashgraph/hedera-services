@@ -2248,7 +2248,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 02072-M-StandardizeFileAppendFees
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

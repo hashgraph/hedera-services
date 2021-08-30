@@ -1,11 +1,15 @@
 package com.hedera.services.pricing;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static java.time.Month.SEPTEMBER;
 
 public class ScheduleGenerator {
 	private static final String FEE_SCHEDULE_FEES_KEY = "fees";
@@ -30,44 +35,71 @@ public class ScheduleGenerator {
 	private static final String FEE_SCHEDULE_ENTRY_KEY = "transactionFeeSchedule";
 	private static final String FEE_SCHEDULE_FUNCTION_KEY = "hederaFunctionality";
 
-	public static void main(String... args) {
+	private final Instant CURRENT_SCHEDULE_EXPIRY =
+			LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0)
+					.plusMonths(1)
+					.toInstant(ZoneOffset.UTC);
+	private final Instant NEXT_SCHEDULE_EXPIRY =
+			LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0)
+					.plusMonths(2)
+					.toInstant(ZoneOffset.UTC);
 
+	private final FeeSchedules feeSchedules = new FeeSchedules();
+
+	String feeSchedulesFor(List<Pair<HederaFunctionality, List<SubType>>> data) throws IOException {
+		final List<Map<String, Object>> currentFeeSchedules = new ArrayList<>();
+		final List<Map<String, Object>> nextFeeSchedules = new ArrayList<>();
+
+		for (var datum : data) {
+			final var function = datum.getKey();
+			final var subTypes = datum.getValue();
+			final var tfs = pricesAsTfs(function, subTypes);
+			currentFeeSchedules.add(tfs);
+			nextFeeSchedules.add(tfs);
+		}
+		currentFeeSchedules.add(Map.of("expiryTime", CURRENT_SCHEDULE_EXPIRY.getEpochSecond()));
+		nextFeeSchedules.add(Map.of("expiryTime", NEXT_SCHEDULE_EXPIRY.getEpochSecond()));
+
+		final List<Map<String, Object>> everything = List.of(
+				Map.of("currentFeeSchedule", currentFeeSchedules),
+				Map.of("nextFeeSchedule", nextFeeSchedules));
+		return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(everything);
 	}
 
-	private String reprAsSingleFeeScheduleEntry(
-			HederaFunctionality function,
-			SubType type,
-			Map<ResourceProvider, Map<UsableResource, Long>> prices
-	) throws JsonProcessingException {
+	private Map<String, Object> pricesAsTfs(HederaFunctionality function, List<SubType> subTypes) throws IOException {
 		final Map<String, Object> transactionFeeSchedule = new HashMap<>();
 
 		final Map<String, Object> details = new LinkedHashMap<>();
 		details.put(FEE_SCHEDULE_FUNCTION_KEY, function.toString());
-		final Map<String, Object> scopedPrices = new LinkedHashMap<>();
-		if (type != DEFAULT) {
-			scopedPrices.put(FEE_SCHEDULE_TYPE_KEY, type.toString());
-		}
-		for (var provider : ResourceProvider.class.getEnumConstants()) {
-			final Map<String, Long> constrainedPrices = new LinkedHashMap<>();
-			final var providerPrices = prices.get(provider);
-			for (var resource : UsableResource.class.getEnumConstants()) {
-				final var price = providerPrices.get(resource);
-				constrainedPrices.put(resource.toString().toLowerCase(), price);
-			}
-			constrainedPrices.put("min", 0L);
-			constrainedPrices.put("max", 1000000000000000L);
-			scopedPrices.put(provider.jsonKey(), constrainedPrices);
-		}
-		final List<Map<String, Object>> allScopedPrices = List.of(scopedPrices);
-		details.put(FEE_SCHEDULE_FEES_KEY, allScopedPrices);
-		transactionFeeSchedule.put(FEE_SCHEDULE_ENTRY_KEY, details);
 
-		final var om = new ObjectMapper();
-		return om.writerWithDefaultPrettyPrinter().writeValueAsString(transactionFeeSchedule);
+		final List<Map<String, Object>> allTypedPrices = new ArrayList<>();
+		for (var subType : subTypes) {
+			final Map<String, Object> typedPrices = new LinkedHashMap<>();
+			typedPrices.put(FEE_SCHEDULE_TYPE_KEY, subType.toString());
+
+			final Map<ResourceProvider, Map<UsableResource, Long>> prices =
+					feeSchedules.canonicalPricesFor(function, subType);
+			for (var provider : ResourceProvider.class.getEnumConstants()) {
+				final Map<String, Long> constrainedPrices = new LinkedHashMap<>();
+				final var providerPrices = prices.get(provider);
+				for (var resource : UsableResource.class.getEnumConstants()) {
+					final var price = providerPrices.get(resource);
+					constrainedPrices.put(resource.toString().toLowerCase(), price);
+				}
+				constrainedPrices.put("min", 0L);
+				constrainedPrices.put("max", 1000000000000000L);
+				typedPrices.put(provider.jsonKey(), constrainedPrices);
+			}
+
+			allTypedPrices.add(typedPrices);
+		}
+		details.put(FEE_SCHEDULE_FEES_KEY, allTypedPrices);
+		transactionFeeSchedule.put(FEE_SCHEDULE_ENTRY_KEY, details);
+		return transactionFeeSchedule;
 	}
 
 	@SuppressWarnings("unchecked")
-	private static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(new Pair[] {
+	static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(new Pair[] {
 					/* Crypto */
 					Pair.of(CryptoTransfer, List.of(
 							DEFAULT,
@@ -101,5 +133,4 @@ public class ScheduleGenerator {
 					)),
 			}
 	);
-
 }
