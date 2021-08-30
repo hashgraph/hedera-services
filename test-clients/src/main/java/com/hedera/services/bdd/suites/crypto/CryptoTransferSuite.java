@@ -89,6 +89,11 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		);
 	}
 
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
 	private HapiApiSpec baseCryptoTransferFeeChargedAsExpected() {
 		final var expectedHbarXferPriceUsd = 0.0001;
 		final var expectedHtsXferPriceUsd = 0.001;

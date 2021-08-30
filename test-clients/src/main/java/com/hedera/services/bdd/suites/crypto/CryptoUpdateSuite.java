@@ -82,6 +82,11 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private final String TARGET_ACCOUNT = "complexKeyAccount";
 
 	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
+	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						updateWithUniqueSigs(),

@@ -194,6 +194,7 @@ public class SuiteRunner {
 	private static final String DEFAULT_PAYER_ID = "0.0.2";
 
 	private static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
+	private static List<HapiApiSuite> suitesToDetail = new ArrayList<>();
 
 	private static final Map<String, Supplier<HapiApiSuite[]>> CATEGORY_MAP = new HashMap<>() {{
 		/* Convenience entries, uncomment locally to run CI jobs */
@@ -564,6 +565,9 @@ public class SuiteRunner {
 			}
 		});
 		log.info("============== SuiteRunner finished ==============");
+
+		/* Print detail summaries for analysis by HapiClientValidator */
+		suitesToDetail.forEach(HapiApiSuite::summarizeDeferredResults);
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {
@@ -585,8 +589,11 @@ public class SuiteRunner {
 				.stream()
 				.filter(k -> null != CATEGORY_MAP.get(k))
 				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k).get()))
-				.peek(cs -> List.of(cs.suites).forEach(HapiApiSuite::skipClientTearDown))
-				.collect(toList());
+				.peek(cs -> List.of(cs.suites).forEach(suite -> {
+					suite.skipClientTearDown();
+					suite.deferResultsSummary();
+					suitesToDetail.add(suite);
+				})).collect(toList());
 	}
 
 	private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {

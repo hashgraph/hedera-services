@@ -28,7 +28,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -51,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -73,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -84,7 +81,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -100,12 +96,12 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	private static final String TOKEN_TREASURY = "treasury";
 
 	public static void main(String... args) {
-		new TokenTransactSpecs().runSuiteSync();
+		new TokenTransactSpecs().runSuiteAsync();
 	}
 
 	@Override
 	public boolean canRunAsync() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -119,7 +115,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenOnlyTxnsAreAtomic(),
 						tokenPlusHbarTxnsAreAtomic(),
 						nonZeroTransfersRejected(),
-						prechecksWork(),
 						missingEntitiesRejected(),
 						allRequiredSigsAreChecked(),
 						uniqueTokenTxnAccountBalance(),
@@ -304,63 +299,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec prechecksWork() {
-		return defaultHapiSpec("PrechecksWork")
-				.given(
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						cryptoCreate(FIRST_USER).balance(0L)
-				).when(
-						tokenCreate(A_TOKEN)
-								.initialSupply(100)
-								.treasury(TOKEN_TREASURY),
-						tokenCreate(B_TOKEN)
-								.initialSupply(100)
-								.treasury(TOKEN_TREASURY)
-				).then(
-						cryptoTransfer(
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER),
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"ledger.tokenTransfers.maxLen", "" + 2
-						)).payingWith(ADDRESS_BOOK_CONTROL),
-						cryptoTransfer(
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER),
-								moving(1, B_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"ledger.tokenTransfers.maxLen", "" + 10
-						)).payingWith(ADDRESS_BOOK_CONTROL),
-						cryptoTransfer(
-								movingHbar(1)
-										.between(TOKEN_TREASURY, FIRST_USER),
-								movingHbar(1)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						cryptoTransfer(
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER),
-								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						cryptoTransfer(
-								moving(0, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
-						cryptoTransfer(
-								moving(10, A_TOKEN)
-										.from(TOKEN_TREASURY)
-						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-						cryptoTransfer(
-								moving(10, A_TOKEN)
-										.empty()
-						).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
-				);
-	}
 
 	public HapiApiSpec missingEntitiesRejected() {
 		return defaultHapiSpec("MissingTokensRejected")

@@ -88,6 +88,7 @@ public abstract class HapiApiSuite {
 
 	public static final HapiSpecSetup DEFAULT_PROPS = HapiSpecSetup.getDefaultInstance();
 
+	private boolean deferResultsSummary = false;
 	private boolean tearDownClientsAfter = true;
 	private List<HapiApiSpec> finalSpecs = Collections.emptyList();
 
@@ -111,6 +112,17 @@ public abstract class HapiApiSuite {
 		this.tearDownClientsAfter = false;
 	}
 
+	public void deferResultsSummary() {
+		this.deferResultsSummary = true;
+	}
+
+	public void summarizeDeferredResults() {
+		if (deferResultsSummary) {
+			deferResultsSummary = false;
+			summarizeResults(getResultsLogger());
+		}
+	}
+
 	public FinalOutcome runSuiteAsync() {
 		return runSuite(this::runAsync);
 	}
@@ -124,7 +136,9 @@ public abstract class HapiApiSuite {
 	}
 
 	private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {
-		getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
+		if (!deferResultsSummary) {
+			getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
+		}
 		List<HapiApiSpec> specs = getSpecsInSuite();
 		specs.forEach(spec -> spec.setSuitePrefix(name()));
 		runner.accept(specs);
@@ -156,6 +170,9 @@ public abstract class HapiApiSuite {
 	}
 
 	private void summarizeResults(Logger log) {
+		if (deferResultsSummary) {
+			return;
+		}
 		log.info("-------------- RESULTS OF " + name() + " SUITE --------------");
 		for (HapiApiSpec spec : finalSpecs) {
 			log.info(spec);
