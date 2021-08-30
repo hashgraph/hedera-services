@@ -152,7 +152,9 @@ public class CryptoOpsUsage {
 						- (ctx.currentMaxAutomaticAssociations() * oldLifetime)) : 0L;
 
 		if (maxAutoAssociationsDelta > 0) {
-			estimate.addRbs(maxAutoAssociationsDelta * INT_SIZE);
+			/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
+			one additional association in a tokenAssociate call */
+			estimate.addRbs(maxAutoAssociationsDelta * INT_SIZE * 27);
 		}
 
 		return estimate.get();
@@ -178,7 +180,9 @@ public class CryptoOpsUsage {
 		   plus a boolean for receiver sig required. */
 		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
 		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-		estimate.addRbs(op.getMaxAutomaticTokenAssociations() * INT_SIZE * lifetime);
+		/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
+			one additional association in a tokenAssociate call */
+		estimate.addRbs(op.getMaxAutomaticTokenAssociations() * INT_SIZE * lifetime * 27);
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
