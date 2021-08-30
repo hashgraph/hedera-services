@@ -29,7 +29,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +48,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final LegacyDeleter delegate;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -57,7 +57,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 			LegacyDeleter delegate,
 			OptionValidator validator,
 			TransactionContext txnCtx,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> contracts
 	) {
 		this.ledger = ledger;
 		this.delegate = delegate;

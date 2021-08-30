@@ -23,7 +23,11 @@ package com.hedera.services.state.merkle.internals;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.virtualmap.ByteBufferSelfSerializable;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,6 +36,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import static java.util.Comparator.comparingLong;
+
+// TODO: normalize IDs across system, declared in multiple places but with same semantic meaning.
+// Similar classes: MerkleEntityId, CopyOnWriteIds, AccountID, TokenID + ScheduleID
+// Could we have a single HederaId that is a VirtualValue + copyable?
 
 /**
  * Manages a multiset of {@code (num, realm, shard)} ids with
@@ -43,7 +51,8 @@ import static java.util.Comparator.comparingLong;
  * {@code a} and {@code aCopy = a.copy()}, both instances will share
  * the same {@code long[] ids} array until one is mutated.
  */
-public class CopyOnWriteIds {
+@ConstructableIgnored
+public class CopyOnWriteIds implements ByteBufferSelfSerializable {
 	private static final int NUM_OFFSET = 0;
 	private static final int REALM_OFFSET = 1;
 	private static final int SHARD_OFFSET = 2;
@@ -301,5 +310,34 @@ public class CopyOnWriteIds {
 				.setRealmNum(nativeId[REALM_OFFSET])
 				.setTokenNum(nativeId[NUM_OFFSET])
 				.build();
+	}
+
+	/* --- ByteBufferSelfSerializable --- */
+
+	@Override
+	public void serialize(ByteBuffer buffer) throws IOException {
+		buffer.putInt(ids.length);
+		for (long id : ids) {
+			buffer.putLong(id);
+		}
+	}
+
+	@Override
+	public void deserialize(ByteBuffer buffer, int version) throws IOException {
+		long[] ids = new long[buffer.getInt()];
+		for (int i = 0; i < ids.length; i++) {
+			ids[i] = buffer.getLong();
+		}
+		this.ids = ids;
+	}
+
+	@Override
+	public long getClassId() {
+		return 59824572;
+	}
+
+	@Override
+	public int getVersion() {
+		return 0;
 	}
 }

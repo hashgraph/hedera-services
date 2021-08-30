@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -48,12 +48,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class QueryFeeCheck {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public QueryFeeCheck(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
@@ -122,9 +122,10 @@ public class QueryFeeCheck {
 		if (amount < 0) {
 			return balanceCheck(accounts.get().get(key), Math.abs(amount));
 		} else {
-			if (!accounts.get().containsKey(key)) {
-				return ACCOUNT_ID_DOES_NOT_EXIST;
-			}
+			// TODO: when VirtualMap.containsKey has been implemented, add back in the check
+//			if (!accounts.get().containsKey(key)) {
+//				return ACCOUNT_ID_DOES_NOT_EXIST;
+//			}
 		}
 
 		return OK;

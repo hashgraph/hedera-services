@@ -29,7 +29,7 @@ import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +52,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final UpdateCustomizerFactory customizerFactory;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -61,7 +61,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			OptionValidator validator,
 			TransactionContext txnCtx,
 			UpdateCustomizerFactory customizerFactory,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> contracts
 	) {
 		this.ledger = ledger;
 		this.validator = validator;

@@ -85,6 +85,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -125,7 +126,7 @@ class SmartContractRequestHandlerMiscTest {
   private static final long secondContractSequenceNumber = 668L;
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+  VirtualMap<MerkleEntityId, MerkleAccount> fcMap = null;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
   LedgerAccountsSource ledgerSource;
@@ -186,7 +187,7 @@ class SmartContractRequestHandlerMiscTest {
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
     //Init FCMap
-    fcMap = new FCMap<>();
+    fcMap = new VirtualMap<>();
     storageMap = new FCMap<>();
     // Create accounts
     createAccount(payerAccountId, 1_000_000_000L);
@@ -1066,8 +1067,8 @@ class SmartContractRequestHandlerMiscTest {
 
   private long getTotalBalance() {
     long total = 0L;
-    for (MerkleAccount val : fcMap.values()) {
-      total += val.getBalance();
+    for (var iter = fcMap.entries(); iter.hasNext(); ) {
+      total += iter.next().getValue().getBalance();
     }
     return total;
   }

@@ -25,7 +25,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
+
+import java.util.Map;
 
 public class BasedLedgerValidator implements LedgerValidator {
 	private final long expectedFloat;
@@ -45,8 +47,10 @@ public class BasedLedgerValidator implements LedgerValidator {
 	}
 
 	@Override
-	public void assertIdsAreValid(FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		for (MerkleEntityId id : accounts.keySet()) {
+	public void assertIdsAreValid(VirtualMap<MerkleEntityId, MerkleAccount> accounts) {
+		for (var iter = accounts.entries(); iter.hasNext(); ) {
+			Map.Entry<MerkleEntityId, MerkleAccount> entry = iter.next();
+			MerkleEntityId id = entry.getKey();
 			if (id.getRealm() != hederaNums.realm()) {
 				throw new IllegalStateException(String.format("Invalid realm in account %s", id.toAbbrevString()));
 			}
@@ -60,7 +64,12 @@ public class BasedLedgerValidator implements LedgerValidator {
 	}
 
 	@Override
-	public boolean hasExpectedTotalBalance(FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		return expectedFloat == accounts.values().stream().mapToLong(MerkleAccount::getBalance).sum();
+	public boolean hasExpectedTotalBalance(VirtualMap<MerkleEntityId, MerkleAccount> accounts) {
+		long sum = 0;
+		for (var iter = accounts.entries(); iter.hasNext(); ) {
+			Map.Entry<MerkleEntityId, MerkleAccount> entry = iter.next();
+			sum += entry.getValue().getBalance();
+		}
+		return expectedFloat == sum;
 	}
 }

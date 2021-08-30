@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +50,7 @@ class TokenAssociateResourceUsageTest {
 
 	AccountID target = IdUtils.asAccount("1.2.3");
 	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private TransactionBody nonTokenAssociateTxn;
 	private TransactionBody tokenAssociateTxn;
@@ -74,7 +74,7 @@ class TokenAssociateResourceUsageTest {
 
 		account = mock(MerkleAccount.class);
 		given(account.getExpiry()).willReturn(expiry);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(target))).willReturn(account);
 		view = mock(StateView.class);
 		given(view.accounts()).willReturn(accounts);

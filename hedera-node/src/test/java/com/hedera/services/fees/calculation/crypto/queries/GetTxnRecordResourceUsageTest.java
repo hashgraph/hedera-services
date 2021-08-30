@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +78,7 @@ class GetTxnRecordResourceUsageTest {
 	RecordCache recordCache;
 	CryptoFeeBuilder usageEstimator;
 	TransactionRecord desiredRecord;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 	GetTxnRecordResourceUsage subject;
 	AnswerFunctions answerFunctions;
 
@@ -88,7 +88,7 @@ class GetTxnRecordResourceUsageTest {
 
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();
 		view = new StateView(

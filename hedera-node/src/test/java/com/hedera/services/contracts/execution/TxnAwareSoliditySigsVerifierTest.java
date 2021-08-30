@@ -30,7 +30,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	TransactionContext txnCtx;
 	SyncActivationCheck areActive;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	VirtualMap<MerkleEntityId, MerkleAccount> accounts;
 
 	TxnAwareSoliditySigsVerifier subject;
 
@@ -81,7 +81,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 
-		accounts = mock(FCMap.class);
+		accounts = mock(VirtualMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(sigReqAccount);
 		given(accounts.get(MerkleEntityId.fromAccountId(sigRequired))).willReturn(sigReqAccount);
 		given(accounts.get(MerkleEntityId.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);

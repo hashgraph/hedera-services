@@ -23,9 +23,10 @@ package com.hedera.services.ledger.accounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -34,9 +35,9 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	Set<AccountID> existingAccounts = new HashSet<>();
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
+	private final Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> delegate;
 
-	public BackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
+	public BackingAccounts(Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 		rebuildFromSources();
 	}
@@ -44,9 +45,11 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	@Override
 	public void rebuildFromSources() {
 		existingAccounts.clear();
-		delegate.get().keySet().stream()
-				.map(MerkleEntityId::toAccountId)
-				.forEach(existingAccounts::add);
+
+		for (var iter = delegate.get().entries(); iter.hasNext(); ) {
+			Map.Entry<MerkleEntityId, MerkleAccount> entry = iter.next();
+			existingAccounts.add(entry.getKey().toAccountId());
+		}
 	}
 
 	@Override

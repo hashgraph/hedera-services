@@ -48,6 +48,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -73,7 +74,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			HederaFs hfs,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
 	) {
@@ -88,7 +89,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			HederaFs hfs,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup
@@ -104,7 +105,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
 			HederaFs hfs,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
@@ -132,7 +133,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
 			HederaFs hfs,
 			NodeLocalProperties properties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<VirtualMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
