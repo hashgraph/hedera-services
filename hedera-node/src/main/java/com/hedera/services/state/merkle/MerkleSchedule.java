@@ -28,6 +28,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -57,7 +58,10 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_RELEASE_0180_VERSION = 1;
+	static final int RELEASE_0180_VERSION = 2;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
 
@@ -90,7 +94,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 	private List<byte[]> signatories = new ArrayList<>();
 
 	public MerkleSchedule() {
-		// Do nothing intentionally as empty default constructor.
+		/* RuntimeConstructable */
 	}
 
 	public static MerkleSchedule from(byte[] bodyBytes, long consensusExpiry) {
@@ -145,7 +149,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 	}
 
 	/* Object */
-
 	/**
 	 * Two {@code MerkleSchedule}s are identical as long as they agree on
 	 * the transaction being scheduled, the admin key used to manage it,
@@ -177,6 +180,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(MerkleSchedule.class)
+				.add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
 				.add("scheduledTxn", scheduledTxn)
 				.add("expiry", expiry)
 				.add("executed", executed)
@@ -208,6 +212,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 		while (numSignatories-- > 0) {
 			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
 		}
+		if (version >= RELEASE_0180_VERSION) {
+			number = in.readInt();
+		}
 
 		initFromBodyBytes();
 	}
@@ -223,6 +230,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);
 		}
+		out.writeInt(number);
 	}
 
 	@Override
@@ -232,7 +240,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -254,6 +262,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 		fc.scheduledTxn = scheduledTxn;
 		fc.ordinaryScheduledTxn = ordinaryScheduledTxn;
 		fc.resolutionTime = resolutionTime;
+		fc.number = number;
 
 		/* Signatories are mutable */
 		for (byte[] signatory : signatories) {
@@ -269,9 +278,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 	}
 
 	@Override
-	public void setKey(PermHashInteger permHashInteger) {
-		throw new UnsupportedOperationException();
+	public void setKey(PermHashInteger phi) {
+		number = phi.intValue();
 	}
+
 	public MerkleSchedule toContentAddressableView() {
 		var cav = new MerkleSchedule();
 
