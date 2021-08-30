@@ -58,5 +58,16 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 		public Function<MerkleTokenRelStatus, Object> getter() {
 			return MerkleTokenRelStatus::isKycGranted;
 		}
+	},
+	IS_AUTOMATIC_ASSOCIATION {
+		@Override
+		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+			return (a, f) -> a.setAutomaticAssociation((boolean)f);
+		}
+
+		@Override
+		public Function<MerkleTokenRelStatus, Object> getter() {
+			return MerkleTokenRelStatus::isAutomaticAssociation;
+		}
 	}
 }

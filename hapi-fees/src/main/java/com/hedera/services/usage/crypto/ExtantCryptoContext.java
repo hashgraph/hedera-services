@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ExtantCryptoContext {
@@ -33,6 +34,7 @@ public class ExtantCryptoContext {
 	private final long currentExpiry;
 	private final String currentMemo;
 	private final boolean currentlyHasProxy;
+	private final int currentMaxAutomaticAssociations;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -40,12 +42,14 @@ public class ExtantCryptoContext {
 		currentExpiry = builder.currentExpiry;
 		currentKey = builder.currentKey;
 		currentlyHasProxy = builder.currentlyHasProxy;
+		currentMaxAutomaticAssociations = builder.currentMaxAutomaticAssociations;
 	}
 
 	public long currentNonBaseRb() {
 		return (long) (currentlyHasProxy ? BASIC_ENTITY_ID_SIZE : 0)
 				+ currentMemo.getBytes(StandardCharsets.UTF_8).length
-				+ getAccountKeyStorageSize(currentKey);
+				+ getAccountKeyStorageSize(currentKey)
+				+ (currentMaxAutomaticAssociations == 0 ? 0 : INT_SIZE);
 	}
 
 	public Key currentKey() {
@@ -68,6 +72,10 @@ public class ExtantCryptoContext {
 		return currentlyHasProxy;
 	}
 
+	public int currentMaxAutomaticAssociations() {
+		return currentMaxAutomaticAssociations;
+	}
+
 	public static ExtantCryptoContext.Builder newBuilder() {
 		return new ExtantCryptoContext.Builder();
 	}
@@ -78,9 +86,10 @@ public class ExtantCryptoContext {
 		private static final int MEMO_MASK = 1 << 2;
 		private static final int KEY_MASK = 1 << 3;
 		private static final int TOKEN_RELS_MASK = 1 << 4;
+		private static final int MAX_AUTO_ASSOCIATIONS_MASK = 1 << 5;
 
 		private static final int ALL_FIELDS_MASK =
-				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK;
+				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK | MAX_AUTO_ASSOCIATIONS_MASK;
 
 		private int mask = 0;
 
@@ -89,6 +98,7 @@ public class ExtantCryptoContext {
 		private String currentMemo;
 		private boolean currentlyHasProxy;
 		private long currentExpiry;
+		private int currentMaxAutomaticAssociations;
 
 		private Builder() {
 		}
@@ -127,6 +137,12 @@ public class ExtantCryptoContext {
 		public ExtantCryptoContext.Builder setCurrentlyHasProxy(boolean currentlyHasProxy) {
 			this.currentlyHasProxy = currentlyHasProxy;
 			mask |= HAS_PROXY_MASK;
+			return this;
+		}
+
+		public ExtantCryptoContext.Builder setCurrentMaxAutomaticAssociations(int currentMaxAutomaticAssociations) {
+			this.currentMaxAutomaticAssociations = currentMaxAutomaticAssociations;
+			mask |= MAX_AUTO_ASSOCIATIONS_MASK;
 			return this;
 		}
 	}

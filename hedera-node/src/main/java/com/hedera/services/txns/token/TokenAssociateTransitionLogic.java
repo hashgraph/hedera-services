@@ -90,12 +90,12 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 		}
 
 		/* --- Do the business logic --- */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount());
+		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
 
 		/* --- Persist the updated models --- */
 		accountStore.persistAccount(account);
 		for (final var token : tokens) {
-			tokenStore.persistTokenRelationships(List.of(token.newRelationshipWith(account)));
+			tokenStore.persistTokenRelationships(List.of(token.newRelationshipWith(account, false)));
 		}
 	}
 

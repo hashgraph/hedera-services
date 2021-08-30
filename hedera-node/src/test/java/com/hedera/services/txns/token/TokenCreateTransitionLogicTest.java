@@ -102,6 +102,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -113,6 +114,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 class TokenCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -130,7 +132,7 @@ class TokenCreateTransitionLogicTest {
 	private Token newProvisionalToken;
 	private Token denom;
 	private final Id denomId = Id.fromGrpcToken(IdUtils.asToken("17.71.77"));
-	private final Id modelTreasuryId = IdUtils.asModelId("1.2.3");
+	private final Id modelTreasuryId = IdUtils.asModelId("1.2.4");
 	private Account modelTreasury;
 	private final Id autoRenewId = IdUtils.asModelId("12.13.12");
 	private CopyOnWriteIds treasuryAssociatedTokenIds;
@@ -147,15 +149,21 @@ class TokenCreateTransitionLogicTest {
 
 	private TokenCreateTransitionLogic subject;
 	private MockedStatic<Token> staticTokenHandle;
+	private final Id miscId = new Id(3, 2,1);
 	private final TokenID misc = IdUtils.asToken("3.2.1");
+	private final Id feeCollectorId = new Id(6, 6,6);
 	private final AccountID feeCollector = IdUtils.asAccount("6.6.6");
 	private final Account feeCollectorModel = mock(Account.class);
+	private final Id hbarFeeCollectorId = new Id(7, 7,7);
 	private final AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
 	private final Account hbarFeeCollectorModel = mock(Account.class);
+	private final Id fixedFeeCollectorId = new Id(8,8,8);
 	private final AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
 	private final Account fixedFeeCollectorModel = mock(Account.class);
+	private final Id fractionalFeeCollectorId = new Id(9,9,9);
 	private final AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
 	private final Account fractionalFeeCollectorModel = mock(Account.class);
+	private final Id nonAutoEnabledFeeCollectorId = new Id(1,2,777);
 	private final AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
 	private final Account nonAutoEnabledFeeCollectorModel = mock(Account.class);
 	private final CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
@@ -221,7 +229,7 @@ class TokenCreateTransitionLogicTest {
 		mockModelTreasury();
 
 		doThrow(new InvalidTransactionException(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)).when(modelTreasury).associateWith(
-				any(), anyInt());
+				any(), anyInt(), anyBoolean());
 		// when:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
@@ -254,7 +262,7 @@ class TokenCreateTransitionLogicTest {
 		given(treasuryAssociatedTokenIds.contains(any(Id.class))).willReturn(false);
 		doThrow(new InvalidTransactionException(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED))
 				.when(modelTreasury)
-				.associateWith(anyList(), anyInt());
+				.associateWith(anyList(), anyInt(), anyBoolean());
 
 		// when & then:
 		assertFailsWith(() -> subject.doStateTransition(), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
@@ -277,6 +285,8 @@ class TokenCreateTransitionLogicTest {
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(treasuryRelMock.getAccount()).willReturn(modelTreasury);
+		given(treasuryRelMock.getToken()).willReturn(newProvisionalToken);
 
 		subject.doStateTransition();
 
@@ -299,18 +309,30 @@ class TokenCreateTransitionLogicTest {
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(treasuryRelMock.getToken()).willReturn(newProvisionalToken);
+		given(treasuryRelMock.getAccount()).willReturn(modelTreasury);
 		final var hbarFeeCollectorRel = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(hbarFeeCollectorModel)).willReturn(hbarFeeCollectorRel);
+		given(hbarFeeCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(hbarFeeCollectorRel.getAccount()).willReturn(hbarFeeCollectorModel);
 		final var feeCollectorRel = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(feeCollectorModel)).willReturn(feeCollectorRel);
+		given(feeCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(feeCollectorRel.getAccount()).willReturn(feeCollectorModel);
 		final var fixedFeeCollectorRel = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(fixedFeeCollectorModel)).willReturn(fixedFeeCollectorRel);
+		given(fixedFeeCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(fixedFeeCollectorRel.getAccount()).willReturn(fixedFeeCollectorModel);
 		final var fractionalFeeCollectorRel = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(fractionalFeeCollectorModel)).willReturn(
 				fractionalFeeCollectorRel);
+		given(fractionalFeeCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(fractionalFeeCollectorRel.getAccount()).willReturn(fractionalFeeCollectorModel);
 		final var nonAutoEnabledCollectorRel = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(nonAutoEnabledFeeCollectorModel)).willReturn(
 				nonAutoEnabledCollectorRel);
+		given(nonAutoEnabledCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(nonAutoEnabledCollectorRel.getAccount()).willReturn(nonAutoEnabledFeeCollectorModel);
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(100);
 		given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
@@ -322,12 +344,12 @@ class TokenCreateTransitionLogicTest {
 		given(treasuryAssociatedTokenIds.contains(newProvisionalToken.getId())).willReturn(false);
 		given(newProvisionalToken.hasKycKey()).willReturn(true);
 		given(newProvisionalToken.hasFreezeKey()).willReturn(true);
-		
+
 		subject.doStateTransition();
 
 		assertNotNull(newProvisionalToken.getCustomFees());
 		verify(typedTokenStore).persistTokenRelationships(anyList());
-		verify(feeCollectorModel).associateWith(anyList(), anyInt());
+		verify(feeCollectorModel, times(2)).associateWith(anyList(), anyInt(), anyBoolean());
 	}
 
 	@Test
@@ -777,6 +799,7 @@ class TokenCreateTransitionLogicTest {
 										.setAmount(10)
 										.setDenominatingTokenId(Id.DEFAULT.asGrpcToken())
 										.build()))
+						.setFeeCollectorAccountId(feeCollector)
 						.build(),
 				CustomFee.newBuilder()
 						.setRoyaltyFee(RoyaltyFee.newBuilder()
@@ -787,6 +810,7 @@ class TokenCreateTransitionLogicTest {
 								.setFallbackFee(FixedFee.newBuilder()
 										.setAmount(10)
 										.build()))
+						.setFeeCollectorAccountId(hbarFeeCollector)
 						.build()
 				));
 		tokenCreateTxn = builder.build();
@@ -806,6 +830,12 @@ class TokenCreateTransitionLogicTest {
 
 		final var treasuryRelMock = mock(TokenRelationship.class);
 		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(treasuryRelMock);
+		given(treasuryRelMock.getAccount()).willReturn(modelTreasury);
+		given(treasuryRelMock.getToken()).willReturn(newProvisionalToken);
+		final var feeCollectorRel = mock(TokenRelationship.class);
+		given(newProvisionalToken.newEnabledRelationship(feeCollectorModel)).willReturn(feeCollectorRel);
+		given(feeCollectorRel.getToken()).willReturn(newProvisionalToken);
+		given(feeCollectorRel.getAccount()).willReturn(feeCollectorModel);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(10);
 
 		subject.doStateTransition();
@@ -822,8 +852,9 @@ class TokenCreateTransitionLogicTest {
 		mockProvisionalToken();
 
 		final var mockRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury))
-				.willReturn(mockRel);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(mockRel);
+		given(mockRel.getAccount()).willReturn(modelTreasury);
+		given(mockRel.getToken()).willReturn(newProvisionalToken);
 		given(modelTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
 		// when:
 		subject.doStateTransition();
@@ -842,8 +873,9 @@ class TokenCreateTransitionLogicTest {
 		mockModelTreasury();
 		mockProvisionalToken();
 		final var mockRel = mock(TokenRelationship.class);
-		given(newProvisionalToken.newEnabledRelationship(modelTreasury))
-				.willReturn(mockRel);
+		given(newProvisionalToken.newEnabledRelationship(modelTreasury)).willReturn(mockRel);
+		given(mockRel.getAccount()).willReturn(modelTreasury);
+		given(mockRel.getToken()).willReturn(newProvisionalToken);
 
 		// when:
 		subject.doStateTransition();
@@ -1066,7 +1098,7 @@ class TokenCreateTransitionLogicTest {
 		givenTxWithInvalidSupplies();
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
-	
+
 	@Test
 	void objectContractWorks() {
 		final var newId = ids.newTokenId(treasury);
@@ -1113,7 +1145,7 @@ class TokenCreateTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(false, false, false, false);
 	}
-	
+
 	private void givenValidTxnCtx(
 			boolean withKyc,
 			boolean withFreeze,
@@ -1313,10 +1345,15 @@ class TokenCreateTransitionLogicTest {
 				nonAutoEnabledFeeCollectorModel);
 
 		given(feeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(feeCollectorModel.getId()).willReturn(feeCollectorId);
 		given(fixedFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(fixedFeeCollectorModel.getId()).willReturn(fixedFeeCollectorId);
 		given(fractionalFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(fractionalFeeCollectorModel.getId()).willReturn(fractionalFeeCollectorId);
 		given(hbarFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(hbarFeeCollectorModel.getId()).willReturn(hbarFeeCollectorId);
 		given(nonAutoEnabledFeeCollectorModel.getAssociatedTokens()).willReturn(treasuryAssociatedTokenIds);
+		given(nonAutoEnabledFeeCollectorModel.getId()).willReturn(nonAutoEnabledFeeCollectorId);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

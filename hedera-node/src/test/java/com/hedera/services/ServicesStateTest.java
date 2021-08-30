@@ -452,7 +452,7 @@ class ServicesStateTest {
 		final var nftKey = new MerkleUniqueTokenId(MISSING_ENTITY_ID, 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, false);
 		// and:
 		nfts.put(nftKey, nftVal);
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -500,7 +500,7 @@ class ServicesStateTest {
 		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
 		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:

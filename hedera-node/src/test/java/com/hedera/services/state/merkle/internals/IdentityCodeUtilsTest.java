@@ -25,14 +25,23 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.nanosFrom;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.packedTime;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.secondsFrom;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IdentityCodeUtilsTest {
+	final int maxAutoAssociations = 123;
+	final int alreadyUsedAutomaticAssociations = 12;
+	int metadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutomaticAssociations);
+
 	@Test
 	void numFromCodeWorks() {
 		assertEquals(MAX_NUM_ALLOWED, IdentityCodeUtils.numFromCode((int) MAX_NUM_ALLOWED));
@@ -69,5 +78,28 @@ class IdentityCodeUtilsTest {
 	@Test
 	void cantPackTooFarFuture() {
 		assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
+	}
+
+	@Test
+	void automaticAssociationsMetaWorks() {
+		assertEquals(maxAutoAssociations, getMaxAutomaticAssociationsFrom(metadata));
+		assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
+	}
+
+	@Test
+	void automaticAssociationSettersWork() {
+		int newMax = maxAutoAssociations + alreadyUsedAutomaticAssociations;
+
+		metadata = setMaxAutomaticAssociationsTo(metadata, newMax);
+
+		assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
+		assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
+
+		int newAlreadyAutoAssociations = alreadyUsedAutomaticAssociations + alreadyUsedAutomaticAssociations;
+
+		metadata = setAlreadyUsedAutomaticAssociationsTo(metadata, newAlreadyAutoAssociations);
+
+		assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
+		assertEquals(newAlreadyAutoAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
 	}
 }
