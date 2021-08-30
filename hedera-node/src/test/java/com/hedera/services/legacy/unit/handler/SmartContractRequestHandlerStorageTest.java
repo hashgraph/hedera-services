@@ -86,6 +86,7 @@ import org.ethereum.solidity.Abi.Event;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -111,6 +112,7 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
+@Disabled
 class SmartContractRequestHandlerStorageTest {
   private static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
   private static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";

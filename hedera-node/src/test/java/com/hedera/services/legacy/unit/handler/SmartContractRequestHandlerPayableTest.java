@@ -79,6 +79,7 @@ import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -100,6 +101,7 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
  */
 
+@Disabled
 class SmartContractRequestHandlerPayableTest {
 
   private static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
