@@ -104,7 +104,8 @@ class ServicesAppTest {
 	void setUp() {
 		final var bootstrapProps = new BootstrapProperties();
 		final var props = new ChainedSources(overridingProps, bootstrapProps);
-		final var logDir = "hedera.recordStream.logDir";
+		final var logDirKey = "hedera.recordStream.logDir";
+		final var logDirVal = "data/recordStreams";
 
 		given(address.getStake()).willReturn(123_456_789L);
 		given(addressBook.getAddress(selfId)).willReturn(address);
@@ -114,9 +115,6 @@ class ServicesAppTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(platform.getCryptography()).willReturn(cryptography);
 		given(platform.getSelfId()).willReturn(selfNodeId);
-		given(overridingProps.containsProperty(any())).willReturn(false);
-		given(overridingProps.containsProperty(logDir)).willReturn(true);
-		given(overridingProps.getProperty(logDir)).willReturn("data/recordStreams");
 
 		subject = DaggerServicesApp.builder()
 				.bootstrapProps(props)
@@ -124,6 +122,12 @@ class ServicesAppTest {
 				.platform(platform)
 				.selfId(selfId)
 				.build();
+
+		if (!subject.nodeLocalProperties().recordLogDir().matches(logDirVal)) {
+			given(overridingProps.containsProperty(any())).willReturn(false);
+			given(overridingProps.containsProperty(logDirKey)).willReturn(true);
+			given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
+		}
 	}
 
 	@Test
