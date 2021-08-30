@@ -227,7 +227,7 @@ public class MerkleScheduleTest {
 				.willReturn(false);
 		final var read = new MerkleSchedule();
 
-		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
+		read.deserialize(fin, MerkleToken.CURRENT_VERSION);
 
 		assertEquals(subject, read);
 		assertTrue(read.signatories().contains(fpk));

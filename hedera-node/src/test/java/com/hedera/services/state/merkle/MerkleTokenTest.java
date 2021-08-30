@@ -24,11 +24,13 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -124,12 +126,16 @@ class MerkleTokenTest {
 			.map(fee -> FcCustomFee.fromGrpc(fee, null))
 			.collect(toList());
 
+	private final int number = 123_456;
+
 	private MerkleToken subject;
 
 	@BeforeEach
 	void setup() {
 		subject = new MerkleToken(
-				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+				expiry, totalSupply, decimals, symbol, name,
+				freezeDefault, accountsKycGrantedByDefault, treasury,
+				number);
 		setOptionalElements(subject);
 		subject.setExpiry(expiry);
 		subject.setTotalSupply(totalSupply);
@@ -195,6 +201,7 @@ class MerkleTokenTest {
 		inOrder.verify(out).writeSerializableList(feeSchedule, true, true);
 		inOrder.verify(serdes).writeNullable(
 				argThat(feeScheduleKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out).writeInt(number);
 	}
 
 	@Test
@@ -244,6 +251,13 @@ class MerkleTokenTest {
 
 		read.deserialize(fin, MerkleToken.RELEASE_0120_VERSION);
 
+		// then:
+		assertNotEquals(subject, read);
+
+		// and when:
+		read.setKey(new PermHashInteger(number));
+
+		// expect:
 		assertEquals(subject, read);
 	}
 
@@ -281,8 +295,53 @@ class MerkleTokenTest {
 				.willReturn(feeSchedule);
 		final var read = new MerkleToken();
 
-		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
+		read.deserialize(fin, MerkleToken.RELEASE_0160_VERSION);
 
+		// and when:
+		read.setKey(new PermHashInteger(number));
+
+		// expect:
+		assertEquals(subject, read);
+	}
+
+	@Test
+	void v0180DeserializeWorks() throws IOException {
+		final var fin = mock(SerializableDataInputStream.class);
+		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
+		given(serdes.deserializeKey(fin)).willReturn(adminKey);
+		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
+				.willReturn(adminKey)
+				.willReturn(freezeKey)
+				.willReturn(kycKey)
+				.willReturn(supplyKey)
+				.willReturn(wipeKey)
+				.willReturn(feeScheduleKey);
+		given(fin.readNormalisedString(anyInt()))
+				.willReturn(symbol)
+				.willReturn(name)
+				.willReturn(memo);
+		given(fin.readLong())
+				.willReturn(subject.expiry())
+				.willReturn(subject.autoRenewPeriod())
+				.willReturn(subject.totalSupply())
+				.willReturn(subject.maxSupply())
+				.willReturn(subject.getLastUsedSerialNumber());
+		given(fin.readInt())
+				.willReturn(subject.decimals())
+				.willReturn(subject.tokenType().ordinal())
+				.willReturn(subject.supplyType().ordinal())
+				.willReturn(subject.getKey().intValue());
+		given(fin.readBoolean())
+				.willReturn(isDeleted)
+				.willReturn(subject.accountsAreFrozenByDefault());
+		given(fin.readSerializable()).willReturn(subject.treasury());
+		given(fin.<FcCustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
+				.willReturn(feeSchedule);
+		final var read = new MerkleToken();
+
+		read.deserialize(fin, MerkleToken.CURRENT_VERSION);
+
+		// expect:
 		assertEquals(subject, read);
 	}
 
@@ -545,6 +604,7 @@ class MerkleTokenTest {
 		identicalSubject.setSupplyType(TokenSupplyType.INFINITE);
 		identicalSubject.setMaxSupply(subject.maxSupply());
 		identicalSubject.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
+		identicalSubject.setKey(PermHashInteger.fromInt(number));
 
 		final var other = new MerkleToken(
 				otherExpiry, otherTotalSupply, otherDecimals, otherSymbol, otherName,
@@ -568,7 +628,8 @@ class MerkleTokenTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "MerkleToken{tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, " +
+		final var desired = "MerkleToken{number=123456 <-> 0.0.123456, " +
+				"tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, " +
 				"expiry=1234567," +
 				" " +
 				"symbol=NotAnHbar, name=NotAnHbarName, memo=NotAMemo, treasury=1.2.3, maxSupply=0, " +
@@ -592,7 +653,7 @@ class MerkleTokenTest {
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleToken.MERKLE_VERSION, subject.getVersion());
+		assertEquals(MerkleToken.CURRENT_VERSION, subject.getVersion());
 		assertEquals(MerkleToken.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -634,7 +695,7 @@ class MerkleTokenTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new MerkleToken();
-		newSubject.deserialize(din, MerkleToken.MERKLE_VERSION);
+		newSubject.deserialize(din, MerkleToken.CURRENT_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -647,5 +708,17 @@ class MerkleTokenTest {
 
 		token.setFeeScheduleFrom(grpcFeeSchedule, null);
 		assertEquals(grpcFeeSchedule, token.grpcFeeSchedule());
+	}
+
+	@Test
+	void canSetKey() {
+		// setup:
+		final var bigNum = (long)Integer.MAX_VALUE + 123;
+
+		// given:
+		subject.setKey(PermHashInteger.fromLong(bigNum));
+
+		// then:
+		assertEquals(BitPackUtils.codeFromNum(bigNum), subject.getKey().intValue());
 	}
 }

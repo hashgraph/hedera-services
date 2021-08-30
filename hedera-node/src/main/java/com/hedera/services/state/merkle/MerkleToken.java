@@ -28,6 +28,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -51,8 +52,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
+	static final int RELEASE_0180_VERSION = 4;
 
-	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -113,6 +115,28 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 		this.treasury = treasury;
 	}
 
+	public MerkleToken(
+			long expiry,
+			long totalSupply,
+			int decimals,
+			String symbol,
+			String name,
+			boolean accountsFrozenByDefault,
+			boolean accountKycGrantedByDefault,
+			EntityId treasury,
+			int number
+	) {
+		this.expiry = expiry;
+		this.totalSupply = totalSupply;
+		this.decimals = decimals;
+		this.symbol = symbol;
+		this.name = name;
+		this.accountsFrozenByDefault = accountsFrozenByDefault;
+		this.accountsKycGrantedByDefault = accountKycGrantedByDefault;
+		this.treasury = treasury;
+		this.number = number;
+	}
+
 	/* Object */
 	@Override
 	public boolean equals(Object o) {
@@ -135,6 +159,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 				this.lastUsedSerialNumber == that.lastUsedSerialNumber &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
+				this.number == that.number &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
 				Objects.equals(this.memo, that.memo) &&
@@ -160,6 +185,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 				totalSupply,
 				decimals,
 				lastUsedSerialNumber,
+				number,
 				adminKey,
 				freezeKey,
 				kycKey,
@@ -182,6 +208,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
 				.omitNullValues()
+				.add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
 				.add("tokenType", tokenType)
 				.add("supplyType", supplyType)
 				.add("deleted", deleted)
@@ -220,7 +247,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -250,6 +277,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 			lastUsedSerialNumber = in.readLong();
 			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
 			feeScheduleKey = serdes.readNullable(in, serdes::deserializeKey);
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			number = in.readInt();
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
@@ -284,6 +314,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
 		serdes.writeNullable(feeScheduleKey, out, serdes::serializeKey);
+		out.writeInt(number);
 	}
 
 	/* --- FastCopyable --- */
@@ -298,7 +329,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 				name,
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
-				treasury);
+				treasury,
+				number);
 		fc.setMemo(memo);
 		fc.setDeleted(deleted);
 		fc.setFeeSchedule(feeSchedule);
@@ -614,17 +646,13 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 		return feeScheduleKey != UNUSED_KEY;
 	}
 
-	public JKey getFeeScheduleKey() {
-		return feeScheduleKey;
-	}
-
 	@Override
 	public PermHashInteger getKey() {
 		return new PermHashInteger(number);
 	}
 
 	@Override
-	public void setKey(PermHashInteger permHashInteger) {
-		throw new UnsupportedOperationException();
+	public void setKey(PermHashInteger phi) {
+		this.number = phi.intValue();
 	}
 }

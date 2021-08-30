@@ -30,7 +30,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
-import static com.hedera.services.utils.EntityIdUtils.asRelationshipString;
+import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
 	static final int RELEASE_090_VERSION = 1;
@@ -170,7 +170,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 				.add("balance", balance)
 				.add("isFrozen", frozen)
 				.add("hasKycGranted", kycGranted)
-				.add("key", numbers + " <-> " + asRelationshipString(numbers))
+				.add("key", numbers + " <-> " + asRelationshipLiteral(numbers))
 				.toString();
 	}
 

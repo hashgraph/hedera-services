@@ -222,9 +222,21 @@ class MerkleEntityIdUtilsTest {
 		final var numbers = BitPackUtils.packedNums(123, 456);
 
 		// when:
-		final var actual = EntityIdUtils.asRelationshipString(numbers);
+		final var actual = EntityIdUtils.asRelationshipLiteral(numbers);
 
 		// then:
 		assertEquals("(0.0.123, 0.0.456)", actual);
+	}
+
+	@Test
+	void codeToLiteralWorks() {
+		// setup:
+		final var bigNum = (long)Integer.MAX_VALUE + 123;
+
+		// given:
+		final var lit = EntityIdUtils.asIdLiteral(BitPackUtils.codeFromNum(bigNum));
+
+		// expect:
+		assertEquals("0.0." + bigNum, lit);
 	}
 }

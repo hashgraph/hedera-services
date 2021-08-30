@@ -182,7 +182,7 @@ class MerkleUniqueTokenTest {
 
 		// when:
 		final var newSubject = new MerkleUniqueToken();
-		newSubject.deserialize(din, MerkleToken.MERKLE_VERSION);
+		newSubject.deserialize(din, MerkleToken.CURRENT_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);

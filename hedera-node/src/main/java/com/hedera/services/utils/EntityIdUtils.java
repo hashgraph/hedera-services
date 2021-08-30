@@ -22,7 +22,6 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,6 +37,9 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 import static java.lang.System.arraycopy;
 
 public class EntityIdUtils {
@@ -202,10 +204,14 @@ public class EntityIdUtils {
 				id.getFileNum());
 	}
 
-	public static String asRelationshipString(long packedNumbers) {
-		final var leftNum = BitPackUtils.unsignedHighOrder32From(packedNumbers);
-		final var rightNum = BitPackUtils.unsignedLowOrder32From(packedNumbers);
+	public static String asRelationshipLiteral(long packedNumbers) {
+		final var leftNum = unsignedHighOrder32From(packedNumbers);
+		final var rightNum = unsignedLowOrder32From(packedNumbers);
 		return "(" + STATIC_PROPERTIES.scopedIdLiteralWith(leftNum)
 				+ ", " + STATIC_PROPERTIES.scopedIdLiteralWith(rightNum) + ")";
+	}
+
+	public static String asIdLiteral(int num) {
+		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(num));
 	}
 }
