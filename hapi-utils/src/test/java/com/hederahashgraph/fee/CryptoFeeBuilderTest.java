@@ -66,6 +66,9 @@ class CryptoFeeBuilderTest {
 		final var serviceFee = feeBuilder()
 				.setRbh(6L);
 
+		assertThrows(InvalidTxBodyException.class,
+				() -> subject.getCryptoCreateTxFeeMatrices(null, sigValueObj));
+
 		final var cryptoTransfer = CryptoTransferTransactionBody.getDefaultInstance();
 		assertThrows(InvalidTxBodyException.class,
 				() -> subject.getCryptoCreateTxFeeMatrices(
@@ -107,6 +110,9 @@ class CryptoFeeBuilderTest {
 		final var serviceFee = feeBuilder()
 				.setRbh(6L)
 				.build();
+
+		assertThrows(InvalidTxBodyException.class,
+				() -> subject.getCryptoDeleteTxFeeMatrices(null, sigValueObj));
 
 		final var cryptoTransfer = CryptoTransferTransactionBody.getDefaultInstance();
 		assertThrows(InvalidTxBodyException.class,

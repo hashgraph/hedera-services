@@ -221,7 +221,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 	}
 
 	private int getAccountTransactionRecordSize(final TransactionRecord transRecord) {
-		final var memoBytesSize = transRecord.getMemo() != null ? transRecord.getMemoBytes().size() : 0;
+		final var memoBytesSize = transRecord.getMemoBytes().size();
 
 		final var accountAmountSize = transRecord.hasTransferList()
 				? transRecord.getTransferList().getAccountAmountsCount() * BASIC_ACCOUNT_AMT_SIZE : 0;
