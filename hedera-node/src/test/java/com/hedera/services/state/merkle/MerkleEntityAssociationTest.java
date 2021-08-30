@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,8 +79,8 @@ class MerkleEntityAssociationTest {
 	@Test
 	void factoryWorks() {
 		assertEquals(
-				subject,
-				MerkleEntityAssociation.fromAccountTokenRel(asAccount("13.25.7"), asToken("31.52.0")));
+				PermHashLong.fromLongs(7, 8),
+				MerkleEntityAssociation.fromAccountTokenRel(asAccount("0.0.7"), asToken("0.0.8")));
 	}
 
 	@Test

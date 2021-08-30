@@ -36,7 +36,7 @@ class PermHashLongTest {
 	@Test
 	void usesExpectedBitPacking() {
 		// given:
-		final var expected = BitPackUtils.packedNums(1, 2);
+		final var expected = new PermHashLong(BitPackUtils.packedNums(1, 2));
 
 		// expect:
 		assertEquals(expected, PermHashLong.fromLongs(1, 2));
@@ -60,8 +60,8 @@ class PermHashLongTest {
 		// setup:
 		final var expected = PermHashLong.fromLongs(1, 2);
 		final var modelRel = new TokenRelationship(
-				new Token(new Id(0 , 0, 1)),
-				new Account(new Id(0 , 0, 2)));
+				new Token(new Id(0 , 0, 2)),
+				new Account(new Id(0 , 0, 1)));
 
 		// given:
 		final var actual = PermHashLong.fromModelRel(modelRel);
@@ -97,5 +97,14 @@ class PermHashLongTest {
 		// then:
 		assertEquals(1, pairRepr.getLeft().getAccountNum());
 		assertEquals(2, pairRepr.getRight().getTokenNum());
+	}
+
+	@Test
+	void toStringWorks() {
+		// given:
+		final var subject = PermHashLong.fromLongs(1, 2);
+
+		// expect:
+		assertEquals("PermHashLong(1, 2)", subject.toString());
 	}
 }

@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -95,7 +94,7 @@ public class AccountStore {
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
 		Account account;
 
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = PermHashInteger.fromLong(id.getNum());
 		final var merkleAccount = accounts.get().get(key);
 
 		validateUsable(merkleAccount, code);

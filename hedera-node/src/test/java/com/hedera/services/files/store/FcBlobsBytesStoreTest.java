@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -52,7 +51,6 @@ class FcBlobsBytesStoreTest {
 	private static final String pathA = "pathA";
 	private static final String pathB = "pathB";
 	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(pathA);
-	private static final MerkleBlobMeta bMeta = new MerkleBlobMeta(pathB);
 
 	private MerkleOptionalBlob blobA, blobB;
 	private Function<byte[], MerkleOptionalBlob> blobFactory;
@@ -112,36 +110,35 @@ class FcBlobsBytesStoreTest {
 	void delegatesPutUsingGetAndFactoryIfNewBlob() {
 		final var keyCaptor = ArgumentCaptor.forClass(String.class);
 		final var valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
-		given(pathedBlobs.containsKey(aMeta)).willReturn(false);
+		given(pathedBlobs.containsKey(pathA)).willReturn(false);
 
 		final var oldBytes = subject.put(pathA, aData);
 
-		verify(pathedBlobs).containsKey(aMeta);
+		verify(pathedBlobs).containsKey(pathA);
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
 
-		assertEquals(aMeta, keyCaptor.getValue());
+		assertEquals(pathA, keyCaptor.getValue());
 		assertSame(blobA, valueCaptor.getValue());
 		assertNull(oldBytes);
 	}
 
 	@Test
 	void propagatesNullFromGet() {
-		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta) sk).getPath().equals(pathA)))).willReturn(null);
+		given(pathedBlobs.get(pathA)).willReturn(null);
 
 		assertNull(subject.get(pathA));
 	}
 
 	@Test
 	void delegatesGet() {
-		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta) sk).getPath().equals(pathA)))).willReturn(blobA);
+		given(pathedBlobs.get(pathA)).willReturn(blobA);
 
 		assertArrayEquals(aData, subject.get(pathA));
 	}
 
 	@Test
 	void delegatesContainsKey() {
-		given(pathedBlobs.containsKey(argThat(sk -> ((MerkleBlobMeta) sk).getPath().equals(pathA))))
-				.willReturn(true);
+		given(pathedBlobs.containsKey(pathA)).willReturn(true);
 
 		assertTrue(subject.containsKey(pathA));
 	}

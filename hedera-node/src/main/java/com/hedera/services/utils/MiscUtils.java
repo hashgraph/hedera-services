@@ -697,7 +697,7 @@ public class MiscUtils {
 			BiConsumer<? super K, ? super V> action
 	) {
 		map.forEachNode((final MerkleNode node) -> {
-			if (node != null && node.isLeaf()) {
+			if (node instanceof Keyed) {
 				final V leaf = node.cast();
 				action.accept(leaf.getKey(), leaf);
 			}

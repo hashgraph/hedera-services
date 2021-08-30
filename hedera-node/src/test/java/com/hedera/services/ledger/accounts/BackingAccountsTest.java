@@ -22,14 +22,14 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.utils.KeyedMerkleLong;
+import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,10 +51,10 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 class BackingAccountsTest {
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("3.2.1");
-	private final AccountID c = asAccount("4.3.0");
-	private final AccountID d = asAccount("1.3.4");
+	private final AccountID a = asAccount("0.0.1");
+	private final AccountID b = asAccount("0.0.2");
+	private final AccountID c = asAccount("0.0.3");
+	private final AccountID d = asAccount("0.0.4");
 	private final PermHashInteger aKey = PermHashInteger.fromAccountId(a);
 	private final PermHashInteger bKey = PermHashInteger.fromAccountId(b);
 	private final PermHashInteger cKey = PermHashInteger.fromAccountId(c);
@@ -205,26 +205,29 @@ class BackingAccountsTest {
 	void twoPutsChangesG4M() throws ConstructableRegistryException {
 		// setup:
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+				new ClassConstructorPair(KeyedMerkleLong.class, KeyedMerkleLong::new));
+		final var oneGrandKey = new FcLong(1000L);
+		final var twoGrandKey = new FcLong(2000L);
+		final var evilKey = new FcLong(666L);
+		final var nonEvilKey = new FcLong(667L);
 
 		/* Case 1: g4m a leaf; then put ONE new leaf; then change the mutable leaf and re-get to verify new value */
-		final var firstMm = new MerkleMap<PermHashInteger, KeyedMerkleLong>();
-		final var oneGrandEntry = new KeyedMerkleLong(1000L);
-		firstMm.put(oneGrandEntry.getKey(), oneGrandEntry);
-		final var mutableOne = firstMm.getForModify(oneGrandEntry.getKey());
+		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> firstMm = new MerkleMap<>();
+		final var oneGrandEntry = new KeyedMerkleLong<>(oneGrandKey, 1000L);
+		firstMm.put(oneGrandKey, oneGrandEntry);
+		final var mutableOne = firstMm.getForModify(oneGrandKey);
 		/* Putting just one new leaf */
-		final var evilEntry = new KeyedMerkleLong(666L);
-		firstMm.put(evilEntry.getKey(), evilEntry);
-		/* And then changing the mutable value */
-		mutableOne.increment();
-		assertEquals(2L, firstMm.get(oneGrandEntry.getKey()).getValue());
+		final var evilEntry = new KeyedMerkleLong<>(evilKey, 666L);
+		firstMm.put(evilKey, evilEntry);
+		/* Then the mutable value is retained */
+		assertSame(mutableOne, firstMm.get(oneGrandKey));
 
 		/* Case 2: g4m a leaf; then put TWO new leaves; then change the mutable leaf and re-get to verify new value */
-		final var secondFcm = new MerkleMap<PermHashInteger, KeyedMerkleLong>();
-		final var twoGrandEntry = new KeyedMerkleLong(2000L);
-		final var evilEntry2 = new KeyedMerkleLong(666L);
-		final var nonEvilEntry2 = new KeyedMerkleLong(667L);
-		secondFcm.put(twoGrandEntry.getKey(), twoGrandEntry);
+		final var secondFcm = new MerkleMap<FcLong, KeyedMerkleLong<FcLong>>();
+		final var twoGrandEntry = new KeyedMerkleLong<>(twoGrandKey, 2000L);
+		final var evilEntry2 = new KeyedMerkleLong<>(evilKey, 666L);
+		final var nonEvilEntry2 = new KeyedMerkleLong<>(nonEvilKey, 667L);
+		secondFcm.put(twoGrandKey, twoGrandEntry);
 		final var mutableTwo = secondFcm.getForModify(twoGrandEntry.getKey());
 		/* Putting two new leaves now */
 		secondFcm.put(evilEntry2.getKey(), evilEntry2);

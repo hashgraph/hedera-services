@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -55,6 +55,7 @@ class MerkleAccountTest {
 	private boolean smartContract = true;
 	private boolean receiverSigRequired = true;
 	private EntityId proxy = new EntityId(1L, 2L, 3L);
+	private final int number = 123;
 
 	private JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private long otherExpiry = 7_234_567L;
@@ -93,7 +94,8 @@ class MerkleAccountTest {
 				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy);
+				proxy,
+				number);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
@@ -150,6 +152,7 @@ class MerkleAccountTest {
 	@Test
 	void gettersDelegate() {
 		// expect:
+		assertEquals(new PermHashInteger(number), subject.getKey());
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
@@ -191,6 +194,7 @@ class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setAccountKey(otherKey);
+		subject.setKey(new PermHashInteger(number));
 
 		// then:
 		verify(delegate).setExpiry(otherExpiry);
@@ -200,8 +204,9 @@ class MerkleAccountTest {
 		verify(delegate).setReceiverSigRequired(otherReceiverSigRequired);
 		verify(delegate).setMemo(otherMemo);
 		verify(delegate).setProxy(otherProxy);
-		verify(delegate).setKey(otherKey);
+		verify(delegate).setAccountKey(otherKey);
 		verify(delegate).setHbarBalance(otherBalance);
+		verify(delegate).setNumber(number);
 	}
 
 	@Test

@@ -162,24 +162,24 @@ class HederaTokenStoreTest {
 	private static final int decimals = 10;
 	private static final long treasuryBalance = 50_000L;
 	private static final long sponsorBalance = 1_000L;
-	private static final TokenID misc = IdUtils.asToken("3.2.1");
-	private static final TokenID nonfungible = IdUtils.asToken("4.3.2");
-	private static final TokenID anotherMisc = IdUtils.asToken("6.4.2");
+	private static final TokenID misc = IdUtils.asToken("0.0.1");
+	private static final TokenID nonfungible = IdUtils.asToken("0.0.2");
+	private static final TokenID anotherMisc = IdUtils.asToken("0.0.2");
 	private static final boolean freezeDefault = true;
 	private static final boolean accountsKycGrantedByDefault = false;
 	private static final long autoRenewPeriod = 500_000L;
 	private static final long newAutoRenewPeriod = 2_000_000L;
-	private static final AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
-	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("1.2.6");
+	private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.5");
+	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
 	private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.0");
-	private static final AccountID treasury = IdUtils.asAccount("1.2.3");
-	private static final AccountID newTreasury = IdUtils.asAccount("3.2.1");
-	private static final AccountID sponsor = IdUtils.asAccount("1.2.666");
-	private static final AccountID counterparty = IdUtils.asAccount("1.2.777");
+	private static final AccountID treasury = IdUtils.asAccount("0.0.3");
+	private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
+	private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
+	private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
 	private static final AccountID feeCollector = treasury;
-	private static final AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
-	private static final TokenID created = IdUtils.asToken("1.2.666666");
-	private static final TokenID pending = IdUtils.asToken("1.2.555555");
+	private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
+	private static final TokenID created = IdUtils.asToken("0.0.666666");
+	private static final TokenID pending = IdUtils.asToken("0.0.555555");
 	private static final int MAX_TOKENS_PER_ACCOUNT = 100;
 	private static final int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
 	private static final int MAX_TOKEN_NAME_UTF8_BYTES = 100;
@@ -189,8 +189,8 @@ class HederaTokenStoreTest {
 	private static final Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
 	private static final Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
 	private static final Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
-	private static final NftId aNft = new NftId(4, 3, 2, 1_234);
-	private static final NftId tNft = new NftId(4, 3, 2, 1_2345);
+	private static final NftId aNft = new NftId(0, 0, 2, 1234);
+	private static final NftId tNft = new NftId(0, 0, 2, 12345);
 	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
 	private static final CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
 	private static final FractionalFee.Builder fractionalFee = fractional(15L, 100L)
@@ -323,9 +323,17 @@ class HederaTokenStoreTest {
 	void rebuildsAsExpected() {
 		final var captor = forClass(Consumer.class);
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
+
+		// setup:
+		token.setKey(PermHashInteger.fromLong(1L));
+		// and:
 		final var deletedToken = new MerkleToken();
+		deletedToken.setKey(PermHashInteger.fromLong(2L));
 		deletedToken.setDeleted(true);
 		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
+
+		given(token.cast()).willReturn(token);
+		given(token.getKey()).willReturn(PermHashInteger.fromLong(1L));
 
 		subject.rebuildViews();
 
@@ -656,7 +664,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(counterparty);
 		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
-		final var muti = PermHashLong.fromLongs(tNft.tokenId().getShardNum(), tNft.serialNo());
+		final var muti = PermHashLong.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
 		}});

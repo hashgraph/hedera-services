@@ -23,7 +23,6 @@ package com.hedera.services.store;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -162,9 +161,10 @@ public class TypedTokenStore {
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
 		final var tokenId = token.getId();
 		final var accountId = account.getId();
-		final var key = new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+//		final var key = new MerkleEntityAssociation(
+//				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
+//				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+		final var key = PermHashLong.fromLongs(accountId.getNum(), tokenId.getNum());
 		final var merkleTokenRel = tokenRels.get().get(key);
 
 		validateUsable(merkleTokenRel);
@@ -249,8 +249,7 @@ public class TypedTokenStore {
 	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
-		final var merkleToken = tokens.get().get(key);
+		final var merkleToken = tokens.get().get(PermHashInteger.fromLong(id.getNum()));
 
 		validateUsable(merkleToken);
 
@@ -297,7 +296,7 @@ public class TypedTokenStore {
 	 * @return a usable model of the token
 	 */
 	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var key = PermHashInteger.fromLong(id.getNum());
 		final var merkleToken = tokens.get().get(key);
 
 		final var token = new Token(id);

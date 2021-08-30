@@ -37,7 +37,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.ServicesStatsConfig;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -116,7 +115,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -246,9 +245,12 @@ class MiscUtilsTest {
 	@Test
 	void forEachDropInWorksAsExpected() {
 		// setup:
-		final MerkleMap<PermHashInteger, KeyedMerkleLong> testMm = new MerkleMap<>();
+		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();
 		@SuppressWarnings("unchecked")
-		final BiConsumer<PermHashInteger, MerkleLong> mockConsumer = BDDMockito.mock(BiConsumer.class);
+		final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(BiConsumer.class);
+		// and:
+		final var key1 = new FcLong(1L);
+		final var key2 = new FcLong(2L);
 
 		// given:
 		putValue(1L, testMm);
@@ -258,13 +260,13 @@ class MiscUtilsTest {
 		MiscUtils.forEach(testMm, mockConsumer);
 
 		// then:
-		verify(mockConsumer).accept(new PermHashInteger(1), new KeyedMerkleLong(1L));
-		verify(mockConsumer).accept(new PermHashInteger(2), new KeyedMerkleLong(2L));
+		verify(mockConsumer).accept(key1, new KeyedMerkleLong<>(key1, 1L));
+		verify(mockConsumer).accept(key2, new KeyedMerkleLong<>(key2, 2L));
 	}
 
-	private void putValue(long value, MerkleMap<PermHashInteger, KeyedMerkleLong> mm) {
+	private void putValue(long value, MerkleMap<FcLong, KeyedMerkleLong<FcLong>> mm) {
 		final var newValue = new KeyedMerkleLong(value);
-		mm.put(newValue.getKey(), newValue);
+		mm.put(new FcLong(value), newValue);
 	}
 
 	@Test

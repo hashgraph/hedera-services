@@ -348,7 +348,7 @@ public interface TxnHandlingScenario {
 		return scheduleStore;
 	}
 
-	String MISSING_ACCOUNT_ID = "1.2.3";
+	String MISSING_ACCOUNT_ID = "0.0.321321";
 	AccountID MISSING_ACCOUNT = asAccount(MISSING_ACCOUNT_ID);
 
 	String NO_RECEIVER_SIG_ID = "0.0.1337";

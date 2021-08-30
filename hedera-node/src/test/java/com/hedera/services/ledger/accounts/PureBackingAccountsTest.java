@@ -43,8 +43,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class PureBackingAccountsTest {
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("3.2.1");
+	private final AccountID a = asAccount("0.0.3");
+	private final AccountID b = asAccount("0.0.1");
 	private final PermHashInteger aKey = PermHashInteger.fromAccountId(a);
 	private final PermHashInteger bKey = PermHashInteger.fromAccountId(b);
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();

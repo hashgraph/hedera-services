@@ -22,7 +22,7 @@ package com.hedera.services.store.tokens.views;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.store.tokens.views.internals.PermHashLong;
@@ -106,22 +106,25 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
 		relation.get(fromInt(key.identityCode()), start, end).forEachRemaining(nftIdCode -> {
-			final var nftId = MerkleUniqueTokenId.fromIdentityCode(nftIdCode);
-			final var nft = curNfts.get(nftId);
+			final var nft = curNfts.get(new PermHashLong(nftIdCode));
 			if (nft == null) {
-				throw new ConcurrentModificationException(nftId + " was removed during query answering");
+				throw new ConcurrentModificationException("NFT was removed during query answering");
 			}
-			final var type = (fixedType != null) ? fixedType : nftId.tokenId().toGrpcTokenId();
+			final var tokenTypeNum = BitPackUtils.unsignedHighOrder32From(nftIdCode);
+			final var type = (fixedType != null)
+					? fixedType
+					: TokenID.newBuilder().setTokenNum(tokenTypeNum).build();
 
+			final var seriallNum = BitPackUtils.unsignedLowOrder32From(nftIdCode);
 			AccountID treasury = nft.isTreasuryOwned() ? fixedTreasury : null;
-			final var info = GrpcUtils.reprOf(type, nftId.serialNumber(), nft, treasury);
+			final var info = GrpcUtils.reprOf(type, seriallNum, nft, treasury);
 			answer.add(info);
 		});
 		return answer;
 	}
 
 	private AccountID treasuryOf(MerkleMap<PermHashInteger, MerkleToken> curTokens, EntityId tokenId) {
-		final var token = curTokens.get(tokenId.asMerkle());
+		final var token = curTokens.get(PermHashInteger.fromLong(tokenId.num()));
 		if (token == null) {
 			throw new ConcurrentModificationException(
 					"Token " + tokenId.toAbbrevString() + " was removed during query answering");

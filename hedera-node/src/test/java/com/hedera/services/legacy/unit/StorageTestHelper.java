@@ -44,14 +44,14 @@ public class StorageTestHelper {
 		} catch (StorageKeyNotFoundException e) {
 			return new byte[0];
 		}
-		return storageMap.get(sKey).getData();
+		return storageMap.get(sKey.getPath()).getData();
 	}
 
 	public boolean fileExists(final String path) {
 		MerkleBlobMeta sKey;
 		try {
 			sKey = validateStorageKey(path);
-			return storageMap.containsKey(sKey);
+			return storageMap.containsKey(sKey.getPath());
 		} catch (StorageKeyNotFoundException ignore) {
 		}
 		return false;
@@ -59,8 +59,8 @@ public class StorageTestHelper {
 
 	public long getSize(final String path) {
 		MerkleBlobMeta sKey = new MerkleBlobMeta(path);
-		if (storageMap.containsKey(sKey)) {
-			return storageMap.get(sKey).getData().length;
+		if (storageMap.containsKey(sKey.getPath())) {
+			return storageMap.get(sKey.getPath()).getData().length;
 		} else {
 			return 0l;
 		}
@@ -74,7 +74,7 @@ public class StorageTestHelper {
 
 	private MerkleBlobMeta validateStorageKey(final String path) throws StorageKeyNotFoundException {
 		MerkleBlobMeta sKey = new MerkleBlobMeta(path);
-		if (!storageMap.containsKey(sKey)) {
+		if (!storageMap.containsKey(sKey.getPath())) {
 			throw new StorageKeyNotFoundException("Destination file does not exist: '" + path + "'");
 		}
 		return sKey;
@@ -82,6 +82,6 @@ public class StorageTestHelper {
 
 	public void delete(final String path) throws StorageKeyNotFoundException {
 		final var sKey = validateStorageKey(path);
-		storageMap.remove(sKey);
+		storageMap.remove(sKey.getPath());
 	}
 }

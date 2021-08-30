@@ -79,10 +79,10 @@ class HederaScheduleStoreTest {
 	private static final RichInstant consensusTime = new RichInstant(expectedExpiry, 0);
 	private static final Key adminJKey = asKeyUnchecked(SCHEDULE_ADMIN_KT.asJKeyUnchecked());
 
-	private static final ScheduleID created = IdUtils.asSchedule("1.2.333333");
-	private static final AccountID schedulingAccount = IdUtils.asAccount("1.2.333");
-	private static final AccountID payerId = IdUtils.asAccount("1.2.456");
-	private static final AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
+	private static final ScheduleID created = IdUtils.asSchedule("0.0.333333");
+	private static final AccountID schedulingAccount = IdUtils.asAccount("0.0.333");
+	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
+	private static final AccountID anotherPayerId = IdUtils.asAccount("0.0.457");
 
 	private static final EntityId entityPayer = fromGrpcAccountId(payerId);
 	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
@@ -141,6 +141,7 @@ class HederaScheduleStoreTest {
 				entitySchedulingAccount.toGrpcAccountId(),
 				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
+		expected.setKey(PermHashInteger.fromLong(created.getScheduleNum()));
 		final var captor = forClass(Consumer.class);
 		final var expectedKey = expected.toContentAddressableView();
 

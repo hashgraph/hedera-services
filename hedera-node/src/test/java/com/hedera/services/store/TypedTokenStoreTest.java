@@ -26,7 +26,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -425,8 +424,8 @@ class TypedTokenStoreTest {
 	@Test
 	void loadOrFailsWorksAsExpected() {
 		assertFailsWith(() -> subject.loadTokenOrFailWith(Id.DEFAULT, FAIL_INVALID), FAIL_INVALID);
-		given(tokens.get(any(MerkleEntityId.class))).willReturn(merkleToken);
-		assertNotNull(subject.loadTokenOrFailWith(IdUtils.asModelId("1.2.3"), FAIL_INVALID));
+		given(tokens.get(any(PermHashInteger.class))).willReturn(merkleToken);
+		assertNotNull(subject.loadTokenOrFailWith(IdUtils.asModelId("0.0.3"), FAIL_INVALID));
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

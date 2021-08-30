@@ -29,7 +29,6 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -330,8 +329,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			if (owner.equals(fromGrpcAccountId(AccountID.getDefaultInstance()))) {
 				final var tid = nftId.tokenId();
-				owner = this.tokens.get().get(
-						new MerkleEntityId(tid.getShardNum(), tid.getRealmNum(), tid.getTokenNum())).treasury();
+				final var key = PermHashInteger.fromLong(tid.getTokenNum());
+				owner = this.tokens.get().get(key).treasury();
 			}
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;

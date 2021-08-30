@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
@@ -63,6 +64,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int number;
 
 	public MerkleAccountState() {
+		/* RuntimeConstructable */
 	}
 
 	public MerkleAccountState(
@@ -74,7 +76,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			boolean deleted,
 			boolean smartContract,
 			boolean receiverSigRequired,
-			EntityId proxy
+			EntityId proxy,
+			int number
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -85,6 +88,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
+		this.number = number;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -113,6 +117,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
 			nftsOwned = in.readLong();
 		}
+		if (version >= RELEASE_0180_VERSION) {
+			number = in.readInt();
+		}
 	}
 
 	@Override
@@ -127,6 +134,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
+		out.writeInt(number);
 	}
 
 	/* --- Copyable --- */
@@ -141,7 +149,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				deleted,
 				smartContract,
 				receiverSigRequired,
-				proxy);
+				proxy,
+				number);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -157,7 +166,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 		var that = (MerkleAccountState) o;
 
-		return this.expiry == that.expiry &&
+		return this.number == that.number &&
+				this.expiry == that.expiry &&
 				this.hbarBalance == that.hbarBalance &&
 				this.autoRenewSecs == that.autoRenewSecs &&
 				Objects.equals(this.memo, that.memo) &&
@@ -181,13 +191,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				smartContract,
 				receiverSigRequired,
 				proxy,
-				nftsOwned);
+				nftsOwned,
+				number);
 	}
 
 	/* --- Bean --- */
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
+				.add("number", number + " <-> " + asIdLiteral(number))
 				.add("key", describe(key))
 				.add("expiry", expiry)
 				.add("balance", hbarBalance)
@@ -203,6 +215,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	public int number() {
 		return number;
+	}
+
+	public void setNumber(int number) {
+		this.number = number;
 	}
 
 	public JKey key() {
@@ -245,7 +261,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return nftsOwned;
 	}
 
-	public void setKey(JKey key) {
+	public void setAccountKey(JKey key) {
 		assertMutable("key");
 		this.key = key;
 	}

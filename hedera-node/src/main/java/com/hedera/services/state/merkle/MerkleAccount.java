@@ -63,8 +63,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	@Override
-	public void setKey(PermHashInteger permHashInteger) {
-		throw new UnsupportedOperationException();
+	public void setKey(PermHashInteger phi) {
+		state().setNumber(phi.intValue());
 	}
 
 	/* Order of Merkle node children */
@@ -242,7 +242,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public void setAccountKey(JKey key) {
 		throwIfImmutable("Cannot change this account's key if it's immutable.");
-		state().setKey(key);
+		state().setAccountKey(key);
 	}
 
 	public EntityId getProxy() {

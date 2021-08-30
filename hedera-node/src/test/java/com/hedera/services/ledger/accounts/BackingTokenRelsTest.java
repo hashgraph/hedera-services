@@ -52,12 +52,12 @@ class BackingTokenRelsTest {
 	private long aBalance = 100, bBalance = 200, cBalance = 300;
 	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
 	private boolean aKyc = false, bKyc = true, cKyc = false;
-	private AccountID a = asAccount("1.2.3");
-	private AccountID b = asAccount("3.2.1");
-	private AccountID c = asAccount("4.3.0");
-	private TokenID at = asToken("9.8.7");
-	private TokenID bt = asToken("9.8.6");
-	private TokenID ct = asToken("9.8.5");
+	private AccountID a = asAccount("0.0.3");
+	private AccountID b = asAccount("0.0.1");
+	private AccountID c = asAccount("0.0.0");
+	private TokenID at = asToken("0.0.7");
+	private TokenID bt = asToken("0.0.6");
+	private TokenID ct = asToken("0.0.5");
 
 	private PermHashLong aKey = fromAccountTokenRel(a, at);
 	private PermHashLong bKey = fromAccountTokenRel(b, bt);
@@ -106,7 +106,7 @@ class BackingTokenRelsTest {
 	@Test
 	void relToStringWorks() {
 		// expect:
-		assertEquals("1.2.3 <-> 9.8.7", readableTokenRel(asTokenRel(a, at)));
+		assertEquals("0.0.3 <-> 0.0.7", readableTokenRel(asTokenRel(a, at)));
 	}
 
 	@Test

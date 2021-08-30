@@ -59,6 +59,7 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		existingRels.clear();
 		delegate.get().keySet().stream()
 				.map(PermHashLong::asAccountTokenRel)
+				.peek(System.out::println)
 				.forEach(existingRels::add);
 	}
 

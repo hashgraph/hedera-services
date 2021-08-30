@@ -217,7 +217,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 					readableId(id)));
 		}
 		var schedule = get(id);
-		schedules.get().remove(entityId.asMerkle());
+		schedules.get().remove(PermHashInteger.fromLong(entityId.num()));
 		extantSchedules.remove(schedule);
 	}
 

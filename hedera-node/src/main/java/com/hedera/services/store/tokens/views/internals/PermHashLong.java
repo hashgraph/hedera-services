@@ -20,6 +20,7 @@ package com.hedera.services.store.tokens.views.internals;
  * ‍
  */
 
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.MiscUtils;
@@ -55,7 +56,7 @@ public class PermHashLong {
 	public static PermHashLong fromModelRel(TokenRelationship tokenRelationship) {
 		final var token = tokenRelationship.getToken();
 		final var account = tokenRelationship.getAccount();
-		return fromLongs(token.getId().getNum(), account.getId().getNum());
+		return fromLongs(account.getId().getNum(), token.getId().getNum());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {
@@ -85,5 +86,13 @@ public class PermHashLong {
 		var that = (PermHashLong) o;
 
 		return this.value == that.value;
+	}
+
+	@Override
+	public String toString() {
+		return "PermHashLong("
+				+ BitPackUtils.unsignedHighOrder32From(value)
+				+ ", "
+				+ BitPackUtils.unsignedLowOrder32From(value) + ")";
 	}
 }

@@ -96,7 +96,9 @@ class GetAccountNftInfosAnswerTest {
 						.build()
 		));
 		accountMap = new MerkleMap<>();
-		accountMap.put(PermHashInteger.fromAccountId(accountId), new MerkleAccount(new ArrayList<>()));
+		accountMap.put(
+				PermHashInteger.fromAccountId(accountId),
+				new MerkleAccount());
 	}
 
 	@Test
