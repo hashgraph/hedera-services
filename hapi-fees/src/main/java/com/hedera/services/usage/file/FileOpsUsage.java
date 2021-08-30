@@ -20,10 +20,12 @@ package com.hedera.services.usage.file;
  * ‍
  */
 
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -63,6 +65,17 @@ public class FileOpsUsage {
 
 	@Inject
 	public FileOpsUsage() {
+	}
+
+	public void fileAppendUsage(
+			SigUsage sigUsage,
+			FileAppendMeta appendMeta,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator accumulator
+	) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		
 	}
 
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {
