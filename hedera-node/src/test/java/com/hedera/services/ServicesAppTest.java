@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.ChainedSources;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -106,6 +107,7 @@ class ServicesAppTest {
 		final var props = new ChainedSources(overridingProps, bootstrapProps);
 		final var logDirKey = "hedera.recordStream.logDir";
 		final var logDirVal = "data/recordStreams";
+		final var nodeProps = new ScreenedNodeFileProps();
 
 		given(address.getStake()).willReturn(123_456_789L);
 		given(addressBook.getAddress(selfId)).willReturn(address);
@@ -115,6 +117,11 @@ class ServicesAppTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(platform.getCryptography()).willReturn(cryptography);
 		given(platform.getSelfId()).willReturn(selfNodeId);
+		if (!nodeProps.containsProperty(logDirKey) || !nodeProps.getStringProperty(logDirKey).matches(logDirVal)) {
+			given(overridingProps.containsProperty(any())).willReturn(false);
+			given(overridingProps.containsProperty(logDirKey)).willReturn(true);
+			given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
+		}
 
 		subject = DaggerServicesApp.builder()
 				.bootstrapProps(props)
@@ -122,12 +129,6 @@ class ServicesAppTest {
 				.platform(platform)
 				.selfId(selfId)
 				.build();
-
-		if (!subject.nodeLocalProperties().recordLogDir().matches(logDirVal)) {
-			given(overridingProps.containsProperty(any())).willReturn(false);
-			given(overridingProps.containsProperty(logDirKey)).willReturn(true);
-			given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
-		}
 	}
 
 	@Test
