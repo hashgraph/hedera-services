@@ -54,7 +54,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidBurnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.invalidMintToken;
@@ -75,7 +74,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -99,7 +97,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -107,31 +104,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
-	private static final int TMP_MAX_TRANSFER_LENGTH = 2;
-	private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
 	private static final String A_TOKEN = "token";
-
-	private static final String defaultTxExpiry =
-			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
-	private static final String defaultMaxTransferLen =
-			HapiSpecSetup.getDefaultNodeProps().get("ledger.transfers.maxLen");
-	private static final String defaultMaxTokenTransferLen =
-			HapiSpecSetup.getDefaultNodeProps().get("ledger.tokenTransfers.maxLen");
-	private static final String defaultWhitelist =
-			HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
 
 	String failingTxn = "failingTxn", successTxn = "successTxn", signTxn = "signTxn";
 
 	public static void main(String... args) {
-		new ScheduleExecutionSpecs().runSuiteSync();
+		new ScheduleExecutionSpecs().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override
@@ -147,8 +136,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				executionWithDefaultPayerButNoFundsFails(),
 				executionWithCustomPayerButNoFundsFails(),
 				executionWithInvalidAccountAmountsFails(),
-				executionWithTransferListWrongSizedFails(),
-				executionWithTokenTransferListSizeExceedFails(),
 				executionWithCryptoInsufficientAccountBalanceFails(),
 				executionWithTokenInsufficientAccountBalanceFails(),
 				executionTriggersWithWeirdlyRepeatedKey(),
@@ -174,7 +161,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				scheduledUniqueMintFailsWithInvalidMetadata(),
 				scheduledMintFailsWithInvalidAmount(),
 				scheduledMintWithInvalidTokenThrowsUnresolvableSigners(),
-				scheduledUniqueMintFailsWithNftsDisabled(),
 				scheduledMintFailsWithInvalidTxBody(),
 
 				scheduledBurnExecutesProperly(),
@@ -183,97 +169,13 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				scheduledUniqueBurnFailsWithInvalidNftId(),
 				scheduledBurnForUniqueFailsWithInvalidAmount(),
 				scheduledBurnForUniqueFailsWithExistingAmount(),
-				scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
-				scheduledUniqueBurnFailsWithNftsDisabled(),
 				scheduledBurnFailsWithInvalidTxBody(),
-
-				suiteCleanup(),
 		});
-	}
-
-	private HapiApiSpec scheduledMintFailsWithoutSupplyKey() {
-		return defaultHapiSpec("ScheduledMintFailsWithoutSupplyKey")
-				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
-						cryptoCreate("treasury"),
-						cryptoCreate("schedulePayer"),
-						tokenCreate(A_TOKEN)
-								.treasury("treasury")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.initialSupply(0),
-						scheduleCreate("validSchedule", mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("metadata"))))
-								.designatingPayer("schedulePayer")
-								.via(failingTxn)
-				)
-				.when(
-						scheduleSign("validSchedule")
-								.alsoSigningWith("schedulePayer", "treasury")
-								.hasKnownStatus(SUCCESS)
-				).then(
-						getTxnRecord(failingTxn).scheduled()
-								.hasPriority(recordWith().status(TOKEN_HAS_NO_SUPPLY_KEY)),
-						getTokenInfo(A_TOKEN)
-								.hasTotalSupply(0)
-				);
-	}
-
-	private HapiApiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
-		return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
-				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
-						cryptoCreate("schedulePayer")
-				)
-				.when(
-						scheduleCreate("validSchedule", burnToken(
-								"0.0.123231", List.of(1L, 2L)
-						))
-								.designatingPayer("schedulePayer")
-								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
-				).then();
-	}
-
-	private HapiApiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
-		return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
-				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
-						cryptoCreate("treasury"),
-						cryptoCreate("schedulePayer"),
-						newKeyNamed("supplyKey"),
-						tokenCreate(A_TOKEN)
-								.supplyKey("supplyKey")
-								.treasury("treasury")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.initialSupply(0),
-						scheduleCreate("validSchedule", burnToken(A_TOKEN, List.of(1L, 2L)))
-								.designatingPayer("schedulePayer")
-								.via(failingTxn),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "false"
-								))
-				)
-				.when(
-						scheduleSign("validSchedule")
-								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
-								.hasKnownStatus(SUCCESS)
-				).then(
-						getTxnRecord(failingTxn).scheduled()
-								.hasPriority(recordWith().status(NOT_SUPPORTED)),
-						getTokenInfo(A_TOKEN)
-								.hasTotalSupply(0),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								))
-				);
 	}
 
 	private HapiApiSpec scheduledBurnFailsWithInvalidTxBody() {
 		return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
 				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -301,7 +203,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec scheduledMintFailsWithInvalidTxBody() {
 		return defaultHapiSpec("ScheduledMintFailsWithInvalidTxBody")
 				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -328,52 +229,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec scheduledUniqueMintFailsWithNftsDisabled() {
-		return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
-				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
-						cryptoCreate("treasury"),
-						cryptoCreate("schedulePayer"),
-						newKeyNamed("supplyKey"),
-						tokenCreate(A_TOKEN)
-								.supplyKey("supplyKey")
-								.treasury("treasury")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.initialSupply(0),
-						scheduleCreate("validSchedule", mintToken(
-								A_TOKEN, List.of(
-										ByteString.copyFromUtf8("m1")
-								)
-						))
-								.designatingPayer("schedulePayer")
-								.via(failingTxn),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "false"
-								))
-				)
-				.when(
-						scheduleSign("validSchedule")
-								.alsoSigningWith("supplyKey", "schedulePayer", "treasury")
-								.hasKnownStatus(SUCCESS)
-				).then(
-						getTxnRecord(failingTxn).scheduled()
-								.hasPriority(recordWith().status(NOT_SUPPORTED)),
-						getTokenInfo(A_TOKEN)
-								.hasTotalSupply(0),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								))
-				);
-	}
-
 	private HapiApiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
 		return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
 				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
 						cryptoCreate("schedulePayer")
 				)
 				.when(
@@ -391,7 +249,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidBatchSize")
 				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -427,7 +284,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec scheduledUniqueBurnExecutesProperly() {
 		return defaultHapiSpec("ScheduledUniqueBurnExecutesProperly")
 				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -490,8 +346,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidMetadata")
 				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
-						overriding("tokens.nfts.areEnabled", "true"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -525,7 +379,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidNftId")
 				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -557,8 +410,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledBurnForUniqueFailsWithExistingAmount")
 				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
-						overriding("tokens.nfts.areEnabled", "true"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -591,8 +442,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledBurnForUniqueFailsWithInvalidAmount")
 				.given(
-						overriding("scheduling.whitelist", "TokenBurn"),
-						overriding("tokens.nfts.areEnabled", "true"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -635,8 +484,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String failingTxn = "failingTxn";
 		return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
 				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
-						overriding("tokens.nfts.areEnabled", "true"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -689,7 +536,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.supplyKey("supplyKey")
 								.treasury("treasury")
 								.initialSupply(101),
-						overriding("scheduling.whitelist", "TokenMint"),
 						scheduleCreate("validSchedule",
 								mintToken(
 										A_TOKEN, 0
@@ -716,8 +562,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		String successTxn = "successTxn", signTxn = "signTxn";
 		return defaultHapiSpec("ScheduledUniqueMintExecutesProperly")
 				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
-						overriding("tokens.nfts.areEnabled", "true"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -773,24 +617,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec suiteCleanup() {
-		return defaultHapiSpec("suiteCleanup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry),
-						overriding("scheduling.whitelist", defaultWhitelist),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.areEnabled", "true"
-								))
-				);
-	}
-
 	private HapiApiSpec scheduledMintExecutesProperly() {
 		String successTxn = "successTxn", signTxn = "signTxn";
 		return defaultHapiSpec("ScheduledMintExecutesProperly")
 				.given(
-						overriding("scheduling.whitelist", "TokenMint"),
 						cryptoCreate("treasury"),
 						cryptoCreate("schedulePayer"),
 						newKeyNamed("supplyKey"),
@@ -857,7 +687,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.treasury("treasury")
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(101),
-						overriding("scheduling.whitelist", "TokenBurn"),
 						scheduleCreate("validSchedule",
 								burnToken(
 										A_TOKEN, 10
@@ -1906,94 +1735,32 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec executionWithTransferListWrongSizedFails() {
-		long transferAmount = 1L;
-		long senderBalance = 1000L;
-		long payingAccountBalance = 1_000_000L;
-		long noBalance = 0L;
 
-		return defaultHapiSpec("ExecutionWithTransferListWrongSizedFails")
+	private HapiApiSpec scheduledMintFailsWithoutSupplyKey() {
+		return defaultHapiSpec("ScheduledMintFailsWithoutSupplyKey")
 				.given(
-						overriding("ledger.transfers.maxLen", "" + TMP_MAX_TRANSFER_LENGTH),
-						cryptoCreate("payingAccount").balance(payingAccountBalance),
-						cryptoCreate("sender").balance(senderBalance),
-						cryptoCreate("receiverA").balance(noBalance),
-						cryptoCreate("receiverB").balance(noBalance),
-						cryptoCreate("receiverC").balance(noBalance),
-						scheduleCreate(
-								"failedXfer",
-								cryptoTransfer(
-										tinyBarsFromTo("sender", "receiverA", transferAmount),
-										tinyBarsFromTo("sender", "receiverB", transferAmount),
-										tinyBarsFromTo("sender", "receiverC", transferAmount)
-								)
-						)
-								.designatingPayer("payingAccount")
-								.via("createTx")
+						cryptoCreate("treasury"),
+						cryptoCreate("schedulePayer"),
+						tokenCreate(A_TOKEN)
+								.treasury("treasury")
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0),
+						scheduleCreate("validSchedule", mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("metadata"))))
+								.designatingPayer("schedulePayer")
+								.via(failingTxn)
 				)
 				.when(
-						scheduleSign("failedXfer")
-								.alsoSigningWith("sender", "payingAccount")
-								.via("signTx")
+						scheduleSign("validSchedule")
+								.alsoSigningWith("schedulePayer", "treasury")
 								.hasKnownStatus(SUCCESS)
-				)
-				.then(
-						overriding("ledger.transfers.maxLen", defaultMaxTransferLen),
-						getAccountBalance("sender").hasTinyBars(senderBalance),
-						getAccountBalance("receiverA").hasTinyBars(noBalance),
-						getAccountBalance("receiverB").hasTinyBars(noBalance),
-						getAccountBalance("receiverC").hasTinyBars(noBalance),
-						withOpContext((spec, opLog) -> {
-							var triggeredTx = getTxnRecord("createTx").scheduled();
-
-							allRunFor(spec, triggeredTx);
-
-							Assertions.assertEquals(
-									TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
-									triggeredTx.getResponseRecord().getReceipt().getStatus(),
-									"Scheduled transaction should not be successful!");
-						})
-				);
-	}
-
-	public HapiApiSpec executionWithTokenTransferListSizeExceedFails() {
-		String xToken = "XXX";
-		String invalidSchedule = "withMaxTokenTransfer";
-		String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
-		String failedTxn = "bad";
-
-		return defaultHapiSpec("ExecutionWithTokenTransferListSizeExceedFails")
-				.given(
-						overriding("ledger.tokenTransfers.maxLen", "" + TMP_MAX_TOKEN_TRANSFER_LENGTH),
-						newKeyNamed("admin"),
-						cryptoCreate(schedulePayer),
-						cryptoCreate(xTreasury),
-						cryptoCreate(civilianA),
-						cryptoCreate(civilianB),
-						tokenCreate(xToken)
-								.treasury(xTreasury)
-								.initialSupply(100)
-								.adminKey("admin"),
-						tokenAssociate(civilianA, xToken),
-						tokenAssociate(civilianB, xToken)
-				).when(
-						scheduleCreate(invalidSchedule,
-								cryptoTransfer(
-										moving(1, xToken).between(xTreasury, civilianA),
-										moving(1, xToken).between(xTreasury, civilianB)
-								)
-										.memo(randomUppercase(100))
-						)
-								.via(failedTxn)
-								.alsoSigningWith(xTreasury, schedulePayer)
-								.designatingPayer(schedulePayer)
 				).then(
-						overriding("ledger.tokenTransfers.maxLen", defaultMaxTokenTransferLen),
-						getTxnRecord(failedTxn).scheduled()
-								.hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
-						getAccountBalance(xTreasury).hasTokenBalance(xToken, 100)
+						getTxnRecord(failingTxn).scheduled()
+								.hasPriority(recordWith().status(TOKEN_HAS_NO_SUPPLY_KEY)),
+						getTokenInfo(A_TOKEN)
+								.hasTotalSupply(0)
 				);
 	}
+
 
 	public HapiApiSpec executionWithCustomPayerWorks() {
 		long transferAmount = 1;

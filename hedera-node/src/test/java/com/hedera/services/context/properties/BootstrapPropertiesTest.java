@@ -37,6 +37,8 @@ import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -161,7 +163,11 @@ class BootstrapPropertiesTest {
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("rates.midnightCheckInterval", 1L),
-			entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage)),
+			entry("scheduling.whitelist", Set.of(
+					CryptoTransfer,
+					TokenMint,
+					TokenBurn,
+					ConsensusSubmitMessage)),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),

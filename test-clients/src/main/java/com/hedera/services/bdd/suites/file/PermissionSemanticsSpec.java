@@ -57,7 +57,12 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(PermissionSemanticsSpec.class);
 
 	public static void main(String... args) {
-		new PermissionSemanticsSpec().runSuiteSync();
+		new PermissionSemanticsSpec().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

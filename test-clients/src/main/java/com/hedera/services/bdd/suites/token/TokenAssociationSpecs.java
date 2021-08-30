@@ -86,7 +86,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	private static final String VANILLA_TOKEN = "TokenD";
 
 	public static void main(String... args) {
-		new TokenAssociationSpecs().runSuiteSync();
+		final var spec = new TokenAssociationSpecs();
+
+		spec.deferResultsSummary();
+		spec.runSuiteAsync();
+		spec.summarizeDeferredResults();
 	}
 
 	@Override
@@ -104,6 +108,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						contractInfoQueriesAsExpected(),
 				}
 		);
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	public HapiApiSpec handlesUseOfDefaultTokenId() {

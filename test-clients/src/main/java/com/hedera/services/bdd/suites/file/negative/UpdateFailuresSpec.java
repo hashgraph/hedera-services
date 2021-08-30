@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -50,11 +49,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UpdateFailuresSpec extends HapiApiSuite {
 	private static final long A_LOT = 1_234_567_890L;
-	private static final long A_LITTLE = 1_234L;
 	private static final Logger log = LogManager.getLogger(UpdateFailuresSpec.class);
 
 	public static void main(String... args) {
-		new UpdateFailuresSpec().runSuiteSync();
+		new UpdateFailuresSpec().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override
@@ -62,10 +65,8 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						precheckAllowsMissing(),
 						precheckAllowsDeleted(),
-//						precheckScreensFees(),
 						precheckRejectsPrematureExpiry(),
 						precheckAllowsBadEncoding(),
-//						handleScreensFees(),
 						handleIgnoresEarlierExpiry(),
 						precheckRejectsUnauthorized(),
 						confusedUpdateCantExtendExpiry(),
@@ -77,7 +78,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 	private HapiApiSpec confusedUpdateCantExtendExpiry() {
 		var initialExpiry = new AtomicLong();
 		var extension = 1_000L;
-		return defaultHapiSpec("confusedUpdateCantExtendExpiry")
+		return defaultHapiSpec("ConfusedUpdateCantExtendExpiry")
 				.given(
 						withOpContext((spec, opLog) -> {
 							var infoOp = QueryVerbs.getFileInfo(EXCHANGE_RATES);
@@ -98,7 +99,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 
 
 	private HapiApiSpec precheckRejectsUnauthorized() {
-		return defaultHapiSpec("precheckRejectsUnauthAddressBookUpdate")
+		return defaultHapiSpec("PrecheckRejectsUnauthAddressBookUpdate")
 				.given(
 						cryptoCreate("civilian")
 				).when().then(
@@ -124,7 +125,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 	}
 
 	private HapiApiSpec precheckAllowsMissing() {
-		return defaultHapiSpec("precheckAllowsMissing")
+		return defaultHapiSpec("PrecheckAllowsMissing")
 				.given().when().then(
 						fileUpdate("1.2.3")
 								.payingWith(GENESIS)
@@ -136,7 +137,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 	}
 
 	private HapiApiSpec precheckAllowsDeleted() {
-		return defaultHapiSpec("precheckAllowsDeleted")
+		return defaultHapiSpec("PrecheckAllowsDeleted")
 				.given(
 						fileCreate("tbd")
 				).when(
@@ -148,21 +149,9 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec precheckScreensFees() {
-		return defaultHapiSpec("precheckScreensFees")
-				.given(
-						fileCreate("file")
-				).when().then(
-						fileUpdate("file")
-								.extendingExpiryBy(666L)
-								.fee(A_LITTLE)
-								.hasPrecheck(INSUFFICIENT_TX_FEE)
-				);
-	}
-
 	private HapiApiSpec precheckRejectsPrematureExpiry() {
 		long now = Instant.now().getEpochSecond();
-		return defaultHapiSpec("precheckRejectsPastExpiry")
+		return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
 				.given(
 						fileCreate("file")
 				).when().then(
@@ -173,23 +162,8 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec handleScreensFees() {
-		return defaultHapiSpec("handleScreensFees")
-				.given(
-						fileCreate("file")
-				).when(
-						fileUpdate("file")
-								.extendingExpiryBy(100_000L)
-								.deferStatusResolution()
-				).then(
-						fileUpdate("file")
-								.extendingExpiryBy(666L)
-								.hasKnownStatus(INSUFFICIENT_TX_FEE)
-				);
-	}
-
 	private HapiApiSpec precheckAllowsBadEncoding() {
-		return defaultHapiSpec("badEncoding")
+		return defaultHapiSpec("PrecheckAllowsBadEncoding")
 				.given(
 						fileCreate("file")
 				).when().then(
@@ -205,7 +179,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 	private HapiApiSpec handleIgnoresEarlierExpiry() {
 		var initialExpiry = new AtomicLong();
 
-		return defaultHapiSpec("handleScreensFees")
+		return defaultHapiSpec("HandleIgnoresEarlierExpiry")
 				.given(
 						fileCreate("file"),
 						withOpContext((spec, opLog) -> {
