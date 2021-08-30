@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -32,7 +31,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -43,7 +41,6 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -64,8 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -78,8 +73,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
-	private static final String defaultMaxNftMints =
-			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.maxAllowedMints");
 
 	public static void main(String... args) {
 		new TokenManagementSpecs().runSuiteSync();
@@ -87,27 +80,27 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				List.of(new HapiApiSpec[] {
-								freezeMgmtFailureCasesWork(),
-								freezeMgmtSuccessCasesWork(),
-								kycMgmtFailureCasesWork(),
-								kycMgmtSuccessCasesWork(),
-								supplyMgmtSuccessCasesWork(),
-								wipeAccountFailureCasesWork(),
-								wipeAccountSuccessCasesWork(),
-								supplyMgmtFailureCasesWork(),
-								burnTokenFailsDueToInsufficientTreasuryBalance(),
-								frozenTreasuryCannotBeMintedOrBurned(),
-								revokedKYCTreasuryCannotBeMintedOrBurned(),
-								fungibleCommonMaxSupplyReachWork(),
-								mintingMaxLongValueWorks(),
-								nftMintingCapIsEnforced()
-						}
-				)
+		return List.of(new HapiApiSpec[] {
+						freezeMgmtSuccessCasesWork(),
+						kycMgmtFailureCasesWork(),
+						kycMgmtSuccessCasesWork(),
+						supplyMgmtSuccessCasesWork(),
+						wipeAccountFailureCasesWork(),
+						wipeAccountSuccessCasesWork(),
+						supplyMgmtFailureCasesWork(),
+						burnTokenFailsDueToInsufficientTreasuryBalance(),
+						frozenTreasuryCannotBeMintedOrBurned(),
+						revokedKYCTreasuryCannotBeMintedOrBurned(),
+						fungibleCommonMaxSupplyReachWork(),
+						mintingMaxLongValueWorks(),
+				}
 		);
 	}
 
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
 
 	private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {
 		return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
@@ -334,54 +327,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec freezeMgmtFailureCasesWork() {
-		var unfreezableToken = "without";
-		var freezableToken = "withPlusDefaultTrue";
-
-		return defaultHapiSpec("FreezeMgmtFailureCasesWork")
-				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.maxPerAccount", "" + 1000
-								)),
-						newKeyNamed("oneFreeze"),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						cryptoCreate("go").balance(0L),
-						tokenCreate(unfreezableToken)
-								.treasury(TOKEN_TREASURY),
-						tokenCreate(freezableToken)
-								.freezeDefault(true)
-								.freezeKey("oneFreeze")
-								.treasury(TOKEN_TREASURY)
-				).when(
-						tokenFreeze(unfreezableToken, TOKEN_TREASURY)
-								.signedBy(GENESIS)
-								.hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-						tokenFreeze(freezableToken, "1.2.3")
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						tokenFreeze(freezableToken, TOKEN_TREASURY)
-								.signedBy(GENESIS)
-								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenFreeze(freezableToken, "go")
-								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-						tokenUnfreeze(freezableToken, "go")
-								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-						tokenUnfreeze(unfreezableToken, TOKEN_TREASURY)
-								.signedBy(GENESIS)
-								.hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-						tokenUnfreeze(freezableToken, "1.2.3")
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						tokenUnfreeze(freezableToken, TOKEN_TREASURY)
-								.signedBy(GENESIS)
-								.hasKnownStatus(INVALID_SIGNATURE)
-				).then(
-						getTokenInfo(unfreezableToken)
-								.hasRegisteredId(unfreezableToken)
-								.logged()
-				);
-	}
-
 	public HapiApiSpec freezeMgmtSuccessCasesWork() {
 		var withPlusDefaultFalse = "withPlusDefaultFalse";
 
@@ -521,34 +466,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						mintToken("fungibleToken", Long.MAX_VALUE).via("mintTxn")
 				).then(
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", Long.MAX_VALUE)
-				);
-	}
-
-	private HapiApiSpec nftMintingCapIsEnforced() {
-		return defaultHapiSpec("NftMintingCapIsEnforced")
-				.given(
-						newKeyNamed("supplyKey"),
-						tokenCreate("fungibleToken")
-								.initialSupply(0)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.supplyType(TokenSupplyType.INFINITE)
-								.supplyKey("supplyKey"),
-						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Why not?")))
-				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.maxAllowedMints", "" + 1
-								))
-				).then(
-						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Again, why not?")))
-								.hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.nfts.maxAllowedMints", "" + defaultMaxNftMints
-								)),
-						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Again, why not?")))
 				);
 	}
 

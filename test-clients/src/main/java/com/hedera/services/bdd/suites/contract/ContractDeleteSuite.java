@@ -45,7 +45,12 @@ public class ContractDeleteSuite extends HapiApiSuite {
 	final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 
 	public static void main(String... args) {
-		new ContractDeleteSuite().runSuiteSync();
+		new ContractDeleteSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

@@ -44,26 +44,31 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALL
 public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CannotDeleteSystemEntitiesSuite.class);
 
-	final int[] sysFileIds = {101,102,111,112,121,122,150};
+	final int[] sysFileIds = { 101, 102, 111, 112, 121, 122, 150 };
 
 	public static void main(String... args) {
 		CannotDeleteSystemEntitiesSuite suite = new CannotDeleteSystemEntitiesSuite();
-		suite.runSuiteSync();
+		suite.runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 				ensureSystemAccountsHaveSomeFunds(),
 
-				systemUserCannotDeleteSystemAccounts(1,100, GENESIS),
-				systemUserCannotDeleteSystemAccounts(900,999, GENESIS),
-				systemUserCannotDeleteSystemAccounts(1,100, SYSTEM_ADMIN),
-				systemUserCannotDeleteSystemAccounts(900,999, SYSTEM_ADMIN),
-				systemUserCannotDeleteSystemAccounts(1,100, SYSTEM_DELETE_ADMIN),
-				systemUserCannotDeleteSystemAccounts(900,999, SYSTEM_DELETE_ADMIN),
-				normalUserCannotDeleteSystemAccounts(1,100),
-				normalUserCannotDeleteSystemAccounts(900,999),
+				systemUserCannotDeleteSystemAccounts(1, 100, GENESIS),
+				systemUserCannotDeleteSystemAccounts(900, 999, GENESIS),
+				systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_ADMIN),
+				systemUserCannotDeleteSystemAccounts(900, 999, SYSTEM_ADMIN),
+				systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_DELETE_ADMIN),
+				systemUserCannotDeleteSystemAccounts(900, 999, SYSTEM_DELETE_ADMIN),
+				normalUserCannotDeleteSystemAccounts(1, 100),
+				normalUserCannotDeleteSystemAccounts(900, 999),
 
 				systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS),
 				systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
@@ -78,7 +83,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 
 	private HapiApiSpec ensureSystemAccountsHaveSomeFunds() {
 		return defaultHapiSpec("EnsureSystemAccountsHaveSomeFunds")
-				.given( ).when( ) .then(
+				.given().when().then(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, ONE_HUNDRED_HBARS))
 								.payingWith(GENESIS),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, ONE_HUNDRED_HBARS))
@@ -90,15 +95,15 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 		return defaultHapiSpec("systemUserCannotDeleteSystemAccounts")
 				.given(
 						cryptoCreate("unluckyReceiver").balance(0L)
-				).when( ) .then(
+				).when().then(
 						inParallel(
 								IntStream.rangeClosed(firstAccount, lastAccount)
 										.mapToObj(id ->
-														cryptoDelete("0.0." + id)
-																.transfer("unluckyReceiver")
-																.payingWith(sysUser)
-																.signedBy(sysUser)
-																.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+												cryptoDelete("0.0." + id)
+														.transfer("unluckyReceiver")
+														.payingWith(sysUser)
+														.signedBy(sysUser)
+														.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
 										)
 										.toArray(HapiSpecOperation[]::new)
 						)

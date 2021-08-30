@@ -60,6 +60,11 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 		);
 	}
 
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
 	private HapiApiSpec transactionsWithOnlySigMap() {
 		return defaultHapiSpec("TransactionsWithOnlySigMap")
 				.given(

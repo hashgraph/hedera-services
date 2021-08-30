@@ -50,7 +50,12 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 
 	public static void main(String... args) {
-		new ContractCallLocalSuite().runSuiteSync();
+		new ContractCallLocalSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

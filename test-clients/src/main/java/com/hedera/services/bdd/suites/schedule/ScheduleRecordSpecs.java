@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +47,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -61,11 +59,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 public class ScheduleRecordSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
 
-	private static final String defaultTxExpiry =
-			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
-
 	public static void main(String... args) {
-		new ScheduleRecordSpecs().runSuiteSync();
+		new ScheduleRecordSpecs().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override
@@ -79,16 +79,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						canScheduleChunkedMessages(),
 						noFeesChargedIfTriggeredPayerIsInsolvent(),
 						noFeesChargedIfTriggeredPayerIsUnwilling(),
-						suiteCleanup(),
 				}
 		);
-	}
-
-	private HapiApiSpec suiteCleanup() {
-		return defaultHapiSpec("suiteCleanup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
-				);
 	}
 
 	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {

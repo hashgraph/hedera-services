@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -193,6 +194,7 @@ public class SuiteRunner {
 	private static final String DEFAULT_PAYER_ID = "0.0.2";
 
 	private static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
+	private static List<HapiApiSuite> suitesToDetail = new ArrayList<>();
 
 	private static final Map<String, Supplier<HapiApiSuite[]>> CATEGORY_MAP = new HashMap<>() {{
 		/* Convenience entries, uncomment locally to run CI jobs */
@@ -451,23 +453,22 @@ public class SuiteRunner {
 					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
 					otherOverrides);
 		}
-		boolean prohibitAsync = !Stream.of(effArgs).anyMatch("-A"::equals);
 		Map<Boolean, List<String>> statefulCategories = Stream
 				.of(effArgs)
 				.filter(CATEGORY_MAP::containsKey)
-				.collect(groupingBy(cat -> prohibitAsync ||
-						SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat).get())));
+				.collect(groupingBy(cat -> SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat).get())));
 
 		Map<String, List<CategoryResult>> byRunType = new HashMap<>();
-		if (statefulCategories.get(Boolean.FALSE) != null) {
-			runAsync = true;
-			byRunType.put("async", runCategories(statefulCategories.get(Boolean.FALSE)));
-		}
 		if (statefulCategories.get(Boolean.TRUE) != null) {
 			runAsync = false;
 			byRunType.put("sync", runCategories(statefulCategories.get(Boolean.TRUE)));
 		}
+		if (statefulCategories.get(Boolean.FALSE) != null) {
+			runAsync = true;
+			byRunType.put("async", runCategories(statefulCategories.get(Boolean.FALSE)));
+		}
 		summarizeResults(byRunType);
+		HapiApiClients.tearDown();
 
 		System.exit(globalPassFlag ? 0 : 1);
 	}
@@ -530,13 +531,13 @@ public class SuiteRunner {
 		Set<String> effectiveArgs = new HashSet<>();
 		String[] ciArgs = realArgs.split("\\s+");
 
-		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {
+		if (Arrays.asList(ciArgs).contains("ALL_SUITES")) {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
 			effectiveArgs.addAll(Stream.of(ciArgs).
 					filter(e -> !e.equals("ALL_SUITES")).
 					collect(Collectors.toList()));
-			log.info("Effective args when running ALL_SUITES : " + effectiveArgs.toString());
-			return effectiveArgs.toArray(new String[effectiveArgs.size()]);
+			log.info("Effective args when running ALL_SUITES : " + effectiveArgs);
+			return effectiveArgs.toArray(new String[0]);
 		}
 
 		return ciArgs;
@@ -564,10 +565,13 @@ public class SuiteRunner {
 			}
 		});
 		log.info("============== SuiteRunner finished ==============");
+
+		/* Print detail summaries for analysis by HapiClientValidator */
+		suitesToDetail.forEach(HapiApiSuite::summarizeDeferredResults);
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {
-		return Stream.of(suites).anyMatch(HapiApiSuite::leaksState);
+		return Stream.of(suites).anyMatch(suite -> !suite.canRunAsync());
 	}
 
 	private static List<CategoryResult> runTargetCategories() {
@@ -585,7 +589,11 @@ public class SuiteRunner {
 				.stream()
 				.filter(k -> null != CATEGORY_MAP.get(k))
 				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k).get()))
-				.collect(toList());
+				.peek(cs -> List.of(cs.suites).forEach(suite -> {
+					suite.skipClientTearDown();
+					suite.deferResultsSummary();
+					suitesToDetail.add(suite);
+				})).collect(toList());
 	}
 
 	private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {

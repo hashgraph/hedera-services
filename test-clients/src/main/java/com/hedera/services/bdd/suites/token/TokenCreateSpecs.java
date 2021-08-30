@@ -107,7 +107,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
-		new TokenCreateSpecs().runSuiteSync();
+		new TokenCreateSpecs().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override
