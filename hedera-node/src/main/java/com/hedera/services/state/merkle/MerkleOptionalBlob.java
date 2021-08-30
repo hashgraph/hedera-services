@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,21 +35,25 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf, Keyed<String> {
-	static final int MERKLE_VERSION = BinaryObject.ClassVersion.ORIGINAL;
+	static final int PRE_RELEASE_0180_VERSION = 1;
+	static final int RELEASE_0180_VERSION = 2;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
+
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
-			(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03,
-			(byte)0x04, (byte)0x05, (byte)0x06, (byte)0x07,
-			(byte)0x08, (byte)0x09, (byte)0x0a, (byte)0x0b,
-			(byte)0x0c, (byte)0x0d, (byte)0x0e, (byte)0x0f,
-			(byte)0x10, (byte)0x11, (byte)0x12, (byte)0x13,
-			(byte)0x14, (byte)0x15, (byte)0x16, (byte)0x17,
-			(byte)0x18, (byte)0x19, (byte)0x1a, (byte)0x1b,
-			(byte)0x1c, (byte)0x1d, (byte)0x1e, (byte)0x1f,
-			(byte)0x20, (byte)0x21, (byte)0x22, (byte)0x23,
-			(byte)0x24, (byte)0x25, (byte)0x26, (byte)0x27,
-			(byte)0x28, (byte)0x29, (byte)0x2a, (byte)0x2b,
-			(byte)0x2c, (byte)0x2d, (byte)0x2e, (byte)0x2f,
+			(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03,
+			(byte) 0x04, (byte) 0x05, (byte) 0x06, (byte) 0x07,
+			(byte) 0x08, (byte) 0x09, (byte) 0x0a, (byte) 0x0b,
+			(byte) 0x0c, (byte) 0x0d, (byte) 0x0e, (byte) 0x0f,
+			(byte) 0x10, (byte) 0x11, (byte) 0x12, (byte) 0x13,
+			(byte) 0x14, (byte) 0x15, (byte) 0x16, (byte) 0x17,
+			(byte) 0x18, (byte) 0x19, (byte) 0x1a, (byte) 0x1b,
+			(byte) 0x1c, (byte) 0x1d, (byte) 0x1e, (byte) 0x1f,
+			(byte) 0x20, (byte) 0x21, (byte) 0x22, (byte) 0x23,
+			(byte) 0x24, (byte) 0x25, (byte) 0x26, (byte) 0x27,
+			(byte) 0x28, (byte) 0x29, (byte) 0x2a, (byte) 0x2b,
+			(byte) 0x2c, (byte) 0x2d, (byte) 0x2e, (byte) 0x2f,
 	});
 	static final byte[] NO_DATA = new byte[0];
 	static final BinaryObject MISSING_DELEGATE = null;
@@ -79,7 +83,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	@Override
 	public void setKey(String path) {
-		throw new UnsupportedOperationException();
+		this.path = path;
 	}
 
 	public void modify(byte[] newContents) {
@@ -99,7 +103,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -119,7 +123,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	 */
 	@Override
 	public void invalidateHash() {
-		// Do nothing because this is no-op intentionally.
+		/* No-op */
 	}
 
 	@Override
@@ -130,6 +134,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 			out.writeBoolean(true);
 			delegate.serialize(out);
 		}
+		out.writeNormalisedString(path);
 	}
 
 	@Override
@@ -137,29 +142,32 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 		var hasData = in.readBoolean();
 		if (hasData) {
 			delegate = blobSupplier.get();
-			delegate.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
+			delegate.deserialize(in, BinaryObject.ClassVersion.ORIGINAL);
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			path = in.readNormalisedString(Integer.MAX_VALUE);
 		}
 	}
 
 	@Override
-	public void serializeAbbreviated(SerializableDataOutputStream out) { 
-                /* Nothing to do here, since Platform automatically serializes the 
-                 * hash of an MerkleExternalLeaf and passes it as an argument to 
-                 * deserializeAbbreviated as below. (Our BinaryObject delegate 
-                 * doesn't need anything except this hash to deserialize itself.) */
-        }
+	public void serializeAbbreviated(SerializableDataOutputStream out) throws IOException {
+		out.writeNormalisedString(path);
+	}
 
 	@Override
 	public void deserializeAbbreviated(
 			SerializableDataInputStream in,
 			Hash hash,
 			int version
-	) {
+	) throws IOException {
 		if (!MISSING_DELEGATE_HASH.equals(hash)) {
 			delegate = blobSupplier.get();
-			delegate.deserializeAbbreviated(in, hash, version);
+			delegate.deserializeAbbreviated(in, hash, BinaryObject.ClassVersion.ORIGINAL);
 		} else {
 			delegate = MISSING_DELEGATE;
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			path = in.readNormalisedString(Integer.MAX_VALUE);
 		}
 	}
 
@@ -179,7 +187,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 			return false;
 		}
 
-		var that = (MerkleOptionalBlob)o;
+		var that = (MerkleOptionalBlob) o;
 
 		return Objects.equals(this.delegate, that.delegate);
 	}
@@ -201,6 +209,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
+				.add("path", path)
 				.add("delegate", delegate)
 				.toString();
 	}
