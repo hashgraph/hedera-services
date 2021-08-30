@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -213,5 +214,17 @@ class MerkleEntityIdUtilsTest {
 
 		// then:
 		assertEquals(expected, fid);
+	}
+
+	@Test
+	void asRelStringWorks() {
+		// given:
+		final var numbers = BitPackUtils.packedNums(123, 456);
+
+		// when:
+		final var actual = EntityIdUtils.asRelationshipString(numbers);
+
+		// then:
+		assertEquals("(0.0.123, 0.0.456)", actual);
 	}
 }

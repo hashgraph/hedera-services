@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,6 +37,7 @@ import com.swirlds.common.CommonUtils;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static java.lang.System.arraycopy;
 
 public class EntityIdUtils {
@@ -198,5 +200,12 @@ public class EntityIdUtils {
 				id.getShardNum(),
 				id.getRealmNum(),
 				id.getFileNum());
+	}
+
+	public static String asRelationshipString(long packedNumbers) {
+		final var leftNum = BitPackUtils.unsignedHighOrder32From(packedNumbers);
+		final var rightNum = BitPackUtils.unsignedLowOrder32From(packedNumbers);
+		return "(" + STATIC_PROPERTIES.scopedIdLiteralWith(leftNum)
+				+ ", " + STATIC_PROPERTIES.scopedIdLiteralWith(rightNum) + ")";
 	}
 }
