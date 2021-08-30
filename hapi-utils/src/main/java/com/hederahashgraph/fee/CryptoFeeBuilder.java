@@ -2,7 +2,7 @@ package com.hederahashgraph.fee;
 
 /*-
  * ‌
- * Hedera Services API
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -162,7 +162,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 		if (transRecord == null) {
 			return FeeData.getDefaultInstance();
 		}
-		final var bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+		final var bpt = BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
 		final var txRecordSize = getAccountTransactionRecordSize(transRecord);
 		final var bpr = BASIC_QUERY_RES_HEADER + txRecordSize + getStateProofSize(responseType);
 
