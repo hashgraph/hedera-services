@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -164,7 +163,6 @@ class MerkleOptionalBlobTest {
 		assertEquals(MerkleOptionalBlob.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 		assertThrows(UnsupportedOperationException.class, () -> subject.setHash(null));
-		assertDoesNotThrow(() -> subject.serializeAbbreviated(null));
 	}
 
 	@Test

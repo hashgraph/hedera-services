@@ -175,7 +175,9 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	@Override
 	public MerkleOptionalBlob copy() {
 		setImmutable(true);
-		return new MerkleOptionalBlob(delegate.copy());
+		final var fc = new MerkleOptionalBlob(delegate.copy());
+		fc.setKey(path);
+		return fc;
 	}
 
 	@Override
@@ -189,12 +191,12 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 		var that = (MerkleOptionalBlob) o;
 
-		return Objects.equals(this.delegate, that.delegate);
+		return Objects.equals(this.delegate, that.delegate) && Objects.equals(this.path, that.path);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Objects.hashCode(delegate));
+		return Objects.hash(Objects.hashCode(delegate), path);
 	}
 
 	/* --- Bean --- */

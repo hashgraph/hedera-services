@@ -214,4 +214,10 @@ public class EntityIdUtils {
 	public static String asIdLiteral(int num) {
 		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(num));
 	}
+
+	public static String asScopedSerialNoLiteral(long scopedSerialNo) {
+		final var leftNum = unsignedHighOrder32From(scopedSerialNo);
+		final var rightNum = unsignedLowOrder32From(scopedSerialNo);
+		return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;
+	}
 }

@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -45,7 +46,10 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHi
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
 	private static final int TREASURY_OWNER_CODE = 0;
 
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_RELEASE_0180_VERSION = 1;
+	static final int RELEASE_0180_VERSION = 2;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
 
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
@@ -85,8 +89,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	public MerkleUniqueToken(
 			int ownerCode,
 			byte[] metadata,
-			long packedCreationTime
+			long packedCreationTime,
+			long numbers
 	) {
+		this.numbers = numbers;
 		this.ownerCode = ownerCode;
 		this.metadata = metadata;
 		this.packedCreationTime = packedCreationTime;
@@ -107,7 +113,8 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 		}
 
 		var that = (MerkleUniqueToken) o;
-		return this.ownerCode == that.ownerCode &&
+		return this.numbers == that.numbers &&
+				this.ownerCode == that.ownerCode &&
 				this.packedCreationTime == that.packedCreationTime &&
 				Objects.deepEquals(this.metadata, that.metadata);
 	}
@@ -115,6 +122,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	@Override
 	public int hashCode() {
 		return Objects.hash(
+				numbers,
 				ownerCode,
 				packedCreationTime,
 				Arrays.hashCode(metadata));
@@ -122,8 +130,11 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 
 	@Override
 	public String toString() {
-		final var then = Instant.ofEpochSecond(unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
+		final var then = Instant.ofEpochSecond(
+				unsignedHighOrder32From(packedCreationTime),
+				signedLowOrder32From(packedCreationTime));
 		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
+				.add("id", EntityIdUtils.asScopedSerialNoLiteral(numbers))
 				.add("owner", EntityId.fromIdentityCode(ownerCode).toAbbrevString())
 				.add("creationTime", then)
 				.add("metadata", metadata)
@@ -138,14 +149,17 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		ownerCode = in.readInt();
 		packedCreationTime = in.readLong();
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
+		if (version >= RELEASE_0180_VERSION) {
+			numbers = in.readLong();
+		}
 	}
 
 	@Override
@@ -153,13 +167,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 		out.writeInt(ownerCode);
 		out.writeLong(packedCreationTime);
 		out.writeByteArray(metadata);
+		out.writeLong(numbers);
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueToken copy() {
 		setImmutable(true);
-		return new MerkleUniqueToken(ownerCode, metadata, packedCreationTime);
+		return new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
 	}
 
 	public void setOwner(EntityId owner) {
@@ -189,7 +204,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	}
 
 	@Override
-	public void setKey(PermHashLong permHashLong) {
-		throw new UnsupportedOperationException();
+	public void setKey(PermHashLong phl) {
+		this.numbers = phl.getValue();
 	}
 }

@@ -239,4 +239,17 @@ class MerkleEntityIdUtilsTest {
 		// expect:
 		assertEquals("0.0." + bigNum, lit);
 	}
+
+	@Test
+	void scopedSerialNoWorks() {
+		// setup:
+		final var bigNum = (long)Integer.MAX_VALUE + 123;
+		final var serialNo = bigNum + 1;
+
+		// given:
+		final var lit = EntityIdUtils.asScopedSerialNoLiteral(BitPackUtils.packedNums(bigNum, serialNo));
+
+		// expect:
+		assertEquals("0.0." + bigNum + "." + serialNo, lit);
+	}
 }
