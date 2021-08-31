@@ -77,7 +77,7 @@ public final class DataFileWriter {
         this.lockFilePath = getLockFilePath(path);
         if (Files.exists(lockFilePath)) throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
         writingStream = new SerializableDataOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 16*1024*1024));
+                new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 4*1024*1024));
         Files.createFile(lockFilePath);
     }
 

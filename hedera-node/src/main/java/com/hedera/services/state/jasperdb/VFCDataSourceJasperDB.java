@@ -14,7 +14,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -387,94 +386,36 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
             try {
                 pathToKeyHashValue.startWriting();
                 // get reusable buffer
-                final ByteArrayOutputStream bout =  hasVariableDataSize ? new ByteArrayOutputStream(1024) : null;
-                final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(bout);
                 if (!isLongKeyMode) objectKeyToPath.startWriting();
 
                 leafRecords
-                        .map(rec -> {
+                        .peek(rec -> {
                             // update objectKeyToPath
                             if (isLongKeyMode) {
                                 longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
                             } else {
                                 objectKeyToPath.put(rec.getKey(), rec.getPath());
                             }
-                            return rec;
                         })
-//                        .map(rec -> rec.getValue())
-                        .forEachOrdered(rec -> {
-                    try {
-                        final long path = rec.getPath();
-                        final VirtualKey key = rec.getKey();
-                        final Hash hash = rec.getHash();
-                        final VirtualValue value = rec.getValue();
-
-
-                        final byte[] valueBytes;
-                        final int valueSize;
-                        if (hasVariableDataSize) {
-                            bout.reset();
-                            value.serialize(outputStream);
-                            outputStream.flush();
-                            valueBytes = bout.toByteArray();
-                            valueSize = valueBytes.length;
-//                         TODO avoid buffer here and go streams all the way to file
-//                        keyHashValueBuffer = ByteBuffer.allocate(keySizeBytes+HASH_SIZE_BYTES+Integer.BYTES+valueBytes.length);
-                        } else {
-                            valueBytes = null;
-                            valueSize = this.valueSizeBytes;
-                            // clear buffer for reuse
-//                        keyHashValueBuffer.clear();
-                        }
-                        final var out = pathToKeyHashValue.startStreamingPut(path, valueSize);
-                        // put key
-                        out.writeInt(key.getVersion());
-                        key.serialize(out);
-                        // put hash
-                        out.write(hash.getValue());
-                        // put value
-                        out.writeInt(value.getVersion());
-                        if (hasVariableDataSize) {
-                            out.write(valueBytes);
-                        } else {
-                            value.serialize(out);
-                        }
-                        // now save pathToKeyHashValue
-                        pathToKeyHashValue.endStreamingPut();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        throw new RuntimeException(e);
-                    }
-                });
+                        .parallel()
+                        .map(rec -> new SerializedVirtualLeafRecord<>(rec,hasVariableDataSize,valueSizeBytes))
+                        .forEachOrdered(serializedVirtualLeafRecord -> {
+                            try {
+                                // now save pathToKeyHashValue
+                                final var out = pathToKeyHashValue.startStreamingPut(
+                                        serializedVirtualLeafRecord.path, serializedVirtualLeafRecord.valueSize);
+                                out.write(serializedVirtualLeafRecord.keyHashValue);
+                                pathToKeyHashValue.endStreamingPut();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                throw new RuntimeException(e);
+                            }
+                        });
                 pathToKeyHashValue.endWriting(firstLeafPath, lastLeafPath);
                 if(!isLongKeyMode) objectKeyToPath.endWriting();
             } catch (IOException e) {
                 // TODO maybe need a way to make sure streams / writers are closed if there is an exception?
                 throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-            }
-        }
-    }
-
-    /**
-     * Write all the given leaf records to objectKeyToPath
-     */
-    private void writeLeavesToObjectKeyToPath(List<VirtualLeafRecord<K, V>> leafRecords) {
-        if (leafRecords != null && !leafRecords.isEmpty()) {
-            if (isLongKeyMode) {
-                for (var rec : leafRecords) {
-                    long key = ((VirtualLongKey) rec.getKey()).getKeyAsLong();
-                    longKeyToPath.put(key, rec.getPath());
-                }
-            } else {
-                try {
-                    objectKeyToPath.startWriting();
-                    for (var rec : leafRecords) {
-                        objectKeyToPath.put(rec.getKey(), rec.getPath());
-                    }
-                    objectKeyToPath.endWriting();
-                } catch (IOException e) {
-                    throw new RuntimeException(e); // TODO maybe re-wrap into IOException?
-                }
             }
         }
     }
@@ -505,19 +446,70 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     }
 
     //==================================================================================================================
-    //
+    // SerializedVirtualRecord class
 
-//    private class SerializedVirtualRecord {
-//        private final long path;
-//        private final Hash hash;
-//        private final K key;
-//        private final byte[] keyHashValue;
-//
-//        public SerializedVirtualRecord(VirtualLeafRecord<K,V> leafRecord) {
-//            path = leafRecord.getPath();
-//        }
-//
-//    }
+    /**
+     * Class used for temporary storage of serialized virtual leaf records.
+     */
+    private static final class SerializedVirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> {
+        /** Reusable ByteArrayOutputStreams */
+        private static final ThreadLocal<ByteArrayOutputStream> reusableStreams =
+                ThreadLocal.withInitial(() -> new ByteArrayOutputStream(1024));
+        /** leaf path */
+        final long path;
+        /** leaf value size when serialized in bytes */
+        final int valueSize;
+        /** key, hash and value serialized to byte[] */
+        final byte[] keyHashValue;
+
+        public SerializedVirtualLeafRecord(VirtualLeafRecord<K,V> leafRecord, boolean hasVariableDataSize, int valueSizeBytes) {
+            try {
+                this.path = leafRecord.getPath();
+                final VirtualKey key = leafRecord.getKey();
+                final Hash hash = leafRecord.getHash();
+                final VirtualValue value = leafRecord.getValue();
+
+                final ByteArrayOutputStream bout = reusableStreams.get();
+                bout.reset();
+                final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(bout);
+
+                if (hasVariableDataSize) {
+                    // now write key, hash and value to stream 1
+                    // put key
+                    outputStream.writeInt(key.getVersion());
+                    key.serialize(outputStream);
+                    // put hash
+                    outputStream.write(hash.getValue());
+                    // put value
+                    outputStream.writeInt(value.getVersion());
+                    outputStream.flush();
+                    final int sizeBefore = bout.size();
+                    // write value to second stream as we need its size
+                    value.serialize(outputStream);
+                    outputStream.flush();
+                    // get value size
+                    valueSize = bout.size() - sizeBefore;
+                } else {
+                    valueSize = valueSizeBytes;
+                    // put key
+                    outputStream.writeInt(key.getVersion());
+                    key.serialize(outputStream);
+                    // put hash
+                    outputStream.write(hash.getValue());
+                    // put value
+                    outputStream.writeInt(value.getVersion());
+                    value.serialize(outputStream);
+                }
+                // flush everything
+                outputStream.flush();
+                // store a copy of array data
+                keyHashValue = bout.toByteArray();
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+    }
     //==================================================================================================================
     // Legacy API methods
     @Deprecated public V loadLeafValue(long path) { throw new IllegalArgumentException("Old API Called"); }
