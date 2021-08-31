@@ -54,10 +54,14 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -430,8 +434,15 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesFromRelease0160AsExpected() {
+	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
 		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));

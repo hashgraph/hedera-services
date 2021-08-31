@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.contract.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -44,7 +43,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class ContractUpdateResourceUsageTest {
-	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
+	PermHashInteger accountKey = PermHashInteger.fromLong(1234);
 	ContractID target = asContract("0.0.1234");
 	Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 	StateView view;

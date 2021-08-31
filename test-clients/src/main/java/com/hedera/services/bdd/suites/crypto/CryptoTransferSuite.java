@@ -70,7 +70,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
 
 	public static void main(String... args) {
-		new CryptoTransferSuite().runSuiteAsync();
+		new CryptoTransferSuite().runSuiteSync();
 	}
 
 	@Override
