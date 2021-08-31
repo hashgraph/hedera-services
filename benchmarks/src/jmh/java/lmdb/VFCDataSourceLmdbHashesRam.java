@@ -471,14 +471,16 @@ public final class VFCDataSourceLmdbHashesRam<K extends VirtualKey, V extends Vi
 
     private Hash getHash(ByteBuffer hashBytes) throws IOException {
         hashBytes.rewind();
-        return Hash.fromByteBuffer(hashBytes);
+        throw new RuntimeException("Needs to be reimplemented");
+//        return Hash.fromByteBuffer(hashBytes);
     }
 
     private ByteBuffer getHashBytes(Hash hash) {
         ByteBuffer hashData = this.hashData.get();
         hashData.rewind();
-        Hash.toByteBuffer(hash,hashData);
-        return hashData.flip();
+        throw new RuntimeException("Needs to be reimplemented");
+//        Hash.toByteBuffer(hash,hashData);
+//        return hashData.flip();
     }
 }
 

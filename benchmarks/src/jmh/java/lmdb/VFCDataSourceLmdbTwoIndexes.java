@@ -492,7 +492,8 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VirtualKey, V extends V
 
     private Hash getHashFromKeyAndHash(ByteBuffer hashBytes) throws IOException {
         hashBytes.position(keySizeBytes);
-        return Hash.fromByteBuffer(hashBytes);
+        throw new RuntimeException("Needs to be reimplemented");
+//        return Hash.fromByteBuffer(hashBytes);
     }
 
     private ByteBuffer getKeyAndHashBytes(K key, Hash hash) throws IOException {
@@ -501,15 +502,17 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VirtualKey, V extends V
         keyAndHashBytes.putInt(key.getVersion());
         key.serialize(keyAndHashBytes);
         keyAndHashBytes.position(keySizeBytes); // jump over key
-        Hash.toByteBuffer(hash,keyAndHashBytes);
-        return keyAndHashBytes.flip();
+        throw new RuntimeException("Needs to be reimplemented");
+//        Hash.toByteBuffer(hash,keyAndHashBytes);
+//        return keyAndHashBytes.flip();
     }
 
     private ByteBuffer getKeyAndHashBytes(Hash hash) {
         ByteBuffer keyAndHashBytes = this.keyAndHashBytes.get();
         keyAndHashBytes.position(keySizeBytes); // jump over key
-        Hash.toByteBuffer(hash,keyAndHashBytes);
-        return keyAndHashBytes.flip();
+        throw new RuntimeException("Needs to be reimplemented");
+//        Hash.toByteBuffer(hash,keyAndHashBytes);
+//        return keyAndHashBytes.flip();
     }
 }
 

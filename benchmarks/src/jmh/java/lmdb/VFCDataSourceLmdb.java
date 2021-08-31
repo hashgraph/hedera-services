@@ -163,7 +163,8 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
             // deserialize hash
             keyHashValueBuffer.rewind();
             keyHashValueBuffer.position(keySizeBytes); // jump over key
-            return Hash.fromByteBuffer(keyHashValueBuffer);
+            throw new RuntimeException("Needs to be reimplemented");
+//            return Hash.fromByteBuffer(keyHashValueBuffer);
         }
     }
 
@@ -197,7 +198,8 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             ByteBuffer hashBytes = pathToInternalHashesMap.get(txn,getPathNativeOrderBytes(path));
             if (hashBytes == null) return null;
-            return Hash.fromByteBuffer(hashBytes);
+            throw new RuntimeException("Needs to be reimplemented");
+//            return Hash.fromByteBuffer(hashBytes);
         }
     }
 
@@ -226,14 +228,15 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
                 final ByteBuffer keyHashValueBytes = leafKeyHashValue.get().clear();
                 keyHashValueBytes.putInt(leaf.getKey().getVersion());
                 leaf.getKey().serialize(keyHashValueBytes);
-                Hash.toByteBuffer(leaf.getHash(),keyHashValueBytes);
-                keyHashValueBytes.putInt(leaf.getValue().getVersion());
-                leaf.getValue().serialize(keyHashValueBytes);
-                keyHashValueBytes.flip();
-                leafPathToKeyHashValueMap.put(txn,
-                        getPathNativeOrderBytes(leaf.getPath()),
-                        keyHashValueBytes
-                );
+//                Hash.toByteBuffer(leaf.getHash(),keyHashValueBytes);
+//                keyHashValueBytes.putInt(leaf.getValue().getVersion());
+//                leaf.getValue().serialize(keyHashValueBytes);
+//                keyHashValueBytes.flip();
+//                leafPathToKeyHashValueMap.put(txn,
+//                        getPathNativeOrderBytes(leaf.getPath()),
+//                        keyHashValueBytes
+//                );
+                throw new RuntimeException("Needs to be reimplemented");
             }
             txn.commit();
         } catch (Exception e) {
@@ -264,13 +267,14 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
             key.deserialize(keyHashValueBuffer, keySerializationVersion);
         }
         // deserialize hash
-        final Hash hash = Hash.fromByteBuffer(keyHashValueBuffer);
-        // deserialize value
-        final int valueSerializationVersion = keyHashValueBuffer.getInt();
-        final V value = valueConstructor.get();
-        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
-        // return new VirtualLeafRecord
-        return new VirtualLeafRecord<>(path, hash, key, value);
+//        final Hash hash = Hash.fromByteBuffer(keyHashValueBuffer);
+//        // deserialize value
+//        final int valueSerializationVersion = keyHashValueBuffer.getInt();
+//        final V value = valueConstructor.get();
+//        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
+//        // return new VirtualLeafRecord
+//        return new VirtualLeafRecord<>(path, hash, key, value);
+        throw new RuntimeException("Needs to be reimplemented");
     }
 
     //==================================================================================================================
@@ -416,14 +420,16 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
 
     private Hash getHash(ByteBuffer hashBytes) throws IOException {
         hashBytes.rewind();
-        return Hash.fromByteBuffer(hashBytes);
+        throw new RuntimeException("Needs to be reimplemented");
+//        return Hash.fromByteBuffer(hashBytes);
     }
 
     private ByteBuffer getHashBytes(Hash hash) {
         ByteBuffer hashData = this.hashData.get();
         hashData.rewind();
-        Hash.toByteBuffer(hash,hashData);
-        return hashData.flip();
+        throw new RuntimeException("Needs to be reimplemented");
+//        Hash.toByteBuffer(hash,hashData);
+//        return hashData.flip();
     }
 }
 
