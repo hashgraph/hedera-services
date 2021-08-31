@@ -3,12 +3,14 @@ package com.hedera.services.state.jasperdb.files;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectList;
 import com.hedera.services.state.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
 import com.hedera.services.state.jasperdb.collections.ThreeLongsList;
+import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
@@ -108,7 +110,7 @@ public class DataFileCollection {
                 if (loadedDataCallback != null) {
                     // now iterate over every file and every key
                     for(var file:dataFileReaders) {
-                        try (DataFileIterator iterator = new DataFileIterator(file.getPath(), file.getMetadata())) {
+                        try (DataFileIterator iterator = new DataFileIteratorSingleBuffered(file.getPath(), file.getMetadata())) {
                             while(iterator.next()) {
                                 loadedDataCallback.newIndexEntry(
                                         iterator.getDataItemsKey(),
@@ -187,8 +189,9 @@ public class DataFileCollection {
      *                              returns it is assumed all readers will no longer be looking in old location, so old
      *                              files can be safely deleted.
      * @param filesToMerge list of files to merge
+     * @return list of files created during the merge
      */
-    public synchronized void mergeFiles(Consumer<ThreeLongsList> locationChangeHandler,
+    public synchronized List<Path> mergeFiles(Consumer<ThreeLongsList> locationChangeHandler,
                                         List<DataFileReader> filesToMerge) throws IOException {
         final var indexedFileList = this.indexedFileList.get();
         // check if anything new has been written since we last merged
@@ -200,7 +203,7 @@ public class DataFileCollection {
             // nothing to do we have merged since the last data update
             System.out.println("Merge not needed as no data changed since last merge in DataFileCollection ["+storeName+"]");
             System.out.println(" last file creation ="+indexedFileList.getLast().getMetadata().getCreationDate()+" , lastMerge="+lastMerge);
-            return;
+            return Collections.emptyList();
         }
         // create a merge time stamp, this timestamp is the newest time of the set of files we are merging
         @SuppressWarnings("OptionalGetWithoutIsPresent") final Instant mergeTime =
@@ -209,8 +212,11 @@ public class DataFileCollection {
         this.lastMerge.set(mergeTime);
         // create new map for keeping track of moves
         ThreeLongsList movesMap = new ThreeLongsList();
+        // create list of paths of files created during merge
+        final List<Path> newFilesCreated = new ArrayList<>();
         // Open a new merge file for writing
         DataFileWriter newFileWriter = newDataFile(mergeTime,true);
+        newFilesCreated.add(newFileWriter.getPath());
         // get the most recent min and max key
         final DataFileMetadata mostRecentDataFileMetadata = indexedFileList.getLast().getMetadata();
         long minimumValidKey = mostRecentDataFileMetadata.getMinimumValidKey();
@@ -256,13 +262,15 @@ public class DataFileCollection {
                 }
                 assert newestIteratorWithLowestKey != null;
                 // write that key from newest iterator to new merge file
-                long newDataLocation = newFileWriter.storeData(newestIteratorWithLowestKey.getDataItemData());
+                long newDataLocation = newestIteratorWithLowestKey.writeItemData(newFileWriter);
+//                long newDataLocation = newFileWriter.storeData(newestIteratorWithLowestKey.getDataItemData());
                 // check if newFile is full
                 if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
                     // finish writing current file, add it for reading then open new file for writing
                     closeCurrentMergeFile(newFileWriter,minimumValidKey,maximumValidKey,locationChangeHandler,movesMap);
                     movesMap.clear();
                     newFileWriter = newDataFile(mergeTime, true);
+                    newFilesCreated.add(newFileWriter.getPath());
                 }
                 // add to movesMap
                 movesMap.add(lowestKey,newestIteratorWithLowestKey.getDataItemsDataLocation(), newDataLocation);
@@ -290,6 +298,8 @@ public class DataFileCollection {
         closeCurrentMergeFile(newFileWriter,minimumValidKey,maximumValidKey,locationChangeHandler,movesMap);
         // delete old files
         deleteFiles(filesToMerge);
+        // return list of files created
+        return newFilesCreated;
     }
 
     /** Finish a merge file and close it. */
@@ -368,6 +378,32 @@ public class DataFileCollection {
         // TODO detect if the file is full and start a new one if needed
         // store key,hash and data in current file and get the offset where it was stored
         return currentDataFileForWriting.storeData(key, data);
+    }
+
+    /**
+     * Start writing an item to current new file, this allows you to stream directly into the file. You will need to call
+     * endStreamingItem() after each item you write to the stream.
+     *
+     * @param key The long key for the data item
+     * @param dataItemSize The size of the data item you are going to write, this is total number of bytes. Only needed
+     *                     when in hasVariableDataSize mode.
+     * @return direct access to stream to file
+     */
+    public SerializableDataOutputStream startStreamingItem(long key, int dataItemSize) throws IOException {
+        var currentDataFileForWriting = this.currentDataFileWriter.get();
+        if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
+        return currentDataFileForWriting.startStreamingItem(key,dataItemSize);
+    }
+
+    /**
+     * End streaming an item, updating the data item count and returning the disk location to find that item later.
+     *
+     * @return the data location of written data in bytes
+     */
+    public long endStreamingItem() throws IOException {
+        var currentDataFileForWriting = this.currentDataFileWriter.get();
+        if (currentDataFileForWriting == null) throw new IOException("Tried to put data when we never started writing.");
+        return currentDataFileForWriting.endStreamingItem();
     }
 
     /**

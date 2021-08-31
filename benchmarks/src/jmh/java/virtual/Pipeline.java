@@ -94,6 +94,7 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                  } else if (currentMergedRoundsCount >= 40) { // it has taken too long for archive, need some back pressure so lets wait for it
                      // probably better way but try for now
                      while(finishedArchiving.get() == false) {
+                         System.out.print("W");
                          Thread.sleep(1000);
                      }
                  }
@@ -104,7 +105,6 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
         archiveService.execute(new Task(() -> {
             final var map = archiveExchanger.exchange(null);
             if (map != null) {
-                System.out.println("Starting Archive...");
                 map.archive();
                 finishedArchiving.set(true);
             }

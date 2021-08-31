@@ -3,9 +3,11 @@ package com.hedera.services.state.jasperdb.collections;
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -40,6 +42,8 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
      * identifying what files are used by what part of the code.
      */
     private final String storeName;
+    /** A temporary key used for start/end streaming put */
+    private long tempKey;
 
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
@@ -78,17 +82,17 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
             System.out.println("Mo meed to merge as only "+size+" files.");
             return;
         }
-        double totalSize = filesToMerge.stream().mapToDouble(file -> {
+        double filesToMergeSizeMb = filesToMerge.stream().mapToDouble(file -> {
             try {
                 return file.getSize();
             } catch (IOException e) {
                 e.printStackTrace();
                 return 0;
             }
-        }).sum() / (MB * 1024D);
-        System.out.printf("Starting merging %,d files in collection %s total %,.2f Gb...\n",size,storeName,totalSize);
+        }).sum() / MB;
+        System.out.printf("Starting merging %,d files in collection %s total %,.2f Gb...\n",size,storeName,filesToMergeSizeMb);
         if (ENABLE_DEEP_VALIDATION) startChecking();
-        fileCollection.mergeFiles(
+        final List<Path> newFilesCreated = fileCollection.mergeFiles(
                 // update index with all moved data
                 moves -> moves.forEach((key, oldValue, newValue) -> {
                    boolean casSuccessful = index.putIfEqual(key, oldValue, newValue);
@@ -96,9 +100,25 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
                 }),
                 filesToMerge);
         if (ENABLE_DEEP_VALIDATION) endChecking(filesToMerge);
-        System.out.printf("Merged %,.2f Gb files in %,.2f seconds\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
-                totalSize,
-                (double) (System.currentTimeMillis() - START) / 1000d,
+
+
+        final double tookSeconds = (double) (System.currentTimeMillis() - START) / 1000d;
+
+        double mergedFilesCreatedSizeMb = newFilesCreated.stream().mapToDouble(path -> {
+            try {
+                return Files.size(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }).sum() / MB;
+
+        System.out.printf("Merged %,.2f Gb files into %,.2f Gb files in %,.2f seconds. Read at %,.2f Mb/sec Written at %,.2f\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
+                filesToMergeSizeMb / 1024d,
+                mergedFilesCreatedSizeMb / 1024d,
+                tookSeconds,
+                filesToMergeSizeMb / tookSeconds,
+                mergedFilesCreatedSizeMb / tookSeconds,
                 Arrays.toString(filesToMerge.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
                 Arrays.toString(allFilesBefore.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
                 Arrays.toString(fileCollection.getAllFullyWrittenFiles().stream().map(reader -> reader.getMetadata().getIndex()).toArray())
@@ -125,6 +145,28 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         long dataLocation = fileCollection.storeData(key,data);
         // store data location in index
         index.put(key,dataLocation);
+    }
+
+    /**
+     * Start streaming put of an item. You will need to call endStreamingPut() after each item you write to the stream.
+     *
+     * @param key The key to store value for
+     * @param dataItemSize The size of the data item you are going to write, this is total number of bytes. Only needed
+     *                     when in hasVariableDataSize mode.
+     * @return direct access to stream to file
+     */
+    public synchronized SerializableDataOutputStream startStreamingPut(long key, int dataItemSize) throws IOException {
+        this.tempKey = key;
+        return fileCollection.startStreamingItem(key,dataItemSize);
+    }
+
+    /**
+     * End streaming put of an item.
+     */
+    public synchronized void endStreamingPut() throws IOException {
+        long dataLocation = fileCollection.endStreamingItem();
+        // store data location in index
+        index.put(tempKey,dataLocation);
     }
 
     /**

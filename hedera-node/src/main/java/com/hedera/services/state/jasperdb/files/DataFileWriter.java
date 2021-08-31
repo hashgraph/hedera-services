@@ -1,7 +1,8 @@
 package com.hedera.services.state.jasperdb.files;
 
+import com.swirlds.common.io.SerializableDataOutputStream;
+
 import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -27,7 +28,7 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.*;
  */
 public final class DataFileWriter {
     /** The output stream we are writing to */
-    private final DataOutputStream writingStream;
+    private final SerializableDataOutputStream writingStream;
     /** Might not need it. Was keeping track of "original" file vs. "merge" file */
     private final boolean isMergeFile;
     /** size of value data or DataFileCommon.VARIABLE_DATA_SIZE if variable length (see commons for constant) */
@@ -52,6 +53,8 @@ public final class DataFileWriter {
     private long writePosition = 0;
     /** Count of the number of data items we have written so far. Ready to be stored in footer metadata */
     private long dataItemCount = 0;
+    /** Temporary byteOffset used by start/stop streaming */
+    private long byteOffset;
 
     /**
      * Create a new data file in the given directory, in append mode. Puts the object into "writing" mode
@@ -73,8 +76,8 @@ public final class DataFileWriter {
         this.path = createDataFilePath(filePrefix, dataFileDir, index, creationInstant);
         this.lockFilePath = getLockFilePath(path);
         if (Files.exists(lockFilePath)) throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
-        writingStream = new DataOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 4*1024*1024));
+        writingStream = new SerializableDataOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND), 16*1024*1024));
         Files.createFile(lockFilePath);
     }
 
@@ -94,6 +97,45 @@ public final class DataFileWriter {
     }
 
     /**
+     * Get the data writing stream, this allows you to stream directly into the file. You will need to call
+     * incrementDataItemCount() after each item you write to the stream.
+     *
+     * @param key The long key for the data item
+     * @param dataItemSize The size of the data item you are going to write, this is total number of bytes. Only needed
+     *                     when in hasVariableDataSize mode.
+     * @return direct access to stream to file
+     */
+    public synchronized SerializableDataOutputStream startStreamingItem(long key, int dataItemSize) throws IOException {
+        final int totalDataWritten;
+        if (hasVariableDataSize) {
+            // write data size
+            writingStream.writeInt(dataItemSize);
+            // include extra data written
+            totalDataWritten = SIZE_OF_DATA_ITEM_SIZE_IN_FILE + KEY_SIZE + dataItemSize;
+        } else {
+            totalDataWritten = KEY_SIZE + this.dataSize;
+        }
+        // find offset for the start of this new data item, we assume we always write data in a whole number of blocks
+        byteOffset = writePosition;
+        writePosition += totalDataWritten;
+        // write key and value
+        writingStream.writeLong(key);
+        return writingStream;
+    }
+
+    /**
+     * End streaming an item, updating the data item count and returning the disk location to find that item later.
+     *
+     * @return the data location of written data in bytes
+     */
+    public synchronized long endStreamingItem() {
+        // increment data item counter
+        dataItemCount++;
+        // return the offset where we wrote the data
+        return DataFileCommon.dataLocation(index, byteOffset);
+    }
+
+    /**
      * Store data in provided ByteBuffer from its current position to its limit.
      *
      * @param key a long key
@@ -102,10 +144,10 @@ public final class DataFileWriter {
      * @throws IOException If there was a problem appending data to file
      */
     public synchronized long storeData(long key, ByteBuffer dataToStore) throws IOException {
-        final int dataValueSize, dataSize;
+        final int dataValueSize, totalDataWritten;
         if (hasVariableDataSize) {
             dataValueSize = dataToStore.remaining();
-            dataSize = SIZE_OF_DATA_ITEM_SIZE_IN_FILE + KEY_SIZE + dataValueSize;
+            totalDataWritten = SIZE_OF_DATA_ITEM_SIZE_IN_FILE + KEY_SIZE + dataValueSize;
             // write data size
             writingStream.writeInt(dataValueSize);
         } else {
@@ -113,11 +155,11 @@ public final class DataFileWriter {
             if (dataToStore.remaining() != dataValueSize) {
                 throw new BufferTooSmallException(dataValueSize, dataToStore.remaining());
             }
-            dataSize = KEY_SIZE + dataValueSize;
+            totalDataWritten = KEY_SIZE + dataValueSize;
         }
         // find offset for the start of this new data item, we assume we always write data in a whole number of blocks
         final long byteOffset = writePosition;
-        writePosition += dataSize;
+        writePosition += totalDataWritten;
         // write key and value
         writingStream.writeLong(key);
         if (dataToStore.isDirect()) {

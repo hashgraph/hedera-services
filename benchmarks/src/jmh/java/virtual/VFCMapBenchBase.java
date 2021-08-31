@@ -166,12 +166,8 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
 
         @Override
-        public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-            byte[] b = new byte[SERIALIZED_SIZE];
-            //noinspection ResultOfMethodCallIgnored
-            serializableDataInputStream.read(b);
-            final var buf = ByteBuffer.wrap(b);
-            deserialize(buf, i);
+        public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+            num = in.readLong();
         }
 
         @Override
@@ -180,10 +176,8 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
 
         @Override
-        public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-            final var buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-            serialize(buf);
-            serializableDataOutputStream.write(buf.array());
+        public void serialize(SerializableDataOutputStream out) throws IOException {
+            out.writeLong(num);
         }
 
         @Override
@@ -388,10 +382,50 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
 
         @Override
-        public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-            final var buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-            serialize(buf);
-            serializableDataOutputStream.write(buf.array());
+        public void serialize(SerializableDataOutputStream out) throws IOException {
+//            final var buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+//            serialize(buf);
+//            serializableDataOutputStream.write(buf.array());
+            final int initialPosition = out.size();
+            out.write(key);
+            out.writeLong(expiry);
+            out.writeLong(hbarBalance);
+            out.writeLong(autoRenewSecs);
+
+            // get the string length, write the string (up to 100 chars), and skip anything left.
+            final var bytes = memo == null ? null : memo.getBytes(StandardCharsets.UTF_8);
+            if (bytes == null) {
+                out.write((byte)0);
+                for (int i = 0; i < MAX_STRING_BYTES; i++) { // padding
+                    out.write((byte)0);
+                }
+            } else {
+                final var extra = Math.max(0, MAX_STRING_BYTES - bytes.length);
+                out.write((byte) bytes.length);
+                out.write(bytes, 0, Math.min(bytes.length, MAX_STRING_BYTES));
+                for (int i = 0; i < extra; i++) { // padding
+                    out.write((byte)0);
+                }
+            }
+            assert (out.size()-initialPosition) == (7*Long.BYTES) + 1 + MAX_STRING_BYTES :
+                    "byteBuffer.position() ["+(out.size()-initialPosition)+"] != (7*Long.BYTES) + 1 + MAX_STRING_BYTES ["+((7*Long.BYTES) + 1 + MAX_STRING_BYTES)+"]";
+
+            // byte pack the three booleans
+            byte packed = 0;
+            packed |= deleted ? 0b0001 : 0;
+            packed |= smartContract ? 0b0010 : 0;
+            packed |= receiverSigRequired ? 0b0100 : 0;
+            packed |= proxy != null ? 0b1000 : 0;
+            out.write(packed);
+
+            // Write the proxy
+            if (proxy != null) {
+                proxy.serialize(out);
+            } else {
+                out.writeLong(0);
+            }
+            assert (out.size()-initialPosition) == SERIALIZED_SIZE :
+                    "byteBuffer.position() ["+(out.size()-initialPosition)+"] != SERIALIZED_SIZE ["+SERIALIZED_SIZE+"]";
         }
 
         @Override

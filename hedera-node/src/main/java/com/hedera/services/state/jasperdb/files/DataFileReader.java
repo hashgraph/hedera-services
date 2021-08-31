@@ -85,7 +85,8 @@ public abstract class DataFileReader implements AutoCloseable, Comparable<DataFi
      * @return new data item iterator
      */
     public final DataFileIterator createIterator() {
-        return new DataFileIterator(path, metadata);
+        return new DataFileIteratorSingleBuffered(path, metadata);
+//        return new DataFileIteratorDoubleBuffered(path, metadata);
     }
 
     /**
