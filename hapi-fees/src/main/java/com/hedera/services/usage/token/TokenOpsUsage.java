@@ -22,9 +22,12 @@ package com.hedera.services.usage.token;
 
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.UsageProperties;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
 import javax.inject.Inject;
@@ -32,6 +35,8 @@ import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
@@ -46,6 +51,9 @@ public class TokenOpsUsage {
 	private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
 
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
+
+	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
 
 	@Inject
 	public TokenOpsUsage() {
@@ -123,6 +131,21 @@ public class TokenOpsUsage {
 				+ numRoyaltyHtsFallbackFees * plusCollectorSize(ROYALTY_HTS_FALLBACK_REPR_SIZE)
 				+ numRoyaltyHbarFallbackFees * plusCollectorSize(ROYALTY_HBAR_FALLBACK_REPR_SIZE);
 
+	}
+	public void tokenCreateUsage(SigUsage sigUsage, BaseTransactionMeta baseMeta, TokenCreateMeta tokenCreateMeta,
+			UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenCreateMeta.getBaseSize());
+		accumulator.addRbs((tokenCreateMeta.getBaseSize() + tokenCreateMeta.getCustomFeeScheduleSize()) *
+				tokenCreateMeta.getLifeTime());
+
+		long tokenSizes = tokenEntitySizes.bytesUsedToRecordTokenTransfers(tokenCreateMeta.getNumTokens(),
+				tokenCreateMeta.getFungibleNumTransfers() , tokenCreateMeta.getNftsTransfers()) *
+				usageProperties.legacyReceiptStorageSecs();
+		accumulator.addRbs(tokenSizes);
+
+		accumulator.addNetworkRbs(tokenCreateMeta.getNetworkRecordRb() * usageProperties.legacyReceiptStorageSecs());
 	}
 
 	private int plusCollectorSize(int feeReprSize) {

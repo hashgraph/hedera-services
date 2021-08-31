@@ -36,6 +36,7 @@ import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 @Singleton
@@ -43,7 +44,8 @@ public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			CryptoTransfer,
 			ConsensusSubmitMessage,
-			TokenFeeScheduleUpdate
+			TokenFeeScheduleUpdate,
+			TokenCreate
 	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -88,6 +90,9 @@ public class AccessorBasedUsages {
 			final var opMeta = spanMapAccessor.getFeeScheduleUpdateMeta(accessor);
 			final var usageCtx = opUsageCtxHelper.ctxForFeeScheduleUpdate(op);
 			tokenOpsUsage.feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, usageCtx, into);
+		} else if (function == TokenCreate) {
+			final var tokenCreateMeta = spanMapAccessor.getTokenCreateMeta(accessor);
+			tokenOpsUsage.tokenCreateUsage(sigUsage, baseMeta, tokenCreateMeta, into);
 		}
 	}
 
