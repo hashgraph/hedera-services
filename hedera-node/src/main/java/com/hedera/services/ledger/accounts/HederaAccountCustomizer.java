@@ -37,7 +37,9 @@ public class HederaAccountCustomizer extends
 			Option.IS_DELETED, AccountProperty.IS_DELETED,
 			Option.AUTO_RENEW_PERIOD, AccountProperty.AUTO_RENEW_PERIOD,
 			Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT,
-			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED
+			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED,
+			Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS,
+			Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS
 	);
 
 	public HederaAccountCustomizer() {

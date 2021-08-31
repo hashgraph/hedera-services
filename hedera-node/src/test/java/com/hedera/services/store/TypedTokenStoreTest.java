@@ -134,7 +134,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsExtantTokenRelAsExpected() {
 		// setup:
-		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted);
+		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted, automaticAssociation);
 
 		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
 		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
@@ -181,7 +181,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsNewTokenRelAsExpected() {
 		// setup:
-		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true);
+		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
 
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
@@ -489,10 +489,11 @@ class TypedTokenStoreTest {
 	}
 
 	private void setupTokenRel() {
-		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
+		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
 	}
 
@@ -526,6 +527,7 @@ class TypedTokenStoreTest {
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
 	private final boolean freezeDefault = true;
+	private final boolean automaticAssociation = true;
 	private final MerkleEntityAssociation miscTokenRelId = new MerkleEntityAssociation(
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);

@@ -54,7 +54,12 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
 
 	public static void main(String... args) {
-		new TokenDeleteSpecs().runSuiteSync();
+		new TokenDeleteSpecs().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

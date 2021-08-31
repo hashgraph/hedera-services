@@ -44,8 +44,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_K
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class TokenListChecks {
+public final class TokenListChecks {
 	static Predicate<Key> adminKeyRemoval = ImmutableKeyUtils::signalsKeyRemoval;
+
+	private TokenListChecks() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
 	public static boolean repeatsItself(final List<TokenID> tokens) {
 		return new HashSet<>(tokens).size() < tokens.size();
@@ -135,7 +139,6 @@ public class TokenListChecks {
 		validity = checkKeyOfType(hasFeeScheduleKey, feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY);
 		return validity;
 	}
-
 
 	private static ResponseCodeEnum checkAdminKey(final boolean hasAdminKey, final Key adminKey) {
 		if (hasAdminKey && !adminKeyRemoval.test(adminKey)) {

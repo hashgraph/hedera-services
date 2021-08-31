@@ -49,6 +49,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -81,6 +82,7 @@ class CryptoCreateTransitionLogicTest {
 	final private long customReceiveThreshold = 51_001L;
 	final private Long balance = 1_234L;
 	final private String memo = "The particular is pounded til it is man";
+	final private int maxAutoAssociations = 1234;
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID created = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -219,13 +221,14 @@ class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(6, changes.size());
+		assertEquals(7, changes.size());
 		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
 		assertEquals(EntityId.fromGrpcAccountId(proxy), changes.get(PROXY));
 		assertEquals(memo, changes.get(MEMO));
+		assertEquals(maxAutoAssociations, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
@@ -334,6 +337,7 @@ class CryptoCreateTransitionLogicTest {
 								.setReceiveRecordThreshold(customReceiveThreshold)
 								.setSendRecordThreshold(customSendThreshold)
 								.setKey(toUse)
+								.setMaxAutomaticTokenAssociations(maxAutoAssociations)
 								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);

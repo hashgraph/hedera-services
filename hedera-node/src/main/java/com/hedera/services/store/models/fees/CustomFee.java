@@ -157,16 +157,20 @@ public class CustomFee {
 	 * Indicates if the fee collection account needs to be auto-associated to its
 	 * owning token (as part of handling a TokenCreate transaction).
 	 *
+	 * @param provisionalId
+	 * 			the id of the token that is provisionally created.
 	 * @return whether the fee collection account should be auto-associated during a TokenCreate
 	 */
-	public boolean shouldCollectorBeAutoAssociated() {
+	public boolean shouldCollectorBeAutoAssociated(Id provisionalId) {
 		if (fractionalFee != null) {
 			return true;
 		} else if (fixedFee != null) {
-			return fixedFee.getDenominatingTokenId().map(id -> id.getNum() == 0).orElse(false);
+			return fixedFee.getDenominatingTokenId().map(
+					id -> id.getNum() == 0 || id.getNum() == provisionalId.getNum()).orElse(false);
 		} else if (royaltyFee != null && royaltyFee.hasFallbackFee()) {
 			final var fallback = royaltyFee.getFallbackFee();
-			return fallback.getDenominatingTokenId().map(id -> id.getNum() == 0).orElse(false);
+			return fallback.getDenominatingTokenId().map(
+					id -> id.getNum() == 0 || id.getNum() == provisionalId.getNum()).orElse(false);
 		}
 		return false;
 	}

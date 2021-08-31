@@ -50,8 +50,8 @@ public class Issue1742Suite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean leaksState() {
-		return true;
+	public boolean canRunAsync() {
+		return false;
 	}
 
 	public static HapiApiSpec cryptoTransferListShowsOnlyFeesAfterIAB() {

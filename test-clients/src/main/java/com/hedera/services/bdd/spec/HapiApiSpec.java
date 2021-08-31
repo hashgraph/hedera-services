@@ -155,7 +155,6 @@ public class HapiApiSpec implements Runnable {
 		accountBalances.add(sab);
 	}
 
-
 	public void exportAccountBalances(Supplier<String> dir) {
 		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder()
 				.addAllAllAccounts(accountBalances);
@@ -221,8 +220,7 @@ public class HapiApiSpec implements Runnable {
 		}
 
 		List<HapiSpecOperation> ops = Stream.of(given, when, then)
-				.map(Arrays::stream)
-				.flatMap(Function.identity())
+				.flatMap(Arrays::stream)
 				.collect(toList());
 		exec(ops);
 

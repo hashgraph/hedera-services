@@ -35,9 +35,9 @@ import javax.annotation.Nullable;
  * unique token whose owner id may be the sentinel {@code 0.0.0} representing
  * treasury ownership.
  */
-public class GrpcUtils {
-	GrpcUtils() {
-		throw new IllegalStateException("Utility Class");
+public final class GrpcUtils {
+	private GrpcUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

@@ -38,48 +38,60 @@ import java.util.Optional;
 
 import static java.lang.System.arraycopy;
 
-public class EntityIdUtils {
+public final class EntityIdUtils {
 	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
-	public static String readableId(Object o) {
+	private EntityIdUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
+	public static String readableId(final Object o) {
 		if (o instanceof Id) {
-			Id id = (Id) o;
+			final var id = (Id) o;
 			return String.format(ENTITY_ID_FORMAT, id.getShard(), id.getRealm(), id.getNum());
-		} else if (o instanceof AccountID) {
-			AccountID id = (AccountID) o;
-			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-		} else if (o instanceof FileID) {
-			FileID id = (FileID) o;
-			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
-		} else if (o instanceof TopicID) {
-			TopicID id = (TopicID) o;
-			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTopicNum());
-		} else if (o instanceof TokenID) {
-			TokenID id = (TokenID) o;
-			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
-		} else if (o instanceof ScheduleID) {
-			ScheduleID id = (ScheduleID) o;
-			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
-		} else if (o instanceof NftID) {
-			NftID id = (NftID) o;
-			TokenID tokenID = id.getTokenID();
-			return String.format(ENTITY_ID_FORMAT, tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), id.getSerialNumber());
-		} else {
-			return String.valueOf(o);
 		}
+		if (o instanceof AccountID) {
+			final var id = (AccountID) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+		}
+		if (o instanceof FileID) {
+			final var id = (FileID) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
+		}
+		if (o instanceof TopicID) {
+			final var id = (TopicID) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTopicNum());
+		}
+		if (o instanceof TokenID) {
+			final var id = (TokenID) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+		}
+		if (o instanceof ScheduleID) {
+			final var id = (ScheduleID) o;
+			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
+		}
+		if (o instanceof NftID) {
+			final var id = (NftID) o;
+			final var tokenID = id.getTokenID();
+			return String.format(ENTITY_ID_FORMAT + ".%d",
+					tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), id.getSerialNumber());
+		}
+		return String.valueOf(o);
 	}
 
 	/**
 	 * Returns the {@code AccountID} represented by a literal of the form {@code <shard>.<realm>.<num>}.
 	 *
-	 * @param literal the account literal
+	 * @param literal
+	 * 		the account literal
 	 * @return the corresponding id
-	 * @throws IllegalArgumentException if the literal is not formatted correctly
+	 * @throws IllegalArgumentException
+	 * 		if the literal is not formatted correctly
 	 */
-	public static AccountID parseAccount(String literal) {
+	public static AccountID parseAccount(final String literal) {
 		try {
-			final long[] parts = parseLongTriple(literal);
+			final var parts = parseLongTriple(literal);
 			return AccountID.newBuilder()
 					.setShardNum(parts[0])
 					.setRealmNum(parts[1])
@@ -90,7 +102,7 @@ public class EntityIdUtils {
 		}
 	}
 
-	private static long[] parseLongTriple(String dotDelimited) {
+	private static long[] parseLongTriple(final String dotDelimited) {
 		final long[] triple = new long[3];
 		int i = 0;
 		long v = 0;
@@ -114,7 +126,7 @@ public class EntityIdUtils {
 		return triple;
 	}
 
-	public static AccountID asAccount(ContractID cid) {
+	public static AccountID asAccount(final ContractID cid) {
 		return AccountID.newBuilder()
 				.setRealmNum(cid.getRealmNum())
 				.setShardNum(cid.getShardNum())
@@ -122,7 +134,7 @@ public class EntityIdUtils {
 				.build();
 	}
 
-	public static ContractID asContract(AccountID id) {
+	public static ContractID asContract(final AccountID id) {
 		return ContractID.newBuilder()
 				.setRealmNum(id.getRealmNum())
 				.setShardNum(id.getShardNum())
@@ -130,7 +142,7 @@ public class EntityIdUtils {
 				.build();
 	}
 
-	public static FileID asFile(AccountID id) {
+	public static FileID asFile(final AccountID id) {
 		return FileID.newBuilder()
 				.setRealmNum(id.getRealmNum())
 				.setShardNum(id.getShardNum())
@@ -138,7 +150,7 @@ public class EntityIdUtils {
 				.build();
 	}
 
-	public static AccountID asAccount(EntityId jId) {
+	public static AccountID asAccount(final EntityId jId) {
 		return Optional
 				.ofNullable(jId)
 				.map(id ->
@@ -150,16 +162,16 @@ public class EntityIdUtils {
 				.orElse(AccountID.getDefaultInstance());
 	}
 
-	public static String asSolidityAddressHex(AccountID id) {
+	public static String asSolidityAddressHex(final AccountID id) {
 		return CommonUtils.hex(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
-	public static byte[] asSolidityAddress(ContractID id) {
+	public static byte[] asSolidityAddress(final ContractID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
-	public static byte[] asSolidityAddress(int shard, long realm, long num) {
-		byte[] solidityAddress = new byte[20];
+	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+		final byte[] solidityAddress = new byte[20];
 
 		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
 		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
@@ -168,7 +180,7 @@ public class EntityIdUtils {
 		return solidityAddress;
 	}
 
-	public static AccountID accountParsedFromSolidityAddress(byte[] solidityAddress) {
+	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {
 		return AccountID.newBuilder()
 				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
 				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
@@ -176,7 +188,7 @@ public class EntityIdUtils {
 				.build();
 	}
 
-	public static ContractID contractParsedFromSolidityAddress(byte[] solidityAddress) {
+	public static ContractID contractParsedFromSolidityAddress(final byte[] solidityAddress) {
 		return ContractID.newBuilder()
 				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
 				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
@@ -184,7 +196,7 @@ public class EntityIdUtils {
 				.build();
 	}
 
-	public static String asLiteralString(AccountID id) {
+	public static String asLiteralString(final AccountID id) {
 		return String.format(
 				ENTITY_ID_FORMAT,
 				id.getShardNum(),
@@ -192,7 +204,7 @@ public class EntityIdUtils {
 				id.getAccountNum());
 	}
 
-	public static String asLiteralString(FileID id) {
+	public static String asLiteralString(final FileID id) {
 		return String.format(
 				ENTITY_ID_FORMAT,
 				id.getShardNum(),

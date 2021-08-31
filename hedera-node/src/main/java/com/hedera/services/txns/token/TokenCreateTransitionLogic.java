@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -133,9 +134,13 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		}
 
 		/* --- Persist anything modified/new --- */
+		List<FcTokenAssociation> newTokenAssociations = new ArrayList<>();
 		for (final var rel : relationsToPersist) {
+			newTokenAssociations.add(new FcTokenAssociation(
+					rel.getToken().getId().getNum(), rel.getAccount().getId().getNum()));
 			accountStore.persistAccount(rel.getAccount());
 		}
+		txnCtx.setNewTokenAssociations(newTokenAssociations);
 		typedTokenStore.persistNew(created);
 		typedTokenStore.persistTokenRelationships(relationsToPersist);
 	}
@@ -154,17 +159,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		final var associatedAccounts = new HashSet<Id>();
 
 		final var treasuryRel = created.newEnabledRelationship(treasury);
-		treasury.associateWith(List.of(created), dynamicProperties.maxTokensPerAccount());
+		treasury.associateWith(List.of(created), dynamicProperties.maxTokensPerAccount(), false);
 		relations.add(treasuryRel);
 		associatedAccounts.add(treasury.getId());
 
 		for (var fee : customFees) {
-			if (fee.shouldCollectorBeAutoAssociated()) {
+			if (fee.shouldCollectorBeAutoAssociated(created.getId())) {
 				final var collector = fee.getCollector();
 				if (!associatedAccounts.contains(collector.getId())) {
 					final var collectorRelation = created.newEnabledRelationship(collector);
 					if (!collector.getAssociatedTokens().contains(created.getId())) {
-						collector.associateWith(List.of(created), dynamicProperties.maxTokensPerAccount());
+						collector.associateWith(List.of(created), dynamicProperties.maxTokensPerAccount(), false);
 					}
 					relations.add(collectorRelation);
 				}

@@ -34,10 +34,10 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.state.org.LegacyStateChildIndices;
-import com.hedera.services.state.org.StateChildIndices;
+import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
-import com.hedera.services.state.org.StateVersions;
+import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -452,7 +452,7 @@ class ServicesStateTest {
 		final var nftKey = new MerkleUniqueTokenId(MISSING_ENTITY_ID, 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, false);
 		// and:
 		nfts.put(nftKey, nftVal);
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -500,7 +500,7 @@ class ServicesStateTest {
 		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
 		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:

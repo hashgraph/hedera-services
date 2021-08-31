@@ -179,6 +179,7 @@ class AutoRenewCalcsTest {
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
 				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
+				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.build();
 
 		// expect:

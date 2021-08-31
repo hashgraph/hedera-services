@@ -168,6 +168,28 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public Function<MerkleAccount, Object> getter() {
 			return a -> a.tokens().tmpNonMerkleCopy();
 		}
+	},
+	MAX_AUTOMATIC_ASSOCIATIONS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setMaxAutomaticAssociations((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getMaxAutomaticAssociations;
+		}
+	},
+	ALREADY_USED_AUTOMATIC_ASSOCIATIONS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setAlreadyUsedAutomaticAssociations((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getAlreadyUsedAutoAssociations;
+		}
 	};
 
 	@Override

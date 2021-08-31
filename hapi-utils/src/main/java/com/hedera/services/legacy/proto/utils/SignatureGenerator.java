@@ -27,7 +27,11 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 
-public class SignatureGenerator {
+public final class SignatureGenerator {
+	private SignatureGenerator() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	/**
 	 * Signs a message with a private key.
 	 *

@@ -25,7 +25,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 
-public class HederaDateTimeFormatter {
+public final class HederaDateTimeFormatter {
+	private HederaDateTimeFormatter() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	private static final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
 			.appendPattern("yyyy-MM-dd")
 			.appendLiteral('T')
@@ -34,7 +38,7 @@ public class HederaDateTimeFormatter {
 			.toFormatter()
 			.withZone(ZoneId.of("UTC"));
 
-	public static String format(Instant instant) {
+	public static String format(final Instant instant) {
 		return formatter.format(instant) + String.format("%09d", instant.getNano()) + "Z";
 	}
 }

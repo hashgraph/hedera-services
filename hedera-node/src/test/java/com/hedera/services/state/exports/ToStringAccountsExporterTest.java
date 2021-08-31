@@ -116,6 +116,8 @@ class ToStringAccountsExporterTest {
 		// setup:
 		account1.setBalance(1L);
 		account1.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 1L, 2L, 3L, 3L, 2L, 1L })));
+		account1.setMaxAutomaticAssociations(10);
+		account1.setAlreadyUsedAutomaticAssociations(7);
 		account2.setBalance(2L);
 		account2.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 0L, 0L, 1234L })));
 		// and:
@@ -123,8 +125,8 @@ class ToStringAccountsExporterTest {
 				"---\n" +
 				"MerkleAccount{state=MerkleAccountState{key=ed25519: \"first-fake\"\n" +
 				", expiry=1234567, balance=1, autoRenewSecs=555555, memo=This ecstasy doth unperplex, deleted=false, " +
-				"smartContract=true, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0}, #" +
-				" records=0, " +
+				"smartContract=true, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, " +
+				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10}, # records=0, " +
 				"tokens=[3.2.1, 1.2.3]}\n" +
 				"\n" +
 				"0.0.2\n" +
@@ -132,7 +134,7 @@ class ToStringAccountsExporterTest {
 				"MerkleAccount{state=MerkleAccountState{key=ed25519: \"second-fake\"\n" +
 				", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us what we love, " +
 				"deleted=true, smartContract=false, receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, " +
-				"num=0}, nftsOwned=0}, # records=0, tokens=[1234.0.0]}\n";
+				"num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, # records=0, tokens=[1234.0.0]}\n";
 
 		// given:
 		FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();

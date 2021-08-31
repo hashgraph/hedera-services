@@ -25,7 +25,6 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,19 +42,7 @@ public class FileAppendSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
+		return List.of(
 				vanillaAppendSucceeds()
 		);
 	}

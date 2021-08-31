@@ -70,7 +70,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation);
 
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 

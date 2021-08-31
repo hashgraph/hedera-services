@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,21 +43,22 @@ class MerkleTokenRelStatusTest {
 	private static final long balance = 666;
 	private static final boolean frozen = true;
 	private static final boolean kycGranted = true;
+	private static final boolean automaticAssociation = false;
 
 	private MerkleTokenRelStatus subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 	}
 
 	@Test
 	void objectContractMet() {
 		final var one = new MerkleTokenRelStatus();
-		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted);
-		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted);
-		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted);
-		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted, !automaticAssociation);
+		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted, automaticAssociation);
+		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted, automaticAssociation);
+		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -88,13 +90,13 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	void deserializeWorks() throws IOException {
+	void deserializev0180Works() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance);
-		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted);
+		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
-		defaultSubject.deserialize(in, MerkleTokenRelStatus.MERKLE_VERSION);
+		defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0180_VERSION);
 
 		assertEquals(subject, defaultSubject);
 	}
@@ -105,6 +107,7 @@ class MerkleTokenRelStatusTest {
 				"MerkleTokenRelStatus{balance=" + balance
 						+ ", isFrozen=" + frozen
 						+ ", hasKycGranted=" + kycGranted
+						+ ", isAutomaticAssociation=" + automaticAssociation
 						+ "}",
 				subject.toString());
 	}
@@ -116,6 +119,33 @@ class MerkleTokenRelStatusTest {
 		assertNotSame(subject, subjectCopy);
 		assertEquals(subject, subjectCopy);
 		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	void settersAndGettersWork() {
+		final var subject = new MerkleTokenRelStatus();
+
+		subject.setBalance(balance);
+		subject.setFrozen(frozen);
+		subject.setKycGranted(kycGranted);
+		subject.setAutomaticAssociation(automaticAssociation);
+
+		assertEquals(balance, subject.getBalance());
+		assertEquals(frozen, subject.isFrozen());
+		assertEquals(kycGranted, subject.isKycGranted());
+		assertEquals(automaticAssociation, subject.isAutomaticAssociation());
+	}
+
+	@Test
+	void cannotModifyImmutable() {
+		final var subjectCopy = subject.copy();
+		assertTrue(subject.isImmutable());
+
+		assertThrows(MutabilityException.class, () -> subject.setBalance(balance+1));
+		assertThrows(MutabilityException.class, () -> subject.setFrozen(!frozen));
+		assertThrows(MutabilityException.class, () -> subject.setKycGranted(!kycGranted));
+		assertThrows(MutabilityException.class, () -> subject.setAutomaticAssociation(!automaticAssociation));
+
 	}
 
 	@Test

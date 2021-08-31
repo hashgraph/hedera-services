@@ -73,7 +73,10 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 
-public class RequestBuilder {
+public final class RequestBuilder {
+  private RequestBuilder() {
+    throw new UnsupportedOperationException("Utility Class");
+  }
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,

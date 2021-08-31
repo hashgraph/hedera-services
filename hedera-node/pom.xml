@@ -176,7 +176,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
+        <version>3.0.0</version>
         <executions>
           <execution>
             <id>app-clean</id>
@@ -204,9 +204,9 @@
             <phase>generate-resources</phase>
             <id>empty-swirlds-jar-for-old-build-scripts</id>
             <configuration>
-              <tasks>
+              <target>
                 <touch file="swirlds.jar" />
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -329,7 +329,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.8</version>
+            <version>3.0.0</version>
             <executions>
               <execution>
                 <phase>generate-resources</phase>
