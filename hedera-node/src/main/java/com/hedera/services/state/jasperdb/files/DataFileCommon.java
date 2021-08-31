@@ -1,6 +1,6 @@
 package com.hedera.services.state.jasperdb.files;
 
-import com.hedera.services.state.jasperdb.collections.LongListOffHeap;
+import com.hedera.services.state.jasperdb.collections.LongList;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -177,7 +177,7 @@ public class DataFileCommon {
     /**
      * print debug info showing if all links in index are still valid
      */
-    public static void printDataLinkValidation(LongListOffHeap index, List<DataFileReader> fileList) {
+    public static void printDataLinkValidation(LongList index, List<DataFileReader> fileList) {
         System.out.println("DataFileCommon.printDataLinkValidation");
         SortedSet<Integer> validFileIds = new TreeSet<>();
         for(var file:fileList) validFileIds.add(file.getMetadata().getIndex());

@@ -53,7 +53,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /** how full should all available bins be if we are at the specified map size */
     private static final double LOADING_FACTOR = 0.5;
     /** Long list used for mapping bucketIndex(index into list) to disk location for latest copy of bucket */
-    private final LongListOffHeap bucketIndexToBucketLocation;
+    private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
     private final DataFileCollection fileCollection;
     /** The size of each entry, contains entry header and long value */
@@ -100,7 +100,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         // create store dir
         Files.createDirectories(storeDir);
         // create bucket index
-        bucketIndexToBucketLocation = new LongListOffHeap();
+        bucketIndexToBucketLocation = new LongListHeap();
         // calculate number of entries we can store in a disk page
         entryHeaderSize = KEY_HASHCODE_SIZE + KEY_SERIALIZATION_VERSION_SIZE + keySize;
         entrySize = entryHeaderSize + VALUE_SIZE; // key hash code, key serialization version, serialized key, long value

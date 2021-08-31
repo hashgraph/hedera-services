@@ -1,9 +1,6 @@
 package com.hedera.services.state.jasperdb;
 
-import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
-import com.hedera.services.state.jasperdb.collections.HashListOffHeap;
-import com.hedera.services.state.jasperdb.collections.LongListOffHeap;
-import com.hedera.services.state.jasperdb.collections.MemoryIndexDiskKeyValueStore;
+import com.hedera.services.state.jasperdb.collections.*;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
 import com.swirlds.common.crypto.Hash;
@@ -74,7 +71,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     /** True when internalHashesRamToDiskThreshold is less than Long.MAX_VALUE */
     private final boolean hasDiskStoreForInternalHashes;
     /** In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys are longs */
-    private final LongListOffHeap longKeyToPath;
+    private final LongList longKeyToPath;
     /** Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have complex keys. */
     private final HalfDiskHashMap<K> objectKeyToPath;
     /** Mixed disk and off-heap memory store for path to leaf key, hash and value */
@@ -149,7 +146,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
         if (keySizeBytes == Long.BYTES) {
             isLongKeyMode = true;
-            longKeyToPath = new LongListOffHeap();
+            longKeyToPath = new LongListHeap();
             objectKeyToPath = null;
             loadedDataCallback = (path, dataLocation, keyHashValueData) -> {
                 // read key from keyHashValueData, as we are in isLongKeyMode mode then the key is a single long

@@ -34,7 +34,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
      * Off-heap index mapping, it uses our key as the index within the list and the value is the dataLocation in
      * fileCollection where the key/value pair is stored.
      */
-    private final LongListOffHeap index = new LongListOffHeap();
+    private final LongList index = new LongListHeap();
     /** On disk set of DataFiles that contain our key/value pairs */
     private final DataFileCollection fileCollection;
     /**
