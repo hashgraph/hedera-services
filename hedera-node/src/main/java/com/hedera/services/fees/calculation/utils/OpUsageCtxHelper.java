@@ -20,12 +20,16 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 
 import javax.inject.Inject;
@@ -43,11 +47,27 @@ public class OpUsageCtxHelper {
 
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 
+	private final StateView workingView;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
 	@Inject
-	public OpUsageCtxHelper(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
+	public OpUsageCtxHelper(
+			StateView workingView,
+			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens
+	) {
 		this.tokens = tokens;
+		this.workingView = workingView;
+	}
+
+	public FileAppendMeta metaForFileAppend(TransactionBody txn) {
+		final var op = txn.getFileAppend();
+		final var fileMeta = workingView.attrOf(op.getFileID());
+
+		final var effCreationTime = txn.getTransactionID().getTransactionValidStart().getSeconds();
+		final var effExpiration = fileMeta.map(HFileMeta::getExpiry).orElse(effCreationTime);
+		final var effLifetime = effExpiration - effCreationTime;
+
+		return new FileAppendMeta(op.getContents().size(), effLifetime);
 	}
 
 	public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {

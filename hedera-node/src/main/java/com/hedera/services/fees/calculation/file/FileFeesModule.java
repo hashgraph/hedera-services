@@ -25,7 +25,6 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.file.queries.GetFileContentsResourceUsage;
 import com.hedera.services.fees.calculation.file.queries.GetFileInfoResourceUsage;
-import com.hedera.services.fees.calculation.file.txns.FileAppendResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.FileCreateResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.FileDeleteResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.FileUpdateResourceUsage;
@@ -37,7 +36,6 @@ import dagger.multibindings.IntoMap;
 import java.util.List;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
@@ -78,14 +76,5 @@ public abstract class FileFeesModule {
 			FileUpdateResourceUsage fileUpdateResourceUsage
 	) {
 		return List.of(fileUpdateResourceUsage);
-	}
-
-	@Provides
-	@IntoMap
-	@FunctionKey(FileAppend)
-	public static List<TxnResourceUsageEstimator> provideFileAppendEstimator(
-			FileAppendResourceUsage fileAppendResourceUsage
-	) {
-		return List.of(fileAppendResourceUsage);
 	}
 }

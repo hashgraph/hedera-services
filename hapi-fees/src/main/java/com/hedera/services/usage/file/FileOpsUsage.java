@@ -50,6 +50,8 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 @Singleton
 public class FileOpsUsage {
+	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
@@ -75,7 +77,9 @@ public class FileOpsUsage {
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		
+		final var bytesAdded = appendMeta.getBytesAdded();
+		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + bytesAdded);
+		accumulator.addSbs(bytesAdded * appendMeta.getLifetime());
 	}
 
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {

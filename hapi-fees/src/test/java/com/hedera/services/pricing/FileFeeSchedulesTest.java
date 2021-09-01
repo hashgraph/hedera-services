@@ -1,4 +1,4 @@
-package com.hedera.services.usage.file;
+package com.hedera.services.pricing;
 
 /*-
  * ‌
@@ -20,20 +20,16 @@ package com.hedera.services.usage.file;
  * ‍
  */
 
-public class FileAppendMeta {
-	private final int bytesAdded;
-	private final long lifetime;
+import org.junit.jupiter.api.Test;
 
-	public FileAppendMeta(int bytesAdded, long lifetime) {
-		this.bytesAdded = bytesAdded;
-		this.lifetime = lifetime;
-	}
+import java.io.IOException;
 
-	public int getBytesAdded() {
-		return bytesAdded;
-	}
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-	public long getLifetime() {
-		return lifetime;
+public class FileFeeSchedulesTest extends FeeSchedulesTestHelper {
+	@Test
+	void computesExpectedPriceForBaseAppend() throws IOException {
+		testExpectedPriceFor(FileAppend, DEFAULT);
 	}
 }

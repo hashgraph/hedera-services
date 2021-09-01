@@ -1,5 +1,25 @@
 package com.hedera.services.pricing;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -17,6 +37,7 @@ import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -108,6 +129,8 @@ public class ScheduleGenerator {
 							TOKEN_NON_FUNGIBLE_UNIQUE,
 							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
 					)),
+					/* File */
+					Pair.of(FileAppend, List.of(DEFAULT)),
 					/* Token */
 					Pair.of(TokenCreate, List.of(
 							TOKEN_FUNGIBLE_COMMON,
@@ -115,22 +138,12 @@ public class ScheduleGenerator {
 							TOKEN_NON_FUNGIBLE_UNIQUE,
 							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
 					)),
-					Pair.of(TokenMint, List.of(
-							TOKEN_NON_FUNGIBLE_UNIQUE
-					)),
-					Pair.of(TokenBurn, List.of(
-							TOKEN_NON_FUNGIBLE_UNIQUE
-					)),
-					Pair.of(TokenAccountWipe, List.of(
-							TOKEN_NON_FUNGIBLE_UNIQUE
-					)),
-					Pair.of(TokenFeeScheduleUpdate, List.of(
-							DEFAULT
-					)),
+					Pair.of(TokenMint, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+					Pair.of(TokenBurn, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+					Pair.of(TokenAccountWipe, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+					Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
 					/* Consensus */
-					Pair.of(ConsensusSubmitMessage, List.of(
-							DEFAULT
-					)),
+					Pair.of(ConsensusSubmitMessage, List.of(DEFAULT)),
 			}
 	);
 }
