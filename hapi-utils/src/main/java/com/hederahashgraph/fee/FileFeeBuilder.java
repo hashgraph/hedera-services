@@ -22,7 +22,6 @@ package com.hederahashgraph.fee;
 
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -146,41 +145,6 @@ public class FileFeeBuilder extends FeeBuilder {
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
     return getQueryFeeDataMatrices(feeMatrices);
-
-  }
-
-
-  /**
-   * This method returns total bytes in File Create Transaction
-   */
-  private int getFileCreateTxSize(TransactionBody txBody) {
-    /*
-     * Timestamp expirationTime - (LONG_SIZE + INT_SIZE) KeyList keys - calculated value bytes
-     * contents -get the size ShardID shardID - LONG_SIZE RealmID realmID - LONG_SIZE Key
-     * newRealmAdminKey - calculated value
-     */
-
-    FileCreateTransactionBody fileCreateTxBody = txBody.getFileCreate();
-    List<Key> waclKeys = fileCreateTxBody.getKeys().getKeysList();
-
-    int keySize = 0;
-
-    for (Key key : waclKeys) {
-      keySize += getAccountKeyStorageSize(key);
-    }
-    int newRealmAdminKeySize = 0;
-
-    if (fileCreateTxBody.hasNewRealmAdminKey()) {
-      newRealmAdminKeySize = getAccountKeyStorageSize(fileCreateTxBody.getNewRealmAdminKey());
-    }
-    int fileContentsSize = 0;
-    if (fileCreateTxBody.getContents() != null) {
-      fileContentsSize = fileCreateTxBody.getContents().size();
-    }
-
-    int cryptoFileCreateSize = (LONG_SIZE) + keySize + fileContentsSize + (BASIC_ENTITY_ID_SIZE)   + newRealmAdminKeySize;
-
-    return cryptoFileCreateSize;
 
   }
 
