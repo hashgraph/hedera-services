@@ -21,155 +21,100 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class SmartContractFailFirstSpec extends HapiApiSuite  {
 	private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);
 
-	public static void main(String... args) {
-		new org.ethereum.crypto.HashUtil();
+	private static final String A_TOKEN = "TokenA";
+	private static final String B_TOKEN = "TokenB";
+	private static final String FIRST_USER = "Client1";
 
+	public static void main(String... args) {
 		new SmartContractFailFirstSpec().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				smartContractFailFirst(),
+				/* Stateful specs from TokenTransactSpecs */
+				prechecksWork()
 		});
 	}
 
-	HapiApiSpec smartContractFailFirst() {
-		return defaultHapiSpec("smartContractFailFirst")
+	private HapiApiSpec prechecksWork() {
+		return defaultHapiSpec("PrechecksWork")
 				.given(
-						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
-						fileCreate("bytecode")
-								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(FIRST_USER).balance(0L)
 				).when(
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore0", "payer");
-
-							var subop2 =
-									contractCreate("failInsufficientGas")
-											.balance(0)
-											.payingWith("payer")
-											.gas(1)
-											.bytecode("bytecode")
-											.hasKnownStatus(INSUFFICIENT_GAS)
-											.via("failInsufficientGas");
-
-							var subop3 = getTxnRecord("failInsufficientGas");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
-							CustomSpecAssert.allRunFor(spec,  subop4);
-
-						}),
-
-
-
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore1", "payer");
-
-							var subop2 = contractCreate("failInvalidInitialBalance")
-									.balance(100_000_000_000L)
-									.payingWith("payer")
-									.gas(250_000L)
-									.bytecode("bytecode")
-									.via("failInvalidInitialBalance")
-									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
-							var subop3 = getTxnRecord("failInvalidInitialBalance");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore1", -delta));
-							CustomSpecAssert.allRunFor(spec,  subop4);
-
-						}),
-
-
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore2", "payer");
-
-							var subop2 = contractCreate("successWithZeroInitialBalance")
-									.balance(0L)
-									.payingWith("payer")
-									.gas(250_000L)
-									.bytecode("bytecode")
-									.hasKnownStatus(SUCCESS)
-									.via("successWithZeroInitialBalance");
-
-							var subop3 = getTxnRecord("successWithZeroInitialBalance");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore2", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
-
-						}),
-
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore3", "payer");
-
-							var subop2 = contractCall("successWithZeroInitialBalance", ContractResources.SIMPLE_STORAGE_SETTER_ABI, 999_999L )
-									.payingWith("payer")
-									.gas(300_000L)
-									.hasKnownStatus(SUCCESS)
-									.via("setValue");
-
-							var subop3 = getTxnRecord("setValue");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore3", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
-
-						}),
-
-
-						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore4", "payer");
-
-							var subop2 = contractCall("successWithZeroInitialBalance", ContractResources.SIMPLE_STORAGE_GETTER_ABI)
-									.payingWith("payer")
-									.gas(300_000L)
-									.hasKnownStatus(SUCCESS)
-									.via("getValue");
-
-							var subop3 = getTxnRecord("getValue");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
-
-							var subop4 = getAccountBalance("payer").hasTinyBars(changeFromSnapshot("balanceBefore4", -delta));
-							CustomSpecAssert.allRunFor(spec, subop4);
-
-						})
-						).then(
-						getTxnRecord("failInsufficientGas"),
-						getTxnRecord("successWithZeroInitialBalance"),
-						getTxnRecord("failInvalidInitialBalance")
+						tokenCreate(A_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 2
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, B_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 10
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						cryptoTransfer(
+								movingHbar(1)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								movingHbar(1)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER),
+								moving(1, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(0, A_TOKEN)
+										.between(TOKEN_TREASURY, FIRST_USER)
+						).hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
+								moving(10, A_TOKEN)
+										.from(TOKEN_TREASURY)
+						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
+						cryptoTransfer(
+								moving(10, A_TOKEN)
+										.empty()
+						).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
 				);
 	}
 

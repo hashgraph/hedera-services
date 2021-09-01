@@ -54,7 +54,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
+	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		throw new UnsupportedOperationException();
 	}
 

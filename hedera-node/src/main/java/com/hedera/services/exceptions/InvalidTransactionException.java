@@ -22,8 +22,6 @@ package com.hedera.services.exceptions;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.util.function.Supplier;
-
 /**
  * Captures a failure in transaction processing to be captured by
  * the {@link com.hedera.services.txns.TransitionRunner} and used
@@ -38,6 +36,7 @@ public class InvalidTransactionException extends RuntimeException {
 	private final ResponseCodeEnum responseCode;
 
 	public InvalidTransactionException(ResponseCodeEnum responseCode) {
+		super(responseCode.name());
 		this.responseCode = responseCode;
 	}
 

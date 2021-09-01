@@ -30,9 +30,11 @@ public enum CryptoEntitySizes {
 	private static final int NUM_FLAGS_IN_BASE_ACCOUNT_REPRESENTATION = 3;
 	/* { expiry, hbarBalance, autoRenewSecs } + (LEGACY) { sendThreshold, receiveThreshold } */
 	private static final int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 5;
+	/* { maxAutomaticAssociations }*/
+	private static final int NUM_INT_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 1;
 
 	public long bytesInTokenAssocRepr() {
-		return LONG_SIZE + 2L * BOOL_SIZE;
+		return LONG_SIZE + 3L * BOOL_SIZE;
 	}
 
 	public int fixedBytesInAccountRepr() {

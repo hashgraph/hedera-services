@@ -59,6 +59,6 @@ public enum TokenEntitySizes {
 	}
 
 	public int bytesUsedPerAccountRelationship() {
-		return 3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * BOOL_SIZE;
+		return 3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 3 * BOOL_SIZE + INT_SIZE;
 	}
 }

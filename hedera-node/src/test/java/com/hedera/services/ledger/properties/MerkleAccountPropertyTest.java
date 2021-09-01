@@ -43,7 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -51,10 +51,12 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -126,6 +128,8 @@ class MerkleAccountPropertyTest {
 		long origAutoRenew = 1L;
 		long origNumNfts = 123;
 		long origExpiry = 1L;
+		int origMaxAutoAssociations = 10;
+		int origAlreadyUsedAutoAssociations = 7;
 		Key origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 		String origMemo = "a";
 		AccountID origProxy = AccountID.getDefaultInstance();
@@ -143,6 +147,8 @@ class MerkleAccountPropertyTest {
 		long newAutoRenew = 2L;
 		long newExpiry = 2L;
 		long newNumNfts = 321;
+		int newMaxAutoAssociations = 15;
+		int newAlreadyUsedAutoAssociations = 11;
 		JKey newKey = new JKeyList();
 		String newMemo = "b";
 		EntityId newProxy = new EntityId(0, 0, 2);
@@ -161,6 +167,8 @@ class MerkleAccountPropertyTest {
 		account.setBalance(origBalance);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
+		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
+		account.setAlreadyUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
 		// and:
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		var unfrozenToken = new MerkleToken(
@@ -187,6 +195,8 @@ class MerkleAccountPropertyTest {
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
 		NUM_NFTS_OWNED.setter().accept(account, newNumNfts);
+		MAX_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newMaxAutoAssociations);
+		ALREADY_USED_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newAlreadyUsedAutoAssociations);
 
 		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -199,6 +209,8 @@ class MerkleAccountPropertyTest {
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
 		assertEquals(newNumNfts, NUM_NFTS_OWNED.getter().apply(account));
+		assertEquals(newAlreadyUsedAutoAssociations, ALREADY_USED_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
+		assertEquals(newMaxAutoAssociations, MAX_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {

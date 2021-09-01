@@ -276,6 +276,25 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setExpiry(expiry);
 	}
 
+	public int getMaxAutomaticAssociations() {
+		return state().getMaxAutomaticAssociations();
+	}
+
+	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+		state().setMaxAutomaticAssociations(maxAutomaticAssociations);
+	}
+
+	public int getAlreadyUsedAutoAssociations() {
+		return state().getAlreadyUsedAutomaticAssociations();
+	}
+
+	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedAutoAssociations) {
+		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
+			throw new IllegalArgumentException("Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
+		}
+		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+	}
+
 	/* --- Helpers --- */
 	public List<ExpirableTxnRecord> recordList() {
 		return new ArrayList<>(records());

@@ -52,8 +52,8 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean leaksState() {
-		return true;
+	public boolean canRunAsync() {
+		return false;
 	}
 
 	HapiApiSpec contractCallLocalPerf() {

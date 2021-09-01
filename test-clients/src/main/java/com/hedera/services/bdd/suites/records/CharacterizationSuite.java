@@ -21,35 +21,33 @@ package com.hedera.services.bdd.suites.records;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiConsumer;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
 public class CharacterizationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CharacterizationSuite.class);
+
+	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
+	private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
+
+	private static final String defaultTxExpiry =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
 
 	public static void main(String... args) {
 		new CharacterizationSuite().runSuiteSync();
@@ -57,118 +55,43 @@ public class CharacterizationSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
+		return List.of(
+				/* Stateful specs from ScheduleDeleteSpecs */
+				expiredBeforeDeletion(),
+				suiteCleanup()
 		);
 	}
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-//				payerThresholdFeeIsIncludedInRecordTotal()
-//				triplicateThresholdRecordsGenerated()
-				resultSizeAffectsFees()
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-		);
-	}
-
-	private HapiApiSpec resultSizeAffectsFees() {
-		final long TRANSFER_AMOUNT = 1_000L;
-		BiConsumer<TransactionRecord, Logger> RESULT_SIZE_FORMATTER = (record, txnLog) -> {
-			ContractFunctionResult result = record.getContractCallResult();
-			txnLog.info("Contract call result FeeBuilder size = "
-					+ FeeBuilder.getContractFunctionSize(result)
-					+ ", fee = " + record.getTransactionFee()
-					+ ", result is [self-reported size = " + result.getContractCallResult().size()
-					+ ", '" + result.getContractCallResult() + "']");
-			txnLog.info("  Literally :: " + result.toString());
-		};
-
-		return defaultHapiSpec("ResultSizeAffectsFees")
+	public HapiApiSpec expiredBeforeDeletion() {
+		final int FAST_EXPIRATION = 0;
+		return defaultHapiSpec("ExpiredBeforeDeletion")
 				.given(
-						TxnVerbs.fileCreate("bytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
-						TxnVerbs.contractCreate("testContract").bytecode("bytecode")
+						sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any scheduled expiring entity to expire
+						newKeyNamed("admin"),
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
-						TxnVerbs.contractCall(
-								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
-								TRANSFER_AMOUNT, 0, "So we out-danced thought...")
-								.via("noLogsCallTxn").sending(TRANSFER_AMOUNT),
-						TxnVerbs.contractCall(
-								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
-								TRANSFER_AMOUNT, 5, "So we out-danced thought...")
-								.via("loggedCallTxn").sending(TRANSFER_AMOUNT)
-
+						overriding("ledger.schedule.txExpiryTimeSecs", "" + FAST_EXPIRATION),
+						scheduleCreate(
+								"twoSigXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								)
+						).adminKey("admin")
+								.signedBy(DEFAULT_PAYER, "admin", "sender"),
+						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
-						assertionsHold((spec, assertLog) -> {
-							HapiGetTxnRecord noLogsLookup =
-									QueryVerbs.getTxnRecord("noLogsCallTxn").loggedWith(RESULT_SIZE_FORMATTER);
-							HapiGetTxnRecord logsLookup =
-									QueryVerbs.getTxnRecord("loggedCallTxn").loggedWith(RESULT_SIZE_FORMATTER);
-							allRunFor(spec, noLogsLookup, logsLookup);
-							TransactionRecord unloggedRecord =
-									noLogsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
-							TransactionRecord loggedRecord =
-									logsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
-							assertLog.info("Fee for logged record   = " + loggedRecord.getTransactionFee());
-							assertLog.info("Fee for unlogged record = " + unloggedRecord.getTransactionFee());
-							Assertions.assertNotEquals(
-									unloggedRecord.getTransactionFee(),
-									loggedRecord.getTransactionFee(),
-									"Result size should change the txn fee!");
-						})
+						scheduleDelete("twoSigXfer")
+								.payingWith("sender")
+								.hasKnownStatus(INVALID_SCHEDULE_ID),
+						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
 	}
 
-	private HapiApiSpec payerThresholdFeeIsIncludedInRecordTotal() {
-		final long INITIAL_BALANCE = 500_000L;
-		final long LOW_SEND_THRESHOLD = 1_000L;
-
-		return defaultFailingHapiSpec("PayerThresholdFeeIncludedInRecordTotal")
-				.given(
-						cryptoCreate("payer")
-								.balance(INITIAL_BALANCE)
-								.sendThreshold(LOW_SEND_THRESHOLD)
-				).when(
-						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, NODE, 1_000L)
-						).payingWith("payer").via("transferTxn")
-				).then(
-						QueryVerbs.getAccountRecords("payer").has(
-								inOrder(
-										recordWith().fee(spec -> {
-											HapiGetAccountBalance op = QueryVerbs.getAccountBalance("payer");
-											allRunFor(spec, op);
-											long balance = op.getResponse().getCryptogetAccountBalance().getBalance();
-											return (INITIAL_BALANCE - balance);
-										})
-								)
-						).logged()
-				);
-	}
-
-	private HapiApiSpec triplicateThresholdRecordsGenerated() {
-		final long INITIAL_BALANCE = 500_000L;
-		final long LOW_SEND_THRESHOLD = 1L;
-
-		return defaultFailingHapiSpec("TriplicateThresholdRecordsGenerated")
-				.given(
-						cryptoCreate("payer")
-								.balance(INITIAL_BALANCE)
-								.sendThreshold(LOW_SEND_THRESHOLD)
-				).when(
-						cryptoTransfer(
-								tinyBarsFromTo("payer", NODE, 1_000L)
-						).payingWith("payer").via("transferTxn")
-				).then(
-						QueryVerbs.getAccountRecords("payer").has(
-								inOrder(
-										recordWith(), recordWith(), recordWith()
-								)
-						).logged()
+	private HapiApiSpec suiteCleanup() {
+		return defaultHapiSpec("suiteCleanup")
+				.given().when().then(
+						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
 				);
 	}
 

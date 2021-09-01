@@ -169,7 +169,7 @@
     <log4j.version>2.14.1</log4j.version>
     <netty.version>4.1.66.Final</netty.version>
     <protobuf-java.version>3.17.3</protobuf-java.version>
-    <swirlds.version>0.17.3</swirlds.version>
+    <swirlds.version>0.17.4</swirlds.version>
     <!-- Test dependency properties in alphabetical order -->
     <hamcrest.version>2.2</hamcrest.version>
     <junit5.version>5.7.2</junit5.version>
@@ -276,12 +276,6 @@ ${git.signoff}
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>com/hederahashgraph/**/*</exclude>
-            <exclude>com/hedera/services/proto/utils/**/*</exclude>
-          </excludes>
-        </configuration>
         <executions>
           <execution>
             <id>jacoco-agent</id>

@@ -43,6 +43,7 @@ public class RawTokenRelationship {
 	private final long tokenNum;
 	private final boolean frozen;
 	private final boolean kycGranted;
+	private final boolean automaticAssociation;
 
 	public RawTokenRelationship(
 			long balance,
@@ -50,7 +51,8 @@ public class RawTokenRelationship {
 			long realmNum,
 			long tokenNum,
 			boolean frozen,
-			boolean kycGranted
+			boolean kycGranted,
+			boolean automaticAssociation
 	) {
 		this.balance = balance;
 		this.shardNum = shardNum;
@@ -58,6 +60,7 @@ public class RawTokenRelationship {
 		this.tokenNum = tokenNum;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
+		this.automaticAssociation = automaticAssociation;
 	}
 
 	public long getBalance() {
@@ -74,6 +77,10 @@ public class RawTokenRelationship {
 
 	public long getTokenNum() {
 		return tokenNum;
+	}
+
+	public boolean isAutomaticAssociation() {
+		return automaticAssociation;
 	}
 
 	public TokenID id() {
@@ -93,8 +100,8 @@ public class RawTokenRelationship {
 						.setTokenNum(tokenNum))
 				.setFreezeStatus(freezeStatusFor(token))
 				.setKycStatus(kycStatusFor(token))
+				.setAutomaticAssociation(automaticAssociation)
 				.build();
-
 	}
 
 	private TokenFreezeStatus freezeStatusFor(MerkleToken token) {
@@ -120,12 +127,15 @@ public class RawTokenRelationship {
 
 		var that = (RawTokenRelationship) o;
 
-		return this.balance == that.balance && this.frozen == that.frozen && this.kycGranted == that.kycGranted;
+		return this.balance == that.balance &&
+				this.frozen == that.frozen &&
+				this.kycGranted == that.kycGranted &&
+				this.automaticAssociation == that.automaticAssociation;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(balance, frozen, kycGranted);
+		return Objects.hash(balance, frozen, kycGranted, automaticAssociation);
 	}
 
 	@Override
@@ -135,6 +145,7 @@ public class RawTokenRelationship {
 				.add("balance", balance)
 				.add("frozen", frozen)
 				.add("kycGranted", kycGranted)
+				.add("automaticAssociation", automaticAssociation)
 				.toString();
 	}
 }

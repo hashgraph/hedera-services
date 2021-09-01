@@ -23,6 +23,7 @@ package com.hedera.services.ledger.properties;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_AUTOMATIC_ASSOCIATION;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -32,8 +33,9 @@ class TokenRelPropertyTest {
 	long balance = 123, newBalance = 321;
 	boolean frozen = true;
 	boolean kycGranted = false;
+	boolean automaticAssociation = false;
 
-	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 
 	@Test
 	void gettersWork() {
@@ -41,6 +43,7 @@ class TokenRelPropertyTest {
 		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(frozen, IS_FROZEN.getter().apply(target));
 		assertEquals(kycGranted, IS_KYC_GRANTED.getter().apply(target));
+		assertEquals(automaticAssociation, IS_AUTOMATIC_ASSOCIATION.getter().apply(target));
 	}
 
 	@Test
@@ -49,10 +52,12 @@ class TokenRelPropertyTest {
 		TOKEN_BALANCE.setter().accept(target, newBalance);
 		IS_FROZEN.setter().accept(target, !frozen);
 		IS_KYC_GRANTED.setter().accept(target, !kycGranted);
+		IS_AUTOMATIC_ASSOCIATION.setter().accept(target, !automaticAssociation);
 
 		// expect:
 		assertEquals(newBalance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(!frozen, IS_FROZEN.getter().apply(target));
 		assertEquals(!kycGranted, IS_KYC_GRANTED.getter().apply(target));
+		assertEquals(!automaticAssociation, IS_AUTOMATIC_ASSOCIATION.getter().apply(target));
 	}
 }

@@ -164,7 +164,8 @@ class CustomFeeTest {
 		assertNotNull(fee);
 		assertNotNull(fee.getFixedFee());
 		assertNotNull(fee.getCollector());
-		assertFalse(fee.shouldCollectorBeAutoAssociated());
+		assertTrue(fee.shouldCollectorBeAutoAssociated(denomId));
+		assertFalse(fee.shouldCollectorBeAutoAssociated(new Id(123,123,123)));
 
 		var fractionalFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setFractionalFee(FractionalFee.newBuilder()
@@ -178,7 +179,7 @@ class CustomFeeTest {
 		final var fractFee = CustomFee.fromGrpc(fractionalFeeGrpc, collector);
 		assertNotNull(fractFee);
 		assertNotNull(fractFee.getFractionalFee());
-		assertTrue(fractFee.shouldCollectorBeAutoAssociated());
+		assertTrue(fractFee.shouldCollectorBeAutoAssociated(denomId));
 		
 		final var royaltyFeeGrpc = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
 				.setRoyaltyFee(RoyaltyFee.newBuilder()
@@ -192,7 +193,7 @@ class CustomFeeTest {
 		assertNotNull(royaltyFee);
 		assertNotNull(royaltyFee.getRoyaltyFee());
 		assertNotNull(royaltyFee.getRoyaltyFee().getFallbackFee());
-		assertTrue(royaltyFee.shouldCollectorBeAutoAssociated());
+		assertTrue(royaltyFee.shouldCollectorBeAutoAssociated(denomId));
 	}
 
 	@Test
@@ -206,7 +207,7 @@ class CustomFeeTest {
 				collector
 		);
 		assertEquals(fee.toMerkle(), merkleFixedHbar);
-		assertFalse(fee.shouldCollectorBeAutoAssociated());
+		assertFalse(fee.shouldCollectorBeAutoAssociated(null));
 
 		final var merkleFractional = FcCustomFee.
 				fractionalFee(10, 1, 1, 10, false, collectorId.asEntityId());
@@ -257,7 +258,7 @@ class CustomFeeTest {
 		assertEquals(15, fee.getFractionalFee().getMaximumAmount());
 		
 		CustomFee someCustomFee = new CustomFee(null, (com.hedera.services.store.models.fees.FixedFee) null);
-		assertFalse(someCustomFee.shouldCollectorBeAutoAssociated());
+		assertFalse(someCustomFee.shouldCollectorBeAutoAssociated(null));
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
