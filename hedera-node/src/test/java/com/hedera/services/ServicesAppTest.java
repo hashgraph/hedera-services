@@ -115,8 +115,8 @@ class ServicesAppTest {
 		given(platform.getCryptography()).willReturn(cryptography);
 		given(platform.getSelfId()).willReturn(selfNodeId);
 		given(overridingProps.containsProperty(any())).willReturn(false);
-		given(overridingProps.containsProperty(logDir)).willReturn(true);
-		given(overridingProps.getProperty(logDir)).willReturn("data/recordStreams");
+//		given(overridingProps.containsProperty(logDir)).willReturn(true);
+//		given(overridingProps.getProperty(logDir)).willReturn("data/recordStreams");
 
 		subject = DaggerServicesApp.builder()
 				.bootstrapProps(props)

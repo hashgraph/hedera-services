@@ -33,7 +33,7 @@ import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -208,7 +208,7 @@ class AccountTest {
 
 		assertFailsWith(
 				() -> subject.associateWith(List.of(firstNewToken), 10, true),
-				NO_REMAINING_AUTO_ASSOCIATIONS);
+				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
 	@Test
@@ -226,19 +226,19 @@ class AccountTest {
 	void invalidValuesToAlreadyUsedAutoAssociationsFailAsExpected() {
 		assertFailsWith(
 				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations+1),
-				NO_REMAINING_AUTO_ASSOCIATIONS);
+				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
 		assertFailsWith(
 				() -> subject.incrementUsedAutomaticAssocitions(),
-				NO_REMAINING_AUTO_ASSOCIATIONS);
+				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
 		subject.setAlreadyUsedAutomaticAssociations(0);
 
 		assertFailsWith(
 				() -> subject.decrementUsedAutomaticAssocitions(),
-				NO_REMAINING_AUTO_ASSOCIATIONS);
+				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
