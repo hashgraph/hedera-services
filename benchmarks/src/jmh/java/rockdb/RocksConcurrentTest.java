@@ -4,7 +4,6 @@ import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.DigestType;
-import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.Benchmark;
 
 import java.io.IOException;

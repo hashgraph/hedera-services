@@ -1,20 +1,21 @@
-package fcmmap;
+package utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.virtualh.Account;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualKey;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -24,7 +25,11 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
 
-public class FCVirtualMapTestUtils {
+/**
+ * Collection of common utility methods and classes used in tests
+ */
+@SuppressWarnings("unused")
+public class CommonTestUtils {
     public static final int HASH_DATA_SIZE = DigestType.SHA_384.digestLength() + Integer.BYTES + Integer.BYTES; // int for digest type and int for byte array length
 
     public static void deleteDirectoryAndContents(Path dir) {
@@ -170,6 +175,15 @@ public class FCVirtualMapTestUtils {
         return ByteString.copyFrom(randomUtf8Bytes(n));
     }
 
+    public static void printMemoryUsage() {
+        for (MemoryPoolMXBean mpBean : ManagementFactory.getMemoryPoolMXBeans()) {
+            if (mpBean.getType() == MemoryType.HEAP) {
+                System.out.printf("     Name: %s: %s\n",mpBean.getName(), mpBean.getUsage());
+            }
+        }
+        System.out.println("    Runtime.getRuntime().totalMemory() = " + Runtime.getRuntime().totalMemory());
+    }
+
     // =================================================================================================================
     // useful classes
 
@@ -200,6 +214,7 @@ public class FCVirtualMapTestUtils {
             hash = new Hash();
             hash.deserialize(serializableDataInputStream,hash.getVersion());
             data = new byte[1024];
+            //noinspection ResultOfMethodCallIgnored
             serializableDataInputStream.read(data);
         }
 
@@ -240,84 +255,6 @@ public class FCVirtualMapTestUtils {
                     "hash=" + hash +
                     ", data=" + Arrays.toString(data) +
                     '}';
-        }
-    }
-
-    public static class SerializableAccount implements VirtualKey {
-        private Account account;
-
-        public SerializableAccount() {}
-
-        public SerializableAccount(Account account) {
-            this.account = account;
-        }
-        public SerializableAccount(long shardNum, long realmNum, long accountNum) {
-            this.account = new Account(shardNum,realmNum,accountNum);
-        }
-
-        @Override
-        public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-            long shard = serializableDataInputStream.readLong();
-            if (shard != Long.MIN_VALUE) {
-                this.account = new Account(
-                        shard,
-                        serializableDataInputStream.readLong(),
-                        serializableDataInputStream.readLong()
-                );
-            } else {
-                account = null;
-            }
-        }
-
-        @Override
-        public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-            if (account != null) {
-                serializableDataOutputStream.writeLong(account.shardNum());
-                serializableDataOutputStream.writeLong(account.realmNum());
-                serializableDataOutputStream.writeLong(account.accountNum());
-            } else {
-                serializableDataOutputStream.writeLong(Long.MIN_VALUE);
-                serializableDataOutputStream.writeLong(Long.MIN_VALUE);
-                serializableDataOutputStream.writeLong(Long.MIN_VALUE);
-            }
-        }
-
-        @Override
-        public long getClassId() {
-            return 3456;
-        }
-
-        @Override
-        public int getVersion() {
-            return 1;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SerializableAccount that = (SerializableAccount) o;
-            return Objects.equals(account, that.account);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(account);
-        }
-
-        @Override
-        public void serialize(ByteBuffer byteBuffer) throws IOException {
-            throw new UnsupportedOperationException("To be implemented");
-        }
-
-        @Override
-        public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-            throw new UnsupportedOperationException("To be implemented");
-        }
-
-        @Override
-        public boolean equals(ByteBuffer byteBuffer, int i) throws IOException {
-            throw new UnsupportedOperationException("To be implemented");
         }
     }
 }

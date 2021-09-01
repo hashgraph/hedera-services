@@ -3,22 +3,15 @@ package virtual;
 import com.swirlds.virtualmap.VirtualMap;
 import org.openjdk.jmh.annotations.*;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * Benchmark for simulating swirlds/hedera lifecycle doing chunks of 10k crypto transfers. Results are multiplied by 10k
+ * to get number of transfers per second. The 10k number can be changed by setting {targetOpsPerSecond}
  */
-@SuppressWarnings("jol")
 @State(Scope.Thread)
 @Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.MINUTES)
 @Measurement(iterations = 500, time = 1, timeUnit = TimeUnit.MINUTES)
@@ -36,7 +29,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     @Param("true") // TODO Remove and replace with a benchmark that measures additions?
     public boolean preFill;
 
-    @Param({"lmdbMem", "lmdb", "rocksdb", "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
+    @Param({"lmdb", "jasperdbIhRam","jasperdbIhDisk","jasperdbIhHalf"})
     public DataSourceType dsType;
 
     @Param({"5"})
@@ -47,7 +40,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
 
     private ExecutorService prepService;
 
-    private AtomicReference<CompletableFuture<List<Account[]>>> accountsFutureRef = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<List<Account[]>>> accountsFutureRef = new AtomicReference<>();
 
     @Setup
     public void prepare() throws Exception {
@@ -62,8 +55,15 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
                     double tookSeconds = (END - START) / 1000d;
                     START = END;
                     System.out.printf("Completed: %,d in %,.2f seconds\n",i,tookSeconds);
-//                    System.out.println(virtualMap.toDebugString());
                     virtualMap = pipeline.endRound(virtualMap);
+                }
+                if (numEntities > 100_000_000) {
+                    // for large data loads give the GC a chance as we crate object like a crazy beast!
+                    if (i % 1_000_000 == 0 && i > 0) {
+                        System.gc();
+                        //noinspection BusyWait
+                        Thread.sleep(2000);
+                    }
                 }
 
                 final var key = asId(i);
@@ -78,26 +78,19 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
             }
 
             System.out.printf("Completed: %,d\n",numEntities);
-
-            // During setup we perform the full hashing and release the old copy. This way,
-            // during the tests, we don't have an initial slow hash.
-//            System.out.println(virtualMap.toDebugString());
             virtualMap = pipeline.endRound(virtualMap);
         }
 
         printDataStoreSize();
-
         prepNextRound();
     }
 
     @TearDown
     public void destroy() {
         printDataStoreSize();
-        /*store.close();*/
     }
 
     private void prepNextRound() {
-//        System.out.println("================>>>> virtualMap.getFastCopyVersion() = " + virtualMap.getFastCopyVersion());
         final var cf = new CompletableFuture<List<Account[]>>();
         accountsFutureRef.set(cf);
         final var accounts = new ArrayList<Account[]>(targetOpsPerSecond);
@@ -148,41 +141,5 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         }
 
         virtualMap = pipeline.endRound(virtualMap);
-    }
-
-    public static void main(String[] args) throws Exception {
-        final var test = new CryptoHbarBench();
-        test.numEntities = 100_000;
-        test.dsType = DataSourceType.jasperdbIhRam;
-        test.preFill = true;
-        test.targetOpsPerSecond = 10_000;
-        test.prepperThreadCount = 5;
-        test.prepare();
-
-        for (int i=0; i< test.numEntities; i++) {
-            final var value = test.virtualMap.getForModify(new Id(i));
-            if (value == null) {
-                test.virtualMap.getForModify(new Id(i));
-            }
-        }
-
-        int totalCount = 0;
-        final var start = new AtomicLong();
-        while (true) {
-            start.set(System.nanoTime());
-            test.handleTransactions();
-            totalCount += test.targetOpsPerSecond;
-            printTestUpdate(start, test.targetOpsPerSecond, totalCount, "Iteration");
-        }
-    }
-
-    private static double printTestUpdate(AtomicLong start, long count, long totalCount, String msg) {
-        final var stopTime = System.nanoTime();
-        long took = stopTime - start.get();
-        double timeSeconds = (double)took/1_000_000_000d;
-        double perSecond = (double)count / timeSeconds;
-        System.out.printf("%s x %,d : [%,d] at %,.0f per/sec, took %,.4f seconds\n",
-                msg, totalCount, count, perSecond, timeSeconds);
-        return perSecond;
     }
 }

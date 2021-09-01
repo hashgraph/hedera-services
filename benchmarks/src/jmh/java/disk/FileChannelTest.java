@@ -1,6 +1,5 @@
 package disk;
 
-import fcmmap.FCVirtualMapTestUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
@@ -8,6 +7,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+
+import static utils.CommonTestUtils.toLongsString;
 
 @SuppressWarnings("DuplicatedCode")
 public class FileChannelTest {
@@ -68,7 +69,7 @@ public class FileChannelTest {
                 // check readIndex matches
                 if (random2kChunkIndex != readIndex) {
                     System.err.println("random2kChunkIndex = "+random2kChunkIndex+" readIndex="+readIndex);
-                    System.out.println("FCVirtualMapTestUtils.toLongsString(inputBuffer) = " + FCVirtualMapTestUtils.toLongsString(inputBuffer));
+                    System.out.println("FCVirtualMapTestUtils.toLongsString(inputBuffer) = " + toLongsString(inputBuffer));
                     throw new Exception("Oops!");
                 }
             }

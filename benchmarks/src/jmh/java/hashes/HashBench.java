@@ -19,6 +19,9 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Benchmark to test hashing performance for different numbers of hashes
+ */
 @SuppressWarnings({"jol", "DuplicatedCode", "DefaultAnnotationParam", "SameParameterValue", "SpellCheckingInspection"})
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)

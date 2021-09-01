@@ -1,19 +1,21 @@
 package jasperdb;
 
 import com.hedera.services.state.jasperdb.collections.*;
-import com.swirlds.common.crypto.Hash;
-import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
+import utils.CommonTestUtils;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryPoolMXBean;
-import java.lang.management.MemoryType;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import static utils.CommonTestUtils.hash;
+
+/**
+ * Benchmark for testing relative performance of HashList implementations
+ */
+@SuppressWarnings("DefaultAnnotationParam")
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
@@ -25,7 +27,6 @@ public class HashListBench {
     public Random random;
     private int randomIndex;
     private HashList list;
-    private int nextIndex = INITIAL_DATA_SIZE;
 
     @Param({"HashListHeap","HashListOffHeap","HashListHeapArrays"})
     public String listImpl;
@@ -44,7 +45,7 @@ public class HashListBench {
         }
         // print memory usage
         System.out.printf("Memory for initial %,d accounts:\n",INITIAL_DATA_SIZE);
-        printMemoryUsage();
+        CommonTestUtils.printMemoryUsage();
     }
 
     @Setup(Level.Invocation)
@@ -61,12 +62,6 @@ public class HashListBench {
     public void b_randomSet() {
         list.put(randomIndex, hash(randomIndex*2));
     }
-//
-//    @Benchmark
-//    public void b_add() {
-//        list.put(nextIndex,hash(nextIndex));
-//        nextIndex ++;
-//    }
 
     @Benchmark
     public void a_multiThreadedRead10k() {
@@ -79,36 +74,6 @@ public class HashListBench {
                     e.printStackTrace();
                 }
             }
-        });
-    }
-
-    public void printMemoryUsage() {
-        for (MemoryPoolMXBean mpBean : ManagementFactory.getMemoryPoolMXBeans()) {
-            if (mpBean.getType() == MemoryType.HEAP) {
-                System.out.printf("     Name: %s: %s\n",mpBean.getName(), mpBean.getUsage());
-            }
-        }
-        System.out.println("    Runtime.getRuntime().totalMemory() = " + Runtime.getRuntime().totalMemory());
-    }
-
-    /**
-     * Creates a hash containing a int repeated 6 times as longs
-     *
-     * @return byte array of 6 longs
-     */
-    public static Hash hash(int value) {
-        value++;
-        byte b0 = (byte)(value >>> 24);
-        byte b1 = (byte)(value >>> 16);
-        byte b2 = (byte)(value >>> 8);
-        byte b3 = (byte)value;
-        return new FCVirtualMapTestUtils.TestHash(new byte[] {
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3,
-                0,0,0,0,b0,b1,b2,b3
         });
     }
 }

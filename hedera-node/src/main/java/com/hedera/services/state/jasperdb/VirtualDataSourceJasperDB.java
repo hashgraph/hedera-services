@@ -32,14 +32,16 @@ import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFile
 import static java.nio.ByteBuffer.allocate;
 
 /**
+ * An implementation of VirtualDataSource that uses JasperDB.
+ *
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
- * Also, we totally depend on the hash and key to be fixed sizes. NOTE: valueSizeBytes needs to work with variable size data.
+ * Also, we totally depend on the hash and key to be fixed sizes.
  *
  * @param <K> type for keys
  * @param <V> type for values
  */
 @SuppressWarnings({"jol", "DuplicatedCode"})
-public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
+public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     /** The size in bytes for serialized key objects */
     private final int keySizeBytes;
     /** Constructor for creating new key objects during de-serialization */
@@ -111,8 +113,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to hashes stored on
      *                                         disk. 0 means all on disk and Long.MAX_VALUE means all in ram.
      */
-    public VFCDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
-                                 Path storageDir, long maxNumOfKeys, long internalHashesRamToDiskThreshold) throws IOException {
+    public VirtualDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
+                                     Path storageDir, long maxNumOfKeys, long internalHashesRamToDiskThreshold) throws IOException {
         this(keySizeBytes, keyConstructor, valueSizeBytes,valueConstructor,storageDir,
                 maxNumOfKeys,true, internalHashesRamToDiskThreshold);
     }
@@ -128,8 +130,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to hashes stored on
      *                                         disk. 0 means all on disk and Long.MAX_VALUE means all in ram.
      */
-    public VFCDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
-                                 Path storageDir, long maxNumOfKeys, boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
+    public VirtualDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
+                                     Path storageDir, long maxNumOfKeys, boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
         this.keySizeBytes = Integer.BYTES + keySizeBytes; // extra leading integer keeps track of the version
         this.keyConstructor = keyConstructor;
         this.valueSizeBytes = Integer.BYTES + valueSizeBytes;  // extra leading integer keeps track of the version
@@ -169,7 +171,41 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     }
 
     //==================================================================================================================
-    // Public NEW API methods
+    // Public  API methods
+
+    /**
+     * Save a batch of data to data store.
+     *
+     * @param firstLeafPath the tree path for first leaf
+     * @param lastLeafPath the tree path for last leaf
+     * @param internalRecords stream of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
+     * @param leafRecords stream of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
+     */
+    @Override
+    public void saveRecords(long firstLeafPath, long lastLeafPath, Stream<VirtualInternalRecord> internalRecords,
+                            Stream<VirtualLeafRecord<K, V>> leafRecords) {
+        final var countDownLatch = new CountDownLatch(1);
+        // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
+        storeInternalExecutor.execute(() -> {
+            try {
+                writeInternalRecords(firstLeafPath, internalRecords);
+            } catch (IOException e) {
+                e.printStackTrace(); // TODO something better please :-)
+                throw new RuntimeException(e);
+            }
+            countDownLatch.countDown();
+        });
+        // we might as well do this in the archive thread rather than leaving it waiting
+        writeLeavesToPathToKeyHashValue(firstLeafPath, lastLeafPath, leafRecords);
+        // wait for the other two threads in the rare case they are not finished yet. We need to have all writing done
+        // before we return as when we return the state version we are writing is deleted from the cache and the flood
+        // gates are opened for reads through to the data we have written here.
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Load a leaf record by key
@@ -178,6 +214,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      * @return loaded record or null if not found
      * @throws IOException If there was a problem reading record from db
      */
+    @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(K key) throws IOException {
         Objects.requireNonNull(key);
         final long path = isLongKeyMode
@@ -194,9 +231,79 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
      * @return loaded record or null if not found
      * @throws IOException If there was a problem reading record from db
      */
+    @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(long path) throws IOException {
         return loadLeafRecord(path,null);
     }
+
+    /**
+     * Load hash for a leaf node with given path
+     *
+     * @param path the path to get hash for
+     * @return loaded hash or null if hash is not stored
+     * @throws IOException if there was a problem loading hash
+     */
+    @Override
+    public Hash loadLeafHash(long path) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        final ByteBuffer keyHashValueBuffer; // TODO can we add method to data files to read a subset of data
+        if (hasVariableDataSize) {
+            // read value
+            keyHashValueBuffer =  pathToKeyHashValue.get(path);
+            if (keyHashValueBuffer == null) return null;
+        } else {
+            keyHashValueBuffer = this.keyHashValue.get().clear();
+            // read value
+            boolean found = pathToKeyHashValue.get(path, keyHashValueBuffer);
+            if (!found) return null;
+        }
+        // deserialize hash
+        keyHashValueBuffer.rewind();
+        keyHashValueBuffer.position(keySizeBytes); // jump over key
+        return byteBufferToHash(keyHashValueBuffer);
+    }
+
+    /**
+     * Load the record for an internal node by path
+     *
+     * @param path the path for a internal
+     * @return the internal node's record if one was stored for the given path or null if not stored
+     * @throws IOException If there was a problem reading the internal record
+     */
+    @Override
+    public VirtualInternalRecord loadInternalRecord(long path) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (path < internalHashesRamToDiskThreshold) {
+            return new VirtualInternalRecord(path,internalHashStoreRam.get(path));
+        } else {
+            ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
+            internalHashStoreDisk.get(path,buf);
+            return new VirtualInternalRecord(path,HashTools.byteBufferToHashNoCopy(buf));
+        }
+    }
+
+    /**
+     * Wait for any merges to finish and then close all data stores.
+     */
+    @Override
+    public void close() throws IOException {
+        try {
+            for(var executor: new ExecutorService[]{mergingExecutor,storeInternalExecutor,storeKeyToPathExecutor}) {
+                executor.shutdown();
+                boolean finishedWithoutTimeout = executor.awaitTermination(5,TimeUnit.MINUTES);
+                if (!finishedWithoutTimeout)
+                    throw new IOException("Timeout while waiting for executor service to finish.");
+            }
+        } catch (InterruptedException e) {
+            throw new IOException("Interrupted while waiting for merge to finish.",e);
+        } finally {
+            if (objectKeyToPath!= null) objectKeyToPath.close();
+            pathToKeyHashValue.close();
+        }
+    }
+
+    //==================================================================================================================
+    // private methods
 
     /**
      * load a leaf record by path, using the provided key or if null deserializing the key.
@@ -234,121 +341,6 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         // return new VirtualLeafRecord
         return new VirtualLeafRecord<>(path, hash, key, value);
     }
-
-    /**
-     * Save a batch of data to data store.
-     *
-     * @param firstLeafPath the tree path for first leaf
-     * @param lastLeafPath the tree path for last leaf
-     * @param internalRecords list of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
-     * @param leafRecords list of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
-     */
-    public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords,
-                            List<VirtualLeafRecord<K, V>> leafRecords) {
-        throw new IllegalStateException("Old API Called");
-    }
-
-    /**
-     * Save a batch of data to data store.
-     *
-     * @param firstLeafPath the tree path for first leaf
-     * @param lastLeafPath the tree path for last leaf
-     * @param internalRecords stream of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
-     * @param leafRecords stream of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
-     */
-    @Override
-    public void saveRecords(long firstLeafPath, long lastLeafPath, Stream<VirtualInternalRecord> internalRecords, Stream<VirtualLeafRecord<K, V>> leafRecords) throws IOException {
-        final var countDownLatch = new CountDownLatch(1);
-        // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
-        storeInternalExecutor.execute(() -> {
-            try {
-                writeInternalRecords(firstLeafPath, internalRecords);
-            } catch (IOException e) {
-                e.printStackTrace(); // TODO something better please :-)
-                throw new RuntimeException(e);
-            }
-            countDownLatch.countDown();
-        });
-        // we might as well do this in the archive thread rather than leaving it waiting
-        writeLeavesToPathToKeyHashValue(firstLeafPath, lastLeafPath, leafRecords);
-        // wait for the other two threads in the rare case they are not finished yet. We need to have all writing done
-        // before we return as when we return the state version we are writing is deleted from the cache and the flood
-        // gates are opened for reads through to the data we have written here.
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Load hash for a leaf node with given path
-     *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
-     */
-    @Override
-    public Hash loadLeafHash(long path) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        final ByteBuffer keyHashValueBuffer; // TODO can we add method to data files to read a subset of data
-        if (hasVariableDataSize) {
-            // read value
-            keyHashValueBuffer =  pathToKeyHashValue.get(path);
-            if (keyHashValueBuffer == null) return null;
-        } else {
-            keyHashValueBuffer = this.keyHashValue.get().clear();
-            // read value
-            boolean found = pathToKeyHashValue.get(path, keyHashValueBuffer);
-            if (!found) return null;
-        }
-        // deserialize hash
-        keyHashValueBuffer.rewind();
-        keyHashValueBuffer.position(keySizeBytes); // jump over key
-        return byteBufferToHash(keyHashValueBuffer);
-    }
-
-    /**
-     * Load hash for a internal node with given path
-     *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
-     */
-    @Override
-    public Hash loadInternalHash(long path) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        if (path < internalHashesRamToDiskThreshold) {
-            return internalHashStoreRam.get(path);
-        } else {
-            ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
-            internalHashStoreDisk.get(path,buf);
-            return HashTools.byteBufferToHashNoCopy(buf);
-        }
-    }
-
-    /**
-     * Wait for any merges to finish and then close all data stores.
-     */
-    @Override
-    public void close() throws IOException {
-        try {
-            for(var executor: new ExecutorService[]{mergingExecutor,storeInternalExecutor,storeKeyToPathExecutor}) {
-                executor.shutdown();
-                boolean finishedWithoutTimeout = executor.awaitTermination(5,TimeUnit.MINUTES);
-                if (!finishedWithoutTimeout)
-                    throw new IOException("Timeout while waiting for executor service to finish.");
-            }
-        } catch (InterruptedException e) {
-            throw new IOException("Interrupted while waiting for merge to finish.",e);
-        } finally {
-            if (objectKeyToPath!= null) objectKeyToPath.close();
-            pathToKeyHashValue.close();
-        }
-    }
-
-    //==================================================================================================================
-    // private methods
 
     /**
      * Write all internal records hashes to internalHashStore
@@ -418,7 +410,9 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Start a Merge
+     * Start a Merge. This implements the logic for how often and with what files we merge. The set of files we merge
+     * must always be contiguous in order of time contained data created. As merged files have a later index but old
+     * data the index can not be used alone to work out order of files to merge.
      */
     private void doMerge() {
         final Instant startMerge = Instant.now();
@@ -435,6 +429,7 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         try {
             // we need to merge disk files for internal hashes if they exist and pathToKeyHashValue store
             if (hasDiskStoreForInternalHashes) internalHashStoreDisk.mergeAll(filesToMergeFilter);
+            // now do main merge of pathToKeyHashValue store
             pathToKeyHashValue.mergeAll(filesToMergeFilter);
         } catch (Throwable t) {
             System.err.println("Exception while merging!");
@@ -446,7 +441,8 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
     // SerializedVirtualRecord class
 
     /**
-     * Class used for temporary storage of serialized virtual leaf records.
+     * Class used for temporary storage of serialized virtual leaf records. The allows us to use parallel background
+     * threads to serialize VirtualRecord before they are written to disk.
      */
     private static final class SerializedVirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> {
         /** Reusable ByteArrayOutputStreams */
@@ -507,16 +503,4 @@ public class VFCDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
             }
         }
     }
-    //==================================================================================================================
-    // Legacy API methods
-    @Deprecated public V loadLeafValue(long path) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public V loadLeafValue(K key)  { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public K loadLeafKey(long path) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public long loadLeafPath(K key) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public void saveInternal(long path, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public void updateLeaf(long oldPath, long newPath, K key, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public void updateLeaf(long path, K key, V value, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public void addLeaf(long path, K key, V value, Hash hash) { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public Object startTransaction() { throw new IllegalArgumentException("Old API Called"); }
-    @Deprecated public void commitTransaction(Object handle) { throw new IllegalArgumentException("Old API Called"); }
 }

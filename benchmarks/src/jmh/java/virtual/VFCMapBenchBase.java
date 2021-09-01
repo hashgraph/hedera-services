@@ -1,6 +1,6 @@
 package virtual;
 
-import com.hedera.services.state.jasperdb.VFCDataSourceJasperDB;
+import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -10,8 +10,6 @@ import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import lmdb.VFCDataSourceLmdb;
-import lmdb.VFCDataSourceLmdbHashesRam;
-import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -26,7 +24,7 @@ import java.util.function.Supplier;
 
 public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualValue> {
     public enum DataSourceType {
-        lmdbMem, lmdb, rocksdb, jasperdbIhRam, jasperdbIhDisk, jasperdbIhHalf
+        lmdb, jasperdbIhRam, jasperdbIhDisk, jasperdbIhHalf
     }
 
     protected static final Random rand = new Random(1234);
@@ -41,25 +39,19 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
             long numEntities) throws IOException {
 
         return switch (type) {
-            case lmdbMem -> new VirtualMap<>(new VFCDataSourceLmdbHashesRam<>(
-                    keySizeBytes,
-                    keyConstructor,
-                    valueSizeBytes,
-                    valueConstructor,
-                    Path.of("lmdbMem")));
             case lmdb -> new VirtualMap<>(new VFCDataSourceLmdb<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("lmdb")));
-            case rocksdb -> new VirtualMap<>(new VFCDataSourceRocksDb<>(
-                    keySizeBytes,
-                    keyConstructor,
-                    valueSizeBytes,
-                    valueConstructor,
-                    Path.of("rocksdb")));
-            case jasperdbIhRam -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
+//            case rocksdb -> new VirtualMap<>(new VFCDataSourceRocksDb<>(
+//                    keySizeBytes,
+//                    keyConstructor,
+//                    valueSizeBytes,
+//                    valueConstructor,
+//                    Path.of("rocksdb")));
+            case jasperdbIhRam -> new VirtualMap<>(new VirtualDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -67,7 +59,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     Path.of("jasperdb_ih_ram"),
                     numEntities,
                     Long.MAX_VALUE));
-            case jasperdbIhDisk -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
+            case jasperdbIhDisk -> new VirtualMap<>(new VirtualDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -75,7 +67,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     Path.of("jasperdb_ih_disk"),
                     numEntities,
                     0));
-            case jasperdbIhHalf -> new VirtualMap<>(new VFCDataSourceJasperDB<>(
+            case jasperdbIhHalf -> new VirtualMap<>(new VirtualDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -128,6 +120,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
     }
 
+    @SuppressWarnings("unused")
     protected static final class Id implements VirtualLongKey {
         public static final int SERIALIZED_SIZE = Long.BYTES;
 

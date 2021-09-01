@@ -1,26 +1,7 @@
 package contract;
 
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.ContractCreateTransaction;
-import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.FileCreateTransaction;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.TransferTransaction;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
+import com.hedera.hashgraph.sdk.*;
+import org.openjdk.jmh.annotations.*;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -33,6 +14,7 @@ import java.util.concurrent.TimeUnit;
  * so that we're really measuring the overhead of the EVM itself. This also gives us
  * a framework for measuring performance of different optimizations or EVM implementations.
  */
+@SuppressWarnings({"DefaultAnnotationParam", "FieldCanBeLocal", "unused"})
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 30, timeUnit = TimeUnit.SECONDS)
@@ -61,7 +43,7 @@ public class ContractExecutionBench {
             "1bff1f8e3abcdedd75bdd8d789eb64736f6c63430008010033").getBytes(StandardCharsets.UTF_8);
 
     // This public/private key pair are the same for all accounts < 0.0.100
-    private PrivateKey privKey;
+    private PrivateKey privateKey;
     private PublicKey pubKey;
 
     private AccountId alice;
@@ -82,8 +64,8 @@ public class ContractExecutionBench {
     private Client customerClient;
 
     @Setup
-    public void prepare() throws Exception {
-        privKey = PrivateKey.fromString(PRIVATE_KEY);
+    public void prepare() {
+        privateKey = PrivateKey.fromString(PRIVATE_KEY);
         pubKey = PublicKey.fromString(PUBLIC_KEY);
 
         alice = AccountId.fromString("0.0.3");
@@ -93,15 +75,15 @@ public class ContractExecutionBench {
 
         treasuryAccount = AccountId.fromString("0.0.2");
         treasuryClient = Client.forNetwork(network);
-        treasuryClient.setOperator(treasuryAccount, privKey);
+        treasuryClient.setOperator(treasuryAccount, privateKey);
 
         contractAccount = AccountId.fromString("0.0.40");
         contractClient = Client.forNetwork(network);
-        contractClient.setOperator(contractAccount, privKey);
+        contractClient.setOperator(contractAccount, privateKey);
 
         customerAccount = AccountId.fromString("0.0.50");
         customerClient = Client.forNetwork(network);
-        customerClient.setOperator(customerAccount, privKey);
+        customerClient.setOperator(customerAccount, privateKey);
 
         setupAccounts();
         uploadContractCode();
@@ -120,16 +102,6 @@ public class ContractExecutionBench {
                     .status);
         } catch (Exception e) {
             System.err.println("Failed to transfer funds");
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void ping() {
-        try {
-            contractClient.ping(alice);
-            customerClient.ping(alice);
-        } catch (Exception e) {
-            System.err.println("Failed to ping alice from one of the clients");
             throw new RuntimeException(e);
         }
     }
@@ -169,19 +141,18 @@ public class ContractExecutionBench {
         };
     }
 
-//    @Benchmark
-//    public void addNumbers() {
-//        final int gas = 10_000;
-//        final String test = "runAdd";
-//        try {
-//            new ContractExecuteTransaction()
-//                    .setGas(gas)
-//                    .setFunction(test)
-//                    .setContractId(contractId)
-//                    .execute(customerClient);
-//        } catch (Exception e) {
-//            System.err.println("Encountered error: " + e.getMessage());
-//        }
-//    }
-
+    @Benchmark
+    public void addNumbers() {
+        final int gas = 10_000;
+        final String test = "runAdd";
+        try {
+            new ContractExecuteTransaction()
+                    .setGas(gas)
+                    .setFunction(test)
+                    .setContractId(contractId)
+                    .execute(customerClient);
+        } catch (Exception e) {
+            System.err.println("Encountered error: " + e.getMessage());
+        }
+    }
 }

@@ -1,9 +1,11 @@
 package lmdb;
 
+import com.hedera.services.state.jasperdb.HashTools;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import org.lmdbjava.Dbi;
@@ -16,16 +18,15 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
-@SuppressWarnings("unused")
-public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValue> implements SequentialInsertsVFCDataSource<K, V> {
+public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
     private final static long GB = 1024*1024*1024;
     private final static long TB = GB*1024;
     private final static int HASH_SIZE = Integer.BYTES + DigestType.SHA_384.digestLength();
@@ -148,10 +149,9 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
      *
      * @param path the path to get hash for
      * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadLeafHash(long path) throws IOException {
+    public Hash loadLeafHash(long path) {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             ByteBuffer keyHashValueBuffer = leafPathToKeyHashValueMap.get(txn,getPathNativeOrderBytes(path));
@@ -173,10 +173,9 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
      *
      * @param path the path to get hash for
      * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
      */
     @Override
-    public VirtualInternalRecord loadInternalRecord(long path) throws IOException {
+    public VirtualInternalRecord loadInternalRecord(long path) {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             ByteBuffer hashBytes = pathToInternalHashesMap.get(txn,getPathNativeOrderBytes(path));
@@ -186,58 +185,44 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
     }
 
     /**
-     * Load hash for a internal node with given path
+     * Save a bulk set of changes to internal nodes and leaves.
      *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
+     * @param firstLeafPath   the new path of first leaf node
+     * @param lastLeafPath    the new path of last leaf node
+     * @param internalRecords stream of new internal nodes and updated internal nodes
+     * @param leafRecords     stream of new leaf nodes and updated leaf nodes
      */
     @Override
-    public Hash loadInternalHash(long path) throws IOException {
-        if (path < 0) throw new IllegalArgumentException("path is less than 0");
-        try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer hashBytes = pathToInternalHashesMap.get(txn,getPathNativeOrderBytes(path));
-            if (hashBytes == null) return null;
-            throw new RuntimeException("Needs to be reimplemented");
-//            return Hash.fromByteBuffer(hashBytes);
-        }
-    }
-
-    /**
-     * Save a batch of data to data store.
-     *
-     * @param firstLeafPath the tree path for first leaf
-     * @param lastLeafPath the tree path for last leaf
-     * @param internalRecords list of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
-     * @param virtualLeafRecords list of records for leaf nodes, it is assumed this is sorted by key and each key only appears once.
-     */
-    @Override
-    public void saveRecords(long firstLeafPath, long lastLeafPath, List<VirtualInternalRecord> internalRecords, List<VirtualLeafRecord<K, V>> virtualLeafRecords) throws IOException {
+    public void saveRecords(long firstLeafPath, long lastLeafPath, Stream<VirtualInternalRecord> internalRecords,
+                            Stream<VirtualLeafRecord<K, V>> leafRecords) {
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            for (var internalRecord: internalRecords) {
-                pathToInternalHashesMap.put(txn,
-                        getPathNativeOrderBytes(internalRecord.getPath()),
-                        getHashBytes(internalRecord.getHash())
-                );
-            }
-            for (var leaf: virtualLeafRecords) {
-                leafKeyToPathMap.put(txn,
-                        getLeafKeyBytes(leaf.getKey()),
-                        getPathBytes(leaf.getPath())
-                );
-                final ByteBuffer keyHashValueBytes = leafKeyHashValue.get().clear();
-                keyHashValueBytes.putInt(leaf.getKey().getVersion());
-                leaf.getKey().serialize(keyHashValueBytes);
-//                Hash.toByteBuffer(leaf.getHash(),keyHashValueBytes);
-//                keyHashValueBytes.putInt(leaf.getValue().getVersion());
-//                leaf.getValue().serialize(keyHashValueBytes);
-//                keyHashValueBytes.flip();
-//                leafPathToKeyHashValueMap.put(txn,
-//                        getPathNativeOrderBytes(leaf.getPath()),
-//                        keyHashValueBytes
-//                );
-                throw new RuntimeException("Needs to be reimplemented");
-            }
+            internalRecords.forEachOrdered(internalRecord -> pathToInternalHashesMap.put(txn,
+                    getPathNativeOrderBytes(internalRecord.getPath()),
+                    getHashBytes(internalRecord.getHash())
+            ));
+            leafRecords.forEachOrdered(leaf -> {
+                try {
+                    leafKeyToPathMap.put(txn,
+                            getLeafKeyBytes(leaf.getKey()),
+                            getPathBytes(leaf.getPath())
+                    );
+                    final ByteBuffer keyHashValueBytes = leafKeyHashValue.get().clear();
+                    keyHashValueBytes.putInt(leaf.getKey().getVersion());
+                    leaf.getKey().serialize(keyHashValueBytes);
+                    HashTools.hashToByteBuffer(leaf.getHash(), keyHashValueBytes);
+                    keyHashValueBytes.putInt(leaf.getValue().getVersion());
+                    leaf.getValue().serialize(keyHashValueBytes);
+                    keyHashValueBytes.flip();
+                    leafPathToKeyHashValueMap.put(txn,
+                            getPathNativeOrderBytes(leaf.getPath()),
+                            keyHashValueBytes
+                    );
+                    throw new RuntimeException("Needs to be reimplemented");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            });
             txn.commit();
         } catch (Exception e) {
             e.printStackTrace();
@@ -267,114 +252,13 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
             key.deserialize(keyHashValueBuffer, keySerializationVersion);
         }
         // deserialize hash
-//        final Hash hash = Hash.fromByteBuffer(keyHashValueBuffer);
-//        // deserialize value
-//        final int valueSerializationVersion = keyHashValueBuffer.getInt();
-//        final V value = valueConstructor.get();
-//        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
-//        // return new VirtualLeafRecord
-//        return new VirtualLeafRecord<>(path, hash, key, value);
-        throw new RuntimeException("Needs to be reimplemented");
-    }
-
-    //==================================================================================================================
-    // Public Old API methods
-
-
-    @Override
-    public V loadLeafValue(long path) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public V loadLeafValue(K key) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public K loadLeafKey(long path) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public long loadLeafPath(K key) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void saveInternal(long path, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void updateLeaf(long oldPath, long newPath, K key, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void updateLeaf(long path, K key, V value, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void addLeaf(long path, K key, V value, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public Object startTransaction() {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void commitTransaction(Object handle) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void saveInternal(Object handle, long path, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void updateLeaf(Object handle, long oldPath, long newPath, K key, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void updateLeaf(Object handle, long path, K key, V value, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void addLeaf(Object handle, long path, K key, V value, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void saveInternalSequential(Object handle, long path, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
-    }
-
-    @Override
-    public void addLeafSequential(Object handle, long path, K key, V value, Hash hash) {
-        System.err.println("!!!!!!!!! Old API Called !!!!!!!!!!!!!");
-        throw new IllegalStateException("Old API Called");
+        final Hash hash = HashTools.byteBufferToHash(keyHashValueBuffer);
+        // deserialize value
+        final int valueSerializationVersion = keyHashValueBuffer.getInt();
+        final V value = valueConstructor.get();
+        value.deserialize(keyHashValueBuffer, valueSerializationVersion);
+        // return new VirtualLeafRecord
+        return new VirtualLeafRecord<>(path, hash, key, value);
     }
 
     //==================================================================================================================
@@ -418,18 +302,16 @@ public final class VFCDataSourceLmdb<K extends VirtualKey, V extends VirtualValu
         return pathBytes.flip();
     }
 
-    private Hash getHash(ByteBuffer hashBytes) throws IOException {
+    private Hash getHash(ByteBuffer hashBytes) {
         hashBytes.rewind();
-        throw new RuntimeException("Needs to be reimplemented");
-//        return Hash.fromByteBuffer(hashBytes);
+        return HashTools.byteBufferToHash(hashBytes);
     }
 
     private ByteBuffer getHashBytes(Hash hash) {
         ByteBuffer hashData = this.hashData.get();
         hashData.rewind();
-        throw new RuntimeException("Needs to be reimplemented");
-//        Hash.toByteBuffer(hash,hashData);
-//        return hashData.flip();
+        HashTools.hashToByteBuffer(hash,hashData);
+        return hashData.flip();
     }
 }
 
