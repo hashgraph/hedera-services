@@ -22,6 +22,7 @@ dependencies {
     jmhImplementation("com.swirlds:swirlds-fcmap:0.17.4-SNAPSHOT")
     jmhImplementation("com.swirlds:swirlds-virtualmap:0.17.4-SNAPSHOT")
     jmhImplementation("com.swirlds:swirlds-logging:0.17.4-SNAPSHOT")
+    jmhImplementation("com.lmax:disruptor:3.4.4")
     jmhRuntimeOnly("io.grpc:grpc-okhttp:1.35.0")
     jmhRuntimeOnly("org.slf4j:slf4j-simple:1.7.29")
     jmhImplementation("org.eclipse.collections:eclipse-collections-api:10.4.0")
