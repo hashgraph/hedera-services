@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +45,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class RecordStreamingTest {
-	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -67,20 +67,16 @@ class RecordStreamingTest {
 
 	@Test
 	void doesNothingIfNoRecord() {
-		// when:
 		subject.run();
 
-		// then:
 		verifyNoInteractions(txnCtx, nonBlockingHandoff, runningHashUpdate);
 	}
 
 	@Test
 	void streamsWhenAvail() {
-		// setup:
-		final Transaction txn = Transaction.getDefaultInstance();
-		final ExpirableTxnRecord lastRecord = ExpirableTxnRecord.newBuilder().build();
-		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
-
+		final var txn = Transaction.getDefaultInstance();
+		final var lastRecord = ExpirableTxnRecord.newBuilder().build();
+		final var expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
 		given(accessor.getSignedTxnWrapper()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
@@ -89,10 +85,8 @@ class RecordStreamingTest {
 				.willReturn(false)
 				.willReturn(true);
 
-		// when:
 		subject.run();
 
-		// then:
 		verify(nonBlockingHandoff, times(2)).offer(expectedRso);
 	}
 }
