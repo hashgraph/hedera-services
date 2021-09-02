@@ -27,12 +27,19 @@ Below is `Worker` functional interface:
 
 ```java
 interface Worker {
-	boolean run(long consensusTimeStamp);
+  boolean run(long consensusTimeStamp);
 }
 ```
 
 This method implementation will iterate over all buckets and execute the determined actions. The worker will also pass
 the available network capacity through the Throttling system to each bucket.
+
+#### Worker algorithm
+
+1. Calculate worker available capacity based on system throttling load
+2. Allocate capacity to each buckets
+3. Drain capacity from each bucket
+4. Every bucket executes actions till it exhausts its capacity
 
 -------------
 
@@ -42,6 +49,7 @@ The bucket is a logical group of executable actions, grouped by common functiona
 account scanner and deletion. New buckets can be introduced in future for token scanning and removal.
 
 For migrating the current expiry/renewal account implementation, we might consider 2 types of buckets
+
 - `AccountScannerBucket` and `AccountDeletionBucket`.
 
 Below is `Bucket` functional interface:
@@ -226,7 +234,7 @@ value 100
 
 Options for translating the throttling load to worker capacity are:
 
-1. Reduce MAX_CAPACITY
+1. Reduce worker available capacity
 2. Increase action's required capacity
 
 Update operations should have higher execution priority. Given the opposite, we will clog the system with operations, as
@@ -243,9 +251,9 @@ the amount of work generated would never be finished in single Hedera transactio
 
 | action               | bucket                | description                                                                                                                               | capacity |
 |----------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| AccountScannerAction | AccountScannerBucket  | 1.Add account for relationship removal to MerkleNetworkContext queue                                                                      | 1% bucket capacity      |
-| AccountRemovalAction | AccountDeletionBucket | 1.Get all accounts; 2.Remove account from FCMap; 3.Delete account relation from MerkleNetworkContext queue                                | 5% bucket capacity      |
-| TokenCleanupAction   | AccountDeletionBucket | 1.Retrieve MerkleToken; 2.Transfer token from expired account to treasury; 3.Remove token associations; 4.Delete token from MerkleAccount | 7% bucket capacity      |
+| AccountScannerAction | AccountScannerBucket  | 1.Add account for relationship removal to MerkleNetworkContext queue                                                                      | 1        |
+| AccountRemovalAction | AccountDeletionBucket | 1.Get all accounts; 2.Remove account from FCMap; 3.Delete account relation from MerkleNetworkContext queue                                | 5        |
+| TokenCleanupAction   | AccountDeletionBucket | 1.Retrieve MerkleToken; 2.Transfer token from expired account to treasury; 3.Remove token associations; 4.Delete token from MerkleAccount | 7        |
 
 -------------
 
