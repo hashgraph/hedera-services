@@ -59,6 +59,7 @@ class MerkleEntityIdTest {
 		final var one = new MerkleEntityId();
 		final var two = new MerkleEntityId(1, 2, 3);
 		final var three = new MerkleEntityId();
+		final var twoRef = two;
 
 		three.setShard(1);
 		three.setRealm(2);
@@ -66,8 +67,8 @@ class MerkleEntityIdTest {
 
 		final var equalsForcedCallResult = one.equals(null);
 		assertFalse(equalsForcedCallResult);
-		assertNotEquals(one, "");
-		assertEquals(two, two);
+		assertNotEquals(one, new Object());
+		assertEquals(two, twoRef);
 		assertNotEquals(two, one);
 		assertEquals(two, three);
 

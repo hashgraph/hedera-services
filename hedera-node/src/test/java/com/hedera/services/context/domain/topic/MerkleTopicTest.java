@@ -144,7 +144,7 @@ class MerkleTopicTest {
 
 	@Test
 	void equalsWrongClass() {
-		assertNotEquals(new MerkleTopic(), "");
+		assertNotEquals(new MerkleTopic(), new Object());
 	}
 
 	@Test

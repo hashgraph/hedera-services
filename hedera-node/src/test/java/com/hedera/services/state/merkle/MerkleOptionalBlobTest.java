@@ -251,13 +251,13 @@ class MerkleOptionalBlobTest {
 		final var one = new MerkleOptionalBlob();
 		final var two = new MerkleOptionalBlob(stuff);
 		final var three = new MerkleOptionalBlob(stuff);
-		final var four = new Object();
+		final var twoRef = two;
 
 		final var equalsForcedCallResult = one.equals(null);
 		assertFalse(equalsForcedCallResult);
-		assertNotEquals(one, four);
+		assertNotEquals(one, new Object());
 		assertNotEquals(two, one);
-		assertEquals(two, two);
+		assertEquals(two, twoRef);
 		assertEquals(two, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
