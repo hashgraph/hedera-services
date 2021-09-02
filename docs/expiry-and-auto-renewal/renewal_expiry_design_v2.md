@@ -107,7 +107,9 @@ class AccountDeletionBucket {
 		while (hasEnoughCapacity(available)) {
 			EntityId accountId = getNextAccountForProcessing();
 			MerkleAccount merkleAccount = accounts.get(accountId);
-			/* Returns AccountRemovalAction if no token rels are existing; Returns TokenCleanupAction if token rel is existing */ 
+			
+			/* Returns AccountRemovalAction if no token rels are existing
+			Returns TokenCleanupAction if token relation is existing */ 
 			Action action = determineAction(merkleAccount);
 
 			if (hasAvailableCapacity(availability, action.requiredCapacity())) {
