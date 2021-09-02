@@ -9,9 +9,9 @@ package com.hedera.services.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,15 +25,11 @@ import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Transaction;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,29 +46,34 @@ public class GetAccountRecordsAnswer implements AnswerService {
 
 	@Inject
 	public GetAccountRecordsAnswer(
-			AnswerFunctions answerFunctions,
-			OptionValidator optionValidator
+			final AnswerFunctions answerFunctions,
+			final OptionValidator optionValidator
 	) {
 		this.answerFunctions = answerFunctions;
 		this.optionValidator = optionValidator;
 	}
 
 	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
+	public boolean needsAnswerOnlyCost(final Query query) {
 		return COST_ANSWER == query.getCryptoGetAccountRecords().getHeader().getResponseType();
 	}
 
 	@Override
-	public boolean requiresNodePayment(Query query) {
+	public boolean requiresNodePayment(final Query query) {
 		return typicallyRequiresNodePayment(query.getCryptoGetAccountRecords().getHeader().getResponseType());
 	}
 
 	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
-		CryptoGetAccountRecordsResponse.Builder response = CryptoGetAccountRecordsResponse.newBuilder();
+	public Response responseGiven(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost
+	) {
+		final var op = query.getCryptoGetAccountRecords();
+		final var response = CryptoGetAccountRecordsResponse.newBuilder();
 
-		ResponseType type = op.getHeader().getResponseType();
+		final var type = op.getHeader().getResponseType();
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
@@ -82,7 +83,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 			} else {
 				response.setHeader(answerOnlyHeader(OK));
 				response.setAccountID(op.getAccountID());
-				response.addAllRecords(answerFunctions.accountRecords(view, query));
+				response.addAllRecords(answerFunctions.accountRecords(view, op));
 			}
 		}
 
@@ -92,14 +93,14 @@ public class GetAccountRecordsAnswer implements AnswerService {
 	}
 
 	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		AccountID id = query.getCryptoGetAccountRecords().getAccountID();
+	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+		final var id = query.getCryptoGetAccountRecords().getAccountID();
 
 		return optionValidator.queryableAccountStatus(id, view.accounts());
 	}
 
 	@Override
-	public ResponseCodeEnum extractValidityFrom(Response response) {
+	public ResponseCodeEnum extractValidityFrom(final Response response) {
 		return response.getCryptoGetAccountRecords().getHeader().getNodeTransactionPrecheckCode();
 	}
 
@@ -109,8 +110,8 @@ public class GetAccountRecordsAnswer implements AnswerService {
 	}
 
 	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		Transaction paymentTxn = query.getCryptoGetAccountRecords().getHeader().getPayment();
+	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+		final var paymentTxn = query.getCryptoGetAccountRecords().getHeader().getPayment();
 		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}
 }
