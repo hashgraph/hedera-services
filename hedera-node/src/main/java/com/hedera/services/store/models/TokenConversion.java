@@ -36,6 +36,18 @@ public final class TokenConversion {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
+	/**
+	 * Returns the token {@link Token} model type based on the merkleToken.
+	 *
+	 * @param merkleToken
+	 * 			immutable MerkleToken object to base the Token model from.
+	 * @param id
+	 * 			Id of the token.
+	 * @param accountStore
+	 * 			AccountStore to retrieve Treasury and Autorenew accounts
+	 * @return
+	 * 			Token Model based on the passed MerkleToken.
+	 */
 	public static Token fromMerkle(final MerkleToken merkleToken, final Id id, final AccountStore accountStore) {
 		var token = new Token(id);
 		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
@@ -43,12 +55,28 @@ public final class TokenConversion {
 		return token;
 	}
 
+	/**
+	 * Returns a MerkleToken {@link MerkleToken} based on the token model passed.
+	 *
+	 * @param token
+	 * 			Token model base to build a MerkleToken from
+	 * @return
+	 * 			A MerkleToken
+	 */
 	public static MerkleToken fromToken(Token token) {
 		final var mutableToken = new MerkleToken();
 		fromToken(token, mutableToken);
 		return mutableToken;
 	}
 
+	/**
+	 * Populates the mutableToken {@link MerkleToken} using the data from the Token model {@link Token}
+	 *
+	 * @param token
+	 * 			The token model to use
+	 * @param mutableToken
+	 * 			The mutable MerkleToken to populate the data.
+	 */
 	public static void fromToken(final Token token, final MerkleToken mutableToken) {
 		mutableToken.setExpiry(token.getExpiry());
 		mutableToken.setTotalSupply(token.getTotalSupply());
@@ -93,6 +121,15 @@ public final class TokenConversion {
 		mutableToken.setExpiry(token.getExpiry());
 	}
 
+	/**
+	 * Returns a UniqueToken {@link UniqueToken} model using the data from
+	 * a immutable MerkleUniqueToken {@link MerkleUniqueToken}
+	 *
+	 * @param immutableUniqueToken
+	 * @param id
+	 * @param serialNumber
+	 * @return
+	 */
 	public static UniqueToken fromMerkleUnique(MerkleUniqueToken immutableUniqueToken, Id id, long serialNumber) {
 		final var uniqueToken = new UniqueToken(id, serialNumber);
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
@@ -101,6 +138,13 @@ public final class TokenConversion {
 		return uniqueToken;
 	}
 
+	/**
+	 * Returns a MerkleUniqueToken {@link MerkleUniqueToken} with data from
+	 * the given UniqueToken {@link UniqueToken} model
+	 *
+	 * @param uniqueToken
+	 * @return
+	 */
 	public static MerkleUniqueToken fromUniqueToken(UniqueToken uniqueToken) {
 		return new MerkleUniqueToken(uniqueToken.getOwner().asEntityId(), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 	}
