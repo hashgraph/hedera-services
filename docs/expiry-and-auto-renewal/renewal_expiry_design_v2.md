@@ -203,12 +203,10 @@ class TokenCleanupAction {
 
 ### Capacity
 
-The throttling system provides information on the current Hedera transaction load of the network. We can assume what's
-left from the throttle is related to the worker capacity. When the usage of the throttle increases, the worker's
-capacity should decrease accordingly. The capacity of the worker should be split into the buckets. It's important to
-note some buckets should have more capacity than others.
+The throttling system provides information on the current Hedera transaction load of the network. We can assume that the capacity from the throttle can be used to determine how much capacity the worker should have. When the usage of the throttle increases, the worker's
+capacity should decrease accordingly. The capacity of the worker will be split into the buckets and each bucket can and will have different capacity assigned to it (in temrs of proportions). It's important to allocate more capacity to some buckets compared to others in order to process background work accordingly.
 
-Below is `Capacity` functional interface:
+Below is the `Capacity` functional interface:
 
 ```java
 interface Capacity {
@@ -216,56 +214,31 @@ interface Capacity {
 }
 ```
 
-This data represented as long value can be utilized during Hedera transaction and passed to the worker for
-re-calculation. This availability number must be the same for both reads and writes. Different fractions of this number
-will be assigned to all buckets. Each specific action is going to provide a long availability number based on the
-steps/work it needs to process. Once action completes, this number is going to be substracted from the overall worker
-capacity.
+The worker will get information on how much congestion is there in the network based on the Throttling system. The congestion will be translated to how much (in terms of %) the network is utilised. The minimum utilisation of the network can be considered 1 TPS and max utilisation can be considered when the Thottles are being reached (f.e 10k TPS for CryptoTransfers).
 
-As global dynamic properties we'll have two weights:
+State read and update operations will have an assigned value that will be used to represent computational time. For example `read` operations cost `1` capacity and write operations cost `5` capacity. 
 
-- touch/read
-- update/write
+The worker will have a property `MAX_CAPACITY` (f.e `1000`), that is a number corresponding to the maximum amount of work the Worker can perform during `handleTransaction` **if there is 1 TX/sec** load in the system.
 
-Update is a manipulation which changes the state, thus it should be more expensive compared to reading.
+The actual `capacity` that the worker will use will be calculated based on how much the network is congested. If the network is utilised at 30%, theoretically the worker can use 70% of the `MAX_CAPACITY` -> `700 units`.
 
-MAX_CAPACITY integer is always required for the worker. It may be depicted as 100% or just integer MAX_CAPACITY with
-value 100
+The worker will assing proportions of the availableCapacity to the buckets. F.e 20% on AccountScanning and 80% on AccountDeletion bucket.
 
-Options for translating the throttling load to worker capacity are:
+#### Buckets
 
-1. Reduce worker available capacity
-2. Increase action's required capacity
+| Bucket                | Description                                              	  	    | capacity            |
+|-----------------------|---------------------------------------------------------------------------|---------------------|
+| AccountScannerBucket  | Iterates through Merkle Accounts and determines an action to be performed | 20% worker capacity |
+| AccountDeletionBucket | Iterates through Merkle Accounts and clears token relations. Removes account from state once all relations are cleared| 80% worker capacity |
 
-Update operations should have higher execution priority. Given the opposite, we will clog the system with operations, as
-the amount of work generated would never be finished in single Hedera transaction.
+#### Actions
 
-#### Bucket capacity metrics
-
-| bucket                | description                                              | capacity            |
-|-----------------------|----------------------------------------------------------|---------------------|
-| AccountScannerBucket  | Bucket for account search and last scanner entity update | 30% worker capacity |
-| AccountDeletionBucket | Bucket for account deletion and token cleanup            | 70% worker capacity |
-
-#### Action capacity metrics
-
-| action               | bucket                | description                                                                                                                               | capacity |
-|----------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| AccountExpiryAction  | AccountScannerBucket  | 1.Add account for relationship removal to MerkleNetworkContext queue                                                                      | 1        |
-| AccountRemovalAction | AccountDeletionBucket | 1.Get all accounts; 2.Remove account from FCMap; 3.Delete account relation from MerkleNetworkContext queue                                | 5        |
-| TokenCleanupAction   | AccountDeletionBucket | 1.Retrieve MerkleToken; 2.Transfer token from expired account to treasury; 3.Remove token associations; 4.Delete token from MerkleAccount | 7        |
-
--------------
-
-### Events, which require actions:
-
-* `Account Expiration` - expired accounts are classified as renewable or not. The second type should be handled by
-  clearing all relations to tokens, returning balances to treasuries and finally deleting the account.
-
-* `Account Renewal` - expired accounts with balance - Renewable accounts. If the balance is sufficient, the account is
-  enabled again.
-
--------------
+| Action               	| Bucket                	| Description                                                                                                           	| Required Capacity         	|
+|----------------------	|-----------------------	|-----------------------------------------------------------------------------------------------------------------------	|---------------------------	|
+| AccountRenewAction   	| AccountScannerBucket  	| Charges the renewal account if expiry time has occurred.                                                              	| `N1=x1 reads + y1 writes` 	|
+| AccountExpiryAction  	| AccountScannerBucket  	| Adds the Entity Id into a queue in the MerkleNetworkContext in order to be processed by the AccountDeletionBucket     	| `N2=x2 reads + y2 writes` 	|
+| TokenCleanupAction   	| AccountDeletionBucket    	| Gets next Token Relation for a given `account`, transfers the tokens to the `treasury` and removes the token relation 	| `N3=x3 reads + y3 writes` 	|
+| AccountRemovalAction 	| AccountDeletionBucket 	| Removes the FCMap entry for a given `account`                                                                         	| `N4=x4 reads + y4 writes` 	|
 
 ### Current UML class diagram
 
