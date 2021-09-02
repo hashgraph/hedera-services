@@ -103,28 +103,28 @@ Pseudo code of the drain method:
 
 ````java
 class AccountDeletionBucket {
-	public Capacity drain(long consensusTimeStamp, Capacity available) {
-		while (hasEnoughCapacity(available)) {
-          EntityId accountId = getNextAccountForProcessing();
-          MerkleAccount merkleAccount = accounts.get(accountId);
+  public Capacity drain(long consensusTimeStamp, Capacity available) {
+    while (hasEnoughCapacity(available)) {
+      EntityId accountId = getNextAccountForProcessing();
+      MerkleAccount merkleAccount = accounts.get(accountId);
 			
 			/* Returns AccountRemovalAction if no token rels are existing
 			Returns TokenCleanupAction if token relation is existing */
-          Action action = determineAction(merkleAccount);
+      Action action = determineAction(merkleAccount);
 
-          if (hasAvailableCapacity(availability, action.requiredCapacity())) {
-            action.execute();
-            available -= action.requiredCapacity();
+      if (hasAvailableCapacity(availability, action.requiredCapacity())) {
+        action.execute();
+        available -= action.requiredCapacity();
 				/* we remove it from MerkleNetworkContext queue for relationship removals
 				 so we do not process the same account again. The work for this entity is done*/
-            if (action instanceof AccountRemovalAction) {
-              merkleNetworkContext.removeAccountForRelRemoval(accountNum);
-            }
-          }
+        if (action instanceof AccountRemovalAction) {
+          merkleNetworkContext.removeAccountForRelRemoval(accountNum);
         }
-
-      return available;
+      }
     }
+
+    return available;
+  }
 }
 ````
 
