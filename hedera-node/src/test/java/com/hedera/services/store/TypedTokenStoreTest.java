@@ -318,6 +318,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setAutoRenewAccount(treasuryId);
 		expectedReplacementToken.setSupplyKey(supplyKey);
 		expectedReplacementToken.setFreezeKey(freezeKey);
+		expectedReplacementToken.setFeeScheduleKey(feeScheduleKey);
 		expectedReplacementToken.setKycKey(kycKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 		expectedReplacementToken.setMemo(memo);
@@ -332,6 +333,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setAutoRenewAccount(treasuryId);
 		expectedReplacementToken2.setSupplyKey(supplyKey);
 		expectedReplacementToken2.setFreezeKey(freezeKey);
+		expectedReplacementToken2.setFeeScheduleKey(feeScheduleKey);
 		expectedReplacementToken2.setKycKey(kycKey);
 		expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
 		expectedReplacementToken2.setMemo(memo);
@@ -415,6 +417,7 @@ class TypedTokenStoreTest {
 		newToken.setSupplyKey(supplyKey);
 		newToken.setWipeKey(wipeKey);
 		newToken.setAdminKey(adminKey);
+		newToken.setFeeScheduleKey(feeScheduleKey);
 		newToken.setCustomFees(List.of());
 
 		subject.persistNew(newToken);
@@ -476,6 +479,7 @@ class TypedTokenStoreTest {
 		merkleToken.setSupplyKey(supplyKey);
 		merkleToken.setKycKey(kycKey);
 		merkleToken.setFreezeKey(freezeKey);
+		merkleToken.setFeeScheduleKey(feeScheduleKey);
 
 		token.setTreasury(treasuryAccount);
 		token.setAutoRenewAccount(autoRenewAccount);
@@ -483,6 +487,7 @@ class TypedTokenStoreTest {
 		token.setKycKey(kycKey);
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
+		token.setFeeScheduleKey(feeScheduleKey);
 		token.setFrozenByDefault(freezeDefault);
 		token.setIsDeleted(false);
 		token.setExpiry(expiry);
@@ -515,6 +520,7 @@ class TypedTokenStoreTest {
 	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final JKey wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 	private final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private final JKey feeScheduleKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
 	private final long tokenNum = 4_234L;
 	private final long tokenSupply = 777L;
 	private final String name = "Testing123";
