@@ -97,10 +97,10 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 
 	@Override
 	public void put(byte[] key, AccountState evmState) {
-		var id = accountParsedFromSolidityAddress(key);
+		final var id = accountParsedFromSolidityAddress(key);
 
 		if (evmState == null) {
-			String idStr = asLiteralString(id);
+			final var idStr = asLiteralString(id);
 			log.warn("Ignoring null state put to account {}!", idStr);
 			return;
 		}
