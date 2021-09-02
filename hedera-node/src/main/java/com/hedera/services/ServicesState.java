@@ -23,7 +23,10 @@ package com.hedera.services;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -31,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.org.LegacyStateChildIndices;
 import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -64,7 +68,9 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
+import static com.hedera.services.store.tokens.views.internals.PermHashLong.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.swirlds.merkle.map.FCMapMigration.FCMapToMerkleMap;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -140,6 +146,42 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void addDeserializedChildren(List<MerkleNode> children, int version) {
 		super.addDeserializedChildren(children, version);
 		deserializedVersion = version;
+	}
+
+	@Override
+	public void migrate() {
+		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION) {
+			FCMapToMerkleMap(
+					this,
+					StateChildIndices.UNIQUE_TOKENS,
+					(MerkleUniqueTokenId uniqueTokenId) -> new PermHashLong(uniqueTokenId.identityCode()),
+					(MerkleUniqueToken v) -> v);
+			FCMapToMerkleMap(
+					this,
+					StateChildIndices.TOKEN_ASSOCIATIONS,
+					(MerkleEntityAssociation tokenRel) -> fromLongs(tokenRel.getFromNum(), tokenRel.getToNum()),
+					(MerkleTokenRelStatus v) -> v);
+			FCMapToMerkleMap(
+					this,
+					StateChildIndices.TOPICS,
+					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleTopic v) -> v);
+			FCMapToMerkleMap(
+					this,
+					StateChildIndices.STORAGE,
+					MerkleBlobMeta::getPath,
+					(MerkleOptionalBlob v) -> v);
+			FCMapToMerkleMap(
+					this,
+					StateChildIndices.ACCOUNTS,
+					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleAccount v) -> v);
+			FCMapToMerkleMap(
+					this,
+					StateChildIndices.SCHEDULE_TXS,
+					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleSchedule v) -> v);
+		}
 	}
 
 	/* --- SwirldState --- */
@@ -221,7 +263,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void archive() {
 		/* NOTE: in the near future, likely SDK 0.19.0, it will be necessary
-		* to also propagate this .archive() call to the MerkleMaps as well. */
+		 * to also propagate this .archive() call to the MerkleMaps as well. */
 		if (metadata != null) {
 			metadata.archive();
 		}

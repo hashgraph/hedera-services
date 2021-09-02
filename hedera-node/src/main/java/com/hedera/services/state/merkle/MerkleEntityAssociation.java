@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -56,12 +55,12 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 		this.toNum = toNum;
 	}
 
-	public static MerkleEntityAssociation fromModelRel(TokenRelationship tokenRelationship) {
-		final var accountId = tokenRelationship.getAccount().getId();
-		final var tokenId = tokenRelationship.getToken().getId();
-		return new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+	public long getFromNum() {
+		return fromNum;
+	}
+
+	public long getToNum() {
+		return toNum;
 	}
 
 	public static PermHashLong fromAccountTokenRel(Pair<AccountID, TokenID> rel) {

@@ -38,7 +38,8 @@ public class StateVersions {
 	public static final int RELEASE_0120_VERSION = 6;
 	public static final int RELEASE_0160_VERSION = 10;
 	public static final int RELEASE_0170_VERSION = 11;
+	public static final int RELEASE_0180_VERSION = 12;
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0120_VERSION;
-	public static final int CURRENT_VERSION = RELEASE_0170_VERSION;
+	public static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 }
