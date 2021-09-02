@@ -131,7 +131,7 @@ executed as part of Hedera transaction. An example for that is an account that h
 passed.
 
 For migrating the current expiry/renewal account implementation, we might consider 3 types of actions
-- `AccountScannerAction`, `AccountRemovalAction` and `TokenCleanupAction`.
+- `AccountExpiryAction`, `AccountRenewAction`, `AccountRemovalAction` and `TokenCleanupAction`.
 
 Below is `Action` functional interface:
 
@@ -145,15 +145,15 @@ interface Action {
 }
 ```
 
-The implementation `AccountScannerAction` will be responsible for:
+The implementation `AccountExpiryAction` will be responsible for:
 
 - add account for reletationship removal to `MerkleNetworkContext` new `Queue<AccountNum>`
 
 Pseudo code of execute method:
 
 ````java
-class AccountScannerAction {
-	public execute() {
+class AccountExpiryAction {
+  public execute() {
 		merkleNetworkContext.addAccountForRelRemoval(accountNum);
 	}
 }
@@ -251,7 +251,7 @@ the amount of work generated would never be finished in single Hedera transactio
 
 | action               | bucket                | description                                                                                                                               | capacity |
 |----------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| AccountScannerAction | AccountScannerBucket  | 1.Add account for relationship removal to MerkleNetworkContext queue                                                                      | 1        |
+| AccountExpiryAction  | AccountScannerBucket  | 1.Add account for relationship removal to MerkleNetworkContext queue                                                                      | 1        |
 | AccountRemovalAction | AccountDeletionBucket | 1.Get all accounts; 2.Remove account from FCMap; 3.Delete account relation from MerkleNetworkContext queue                                | 5        |
 | TokenCleanupAction   | AccountDeletionBucket | 1.Retrieve MerkleToken; 2.Transfer token from expired account to treasury; 3.Remove token associations; 4.Delete token from MerkleAccount | 7        |
 
