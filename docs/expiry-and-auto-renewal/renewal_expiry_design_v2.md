@@ -68,6 +68,7 @@ class AccountScannerBucket {
 	public Capacity drain(long consensusTimeStamp, Capacity available) {
 		while (hasEnoughCapacity(available)) {
 			MerkleAccount account = loadAccount(++lastScannedEntity);
+			/* Returns AccountRenewAction or AccountExpiryAction for now */
 			Option<Action> action = determineAction(account, now);
 
 			if (!action.isEmpty() && hasAvailableCapacity(availability, action.requiredCapacity())) {
@@ -96,8 +97,9 @@ Pseudo code of the drain method:
 class AccountDeletionBucket {
 	public Capacity drain(long consensusTimeStamp, Capacity available) {
 		while (hasEnoughCapacity(available)) {
-			EntityId accountId = getNextRelationForProcessing();
+			EntityId accountId = getNextAccountForProcessing();
 			MerkleAccount merkleAccount = accounts.get(accountId);
+			/* Returns AccountRemovalAction if no token rels are existing; Returns TokenCleanupAction if token rel is existing */ 
 			Action action = determineAction(merkleAccount);
 
 			if (hasAvailableCapacity(availability, action.requiredCapacity())) {
@@ -179,18 +181,13 @@ Pseudo code of execute method:
 ````java
 class TokenCleanupAction {
 	public execute() {
-		while (hasEnoughCapacity(available)) {
-			long tokenId = merkleAccount.tokens().getRawIds()[0];
-			MerkleToken token = tokens().get(tokenId);
-			transferToken(accountId, treasury);
-			MerkleEntityAssociation mea = new MerkleEntityAssociation(accountId, tokenId);
-			tokenAssociations().remove(mea);
-          merkleAccount.tokens().remove(0);
-        }
-      FCMap<MerkleEntityId, MerkleAccount> accounts = getAccounts();
-      accounts.remove(accountNum);
-      merkleNetworkContext.removeAccountForRelRemoval(accountNum);
-    }
+		long tokenId = merkleAccount.tokens().getRawIds()[0];
+		MerkleToken token = tokens().get(tokenId);
+		transferToken(accountId, treasury);
+		MerkleEntityAssociation mea = new MerkleEntityAssociation(accountId, tokenId);
+		tokenAssociations().remove(mea);
+		merkleAccount.tokens().remove(0);
+	}
 }
 ````
 
