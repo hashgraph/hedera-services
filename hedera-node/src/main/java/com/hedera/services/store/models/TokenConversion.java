@@ -28,8 +28,9 @@ import com.hedera.services.store.AccountStore;
 import javax.annotation.Nullable;
 
 /**
- * Performs MerkleToken {@link MerkleToken}  <-> Token {@link Token} <-> MerkleToken {@link MerkleToken} conversions,
- * preserving all the fields as expected.
+ * Performs MerkleToken {@link MerkleToken}  - Token {@link Token} - MerkleToken {@link MerkleToken} and
+ * MerkleUniqueToken {@link MerkleUniqueToken} - UniqueToken {@link UniqueToken} - MerkleUniqueToken {@link MerkleUniqueToken}
+ * conversions by preserving all the fields as expected.
  */
 public final class TokenConversion {
 	private TokenConversion() {
@@ -126,9 +127,13 @@ public final class TokenConversion {
 	 * a immutable MerkleUniqueToken {@link MerkleUniqueToken}
 	 *
 	 * @param immutableUniqueToken
+	 * 			Immutable MerkleUniqueToken object.
 	 * @param id
+	 * 			The tokenId
 	 * @param serialNumber
+	 * 			The the serial number of the unique token.
 	 * @return
+	 * 			The UniqueToken model object with all the data.
 	 */
 	public static UniqueToken fromMerkleUnique(MerkleUniqueToken immutableUniqueToken, Id id, long serialNumber) {
 		final var uniqueToken = new UniqueToken(id, serialNumber);
@@ -143,7 +148,9 @@ public final class TokenConversion {
 	 * the given UniqueToken {@link UniqueToken} model
 	 *
 	 * @param uniqueToken
+	 * 			The UniqueToken to base the MerkleUniqueToken on.
 	 * @return
+	 * 			The created MerkleUniqueToken.
 	 */
 	public static MerkleUniqueToken fromUniqueToken(UniqueToken uniqueToken) {
 		return new MerkleUniqueToken(uniqueToken.getOwner().asEntityId(), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
