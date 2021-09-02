@@ -120,7 +120,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public int getMinimumChildCount(int version) {
 		if (version < StateVersions.RELEASE_0160_VERSION) {
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
-		} else if (version <= StateVersions.RELEASE_0170_VERSION) {
+		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
 			return StateChildIndices.NUM_POST_0160_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
