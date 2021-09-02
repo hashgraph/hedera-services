@@ -166,7 +166,7 @@ public class TxnIdRecentHistory {
 			final var onlyRecord = records.get(0);
 			if (onlyRecord.getExpiry() <= now) {
 				records.clear();
-			}git
+			}
 		}
 	}
 
