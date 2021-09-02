@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.AccountStore;
 
@@ -35,65 +36,45 @@ public final class TokenConversion {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static Token FromMerkle(final MerkleToken merkleToken, final Id id, final AccountStore accountStore) {
+	public static Token fromMerkle(final MerkleToken merkleToken, final Id id, final AccountStore accountStore) {
 		var token = new Token(id);
 		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
 		initModelFields(token, merkleToken);
 		return token;
 	}
 
-	public static void fromToken(Token token, MerkleToken merkleToken) {
-		mapModelChangesToMutable(token, merkleToken);
+	public static MerkleToken fromToken(Token token) {
+		final var mutableToken = new MerkleToken();
+		fromToken(token, mutableToken);
+		return mutableToken;
 	}
 
+	public static void fromToken(final Token token, final MerkleToken mutableToken) {
+		mutableToken.setExpiry(token.getExpiry());
+		mutableToken.setTotalSupply(token.getTotalSupply());
+		mutableToken.setDecimals(token.getDecimals());
+		mutableToken.setSymbol(token.getSymbol());
+		mutableToken.setName(token.getName());
+		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
+		mutableToken.setAccountsKycGrantedByDefault(token.isKycGrantedByDefault());
+		mutableToken.setTreasury(token.getTreasury().getId().asEntityId());
 
-	private static void initModelAccounts(Token token,
-			final EntityId _treasuryId,
-			@Nullable final EntityId _autoRenewId,
-			final AccountStore accountStore) {
-		if (_autoRenewId != null) {
-			final var autoRenewId = new Id(_autoRenewId.shard(), _autoRenewId.realm(), _autoRenewId.num());
-			final var autoRenew = accountStore.loadAccount(autoRenewId);
-			token.setAutoRenewAccount(autoRenew);
-		}
-		final var treasuryId = new Id(_treasuryId.shard(), _treasuryId.realm(), _treasuryId.num());
-		final var treasury = accountStore.loadAccount(treasuryId);
-		token.setTreasury(treasury);
-	}
-
-	private static void initModelFields(Token token, MerkleToken immutableToken) {
-		token.initTotalSupply(immutableToken.totalSupply());
-		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
-		token.setKycKey(immutableToken.getKycKey());
-		token.setFreezeKey(immutableToken.getFreezeKey());
-		token.setSupplyKey(immutableToken.getSupplyKey());
-		token.setWipeKey(immutableToken.getWipeKey());
-		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
-		token.setAdminKey(immutableToken.getAdminKey());
-		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
-		token.setType(immutableToken.tokenType());
-		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
-		token.setIsDeleted(immutableToken.isDeleted());
-		token.setExpiry(immutableToken.expiry());
-		token.setMemo(immutableToken.memo());
-		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
-	}
-
-	private static void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();
 		if (newAutoRenewAccount != null) {
 			mutableToken.setAutoRenewAccount(new EntityId(newAutoRenewAccount.getId()));
 			mutableToken.setAutoRenewPeriod(token.getAutoRenewPeriod());
 		}
+
 		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
 		mutableToken.setTotalSupply(token.getTotalSupply());
-		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
 
 		mutableToken.setTokenType(token.getType());
 		mutableToken.setSupplyType(token.getSupplyType());
 
 		mutableToken.setMemo(token.getMemo());
+		mutableToken.setName(token.getName());
+		mutableToken.setSymbol(token.getSymbol());
 
 		mutableToken.setAdminKey(token.getAdminKey());
 		mutableToken.setSupplyKey(token.getSupplyKey());
@@ -110,5 +91,52 @@ public final class TokenConversion {
 		}
 
 		mutableToken.setExpiry(token.getExpiry());
+	}
+
+	public static UniqueToken fromMerkleUnique(MerkleUniqueToken immutableUniqueToken, Id id, long serialNumber) {
+		final var uniqueToken = new UniqueToken(id, serialNumber);
+		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
+		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
+		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
+		return uniqueToken;
+	}
+
+	public static MerkleUniqueToken fromUniqueToken(UniqueToken uniqueToken) {
+		return new MerkleUniqueToken(uniqueToken.getOwner().asEntityId(), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
+	}
+
+	private static void initModelAccounts(Token token,
+			final EntityId _treasuryId,
+			@Nullable final EntityId _autoRenewId,
+			final AccountStore accountStore) {
+		if (_autoRenewId != null) {
+			final var autoRenewId = new Id(_autoRenewId.shard(), _autoRenewId.realm(), _autoRenewId.num());
+			final var autoRenew = accountStore.loadAccount(autoRenewId);
+			token.setAutoRenewAccount(autoRenew);
+		}
+		final var treasuryId = new Id(_treasuryId.shard(), _treasuryId.realm(), _treasuryId.num());
+		final var treasury = accountStore.loadAccount(treasuryId);
+		token.setTreasury(treasury);
+	}
+
+	private static void initModelFields(Token token, MerkleToken immutableToken) {
+		token.setName(immutableToken.name());
+		token.setSymbol(immutableToken.symbol());
+		token.initTotalSupply(immutableToken.totalSupply());
+		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
+		token.setKycKey(immutableToken.getKycKey());
+		token.setFreezeKey(immutableToken.getFreezeKey());
+		token.setSupplyKey(immutableToken.getSupplyKey());
+		token.setWipeKey(immutableToken.getWipeKey());
+		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+		token.setKycGrantedByDefault(immutableToken.accountsKycGrantedByDefault());
+		token.setAdminKey(immutableToken.getAdminKey());
+		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
+		token.setType(immutableToken.tokenType());
+		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
+		token.setIsDeleted(immutableToken.isDeleted());
+		token.setExpiry(immutableToken.expiry());
+		token.setMemo(immutableToken.memo());
+		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
 	}
 }

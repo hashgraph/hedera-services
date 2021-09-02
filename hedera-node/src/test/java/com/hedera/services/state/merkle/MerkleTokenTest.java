@@ -133,6 +133,7 @@ class MerkleTokenTest {
 		setOptionalElements(subject);
 		subject.setExpiry(expiry);
 		subject.setTotalSupply(totalSupply);
+		subject.setDecimals(decimals);
 		subject.setAdminKey(adminKey);
 		subject.setFreezeKey(freezeKey);
 		subject.setKycKey(kycKey);
@@ -145,7 +146,8 @@ class MerkleTokenTest {
 		subject.setTreasury(treasury);
 		subject.setName(name);
 		subject.setSymbol(symbol);
-		subject.setAccountsFrozenByDefault(true);
+		subject.setAccountsFrozenByDefault(freezeDefault);
+		subject.setAccountsKycGrantedByDefault(accountsKycGrantedByDefault);
 		subject.setFeeScheduleFrom(grpcFeeSchedule, null);
 
 		serdes = mock(DomainSerdes.class);

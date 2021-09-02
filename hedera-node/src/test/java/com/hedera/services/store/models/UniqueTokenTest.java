@@ -46,6 +46,8 @@ class UniqueTokenTest {
 		assertEquals(Id.DEFAULT, subj.getTokenId());
 		subj.setCreationTime(RichInstant.MISSING_INSTANT);
 		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
+		assertEquals("UniqueToken{owner=Id{shard=1, realm=2, num=3}, tokenId=Id{shard=0, realm=0, num=0}," +
+				" serialNum=2, creationTime=RichInstant{seconds=0, nanos=0}, metadata=[1, 2, 3]}", subj.toString());
 	}
 
 }

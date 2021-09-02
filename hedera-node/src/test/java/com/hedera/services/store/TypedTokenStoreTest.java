@@ -489,6 +489,7 @@ class TypedTokenStoreTest {
 		token.setFreezeKey(freezeKey);
 		token.setFeeScheduleKey(feeScheduleKey);
 		token.setFrozenByDefault(freezeDefault);
+		token.setKycGrantedByDefault(true);
 		token.setIsDeleted(false);
 		token.setExpiry(expiry);
 	}

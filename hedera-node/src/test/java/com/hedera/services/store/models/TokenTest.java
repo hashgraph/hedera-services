@@ -526,7 +526,9 @@ class TokenTest {
 		subject.setLastUsedSerialNumber(1);
 		assertEquals(1, subject.getLastUsedSerialNumber());
 		subject.setFrozenByDefault(false);
+		subject.setKycGrantedByDefault(false);
 		assertFalse(subject.isFrozenByDefault());
+		assertFalse(subject.isKycGrantedByDefault());
 
 		final var wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
 		subject.setWipeKey(wipeKey);
@@ -558,7 +560,7 @@ class TokenTest {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
 
 		assertEquals(desired, subject.toString());
 	}

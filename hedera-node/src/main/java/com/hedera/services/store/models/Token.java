@@ -90,6 +90,7 @@ public class Token {
 	private JKey adminKey;
 	private JKey feeScheduleKey;
 	private boolean frozenByDefault;
+	private boolean kycGrantedByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
 	private boolean deleted;
@@ -168,6 +169,7 @@ public class Token {
 		token.setDecimals(op.getDecimals());
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
+		token.setKycGrantedByDefault(!op.hasKycKey());
 		token.setCustomFees(customFees);
 
 		token.setNew(true);
@@ -498,6 +500,14 @@ public class Token {
 		this.frozenByDefault = frozenByDefault;
 	}
 
+	public boolean isKycGrantedByDefault() {
+		return kycGrantedByDefault;
+	}
+
+	public void setKycGrantedByDefault(boolean kycGrantedByDefault) {
+		this.kycGrantedByDefault = kycGrantedByDefault;
+	}
+
 	public Id getId() {
 		return id;
 	}
@@ -652,6 +662,7 @@ public class Token {
 				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
 				.add("frozenByDefault", frozenByDefault)
+				.add("kycGrantedByDefault", kycGrantedByDefault)
 				.add("supplyKey", describe(supplyKey))
 				.add("currentSerialNumber", lastUsedSerialNumber)
 				.toString();
