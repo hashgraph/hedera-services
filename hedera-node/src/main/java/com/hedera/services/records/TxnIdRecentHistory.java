@@ -30,7 +30,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -54,7 +54,7 @@ public class TxnIdRecentHistory {
 	List<ExpirableTxnRecord> classifiableRecords = null;
 	List<ExpirableTxnRecord> unclassifiableRecords = null;
 
-	public static final EnumSet<ResponseCodeEnum> UNCLASSIFIABLE_STATUSES = EnumSet.of(
+	private static final Set<ResponseCodeEnum> UNCLASSIFIABLE_STATUSES = EnumSet.of(
 			INVALID_NODE_ACCOUNT,
 			INVALID_PAYER_SIGNATURE);
 
@@ -81,7 +81,7 @@ public class TxnIdRecentHistory {
 	}
 
 	private Stream<ExpirableTxnRecord> unclassifiableDuplicates() {
-		int startIndex = areForgotten(classifiableRecords) ? 1 : 0;
+		final var startIndex = areForgotten(classifiableRecords) ? 1 : 0;
 		if (areForgotten(unclassifiableRecords) || unclassifiableRecords.size() <= startIndex) {
 			return Stream.empty();
 		} else {
@@ -93,15 +93,15 @@ public class TxnIdRecentHistory {
 		return areForgotten(classifiableRecords) && areForgotten(unclassifiableRecords);
 	}
 
-	private boolean areForgotten(List<ExpirableTxnRecord> records) {
+	private boolean areForgotten(final List<ExpirableTxnRecord> records) {
 		return records == null || records.isEmpty();
 	}
 
-	public void observe(ExpirableTxnRecord record, ResponseCodeEnum status) {
+	public void observe(final ExpirableTxnRecord expirableTxnRecord, final ResponseCodeEnum status) {
 		if (UNCLASSIFIABLE_STATUSES.contains(status)) {
-			addUnclassifiable(record);
+			addUnclassifiable(expirableTxnRecord);
 		} else {
-			addClassifiable(record);
+			addClassifiable(expirableTxnRecord);
 		}
 	}
 
@@ -114,17 +114,18 @@ public class TxnIdRecentHistory {
 
 	public void observeStaged() {
 		memory.sort(CONSENSUS_TIME_COMPARATOR);
-		memory.forEach(record -> this.observe(record, ResponseCodeEnum.valueOf(record.getReceipt().getStatus())));
+		memory.forEach(expirableTxnRecord -> this.observe(expirableTxnRecord,
+				ResponseCodeEnum.valueOf(expirableTxnRecord.getReceipt().getStatus())));
 		memory = null;
 	}
 
-	private void addClassifiable(ExpirableTxnRecord record) {
+	private void addClassifiable(final ExpirableTxnRecord expirableTxnRecord) {
 		if (classifiableRecords == null) {
 			classifiableRecords = new LinkedList<>();
 		}
 		int i = 0;
-		long submittingMember = record.getSubmittingMember();
-		var iter = classifiableRecords.listIterator();
+		final var submittingMember = expirableTxnRecord.getSubmittingMember();
+		final var iter = classifiableRecords.listIterator();
 		boolean isNodeDuplicate = false;
 		while (i < numDuplicates) {
 			if (submittingMember == iter.next().getSubmittingMember()) {
@@ -134,21 +135,21 @@ public class TxnIdRecentHistory {
 			i++;
 		}
 		if (isNodeDuplicate) {
-			classifiableRecords.add(record);
+			classifiableRecords.add(expirableTxnRecord);
 		} else {
 			numDuplicates++;
-			iter.add(record);
+			iter.add(expirableTxnRecord);
 		}
 	}
 
-	private void addUnclassifiable(ExpirableTxnRecord record) {
+	private void addUnclassifiable(final ExpirableTxnRecord expirableTxnRecord) {
 		if (unclassifiableRecords == null) {
 			unclassifiableRecords = new LinkedList<>();
 		}
-		unclassifiableRecords.add(record);
+		unclassifiableRecords.add(expirableTxnRecord);
 	}
 
-	public void forgetExpiredAt(long now) {
+	public void forgetExpiredAt(final long now) {
 		if (classifiableRecords != null) {
 			forgetFromList(classifiableRecords, now);
 		}
@@ -157,10 +158,10 @@ public class TxnIdRecentHistory {
 		}
 	}
 
-	private void forgetFromList(List<ExpirableTxnRecord> records, long now) {
-		final int size = records.size();
+	private void forgetFromList(final List<ExpirableTxnRecord> records, final long now) {
+		final var size = records.size();
 		if (size > 1) {
-			records.removeIf(record -> record.getExpiry() <= now);
+			records.removeIf(expirableTxnRecord -> expirableTxnRecord.getExpiry() <= now);
 		} else if (size == 1) {
 			final var onlyRecord = records.get(0);
 			if (onlyRecord.getExpiry() <= now) {
@@ -169,11 +170,11 @@ public class TxnIdRecentHistory {
 		}
 	}
 
-	public DuplicateClassification currentDuplicityFor(long submittingMember) {
+	public DuplicateClassification currentDuplicityFor(final long submittingMember) {
 		if (numDuplicates == 0) {
 			return BELIEVED_UNIQUE;
 		}
-		var iter = classifiableRecords.listIterator();
+		final var iter = classifiableRecords.listIterator();
 		for (int i = 0; i < numDuplicates; i++) {
 			if (iter.next().getSubmittingMember() == submittingMember) {
 				return NODE_DUPLICATE;

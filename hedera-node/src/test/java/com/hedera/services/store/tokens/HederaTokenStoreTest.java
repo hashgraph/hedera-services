@@ -118,7 +118,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -594,12 +594,12 @@ class HederaTokenStoreTest {
 		// auto associate a fungible token
 		var status = subject.associate(sponsor, List.of(misc), true);
 
-		assertEquals(NO_REMAINING_AUTO_ASSOCIATIONS, status);
+		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 
 		// auto associate a fungibleUnique token
 		status = subject.associate(sponsor, List.of(nonfungible), true);
 
-		assertEquals(NO_REMAINING_AUTO_ASSOCIATIONS, status);
+		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 	}
 
 	@Test
@@ -1412,7 +1412,7 @@ class HederaTokenStoreTest {
 
 		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
-		assertEquals(NO_REMAINING_AUTO_ASSOCIATIONS, status);
+		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 		verify(tokenRelsLedger, never()).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
 		verify(hederaLedger, never()).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
 	}
