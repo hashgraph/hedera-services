@@ -412,7 +412,7 @@ public final class RequestBuilder {
    *
    * @param payerAccountNum payer account number
    * @param payerRealmNum payer realm number
-   * @param payerShardNum payer share number
+   * @param payerShardNum payer shard number
    * @param nodeAccountNum node account number
    * @param nodeRealmNum node realm number
    * @param nodeShardNum node shard number
@@ -441,9 +441,9 @@ public final class RequestBuilder {
     body.setFileDelete(fileDeleteTransaction);
     byte[] bodyBytesArr = body.build().toByteArray();
     ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
+    System.out.println(bodyBytes);
     return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
   }
-
 
   public static Query getFileGetContentBuilder(Transaction payment, FileID fileID,
       ResponseType responseType) {
@@ -754,7 +754,6 @@ public final class RequestBuilder {
             .setHeader(queryHeader)).build();
 
   }
-
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
