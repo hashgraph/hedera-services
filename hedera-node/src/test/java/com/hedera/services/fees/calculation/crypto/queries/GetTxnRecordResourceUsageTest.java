@@ -122,13 +122,13 @@ class GetTxnRecordResourceUsageTest {
 
 		var costAnswerEstimate = subject.usageGiven(satisfiableCostAnswerQuery, view);
 		var answerOnlyEstimate = subject.usageGiven(satisfiableAnswerOnlyQuery, view);
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+		assertSame(costAnswerUsage, costAnswerEstimate);
+		assertSame(answerOnlyUsage, answerOnlyEstimate);
 
 		costAnswerEstimate = subject.usageGivenType(satisfiableCostAnswerQuery, view, COST_ANSWER);
 		answerOnlyEstimate = subject.usageGivenType(satisfiableAnswerOnlyQuery, view, ANSWER_ONLY);
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+		assertSame(costAnswerUsage, costAnswerEstimate);
+		assertSame(answerOnlyUsage, answerOnlyEstimate);
 	}
 
 	@Test

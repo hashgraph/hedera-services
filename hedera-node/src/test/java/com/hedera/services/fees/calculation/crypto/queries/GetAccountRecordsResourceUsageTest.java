@@ -47,7 +47,6 @@ import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.E
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -109,8 +108,8 @@ class GetAccountRecordsResourceUsageTest {
 		final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
 		final var answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
 
-		assertEquals(costAnswerUsage, costAnswerEstimate);
-		assertEquals(answerOnlyUsage, answerOnlyEstimate);
+		assertSame(costAnswerUsage, costAnswerEstimate);
+		assertSame(answerOnlyUsage, answerOnlyEstimate);
 	}
 
 
