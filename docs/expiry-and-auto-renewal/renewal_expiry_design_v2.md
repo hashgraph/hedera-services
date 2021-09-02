@@ -71,9 +71,9 @@ class AccountScannerBucket {
 			Option<Action> action = determineAction(account, now);
 
 			if (!action.isEmpty() && hasAvailableCapacity(availability, action.requiredCapacity())) {
-              action.execute();
-              availability -= action.requiredCapacity() + action.requiredCapacity() * throttleLoad();
-              lastScannedEntity = accountNum;
+              			action.execute();
+              			availability -= action.requiredCapacity() + action.requiredCapacity() * throttleLoad();
+              			lastScannedEntity = accountNum;
 			}
 		}
 
