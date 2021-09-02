@@ -51,7 +51,7 @@ public class ScreenedTransition {
 	}
 
 	void finishFor(TxnAccessor accessor) {
-		final var sysAuthStatus = opPolicies.check(accessor).asStatus();
+		final var sysAuthStatus = opPolicies.checkAccessor(accessor).asStatus();
 		if (sysAuthStatus != OK) {
 			txnCtx.setStatus(sysAuthStatus);
 			return;

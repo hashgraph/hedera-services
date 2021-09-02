@@ -23,6 +23,7 @@ package com.hedera.services.txns.auth;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,10 +46,13 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
+
 import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,7 +133,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -140,7 +144,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -151,7 +155,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -162,7 +166,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setAccountIDToUpdate(account(75)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -173,7 +177,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setAccountIDToUpdate(account(75)));
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -184,7 +188,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setAccountIDToUpdate(account(1001)));
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -199,8 +203,8 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setAccountIDToUpdate(account(50)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(selfUpdateTxn)));
-		assertEquals(AUTHORIZED, subject.check(accessor(otherUpdateTxn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(selfUpdateTxn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(otherUpdateTxn)));
 	}
 
 	@Test
@@ -215,8 +219,8 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setAccountIDToUpdate(account(2)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(civilianTxn)));
-		assertEquals(UNAUTHORIZED, subject.check(accessor(sysAdminTxn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(civilianTxn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(sysAdminTxn)));
 	}
 
 	@Test
@@ -227,7 +231,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(111)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -238,7 +242,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(111)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -249,7 +253,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(112)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -258,7 +262,7 @@ class SystemOpPoliciesTest {
 		var txn = treasuryTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -267,7 +271,7 @@ class SystemOpPoliciesTest {
 		var txn = sysAdminTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -276,7 +280,7 @@ class SystemOpPoliciesTest {
 		var txn = freezeAdminTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -285,7 +289,7 @@ class SystemOpPoliciesTest {
 		var txn = exchangeRatesAdminTxn()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance());
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -296,7 +300,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(123)));
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -307,7 +311,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(123)));
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -318,7 +322,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(1234)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -329,7 +333,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(1234)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -340,7 +344,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(1234)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -351,7 +355,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(1234)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -362,7 +366,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(123)));
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -373,7 +377,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(123)));
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -384,7 +388,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(1234)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -395,7 +399,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(1234)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -406,7 +410,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(1234)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -417,7 +421,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(1234)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -428,7 +432,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(1122)));
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -439,7 +443,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(123)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -450,7 +454,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setContractID(contract(1233)));
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -461,7 +465,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(112)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -472,9 +476,8 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(150)));
 		// expect:
-		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
 	}
-
 
 	@Test
 	void fileUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
@@ -484,7 +487,7 @@ class SystemOpPoliciesTest {
 						.newBuilder()
 						.setFileID(file(1122)));
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -496,7 +499,7 @@ class SystemOpPoliciesTest {
 						.setFileID(file(100)));
 
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -508,7 +511,7 @@ class SystemOpPoliciesTest {
 						.setFileID(file(1001)));
 
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -520,7 +523,7 @@ class SystemOpPoliciesTest {
 						.setContractID(contract(100)));
 
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -532,7 +535,7 @@ class SystemOpPoliciesTest {
 						.setContractID(contract(1001)));
 
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -544,7 +547,7 @@ class SystemOpPoliciesTest {
 						.setDeleteAccountID(account(100)));
 
 		// expect:
-		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+		assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -556,7 +559,7 @@ class SystemOpPoliciesTest {
 						.setDeleteAccountID(account(1001)));
 
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
 	}
 
 	@Test
@@ -566,7 +569,24 @@ class SystemOpPoliciesTest {
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
 
 		// expect:
-		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+	}
+
+	@Test
+	void executionTimesAreQueryableBySuperusers() {
+		// expect:
+		assertEquals(AUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 2));
+		assertEquals(AUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 50));
+		// and:
+		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 3));
+		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 55));
+		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 99));
+		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 1001));
+	}
+
+	@Test
+	void onlyPrivilegedQueryIsExecutionTime() {
+		MiscUtils.QUERY_FUNCTIONS
 	}
 
 	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {

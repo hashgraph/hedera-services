@@ -43,6 +43,7 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	private final QueryResponseHelper queryHelper;
 
 	public static final String GET_VERSION_INFO_METRIC = "getVersionInfo";
+	public static final String GET_EXECUTION_TIME_METRIC = "getExecutionTime";
 	public static final String UNCHECKED_SUBMIT_METRIC = "uncheckedSubmit";
 
 	@Inject

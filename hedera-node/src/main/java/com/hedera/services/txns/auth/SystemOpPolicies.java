@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
@@ -77,14 +78,22 @@ public class SystemOpPolicies {
 		functionPolicies.put(UncheckedSubmit, this::checkUncheckedSubmit);
 	}
 
-	public SystemOpAuthorization check(TxnAccessor accessor) {
-		return check(accessor.getTxn(), accessor.getFunction());
+	public SystemOpAuthorization checkAccessor(TxnAccessor accessor) {
+		return checkKnownTxn(accessor.getTxn(), accessor.getFunction());
 	}
 
-	public SystemOpAuthorization check(TransactionBody txn, HederaFunctionality function) {
+	public SystemOpAuthorization checkKnownTxn(TransactionBody txn, HederaFunctionality function) {
 		return Optional.ofNullable(functionPolicies.get(function))
 				.map(opCheck -> opCheck.apply(txn))
 				.orElse(UNNECESSARY);
+	}
+
+	public SystemOpAuthorization checkKnownQuery(HederaFunctionality function, long payerNum) {
+		if (function == NetworkGetExecutionTime) {
+			return entityNums.accounts().isSuperuser(payerNum) ? AUTHORIZED : UNAUTHORIZED;
+		} else {
+			throw new AssertionError("Not implemented!");
+		}
 	}
 
 	private SystemOpAuthorization checkUncheckedSubmit(TransactionBody txn) {

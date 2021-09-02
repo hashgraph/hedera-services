@@ -67,7 +67,7 @@ public class SystemPrecheck {
 			return permissionStatus;
 		}
 
-		final var privilegeStatus = systemOpPolicies.check(accessor).asStatus();
+		final var privilegeStatus = systemOpPolicies.checkAccessor(accessor).asStatus();
 		if (privilegeStatus != OK) {
 			return privilegeStatus;
 		}
