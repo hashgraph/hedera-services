@@ -23,7 +23,6 @@ package com.hedera.services.store;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -364,7 +363,7 @@ public class TypedTokenStore {
 	}
 
 	/**
-	 * Instantiates a new {@link MerkleToken} and a {@link MerkleEntityId} based on the given new mutable {@link Token}.
+	 * Instantiates a new {@link MerkleToken} based on the given new mutable {@link Token}.
 	 * Maps the properties between the mutable and immutable token, and later puts the immutable one in state.
 	 * Adds the token's treasury to the known treasuries map.
 	 *

@@ -197,7 +197,6 @@ class EntityIdTest {
 		assertEquals(contractId, subject.toGrpcContractId());
 		assertEquals(tokenId, subject.toGrpcTokenId());
 		assertEquals(scheduleId, subject.toGrpcScheduleId());
-		assertEquals(merkleId, subject.asMerkle());
 	}
 
 	@Test

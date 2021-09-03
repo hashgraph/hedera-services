@@ -31,7 +31,6 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -45,6 +44,7 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
@@ -88,7 +88,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
 		for (long num = 1; num <= N; num++) {
-			var id = idWith(num);
+			var id = STATIC_PROPERTIES.scopedAccountWith(num);
 			if (accounts.contains(id)) {
 				continue;
 			}
@@ -100,7 +100,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		}
 
 		for (long num = 900; num <= 1000; num++) {
-			var id = idWith(num);
+			var id = STATIC_PROPERTIES.scopedAccountWith(num);
 			if (!accounts.contains(id)) {
 				accounts.put(id, accountWith(0, expiry));
 			}
@@ -153,9 +153,5 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 					properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
 		}
 		return hexedABytes;
-	}
-
-	private AccountID idWith(long num) {
-		return new MerkleEntityId(hederaNums.shard(), hederaNums.realm(), num).toAccountId();
 	}
 }
