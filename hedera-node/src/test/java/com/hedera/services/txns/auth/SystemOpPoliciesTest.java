@@ -23,7 +23,6 @@ package com.hedera.services.txns.auth;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -46,13 +45,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import org.junit.jupiter.api.Test;
 
-import java.util.EnumSet;
-
 import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -570,23 +566,6 @@ class SystemOpPoliciesTest {
 
 		// expect:
 		assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
-	}
-
-	@Test
-	void executionTimesAreQueryableBySuperusers() {
-		// expect:
-		assertEquals(AUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 2));
-		assertEquals(AUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 50));
-		// and:
-		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 3));
-		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 55));
-		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 99));
-		assertEquals(UNAUTHORIZED, subject.checkKnownQuery(NetworkGetExecutionTime, 1001));
-	}
-
-	@Test
-	void onlyPrivilegedQueryIsExecutionTime() {
-		MiscUtils.QUERY_FUNCTIONS
 	}
 
 	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {
