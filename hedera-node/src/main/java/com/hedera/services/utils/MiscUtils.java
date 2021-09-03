@@ -45,7 +45,6 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
-import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;

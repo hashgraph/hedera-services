@@ -38,7 +38,6 @@ import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
@@ -168,7 +167,7 @@ public class ExpiringCreations implements EntityCreator {
 		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments).setNftTokenAdjustments(nftTokenAdjustments);
 	}
 
-	private void addToState(final PermHashInteger key, final ExpirableTxnRecord record) {
+	private void addToState(final PermHashInteger key, final ExpirableTxnRecord expirableTxnRecord) {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.records().offer(expirableTxnRecord);

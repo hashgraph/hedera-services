@@ -96,11 +96,8 @@ class ServicesAppTest {
 	private ServicesState initialState;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
-<<<<<<< HEAD
-=======
 	@Mock
 	private PropertySource overridingProps;
->>>>>>> origin/master
 
 	private ServicesApp subject;
 

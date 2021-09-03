@@ -32,10 +32,10 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.org.LegacyStateChildIndices;
-import com.hedera.services.state.org.StateChildIndices;
-import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -341,10 +341,13 @@ class ServicesStateTest {
 				StateChildIndices.NUM_POST_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
 		assertEquals(
+				StateChildIndices.NUM_POST_0160_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
+		assertEquals(
 				StateChildIndices.NUM_PRE_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION + 1));
+				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
 
 	@Test
@@ -452,7 +455,7 @@ class ServicesStateTest {
 		final var nftKey = PermHashLong.fromLongs(MISSING_ENTITY_ID.num(), 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
 		final var tokenRelsKey = PermHashLong.fromLongs(2, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		nfts.put(nftKey, nftVal);
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -495,7 +498,7 @@ class ServicesStateTest {
 		final MerkleMap<PermHashLong, MerkleUniqueToken> nfts = new MerkleMap<>();
 		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 		final var tokenRelsKey = PermHashLong.fromLongs(2, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
 		// and:

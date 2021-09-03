@@ -92,7 +92,7 @@ class AnswerFunctionsTest {
 		payerAccount.records().offer(targetRecord);
 
 		accounts = mock(MerkleMap.class);
-		given(accounts.get(PermHashInteger.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		given(accounts.get(PermHashInteger.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();
 		children.setAccounts(accounts);

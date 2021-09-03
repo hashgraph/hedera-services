@@ -25,7 +25,6 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -41,7 +40,7 @@ public class AnswerFunctions {
 	public AnswerFunctions() {
 	}
 
-	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery query) {
+	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
 		final var key = PermHashInteger.fromAccountId(op.getAccountID());
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());

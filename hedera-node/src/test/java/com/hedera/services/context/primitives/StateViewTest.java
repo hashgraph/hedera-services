@@ -249,7 +249,7 @@ class StateViewTest {
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
 				PermHashLong.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
-				new MerkleTokenRelStatus(123L, false, true));
+				new MerkleTokenRelStatus(123L, false, true, true));
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
@@ -561,6 +561,7 @@ class StateViewTest {
 						.setBalance(123L)
 						.setKycStatus(TokenKycStatus.Granted)
 						.setFreezeStatus(TokenFreezeStatus.Unfrozen)
+						.setAutomaticAssociation(true)
 						.setDecimals(1)
 						.build());
 

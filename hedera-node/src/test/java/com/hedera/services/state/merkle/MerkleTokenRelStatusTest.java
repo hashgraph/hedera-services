@@ -53,18 +53,18 @@ class MerkleTokenRelStatusTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted, numbers, automaticAssociation);
+		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted,  automaticAssociation, numbers);
 	}
 
 	@Test
 	void objectContractMet() {
 		final var one = new MerkleTokenRelStatus();
-		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted, numbers, automaticAssociation);
-		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted, numbers, automaticAssociation);
-		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted, numbers, automaticAssociation);
-		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted, numbers - 1, automaticAssociation);
-		final var six = new MerkleTokenRelStatus(balance, frozen, kycGranted, numbers, !automaticAssociation);
-		final var seven = new MerkleTokenRelStatus(balance, frozen, kycGranted, numbers, automaticAssociation);
+		final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted, automaticAssociation, numbers);
+		final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted, automaticAssociation, numbers);
+		final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted, automaticAssociation, numbers);
+		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers - 1);
+		final var six = new MerkleTokenRelStatus(balance, frozen, kycGranted, !automaticAssociation, numbers);
+		final var seven = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
 		final var eight = subject;
 
 		assertNotEquals(subject, null);
@@ -133,13 +133,9 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void toStringWorks() {
-		assertEquals(
-				"MerkleTokenRelStatus{balance=" + balance
-						+ ", isFrozen=" + frozen
-						+ ", hasKycGranted=" + kycGranted
-						+ ", isAutomaticAssociation=" + automaticAssociation
-						+ "}",
-				subject.toString());
+		final var desired = "MerkleTokenRelStatus{balance=666, isFrozen=true, hasKycGranted=true, " +
+				"key=528280977864 <-> (0.0.123, 0.0.456), isAutomaticAssociation=false}";
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test

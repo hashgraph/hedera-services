@@ -38,7 +38,7 @@ import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.Release0170Migration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -79,7 +79,7 @@ class UtilsConstructorTest {
 			ImmutableKeyUtils.class,
 			PrecheckUtils.class,
 			MerkleAccount.ChildIndices.class,
-			IdentityCodeUtils.class,
+			BitPackUtils.class,
 			LegacyStateChildIndices.class,
 			Release0170Migration.class,
 			StateChildIndices.class,

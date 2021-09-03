@@ -71,9 +71,7 @@ class ExpiryManagerTest {
 	private MerkleMap<PermHashInteger, MerkleSchedule> liveSchedules = new MerkleMap<>();
 	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
-	private final FCMap<MerkleEntityId, MerkleAccount> liveAccounts = new FCMap<>();
-	private final FCMap<MerkleEntityId, MerkleSchedule> liveSchedules = new FCMap<>();
-	private final Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
+	private final HederaNumbers nums = new MockHederaNumbers();
 
 	@Mock
 	private ScheduleStore mockScheduleStore;
@@ -182,7 +180,7 @@ class ExpiryManagerTest {
 		assertFalse(liveTxnHistories.containsKey(newTxnId));
 	}
 
-	private void addLiveRecord(PermHashInteger key, ExpirableTxnRecord record) {
+	private void addLiveRecord(PermHashInteger key, ExpirableTxnRecord expirableTxnRecord) {
 		final var mutableAccount = liveAccounts.getForModify(key);
 		mutableAccount.records().offer(expirableTxnRecord);
 		liveAccounts.replace(aKey, mutableAccount);

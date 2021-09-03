@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -66,10 +66,10 @@ class MerkleAccountStateTest {
 	private static final boolean receiverSigRequired = true;
 	private static final EntityId proxy = new EntityId(1L, 2L, 3L);
 	private static final int number = 123;
-	private static final int maxAutoAssociaitons = 1234;
+	private static final int maxAutoAssociations = 1234;
 	private static final int alreadyUsedAutoAssociations = 123;
 	private static final int autoAssociationMetadata =
-			buildAutomaticAssociationMetaData(maxAutoAssociaitons, alreadyUsedAutoAssociations);
+			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -118,7 +118,7 @@ class MerkleAccountStateTest {
 						"receiverSigRequired=" + receiverSigRequired + ", " +
 						"proxy=" + proxy + ", nftsOwned=0, " +
 						"alreadyUsedAutoAssociations=" + alreadyUsedAutoAssociations + ", " +
-						"maxAutoAssociations=" + maxAutoAssociaitons + "}",
+						"maxAutoAssociations=" + maxAutoAssociations + "}",
 				subject.toString());
 	}
 
@@ -138,7 +138,7 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setReceiverSigRequired(true));
 		assertThrows(MutabilityException.class, () -> subject.setExpiry(1_234_567L));
 		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
-		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociaitons));
+		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociations));
 		assertThrows(MutabilityException.class, () -> subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations));
 	}
 
@@ -219,41 +219,13 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
-		given(in.readInt()).willReturn(number);
+		given(in.readInt()).willReturn(number).willReturn(autoAssociationMetadata);
 		given(serdes.readNullableSerializable(in)).willReturn(proxy);
 
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_0180_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
-		verify(in, never()).readInt();
-		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
-		verify(in, times(4)).readLong();
-	}
-
-	@Test
-	void deserializeV0180Works() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		subject.setNftsOwned(nftsOwned);
-		final var newSubject = new MerkleAccountState();
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
-		given(in.readLong())
-				.willReturn(expiry)
-				.willReturn(balance)
-				.willReturn(autoRenewSecs)
-				.willReturn(nftsOwned);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
-		given(in.readBoolean())
-				.willReturn(deleted)
-				.willReturn(smartContract)
-				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
-		given(in.readInt()).willReturn(autoAssociationMetadata);
-
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_0180_VERSION);
-
-		assertEquals(subject, newSubject);
-		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		verify(in, times(4)).readLong();
 	}
 

@@ -53,11 +53,13 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 	public MerkleTokenRelStatus(
 			long balance,
 			boolean frozen,
-			boolean kycGranted
+			boolean kycGranted,
+			boolean automaticAssociation
 	) {
 		this.balance = balance;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
+		this.automaticAssociation = automaticAssociation;
 	}
 
 	public MerkleTokenRelStatus(

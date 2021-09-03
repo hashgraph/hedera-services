@@ -13,6 +13,7 @@ test-clients/yahcli/localhost/accounts
 test-clients/yahcli/localhost/tokens
 test-clients/yahcli/localhost/topics
 test-clients/yahcli/cost-snapshots
+test-clients/yahcli/run/test/local/
 
 # VIM
 *.sw*

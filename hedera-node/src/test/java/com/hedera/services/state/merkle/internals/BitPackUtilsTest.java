@@ -25,6 +25,11 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
@@ -33,6 +38,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BitPackUtilsTest {
+	private final int maxAutoAssociations = 123;
+	private final int alreadyUsedAutomaticAssociations = 12;
+	private int metadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutomaticAssociations);
+
 	@Test
 	void numFromCodeWorks() {
 		// expect:
@@ -112,5 +121,28 @@ class BitPackUtilsTest {
 	void cantPackTooFarFuture() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
+	}
+
+	@Test
+	void automaticAssociationsMetaWorks() {
+		assertEquals(maxAutoAssociations, getMaxAutomaticAssociationsFrom(metadata));
+		assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
+	}
+
+	@Test
+	void automaticAssociationSettersWork() {
+		int newMax = maxAutoAssociations + alreadyUsedAutomaticAssociations;
+
+		metadata = setMaxAutomaticAssociationsTo(metadata, newMax);
+
+		assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
+		assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
+
+		int newAlreadyAutoAssociations = alreadyUsedAutomaticAssociations + alreadyUsedAutomaticAssociations;
+
+		metadata = setAlreadyUsedAutomaticAssociationsTo(metadata, newAlreadyAutoAssociations);
+
+		assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
+		assertEquals(newAlreadyAutoAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
 	}
 }
