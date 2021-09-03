@@ -105,7 +105,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -221,7 +221,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				var alreadyUsedAutomaticAssociations = hederaLedger.alreadyUsedAutomaticAssociations(aId);
 
 				if (automaticAssociation && alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
-					validity = NO_REMAINING_AUTO_ASSOCIATIONS;
+					validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 				}
 
 				if (validity == OK) {

@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -55,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoUpdateSuite extends HapiApiSuite {
@@ -89,7 +92,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -112,6 +115,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFailsWithInvalidMaxAutoAssociations() {
+		final int tokenAssociations_restrictedNetwork = 10;
+		final int tokenAssociations_adventurousNetwork = 1_000;
 		final int originalMax = 2;
 		final int newBadMax = originalMax - 1;
 		final int newGoodMax = originalMax + 1;
@@ -126,6 +131,9 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("UpdateFailsWithInvalidMaxAutoAssociations")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(firstUser)
@@ -164,7 +172,13 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.maxAutomaticAssociations(newBadMax)
 								.hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
 						cryptoUpdate(firstUser)
-								.maxAutomaticAssociations(newGoodMax)
+								.maxAutomaticAssociations(newGoodMax),
+						cryptoUpdate(firstUser)
+								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork+1)
+								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
 				);
 	}
 
