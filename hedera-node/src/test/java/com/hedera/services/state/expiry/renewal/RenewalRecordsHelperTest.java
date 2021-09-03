@@ -81,72 +81,60 @@ class RenewalRecordsHelperTest {
 
 	@Test
 	void mustBeInCycleToStream() {
-		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(keyId, 1L, 2L));
 	}
 
 	@Test
 	void streamsExpectedRemovalRecord() {
-		// setup:
 		final var aToken = TokenID.newBuilder().setTokenNum(1_234L).build();
 		final var bToken = TokenID.newBuilder().setTokenNum(2_345L).build();
 		final var from = AccountID.newBuilder().setAccountNum(3_456L).build();
 		final var firstTo = AccountID.newBuilder().setAccountNum(5_678L).build();
 		final var secondTo = AccountID.newBuilder().setAccountNum(4_567L).build();
-		final long aBalance = 100L, bBalance = 200L;
+		final var aBalance = 100L;
+		final var bBalance = 200L;
 		final var removalTime = instantNow.plusNanos(1);
-		final List<TokenTransferList> displacements = List.of(
+		final var displacements = List.of(
 				RenewalHelperTest.ttlOf(aToken, from, firstTo, aBalance),
 				RenewalHelperTest.ttlOf(bToken, from, secondTo, bBalance));
 		final var rso = expectedRso(
 				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 1);
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
 		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
 		verify(updateRunningHash).accept(any());
 		verify(recordStreamManager).addRecordStreamObject(rso);
 
-		// and when:
 		subject.endRenewalCycle();
-
-		// then:
 		assertNull(subject.getCycleStart());
 		assertEquals(0, subject.getConsensusNanosIncr());
 	}
 
 	@Test
 	void streamsExpectedRenewalRecord() {
-		// setup:
 		final var renewalTime = instantNow.plusNanos(1);
 		final var rso = expectedRso(
 				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding), 1);
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
 		subject.streamCryptoRenewal(keyId, fee, newExpiry);
 
 		// then:
 		verify(updateRunningHash).accept(any());
 		verify(recordStreamManager).addRecordStreamObject(rso);
 
-		// and when:
 		subject.endRenewalCycle();
-
-		// then:
 		assertNull(subject.getCycleStart());
 		assertEquals(0, subject.getConsensusNanosIncr());
 	}
 
-	static List<EntityId> tokensFrom(List<TokenTransferList> ttls) {
+	static List<EntityId> tokensFrom(final List<TokenTransferList> ttls) {
 		return ttls.stream().map(TokenTransferList::getToken).map(EntityId::fromGrpcTokenId).collect(toList());
 	}
 
-	static List<CurrencyAdjustments> adjustmentsFrom(List<TokenTransferList> ttls) {
+	static List<CurrencyAdjustments> adjustmentsFrom(final List<TokenTransferList> ttls) {
 		return ttls.stream().map(ttl -> new CurrencyAdjustments(
 				ttl.getTransfersList().stream()
 						.mapToLong(AccountAmount::getAmount)
@@ -158,7 +146,7 @@ class RenewalRecordsHelperTest {
 		)).collect(Collectors.toList());
 	}
 
-	private RecordStreamObject expectedRso(TransactionRecord record, int nanosOffset) {
+	private RecordStreamObject expectedRso(final TransactionRecord record, final int nanosOffset) {
 		return new RecordStreamObject(
 				fromGprc(record),
 				Transaction.getDefaultInstance(),
@@ -166,18 +154,13 @@ class RenewalRecordsHelperTest {
 	}
 
 	private TransactionRecord cryptoRemovalRecord(
-			AccountID accountRemoved,
-			Instant removedAt,
-			AccountID autoRenewAccount,
-			List<TokenTransferList> displacements
+			final AccountID accountRemoved,
+			final Instant removedAt,
+			final AccountID autoRenewAccount,
+			final List<TokenTransferList> displacements
 	) {
-		TransactionReceipt receipt = TransactionReceipt.newBuilder()
-				.setAccountID(accountRemoved)
-				.build();
-
-		TransactionID transactionID = TransactionID.newBuilder()
-				.setAccountID(autoRenewAccount)
-				.build();
+		final var receipt = TransactionReceipt.newBuilder().setAccountID(accountRemoved).build();
+		final var transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
 
 		return TransactionRecord.newBuilder()
 				.setReceipt(receipt)
@@ -190,30 +173,31 @@ class RenewalRecordsHelperTest {
 	}
 
 	private TransactionRecord cryptoRenewalRecord(
-			AccountID accountRenewed,
-			Instant renewedAt,
-			AccountID autoRenewAccount,
-			long fee,
-			long newExpirationTime,
-			AccountID feeCollector
+			final AccountID accountRenewed,
+			final Instant renewedAt,
+			final AccountID autoRenewAccount,
+			final long fee,
+			final long newExpirationTime,
+			final AccountID feeCollector
 	) {
-		TransactionReceipt receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
-		TransactionID transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
-		String memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",
+		final var receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
+		final var transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
+		final var memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",
 				asLiteralString(accountRenewed),
 				newExpirationTime);
-		AccountAmount payerAmount = AccountAmount.newBuilder()
+		final var payerAmount = AccountAmount.newBuilder()
 				.setAccountID(autoRenewAccount)
 				.setAmount(-1 * fee)
 				.build();
-		AccountAmount payeeAmount = AccountAmount.newBuilder()
+		final var payeeAmount = AccountAmount.newBuilder()
 				.setAccountID(feeCollector)
 				.setAmount(fee)
 				.build();
-		TransferList transferList = TransferList.newBuilder()
+		final var transferList = TransferList.newBuilder()
 				.addAccountAmounts(payeeAmount)
 				.addAccountAmounts(payerAmount)
 				.build();
+
 		return TransactionRecord.newBuilder()
 				.setReceipt(receipt)
 				.setConsensusTimestamp(asTimestamp(renewedAt))

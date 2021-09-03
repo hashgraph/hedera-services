@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class HederaDateTimeFormatterTest {
 	@Test
 	void shouldFormatInstantCorrectly() {
-		Instant instant = Instant.EPOCH
+		final var instant = Instant.EPOCH
 				.plus(18500, ChronoUnit.DAYS)
 				.plus(12, ChronoUnit.HOURS)
 				.plus(34, ChronoUnit.MINUTES)

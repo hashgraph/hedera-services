@@ -115,19 +115,19 @@ class GetAccountInfoAnswerTest {
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(payerId, firstToken),
-				new MerkleTokenRelStatus(firstBalance, true, true));
+				new MerkleTokenRelStatus(firstBalance, true, true, true));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, secondToken),
-				new MerkleTokenRelStatus(secondBalance, false, false));
+				new MerkleTokenRelStatus(secondBalance, false, false, true));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, thirdToken),
-				new MerkleTokenRelStatus(thirdBalance, true, true));
+				new MerkleTokenRelStatus(thirdBalance, true, true, false));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, fourthToken),
-				new MerkleTokenRelStatus(fourthBalance, false, false));
+				new MerkleTokenRelStatus(fourthBalance, false, false, true));
 		tokenRels.put(
 				fromAccountTokenRel(payerId, missingToken),
-				new MerkleTokenRelStatus(missingBalance, false, false));
+				new MerkleTokenRelStatus(missingBalance, false, false, false));
 
 		token = mock(MerkleToken.class);
 		given(token.kycKey()).willReturn(Optional.of(new JEd25519Key("kyc".getBytes())));
@@ -268,19 +268,19 @@ class GetAccountInfoAnswerTest {
 				List.of(
 						new RawTokenRelationship(
 								firstBalance, 0, 0,
-								firstToken.getTokenNum(), true, true).asGrpcFor(token),
+								firstToken.getTokenNum(), true, true, true).asGrpcFor(token),
 						new RawTokenRelationship(
 								secondBalance, 0, 0,
-								secondToken.getTokenNum(), false, false).asGrpcFor(token),
+								secondToken.getTokenNum(), false, false, true).asGrpcFor(token),
 						new RawTokenRelationship(
 								thirdBalance, 0, 0,
-								thirdToken.getTokenNum(), true, true).asGrpcFor(token),
+								thirdToken.getTokenNum(), true, true, false).asGrpcFor(token),
 						new RawTokenRelationship(
 								fourthBalance, 0, 0,
-								fourthToken.getTokenNum(), false, false).asGrpcFor(deletedToken),
+								fourthToken.getTokenNum(), false, false, true).asGrpcFor(deletedToken),
 						new RawTokenRelationship(
 								missingBalance, 0, 0,
-								missingToken.getTokenNum(), false, false).asGrpcFor(REMOVED_TOKEN)),
+								missingToken.getTokenNum(), false, false, false).asGrpcFor(REMOVED_TOKEN)),
 
 				info.getTokenRelationshipsList());
 	}

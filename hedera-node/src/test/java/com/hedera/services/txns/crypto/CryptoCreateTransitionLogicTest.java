@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -49,6 +50,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -62,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_R
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,6 +84,8 @@ class CryptoCreateTransitionLogicTest {
 	final private long customReceiveThreshold = 51_001L;
 	final private Long balance = 1_234L;
 	final private String memo = "The particular is pounded til it is man";
+	final private int maxAutoAssociations = 1234;
+	final private int maxTokenAssociations = 12345;
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID created = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -93,6 +98,7 @@ class CryptoCreateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
@@ -103,9 +109,11 @@ class CryptoCreateTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenAssociations);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -201,6 +209,14 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsInvalidMaxAutomaticAssociations() {
+		givenInvalidMaxAutoAssociations();;
+
+		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
+				subject.semanticCheck().apply(cryptoCreateTxn));
+	}
+
+	@Test
 	void followsHappyPathWithOverrides() throws Throwable {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
@@ -219,13 +235,14 @@ class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(6, changes.size());
+		assertEquals(7, changes.size());
 		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
 		assertEquals(EntityId.fromGrpcAccountId(proxy), changes.get(PROXY));
 		assertEquals(memo, changes.get(MEMO));
+		assertEquals(maxAutoAssociations, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
 	}
 
 	@Test
@@ -317,6 +334,24 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 	}
 
+	private void givenInvalidMaxAutoAssociations() {
+		cryptoCreateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoCreateAccount(
+						CryptoCreateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setInitialBalance(balance)
+								.setProxyAccountID(proxy)
+								.setReceiverSigRequired(true)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
+								.setReceiveRecordThreshold(customReceiveThreshold)
+								.setSendRecordThreshold(customSendThreshold)
+								.setKey(key)
+								.setMaxAutomaticTokenAssociations(maxTokenAssociations+1)
+								.build()
+				).build();
+	}
+
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(key);
 	}
@@ -334,6 +369,7 @@ class CryptoCreateTransitionLogicTest {
 								.setReceiveRecordThreshold(customReceiveThreshold)
 								.setSendRecordThreshold(customSendThreshold)
 								.setKey(toUse)
+								.setMaxAutomaticTokenAssociations(maxAutoAssociations)
 								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);

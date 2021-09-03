@@ -221,6 +221,8 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
+		tokenAccount.setNftsOwned(10);
+		tokenAccount.setMaxAutomaticAssociations(123);
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
@@ -628,6 +630,7 @@ class StateViewTest {
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
 		// when:

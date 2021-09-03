@@ -35,7 +35,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.org.LegacyStateChildIndices;
 import com.hedera.services.state.org.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
-import com.hedera.services.state.org.StateVersions;
+import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
@@ -451,7 +451,7 @@ class ServicesStateTest {
 		final MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 		final var nftKey = PermHashLong.fromLongs(MISSING_ENTITY_ID.num(), 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
-		final var tokenRelsKey = PermHashLong.fromLongs(2,3);
+		final var tokenRelsKey = PermHashLong.fromLongs(2, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false);
 		// and:
 		nfts.put(nftKey, nftVal);

@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.time.Instant;
 
 class RequestBuilderTest {
-
 	@Test
 	void testExpirationTime() {
 		final var seconds = 500L;

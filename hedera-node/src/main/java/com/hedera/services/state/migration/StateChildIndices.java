@@ -1,4 +1,4 @@
-package com.hedera.services.state.org;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
@@ -23,7 +23,7 @@ package com.hedera.services.state.org;
 /**
  * Gives the Services 0.17.0 index order of Merkle node children.
  */
-public class StateChildIndices {
+public final class StateChildIndices {
 	public static final int UNIQUE_TOKENS = 0;
 	public static final int TOKEN_ASSOCIATIONS = 1;
 	public static final int TOPICS = 2;
@@ -38,4 +38,8 @@ public class StateChildIndices {
 
 	public static final int NUM_PRE_0160_CHILDREN = 10;
 	public static final int NUM_POST_0160_CHILDREN = 11;
+
+	private StateChildIndices() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 }

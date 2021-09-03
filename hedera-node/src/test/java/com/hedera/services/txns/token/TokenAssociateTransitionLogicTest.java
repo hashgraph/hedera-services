@@ -101,8 +101,8 @@ class TokenAssociateTransitionLogicTest {
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
 		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
-		given(firstModelToken.newRelationshipWith(modelAccount)).willReturn(firstModelTokenRel);
-		given(secondModelToken.newRelationshipWith(modelAccount)).willReturn(secondModelTokenRel);
+		given(firstModelToken.newRelationshipWith(modelAccount, false)).willReturn(firstModelTokenRel);
+		given(secondModelToken.newRelationshipWith(modelAccount, false)).willReturn(secondModelTokenRel);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(123);
 		// and:
 		List<Token> tokens = List.of(firstModelToken, secondModelToken);
@@ -111,7 +111,7 @@ class TokenAssociateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		inOrder.verify(modelAccount).associateWith(tokens, 123);
+		inOrder.verify(modelAccount).associateWith(tokens, 123, false);
 		inOrder.verify(accountStore).persistAccount(modelAccount);
 		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
 		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));

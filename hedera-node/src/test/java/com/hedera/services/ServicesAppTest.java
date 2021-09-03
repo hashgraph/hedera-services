@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,8 +24,11 @@ import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.ChainedSources;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -69,6 +72,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -92,6 +96,11 @@ class ServicesAppTest {
 	private ServicesState initialState;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
+<<<<<<< HEAD
+=======
+	@Mock
+	private PropertySource overridingProps;
+>>>>>>> origin/master
 
 	private ServicesApp subject;
 
@@ -99,6 +108,10 @@ class ServicesAppTest {
 	void setUp() {
 		// setup:
 		final var bootstrapProps = new BootstrapProperties();
+		final var props = new ChainedSources(overridingProps, bootstrapProps);
+		final var logDirKey = "hedera.recordStream.logDir";
+		final var logDirVal = "data/recordStreams";
+		final var nodeProps = new ScreenedNodeFileProps();
 
 		given(address.getStake()).willReturn(123_456_789L);
 		given(addressBook.getAddress(selfId)).willReturn(address);
@@ -108,9 +121,14 @@ class ServicesAppTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(platform.getCryptography()).willReturn(cryptography);
 		given(platform.getSelfId()).willReturn(selfNodeId);
+		if (!nodeProps.containsProperty(logDirKey)) {
+			given(overridingProps.containsProperty(any())).willReturn(false);
+			given(overridingProps.containsProperty(logDirKey)).willReturn(true);
+			given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
+		}
 
 		subject = DaggerServicesApp.builder()
-				.bootstrapProps(bootstrapProps)
+				.bootstrapProps(props)
 				.initialState(initialState)
 				.platform(platform)
 				.selfId(selfId)
@@ -119,7 +137,6 @@ class ServicesAppTest {
 
 	@Test
 	void objectGraphRootsAreAvailable() {
-		// expect:
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
@@ -131,7 +148,6 @@ class ServicesAppTest {
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-		// and:
 		assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
 		assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
 		assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
@@ -149,7 +165,6 @@ class ServicesAppTest {
 		assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
 		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
 		assertThat(subject.updateHelper(), instanceOf(UpdateHelper.class));
-		// and:
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

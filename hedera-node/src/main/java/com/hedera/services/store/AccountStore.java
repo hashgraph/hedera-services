@@ -31,6 +31,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -104,6 +106,8 @@ public class AccountStore {
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
+		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
 
 		return account;
 	}
@@ -123,6 +127,8 @@ public class AccountStore {
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		mutableAccount.setNftsOwned(account.getOwnedNfts());
+		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
+		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {

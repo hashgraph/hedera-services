@@ -28,7 +28,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -50,22 +49,23 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetAccountRecordsResourceUsageTest {
-	StateView view;
-	CryptoFeeBuilder usageEstimator;
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
-	GetAccountRecordsResourceUsage subject;
-	String a = "0.0.1234";
-	MerkleAccount aValue;
-	List<TransactionRecord> someRecords = ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
-	NodeLocalProperties nodeProps;
+	private StateView view;
+	private CryptoFeeBuilder usageEstimator;
+	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private GetAccountRecordsResourceUsage subject;
+	private String a = "0.0.1234";
+	private MerkleAccount aValue;
+	private List<TransactionRecord> someRecords = ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
+	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		aValue = MerkleAccountFactory.newAccount().get();
 		aValue.records().offer(recordOne());
 		aValue.records().offer(recordTwo());
@@ -86,23 +86,21 @@ class GetAccountRecordsResourceUsageTest {
 
 	@Test
 	void returnsEmptyFeeDataWhenAccountMissing() {
-		// given:
-		Query query = accountRecordsQuery(a, ANSWER_ONLY);
+		final var query = accountRecordsQuery(a, ANSWER_ONLY);
 
-		// expect:
-		Assertions.assertSame(FeeData.getDefaultInstance(), subject.usageGiven(query, view));
+		assertSame(FeeData.getDefaultInstance(), subject.usageGiven(query, view));
 	}
 
 	@Test
 	void invokesEstimatorAsExpectedForType() {
 		// setup:
-		FeeData costAnswerUsage = mock(FeeData.class);
-		FeeData answerOnlyUsage = mock(FeeData.class);
+		final var costAnswerUsage = mock(FeeData.class);
+		final var answerOnlyUsage = mock(FeeData.class);
 		final var key = PermHashInteger.fromAccountId(asAccount(a));
 
 		// given:
-		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
-		Query costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
+		final var answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
+		final var costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
 		given(accounts.get(key)).willReturn(aValue);
 		given(accounts.containsKey(key)).willReturn(true);
 		given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, COST_ANSWER))
@@ -110,30 +108,26 @@ class GetAccountRecordsResourceUsageTest {
 		given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
-		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
-		FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
+		final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
+		final var answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
 
-		// then:
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+		assertSame(costAnswerUsage, costAnswerEstimate);
+		assertSame(answerOnlyUsage, answerOnlyEstimate);
 	}
 
 
 	@Test
 	void recognizesApplicableQuery() {
-		// given:
-		Query accountRecordsQuery = accountRecordsQuery(a, COST_ANSWER);
-		Query nonAccountRecordsQuery = nonAccountRecordsQuery();
+		final var accountRecordsQuery = accountRecordsQuery(a, COST_ANSWER);
+		final var nonAccountRecordsQuery = nonAccountRecordsQuery();
 
-		// expect:
 		assertTrue(subject.applicableTo(accountRecordsQuery));
 		assertFalse(subject.applicableTo(nonAccountRecordsQuery));
 	}
 
-	private Query accountRecordsQuery(String target, ResponseType type) {
-		AccountID id = asAccount(target);
-		CryptoGetAccountRecordsQuery.Builder op = CryptoGetAccountRecordsQuery.newBuilder()
+	private Query accountRecordsQuery(final String target, final ResponseType type) {
+		final var id = asAccount(target);
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
 				.setAccountID(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()

@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,37 +39,28 @@ class AdjustmentUtilsTest {
 
 	@Test
 	void includesNewHtsChange() {
-		// setup:
 		final var account = new Id(1, 2, 3);
 		final var denom = new Id(2, 3, 4);
 		final var chargingToken = new Id(3, 4, 5);
 		final var amount = 123L;
-
-		// given:
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
-		// when:
 		final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
-		// then:
 		Assertions.assertEquals(expectedChange, change);
 		verify(changeManager).includeChange(expectedChange);
 	}
 
 	@Test
 	void alsoIncludesAnyHtsDebit() {
-		// setup:
 		final var account = new Id(1, 2, 3);
 		final var denom = new Id(2, 3, 4);
 		final var chargingToken = new Id(3, 4, 5);
 		final var amount = -123L;
-
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
-		// when:
 		final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
-		// then:
 		Assertions.assertEquals(expectedChange, change);
 		verify(changeManager, never()).changeFor(account, denom);
 		verify(changeManager).includeChange(expectedChange);
@@ -77,19 +68,14 @@ class AdjustmentUtilsTest {
 
 	@Test
 	void includesExemptHtsDebitWhenSelfDenominated() {
-		// setup:
 		final var account = new Id(1, 2, 3);
 		final var denom = new Id(2, 3, 4);
 		final var amount = -123L;
-
-		// given:
 		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 		expectedChange.setExemptFromCustomFees(true);
 
-		// when:
 		final var change = adjustedChange(account, denom, denom, amount, changeManager);
 
-		// then:
 		Assertions.assertEquals(expectedChange, change);
 		verify(changeManager, never()).changeFor(account, denom);
 		verify(changeManager).includeChange(expectedChange);

@@ -32,7 +32,11 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 /**
  * Provides static methods to work with {@link com.swirlds.common.crypto.Signature} objects.
  */
-public class PlatformSigOps {
+public final class PlatformSigOps {
+	private PlatformSigOps() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	/**
 	 * Return the result of trying to create one or more platform sigs using a given
 	 * {@link TxnScopedPlatformSigFactory}, where this {@code factory} should be invoked for
@@ -48,22 +52,22 @@ public class PlatformSigOps {
 	 * @return the result of attempting this creation.
 	 */
 	public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(
-			List<JKey> pubKeys,
-			PubKeyToSigBytes sigBytesFn,
-			TxnScopedPlatformSigFactory factory
+			final List<JKey> pubKeys,
+			final PubKeyToSigBytes sigBytesFn,
+			final TxnScopedPlatformSigFactory factory
 	) {
-		PlatformSigsCreationResult result = new PlatformSigsCreationResult();
-		for (JKey pk : pubKeys) {
+		final var result = new PlatformSigsCreationResult();
+		for (final var pk : pubKeys) {
 			visitSimpleKeys(pk, ed25519Key -> createPlatformSigFor(ed25519Key, sigBytesFn, factory, result));
 		}
 		return result;
 	}
 
 	private static void createPlatformSigFor(
-			JKey ed25519Key,
-			PubKeyToSigBytes sigBytesFn,
-			TxnScopedPlatformSigFactory factory,
-			PlatformSigsCreationResult result
+			final JKey ed25519Key,
+			final PubKeyToSigBytes sigBytesFn,
+			final TxnScopedPlatformSigFactory factory,
+			final PlatformSigsCreationResult result
 	) {
 		if (result.hasFailed()) {
 			return;
@@ -77,7 +81,7 @@ public class PlatformSigOps {
 			}
 		} catch (KeyPrefixMismatchException kmpe) {
 			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
-			if (!ed25519Key.isForScheduledTxn())	{
+			if (!ed25519Key.isForScheduledTxn()) {
 				result.setTerminatingEx(kmpe);
 			}
 		} catch (Exception e) {

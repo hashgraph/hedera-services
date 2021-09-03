@@ -71,7 +71,9 @@ class ExpiryManagerTest {
 	private MerkleMap<PermHashInteger, MerkleSchedule> liveSchedules = new MerkleMap<>();
 	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
-	private final HederaNumbers nums = new MockHederaNumbers();
+	private final FCMap<MerkleEntityId, MerkleAccount> liveAccounts = new FCMap<>();
+	private final FCMap<MerkleEntityId, MerkleSchedule> liveSchedules = new FCMap<>();
+	private final Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
 	@Mock
 	private ScheduleStore mockScheduleStore;
@@ -86,7 +88,6 @@ class ExpiryManagerTest {
 
 	@Test
 	void rebuildsExpectedSchedulesFromState() {
-		// setup:
 		subject = new ExpiryManager(
 				mockScheduleStore, nums, mockTxnHistories, () -> mockAccounts, () -> liveSchedules);
 		aSchedule.setExpiry(firstThen);
@@ -94,9 +95,7 @@ class ExpiryManagerTest {
 		liveSchedules.put(aKey, aSchedule);
 		liveSchedules.put(bKey, bSchedule);
 
-		// when:
 		subject.reviewExistingShortLivedEntities();
-		// and:
 		final var resultingExpiries = subject.getShortLivedEntityExpiries();
 		final var firstExpiry = resultingExpiries.expireNextAt(now);
 
@@ -116,7 +115,6 @@ class ExpiryManagerTest {
 		subject.trackExpirationEvent(Pair.of((long) bKey.longValue(),
 				entityId -> mockScheduleStore.expire(entityId)), secondThen);
 
-		// when:
 		subject.purge(now);
 
 		// then:
@@ -126,19 +124,15 @@ class ExpiryManagerTest {
 
 	@Test
 	void rebuildsExpectedRecordsFromState() {
-		// setup:
 		subject = new ExpiryManager(
 				mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
 		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
 		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
-
-		// given:
 		anAccount.records().offer(expiring(recordWith(aGrpcId, start), firstThen));
 		anAccount.records().offer(expiring(recordWith(aGrpcId, start), secondThen));
 		liveAccounts.put(aKey, anAccount);
 
-		// when:
 		subject.reviewExistingPayerRecords();
 
 		// then:
@@ -149,67 +143,59 @@ class ExpiryManagerTest {
 
 	@Test
 	void expiresRecordsAsExpected() {
-		// setup:
 		subject = new ExpiryManager(
 				mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
 		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 		liveAccounts.put(aKey, anAccount);
 
-		// given:
 		final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
 		addLiveRecord(aKey, firstRecord);
 		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(firstRecord, OK);
 		subject.trackRecordInState(aGrpcId, firstThen);
-		// and:
+
 		final var secondRecord = expiring(recordWith(aGrpcId, start), secondThen);
 		addLiveRecord(aKey, secondRecord);
 		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(secondRecord, OK);
 		subject.trackRecordInState(aGrpcId, secondThen);
 
-		// when:
 		subject.purge(now);
 
-		// then:
 		assertEquals(1, liveAccounts.get(aKey).records().size());
 		assertEquals(secondThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
 	}
 
 	@Test
 	void expiresLoneRecordAsExpected() {
-		// setup:
 		subject = new ExpiryManager(
 				mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
 		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 		liveAccounts.put(aKey, anAccount);
 
-		// given:
 		final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
 		addLiveRecord(aKey, firstRecord);
 		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(firstRecord, OK);
 		subject.trackRecordInState(aGrpcId, firstThen);
 
-		// when:
 		subject.purge(now);
 
-		// then:
 		assertEquals(0, liveAccounts.get(aKey).records().size());
 		assertFalse(liveTxnHistories.containsKey(newTxnId));
 	}
 
 	private void addLiveRecord(PermHashInteger key, ExpirableTxnRecord record) {
 		final var mutableAccount = liveAccounts.getForModify(key);
-		mutableAccount.records().offer(record);
+		mutableAccount.records().offer(expirableTxnRecord);
 		liveAccounts.replace(aKey, mutableAccount);
 	}
 
-	private ExpirableTxnRecord expiring(ExpirableTxnRecord record, long at) {
-		final var ans = record;
+	private ExpirableTxnRecord expiring(final ExpirableTxnRecord expirableTxnRecord, final long at) {
+		final var ans = expirableTxnRecord;
 		ans.setExpiry(at);
 		ans.setSubmittingMember(0L);
 		return ans;
 	}
 
-	private ExpirableTxnRecord recordWith(AccountID payer, long validStartSecs) {
+	private static final ExpirableTxnRecord recordWith(final AccountID payer, final long validStartSecs) {
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
 						.setAccountID(payer)

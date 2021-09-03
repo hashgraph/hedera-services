@@ -49,7 +49,7 @@ public class TopicCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
 
 	public static void main(String... args) {
-		new TopicCreateSuite().runSuiteSync();
+		new TopicCreateSuite().runSuiteAsync();
 	}
 
 	@Override
@@ -66,6 +66,11 @@ public class TopicCreateSuite extends HapiApiSuite {
 				feeAsExpected(),
 				memoValidations()
 		);
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	private HapiApiSpec adminKeyIsValidated() {

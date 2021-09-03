@@ -32,13 +32,8 @@ import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -53,11 +48,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hedera.test.utils.QueryUtils.defaultPaymentTxn;
+import static com.hedera.test.utils.QueryUtils.payer;
+import static com.hedera.test.utils.QueryUtils.queryOf;
+import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -78,25 +74,31 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class GetTxnRecordAnswerTest {
-	private String payer = "0.0.12345";
-	private TransactionID targetTxnId = TransactionID.newBuilder()
+	private static final TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
-	private TransactionID missingTxnId = TransactionID.newBuilder()
+	private static final TransactionID missingTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
-	private ExpirableTxnRecord targetRecord = constructTargetRecord();
-	private TransactionRecord cachedTargetRecord = targetRecord.asGrpc();
+	private static final TransactionRecord cachedTargetRecord = TransactionRecord.newBuilder()
+			.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
+			.setTransactionID(targetTxnId)
+			.setMemo("Dim galleries, dusk winding stairs got past...")
+			.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
+			.setTransactionFee(555L)
+			.setTransferList(withAdjustments(
+					asAccount("0.0.2"), -2L,
+					asAccount("0.0.2"), -2L,
+					asAccount("0.0.1001"), 2L,
+					asAccount("0.0.1002"), 2L))
+			.build();
 
 	private StateView view;
 	private RecordCache recordCache;
 	private AnswerFunctions answerFunctions;
 	private OptionValidator optionValidator;
-	private String node = "0.0.3";
-	private long fee = 1_234L;
-	private Transaction paymentTxn;
 	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
@@ -122,96 +124,77 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	void getsExpectedPayment() throws Throwable {
-		// given:
-		Query query = getRecordQuery(targetTxnId, COST_ANSWER, 5L);
+	void getsExpectedPayment() {
+		final var paymentTxn = defaultPaymentTxn(5L);
+		final var query = queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, paymentTxn));
 
-		// expect:
 		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
 	}
 
 	@Test
 	void getsValidity() {
-		// given:
-		Response response = Response.newBuilder().setTransactionGetRecord(
+		final var response = Response.newBuilder().setTransactionGetRecord(
 				TransactionGetRecordResponse.newBuilder()
 						.setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED))).build();
 
-		// expect:
 		assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
 	}
 
 	@Test
-	void getsCostAnswerResponse() throws Throwable {
-		// setup:
-		Query query = getRecordQuery(targetTxnId, COST_ANSWER, fee);
+	void getsCostAnswerResponse() {
+		final var fee = 1_234L;
+		final var query = queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, fee));
 
-		// when:
-		Response response = subject.responseGiven(query, view, OK, fee);
+		final var response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
 		assertTrue(response.hasTransactionGetRecord());
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(COST_ANSWER, opResponse.getHeader().getResponseType());
 		assertEquals(fee, opResponse.getHeader().getCost());
 	}
 
 	@Test
-	void getsRecordWhenAvailable() throws Throwable {
-		// setup:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
-		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+	void getsRecordWhenAvailable() {
+		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+		final var sensibleQuery = queryOf(op);
+		given(answerFunctions.txnRecord(recordCache, view, op))
 				.willReturn(Optional.of(cachedTargetRecord));
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
-		// and:
 		verify(recordCache, never()).getDuplicateRecords(any());
 	}
 
 	@Test
-	void getsRecordFromCtxWhenAvailable() throws Throwable {
-		// setup:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
-		Map<String, Object> ctx = new HashMap<>();
-
-		// given:
+	void getsRecordFromCtxWhenAvailable() {
+		final var sensibleQuery = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L));
+		final Map<String, Object> ctx = new HashMap<>();
 		ctx.put(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY, cachedTargetRecord);
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
-		// and:
 		verify(answerFunctions, never()).txnRecord(any(), any(), any());
 	}
 
 	@Test
-	void getsDuplicateRecordsFromCtxWhenAvailable() throws Throwable {
-		// setup:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
-		Map<String, Object> ctx = new HashMap<>();
-
-		// given:
+	void getsDuplicateRecordsFromCtxWhenAvailable() {
+		final var sensibleQuery = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true));
+		final Map<String, Object> ctx = new HashMap<>();
 		ctx.put(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY, cachedTargetRecord);
 		ctx.put(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY, List.of(cachedTargetRecord));
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
@@ -219,33 +202,28 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	void recognizesMissingRecordWhenCtxGiven() throws Throwable {
-		// setup:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+	void recognizesMissingRecordWhenCtxGiven() {
+		final var sensibleQuery = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L));
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(RECORD_NOT_FOUND, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		verify(answerFunctions, never()).txnRecord(any(), any(), any());
 	}
 
 	@Test
-	void getsDuplicateRecordsWhenRequested() throws Throwable {
-		// setup:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
-		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+	void getsDuplicateRecordsWhenRequested() {
+		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
+		final var sensibleQuery = queryOf(op);
+		given(answerFunctions.txnRecord(recordCache, view, op))
 				.willReturn(Optional.of(cachedTargetRecord));
 		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
@@ -253,118 +231,70 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	void recognizesUnavailableRecordFromMiss() throws Throwable {
-		// setup:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
-		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+	void recognizesUnavailableRecordFromMiss() {
+		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+		final var sensibleQuery = queryOf(op);
+		given(answerFunctions.txnRecord(recordCache, view, op))
 				.willReturn(Optional.empty());
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(RECORD_NOT_FOUND, opResponse.getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
-	void respectsMetaValidity() throws Throwable {
-		// given:
-		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+	void respectsMetaValidity() {
+		final var sensibleQuery = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L));
 
-		// when:
-		Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
+		final var response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
 
-		// then:
-		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		final var opResponse = response.getTransactionGetRecord();
 		assertEquals(INVALID_TRANSACTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
-	void requiresAnswerOnlyPaymentButNotCostAnswer() throws Throwable {
-		// expect:
-		assertFalse(subject.requiresNodePayment(getRecordQuery(targetTxnId, COST_ANSWER, 0)));
-		assertTrue(subject.requiresNodePayment(getRecordQuery(targetTxnId, ANSWER_ONLY, 0)));
+	void requiresAnswerOnlyPaymentButNotCostAnswer() {
+		assertFalse(subject.requiresNodePayment(queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, 0))));
+		assertTrue(subject.requiresNodePayment(queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 0))));
 	}
 
 	@Test
-	void requiresAnswerOnlyCostAsExpected() throws Throwable {
-		// expect:
-		assertTrue(subject.needsAnswerOnlyCost(getRecordQuery(targetTxnId, COST_ANSWER, 0)));
-		assertFalse(subject.needsAnswerOnlyCost(getRecordQuery(targetTxnId, ANSWER_ONLY, 0)));
+	void requiresAnswerOnlyCostAsExpected() {
+		assertTrue(subject.needsAnswerOnlyCost(queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, 0))));
+		assertFalse(subject.needsAnswerOnlyCost(queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 0))));
 	}
 
 	@Test
-	void syntaxCheckPrioritizesAccountStatus() throws Throwable {
-		// setup:
-		Query query = getRecordQuery(targetTxnId, ANSWER_ONLY, 123L);
-
+	void syntaxCheckPrioritizesAccountStatus() {
+		final var query = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 123L));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(ACCOUNT_DELETED);
 
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		final var validity = subject.checkValidity(query, view);
 
-		// then:
 		assertEquals(ACCOUNT_DELETED, validity);
 	}
 
 	@Test
 	void syntaxCheckShortCircuitsOnDefaultAccountID() {
-		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(Query.getDefaultInstance(), view));
 	}
 
 	@Test
-	void syntaxCheckOkForFindableRecord() throws Throwable {
-		Query query = getRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
-
-		given(answerFunctions.txnRecord(recordCache, view, query)).willReturn(Optional.of(cachedTargetRecord));
+	void syntaxCheckOkForFindableRecord() {
+		final var op = txnRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
+		final var query = queryOf(op);
+		given(answerFunctions.txnRecord(recordCache, view, op)).willReturn(Optional.of(cachedTargetRecord));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
 
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		final var validity = subject.checkValidity(query, view);
 
-		// then:
 		assertEquals(OK, validity);
 	}
 
 	@Test
 	void recognizesFunction() {
-		// expect:
 		assertEquals(HederaFunctionality.TransactionGetRecord, subject.canonicalFunction());
-	}
-
-	Query getRecordQuery(TransactionID txnId, ResponseType type, long payment, boolean duplicates) throws Throwable {
-		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
-		TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder()
-						.setResponseType(type)
-						.setPayment(paymentTxn))
-				.setTransactionID(txnId)
-				.setIncludeDuplicates(duplicates);
-		return Query.newBuilder()
-				.setTransactionGetRecord(op)
-				.build();
-	}
-
-	 Query getRecordQuery(TransactionID txnId, ResponseType type, long payment) throws Throwable {
-		return getRecordQuery(txnId, type, payment, false);
-	}
-
-	 ExpirableTxnRecord constructTargetRecord() {
-		TransactionRecord record = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
-				.setTransactionID(targetTxnId)
-				.setMemo("Dim galleries, dusk winding stairs got past...")
-				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
-				.setTransactionFee(555L)
-				.setTransferList(withAdjustments(
-						asAccount("0.0.2"), -2L,
-						asAccount("0.0.2"), -2L,
-						asAccount("0.0.1001"), 2L,
-						asAccount("0.0.1002"), 2L))
-				.build();
-		return fromGprc(record);
 	}
 }

@@ -26,12 +26,10 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.List;
 
 import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
 
@@ -42,26 +40,27 @@ public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimat
 
 	@Inject
 	public GetAccountRecordsResourceUsage(
-			AnswerFunctions answerFunctions,
-			CryptoFeeBuilder usageEstimator
+			final AnswerFunctions answerFunctions,
+			final CryptoFeeBuilder usageEstimator
 	) {
 		this.answerFunctions = answerFunctions;
 		this.usageEstimator = usageEstimator;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasCryptoGetAccountRecords();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view) {
 		return usageGivenType(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType());
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var target = fromAccountId(query.getCryptoGetAccountRecords().getAccountID());
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+		final var op = query.getCryptoGetAccountRecords();
+		final var target = fromAccountId(op.getAccountID());
 		if (!view.accounts().containsKey(target)) {
 			/* Given the test in {@code GetAccountRecordsAnswer.checkValidity}, this can only be
 			 * missing under the extraordinary circumstance that the desired account expired
@@ -69,7 +68,7 @@ public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimat
 			 * status code); so just return the default {@code FeeData} here. */
 			return FeeData.getDefaultInstance();
 		}
-		List<TransactionRecord> records = answerFunctions.accountRecords(view, query);
+		final var records = answerFunctions.accountRecords(view, op);
 		return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, type);
 	}
 }

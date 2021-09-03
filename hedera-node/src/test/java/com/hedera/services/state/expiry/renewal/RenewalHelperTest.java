@@ -337,12 +337,12 @@ class RenewalHelperTest {
 
 	private void givenRelPresent(PermHashInteger account, PermHashInteger token, long balance) {
 		var rel = assoc(account, token);
-		given(tokenRels.get(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false));
+		given(tokenRels.get(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false, false));
 	}
 
 	private void givenModifiableRelPresent(PermHashInteger account, PermHashInteger token, long balance) {
 		var rel = PermHashLong.fromLongs(account.longValue(), token.longValue());
-		given(tokenRels.getForModify(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false));
+		given(tokenRels.getForModify(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false, true));
 	}
 
 	private void givenPresent(long num, MerkleAccount account, boolean modifiable) {

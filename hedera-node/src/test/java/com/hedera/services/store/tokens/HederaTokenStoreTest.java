@@ -85,6 +85,7 @@ import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyNoFallback;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.royaltyWithFallback;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
@@ -98,17 +99,27 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -165,6 +176,8 @@ class HederaTokenStoreTest {
 	private static final TokenID misc = IdUtils.asToken("0.0.1");
 	private static final TokenID nonfungible = IdUtils.asToken("0.0.2");
 	private static final TokenID anotherMisc = IdUtils.asToken("0.0.2");
+	private static final int maxAutoAssociations = 1234;
+	private static final int alreadyUsedAutoAssocitaions = 123;
 	private static final boolean freezeDefault = true;
 	private static final boolean accountsKycGrantedByDefault = false;
 	private static final long autoRenewPeriod = 500_000L;
@@ -196,15 +209,40 @@ class HederaTokenStoreTest {
 	private static final FractionalFee.Builder fractionalFee = fractional(15L, 100L)
 			.setMaximumAmount(50)
 			.setMinimumAmount(10);
+	private static final FractionalFee.Builder fractionalFee_negative = fractional(-15L, 100L)
+			.setMaximumAmount(50)
+			.setMinimumAmount(10);
+	private static final FractionalFee.Builder fractionalFee_negativeMin = fractional(15L, 100L)
+			.setMaximumAmount(50)
+			.setMinimumAmount(-10);
+	private static final FractionalFee.Builder fractionalFee_greaterMin = fractional(15L, 100L)
+			.setMaximumAmount(50)
+			.setMinimumAmount(60);
+	private static final FractionalFee.Builder fractionalFee_ZeroDiv = fractional(15L, 0L)
+			.setMaximumAmount(50)
+			.setMinimumAmount(10);
 	private static final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
+	private static final CustomFee customFixedFeeInHbar_ngeative = builder.withFixedFee(fixedHbar(-10L));
 	private static final CustomFee customFixedFeeInHts = new CustomFeeBuilder(anotherFeeCollector)
 			.withFixedFee(fixedHts(misc, 100L));
+	private static final CustomFee customFixedFeeInHts_MissingDenom = new CustomFeeBuilder(anotherFeeCollector)
+			.withFixedFee(fixedHts(MISSING_TOKEN, 100L));
+	private static final CustomFee customFixedFeeInHts_NftDenom = new CustomFeeBuilder(anotherFeeCollector)
+			.withFixedFee(fixedHts(nonfungible, 100L));
 	private static final CustomFee customRoyaltyNoFallback = new CustomFeeBuilder(feeCollector)
 			.withRoyaltyFee(royaltyNoFallback(11, 111));
 	private static final CustomFee customRoyaltyHtsFallback = new CustomFeeBuilder(anotherFeeCollector)
 			.withRoyaltyFee(royaltyWithFallback(11, 111, fixedHts(misc, 123)));
+	private static final CustomFee customRoyaltyHtsFallback_ZeroDiv = new CustomFeeBuilder(anotherFeeCollector)
+			.withRoyaltyFee(royaltyWithFallback(11, 0, fixedHts(misc, 123)));
+	private static final CustomFee customRoyaltyHtsFallback_InvalidFraction = new CustomFeeBuilder(anotherFeeCollector)
+			.withRoyaltyFee(royaltyWithFallback(11, 10, fixedHts(misc, 123)));
 	private static final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
 	private static final CustomFee customFractionalFee = builder.withFractionalFee(fractionalFee);
+	private static final CustomFee customFractionalFee_negative = builder.withFractionalFee(fractionalFee_negative);
+	private static final CustomFee customFractionalFee_zeroDiv = builder.withFractionalFee(fractionalFee_ZeroDiv);
+	private static final CustomFee customFractionalFee_negativeMin = builder.withFractionalFee(fractionalFee_negativeMin);
+	private static final CustomFee customFractionalFee_greaterMin = builder.withFractionalFee(fractionalFee_greaterMin);
 	private static final List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
@@ -467,7 +505,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsDeletedTokens() {
 		given(token.isDeleted()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKEN_WAS_DELETED, status);
 	}
@@ -476,7 +514,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(INVALID_TOKEN_ID, status);
 	}
@@ -485,7 +523,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
@@ -508,7 +546,7 @@ class HederaTokenStoreTest {
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
@@ -520,7 +558,7 @@ class HederaTokenStoreTest {
 		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		verify(tokens, never()).associateAll(any());
@@ -533,18 +571,42 @@ class HederaTokenStoreTest {
 		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(sponsor)).willReturn(alreadyUsedAutoAssocitaions);
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc), true);
 
 		assertEquals(OK, status);
 		verify(tokens).associateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(hederaLedger).addNewAssociationToList(any());
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
+		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
+	}
+
+	@Test
+	void associatingFailsWhenAutoAssociationLimitReached() {
+		final var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.includes(misc)).willReturn(false);
+		given(tokens.includes(nonfungible)).willReturn(false);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+
+		// auto associate a fungible token
+		var status = subject.associate(sponsor, List.of(misc), true);
+
+		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
+
+		// auto associate a fungibleUnique token
+		status = subject.associate(sponsor, List.of(nonfungible), true);
+
+		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 	}
 
 	@Test
@@ -604,6 +666,15 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void changingOwnerRejectsMissingReceiver() {
+		given(accountsLedger.exists(counterparty)).willReturn(false);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
 	void changingOwnerRejectsMissingNftInstance() {
 		given(nftsLedger.exists(aNft)).willReturn(false);
 
@@ -615,6 +686,7 @@ class HederaTokenStoreTest {
 	@Test
 	void changingOwnerRejectsUnassociatedReceiver() {
 		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
+		given(hederaLedger.maxAutomaticAssociations(counterparty)).willReturn(0);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -757,6 +829,24 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(true);
 
 		final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
+	void changingOwnerRejectsFromFreezeAndKYC() {
+		given(tokenRelsLedger.get(treasuryNft, IS_FROZEN)).willReturn(true);
+
+		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
+
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
+	void changingOwnerRejectsToFreezeAndKYC() {
+		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(true);
+
+		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
 		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
 	}
@@ -1307,6 +1397,53 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(0);
+
+		var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	void adjustmentFailsOnAutomaticAssociationLimitReached() {
+		final var tokens = mock(MerkleAccountTokens.class);
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
+		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(3);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(anotherFeeCollector)).willReturn(3);
+		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
+		given(tokens.includes(misc)).willReturn(false);
+
+		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+
+		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
+		verify(tokenRelsLedger, never()).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
+		verify(hederaLedger, never()).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
+	}
+
+	@Test
+	void adjustmentWorksAndIncrementsAlreadyUsedAutoAssociationCountForNewAssociation() {
+		final var tokens = mock(MerkleAccountTokens.class);
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
+		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(5);
+		given(hederaLedger.alreadyUsedAutomaticAssociations(anotherFeeCollector)).willReturn(3);
+		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
+		given(tokens.includes(misc)).willReturn(false);
+
+		var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+
+		assertEquals(OK, status);
+		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
+		verify(hederaLedger).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
+	}
+
+	@Test
 	void performsValidAdjustment() {
 		subject.adjustBalance(treasury, misc, -1);
 
@@ -1435,6 +1572,25 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void rejectsFeesUpdatedWithMissingFeeCollector() {
+		given(accountsLedger.exists(feeCollector)).willReturn(false);
+		final var op = updateFeeScheduleWith();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, result);
+	}
+
+	@Test
+	void rejectsFeesUpdatedWithIncompleteFee() {
+		final var op = updateFeeScheduleWithIncompleteFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEE_NOT_FULLY_SPECIFIED, result);
+	}
+
+	@Test
 	void canOnlyUpdateTokensWithFeeScheduleKey() {
 		given(token.hasFeeScheduleKey()).willReturn(false);
 		final var op = updateFeeScheduleWith();
@@ -1465,6 +1621,121 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void canUseRoyaltyFeeWithNoFallBackFees() {
+		given(token.tokenType())
+				.willReturn(TokenType.NON_FUNGIBLE_UNIQUE)
+				.willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithRoyaltyHtsNoFallback();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		verify(token).setFeeScheduleFrom(List.of(customRoyaltyNoFallback), EntityId.fromGrpcTokenId(misc));
+		assertEquals(OK, result);
+	}
+
+	@Test
+	void cannotUseRoyaltyFeeWithZeroDivFraction() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallbackZeroDiv();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(FRACTION_DIVIDES_BY_ZERO, result);
+	}
+
+	@Test
+	void cannotUseRoyaltyFeeWithInvalidFraction() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallbackInvalidFraction();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(ROYALTY_FRACTION_CANNOT_EXCEED_ONE, result);
+	}
+
+	@Test
+	void cannotUseNegativeAmountInCustomFee() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithNegativeValue();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result);
+	}
+
+	@Test
+	void cannotUseFixedCustomFeeWithMissingToken() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithFixedFeeMissingToken();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(INVALID_TOKEN_ID_IN_CUSTOM_FEES, result);
+	}
+
+	@Test
+	void cannotUseFixedCustomFeeWithNftTokenAsDenom() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(tokens.get(fromTokenId(nonfungible))).willReturn(token);
+		final var op = updateFeeScheduleWithFixedFeeNftToken();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON, result);
+	}
+
+	@Test
+	void cannotUseFixedCustomFeeWithNonAssociatedTokenToCollector() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		final var op = updateFeeScheduleWithFixedHtsFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result);
+	}
+
+	@Test
+	void cannotUseNegativeAmountInCustomFractionalFee() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithNegativeFractionalFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result);
+	}
+
+	@Test
+	void cannotUseInvalidZeroDivisionInCustomFractionalFee() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithZeroDivisonFractionalFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(FRACTION_DIVIDES_BY_ZERO, result);
+	}
+
+	@Test
+	void cannotUseNegativeMinInCustomFractionalFee() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithNegativeMinInFractionalFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result);
+	}
+
+	@Test
+	void cannotUseGreaterMinInCustomFractionalFee() {
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithGreaterMinInFractionalFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT, result);
+	}
+
+	@Test
 	void happyPathCustomFeesUpdated() {
 		final var op = updateFeeScheduleWith();
 
@@ -1472,6 +1743,75 @@ class HederaTokenStoreTest {
 
 		verify(token).setFeeScheduleFrom(grpcCustomFees, EntityId.fromGrpcTokenId(misc));
 		assertEquals(OK, result);
+	}
+
+	@Test
+	void happyPathCustomRoyaltyFeesUpdated() {
+		given(token.tokenType())
+				.willReturn(TokenType.NON_FUNGIBLE_UNIQUE)
+				.willReturn(TokenType.FUNGIBLE_COMMON);
+		final var op = updateFeeScheduleWithOnlyRoyaltyHtsFallback();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		verify(token).setFeeScheduleFrom(List.of(customRoyaltyHtsFallback), EntityId.fromGrpcTokenId(misc));
+		assertEquals(OK, result);
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithNegativeValue() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFixedFeeInHbar_ngeative));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithFixedFeeMissingToken() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFixedFeeInHts_MissingDenom));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithFixedFeeNftToken() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(nonfungible)
+				.addAllCustomFees(List.of(customFixedFeeInHts_NftDenom));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithFixedHtsFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFixedFeeInHts));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithNegativeFractionalFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFractionalFee_negative));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithZeroDivisonFractionalFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFractionalFee_zeroDiv));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithNegativeMinInFractionalFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFractionalFee_negativeMin));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithGreaterMinInFractionalFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFractionalFee_greaterMin));
+		return op.build();
 	}
 
 	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithEmptyFees() {
@@ -1495,6 +1835,13 @@ class HederaTokenStoreTest {
 		return op.build();
 	}
 
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithIncompleteFee() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(builder.withOnlyFeeCollector()));
+		return op.build();
+	}
+
 	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyFractional() {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
@@ -1506,6 +1853,27 @@ class HederaTokenStoreTest {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(List.of(customRoyaltyHtsFallback));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithRoyaltyHtsNoFallback() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyNoFallback));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallbackZeroDiv() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyHtsFallback_ZeroDiv));
+		return op.build();
+	}
+
+	private static final TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyRoyaltyHtsFallbackInvalidFraction() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customRoyaltyHtsFallback_InvalidFraction));
 		return op.build();
 	}
 

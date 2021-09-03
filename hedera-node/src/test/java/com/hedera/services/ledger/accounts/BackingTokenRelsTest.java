@@ -52,6 +52,7 @@ class BackingTokenRelsTest {
 	private long aBalance = 100, bBalance = 200, cBalance = 300;
 	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
 	private boolean aKyc = false, bKyc = true, cKyc = false;
+	private boolean automaticAssociation = false;
 	private AccountID a = asAccount("0.0.3");
 	private AccountID b = asAccount("0.0.1");
 	private AccountID c = asAccount("0.0.0");
@@ -62,9 +63,9 @@ class BackingTokenRelsTest {
 	private PermHashLong aKey = fromAccountTokenRel(a, at);
 	private PermHashLong bKey = fromAccountTokenRel(b, bt);
 	private PermHashLong cKey = fromAccountTokenRel(c, ct);
-	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
-	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
-	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
+	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
+	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
+	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
 
 	private MerkleMap<PermHashLong, MerkleTokenRelStatus> rels;
 

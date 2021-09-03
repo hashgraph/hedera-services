@@ -1,17 +1,17 @@
-package com.hedera.services.utils;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
- * Hedera Services API Utilities
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +20,18 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import org.junit.jupiter.api.Test;
+/**
+ *  Recalls the Services 0.16.0 Merkle node children with indices different from 0.17.0, used for migration.
+ */
+public final class LegacyStateChildIndices {
+	static final int ADDRESS_BOOK = 0;
+	static final int NETWORK_CTX = 1;
+	static final int TOKEN_ASSOCIATIONS = 6;
+	public static final int UNIQUE_TOKENS = 10;
 
-import java.io.File;
-import java.io.IOException;
+	public static final int NUM_0160_CHILDREN = 11;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class CommonUtilsTest {
-	@Test
-	void testNap() throws InterruptedException, IOException {
-		final String filePath = "./src/test/resources/test.txt";
-		CommonUtils.writeToFile(filePath, "TEST".getBytes());
-		CommonUtils.nap(1);
-		final var file = new File(filePath);
-		assertTrue(file.exists());
-		file.delete();
+	private LegacyStateChildIndices() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 }

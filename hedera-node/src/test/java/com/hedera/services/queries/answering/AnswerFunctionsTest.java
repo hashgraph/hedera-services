@@ -28,9 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -38,12 +36,12 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.QueryUtils.payer;
+import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,20 +53,30 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class AnswerFunctionsTest {
-	private String payer = "0.0.12345";
-	private TransactionID targetTxnId = TransactionID.newBuilder()
+	private static final TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
-	private TransactionID absentTxnId = TransactionID.newBuilder()
+	private static final TransactionID absentTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("3.2.1"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
+	private static final TransactionRecord grpcRecord = TransactionRecord.newBuilder()
+			.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
+			.setTransactionID(targetTxnId)
+			.setMemo("Dim galleries, dusk winding stairs got past...")
+			.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
+			.setTransactionFee(555L)
+			.setTransferList(withAdjustments(
+					asAccount("0.0.2"), -2L,
+					asAccount("0.0.2"), -2L,
+					asAccount("0.0.1001"), 2L,
+					asAccount("0.0.1002"), 2L))
+			.build();
+	private static final ExpirableTxnRecord targetRecord = fromGprc(grpcRecord);
+	private static final ExpirableTxnRecord cachedTargetRecord = targetRecord;
 
-	private ExpirableTxnRecord targetRecord = constructTargetRecord();
-	private ExpirableTxnRecord cachedTargetRecord = targetRecord;
 	private MerkleAccount payerAccount;
-	private String target = payer;
 	private StateView view;
 	private RecordCache recordCache;
 	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
@@ -102,66 +110,33 @@ class AnswerFunctionsTest {
 
 	@Test
 	void returnsEmptyOptionalWhenProblematic() {
-		// setup:
-		Query validQuery = getRecordQuery(absentTxnId);
-
+		final var validQuery = txnRecordQuery(absentTxnId);
 		given(recordCache.getPriorityRecord(absentTxnId)).willReturn(null);
 
-		// when:
-		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
+		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
 
-		// then:
-		assertFalse(record.isPresent());
+		assertFalse(txnRecord.isPresent());
 	}
 
 	@Test
 	void findsInPayerAccountIfPresentThere() {
-		// setup:
-		Query validQuery = getRecordQuery(targetTxnId);
-
+		final var validQuery = txnRecordQuery(targetTxnId);
 		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(null);
 
-		// when:
-		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
+		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
 
-		// then:
-		assertEquals(cachedTargetRecord.asGrpc(), record.get());
+		assertEquals(grpcRecord, txnRecord.get());
 	}
 
 	@Test
 	void usesCacheIfPresentThere() {
-		// setup:
-		Query validQuery = getRecordQuery(targetTxnId);
-
+		final var validQuery = txnRecordQuery(targetTxnId);
 		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(cachedTargetRecord);
 
-		// when:
-		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
+		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
 
-		// then:
-		assertEquals(cachedTargetRecord.asGrpc(), record.get());
+		assertEquals(grpcRecord, txnRecord.get());
 		verify(accounts, never()).get(any());
 		verify(recordCache, never()).isReceiptPresent(any());
-	}
-
-	ExpirableTxnRecord constructTargetRecord() {
-		TransactionRecord record = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
-				.setTransactionID(targetTxnId)
-				.setMemo("Dim galleries, dusk winding stairs got past...")
-				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
-				.setTransactionFee(555L)
-				.setTransferList(withAdjustments(
-						asAccount("0.0.2"), -2L,
-						asAccount("0.0.2"), -2L,
-						asAccount("0.0.1001"), 2L,
-						asAccount("0.0.1002"), 2L))
-				.build();
-		return fromGprc(record);
-	}
-
-	Query getRecordQuery(TransactionID txnId) {
-		TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder().setTransactionID(txnId);
-		return Query.newBuilder().setTransactionGetRecord(op).build();
 	}
 }

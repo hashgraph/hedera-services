@@ -173,6 +173,7 @@ public class TypedTokenStore {
 		tokenRelationship.initBalance(merkleTokenRel.getBalance());
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
+		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
 
 		tokenRelationship.markAsPersisted();
 
@@ -214,6 +215,7 @@ public class TypedTokenStore {
 		mutableTokenRel.setBalance(modelRel.getBalance());
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
+		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
 		if (isNewRel) {
 			currentTokenRels.put(key, mutableTokenRel);
 			alertTokenBackingStoreOfNew(modelRel);

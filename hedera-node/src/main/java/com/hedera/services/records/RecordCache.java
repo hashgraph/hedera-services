@@ -45,11 +45,11 @@ import static java.util.stream.Collectors.toList;
 
 @Singleton
 public class RecordCache {
-	static final TxnReceipt UNKNOWN_RECEIPT = TxnReceipt.newBuilder()
+	private static final TxnReceipt UNKNOWN_RECEIPT = TxnReceipt.newBuilder()
 			.setStatus(UNKNOWN.name())
 			.build();
 
-	public static final Boolean MARKER = Boolean.TRUE;
+	static final Boolean MARKER = Boolean.TRUE;
 
 	private EntityCreator creator;
 	private Cache<TransactionID, Boolean> timedReceiptCache;
@@ -62,31 +62,31 @@ public class RecordCache {
 	}
 
 	@Inject
-	public void setCreator(EntityCreator creator) {
+	void setCreator(final EntityCreator creator) {
 		this.creator = creator;
 	}
 
-	public void addPreConsensus(TransactionID txnId) {
+	public void addPreConsensus(final TransactionID txnId) {
 		timedReceiptCache.put(txnId, Boolean.TRUE);
 	}
 
-	public void setPostConsensus(
-			TransactionID txnId,
-			ResponseCodeEnum status,
-			ExpirableTxnRecord record
+	void setPostConsensus(
+			final TransactionID txnId,
+			final ResponseCodeEnum status,
+			final ExpirableTxnRecord expirableTxnRecord
 	) {
-		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
-		recentHistory.observe(record, status);
+		final var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
+		recentHistory.observe(expirableTxnRecord, status);
 	}
 
 	public void setFailInvalid(
-			AccountID effectivePayer,
-			TxnAccessor accessor,
-			Instant consensusTimestamp,
-			long submittingMember
+			final AccountID effectivePayer,
+			final TxnAccessor accessor,
+			final Instant consensusTimestamp,
+			final long submittingMember
 	) {
-		var recordBuilder = creator.buildFailedExpiringRecord(accessor, consensusTimestamp);
-		var expiringRecord = creator.saveExpiringRecord(
+		final var recordBuilder = creator.buildFailedExpiringRecord(accessor, consensusTimestamp);
+		final var expiringRecord = creator.saveExpiringRecord(
 				effectivePayer,
 				recordBuilder.build(),
 				consensusTimestamp.getEpochSecond(),
@@ -97,27 +97,27 @@ public class RecordCache {
 		recentHistory.observe(expiringRecord, FAIL_INVALID);
 	}
 
-	public boolean isReceiptPresent(TransactionID txnId) {
+	public boolean isReceiptPresent(final TransactionID txnId) {
 		return histories.containsKey(txnId) || timedReceiptCache.getIfPresent(txnId) == MARKER;
 	}
 
-	public TxnReceipt getPriorityReceipt(TransactionID txnId) {
-		var recentHistory = histories.get(txnId);
+	public TxnReceipt getPriorityReceipt(final TransactionID txnId) {
+		final var recentHistory = histories.get(txnId);
 		return recentHistory != null
 				? receiptFrom(recentHistory)
 				: (timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
 	}
 
-	public List<TransactionRecord> getDuplicateRecords(TransactionID txnId) {
+	public List<TransactionRecord> getDuplicateRecords(final TransactionID txnId) {
 		return duplicatesOf(txnId);
 	}
 
-	public List<TransactionReceipt> getDuplicateReceipts(TransactionID txnId) {
+	public List<TransactionReceipt> getDuplicateReceipts(final TransactionID txnId) {
 		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).collect(toList());
 	}
 
-	private List<TransactionRecord> duplicatesOf(TransactionID txnId) {
-		var recentHistory = histories.get(txnId);
+	private List<TransactionRecord> duplicatesOf(final TransactionID txnId) {
+		final var recentHistory = histories.get(txnId);
 		if (recentHistory == null) {
 			return Collections.emptyList();
 		} else {
@@ -128,14 +128,14 @@ public class RecordCache {
 		}
 	}
 
-	private TxnReceipt receiptFrom(TxnIdRecentHistory recentHistory) {
+	private TxnReceipt receiptFrom(final TxnIdRecentHistory recentHistory) {
 		return Optional.ofNullable(recentHistory.priorityRecord())
 				.map(ExpirableTxnRecord::getReceipt)
 				.orElse(UNKNOWN_RECEIPT);
 	}
 
-	public ExpirableTxnRecord getPriorityRecord(TransactionID txnId) {
-		var history = histories.get(txnId);
+	public ExpirableTxnRecord getPriorityRecord(final TransactionID txnId) {
+		final var history = histories.get(txnId);
 		if (history != null) {
 			return Optional.ofNullable(history.priorityRecord())
 					.orElse(null);

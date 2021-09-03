@@ -40,10 +40,11 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
+	private long numbers;
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
-	private long numbers;
+	private boolean automaticAssociation;
 
 	public MerkleTokenRelStatus() {
 		/* RuntimeConstructable */
@@ -63,12 +64,14 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 			long balance,
 			boolean frozen,
 			boolean kycGranted,
+                        boolean automaticAssociation,
 			long numbers
 	) {
 		this.balance = balance;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
 		this.numbers = numbers;
+		this.automaticAssociation = automaticAssociation;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -89,6 +92,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		kycGranted = in.readBoolean();
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
+			automaticAssociation = in.readBoolean();
 		}
 	}
 
@@ -98,6 +102,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		out.writeBoolean(frozen);
 		out.writeBoolean(kycGranted);
 		out.writeLong(numbers);
+		out.writeBoolean(automaticAssociation);
 	}
 
 	/* --- Object --- */
@@ -114,7 +119,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		return this.balance == that.balance
 				&& this.frozen == that.frozen
 				&& this.kycGranted == that.kycGranted
-				&& this.numbers == that.numbers;
+				&& this.numbers == that.numbers 
+                                && this.automaticAssociation == that.automaticAssociation;
 	}
 
 	@Override
@@ -123,6 +129,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 				.append(balance)
 				.append(frozen)
 				.append(kycGranted)
+				.append(automaticAssociation)
 				.toHashCode();
 	}
 
@@ -157,11 +164,20 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		this.kycGranted = kycGranted;
 	}
 
+	public boolean isAutomaticAssociation() {
+		return automaticAssociation;
+	}
+
+	public void setAutomaticAssociation(boolean automaticAssociation) {
+		throwIfImmutable("Cannot change this token relation's automaticAssociation if it's immutable.");
+		this.automaticAssociation = automaticAssociation;
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted, numbers);
+		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
 	}
 
 	@Override
@@ -171,6 +187,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 				.add("isFrozen", frozen)
 				.add("hasKycGranted", kycGranted)
 				.add("key", numbers + " <-> " + asRelationshipLiteral(numbers))
+				.add("isAutomaticAssociation", automaticAssociation)
 				.toString();
 	}
 

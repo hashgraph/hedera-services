@@ -82,6 +82,11 @@ public class TopicUpdateSuite extends HapiApiSuite {
 		);
 	}
 
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
 	private HapiApiSpec updateToMissingTopicFails() {
 		return defaultHapiSpec("UpdateTopicHandlesMissingTopicGracefully")
 				.given( ).when( ).then(

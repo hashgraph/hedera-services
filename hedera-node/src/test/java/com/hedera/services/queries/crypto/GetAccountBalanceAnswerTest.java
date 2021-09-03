@@ -111,16 +111,16 @@ class GetAccountBalanceAnswerTest {
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(target, aToken),
-				new MerkleTokenRelStatus(aBalance, true, true));
+				new MerkleTokenRelStatus(aBalance, true, true, true));
 		tokenRels.put(
 				fromAccountTokenRel(target, bToken),
-				new MerkleTokenRelStatus(bBalance, false, false));
+				new MerkleTokenRelStatus(bBalance, false, false, false));
 		tokenRels.put(
 				fromAccountTokenRel(target, cToken),
-				new MerkleTokenRelStatus(cBalance, false, false));
+				new MerkleTokenRelStatus(cBalance, false, false, true));
 		tokenRels.put(
 				fromAccountTokenRel(target, dToken),
-				new MerkleTokenRelStatus(dBalance, false, false));
+				new MerkleTokenRelStatus(dBalance, false, false, true));
 
 		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);

@@ -27,13 +27,10 @@ import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -50,6 +47,8 @@ import java.util.function.BinaryOperator;
 
 import static com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.QueryUtils.queryOf;
+import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,37 +59,39 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetTxnRecordResourceUsageTest {
-	private TransactionID targetTxnId = TransactionID.newBuilder()
+	private static final TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("0.0.2"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
-	private TransactionID missingTxnId = TransactionID.newBuilder()
+	private static final TransactionID missingTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("1.2.3"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
-	Query satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
-	Query satisfiableAnswerOnlyWithDups = txnRecordQuery(targetTxnId, ANSWER_ONLY, true);
-	Query satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
-	Query unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
+	private static final TransactionGetRecordQuery satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
+	private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithDups =
+			txnRecordQuery(targetTxnId, ANSWER_ONLY, true);
+	private static final TransactionGetRecordQuery satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
+	private static final TransactionGetRecordQuery unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
+	private static final Query satisfiableAnswerOnlyQuery = queryOf(satisfiableAnswerOnly);
+	private static final Query satisfiableAnswerOnlyWithDupsQuery = queryOf(satisfiableAnswerOnlyWithDups);
+	private static final Query satisfiableCostAnswerQuery = queryOf(satisfiableCostAnswer);
 
-	NodeLocalProperties nodeProps;
-	StateView view;
-	RecordCache recordCache;
-	CryptoFeeBuilder usageEstimator;
-	TransactionRecord desiredRecord;
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
-	GetTxnRecordResourceUsage subject;
-	AnswerFunctions answerFunctions;
+	private NodeLocalProperties nodeProps;
+	private StateView view;
+	private RecordCache recordCache;
+	private CryptoFeeBuilder usageEstimator;
+	private TransactionRecord desiredRecord;
+	private GetTxnRecordResourceUsage subject;
+	private AnswerFunctions answerFunctions;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	private void setup() {
 		desiredRecord = mock(TransactionRecord.class);
 
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
-		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
+		final var children = new StateChildren();
 		view = new StateView(
 				null,
 				null,
@@ -114,143 +115,88 @@ class GetTxnRecordResourceUsageTest {
 
 	@Test
 	void invokesEstimatorAsExpectedForType() {
-		// setup:
-		FeeData costAnswerUsage = mock(FeeData.class);
-		FeeData answerOnlyUsage = mock(FeeData.class);
-
-		// given:
+		final var costAnswerUsage = mock(FeeData.class);
+		final var answerOnlyUsage = mock(FeeData.class);
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, COST_ANSWER))
 				.willReturn(costAnswerUsage);
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
-		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(satisfiableCostAnswer, view);
-		FeeData answerOnlyEstimate = subject.usageGiven(satisfiableAnswerOnly, view);
+		var costAnswerEstimate = subject.usageGiven(satisfiableCostAnswerQuery, view);
+		var answerOnlyEstimate = subject.usageGiven(satisfiableAnswerOnlyQuery, view);
+		assertSame(costAnswerUsage, costAnswerEstimate);
+		assertSame(answerOnlyUsage, answerOnlyEstimate);
 
-		// then:
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
-
-		// and when:
-		costAnswerEstimate = subject.usageGivenType(satisfiableCostAnswer, view, COST_ANSWER);
-		answerOnlyEstimate = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
-
-		// then:
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+		costAnswerEstimate = subject.usageGivenType(satisfiableCostAnswerQuery, view, COST_ANSWER);
+		answerOnlyEstimate = subject.usageGivenType(satisfiableAnswerOnlyQuery, view, ANSWER_ONLY);
+		assertSame(costAnswerUsage, costAnswerEstimate);
+		assertSame(answerOnlyUsage, answerOnlyEstimate);
 	}
 
 	@Test
 	void returnsSummedUsagesIfDuplicatesPresent() {
-		// setup:
-		FeeData answerOnlyUsage = mock(FeeData.class);
-		FeeData summedUsage = mock(FeeData.class);
-		var queryCtx = new HashMap<String, Object>();
-		var sumFn = mock(BinaryOperator.class);
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var summedUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
+		final var sumFn = mock(BinaryOperator.class);
 		GetTxnRecordResourceUsage.sumFn = sumFn;
-
-		// given:
 		given(sumFn.apply(answerOnlyUsage, answerOnlyUsage)).willReturn(summedUsage);
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
-		// when:
-		var usage = subject.usageGiven(satisfiableAnswerOnlyWithDups, view, queryCtx);
+		final var usage = subject.usageGiven(satisfiableAnswerOnlyWithDupsQuery, view, queryCtx);
 
-		// then:
 		assertEquals(summedUsage, usage);
 
-		// cleanup:
 		GetTxnRecordResourceUsage.sumFn = FeeCalcUtils::sumOfUsages;
 	}
 
 	@Test
 	void setsDuplicateRecordsInQueryCtxIfAppropos() {
-		// setup:
-		FeeData answerOnlyUsage = mock(FeeData.class);
-		var queryCtx = new HashMap<String, Object>();
-		var sumFn = mock(BinaryOperator.class);
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
+		final var sumFn = mock(BinaryOperator.class);
 		GetTxnRecordResourceUsage.sumFn = sumFn;
-
-		// given:
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
-		// when:
-		subject.usageGiven(satisfiableAnswerOnlyWithDups, view, queryCtx);
+		subject.usageGiven(satisfiableAnswerOnlyWithDupsQuery, view, queryCtx);
 
-		// then:
 		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY));
 
-		// cleanup:
 		GetTxnRecordResourceUsage.sumFn = FeeCalcUtils::sumOfUsages;
 	}
 
 	@Test
 	void setsPriorityRecordInQueryCxtIfPresent() {
-		// setup:
-		FeeData answerOnlyUsage = mock(FeeData.class);
-		var queryCtx = new HashMap<String, Object>();
-
-		// given:
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 
-		// when:
-		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		subject.usageGiven(satisfiableAnswerOnlyQuery, view, queryCtx);
 
-		// then:
 		assertEquals(desiredRecord, queryCtx.get(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY));
 	}
 
 	@Test
 	void onlySetsPriorityRecordInQueryCxtIfFound() {
-		// setup:
-		FeeData answerOnlyUsage = mock(FeeData.class);
-		var queryCtx = new HashMap<String, Object>();
-
-		// given:
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
 				.willReturn(Optional.empty());
 
-		// when:
-		var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var actual = subject.usageGiven(satisfiableAnswerOnlyQuery, view, queryCtx);
 
-		// then:
 		assertFalse(queryCtx.containsKey(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY));
 		assertSame(answerOnlyUsage, actual);
 	}
 
 	@Test
 	void recognizesApplicableQueries() {
-		// given:
-		Query no = nonTxnRecordQuery();
-		Query yes = txnRecordQuery(targetTxnId, ANSWER_ONLY);
-
-		// expect:
-		assertTrue(subject.applicableTo(yes));
-		assertFalse(subject.applicableTo(no));
-	}
-
-	Query nonTxnRecordQuery() {
-		return Query.getDefaultInstance();
-	}
-
-
-	Query txnRecordQuery(TransactionID txnId, ResponseType type) {
-		return txnRecordQuery(txnId, type, false);
-	}
-
-	Query txnRecordQuery(TransactionID txnId, ResponseType type, boolean duplicates) {
-		TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder()
-				.setHeader(QueryHeader.newBuilder().setResponseType(type))
-				.setTransactionID(txnId)
-				.setIncludeDuplicates(duplicates);
-		return Query.newBuilder()
-				.setTransactionGetRecord(op)
-				.build();
+		assertTrue(subject.applicableTo(satisfiableAnswerOnlyQuery));
+		assertFalse(subject.applicableTo(Query.getDefaultInstance()));
 	}
 }

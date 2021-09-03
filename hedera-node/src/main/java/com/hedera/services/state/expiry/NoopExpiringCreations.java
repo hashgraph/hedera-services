@@ -25,6 +25,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -36,35 +37,38 @@ public enum NoopExpiringCreations implements EntityCreator {
 	NOOP_EXPIRING_CREATIONS;
 
 	@Override
-	public void setLedger(HederaLedger ledger) {
+	public void setLedger(final HederaLedger ledger) {
 		/* No-op */
 	}
 
 	@Override
 	public ExpirableTxnRecord saveExpiringRecord(
-			AccountID id,
-			ExpirableTxnRecord expiringRecord,
-			long consensusTime,
-			long submittingMember
+			final AccountID id,
+			final ExpirableTxnRecord expiringRecord,
+			final long consensusTime,
+			final long submittingMember
 	) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ExpirableTxnRecord.Builder buildExpiringRecord(
-			long otherNonThresholdFees,
-			byte[] hash,
-			TxnAccessor accessor,
-			Instant consensusTime,
-			TxnReceipt receipt,
-			List<TokenTransferList> explicitTokenTransfers,
-			List<FcAssessedCustomFee> customFeesCharged
+			final long otherNonThresholdFees,
+			final byte[] hash,
+			final TxnAccessor accessor,
+			final Instant consensusTime,
+			final TxnReceipt receipt,
+			final List<TokenTransferList> explicitTokenTransfers,
+			final List<FcAssessedCustomFee> customFeesCharged,
+			final List<FcTokenAssociation> newTokenAssociations
 	) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp) {
+	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(
+			final TxnAccessor accessor,
+			final Instant consensusTimestamp) {
 		throw new UnsupportedOperationException();
 	}
 }
