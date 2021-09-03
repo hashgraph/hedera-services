@@ -9,9 +9,9 @@ package com.hedera.services.pricing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
-public class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
+class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForCryptoTransferSubyptes() throws IOException {
 		testExpectedPriceFor(CryptoTransfer, DEFAULT);
