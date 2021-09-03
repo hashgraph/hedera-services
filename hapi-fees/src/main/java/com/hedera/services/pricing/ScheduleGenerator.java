@@ -9,9 +9,9 @@ package com.hedera.services.pricing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,18 +56,18 @@ public class ScheduleGenerator {
 	private static final String FEE_SCHEDULE_ENTRY_KEY = "transactionFeeSchedule";
 	private static final String FEE_SCHEDULE_FUNCTION_KEY = "hederaFunctionality";
 
-	private final Instant CURRENT_SCHEDULE_EXPIRY =
+	private static final Instant CURRENT_SCHEDULE_EXPIRY =
 			LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0)
 					.plusMonths(1)
 					.toInstant(ZoneOffset.UTC);
-	private final Instant NEXT_SCHEDULE_EXPIRY =
+	private static final Instant NEXT_SCHEDULE_EXPIRY =
 			LocalDateTime.of(2021, SEPTEMBER, 2, 0, 0)
 					.plusMonths(2)
 					.toInstant(ZoneOffset.UTC);
 
-	private final FeeSchedules feeSchedules = new FeeSchedules();
+	private static final FeeSchedules feeSchedules = new FeeSchedules();
 
-	String feeSchedulesFor(List<Pair<HederaFunctionality, List<SubType>>> data) throws IOException {
+	String feeSchedulesFor(final List<Pair<HederaFunctionality, List<SubType>>> data) throws IOException {
 		final List<Map<String, Object>> currentFeeSchedules = new ArrayList<>();
 		final List<Map<String, Object>> nextFeeSchedules = new ArrayList<>();
 
@@ -87,7 +87,10 @@ public class ScheduleGenerator {
 		return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(everything);
 	}
 
-	private Map<String, Object> pricesAsTfs(HederaFunctionality function, List<SubType> subTypes) throws IOException {
+	private Map<String, Object> pricesAsTfs(
+			final HederaFunctionality function,
+			final List<SubType> subTypes
+	) throws IOException {
 		final Map<String, Object> transactionFeeSchedule = new HashMap<>();
 
 		final Map<String, Object> details = new LinkedHashMap<>();
@@ -120,30 +123,29 @@ public class ScheduleGenerator {
 	}
 
 	@SuppressWarnings("unchecked")
-	static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(new Pair[] {
-					/* Crypto */
-					Pair.of(CryptoTransfer, List.of(
-							DEFAULT,
-							TOKEN_FUNGIBLE_COMMON,
-							TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-							TOKEN_NON_FUNGIBLE_UNIQUE,
-							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
-					)),
-					/* File */
-					Pair.of(FileAppend, List.of(DEFAULT)),
-					/* Token */
-					Pair.of(TokenCreate, List.of(
-							TOKEN_FUNGIBLE_COMMON,
-							TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-							TOKEN_NON_FUNGIBLE_UNIQUE,
-							TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
-					)),
-					Pair.of(TokenMint, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-					Pair.of(TokenBurn, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-					Pair.of(TokenAccountWipe, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
-					Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
-					/* Consensus */
-					Pair.of(ConsensusSubmitMessage, List.of(DEFAULT)),
-			}
+	static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(
+			/* Crypto */
+			Pair.of(CryptoTransfer, List.of(
+					DEFAULT,
+					TOKEN_FUNGIBLE_COMMON,
+					TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+					TOKEN_NON_FUNGIBLE_UNIQUE,
+					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
+			)),
+			/* File */
+			Pair.of(FileAppend, List.of(DEFAULT)),
+			/* Token */
+			Pair.of(TokenCreate, List.of(
+					TOKEN_FUNGIBLE_COMMON,
+					TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+					TOKEN_NON_FUNGIBLE_UNIQUE,
+					TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
+			)),
+			Pair.of(TokenMint, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenBurn, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenAccountWipe, List.of(TOKEN_NON_FUNGIBLE_UNIQUE)),
+			Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
+			/* Consensus */
+			Pair.of(ConsensusSubmitMessage, List.of(DEFAULT))
 	);
 }
