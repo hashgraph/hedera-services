@@ -63,8 +63,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
-	private long shard = 1;
-	private long realm = 2;
+	private long shard = 0;
+	private long realm = 0;
 	private long totalBalance = 100l;
 	private long expiry = Instant.now().getEpochSecond() + 1_234_567L;
 	private int numAccounts = 4;
