@@ -148,15 +148,18 @@ public final class TokenConversion {
 
 	/**
 	 * Returns a MerkleUniqueToken {@link MerkleUniqueToken} with data from
-	 * the freshly minted UniqueToken {@link UniqueToken} model
+	 * the UniqueToken {@link UniqueToken} model
 	 *
 	 * @param uniqueToken
 	 * 			The UniqueToken to base the MerkleUniqueToken on.
 	 * @return
 	 * 			The created MerkleUniqueToken.
 	 */
-	public static MerkleUniqueToken fromMintedUniqueToken(final UniqueToken uniqueToken) {
-		return new MerkleUniqueToken(EntityId.MISSING_ENTITY_ID, uniqueToken.getMetadata(), uniqueToken.getCreationTime());
+	public static MerkleUniqueToken fromUniqueToken(final UniqueToken uniqueToken) {
+		return new MerkleUniqueToken(
+				uniqueToken.getOwner().asEntityId(),
+				uniqueToken.getMetadata(),
+				uniqueToken.getCreationTime());
 	}
 
 	private static void initModelAccounts(
