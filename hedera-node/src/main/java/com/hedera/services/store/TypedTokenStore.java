@@ -54,7 +54,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.models.TokenConversion.fromMerkle;
 import static com.hedera.services.store.models.TokenConversion.fromMerkleUnique;
 import static com.hedera.services.store.models.TokenConversion.fromToken;
-import static com.hedera.services.store.models.TokenConversion.fromUniqueToken;
+import static com.hedera.services.store.models.TokenConversion.fromMintedUniqueToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -389,7 +389,7 @@ public class TypedTokenStore {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
 			final var merkleNftId = new MerkleUniqueTokenId(new EntityId(nft.getTokenId()), nft.getSerialNumber());
-			curNfts.put(merkleNftId, fromUniqueToken(nft));
+			curNfts.put(merkleNftId, fromMintedUniqueToken(nft));
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);
 		}
 	}

@@ -35,7 +35,7 @@ import java.time.Instant;
 import static com.hedera.services.store.models.TokenConversion.fromMerkle;
 import static com.hedera.services.store.models.TokenConversion.fromMerkleUnique;
 import static com.hedera.services.store.models.TokenConversion.fromToken;
-import static com.hedera.services.store.models.TokenConversion.fromUniqueToken;
+import static com.hedera.services.store.models.TokenConversion.fromMintedUniqueToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -127,7 +127,7 @@ class TokenConversionTest {
 	@Test
 	void conversionFromMerkleWorks() {
 		final var newToken = fromMerkle(merkleToken, tokenId, accountStore);
-		
+
 		assertEquals(token.toString(), newToken.toString());
 	}
 
@@ -164,24 +164,29 @@ class TokenConversionTest {
 
 	@Test
 	void conversionFromUniqueTokenWorks() {
-		final var newMerkleUniqueToken = fromUniqueToken(uniqueToken);
+		final var newMerkleUniqueToken = fromMintedUniqueToken(uniqueToken);
 
-		assertEquals(merkleUniqueToken.toString(), newMerkleUniqueToken.toString());
+		assertEquals(merkleUniqueToken.getCreationTime(), newMerkleUniqueToken.getCreationTime());
+		assertEquals(merkleUniqueToken.getMetadata(), newMerkleUniqueToken.getMetadata());
 	}
 
 	@Test
 	void conversionCycleFromMerkleUniqueWorks() {
 		final var newUniqueToken = fromMerkleUnique(merkleUniqueToken, tokenId, serialNum);
-		final var newMerkleUniqueToken = fromUniqueToken(newUniqueToken);
+		final var newMerkleUniqueToken = fromMintedUniqueToken(newUniqueToken);
 
-		assertEquals(merkleUniqueToken.toString(), newMerkleUniqueToken.toString());
+		assertEquals(merkleUniqueToken.getCreationTime(), newMerkleUniqueToken.getCreationTime());
+		assertEquals(merkleUniqueToken.getMetadata(), newMerkleUniqueToken.getMetadata());
 	}
 
 	@Test
 	void conversionCycleFromUniqueTokenWorks() {
-		final var newMerkleUniqueToken = fromUniqueToken(uniqueToken);
+		final var newMerkleUniqueToken = fromMintedUniqueToken(uniqueToken);
 		final var newUniqueToken = fromMerkleUnique(newMerkleUniqueToken, tokenId, serialNum);
 
-		assertEquals(uniqueToken.toString(), newUniqueToken.toString());
+		assertEquals(uniqueToken.getCreationTime(), newUniqueToken.getCreationTime());
+		assertEquals(uniqueToken.getMetadata(), newUniqueToken.getMetadata());
+		assertEquals(uniqueToken.getSerialNumber(), newUniqueToken.getSerialNumber());
+		assertEquals(uniqueToken.getTokenId(), newUniqueToken.getTokenId());
 	}
 }
