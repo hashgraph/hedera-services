@@ -2,12 +2,9 @@ package disruptor;
 
 import com.lmax.disruptor.EventHandler;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Disruptor event handler that mimics the handle phase of eventFlow. The transaction
@@ -16,28 +13,24 @@ import java.util.function.BiConsumer;
  * during the preFetch phase.
  */
 public class TransactionHandler<K extends VirtualKey, V extends VirtualValue> implements EventHandler<Transaction> {
-    VirtualMap<K, V> map;
-    BiConsumer<V, V> txLogic;
+    Consumer<Transaction> txLogic;
     Latch latch;
-    Random rand;
 
-    public TransactionHandler(VirtualMap<K, V> map, Latch latch, BiConsumer<V, V> txLogic) {
-        this.map = map;
-        this.txLogic = txLogic;
+    public TransactionHandler(Latch latch, Consumer<Transaction> txLogic) {
         this.latch = latch;
-        this.rand = new Random();
+        this.txLogic = txLogic;
     }
 
     public void onEvent(Transaction tx, long sequence, boolean endOfBatch) {
-        final var tinyBars = rand.nextInt(10);
-
         try {
-            final var sender = map.get((K) tx.getSender());
-            final var receiver = map.get((K) tx.getReceiver());
-
-            txLogic.accept(sender, receiver);
+            if (!tx.isLast()) {
+                txLogic.accept(tx);
+            }
         } finally {
-            latch.countdown();
+            if (tx.isLast())
+                latch.countdown();
+
+            tx.clear();     // release hard references for GC
         }
     }
 }

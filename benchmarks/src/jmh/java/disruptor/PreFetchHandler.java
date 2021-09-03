@@ -2,11 +2,11 @@ package disruptor;
 
 import com.lmax.disruptor.EventHandler;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 
-import java.util.Random;
-import java.util.function.Function;
+import java.util.function.Consumer;
+
+import static disruptor.Utils.fastModulo;
 
 /**
  * Disruptor event handler that mimics the pre-fetch phase of eventFlow. We ask the
@@ -17,32 +17,27 @@ import java.util.function.Function;
 public class PreFetchHandler<K extends VirtualKey, V extends VirtualValue> implements EventHandler<Transaction> {
     long id;
     int numHandlers;
-    int numEntities;
 
-    Function<Long, VirtualKey> idFactory;
-    VirtualMap<K, V> map;
+    Consumer<Transaction> preFetchLogic;
 
     public PreFetchHandler(
             int id,     // handler id
             int numHandlers,    // total number of handlers in set
-            int numEntities,    // total number of entities in VirtualMap
-            Function<Long, VirtualKey> idFactory,   // factory for VirtualKey
-            VirtualMap<K, V> map
+            Consumer<Transaction> preFetchLogic
     ) {
         this.id = id;
         this.numHandlers = numHandlers;
-        this.numEntities = numEntities;
-        this.idFactory = idFactory;
-        this.map = map;
+        this.preFetchLogic = preFetchLogic;
     }
 
     public void onEvent(Transaction tx, long sequence, boolean endOfBatch) {
         // Only handle events assigned to this handler
-        if (sequence % numHandlers != id) {
+        if (fastModulo(sequence, numHandlers) != id) {
             return;
         }
 
-        map.get((K) tx.getSender());
-        map.get((K) tx.getReceiver());
+        if (!tx.isLast()) {
+            preFetchLogic.accept(tx);
+        }
     }
 }
