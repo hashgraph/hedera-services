@@ -49,10 +49,10 @@ public class DataFileCommon {
      * are extensive to merge. It must be less than MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES.
      *
      * It is also limited by the in RAM size of the moves list needed to merge a file of this size. If you take this
-     * MAX_DATA_FILE_SIZE divided by (key+hash+value) size. That number should be less than Integer.MAX_VALUE/3 which
-     * is needed by ThreeLongsList.
+     * MAX_DATA_FILE_SIZE divided by (8+key+hash+value) size. That number should be less than Integer.MAX_VALUE/3 which
+     * is needed by ThreeLongsList. For internal hashes stored that size is 32Gb.
      */
-    static final long MAX_DATA_FILE_SIZE = 64*GB;
+    static final long MAX_DATA_FILE_SIZE = 32*GB;
     /** Size of keys in bytes, assumed to be a single long as all our use cases just needed a long */
     static final int KEY_SIZE = Long.BYTES;
     /** The current file format version, ready for if the file format needs to change */

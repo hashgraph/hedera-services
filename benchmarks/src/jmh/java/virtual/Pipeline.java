@@ -93,8 +93,9 @@ public class Pipeline<K extends VirtualKey, V extends VirtualValue> {
                      archiveExchanger.exchange(masterMap.getAndSet(null));
                  } else if (currentMergedRoundsCount >= 20) { // it has taken too long for archive, need some back pressure so lets wait for it
                      // probably better way but try for now
-                     while(finishedArchiving.get() == false) {
+                     while(!finishedArchiving.get()) {
                          System.out.print("W");
+                         //noinspection BusyWait
                          Thread.sleep(1000);
                      }
                  }

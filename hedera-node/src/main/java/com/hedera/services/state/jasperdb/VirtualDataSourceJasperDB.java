@@ -42,6 +42,8 @@ import static java.nio.ByteBuffer.allocate;
  */
 @SuppressWarnings({"jol", "DuplicatedCode"})
 public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
+    /** Flag to enable multi-threaded serialization */
+    private static final boolean multiThreadedSerializationEnabled = Boolean.getBoolean("multiThreadedSerializationEnabled");
     /** The size in bytes for serialized key objects */
     private final int keySizeBytes;
     /** Constructor for creating new key objects during de-serialization */
@@ -132,6 +134,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     public VirtualDataSourceJasperDB(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
                                      Path storageDir, long maxNumOfKeys, boolean mergingEnabled, long internalHashesRamToDiskThreshold) throws IOException {
+        System.out.println("multiThreadedSerializationEnabled = " + multiThreadedSerializationEnabled);
         this.keySizeBytes = Integer.BYTES + keySizeBytes; // extra leading integer keeps track of the version
         this.keyConstructor = keyConstructor;
         this.valueSizeBytes = Integer.BYTES + valueSizeBytes;  // extra leading integer keeps track of the version
@@ -377,29 +380,60 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 // get reusable buffer
                 if (!isLongKeyMode) objectKeyToPath.startWriting();
 
-                leafRecords
-                        .peek(rec -> {
-                            // update objectKeyToPath
-                            if (isLongKeyMode) {
-                                longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
-                            } else {
-                                objectKeyToPath.put(rec.getKey(), rec.getPath());
-                            }
-                        })
-                        .parallel()
-                        .map(rec -> new SerializedVirtualLeafRecord<>(rec,hasVariableDataSize,valueSizeBytes))
-                        .forEachOrdered(serializedVirtualLeafRecord -> {
-                            try {
-                                // now save pathToKeyHashValue
-                                final var out = pathToKeyHashValue.startStreamingPut(
-                                        serializedVirtualLeafRecord.path, serializedVirtualLeafRecord.valueSize);
-                                out.write(serializedVirtualLeafRecord.keyHashValue);
-                                pathToKeyHashValue.endStreamingPut();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        });
+                if (multiThreadedSerializationEnabled) {
+                    leafRecords
+                            .peek(rec -> {
+                                // update objectKeyToPath
+                                if (isLongKeyMode) {
+                                    longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
+                                } else {
+                                    objectKeyToPath.put(rec.getKey(), rec.getPath());
+                                }
+                            })
+                            .parallel()
+                            .map(rec -> new SerializedVirtualLeafRecord<>(rec, hasVariableDataSize, valueSizeBytes))
+                            .forEachOrdered(serializedVirtualLeafRecord -> {
+                                try {
+                                    // now save pathToKeyHashValue
+                                    final var out = pathToKeyHashValue.startStreamingPut(
+                                            serializedVirtualLeafRecord.path, serializedVirtualLeafRecord.valueSize);
+                                    out.write(serializedVirtualLeafRecord.keyHashValue);
+                                    pathToKeyHashValue.endStreamingPut();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                } else {
+                    final ByteArrayOutputStream bout = new ByteArrayOutputStream(1024);
+                    final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(bout);
+                    leafRecords
+                            .peek(rec -> {
+                                // update objectKeyToPath
+                                if (isLongKeyMode) {
+                                    longKeyToPath.put(((VirtualLongKey) rec.getKey()).getKeyAsLong(), rec.getPath());
+                                } else {
+                                    objectKeyToPath.put(rec.getKey(), rec.getPath());
+                                }
+                            })
+                            .forEachOrdered(virtualLeafRecord -> {
+                                try {
+                                    // clean reusable buffer
+                                    bout.reset();
+                                    // serialize leaf key, hash and value to stream
+                                    int valueSize = serializeKeyHashValue(bout,outputStream,virtualLeafRecord,
+                                            hasVariableDataSize, valueSizeBytes);
+                                    // now save pathToKeyHashValue
+                                    final var out = pathToKeyHashValue.startStreamingPut(
+                                            virtualLeafRecord.getPath(), valueSize);
+                                    bout.writeTo(out);
+                                    pathToKeyHashValue.endStreamingPut();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                }
                 pathToKeyHashValue.endWriting(firstLeafPath, lastLeafPath);
                 if(!isLongKeyMode) objectKeyToPath.endWriting();
             } catch (IOException e) {
@@ -437,6 +471,47 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         }
     }
 
+    private static <K extends VirtualKey, V extends VirtualValue> int serializeKeyHashValue(
+                        ByteArrayOutputStream bout,
+                        SerializableDataOutputStream outputStream,
+                        VirtualLeafRecord<K,V> leafRecord,
+                        boolean hasVariableDataSize, int valueSizeBytes) throws IOException {
+        final VirtualKey key = leafRecord.getKey();
+        final Hash hash = leafRecord.getHash();
+        final VirtualValue value = leafRecord.getValue();
+        int valueSize;
+        if (hasVariableDataSize) {
+            // now write key, hash and value to stream 1
+            // put key
+            outputStream.writeInt(key.getVersion());
+            key.serialize(outputStream);
+            // put hash
+            outputStream.write(hash.getValue());
+            // put value
+            outputStream.writeInt(value.getVersion());
+            outputStream.flush();
+            final int sizeBefore = bout.size();
+            // write value to second stream as we need its size
+            value.serialize(outputStream);
+            outputStream.flush();
+            // get value size
+            valueSize = bout.size() - sizeBefore;
+        } else {
+            valueSize = valueSizeBytes;
+            // put key
+            outputStream.writeInt(key.getVersion());
+            key.serialize(outputStream);
+            // put hash
+            outputStream.write(hash.getValue());
+            // put value
+            outputStream.writeInt(value.getVersion());
+            value.serialize(outputStream);
+        }
+        // flush everything
+        outputStream.flush();
+        return valueSize;
+    }
+
     //==================================================================================================================
     // SerializedVirtualRecord class
 
@@ -458,43 +533,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         public SerializedVirtualLeafRecord(VirtualLeafRecord<K,V> leafRecord, boolean hasVariableDataSize, int valueSizeBytes) {
             try {
                 this.path = leafRecord.getPath();
-                final VirtualKey key = leafRecord.getKey();
-                final Hash hash = leafRecord.getHash();
-                final VirtualValue value = leafRecord.getValue();
-
+                // get thread local buffer for reuse
                 final ByteArrayOutputStream bout = reusableStreams.get();
                 bout.reset();
                 final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(bout);
-
-                if (hasVariableDataSize) {
-                    // now write key, hash and value to stream 1
-                    // put key
-                    outputStream.writeInt(key.getVersion());
-                    key.serialize(outputStream);
-                    // put hash
-                    outputStream.write(hash.getValue());
-                    // put value
-                    outputStream.writeInt(value.getVersion());
-                    outputStream.flush();
-                    final int sizeBefore = bout.size();
-                    // write value to second stream as we need its size
-                    value.serialize(outputStream);
-                    outputStream.flush();
-                    // get value size
-                    valueSize = bout.size() - sizeBefore;
-                } else {
-                    valueSize = valueSizeBytes;
-                    // put key
-                    outputStream.writeInt(key.getVersion());
-                    key.serialize(outputStream);
-                    // put hash
-                    outputStream.write(hash.getValue());
-                    // put value
-                    outputStream.writeInt(value.getVersion());
-                    value.serialize(outputStream);
-                }
-                // flush everything
-                outputStream.flush();
+                // serialize the key hash and value
+                valueSize = serializeKeyHashValue(bout,outputStream,leafRecord,hasVariableDataSize,valueSizeBytes);
                 // store a copy of array data
                 keyHashValue = bout.toByteArray();
             } catch (IOException e) {
