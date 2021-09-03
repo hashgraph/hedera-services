@@ -9,6 +9,7 @@ import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 
 /**
  * An off-heap in memory store of longs, it stores them in memoryChunkSize direct buffers and adds buffers as needed.
@@ -145,17 +146,23 @@ public final class LongListOffHeap implements LongList {
      * @param newIndex the index of the new item we would like to add to storage
      */
     private void expandIfNeeded(long newIndex) {
-        currentMaxIndex.getAndUpdate(oldMaxIndex -> Math.max(oldMaxIndex,newIndex));
-        // expand data if needed
-        maxIndexThatCanBeStored.updateAndGet(currentValue -> {
-            while (newIndex > currentValue) { // need to expand
-                ByteBuffer directBuffer = ByteBuffer.allocateDirect(memoryChunkSize);
-                directBuffer.order(ByteOrder.nativeOrder());
-                data.add(directBuffer.asLongBuffer());
-                currentValue += numLongsPerChunk;
-            }
-            return currentValue;
-        });
+        // updates the index to the max of new index and its current value. If two threads are trying to do this at the
+        // same time they will both keep trying till each one gets a clean chance of setting the value. The largest will
+        // always win, which is what matters.
+        //noinspection ManualMinMaxCalculation
+        currentMaxIndex.getAndUpdate(oldMaxIndex -> newIndex > oldMaxIndex ? newIndex : oldMaxIndex);
+
+        // This is important to be lock free which means two or more threads can be inside the loop at a time. This
+        // means two threads can be making the buffer bigger at the same time. The most that can happen in this case is
+        // the buffer is bigger than needed. Because the index for inserting the value is fixed, there is no contention
+        // over the index only over the size of the buffer.
+        while (newIndex > maxIndexThatCanBeStored.get()) {
+            // need to expand
+            ByteBuffer directBuffer = ByteBuffer.allocateDirect(memoryChunkSize);
+            directBuffer.order(ByteOrder.nativeOrder());
+            data.add(directBuffer.asLongBuffer());
+            maxIndexThatCanBeStored.addAndGet(numLongsPerChunk);
+        }
     }
 
     /**

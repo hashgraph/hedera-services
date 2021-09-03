@@ -90,7 +90,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
                 return 0;
             }
         }).sum() / MB;
-        System.out.printf("Starting merging %,d files in collection %s total %,.2f Gb...\n",size,storeName,filesToMergeSizeMb);
+        System.out.printf("Starting merging %,d files in collection %s total %,.2f Gb...\n",size,storeName,filesToMergeSizeMb/1024);
         if (ENABLE_DEEP_VALIDATION) startChecking();
         final List<Path> newFilesCreated = fileCollection.mergeFiles(
                 // update index with all moved data

@@ -210,8 +210,16 @@ public class DataFileCollection {
                 filesToMerge.stream().map(file -> file.getMetadata().getCreationDate()).max(Instant::compareTo).get();
         // update last merge time
         this.lastMerge.set(mergeTime);
+        // compute how many moves can come from one file
+        int maxMovesFromOneFile = 5000;
+        if (dataItemValueSize != VARIABLE_DATA_SIZE) {
+            maxMovesFromOneFile = (int)(MAX_DATA_FILE_SIZE / ((long)KEY_SIZE+dataItemValueSize));
+            System.out.printf("maxMovesFromOneFile %,d which means merge moves list is %,.2f Mb of ram\n",maxMovesFromOneFile,(maxMovesFromOneFile*3*8)/1024/1024D);
+        }
+        // TODO need to handle variable size here as we don't want to have to grow move map too many times as it stresses the GC.
+        // TODO We could solve it by making ThreeLongsList be array of arrays so better for growing. Or we could make merge files max number of items rather than max Gb.
         // create new map for keeping track of moves
-        ThreeLongsList movesMap = new ThreeLongsList();
+        ThreeLongsList movesMap = new ThreeLongsList(maxMovesFromOneFile);
         // create list of paths of files created during merge
         final List<Path> newFilesCreated = new ArrayList<>();
         // Open a new merge file for writing
@@ -268,6 +276,7 @@ public class DataFileCollection {
                 if (newFileWriter.getFileSizeEstimate() >= MAX_DATA_FILE_SIZE) {
                     // finish writing current file, add it for reading then open new file for writing
                     closeCurrentMergeFile(newFileWriter,minimumValidKey,maximumValidKey,locationChangeHandler,movesMap);
+                    System.out.println("movesMap.size() = " + movesMap.size());
                     movesMap.clear();
                     newFileWriter = newDataFile(mergeTime, true);
                     newFilesCreated.add(newFileWriter.getPath());

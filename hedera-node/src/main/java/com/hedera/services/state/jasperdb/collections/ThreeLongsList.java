@@ -3,12 +3,33 @@ package com.hedera.services.state.jasperdb.collections;
 /**
  * Simple array list for triplets of longs.
  *
+ * IMPORTANT this is not designed to be thread safe.
+ *
  * IMPORTANT this is limited to a maximum of 700 million entries which is about 16Gb of RAM.
+ *
+ * TODO This should be a array of arrays class again so we do not pay the cost of copies on enlargement.
  */
 public class ThreeLongsList {
-    private long[] data = new long[12_000];
-    private int capacity = data.length/3;
+    private long[] data;
+    private int capacity;
     private int size = 0;
+
+    /**
+     * Construct a new ThreeLongsList with the default size of 4,000 triplets
+     */
+    public ThreeLongsList() {
+        this(4_000);
+    }
+
+    /**
+     * Construct a new ThreeLongsList with the chosen capacity
+     *
+     * @param capacity the initial number of triplets that can be stored
+     */
+    public ThreeLongsList(int capacity) {
+        this.capacity = capacity;
+        data = new long[capacity*3];
+    }
 
     /**
      * Add a triplet of 3 longs

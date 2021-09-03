@@ -11,6 +11,11 @@ import java.util.stream.StreamSupport;
 /**
  * Interface for a simple list of longs. This is intentionally not java util list compatible because keeping the
  * functionality very simple we can implement a bunch of optimizations to allow cheep high concurrency without locks.
+ *
+ * The aim here is to have a concurrent expandable array with very fast lookups and fast concurrent appends.
+ *
+ * Some others have tried similar but different ideas
+ * https://philosopherdeveloper.com/posts/how-to-build-a-thread-safe-lock-free-resizable-array.html
  */
 public interface LongList {
 

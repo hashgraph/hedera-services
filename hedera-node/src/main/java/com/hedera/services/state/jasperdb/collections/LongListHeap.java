@@ -108,20 +108,25 @@ public final class LongListHeap implements LongList {
     // Private helper methods
 
     /**
-     * Expand the available data storage if needed to allow storage of a item at newIndex
+     * Expand the available data storage if needed to allow storage of an item at newIndex
      *
      * @param newIndex the index of the new item we would like to add to storage
      */
     private void expandIfNeeded(long newIndex) {
-        currentMaxIndex.getAndUpdate(oldMaxIndex -> Math.max(oldMaxIndex,newIndex));
-        // expand data if needed
-        maxIndexThatCanBeStored.updateAndGet(currentValue -> {
-            while (newIndex > currentValue) { // need to expand
-                data.add(new AtomicLongArray(numLongsPerChunk));
-                currentValue += numLongsPerChunk;
-            }
-            return currentValue;
-        });
-    }
+        // updates the index to the max of new index and its current value. If two threads are trying to do this at the
+        // same time they will both keep trying till each one gets a clean chance of setting the value. The largest will
+        // always win, which is what matters.
+        //noinspection ManualMinMaxCalculation
+        currentMaxIndex.getAndUpdate(oldMaxIndex -> newIndex > oldMaxIndex ? newIndex : oldMaxIndex);
 
+        // This is important to be lock free which means two or more threads can be inside the loop at a time. This
+        // means two threads can be making the buffer bigger at the same time. The most that can happen in this case is
+        // the buffer is bigger than needed. Because the index for inserting the value is fixed, there is no contention
+        // over the index only over the size of the buffer.
+        while (newIndex > maxIndexThatCanBeStored.get()) {
+            // need to expand
+            data.add(new AtomicLongArray(numLongsPerChunk));
+            maxIndexThatCanBeStored.addAndGet(numLongsPerChunk);
+        }
+    }
 }
