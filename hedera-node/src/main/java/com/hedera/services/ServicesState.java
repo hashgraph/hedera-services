@@ -86,7 +86,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for 0.18.0 to support migration from a 0.17x state */
+	/* Only needed for 0.18.0 to support migration from a 0.17.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 
@@ -107,6 +107,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Copy the non-Merkle state from the source */
 		this.deserializedVersion = that.deserializedVersion;
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
+
 		this.platformForDeferredInit = that.platformForDeferredInit;
 		this.addressBookForDeferredInit = that.addressBookForDeferredInit;
 	}
@@ -203,6 +204,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
 		if (deserializedVersion == StateVersions.RELEASE_0170_VERSION && platform != platformForDeferredInit) {
+			/* Due to design issues with the BinaryObjectStore, which will not be finished
+			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
 			addressBookForDeferredInit = addressBook;
 			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());

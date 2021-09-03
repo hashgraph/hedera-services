@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -279,7 +278,7 @@ public class TypedTokenStore {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		final var curUniqueTokens = uniqueTokens.get();
 		for (long serialNumber : serialNumbers) {
-			final var uniqueTokenKey = new MerkleUniqueTokenId(tokenAsEntityId, serialNumber);
+			final var uniqueTokenKey = PermHashLong.fromLongs(tokenAsEntityId.num(), serialNumber);
 			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
 			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
