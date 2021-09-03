@@ -85,6 +85,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	 * @param ownerCode the number of the owning entity as an unsigned {@code int}
 	 * @param metadata the metadata of the unique token
 	 * @param packedCreationTime the "packed" representation of the consensus time at which the token was minted
+	 * @param numbers the packed representation of the token type number and serial number
 	 */
 	public MerkleUniqueToken(
 			int ownerCode,
