@@ -9,9 +9,9 @@ package com.hedera.services.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,15 +22,15 @@ package com.hedera.services.files;
 
 import com.hedera.services.files.store.BytesStoreAdapter;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.swirlds.common.CommonUtils;
-
-public class MetadataMapFactory {
+public final class MetadataMapFactory {
 	private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
 
 	private static final String LEGACY_PATH_TEMPLATE = "/%d/k%d";
@@ -38,11 +38,11 @@ public class MetadataMapFactory {
 	private static final int REALM_INDEX = 1;
 	private static final int ACCOUNT_INDEX = 2;
 
-	MetadataMapFactory(){
-		throw new IllegalStateException();
+	private MetadataMapFactory() {
+		throw new UnsupportedOperationException("Factory Class");
 	}
 
-	public static Map<FileID, HFileMeta> metaMapFrom(Map<String, byte[]> store) {
+	public static Map<FileID, HFileMeta> metaMapFrom(final Map<String, byte[]> store) {
 		return new BytesStoreAdapter<>(
 				FileID.class,
 				MetadataMapFactory::toAttr,
@@ -52,9 +52,9 @@ public class MetadataMapFactory {
 				store);
 	}
 
-	static FileID toFid(String key) {
-		var matcher = LEGACY_PATH_PATTERN.matcher(key);
-		var flag = matcher.matches();
+	static FileID toFid(final String key) {
+		final var matcher = LEGACY_PATH_PATTERN.matcher(key);
+		final var flag = matcher.matches();
 		assert flag;
 
 		return FileID.newBuilder()
@@ -64,23 +64,23 @@ public class MetadataMapFactory {
 				.build();
 	}
 
-	static String toKeyString(FileID fid) {
+	static String toKeyString(final FileID fid) {
 		return String.format(LEGACY_PATH_TEMPLATE, fid.getRealmNum(), fid.getFileNum());
 	}
 
-	static HFileMeta toAttr(byte[] bytes) {
+	static HFileMeta toAttr(final byte[] bytes) {
 		try {
 			return (bytes == null) ? null : HFileMeta.deserialize(bytes);
-		} catch (Exception internal) {
+		} catch (final IOException internal) {
 			log.warn("Argument 'bytes={}' was not a serialized HFileMeta!", CommonUtils.hex(bytes));
 			throw new IllegalArgumentException(internal);
 		}
 	}
 
-	static byte[] toValueBytes(HFileMeta attr) {
+	static byte[] toValueBytes(final HFileMeta attr) {
 		try {
 			return attr.serialize();
-		} catch (Exception internal) {
+		} catch (final IOException internal) {
 			try {
 				log.warn("Argument 'attr={}' could not be serialized!", attr);
 			} catch (Exception terminal) {
