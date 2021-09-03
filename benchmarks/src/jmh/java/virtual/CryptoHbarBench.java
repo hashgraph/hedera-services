@@ -54,6 +54,9 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     @Param({"5"})
     public int prepperThreadCount;
 
+    @Param({"4"})
+    public int preFetchEventHandlers;
+
     // This is the map we will be testing!
     private VirtualMap<Id, Account> virtualMap;
 
@@ -76,6 +79,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
 
         final var rand = new Random();
         txProcessor = new TransactionProcessor<VFCMapBenchBase.Id, VFCMapBenchBase.Account>(
+                preFetchEventHandlers,
                 (Transaction tx) -> {   // preFetch logic
                     VirtualMap<Id, Account> map = getVirtualMap();
 

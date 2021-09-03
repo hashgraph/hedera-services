@@ -5,21 +5,21 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class TransactionProcessor<K extends VirtualKey, V extends VirtualValue> {
     public static final int BUFFER_SIZE = 131072;   // MUST be 2^n
-    public static final int NUM_PRE_FETCH_HANDLERS = 16; // MUST be 2^n
 
     Disruptor<Transaction> disruptor;
     TransactionPublisher publisher;
-    Supplier<VirtualMap<K, V>> mapSupplier;
 
-    public TransactionProcessor(Consumer<Transaction> preFetchLogic, Consumer<Transaction> txLogic) {
+    public TransactionProcessor(
+            int preFetchEventHandlers,
+            Consumer<Transaction> preFetchLogic,
+            Consumer<Transaction> txLogic
+    ) {
         disruptor = new Disruptor<>(
                 Transaction::new,
                 BUFFER_SIZE,
@@ -28,9 +28,9 @@ public class TransactionProcessor<K extends VirtualKey, V extends VirtualValue> 
                 new YieldingWaitStrategy());
 
         // Workaround to create generic array in java
-        PreFetchHandler preFetchHandlers[] = new PreFetchHandler[NUM_PRE_FETCH_HANDLERS];
-        for (int i = 0; i < NUM_PRE_FETCH_HANDLERS; i++) {
-            preFetchHandlers[i] = new PreFetchHandler(i, NUM_PRE_FETCH_HANDLERS, preFetchLogic);
+        PreFetchHandler preFetchHandlers[] = new PreFetchHandler[preFetchEventHandlers];
+        for (int i = 0; i < preFetchEventHandlers; i++) {
+            preFetchHandlers[i] = new PreFetchHandler(i, preFetchEventHandlers, preFetchLogic);
         }
 
         Latch latch = new Latch();
