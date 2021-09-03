@@ -35,13 +35,12 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.unit.StorageTestHelper;
 import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
+import com.hedera.services.legacy.unit.StorageTestHelper;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
@@ -125,7 +124,6 @@ class SmartContractRequestHandlerMiscTest {
   LedgerAccountsSource ledgerSource;
   HederaLedger ledger;
 
-  MerkleEntityId payerMerkleEntityId; // fcMap key for payer account
   byte[] payerKeyBytes = null; // Repository key for payer account
   AccountID payerAccountId;
   AccountID nodeAccountId;
@@ -222,10 +220,6 @@ class SmartContractRequestHandlerMiscTest {
     } catch (IllegalArgumentException e) {
       Assertions.fail("Failure building solidity key for payer account");
     }
-    payerMerkleEntityId = new MerkleEntityId();
-    payerMerkleEntityId.setNum(payerAccount);
-    payerMerkleEntityId.setRealm(0);
-    payerMerkleEntityId.setShard(0);
 
     backingAccounts.rebuildFromSources();
   }

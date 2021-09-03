@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -60,7 +59,6 @@ import static com.hedera.services.store.tokens.views.internals.PermHashInteger.f
 public class RenewalHelper {
 	private static final Logger log = LogManager.getLogger(RenewalHelper.class);
 
-	private final long shard, realm;
 	private final TokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
@@ -76,15 +74,12 @@ public class RenewalHelper {
 	@Inject
 	public RenewalHelper(
 			TokenStore tokenStore,
-			HederaNumbers hederaNumbers,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
 			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
 			Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels,
 			BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
-		this.shard = hederaNumbers.shard();
-		this.realm = hederaNumbers.realm();
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;
 		this.accounts = accounts;

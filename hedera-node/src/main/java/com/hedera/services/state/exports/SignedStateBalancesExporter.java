@@ -53,7 +53,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -76,8 +75,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '{}'.";
 
 	private static final String PROTO_FILE_EXTENSION = ".pb";
-
-	private static final Base64.Encoder encoder = Base64.getEncoder();
 
 	private Instant nextExportTime = null;
 

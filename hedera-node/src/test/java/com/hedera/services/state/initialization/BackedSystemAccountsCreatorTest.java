@@ -131,7 +131,6 @@ class BackedSystemAccountsCreatorTest {
 		given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
 		subject = new BackedSystemAccountsCreator(
-				hederaNums,
 				accountNums,
 				properties,
 				legacyReader);

@@ -41,11 +41,12 @@ public class DefaultTopicLookup implements TopicSigMetaLookup {
 	@Override
 	public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
 		var topic = topics.get().get(fromTopicId(id));
-		return (topic == null || topic.isDeleted())
-				? SafeLookupResult.failure(INVALID_TOPIC)
-				: new SafeLookupResult<>(
-				new TopicSigningMetadata(
-						topic.hasAdminKey() ? topic.getAdminKey() : null,
-						topic.hasSubmitKey() ? topic.getSubmitKey() : null));
+		if (topic == null || topic.isDeleted()) {
+			return SafeLookupResult.failure(INVALID_TOPIC);
+		} else {
+			final var effAdminKey = topic.hasAdminKey() ? topic.getAdminKey() : null;
+			final var effSubmitKey = topic.hasSubmitKey() ? topic.getSubmitKey() : null;
+			return new SafeLookupResult<>(new TopicSigningMetadata(effAdminKey, effSubmitKey));
+		}
 	}
 }

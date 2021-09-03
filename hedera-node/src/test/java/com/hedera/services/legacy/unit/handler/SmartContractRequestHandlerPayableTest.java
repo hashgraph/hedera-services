@@ -116,7 +116,6 @@ class SmartContractRequestHandlerPayableTest {
   private MerkleMap<String, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
-  MerkleEntityId payerMerkleEntityId; // fcMap key for payer account
   byte[] payerKeyBytes = null; // Repository key for payer account
   AccountID payerAccountId;
   AccountID nodeAccountId;
@@ -202,10 +201,6 @@ class SmartContractRequestHandlerPayableTest {
     } catch (IllegalArgumentException e) {
       Assertions.fail("Failure building solidity key for payer account");
     }
-    payerMerkleEntityId = new MerkleEntityId();
-    payerMerkleEntityId.setNum(payerAccount);
-    payerMerkleEntityId.setRealm(0);
-    payerMerkleEntityId.setShard(0);
 
     backingAccounts.rebuildFromSources();
   }

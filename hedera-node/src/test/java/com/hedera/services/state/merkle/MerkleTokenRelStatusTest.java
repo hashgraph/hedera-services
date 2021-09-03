@@ -67,7 +67,6 @@ class MerkleTokenRelStatusTest {
 		final var seven = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
 		final var eight = subject;
 
-		assertNotEquals(subject, null);
 		assertNotEquals(subject, new Object());
 		assertNotEquals(subject, two);
 		assertNotEquals(subject, three);

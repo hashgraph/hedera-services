@@ -94,7 +94,6 @@ class MerkleUniqueTokenTest {
 		identical.setKey(key);
 
 		// expect
-		assertNotEquals(subject, null);
 		assertNotEquals(subject, new Object());
 		assertNotEquals(subject, other);
 		assertNotEquals(subject, other2);

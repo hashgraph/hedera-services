@@ -132,7 +132,7 @@ class RenewalHelperTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalHelper(tokenStore, nums, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels, backingAccounts);
+		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels, backingAccounts);
 	}
 
 	@Test

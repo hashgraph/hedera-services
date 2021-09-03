@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import org.apache.logging.log4j.LogManager;
@@ -41,8 +40,6 @@ public class RenewalProcess {
 			DETACHED_ACCOUNT_GRACE_PERIOD_OVER
 	);
 
-	private final long shard, realm;
-
 	private final FeeCalculator fees;
 	private final RenewalHelper helper;
 	private final RenewalRecordsHelper recordsHelper;
@@ -52,16 +49,12 @@ public class RenewalProcess {
 	@Inject
 	public RenewalProcess(
 			FeeCalculator fees,
-			HederaNumbers hederaNums,
 			RenewalHelper helper,
 			RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
 		this.recordsHelper = recordsHelper;
-
-		this.realm = hederaNums.realm();
-		this.shard = hederaNums.shard();
 	}
 
 	public void beginRenewalCycle(Instant now) {

@@ -21,13 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -138,33 +132,5 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 				.add("realm", realm)
 				.add("entity", num)
 				.toString();
-	}
-
-	public String toAbbrevString() {
-		return String.format("%d.%d.%d", shard, realm, num);
-	}
-
-	public AccountID toAccountId() {
-		return AccountID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setAccountNum(num)
-				.build();
-	}
-
-	public TokenID toTokenId() {
-		return TokenID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setTokenNum(num)
-				.build();
-	}
-
-	public ScheduleID toScheduleId() {
-		return ScheduleID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setScheduleNum(num)
-				.build();
 	}
 }

@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -79,7 +78,7 @@ class RenewalProcessTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, recordsHelper);
+		subject = new RenewalProcess(fees, helper, recordsHelper);
 	}
 
 	@Test
