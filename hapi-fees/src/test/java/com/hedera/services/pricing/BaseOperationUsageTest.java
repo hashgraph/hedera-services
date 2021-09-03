@@ -26,6 +26,7 @@ import org.mockito.Mockito;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
@@ -72,6 +73,9 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(TokenFeeScheduleUpdate, DEFAULT);
 		Mockito.verify(mock).feeScheduleUpdate();
+
+		mock.baseUsageFor(FileAppend, DEFAULT);
+		Mockito.verify(mock).fileAppend();
 
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));

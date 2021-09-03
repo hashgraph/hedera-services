@@ -1,8 +1,8 @@
-package com.hedera.services.queries;
+package com.hedera.services.pricing;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -20,28 +20,16 @@ package com.hedera.services.queries;
  * ‍
  */
 
-import com.hedera.services.context.ServicesNodeType;
-import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import java.io.IOException;
 
-class QueriesModuleTest {
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+
+public class FileFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
-	void usesZeroStakeWhenAppropriate() {
-		// expect:
-		assertThat(QueriesModule.provideAnswerFlow(
-			null,
-			null,
-			ServicesNodeType.ZERO_STAKE_NODE,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null
-		), instanceOf(ZeroStakeAnswerFlow.class));
+	void computesExpectedPriceForBaseAppend() throws IOException {
+		testExpectedPriceFor(FileAppend, DEFAULT);
 	}
 }

@@ -32,6 +32,8 @@ import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.file.FileAppendMeta;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
@@ -58,6 +60,7 @@ import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,7 +71,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccessorBasedUsagesTest {
-	private final int multiplier = 30;
 	private final String memo = "Even the most cursory inspection would yield that...";
 	private final long now = 1_234_567L;
 	private final SigUsage sigUsage = new SigUsage(1, 2, 3);
@@ -78,6 +80,8 @@ class AccessorBasedUsagesTest {
 	private TxnAccessor txnAccessor;
 	@Mock
 	private OpUsageCtxHelper opUsageCtxHelper;
+	@Mock
+	private FileOpsUsage fileOpsUsage;
 	@Mock
 	private TokenOpsUsage tokenOpsUsage;
 	@Mock
@@ -92,7 +96,7 @@ class AccessorBasedUsagesTest {
 	@BeforeEach
 	void setUp() {
 		subject = new AccessorBasedUsages(
-				tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, dynamicProperties);
+				fileOpsUsage, tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, consensusOpsUsage, dynamicProperties);
 	}
 
 	@Test
@@ -107,8 +111,28 @@ class AccessorBasedUsagesTest {
 	}
 
 	@Test
+	void worksAsExpectedForFileAppend() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var opMeta = new FileAppendMeta(1_234, 1_234_567L);
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(FileAppend);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(opUsageCtxHelper.metaForFileAppend(TransactionBody.getDefaultInstance())).willReturn(opMeta);
+
+		// expect:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(fileOpsUsage).fileAppendUsage(sigUsage, opMeta, baseMeta, accumulator);
+	}
+
+	@Test
 	void worksAsExpectedForCryptoTransfer() {
 		// setup:
+		int multiplier = 30;
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var xferMeta = new CryptoTransferMeta(1, 3, 7, 4);
 		final var usageAccumulator = new UsageAccumulator();
