@@ -70,11 +70,6 @@ class BitPackUtilsTest {
 	}
 
 	@Test
-	void isUninstantiable() {
-		assertThrows(IllegalStateException.class, BitPackUtils::new);
-	}
-
-	@Test
 	void timePackingWorks() {
 		// given:
 		final var distantFuture = Instant.ofEpochSecond(MAX_NUM_ALLOWED, 999_999_999);
