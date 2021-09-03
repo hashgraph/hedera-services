@@ -64,7 +64,7 @@ public final class TokenConversion {
 	 * @return
 	 * 			A MerkleToken
 	 */
-	public static MerkleToken fromToken(Token token) {
+	public static MerkleToken fromToken(final Token token) {
 		final var mutableToken = new MerkleToken();
 		fromToken(token, mutableToken);
 		return mutableToken;
@@ -135,7 +135,10 @@ public final class TokenConversion {
 	 * @return
 	 * 			The UniqueToken model object with all the data.
 	 */
-	public static UniqueToken fromMerkleUnique(MerkleUniqueToken immutableUniqueToken, Id id, long serialNumber) {
+	public static UniqueToken fromMerkleUnique(
+			final MerkleUniqueToken immutableUniqueToken,
+			final Id id,
+			final long serialNumber) {
 		final var uniqueToken = new UniqueToken(id, serialNumber);
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
@@ -152,11 +155,12 @@ public final class TokenConversion {
 	 * @return
 	 * 			The created MerkleUniqueToken.
 	 */
-	public static MerkleUniqueToken fromUniqueToken(UniqueToken uniqueToken) {
+	public static MerkleUniqueToken fromUniqueToken(final UniqueToken uniqueToken) {
 		return new MerkleUniqueToken(uniqueToken.getOwner().asEntityId(), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 	}
 
-	private static void initModelAccounts(Token token,
+	private static void initModelAccounts(
+			final Token token,
 			final EntityId _treasuryId,
 			@Nullable final EntityId _autoRenewId,
 			final AccountStore accountStore) {
@@ -170,7 +174,7 @@ public final class TokenConversion {
 		token.setTreasury(treasury);
 	}
 
-	private static void initModelFields(Token token, MerkleToken immutableToken) {
+	private static void initModelFields(final Token token, final MerkleToken immutableToken) {
 		token.setName(immutableToken.name());
 		token.setSymbol(immutableToken.symbol());
 		token.initTotalSupply(immutableToken.totalSupply());

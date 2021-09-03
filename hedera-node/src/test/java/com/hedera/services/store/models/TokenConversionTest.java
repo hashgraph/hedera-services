@@ -126,60 +126,61 @@ class TokenConversionTest {
 
 	@Test
 	void conversionFromMerkleWorks() {
-		var newToken = fromMerkle(merkleToken, tokenId, accountStore);
+		final var newToken = fromMerkle(merkleToken, tokenId, accountStore);
+		
 		assertEquals(token.toString(), newToken.toString());
 	}
 
 	@Test
 	void conversionFromTokenWorks() {
-		var newMerkleToken = fromToken(token);
+		final var newMerkleToken = fromToken(token);
 
 		assertEquals(merkleToken, newMerkleToken);
 	}
 
 	@Test
 	void conversionCycleFromMerkleWorks() {
-		var tokenSubject = fromMerkle(merkleToken, tokenId, accountStore);
-		var newMerkleToken = fromToken(tokenSubject);
+		final var tokenSubject = fromMerkle(merkleToken, tokenId, accountStore);
+		final var newMerkleToken = fromToken(tokenSubject);
 
 		assertEquals(merkleToken, newMerkleToken);
 	}
 
 	@Test
 	void conversionCycleFromTokenWorks() {
-		var newMerkleToken = fromToken(token);
+		final var newMerkleToken = fromToken(token);
 
-		var newToken = fromMerkle(newMerkleToken, tokenId, accountStore);
+		final var newToken = fromMerkle(newMerkleToken, tokenId, accountStore);
 
 		assertEquals(token.toString(), newToken.toString());
 	}
 
 	@Test
 	void conversionFromMerkleUniqueWorks() {
-		var newUniqueToken = fromMerkleUnique(merkleUniqueToken, tokenId, serialNum);
+		final var newUniqueToken = fromMerkleUnique(merkleUniqueToken, tokenId, serialNum);
 
 		assertEquals(uniqueToken.toString(), newUniqueToken.toString());
 	}
 
 	@Test
 	void conversionFromUniqueTokenWorks() {
-		var newMerkleUniqueToken = fromUniqueToken(uniqueToken);
+		final var newMerkleUniqueToken = fromUniqueToken(uniqueToken);
 
 		assertEquals(merkleUniqueToken.toString(), newMerkleUniqueToken.toString());
 	}
 
 	@Test
 	void conversionCycleFromMerkleUniqueWorks() {
-		var newUniqueToken = fromMerkleUnique(merkleUniqueToken, tokenId, serialNum);
-		var newMerkleUniqueToken = fromUniqueToken(newUniqueToken);
+		final var newUniqueToken = fromMerkleUnique(merkleUniqueToken, tokenId, serialNum);
+		final var newMerkleUniqueToken = fromUniqueToken(newUniqueToken);
 
 		assertEquals(merkleUniqueToken.toString(), newMerkleUniqueToken.toString());
 	}
 
 	@Test
 	void conversionCycleFromUniqueTokenWorks() {
-		var newMerkleUniqueToken = fromUniqueToken(uniqueToken);
-		var newUniqueToken = fromMerkleUnique(newMerkleUniqueToken, tokenId, serialNum);
+		final var newMerkleUniqueToken = fromUniqueToken(uniqueToken);
+		final var newUniqueToken = fromMerkleUnique(newMerkleUniqueToken, tokenId, serialNum);
 
 		assertEquals(uniqueToken.toString(), newUniqueToken.toString());
 	}
