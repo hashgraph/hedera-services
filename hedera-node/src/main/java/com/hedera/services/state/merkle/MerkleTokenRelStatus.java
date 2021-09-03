@@ -34,7 +34,8 @@ import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
 	static final int RELEASE_090_VERSION = 1;
-	static final int RELEASE_0180_VERSION = 2;
+	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
+	static final int RELEASE_0180_VERSION = 3;
 
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
@@ -66,7 +67,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 			long balance,
 			boolean frozen,
 			boolean kycGranted,
-                        boolean automaticAssociation,
+			boolean automaticAssociation,
 			long numbers
 	) {
 		this.balance = balance;
@@ -92,9 +93,11 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		balance = in.readLong();
 		frozen = in.readBoolean();
 		kycGranted = in.readBoolean();
+		if (version >= RELEASE_0180_PRE_SDK_VERSION) {
+			automaticAssociation = in.readBoolean();
+		}
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
-			automaticAssociation = in.readBoolean();
 		}
 	}
 
@@ -103,8 +106,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		out.writeLong(balance);
 		out.writeBoolean(frozen);
 		out.writeBoolean(kycGranted);
-		out.writeLong(numbers);
 		out.writeBoolean(automaticAssociation);
+		out.writeLong(numbers);
 	}
 
 	/* --- Object --- */
@@ -121,8 +124,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 		return this.balance == that.balance
 				&& this.frozen == that.frozen
 				&& this.kycGranted == that.kycGranted
-				&& this.numbers == that.numbers 
-                                && this.automaticAssociation == that.automaticAssociation;
+				&& this.numbers == that.numbers
+				&& this.automaticAssociation == that.automaticAssociation;
 	}
 
 	@Override

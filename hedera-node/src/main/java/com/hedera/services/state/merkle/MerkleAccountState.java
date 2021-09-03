@@ -48,8 +48,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	static final int RELEASE_090_VERSION = 4;
 	static final int RELEASE_0160_VERSION = 5;
-	static final int RELEASE_0180_VERSION = 6;
-	private static final int MERKLE_VERSION = RELEASE_0180_VERSION;
+	static final int RELEASE_0180_PRE_SDK_VERSION = 6;
+	static final int RELEASE_0180_VERSION = 7;
+	private static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -107,7 +108,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -125,9 +126,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
 			nftsOwned = in.readLong();
 		}
+		if (version >= RELEASE_0180_PRE_SDK_VERSION) {
+			autoAssociationMetadata = in.readInt();
+		}
 		if (version >= RELEASE_0180_VERSION) {
 			number = in.readInt();
-			autoAssociationMetadata = in.readInt();
 		}
 	}
 
@@ -143,8 +146,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
-		out.writeInt(number);
 		out.writeInt(autoAssociationMetadata);
+		out.writeInt(number);
 	}
 
 	/* --- Copyable --- */

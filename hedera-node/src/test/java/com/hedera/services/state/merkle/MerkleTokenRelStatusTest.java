@@ -119,7 +119,24 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	void deserializeWorksFor0180() throws IOException {
+	void deserializeWorksFor0180PreSdk() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		final var defaultSubject = new MerkleTokenRelStatus();
+		given(in.readLong()).willReturn(balance);
+		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
+
+		defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0180_PRE_SDK_VERSION);
+
+		// then:
+		assertNotEquals(subject, defaultSubject);
+		// and when:
+		defaultSubject.setKey(new PermHashLong(numbers));
+		// then:
+		assertEquals(subject, defaultSubject);
+	}
+
+	@Test
+	void deserializeWorksFor0180PostSdk() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance).willReturn(numbers);

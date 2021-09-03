@@ -204,7 +204,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void deserializeV0180Works() throws IOException {
+	void deserializeV0180WorksPreSdk() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
 		final var newSubject = new MerkleAccountState();
@@ -219,14 +219,42 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
-		given(in.readInt()).willReturn(number).willReturn(autoAssociationMetadata);
+		given(in.readInt()).willReturn(autoAssociationMetadata).willReturn(number);
+		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_0180_PRE_SDK_VERSION);
+
+		// then:
+		assertNotEquals(subject, newSubject);
+		// and when:
+		newSubject.setNumber(number);
+		// then:
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void deserializeV0180WorksPostSdk() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		subject.setNftsOwned(nftsOwned);
+		final var newSubject = new MerkleAccountState();
+		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		given(in.readLong())
+				.willReturn(expiry)
+				.willReturn(balance)
+				.willReturn(autoRenewSecs)
+				.willReturn(nftsOwned);
+		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readBoolean())
+				.willReturn(deleted)
+				.willReturn(smartContract)
+				.willReturn(receiverSigRequired);
+		given(in.readInt()).willReturn(autoAssociationMetadata).willReturn(number);
 		given(serdes.readNullableSerializable(in)).willReturn(proxy);
 
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_0180_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
-		verify(in, times(4)).readLong();
 	}
 
 	@Test

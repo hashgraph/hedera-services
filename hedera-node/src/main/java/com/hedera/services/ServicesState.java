@@ -86,6 +86,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
+	/* Only needed for 0.18.0 to support migration from a 0.17x state */
+	private Platform platformForDeferredInit;
+	private AddressBook addressBookForDeferredInit;
+
 	public ServicesState() {
 		/* RuntimeConstructable */
 	}
@@ -103,6 +107,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Copy the non-Merkle state from the source */
 		this.deserializedVersion = that.deserializedVersion;
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
+		this.platformForDeferredInit = that.platformForDeferredInit;
+		this.addressBookForDeferredInit = that.addressBookForDeferredInit;
 	}
 
 	/* --- MerkleInternal --- */
@@ -151,6 +157,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION) {
+			log.info("Beginning FCMap -> MerkleMap migrations");
 			FCMapToMerkleMap(
 					this,
 					StateChildIndices.UNIQUE_TOKENS,
@@ -178,15 +185,30 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					(MerkleAccount v) -> v);
 			FCMapToMerkleMap(
 					this,
+					StateChildIndices.TOKENS,
+					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleToken v) -> v);
+			FCMapToMerkleMap(
+					this,
 					StateChildIndices.SCHEDULE_TXS,
 					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
 					(MerkleSchedule v) -> v);
+			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
+
+			init(platformForDeferredInit, addressBookForDeferredInit);
 		}
 	}
 
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
+		if (deserializedVersion == StateVersions.RELEASE_0170_VERSION && platform != platformForDeferredInit) {
+			platformForDeferredInit = platform;
+			addressBookForDeferredInit = addressBook;
+			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
+			return;
+		}
+
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
