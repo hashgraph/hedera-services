@@ -600,14 +600,6 @@ commands:
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
-  ensure-env-vars:
-    description: Ensure the builtin CircleCI env vars are available
-    steps:
-      - run:
-          name: Ensure the builtin CircleCI env vars are available
-          command: |
-            /repo/.circleci/scripts/ensure-builtin-env-vars.sh
-
   send-report-to-slack:
     parameters:
       workflow-name:
