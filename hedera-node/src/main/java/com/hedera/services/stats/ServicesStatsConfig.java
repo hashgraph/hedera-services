@@ -29,8 +29,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 
-public class ServicesStatsConfig {
-	public static final Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
+public final class ServicesStatsConfig {
+	static final Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
 			NONE,
 			UNRECOGNIZED,
 			GetByKey
@@ -56,4 +56,8 @@ public class ServicesStatsConfig {
 
 	public static final String SYSTEM_DELETE_METRIC = "systemDelete";
 	public static final String SYSTEM_UNDELETE_METRIC = "systemUndelete";
+
+	private ServicesStatsConfig() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 }

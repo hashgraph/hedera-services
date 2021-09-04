@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -94,6 +95,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
 	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
 	private List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
+	private List<Pair<String, String>> newTokenAssociations = new ArrayList<>();
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
@@ -222,6 +224,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	public HapiGetTxnRecord loggedWith(BiConsumer<TransactionRecord, Logger> customFormat) {
 		super.logged();
 		format = Optional.of(customFormat);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasNewTokenAssociation(final String token, final String account) {
+		newTokenAssociations.add(Pair.of(token, account));
 		return this;
 	}
 
@@ -376,6 +383,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 							actualAssessedCustomFees
 					));
 		}
+		final var actualNewTokenAssociations = actualRecord.getAutomaticTokenAssociationsList();
+		if (!newTokenAssociations.isEmpty()) {
+			newTokenAssociations.forEach(pair ->
+					validateNewTokenAssociations(
+							asTokenId(pair.getLeft(), spec),
+							asId(pair.getRight(), spec), actualNewTokenAssociations));
+		}
+	}
+
+	private void validateNewTokenAssociations(
+			final TokenID token, final AccountID account, final List<TokenAssociation> newTokenAssociations) {
+		for (var newTokenAssociation : newTokenAssociations) {
+			if (newTokenAssociation.getTokenId().equals(token) && newTokenAssociation.getAccountId().equals(account)) {
+				return;
+			}
+		}
+		Assertions.fail(cannotFind(token, account) + " in the new_token_associations of the txnRecord");
 	}
 
 	private void validateAssessedCustomFees(final TokenID tokenID,
@@ -392,6 +416,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 
 		Assertions.fail(cannotFind(tokenID, accountID, amount) + " in the assessed_custom_fees of the txnRecord");
+	}
+
+	private String cannotFind(final TokenID tokenID, final AccountID accountID) {
+		return "Cannot find TokenID: " + tokenID
+				+ " AccountID: " + accountID;
 	}
 
 	private void validateTokenAmount(final TokenID tokenID,
@@ -412,9 +441,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	}
 
 	private String cannotFind(final TokenID tokenID, final AccountID accountID, final long amount) {
-		return "Cannot find TokenID: " + tokenID
-				+ " AccountID: " + accountID
-				+ " and amount: " + amount;
+		return cannotFind(tokenID, accountID) + " and amount: " + amount;
 	}
 
 	private void validateAssessedNftTransfer(final TokenID tokenID,

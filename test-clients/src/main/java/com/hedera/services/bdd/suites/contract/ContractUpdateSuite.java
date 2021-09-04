@@ -49,7 +49,12 @@ public class ContractUpdateSuite extends HapiApiSuite {
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
-		new ContractUpdateSuite().runSuiteSync();
+		new ContractUpdateSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

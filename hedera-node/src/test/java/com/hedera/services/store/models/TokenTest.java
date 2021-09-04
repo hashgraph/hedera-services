@@ -91,6 +91,7 @@ class TokenTest {
 
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
+		treasuryRel.setAutomaticAssociation(true);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
 	}
 
@@ -150,12 +151,21 @@ class TokenTest {
 	}
 
 	@Test
+	void constructsTreasuryRelationShipAsExpected() {
+		subject.setKycKey(someKey);
+		final var newRel = subject.newRelationshipWith(treasuryAccount, true);
+		newRel.initBalance(initialTreasuryBalance);
+
+		assertEquals(newRel, treasuryRel);
+	}
+
+	@Test
 	void constructsExpectedDefaultRelWithNoKeys() {
 		// setup:
 		nonTreasuryRel.setKycGranted(true);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -184,7 +194,7 @@ class TokenTest {
 		subject.setFrozenByDefault(true);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -200,7 +210,7 @@ class TokenTest {
 		subject.setFrozenByDefault(false);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -212,7 +222,7 @@ class TokenTest {
 		subject.setKycKey(someKey);
 
 		// when:
-		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
 		// then:
 		assertEquals(newRel, nonTreasuryRel);
@@ -546,9 +556,9 @@ class TokenTest {
 	@Test
 	void toStringWorks() {
 		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
-				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
-				"currentSerialNumber=0}";
+				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, autoRenewAccount=null, " +
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
 
 		assertEquals(desired, subject.toString());
 	}

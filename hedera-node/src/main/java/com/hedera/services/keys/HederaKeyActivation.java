@@ -41,14 +41,14 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
  * a set of platform signatures corresponding to its simple keys.
  * @see JKey
  */
-public class HederaKeyActivation {
+public final class HederaKeyActivation {
 	public static final TransactionSignature INVALID_MISSING_SIG = new InvalidSignature();
 
 	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
 			(ignoredKey, sig) -> VALID.equals(sig.getSignatureStatus());
 
-	HederaKeyActivation() {
-		throw new IllegalStateException("Utility Class");
+	private HederaKeyActivation() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

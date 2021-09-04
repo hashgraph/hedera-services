@@ -72,6 +72,7 @@ class GetAccountInfoResourceUsageTest {
 	TokenID bToken = asToken("0.0.1002");
 	TokenID cToken = asToken("0.0.1003");
 	String memo = "Hi there!";
+	int maxAutomaticAssociations = 123;
 	FeeData expected;
 	AccountID queryTarget = IdUtils.asAccount(a);
 
@@ -99,6 +100,7 @@ class GetAccountInfoResourceUsageTest {
 				.addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
 				.addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
 				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
+				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
 				.build();
 		// and:
 		var query = accountInfoQuery(a, ANSWER_ONLY);

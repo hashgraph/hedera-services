@@ -44,29 +44,29 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	public MerkleEntityId() {
 	}
 
-	public MerkleEntityId(long shard, long realm, long num) {
+	public MerkleEntityId(final long shard, final long realm, final long num) {
 		this.shard = shard;
 		this.realm = realm;
 		this.num = num;
 	}
 
-	public static MerkleEntityId fromAccountId(AccountID grpc) {
+	public static MerkleEntityId fromAccountId(final AccountID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
 	}
 
-	public static MerkleEntityId fromTokenId(TokenID grpc) {
+	public static MerkleEntityId fromTokenId(final TokenID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTokenNum());
 	}
 
-	public static MerkleEntityId fromTopicId(TopicID grpc) {
+	public static MerkleEntityId fromTopicId(final TopicID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTopicNum());
 	}
 
-	public static MerkleEntityId fromContractId(ContractID grpc) {
+	public static MerkleEntityId fromContractId(final ContractID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getContractNum());
 	}
 
-	public static MerkleEntityId fromScheduleId(ScheduleID grpc) {
+	public static MerkleEntityId fromScheduleId(final ScheduleID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getScheduleNum());
 	}
 
@@ -82,14 +82,14 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		shard = in.readLong();
 		realm = in.readLong();
 		num = in.readLong();
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		out.writeLong(shard);
 		out.writeLong(realm);
 		out.writeLong(num);
@@ -97,7 +97,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 
 	/* --- Object --- */
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -105,7 +105,7 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 			return false;
 		}
 
-		var that = (MerkleEntityId) o;
+		final var that = (MerkleEntityId) o;
 		return this.shard == that.shard && this.realm == that.realm && this.num == that.num;
 	}
 

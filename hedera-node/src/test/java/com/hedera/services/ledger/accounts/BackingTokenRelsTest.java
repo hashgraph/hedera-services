@@ -55,6 +55,7 @@ class BackingTokenRelsTest {
 	private long aBalance = 100, bBalance = 200, cBalance = 300;
 	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
 	private boolean aKyc = false, bKyc = true, cKyc = false;
+	private boolean automaticAssociation = false;
 	private AccountID a = asAccount("1.2.3");
 	private AccountID b = asAccount("3.2.1");
 	private AccountID c = asAccount("4.3.0");
@@ -65,9 +66,9 @@ class BackingTokenRelsTest {
 	private MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
 	private MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
 	private MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
-	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
-	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
-	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
+	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
+	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
+	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
 
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> rels;
 

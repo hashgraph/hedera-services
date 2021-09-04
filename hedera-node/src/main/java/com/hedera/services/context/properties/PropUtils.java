@@ -23,17 +23,20 @@ package com.hedera.services.context.properties;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
-public class PropUtils {
+public final class PropUtils {
+	private PropUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	public static void loadOverride(
-			String loc,
-			Properties intoProps,
-			ThrowingStreamProvider fileStreamProvider,
-			Logger log
+			final String loc,
+			final Properties intoProps,
+			final ThrowingStreamProvider fileStreamProvider,
+			final Logger log
 	) {
-		try (InputStream fin = fileStreamProvider.newInputStream(loc)) {
+		try (final var fin = fileStreamProvider.newInputStream(loc)) {
 			intoProps.load(fin);
 		} catch (IOException ignore) {
 			log.info("No overrides present at {}.", loc);

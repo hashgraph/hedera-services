@@ -61,6 +61,11 @@ public class ContractGetBytecodeSuite extends HapiApiSuite {
 		);
 	}
 
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
 	private List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
 			invalidContractFromCostAnswer(),

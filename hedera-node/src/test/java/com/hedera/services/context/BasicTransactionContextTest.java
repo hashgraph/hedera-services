@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
@@ -120,6 +121,8 @@ class BasicTransactionContextTest {
 			.setToken(tokenCreated)
 			.addAllTransfers(withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList())
 			.build();
+	private List<FcTokenAssociation> newTokenAssociations = List.of(new FcTokenAssociation(
+			tokenCreated.getTokenNum(), payer.getAccountNum()));
 	private final FileID fileCreated = asFile("2.0.1");
 	private final ContractID contractCreated = asContract("0.1.2");
 	private final TopicID topicCreated = asTopic("5.4.3");
@@ -252,6 +255,7 @@ class BasicTransactionContextTest {
 		subject.payerSigIsKnownActive();
 		subject.setHasComputedRecordSoFar(true);
 		subject.setAssessedCustomFees(Collections.emptyList());
+		subject.setNewTokenAssociations(Collections.emptyList());
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -273,6 +277,7 @@ class BasicTransactionContextTest {
 		assertTrue(subject.hasComputedRecordSoFar());
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
+		assertEquals(newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
 		// and:
 		verify(narratedCharging).resetForTxn(accessor, memberId);
 	}
@@ -661,7 +666,8 @@ class BasicTransactionContextTest {
 				.setFee(amount)
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
 						transfersList) : null)
-				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
+				.setNewTokenAssociations(newTokenAssociations);
 
 		List<EntityId> tokens = new ArrayList<>();
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
@@ -684,7 +690,7 @@ class BasicTransactionContextTest {
 				accessor,
 				now,
 				subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any()))
 				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}

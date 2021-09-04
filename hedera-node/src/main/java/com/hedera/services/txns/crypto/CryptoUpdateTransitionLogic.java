@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -49,11 +50,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -74,16 +77,19 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
 			HederaLedger ledger,
 			OptionValidator validator,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -136,6 +142,16 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
+		if (keyChanges.contains(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
+				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+			}
+			if (newMax > dynamicProperties.maxTokensPerAccount()) {
+				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+			}
+		}
+
 		return OK;
 	}
 
@@ -164,7 +180,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasMemo()) {
 			customizer.memo(op.getMemo().getValue());
 		}
-
+		if (op.hasMaxAutomaticTokenAssociations()) {
+			customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
+		}
 		return customizer;
 	}
 

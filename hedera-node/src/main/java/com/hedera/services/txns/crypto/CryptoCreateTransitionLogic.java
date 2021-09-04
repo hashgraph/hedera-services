@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -51,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -69,16 +71,19 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
 			HederaLedger ledger,
 			OptionValidator validator,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -112,7 +117,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.memo(op.getMemo())
 				.expiry(expiry)
 				.autoRenewPeriod(autoRenewPeriod)
-				.isReceiverSigRequired(op.getReceiverSigRequired());
+				.isReceiverSigRequired(op.getReceiverSigRequired())
+				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
 			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
 		}
@@ -163,6 +169,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getReceiveRecordThreshold() < 0L) {
 			return INVALID_RECEIVE_RECORD_THRESHOLD;
+		}
+		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
+			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
 
 		return OK;

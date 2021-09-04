@@ -2,7 +2,7 @@ package com.hedera.services.legacy.proto.utils;
 
 /*-
  * ‌
- * Hedera Services API
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -47,7 +47,10 @@ import java.util.Base64;
 /**
  * Common utilities.
  */
-public class CommonUtils {
+public final class CommonUtils {
+  private CommonUtils() {
+    throw new UnsupportedOperationException("Utility Class");
+  }
 
   /**
    * Sleep given seconds.

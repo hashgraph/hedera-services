@@ -70,6 +70,7 @@ public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator 
 				.setCurrentExpiry(details.getExpirationTime().getSeconds())
 				.setCurrentlyHasProxy(details.hasProxyAccountID())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+				.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
 				.build();
 		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
 	}

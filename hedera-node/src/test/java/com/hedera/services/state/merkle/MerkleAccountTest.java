@@ -34,11 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.MerkleAccount.ChildIndices.RELEASE_090_ASSOCIATED_TOKENS;
-import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -50,25 +46,29 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class MerkleAccountTest {
-	private JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
-	private long expiry = 1_234_567L;
-	private long balance = 555_555L;
-	private long autoRenewSecs = 234_567L;
-	private String memo = "A memo";
-	private boolean deleted = true;
-	private boolean smartContract = true;
-	private boolean receiverSigRequired = true;
-	private EntityId proxy = new EntityId(1L, 2L, 3L);
+	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
+	private static final long expiry = 1_234_567L;
+	private static final long balance = 555_555L;
+	private static final long autoRenewSecs = 234_567L;
+	private static final String memo = "A memo";
+	private static final boolean deleted = true;
+	private static final boolean smartContract = true;
+	private static final boolean receiverSigRequired = true;
+	private static final EntityId proxy = new EntityId(1L, 2L, 3L);
+	private int maxAutoAssociaitons = 1234;
+	private int alreadyUsedAutoAssociations = 123;
+	private int autoAssociationMetadata =
+			buildAutomaticAssociationMetaData(maxAutoAssociaitons, alreadyUsedAutoAssociations);
 
-	private JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
-	private long otherExpiry = 7_234_567L;
-	private long otherBalance = 666_666L;
-	private long otherAutoRenewSecs = 432_765L;
-	private String otherMemo = "Another memo";
-	private boolean otherDeleted = false;
-	private boolean otherSmartContract = false;
-	private boolean otherReceiverSigRequired = false;
-	private EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
+	private static final long otherExpiry = 7_234_567L;
+	private static final long otherBalance = 666_666L;
+	private static final long otherAutoRenewSecs = 432_765L;
+	private static final String otherMemo = "Another memo";
+	private static final boolean otherDeleted = false;
+	private static final boolean otherSmartContract = false;
+	private static final boolean otherReceiverSigRequired = false;
+	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -80,8 +80,7 @@ class MerkleAccountTest {
 
 	@BeforeEach
 	void setup() {
-		DomainSerdes serdes = mock(DomainSerdes.class);
-		MerkleAccount.serdes = serdes;
+		MerkleAccount.serdes = mock(DomainSerdes.class);
 
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
@@ -97,7 +96,7 @@ class MerkleAccountTest {
 				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy);
+				proxy, autoAssociationMetadata);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
@@ -109,26 +108,19 @@ class MerkleAccountTest {
 
 	@Test
 	void immutableAccountThrowsIse() {
-		// setup:
 		MerkleAccount.stackDump = () -> {
 		};
+		final var original = new MerkleAccount();
 
-		// given:
-		var original = new MerkleAccount();
-
-		// when:
 		original.copy();
 
-		// then:
 		assertThrows(IllegalStateException.class, () -> original.copy());
 
-		// cleanup:
 		MerkleAccount.stackDump = Thread::dumpStack;
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		// expect;
 		assertEquals(
 				MerkleAccount.ChildIndices.NUM_090_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
@@ -142,7 +134,6 @@ class MerkleAccountTest {
 		given(payerRecords.size()).willReturn(3);
 		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
 
-		// expect:
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
 						+ ", # records=" + 3
@@ -153,7 +144,6 @@ class MerkleAccountTest {
 
 	@Test
 	void gettersDelegate() {
-		// expect:
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
@@ -164,28 +154,25 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getKey()));
 		assertSame(tokens, subject.tokens());
+		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
+		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
 	}
 
 	@Test
 	void uncheckedSetterDelegates() {
-		// given:
 		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
-		// and:
 		assertThrows(IllegalArgumentException.class, () -> subject.setBalanceUnchecked(-1L));
 
-		// when:
 		subject.setBalanceUnchecked(otherBalance);
 
-		// then:
 		verify(delegate).setHbarBalance(otherBalance);
 	}
 
 	@Test
 	void settersDelegate() throws NegativeAccountBalanceException {
-		// given:
 		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
+		given(delegate.getMaxAutomaticAssociations()).willReturn(maxAutoAssociaitons);
 
-		// when:
 		subject.setExpiry(otherExpiry);
 		subject.setBalance(otherBalance);
 		subject.setAutoRenewSecs(otherAutoRenewSecs);
@@ -195,8 +182,9 @@ class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setKey(otherKey);
+		subject.setMaxAutomaticAssociations(maxAutoAssociaitons);
+		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 
-		// then:
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
 		verify(delegate).setDeleted(otherDeleted);
@@ -206,23 +194,23 @@ class MerkleAccountTest {
 		verify(delegate).setProxy(otherProxy);
 		verify(delegate).setKey(otherKey);
 		verify(delegate).setHbarBalance(otherBalance);
+		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociaitons);
+		verify(delegate).setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 	}
 
 	@Test
 	void objectContractMet() {
-		// given:
-		var one = new MerkleAccount();
-		var two = new MerkleAccount(List.of(state, payerRecords, tokens));
-		var three = two.copy();
+		final var one = new MerkleAccount();
+		final var two = new MerkleAccount(List.of(state, payerRecords, tokens));
+		final var three = two.copy();
 
-		// then:
 		verify(payerRecords).copy();
 		verify(tokens).copy();
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
 		assertEquals(two, three);
-		// and:
+
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
 	}
@@ -231,19 +219,21 @@ class MerkleAccountTest {
 	void copyConstructorFastCopiesMutableFcqs() {
 		given(payerRecords.isImmutable()).willReturn(false);
 
-		// when:
-		var copy = subject.copy();
+		final var copy = subject.copy();
 
-		// then:
 		verify(payerRecords).copy();
-		// and:
 		assertEquals(payerRecords, copy.records());
 	}
 
 	@Test
 	void throwsOnNegativeBalance() {
-		// expect:
 		assertThrows(NegativeAccountBalanceException.class, () -> subject.setBalance(-1L));
+	}
+
+	@Test
+	void throwsOnInvalidAlreadyUsedAtoAssociations() {
+		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(-1));
+		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociaitons+1));
 	}
 
 	@Test
@@ -260,10 +250,8 @@ class MerkleAccountTest {
 
 	@Test
 	void delegatesDelete() {
-		// when:
 		subject.release();
 
-		// then:
 		verify(payerRecords).decrementReferenceCount();
 	}
 }

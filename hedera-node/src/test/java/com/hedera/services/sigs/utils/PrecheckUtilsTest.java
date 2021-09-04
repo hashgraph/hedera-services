@@ -9,9 +9,9 @@ package com.hedera.services.sigs.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,44 +36,38 @@ import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class PrecheckUtilsTest {
-	final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
-	final AccountID node = SignedTxnFactory.DEFAULT_NODE;
-	final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
+	private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
+	private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
+	private static final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
 
 	@Test
 	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
-		// given:
-		TransactionBody txn = new PlatformTxnAccessor(from(
-			newSignedCryptoUpdate("0.0.2").get()
+		final var txn = new PlatformTxnAccessor(from(
+				newSignedCryptoUpdate("0.0.2").get()
 		)).getTxn();
 
-		// expect:
 		assertFalse(subject.test(txn));
 	}
 
 	@Test
 	void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
-		// given:
-		TransactionBody txn = new PlatformTxnAccessor(from(
+		final var txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
-					tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
+						tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
 				).get()
 		)).getTxn();
 
-		// expect:
 		assertFalse(subject.test(txn));
 	}
 
 	@Test
 	void queryPaymentTransfersToTargetNode() throws Throwable {
-		// given:
-		TransactionBody txn = new PlatformTxnAccessor(from(
+		final var txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo(nodeId, "0.0.2048", 1_000L)
 				).get()
 		)).getTxn();
 
-		// expect:
 		assertFalse(subject.test(txn));
 	}
 }

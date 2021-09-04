@@ -9,9 +9,9 @@ package com.hedera.services.context.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class StandardizedPropertySourcesTest {
+class StandardizedPropertySourcesTest {
 	@Mock
 	private PropertySource bootstrapProps;
 	@Mock
@@ -50,40 +50,31 @@ public class StandardizedPropertySourcesTest {
 
 	@Test
 	void usesDynamicGlobalAsPriority() {
-		// setup:
 		given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
 		given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
 
-		// when:
 		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
-		// expect:
 		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
 	}
 
 	@Test
 	void usesNodeAsSecondPriority() {
-		// setup:
 		given(nodeProps.containsProperty("testProp2")).willReturn(true);
 		given(nodeProps.getProperty("testProp2")).willReturn("goodEnoughForMe");
-		// and:
 		given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
 		given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
 
-		// when:
 		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
-		// expect:
 		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
 		assertEquals("goodEnoughForMe", subject.asResolvingSource().getStringProperty("testProp2"));
 	}
 
 	@Test
 	void propagatesReloadToDynamicGlobalProps() {
-		// when:
 		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
-		// expect:
 		verify(dynamicGlobalProps).screenNew(ServicesConfigurationList.getDefaultInstance());
 	}
 
@@ -91,13 +82,10 @@ public class StandardizedPropertySourcesTest {
 	void usesBootstrapSourceAsApropos() {
 		subject.getNodeProps().getFromFile().clear();
 
-		// when:
-		PropertySource properties = subject.asResolvingSource();
-		// and:
+		final var properties = subject.asResolvingSource();
 		BOOTSTRAP_PROP_NAMES.forEach(properties::getProperty);
 
-		// then:
-		for (String bootstrapProp : BOOTSTRAP_PROP_NAMES) {
+		for (final var bootstrapProp : BOOTSTRAP_PROP_NAMES) {
 			verify(bootstrapProps).getProperty(bootstrapProp);
 		}
 	}
