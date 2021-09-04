@@ -44,7 +44,7 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 	}
 
 	public TokenMintUsage givenExpectedLifetime(long secs) {
-		expectedNftLifetime = secs;
+		this.expectedNftLifetime = secs;
 		return this;
 	}
 
@@ -66,7 +66,7 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 				metadataBytes += o.size();
 			}
 			usageEstimator.addBpt(metadataBytes);
-			usageEstimator.addRbs(expectedNftLifetime * metadataBytes);
+			usageEstimator.addRbs(this.expectedNftLifetime * metadataBytes);
 			addTokenTransfersRecordRb(1, 0, op.getMetadataCount());
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
@@ -74,6 +74,6 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 		}
 
 		addEntityBpt();
-		return usageEstimator.get(currentSubType);
+		return usageEstimator.get(this.currentSubType);
 	}
 }
