@@ -169,6 +169,11 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	}
 
 	public byte[] getMetadata() {
+
+		byte metadata[]=byte[metadata.length];
+		
+		Arrays.copy(this.metadata,metadata);
+
 		return metadata;
 	}
 
