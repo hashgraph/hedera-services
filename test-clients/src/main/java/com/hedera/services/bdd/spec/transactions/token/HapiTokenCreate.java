@@ -31,8 +31,6 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.entities.TokenEntitySizes;
-import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -60,15 +58,13 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
-import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	static final Logger log = LogManager.getLogger(HapiTokenCreate.class);
@@ -240,9 +236,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		final var txnSubType = getTxnSubType(txn.getBody());
-
-
+		final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
 		return spec.fees().forActivityBasedOp(
 				HederaFunctionality.TokenCreate, txnSubType, this::usageEstimate, txn, numPayerKeys);
 	}
@@ -260,58 +254,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		final var op = txn.getTokenCreation();
-		final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-
-
-		TokenEntitySizes tokenEntitySizes = TokenEntitySizes.TOKEN_ENTITY_SIZES;
-		var baseSize = tokenEntitySizes.totalBytesInTokenReprGiven(op.getSymbol(), op.getName());
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasKycKey, TokenCreateTransactionBody::getKycKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasWipeKey, TokenCreateTransactionBody::getWipeKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasSupplyKey, TokenCreateTransactionBody::getSupplyKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasFreezeKey, TokenCreateTransactionBody::getFreezeKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasFeeScheduleKey, TokenCreateTransactionBody::getFeeScheduleKey);
-		baseSize += op.getMemoBytes().size();
-		if (op.hasAutoRenewAccount()) {
-			baseSize += BASIC_ENTITY_ID_SIZE;
-		}
-		var lifetime = op.hasAutoRenewAccount()
-				? op.getAutoRenewPeriod().getSeconds()
-				:  op.getExpiry().getSeconds();
-		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
-
-		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-		final var feeSchedulesSize = op.getCustomFeesCount() > 0
-				? tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()) : 0;
-
-		SubType chosenType;
-		final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
-		if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
-			chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
-		} else {
-			chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
-		}
-
 		UsageAccumulator accumulator = new UsageAccumulator();
-		final var tokenCreateMeta = new TokenCreateMeta.Builder()
-				.baseSize(baseSize)
-				.lifeTime(lifetime)
-				.customFeeScheleSize(feeSchedulesSize)
-				.fungibleNumTransfers(op.getInitialSupply() > 0 ? 1 : 0)
-				.nftsTranfers(0)
-				.numTokens(1)
-				.networkRecordRb(BASIC_ENTITY_ID_SIZE)
-				.subType(chosenType)
-				.build();
-
-		tokenOpsUsage.tokenCreateUsage(suFrom(svo), baseMeta, tokenCreateMeta, accumulator );
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		tokenOpsUsage.tokenCreateUsage(suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator );
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 

@@ -30,16 +30,13 @@ import com.hedera.services.usage.UsageProperties;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -53,22 +50,14 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -342,54 +331,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	private void setTokenCreateUsageMeta() {
-		final var op = getTxn().getTokenCreation();
-
-		TokenEntitySizes tokenEntitySizes = TokenEntitySizes.TOKEN_ENTITY_SIZES;
-		var baseSize = tokenEntitySizes.totalBytesInTokenReprGiven(op.getSymbol(), op.getName());
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasKycKey, TokenCreateTransactionBody::getKycKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasWipeKey, TokenCreateTransactionBody::getWipeKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasSupplyKey, TokenCreateTransactionBody::getSupplyKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasFreezeKey, TokenCreateTransactionBody::getFreezeKey);
-		baseSize += keySizeIfPresent(
-				op, TokenCreateTransactionBody::hasFeeScheduleKey, TokenCreateTransactionBody::getFeeScheduleKey);
-		baseSize += op.getMemoBytes().size();
-		if (op.hasAutoRenewAccount()) {
-			baseSize += BASIC_ENTITY_ID_SIZE;
-		}
-		var lifetime = op.hasAutoRenewAccount()
-				? op.getAutoRenewPeriod().getSeconds()
-				: ESTIMATOR_UTILS.relativeLifetime(getTxn(), op.getExpiry().getSeconds());
-		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
-
-		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-		final var feeSchedulesSize = op.getCustomFeesCount() > 0
-				? tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()) : 0;
-
-		SubType chosenType;
-		final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
-		if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
-			chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
-		} else {
-			chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
-		}
-
-		final var tokenCreateMeta = new TokenCreateMeta.Builder()
-				.baseSize(baseSize)
-				.lifeTime(lifetime)
-				.customFeeScheleSize(feeSchedulesSize)
-				.fungibleNumTransfers(op.getInitialSupply() > 0 ? 1 : 0)
-				.nftsTranfers(0)
-				.numTokens(1)
-				.networkRecordRb(BASIC_ENTITY_ID_SIZE)
-				.subType(chosenType)
-				.build();
-
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 		SPAN_MAP_ACCESSOR.setTokenCreate(this, tokenCreateMeta);
 	}
 }

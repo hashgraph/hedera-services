@@ -85,6 +85,8 @@ public class AccessorBasedUsages {
 			estimateFeeScheduleUpdate(sigUsage, accessor, baseMeta, into);
 		} else if (function == FileAppend) {
 			estimateFileAppend(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenCreate) {
+			estimateTokenCreate(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -117,5 +119,10 @@ public class AccessorBasedUsages {
 			UsageAccumulator into) {
 		final var submitMeta = accessor.availSubmitUsageMeta();
 		consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
+	}
+	private void estimateTokenCreate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var tokenCreateMeta = accessor.getSpanMapAccessor().getTokenCreateMeta(accessor);
+		tokenOpsUsage.tokenCreateUsage(sigUsage, baseMeta, tokenCreateMeta, into);
 	}
 }

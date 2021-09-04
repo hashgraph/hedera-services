@@ -132,8 +132,10 @@ public class TokenOpsUsage {
 				+ numRoyaltyHbarFallbackFees * plusCollectorSize(ROYALTY_HBAR_FALLBACK_REPR_SIZE);
 
 	}
-	public void tokenCreateUsage(SigUsage sigUsage, BaseTransactionMeta baseMeta, TokenCreateMeta tokenCreateMeta,
-			UsageAccumulator accumulator) {
+	public void tokenCreateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenCreateMeta tokenCreateMeta,
+			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(tokenCreateMeta.getBaseSize());
