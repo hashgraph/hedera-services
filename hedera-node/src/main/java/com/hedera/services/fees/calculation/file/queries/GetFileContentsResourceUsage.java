@@ -35,24 +35,24 @@ public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator
 	private final FileFeeBuilder usageEstimator;
 
 	@Inject
-	public GetFileContentsResourceUsage(FileFeeBuilder usageEstimator) {
+	public GetFileContentsResourceUsage(final FileFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasFileGetContents();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view) {
 		return usageGivenType(query, view, query.getFileGetContents().getHeader().getResponseType());
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		var op = query.getFileGetContents();
-		var info = view.infoForFile(op.getFileID());
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+		final var op = query.getFileGetContents();
+		final var info = view.infoForFile(op.getFileID());
 		/* Given the test in {@code GetFileContentsAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired file expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

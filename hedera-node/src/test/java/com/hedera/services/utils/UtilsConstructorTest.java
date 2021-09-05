@@ -27,6 +27,7 @@ import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
+import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
@@ -98,7 +99,8 @@ class UtilsConstructorTest {
 			HederaDateTimeFormatter.class,
 			TokenTypesMapper.class,
 			UnzipUtility.class,
-			MiscUtils.class
+			MiscUtils.class,
+			MetadataMapFactory.class
 	));
 
 	@Test

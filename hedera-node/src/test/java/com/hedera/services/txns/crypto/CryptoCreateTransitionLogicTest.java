@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -63,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_R
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,6 +85,7 @@ class CryptoCreateTransitionLogicTest {
 	final private Long balance = 1_234L;
 	final private String memo = "The particular is pounded til it is man";
 	final private int maxAutoAssociations = 1234;
+	final private int maxTokenAssociations = 12345;
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID created = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -95,6 +98,7 @@ class CryptoCreateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
@@ -105,9 +109,11 @@ class CryptoCreateTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenAssociations);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -200,6 +206,14 @@ class CryptoCreateTransitionLogicTest {
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
+	}
+
+	@Test
+	void rejectsInvalidMaxAutomaticAssociations() {
+		givenInvalidMaxAutoAssociations();;
+
+		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
+				subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -316,6 +330,24 @@ class CryptoCreateTransitionLogicTest {
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1L))
 								.setKey(key)
 								.setInitialBalance(-1L)
+								.build()
+				).build();
+	}
+
+	private void givenInvalidMaxAutoAssociations() {
+		cryptoCreateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoCreateAccount(
+						CryptoCreateTransactionBody.newBuilder()
+								.setMemo(memo)
+								.setInitialBalance(balance)
+								.setProxyAccountID(proxy)
+								.setReceiverSigRequired(true)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
+								.setReceiveRecordThreshold(customReceiveThreshold)
+								.setSendRecordThreshold(customSendThreshold)
+								.setKey(key)
+								.setMaxAutomaticTokenAssociations(maxTokenAssociations+1)
 								.build()
 				).build();
 	}

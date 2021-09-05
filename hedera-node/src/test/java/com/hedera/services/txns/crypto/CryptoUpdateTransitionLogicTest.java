@@ -24,6 +24,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt32Value;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -70,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -88,6 +90,7 @@ class CryptoUpdateTransitionLogicTest {
 	final private long newExpiry = consensusTime.getEpochSecond() + 7776000L;
 	final private int curMaxAutomaticAssociations = 10;
 	final private int newMaxAutomaticAssociations = 15;
+	final private int maxTokenAssociations = 12345;
 
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long autoRenewPeriod = 100_001L;
@@ -103,6 +106,7 @@ class CryptoUpdateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	private void setup() {
@@ -113,9 +117,11 @@ class CryptoUpdateTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenAssociations);
 		withRubberstampingValidator();
 
-		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx);
+		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -212,7 +218,7 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void updateMaxAutomaticAssociationsFailAsExpected() {
+	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxLessThanAlreadyExisting() {
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
 		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(newMaxAutomaticAssociations+1);
@@ -221,6 +227,19 @@ class CryptoUpdateTransitionLogicTest {
 
 		verify(ledger, never()).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+	}
+
+	@Test
+	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxMoreThanAllowedTokenAssociations() {
+		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(curMaxAutomaticAssociations);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(newMaxAutomaticAssociations-1);
+
+		subject.doStateTransition();
+
+		verify(ledger, never()).customize(argThat(target::equals), captor.capture());
+		verify(txnCtx).setStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 	}
 
 	@Test

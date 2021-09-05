@@ -28,6 +28,8 @@ import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.file.FileAppendMeta;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenCreateUsage;
@@ -47,7 +49,6 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -57,6 +58,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
@@ -111,6 +113,7 @@ class BaseOperationUsage {
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
 	private static final CryptoOpsUsage CRYPTO_OPS_USAGE = new CryptoOpsUsage();
+	private static final FileOpsUsage FILE_OPS_USAGE = new FileOpsUsage();
 
 	/**
 	 * Returns the total resource usage in the new {@link UsageAccumulator} process
@@ -124,6 +127,11 @@ class BaseOperationUsage {
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
 		switch (function) {
+			case FileAppend:
+				if (type == DEFAULT) {
+					return fileAppend();
+				}
+				break;
 			case CryptoTransfer:
 				switch (type) {
 					case DEFAULT:
@@ -169,15 +177,23 @@ class BaseOperationUsage {
 					return uniqueTokenBurn();
 				}
 				break;
-			case ConsensusSubmitMessage:
-				return submitMessage();
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
+			case ConsensusSubmitMessage:
+				return submitMessage();
 			default:
 				break;
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
+	}
+
+	UsageAccumulator fileAppend() {
+		/* The canonical usage and context */
+		final var opMeta = new FileAppendMeta(1_000, THREE_MONTHS_IN_SECONDS);
+		final var into = new UsageAccumulator();
+		FILE_OPS_USAGE.fileAppendUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenBurn() {
@@ -339,10 +355,6 @@ class BaseOperationUsage {
 						.setAmount(123L)
 						.setDenominatingTokenId(target))
 						.build());
-		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-				.setTokenId(target)
-				.addAllCustomFees(theNewSchedule)
-				.build();
 
 		/* The canonical usage and context */
 		final var newReprBytes = TOKEN_OPS_USAGE.bytesNeededToRepr(theNewSchedule);
