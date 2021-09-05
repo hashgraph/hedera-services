@@ -20,10 +20,12 @@ package com.hedera.services.usage.file;
  * ‍
  */
 
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -48,6 +50,8 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 @Singleton
 public class FileOpsUsage {
+	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
@@ -63,6 +67,19 @@ public class FileOpsUsage {
 
 	@Inject
 	public FileOpsUsage() {
+	}
+
+	public void fileAppendUsage(
+			SigUsage sigUsage,
+			FileAppendMeta appendMeta,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator accumulator
+	) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		final var bytesAdded = appendMeta.getBytesAdded();
+		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + bytesAdded);
+		accumulator.addSbs(bytesAdded * appendMeta.getLifetime());
 	}
 
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {
