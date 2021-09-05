@@ -883,7 +883,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (validity != OK) {
 			return validity;
 		}
-		token.setFeeScheduleFrom(customFees, EntityId.fromGrpcTokenId(tId));
+		token.setFeeScheduleFrom(customFees);
 
 		return OK;
 	}

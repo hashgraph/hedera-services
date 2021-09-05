@@ -1314,7 +1314,7 @@ class TokenCreateTransitionLogicTest {
 	private void mockProvisionalToken() {
 		given(newProvisionalToken.getId()).willReturn(Id.fromGrpcToken(created));
 		given(newProvisionalToken.getType()).willReturn(FUNGIBLE_COMMON);
-		staticTokenHandle.when(() -> Token.fromGrpcTokenCreate(any(), any(), any(), any(), any(), anyLong())).thenReturn(
+		staticTokenHandle.when(() -> Token.fromGrpcOpAndMeta(any(), any(), any(), any(), anyLong())).thenReturn(
 				newProvisionalToken);
 	}
 

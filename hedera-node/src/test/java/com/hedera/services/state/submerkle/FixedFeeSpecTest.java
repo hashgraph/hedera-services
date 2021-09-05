@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,140 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
+
+@ExtendWith(MockitoExtension.class)
 class FixedFeeSpecTest {
+	private final Id provisionalId = new Id(0, 0, 666);
+	private final EntityId selfDenom = new EntityId(0, 0, 0);
+	private final EntityId otherDenom = new EntityId(0, 0, 1234);
+
+	@Mock
+	private Token token;
+	@Mock
+	private Account feeCollector;
+	@Mock
+	private TypedTokenStore tokenStore;
+
+	@Test
+	void validationRequiresFungibleDenom() {
+		given(tokenStore.loadTokenOrFailWith(
+				new Id(0, 0, otherDenom.num()),
+				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
+
+		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
+
+		assertFailsWith(
+				() -> otherDenomSubject.validateWith(feeCollector, tokenStore),
+				CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+	}
+
+	@Test
+	void validationRequiresAssociatedFeeCollector() {
+		given(tokenStore.loadTokenOrFailWith(
+				new Id(0, 0, otherDenom.num()),
+				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
+		given(token.isFungibleCommon()).willReturn(true);
+
+		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
+
+		assertFailsWith(
+				() -> otherDenomSubject.validateWith(feeCollector, tokenStore),
+				TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+	}
+
+	@Test
+	void validationWorksWithWellBehaved() {
+		given(tokenStore.loadTokenOrFailWith(
+				new Id(0, 0, otherDenom.num()),
+				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
+		given(token.isFungibleCommon()).willReturn(true);
+		given(feeCollector.isAssociatedWith(otherDenom.asId())).willReturn(true);
+
+		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
+
+		assertDoesNotThrow(() -> otherDenomSubject.validateWith(feeCollector, tokenStore));
+	}
+
+	@Test
+	void finalizationRequiresFungibleDenomAtCreationWithOtherDenom() {
+		given(tokenStore.loadToken(new Id(0, 0, otherDenom.num()))).willReturn(token);
+
+		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
+
+		assertFailsWith(
+				() -> otherDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore),
+				CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+	}
+
+	@Test
+	void finalizationWorksWithFungibleDenomAtCreation() {
+		given(token.isFungibleCommon()).willReturn(true);
+		given(tokenStore.loadTokenOrFailWith(
+				new Id(0, 0, otherDenom.num()),
+				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
+
+		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
+
+		assertDoesNotThrow(() -> otherDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore));
+	}
+
+	@Test
+	void finalizationRequiresFungibleDenomAtCreationWithSelfDenom() {
+		final var selfDenomSubject = new FixedFeeSpec(123, selfDenom);
+
+		assertFailsWith(
+				() -> selfDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore),
+				CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+	}
+
+	@Test
+	void finalizationUpdatesDenomWithProvisionalIdIfFungible() {
+		given(token.isFungibleCommon()).willReturn(true);
+		given(token.getId()).willReturn(provisionalId);
+
+		final var selfDenomSubject = new FixedFeeSpec(123, selfDenom);
+
+		selfDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore);
+
+		verifyNoInteractions(tokenStore);
+		assertEquals(provisionalId.getNum(), selfDenomSubject.getTokenDenomination().num());
+	}
+
+	@Test
+	void semanticValidationIsNoopForHbarFee() {
+		final var subject = new FixedFeeSpec(123, null);
+
+		subject.validateWith(feeCollector, tokenStore);
+		subject.validateAndFinalizeWith(token, feeCollector, tokenStore);
+
+		verifyNoInteractions(token, tokenStore);
+	}
+
+	@Test
+	void constructorValidatesSyntax() {
+		assertFailsWith(() -> new FixedFeeSpec(-1, null), CUSTOM_FEE_MUST_BE_POSITIVE);
+	}
+
 	@Test
 	void factoryWorksForHbar() {
 		// setup:

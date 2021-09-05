@@ -21,10 +21,19 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Objects;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 public class FixedFeeSpec {
 	private final long unitsToCollect;
@@ -32,11 +41,37 @@ public class FixedFeeSpec {
 	private final EntityId tokenDenomination;
 
 	public FixedFeeSpec(long unitsToCollect, EntityId tokenDenomination) {
-		if (unitsToCollect <= 0) {
-			throw new IllegalArgumentException("Only positive values are allowed");
-		}
+		validateTrue(unitsToCollect > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
 		this.unitsToCollect = unitsToCollect;
 		this.tokenDenomination = tokenDenomination;
+	}
+
+	public void validateAndFinalizeWith(
+			final Token provisionalToken,
+			final Account feeCollector,
+			final TypedTokenStore tokenStore
+	) {
+		if (tokenDenomination != null) {
+			if (tokenDenomination.num() == 0L) {
+				validateTrue(provisionalToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+				tokenDenomination.setNum(provisionalToken.getId().getNum());
+			} else {
+				validateExplicitlyDenominatedWith(feeCollector, tokenStore);
+			}
+		}
+	}
+
+	public void validateWith(final Account feeCollector, final TypedTokenStore tokenStore) {
+		if (tokenDenomination != null) {
+			validateExplicitlyDenominatedWith(feeCollector, tokenStore);
+		}
+	}
+
+	private void validateExplicitlyDenominatedWith(final Account feeCollector, final TypedTokenStore tokenStore) {
+		final var denomId = tokenDenomination.asId();
+		final var denomToken = tokenStore.loadTokenOrFailWith(denomId, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+		validateTrue(denomToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+		validateTrue(feeCollector.isAssociatedWith(denomId), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
 	}
 
 	public static FixedFeeSpec fromGrpc(FixedFee fixedFee) {

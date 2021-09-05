@@ -1174,6 +1174,7 @@ workflows:
               branches:
                 ignore:
                   - NONE
+                  - ci-enabled-2069
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

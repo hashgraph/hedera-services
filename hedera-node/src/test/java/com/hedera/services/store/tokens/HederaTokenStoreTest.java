@@ -106,7 +106,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -1517,7 +1516,7 @@ class HederaTokenStoreTest {
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
 		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
-		expected.setFeeScheduleFrom(grpcCustomFees, EntityId.fromGrpcTokenId(created));
+		expected.setFeeScheduleFrom(grpcCustomFees);
 
 		return expected;
 	}
@@ -1622,7 +1621,7 @@ class HederaTokenStoreTest {
 
 		final var result = subject.updateFeeSchedule(op);
 
-		verify(token).setFeeScheduleFrom(List.of(customRoyaltyNoFallback), EntityId.fromGrpcTokenId(misc));
+		verify(token).setFeeScheduleFrom(List.of(customRoyaltyNoFallback));
 		assertEquals(OK, result);
 	}
 
@@ -1734,7 +1733,7 @@ class HederaTokenStoreTest {
 
 		final var result = subject.updateFeeSchedule(op);
 
-		verify(token).setFeeScheduleFrom(grpcCustomFees, EntityId.fromGrpcTokenId(misc));
+		verify(token).setFeeScheduleFrom(grpcCustomFees);
 		assertEquals(OK, result);
 	}
 
@@ -1747,7 +1746,7 @@ class HederaTokenStoreTest {
 
 		final var result = subject.updateFeeSchedule(op);
 
-		verify(token).setFeeScheduleFrom(List.of(customRoyaltyHtsFallback), EntityId.fromGrpcTokenId(misc));
+		verify(token).setFeeScheduleFrom(List.of(customRoyaltyHtsFallback));
 		assertEquals(OK, result);
 	}
 

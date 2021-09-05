@@ -461,7 +461,7 @@ public class TypedTokenStore {
 		mutableToken.setDeleted(token.isDeleted());
 
 		if (token.getCustomFees() != null) {
-			mutableToken.setFeeSchedule(token.getCustomFeesAsMerkle());
+			mutableToken.setFeeSchedule(token.getCustomFees());
 		}
 
 		mutableToken.setExpiry(token.getExpiry());

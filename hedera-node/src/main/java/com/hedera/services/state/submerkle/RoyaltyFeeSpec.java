@@ -21,9 +21,18 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Token;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Objects;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 
 public class RoyaltyFeeSpec {
 	private final long numerator;
@@ -31,14 +40,40 @@ public class RoyaltyFeeSpec {
 	private final FixedFeeSpec fallbackFee;
 
 	public RoyaltyFeeSpec(long numerator, long denominator, FixedFeeSpec fallbackFee) {
-		if (denominator <= 0 || numerator < 0 || numerator > denominator) {
-			throw new IllegalArgumentException(
-					"Cannot build royalty fee with args numerator='" + numerator
-							+ "', denominator='" + denominator + "'");
-		}
+		validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
+		validateTrue(bothPositive(numerator, denominator), CUSTOM_FEE_MUST_BE_POSITIVE);
+		validateTrue(numerator <= denominator, ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
 		this.numerator = numerator;
 		this.denominator = denominator;
 		this.fallbackFee = fallbackFee;
+	}
+
+	public void validateWith(final Token owningToken, final Account feeCollector, final TypedTokenStore tokenStore) {
+		validateInternal(owningToken, false, feeCollector, tokenStore);
+	}
+
+	public void validateAndFinalizeWith(
+			final Token provisionalToken,
+			final Account feeCollector,
+			final TypedTokenStore tokenStore
+	) {
+		validateInternal(provisionalToken, true, feeCollector, tokenStore);
+	}
+
+	private void validateInternal(
+			final Token token,
+			final boolean beingCreated,
+			final Account feeCollector,
+			final TypedTokenStore tokenStore
+	) {
+		validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+		if (fallbackFee != null) {
+			if (beingCreated) {
+				fallbackFee.validateAndFinalizeWith(token, feeCollector, tokenStore);
+			} else {
+				fallbackFee.validateWith(feeCollector, tokenStore);
+			}
+		}
 	}
 
 	@Override
@@ -80,5 +115,9 @@ public class RoyaltyFeeSpec {
 
 	public FixedFeeSpec getFallbackFee() {
 		return fallbackFee;
+	}
+
+	private boolean bothPositive(long a, long b) {
+		return a > 0 && b > 0;
 	}
 }
