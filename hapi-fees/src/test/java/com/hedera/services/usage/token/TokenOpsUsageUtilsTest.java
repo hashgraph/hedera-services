@@ -40,7 +40,7 @@ import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TokenOpsUsageUtilsTest {
+class TokenOpsUsageUtilsTest {
 	@Test
 	void tokenCreateUsageFromGrpcWorks() {
 		// setup:

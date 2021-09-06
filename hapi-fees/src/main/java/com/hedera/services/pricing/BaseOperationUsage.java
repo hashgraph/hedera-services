@@ -32,10 +32,8 @@ import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenBurnUsage;
-//import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.TokenOpsUsageUtils;
 import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
@@ -61,6 +59,7 @@ import java.util.List;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -116,7 +115,6 @@ class BaseOperationUsage {
 	private static final CryptoOpsUsage CRYPTO_OPS_USAGE = new CryptoOpsUsage();
 	private static final FileOpsUsage FILE_OPS_USAGE = new FileOpsUsage();
 
-	private static final TokenOpsUsageUtils TOKEN_OPS_USAGE_UTILS = TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 	/**
 	 * Returns the total resource usage in the new {@link UsageAccumulator} process
 	 * object for the base configuration of the given type of the given operation.

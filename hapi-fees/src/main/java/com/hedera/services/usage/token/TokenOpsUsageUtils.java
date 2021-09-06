@@ -44,7 +44,39 @@ public enum TokenOpsUsageUtils {
 	TOKEN_OPS_USAGE_UTILS;
 
 	public TokenCreateMeta tokenCreateUsageFrom(final TransactionBody txn) {
+		int baseSize = getTokenTxnBaseSize(txn);
 
+		TokenCreateTransactionBody op = txn.getTokenCreation();
+		var lifetime = op.hasAutoRenewAccount()
+				? op.getAutoRenewPeriod().getSeconds()
+				: ESTIMATOR_UTILS.relativeLifetime(txn, op.getExpiry().getSeconds());
+		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
+
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		final var feeSchedulesSize = op.getCustomFeesCount() > 0
+				? tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()) : 0;
+
+		SubType chosenType;
+		final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
+		if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
+			chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
+		} else {
+			chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
+		}
+
+		return new TokenCreateMeta.Builder()
+				.baseSize(baseSize)
+				.lifeTime(lifetime)
+				.customFeeScheleSize(feeSchedulesSize)
+				.fungibleNumTransfers(op.getInitialSupply() > 0 ? 1 : 0)
+				.nftsTranfers(0)
+				.numTokens(1)
+				.networkRecordRb(BASIC_ENTITY_ID_SIZE)
+				.subType(chosenType)
+				.build();
+	}
+
+	public int getTokenTxnBaseSize(final TransactionBody txn) {
 		TokenCreateTransactionBody op = txn.getTokenCreation();
 
 		TokenEntitySizes tokenEntitySizes = TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -65,34 +97,7 @@ public enum TokenOpsUsageUtils {
 		if (op.hasAutoRenewAccount()) {
 			baseSize += BASIC_ENTITY_ID_SIZE;
 		}
-		var lifetime = op.hasAutoRenewAccount()
-				? op.getAutoRenewPeriod().getSeconds()
-				: ESTIMATOR_UTILS.relativeLifetime(txn, op.getExpiry().getSeconds());
-		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
-
-		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-		final var feeSchedulesSize = op.getCustomFeesCount() > 0
-				? tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()) : 0;
-
-		SubType chosenType;
-		final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
-		if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
-			chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
-		} else {
-			chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
-		}
-
-		final var tokenCreateMeta = new TokenCreateMeta.Builder()
-				.baseSize(baseSize)
-				.lifeTime(lifetime)
-				.customFeeScheleSize(feeSchedulesSize)
-				.fungibleNumTransfers(op.getInitialSupply() > 0 ? 1 : 0)
-				.nftsTranfers(0)
-				.numTokens(1)
-				.networkRecordRb(BASIC_ENTITY_ID_SIZE)
-				.subType(chosenType)
-				.build();
-		return tokenCreateMeta;
+		return baseSize;
 	}
 
 	public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
