@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapBenchBase.Account> {
-    private static final ThreadGroup PREPPER_GROUP = new ThreadGroup("PrepperGroup");
+//    private static final ThreadGroup PREPPER_GROUP = new ThreadGroup("PrepperGroup");
 
     @Param({"10000"})
     public int targetOpsPerSecond;
@@ -75,7 +75,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     @Setup
     public void prepare() throws Exception {
         virtualMap = createMap(dsType, Id.SERIALIZED_SIZE, Id::new, Account.SERIALIZED_SIZE, Account::new, numEntities);
-        prepService = Executors.newFixedThreadPool(prepperThreadCount, Pipeline.threadFactory("Preppers", PREPPER_GROUP));
+//        prepService = Executors.newFixedThreadPool(prepperThreadCount, Pipeline.threadFactory("Preppers", PREPPER_GROUP));
 
         final var rand = new Random();
         txProcessor = new TransactionProcessor<VFCMapBenchBase.Id, VFCMapBenchBase.Account>(
@@ -140,7 +140,7 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         }
 
         printDataStoreSize();
-        prepNextRound();
+//        prepNextRound();
     }
 
     @TearDown
@@ -148,59 +148,63 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         printDataStoreSize();
     }
 
-    private void prepNextRound() {
-        final var cf = new CompletableFuture<List<Transaction>>();
-        txsFutureRef.set(cf);
-        final var txs = new ArrayList<Transaction>(targetOpsPerSecond);
-        final var futures = new ArrayList<Future<List<Transaction>>>(prepperThreadCount);
-        for (int i=0; i<prepperThreadCount; i++) {
-            final var numOps = targetOpsPerSecond / prepperThreadCount;
-            final var future = prepService.submit(() -> {
-                List<Transaction> threadTxs = new ArrayList<>(numOps);
-                for (int j=0; j<numOps; j++) {
-                    final var senderId = new Id(rand.nextInt((int)numEntities));
-                    final var receiverId = new Id(rand.nextInt((int)numEntities));
-
-                    threadTxs.add(new Transaction(senderId, receiverId));
-//                    final var sender = virtualMap.getForModify(senderId);
-//                    final var receiver = virtualMap.getForModify(receiverId);
-//                    threadAccounts.add(new Account[] {sender, receiver});
-                }
-                return threadTxs;
-            });
-            futures.add(future);
-        }
-
-        for (final var future : futures) {
-            try {
-                txs.addAll(future.get()); // block on each
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-
-        cf.complete(txs);
-    }
+    // Not needed anymore, inline transaction generation into handleTransaction since this is
+    // how it will behave in EventFlow.
+//    private void prepNextRound() {
+//        final var cf = new CompletableFuture<List<Transaction>>();
+//        txsFutureRef.set(cf);
+//
+//        // Pre-fetch is done as part of handleTransaction, don't need multi-threaded loading here.
+//        final var txs = new ArrayList<Transaction>(targetOpsPerSecond);
+//        for (int j=0; j<targetOpsPerSecond; j++) {
+//            final var senderId = new Id(rand.nextInt((int)numEntities));
+//            final var receiverId = new Id(rand.nextInt((int)numEntities));
+//
+//            txs.add(new Transaction(senderId, receiverId));
+//        }
+//        cf.complete(txs);
+//
+////        final var futures = new ArrayList<Future<List<Transaction>>>(prepperThreadCount);
+////        for (int i=0; i<prepperThreadCount; i++) {
+////            final var numOps = targetOpsPerSecond / prepperThreadCount;
+////            final var future = prepService.submit(() -> {
+////                List<Transaction> threadTxs = new ArrayList<>(numOps);
+////                for (int j=0; j<numOps; j++) {
+////                    final var senderId = new Id(rand.nextInt((int)numEntities));
+////                    final var receiverId = new Id(rand.nextInt((int)numEntities));
+////
+////                    threadTxs.add(new Transaction(senderId, receiverId));
+//////                    final var sender = virtualMap.getForModify(senderId);
+//////                    final var receiver = virtualMap.getForModify(receiverId);
+//////                    threadAccounts.add(new Account[] {sender, receiver});
+////                }
+////                return threadTxs;
+////            });
+////            futures.add(future);
+////        }
+////
+////        for (final var future : futures) {
+////            try {
+////                txs.addAll(future.get()); // block on each
+////            } catch (InterruptedException | ExecutionException e) {
+////                e.printStackTrace();
+////            }
+////        }
+////
+////        cf.complete(txs);
+//    }
 
     /**
      * Benchmarks update operations of an existing tree.
      */
     @Benchmark
     public void handleTransactions() throws Exception {
-        final var f = txsFutureRef.getAndSet(null);
-        final var txs = f.get();
-        prepNextRound();
-
         TransactionPublisher publisher = txProcessor.getPublisher();
-        for (final var tx : txs) {
-            publisher.publish(tx);
+        for (int j=0; j<targetOpsPerSecond; j++) {
+            final var senderId = new Id(rand.nextInt((int)numEntities));
+            final var receiverId = new Id(rand.nextInt((int)numEntities));
 
-            // Moved to disruptor TransactionHandler
-//            final var sender = arr[0];
-//            final var receiver = arr[1];
-//            final var tinyBars = rand.nextInt(10);
-//            sender.setHbarBalance(sender.getHbarBalance() - tinyBars);
-//            receiver.setHbarBalance(receiver.getHbarBalance() + tinyBars);
+            publisher.publish(new Transaction(senderId, receiverId));
         }
 
         // In EventFlow, copy() is called before noMoreTransactions() but since the disruptor

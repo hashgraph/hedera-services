@@ -6,8 +6,6 @@ import com.swirlds.virtualmap.VirtualValue;
 
 import java.util.function.Consumer;
 
-import static disruptor.Utils.fastModulo;
-
 /**
  * Disruptor event handler that mimics the pre-fetch phase of eventFlow. We ask the
  * DataSource backing the VirtualMap to load the entry corresponding to the keys
@@ -32,7 +30,7 @@ public class PreFetchHandler<K extends VirtualKey, V extends VirtualValue> imple
 
     public void onEvent(Transaction tx, long sequence, boolean endOfBatch) {
         // Only handle events assigned to this handler
-        if (fastModulo(sequence, numHandlers) != id) {
+        if (sequence % numHandlers != id) {
             return;
         }
 
