@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -50,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -65,7 +63,7 @@ import java.util.List;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+//import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static java.util.stream.Collectors.toList;
@@ -490,58 +488,6 @@ class SignedTxnAccessorTest {
 	}
 
 
-	private long baseSize() {
-		return baseSizeWith(false);
-	}
-
-	private long baseSizeWith(boolean customFeesKey) {
-		return TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
-				+ FeeBuilder.getAccountKeyStorageSize(kycKey)
-				+ FeeBuilder.getAccountKeyStorageSize(adminKey)
-				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)
-				+ FeeBuilder.getAccountKeyStorageSize(freezeKey)
-				+ FeeBuilder.getAccountKeyStorageSize(supplyKey)
-				+ memo.length()
-				+ (customFeesKey ? FeeBuilder.getAccountKeyStorageSize(customFeeKey) : 0);
-	}
-
-	private void givenExpiryBasedOp(TokenType type) {
-		givenExpiryBasedOp(expiry, type, false, false);
-	}
-
-	private void givenExpiryBasedOp(TokenType type, boolean withCustomFees) {
-		givenExpiryBasedOp(expiry, type, withCustomFees, false);
-	}
-
-	private void givenExpiryBasedOp(
-			long newExpiry,
-			TokenType type,
-			boolean withCustomFeesKey,
-			boolean withCustomFees
-	) {
-		var builder = TokenCreateTransactionBody.newBuilder()
-				.setTokenType(type)
-				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-				.setSymbol(symbol)
-				.setMemo(memo)
-				.setName(name)
-				.setKycKey(kycKey)
-				.setAdminKey(adminKey)
-				.setFreezeKey(freezeKey)
-				.setSupplyKey(supplyKey)
-				.setWipeKey(wipeKey);
-		if (withCustomFeesKey) {
-			builder.setFeeScheduleKey(customFeeKey);
-		}
-		if (withCustomFees) {
-			builder.addCustomFees(CustomFee.newBuilder()
-					.setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
-					.setFixedFee(FixedFee.newBuilder().setAmount(123)));
-		}
-		op = builder.build();
-		setTxn();
-	}
-
 	private TransactionBody givenAutoRenewBasedOp() {
 		TokenCreateTransactionBody op = TokenCreateTransactionBody.newBuilder()
 				.setAutoRenewAccount(autoRenewAccount)
@@ -565,38 +511,23 @@ class SignedTxnAccessorTest {
 		return txn;
 	}
 
-	private void setTxn() {
-		txn = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(now)))
-				.setTokenCreation(op)
-				.build();
-	}
-
 	private Key kycKey = KeyUtils.A_COMPLEX_KEY;
 	private Key adminKey = KeyUtils.A_THRESHOLD_KEY;
 	private Key freezeKey = KeyUtils.A_KEY_LIST;
 	private Key supplyKey = KeyUtils.B_COMPLEX_KEY;
 	private Key wipeKey = KeyUtils.C_COMPLEX_KEY;
-	private Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
-	private long expiry = 2_345_678L;
+//	private Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
+//	private long expiry = 2_345_678L;
 	private long autoRenewPeriod = 1_234_567L;
-//	private long now = expiry - autoRenewPeriod;
 	private String symbol = "ABCDEFGH";
 	private String name = "WhyWhyWHy";
-//	private String memo = "Cellar door";
 	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	private AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
 
-	private TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-	private TokenCreateTransactionBody op;
-	private TransactionBody txn;
-
-//	private EstimatorFactory factory;
-//	private TxnUsageEstimator base;
-//	private TokenCreateUsage subject;
+//	private TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+//	private TokenCreateTransactionBody op;
+//	private TransactionBody txn;
 
 	private final long now = 1_234_567L;
 	private final AccountID a = asAccount("1.2.3");
