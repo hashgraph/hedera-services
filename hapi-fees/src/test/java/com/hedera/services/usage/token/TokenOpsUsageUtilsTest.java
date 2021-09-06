@@ -20,8 +20,8 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -38,13 +38,19 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.test.IdUtils.asAccount;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenOpsUsageUtilsTest {
 	@Test
-	void tokenCreateUsageFromGrpcWorks() {
+	void tokenCreateWithAutoRenewAccountWorks() {
 		// setup:
-		TransactionBody txn = givenAutoRenewBasedOp();
+		TransactionBody txn = givenTokenCreateWith(
+				FUNGIBLE_COMMON, false, false, true);
 
 		// given:
 		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
@@ -52,20 +58,93 @@ class TokenOpsUsageUtilsTest {
 		// then:
 		assertEquals(1062, tokenCreateMeta.getBaseSize());
 		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
-		assertEquals(0, tokenCreateMeta.getCustomFeeScheduleSize());
 		assertEquals(TOKEN_FUNGIBLE_COMMON, tokenCreateMeta.getSubType());
+		assertEquals(1, tokenCreateMeta.getNumTokens());
+		assertEquals(0, tokenCreateMeta.getNftsTransfers());
+		assertEquals(0, tokenCreateMeta.getCustomFeeScheduleSize());
+	}
+	@Test
+	void tokenCreateWithCustomFeesAndKeyWork() {
+		// setup:
+		TransactionBody txn = givenTokenCreateWith(
+				FUNGIBLE_COMMON, true, true, false);
+
+		// given:
+		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+
+		// then:
+		assertEquals(1138, tokenCreateMeta.getBaseSize());
+		assertEquals(1_111_111L, tokenCreateMeta.getLifeTime());
+		assertEquals(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
+		assertEquals(1, tokenCreateMeta.getNumTokens());
+		assertEquals(0, tokenCreateMeta.getNftsTransfers());
+		assertEquals(32, tokenCreateMeta.getCustomFeeScheduleSize());
 
 	}
 
-	private TransactionBody givenExpiryBasedOp(
-			long newExpiry,
-			TokenType type,
-			boolean withCustomFeesKey,
-			boolean withCustomFees
+
+	@Test
+	void tokenCreateWithAutoRenewAcctNoCustomFeeKeyNoCustomFeesWorks() {
+		// setup:
+		TransactionBody txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
+				false, false, true);
+
+		// given:
+		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+
+		// then:
+		assertEquals(1062, tokenCreateMeta.getBaseSize());
+		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, tokenCreateMeta.getSubType());
+		assertEquals(1, tokenCreateMeta.getNumTokens());
+		assertEquals(0, tokenCreateMeta.getNftsTransfers());
+		assertEquals(0, tokenCreateMeta.getCustomFeeScheduleSize());
+	}
+
+	@Test
+	void tokenCreateWithOutAutoRenewAcctAndCustomFeeKeyNoCustomFeesWorks() {
+		// setup:
+		TransactionBody txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
+				true, false, true);
+
+		// given:
+		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+
+		// then:
+		assertEquals(1162, tokenCreateMeta.getBaseSize());
+		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
+		assertEquals(1, tokenCreateMeta.getNumTokens());
+		assertEquals(0, tokenCreateMeta.getNftsTransfers());
+		assertEquals(0, tokenCreateMeta.getCustomFeeScheduleSize());
+	}
+	@Test
+	void tokenCreateWithAutoRenewAcctAndCustomFeesAndKeyWorks() {
+		// setup:
+		TransactionBody txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
+				true, true, true);
+
+		// given:
+		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+
+		// then:
+		assertEquals(1162, tokenCreateMeta.getBaseSize());
+		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
+		assertEquals(1, tokenCreateMeta.getNumTokens());
+		assertEquals(0, tokenCreateMeta.getNftsTransfers());
+		assertEquals(32, tokenCreateMeta.getCustomFeeScheduleSize());
+	}
+
+	private TransactionBody givenTokenCreateWith(
+			final TokenType type,
+			final boolean withCustomFeesKey,
+			final boolean withCustomFees,
+			final boolean withAutoRenewAccount
 	) {
 		var builder = TokenCreateTransactionBody.newBuilder()
 				.setTokenType(type)
-				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setSymbol(symbol)
 				.setMemo(memo)
 				.setName(name)
@@ -79,38 +158,18 @@ class TokenOpsUsageUtilsTest {
 		}
 		if (withCustomFees) {
 			builder.addCustomFees(CustomFee.newBuilder()
-					.setFeeCollectorAccountId(asAccount("0.0.1234"))
+					.setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
 					.setFixedFee(FixedFee.newBuilder().setAmount(123)));
 		}
-		TokenCreateTransactionBody op = builder.build();
+		if(withAutoRenewAccount) {
+			builder.setAutoRenewAccount(autoRenewAccount)
+					.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
+		}
 		TransactionBody txn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setTokenCreation(op)
-				.build();
-		return txn;
-	}
-
-	private TransactionBody givenAutoRenewBasedOp() {
-		TokenCreateTransactionBody op = TokenCreateTransactionBody.newBuilder()
-				.setAutoRenewAccount(autoRenewAccount)
-				.setMemo(memo)
-				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-				.setSymbol(symbol)
-				.setName(name)
-				.setKycKey(kycKey)
-				.setAdminKey(adminKey)
-				.setFreezeKey(freezeKey)
-				.setSupplyKey(supplyKey)
-				.setWipeKey(wipeKey)
-				.setInitialSupply(1)
-				.build();
-		TransactionBody txn = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(now)))
-				.setTokenCreation(op)
+				.setTokenCreation(builder.build())
 				.build();
 		return txn;
 	}
@@ -128,7 +187,6 @@ class TokenOpsUsageUtilsTest {
 	private String name = "DummyToken";
 	private String memo = "A simple test token create";
 	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	private AccountID autoRenewAccount = asAccount("0.0.75231");
 
 	private final long now = 1_234_567L;

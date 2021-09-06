@@ -67,6 +67,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -105,6 +106,7 @@ class SignedTxnAccessorTest {
 		doCallRealMethod().when(subject).availXferUsageMeta();
 		doCallRealMethod().when(subject).availSubmitUsageMeta();
 		doCallRealMethod().when(subject).getSpanMap();
+		doCallRealMethod().when(subject).getSpanMapAccessor();
 
 		// expect:
 		assertThrows(UnsupportedOperationException.class, subject::getSigMeta);
@@ -114,6 +116,7 @@ class SignedTxnAccessorTest {
 		assertThrows(UnsupportedOperationException.class, subject::availSubmitUsageMeta);
 		assertThrows(UnsupportedOperationException.class, subject::getSpanMap);
 		assertThrows(UnsupportedOperationException.class, () -> subject.setSigMeta(null));
+		assertThrows(UnsupportedOperationException.class, subject::getSpanMapAccessor);
 	}
 
 	@Test
@@ -162,6 +165,8 @@ class SignedTxnAccessorTest {
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 		assertEquals(zeroByteMemo, accessor.getMemo());
+		assertEquals(false, accessor.isTriggeredTxn());
+		assertEquals(false, accessor.canTriggerTxn());
 		// and:
 		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
 	}
@@ -197,7 +202,7 @@ class SignedTxnAccessorTest {
 
 		txn = buildTokenTransferTxn(fungibleTokenXfers);
 		subject = new SignedTxnAccessor(txn);
-		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON , subject.availXferUsageMeta().getSubType());
+		assertEquals(TOKEN_FUNGIBLE_COMMON , subject.availXferUsageMeta().getSubType());
 		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
 		// set customFee
@@ -342,7 +347,6 @@ class SignedTxnAccessorTest {
 		givenAutoRenewBasedOp();
 		final var txn = signedTokenCreateTxn();
 		final var tokenOpsUsage = new TokenOpsUsage();
-		final var expectedReprBytes = tokenOpsUsage.bytesNeededToRepr(fees());
 		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
 		// given:
@@ -355,7 +359,8 @@ class SignedTxnAccessorTest {
 		assertEquals(0, expandedMeta.getNftsTransfers());
 		assertEquals(1, expandedMeta.getFungibleNumTransfers());
 		assertEquals(1, expandedMeta.getNumTokens());
-//		assertEquals(expectedReprBytes, expandedMeta.numBytesInNewFeeScheduleRepr());
+		assertEquals(1070, expandedMeta.getBaseSize());
+		assertEquals( TOKEN_FUNGIBLE_COMMON, accessor.getSubType());
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

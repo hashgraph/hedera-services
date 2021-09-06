@@ -38,6 +38,7 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -61,11 +63,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -76,7 +80,7 @@ class AccessorBasedUsagesTest {
 	private final SigUsage sigUsage = new SigUsage(1, 2, 3);
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
-	@Mock
+	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
 	private TxnAccessor txnAccessor;
 	@Mock
 	private OpUsageCtxHelper opUsageCtxHelper;
@@ -191,6 +195,37 @@ class AccessorBasedUsagesTest {
 		// then:
 		verify(tokenOpsUsage).feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, feeScheduleCtx, accum);
 	}
+
+
+	@Test
+	void worksAsExpectedForTokenCreate() {
+		// setup:
+		final var baseMeta = new BaseTransactionMeta(100, 2);
+		final var opMeta = new TokenCreateMeta.Builder()
+				.baseSize(1_234)
+				.customFeeScheleSize(0)
+				.lifeTime(1_234_567L)
+				.fungibleNumTransfers(0)
+				.nftsTranfers(0)
+				.nftsTranfers(1000)
+				.nftsTranfers(1)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+
+		given(txnAccessor.getFunction()).willReturn(TokenCreate);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getTokenCreateMeta(any())).willReturn(opMeta);
+
+		// expect:
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		// then:
+		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta,  accumulator);
+	}
+
+
 
 	@Test
 	void supportsIfInSet() {

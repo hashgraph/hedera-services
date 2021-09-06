@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -76,6 +77,24 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(FileAppend, DEFAULT);
 		Mockito.verify(mock).fileAppend();
+
+		mock.baseUsageFor(TokenCreate, TOKEN_FUNGIBLE_COMMON);
+		Mockito.verify(mock).fungibleTokenCreate();
+
+		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE);
+		Mockito.verify(mock).uniqueTokenCreate();
+
+		mock.baseUsageFor(TokenCreate, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+		Mockito.verify(mock).fungibleTokenCreateWithCustomFees();
+
+		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+		Mockito.verify(mock).uniqueTokenCreateWithCustomFees();
+
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));
+
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(FileAppend, UNRECOGNIZED));
 
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
