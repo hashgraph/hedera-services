@@ -40,10 +40,16 @@ public class FixedFeeSpec {
 	/* If null, fee is collected in ℏ */
 	private final EntityId tokenDenomination;
 
+	private boolean usedDenomWildcard = false;
+
 	public FixedFeeSpec(long unitsToCollect, EntityId tokenDenomination) {
 		validateTrue(unitsToCollect > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
 		this.unitsToCollect = unitsToCollect;
 		this.tokenDenomination = tokenDenomination;
+	}
+
+	public boolean usedDenomWildcard() {
+		return usedDenomWildcard;
 	}
 
 	public void validateAndFinalizeWith(
@@ -55,6 +61,7 @@ public class FixedFeeSpec {
 			if (tokenDenomination.num() == 0L) {
 				validateTrue(provisionalToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
 				tokenDenomination.setNum(provisionalToken.getId().getNum());
+				usedDenomWildcard = true;
 			} else {
 				validateExplicitlyDenominatedWith(feeCollector, tokenStore);
 			}

@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -137,6 +138,7 @@ class FixedFeeSpecTest {
 
 		verifyNoInteractions(tokenStore);
 		assertEquals(provisionalId.getNum(), selfDenomSubject.getTokenDenomination().num());
+		assertTrue(selfDenomSubject.usedDenomWildcard());
 	}
 
 	@Test

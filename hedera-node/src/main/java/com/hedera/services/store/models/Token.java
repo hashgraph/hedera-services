@@ -126,7 +126,7 @@ public class Token {
 			final Id tokenId,
 			final TokenCreateTransactionBody op,
 			final Account treasury,
-			@Nullable Account autoRenewAccount,
+			@Nullable final Account autoRenewAccount,
 			final long consensusTimestamp
 	) {
 		final var token = new Token(tokenId);

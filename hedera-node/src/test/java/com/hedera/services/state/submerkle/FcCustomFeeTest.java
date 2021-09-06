@@ -60,8 +60,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -104,6 +107,52 @@ class FcCustomFeeTest {
 	private RoyaltyFeeSpec royaltyFeeSpec;
 
 	@Test
+	void fractionalRequiresCollectorAssociation() {
+		final var subject = new FcCustomFee(
+				FcCustomFee.FeeType.FRACTIONAL_FEE,
+				feeCollector,
+				fixedFeeSpec,
+				fractionalFeeSpec,
+				royaltyFeeSpec);
+
+		assertTrue(subject.requiresCollectorAutoAssociation());
+	}
+
+	@Test
+	void fixedRequiresCollectorAssociationIfWildcardUsed() {
+		final var subject = new FcCustomFee(
+				FcCustomFee.FeeType.FIXED_FEE,
+				feeCollector,
+				fixedFeeSpec,
+				fractionalFeeSpec,
+				royaltyFeeSpec);
+
+		assertFalse(subject.requiresCollectorAutoAssociation());
+
+		given(fixedFeeSpec.usedDenomWildcard()).willReturn(true);
+
+		assertTrue(subject.requiresCollectorAutoAssociation());
+	}
+
+	@Test
+	void royaltyRequiresCollectorAssociationIfFallbackWildcardUsed() {
+		final var subject = new FcCustomFee(
+				FcCustomFee.FeeType.ROYALTY_FEE,
+				feeCollector,
+				fixedFeeSpec,
+				fractionalFeeSpec,
+				royaltyFeeSpec);
+
+		assertFalse(subject.requiresCollectorAutoAssociation());
+
+		given(royaltyFeeSpec.hasFallbackFee()).willReturn(true);
+		given(royaltyFeeSpec.getFallbackFee()).willReturn(fixedFeeSpec);
+		given(fixedFeeSpec.usedDenomWildcard()).willReturn(true);
+
+		assertTrue(subject.requiresCollectorAutoAssociation());
+	}
+
+	@Test
 	void requiresSomeFeeTypeInGrpc() {
 		assertFailsWith(
 				() -> FcCustomFee.fromGrpc(CustomFee.getDefaultInstance()),
@@ -143,6 +192,9 @@ class FcCustomFeeTest {
 		subject.validateWith(token, accountStore, tokenStore);
 
 		verify(royaltyFeeSpec).validateWith(token, collectionAccount, tokenStore);
+		assertSame(collectionAccount, subject.getValidatedCollector());
+		subject.nullOutCollector();
+		assertNull(subject.getValidatedCollector());
 	}
 
 	@Test

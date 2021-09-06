@@ -23,6 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -92,6 +93,8 @@ public class FcCustomFee implements SelfSerializable {
 		FRACTIONAL_FEE, FIXED_FEE, ROYALTY_FEE
 	}
 
+	private Account collector;
+
 	public FcCustomFee() {
 		/* For RuntimeConstructable */
 	}
@@ -108,6 +111,20 @@ public class FcCustomFee implements SelfSerializable {
 		this.fixedFeeSpec = fixedFeeSpec;
 		this.royaltyFeeSpec = royaltyFeeSpec;
 		this.fractionalFeeSpec = fractionalFeeSpec;
+	}
+
+	public boolean requiresCollectorAutoAssociation() {
+		switch (feeType) {
+			case FRACTIONAL_FEE:
+				return true;
+			case FIXED_FEE:
+				return fixedFeeSpec.usedDenomWildcard();
+			case ROYALTY_FEE:
+				if (royaltyFeeSpec.hasFallbackFee()) {
+					return royaltyFeeSpec.getFallbackFee().usedDenomWildcard();
+				}
+		}
+		return false;
 	}
 
 	public void validateAndFinalizeWith(
@@ -132,7 +149,7 @@ public class FcCustomFee implements SelfSerializable {
 			final AccountStore accountStore,
 			final TypedTokenStore tokenStore
 	) {
-		final var collector = accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR);
+		collector = accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR);
 
 		switch (feeType) {
 			case FIXED_FEE:
@@ -276,6 +293,14 @@ public class FcCustomFee implements SelfSerializable {
 
 	public FixedFeeSpec getFixedFeeSpec() {
 		return fixedFeeSpec;
+	}
+
+	public void nullOutCollector() {
+		collector = null;
+	}
+
+	public Account getValidatedCollector() {
+		return collector;
 	}
 
 	public FractionalFeeSpec getFractionalFeeSpec() {

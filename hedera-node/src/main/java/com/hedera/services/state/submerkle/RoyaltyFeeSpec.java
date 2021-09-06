@@ -117,6 +117,10 @@ public class RoyaltyFeeSpec {
 		return fallbackFee;
 	}
 
+	public boolean hasFallbackFee() {
+		return fallbackFee != null;
+	}
+
 	private boolean bothPositive(long a, long b) {
 		return a > 0 && b > 0;
 	}
