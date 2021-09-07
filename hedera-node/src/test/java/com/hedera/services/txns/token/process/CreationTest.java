@@ -22,6 +22,7 @@ package com.hedera.services.txns.token.process;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -75,6 +76,8 @@ class CreationTest {
 	@Mock
 	private Account autoRenew;
 	@Mock
+	private FcCustomFee customFee;
+	@Mock
 	private TokenRelationship newRel;
 	@Mock
 	private FcTokenAssociation autoAssociation;
@@ -107,12 +110,15 @@ class CreationTest {
 	@Test
 	void persistWorks() {
 		givenSubjectWithEverything();
+		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 		given(newRel.getAccount()).willReturn(treasury);
 		subject.setNewRels(List.of(newRel));
 		subject.setProvisionalToken(provisionalToken);
 
 		subject.persistWith(accountStore, tokenStore);
 
+		verify(customFee).validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
+		verify(customFee).nullOutCollector();
 		verify(tokenStore).persistNew(provisionalToken);
 		verify(tokenStore).persistTokenRelationships(List.of(newRel));
 		verify(accountStore).persistAccount(treasury);

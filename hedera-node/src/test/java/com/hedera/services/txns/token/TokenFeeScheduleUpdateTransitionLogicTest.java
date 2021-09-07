@@ -104,6 +104,8 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
 		verify(firstMockFee).validateWith(token, accountStore, tokenStore);
 		verify(secondMockFee).validateWith(token, accountStore, tokenStore);
+		verify(firstMockFee).nullOutCollector();
+		verify(secondMockFee).nullOutCollector();
 		verify(token).setCustomFees(List.of(firstMockFee, secondMockFee));
 		verify(tokenStore).persistToken(token);
 	}

@@ -43,7 +43,6 @@ public class NewRels {
 				final var collector = customFee.getValidatedCollector();
 				associateGiven(maxTokensPerAccount, provisionalToken, collector, associatedSoFar, newRels);
 			}
-			customFee.nullOutCollector();
 		}
 
 		return newRels;

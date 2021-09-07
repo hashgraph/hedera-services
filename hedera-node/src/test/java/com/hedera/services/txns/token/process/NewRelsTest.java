@@ -83,8 +83,5 @@ class NewRelsTest {
 		verify(treasury).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
 		verify(collector).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
 		verify(provisionalToken, times(1)).newEnabledRelationship(collector);
-		verify(feeCollectorAssociationRequired).nullOutCollector();
-		verify(feeNoCollectorAssociationRequired).nullOutCollector();
-		verify(feeSameCollectorAssociationRequired).nullOutCollector();
 	}
 }

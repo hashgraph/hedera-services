@@ -37,7 +37,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -90,6 +92,7 @@ class RoyaltyFeeSpecTest {
 
 		final var subject = new RoyaltyFeeSpec(1, 10, null);
 
+		assertFalse(subject.hasFallbackFee());
 		assertDoesNotThrow(() -> subject.validateWith(token, feeCollector, tokenStore));
 	}
 
@@ -117,6 +120,17 @@ class RoyaltyFeeSpecTest {
 		assertEquals(1, a.getNumerator());
 		assertEquals(10, a.getDenominator());
 		assertSame(fallback, a.getFallbackFee());
+		assertTrue(a.hasFallbackFee());
+	}
+
+	@Test
+	void toStringWorks() {
+		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
+		final var a = new RoyaltyFeeSpec(1, 10, fallback);
+		final var desired = "RoyaltyFeeSpec{numerator=1, denominator=10, " +
+				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}}";
+
+		assertEquals(desired, a.toString());
 	}
 
 	@Test

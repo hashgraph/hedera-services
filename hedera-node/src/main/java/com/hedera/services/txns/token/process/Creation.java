@@ -111,6 +111,10 @@ public class Creation {
 	}
 
 	public void persistWith(AccountStore accountStore, TypedTokenStore tokenStore) {
+		provisionalToken.getCustomFees().forEach(fee -> {
+			fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
+			fee.nullOutCollector();
+		});
 		tokenStore.persistNew(provisionalToken);
 		tokenStore.persistTokenRelationships(newRels);
 		newRels.forEach(rel -> accountStore.persistAccount(rel.getAccount()));
