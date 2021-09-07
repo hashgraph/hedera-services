@@ -12,9 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -46,14 +44,13 @@ class ExecutionTimeTrackerTest {
 		assertNull(subject.getExecNanosCache());
 		assertDoesNotThrow(subject::stop);
 		assertDoesNotThrow(subject::start);
-		assertFalse(subject.hasExecNanosFor(aTxnId));
-		assertThrows(IllegalStateException.class, () -> subject.getExecNanosFor(aTxnId));
+		assertNull(subject.getExecNanosIfPresentFor(aTxnId));
 	}
 
 	@Test
 	void tracksAtMostConfigured() {
-		final var busyNanos = 1_000_000;
-		final var epsilonNanos = 1_000;
+		final var busyNanos = 5_000_000;
+		final var epsilonNanos = 50_000;
 
 		given(nodeLocalProperties.numExecutionTimesToTrack()).willReturn(1);
 		withImpliedSubject();
@@ -65,18 +62,17 @@ class ExecutionTimeTrackerTest {
 		stayBusyFor(busyNanos);
 		subject.stop();
 
-		assertTrue(subject.hasExecNanosFor(aTxnId));
-		assertTrue(Math.abs(subject.getExecNanosFor(aTxnId) - busyNanos) < epsilonNanos);
+		final var aNanos = subject.getExecNanosIfPresentFor(aTxnId);
+		assertTrue(Math.abs(aNanos - busyNanos) < epsilonNanos);
 
 		given(accessor.getTxnId()).willReturn(bTxnId);
 		subject.start();
 		stayBusyFor(busyNanos);
 		subject.stop();
 
-		assertFalse(subject.hasExecNanosFor(aTxnId));
-		assertThrows(IllegalArgumentException.class, () -> subject.getExecNanosFor(aTxnId));
-		assertTrue(subject.hasExecNanosFor(bTxnId));
-		assertTrue(Math.abs(subject.getExecNanosFor(bTxnId) - busyNanos) < epsilonNanos);
+		assertNull(subject.getExecNanosIfPresentFor(aTxnId));
+		final var bNanos = subject.getExecNanosIfPresentFor(bTxnId);
+		assertTrue(Math.abs(bNanos - busyNanos) < epsilonNanos);
 	}
 
 	private void stayBusyFor(long nanos) {

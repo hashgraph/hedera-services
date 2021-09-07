@@ -63,6 +63,10 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	}
 
 	@Override
+	public void getExecutionTime(final Query request, final StreamObserver<Response> observer) {
+	}
+
+	@Override
 	public void uncheckedSubmit(final Transaction signedTxn, final StreamObserver<TransactionResponse> observer) {
 		txnResponseHelper.submit(signedTxn, observer, UncheckedSubmit);
 	}

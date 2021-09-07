@@ -44,21 +44,13 @@ public class ExecutionTimeTracker {
 		if (shouldNoop) {
 			return;
 		}
-		throw new AssertionError("Not implemented");
+		final var execTime = System.nanoTime() - startTime;
+		final var txnId = txnCtx.accessor().getTxnId();
+		execNanosCache.put(txnId, execTime);
 	}
 
-	public boolean hasExecNanosFor(TransactionID txnId) {
-		if (shouldNoop) {
-			return false;
-		}
-		throw new AssertionError("Not implemented");
-	}
-
-	public long getExecNanosFor(TransactionID txnId) {
-		if (shouldNoop) {
-			throw new IllegalStateException();
-		}
-		throw new AssertionError("Not implemented");
+	public Long getExecNanosIfPresentFor(TransactionID txnId) {
+		return shouldNoop ? null : execNanosCache.getIfPresent(txnId);
 	}
 
 	/* --- Only used by unit tests --- */

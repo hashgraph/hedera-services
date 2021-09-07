@@ -69,6 +69,16 @@ class NetworkControllerTest {
 	}
 
 	@Test
+	void forwardsGetExecTimeAsExpected() {
+		// when:
+		subject.getExecutionTime(query, queryObserver);
+
+		// expect:
+		verify(answers).getVersionInfo();
+		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.GetVersionInfo);
+	}
+
+	@Test
 	void forwardsUncheckedSubmitAsExpected() {
 		// when:
 		subject.uncheckedSubmit(txn, txnObserver);
