@@ -9,9 +9,9 @@ package com.hedera.services.pricing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,56 +39,57 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.UNRECOGNIZED;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 
 class BaseOperationUsageTest {
 	@Test
 	void picksAppropriateOperation() {
-		BaseOperationUsage mock = Mockito.spy(new BaseOperationUsage());
+		final var mock = Mockito.spy(new BaseOperationUsage());
 
 		mock.baseUsageFor(CryptoTransfer, DEFAULT);
-		Mockito.verify(mock).hbarCryptoTransfer();
+		verify(mock).hbarCryptoTransfer();
 
 		mock.baseUsageFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON);
-		Mockito.verify(mock).htsCryptoTransfer();
+		verify(mock).htsCryptoTransfer();
 
 		mock.baseUsageFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-		Mockito.verify(mock).htsCryptoTransferWithCustomFee();
+		verify(mock).htsCryptoTransferWithCustomFee();
 
 		mock.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE);
-		Mockito.verify(mock).nftCryptoTransfer();
+		verify(mock).nftCryptoTransfer();
 
 		mock.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
-		Mockito.verify(mock).nftCryptoTransferWithCustomFee();
+		verify(mock).nftCryptoTransferWithCustomFee();
 
 		mock.baseUsageFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
-		Mockito.verify(mock).uniqueTokenWipe();
+		verify(mock).uniqueTokenWipe();
 
 		mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
-		Mockito.verify(mock).uniqueTokenBurn();
+		verify(mock).uniqueTokenBurn();
 
 		mock.baseUsageFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
-		Mockito.verify(mock).uniqueTokenMint();
+		verify(mock).uniqueTokenMint();
 
 		mock.baseUsageFor(ConsensusSubmitMessage, DEFAULT);
-		Mockito.verify(mock).submitMessage();
+		verify(mock).submitMessage();
 
 		mock.baseUsageFor(TokenFeeScheduleUpdate, DEFAULT);
-		Mockito.verify(mock).feeScheduleUpdate();
+		verify(mock).feeScheduleUpdate();
 
 		mock.baseUsageFor(FileAppend, DEFAULT);
-		Mockito.verify(mock).fileAppend();
+		verify(mock).fileAppend();
 
 		mock.baseUsageFor(TokenCreate, TOKEN_FUNGIBLE_COMMON);
-		Mockito.verify(mock).fungibleTokenCreate();
+		verify(mock).fungibleTokenCreate();
 
 		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE);
-		Mockito.verify(mock).uniqueTokenCreate();
+		verify(mock).uniqueTokenCreate();
 
 		mock.baseUsageFor(TokenCreate, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-		Mockito.verify(mock).fungibleTokenCreateWithCustomFees();
+		verify(mock).fungibleTokenCreateWithCustomFees();
 
 		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
-		Mockito.verify(mock).uniqueTokenCreateWithCustomFees();
+		verify(mock).uniqueTokenCreateWithCustomFees();
 
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));

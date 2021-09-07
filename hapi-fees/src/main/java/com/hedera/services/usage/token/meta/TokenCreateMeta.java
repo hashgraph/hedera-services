@@ -36,7 +36,6 @@ public class TokenCreateMeta {
 	private final SubType subType;
 
 	private TokenCreateMeta(final Builder builder) {
-
 		this.lifeTime = builder.lifeTime;
 		this.subType = builder.subType;
 		this.baseSize = builder.baseSize;
@@ -63,7 +62,6 @@ public class TokenCreateMeta {
 	public SubType getSubType() {
 		return subType;
 	}
-
 
 	public static class Builder {
 		private int baseSize;

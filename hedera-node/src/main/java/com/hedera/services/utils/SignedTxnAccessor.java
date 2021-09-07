@@ -26,7 +26,6 @@ import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.UsageProperties;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -50,14 +49,13 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -89,8 +87,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
-
-	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {

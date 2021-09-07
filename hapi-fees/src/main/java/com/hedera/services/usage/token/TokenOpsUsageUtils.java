@@ -44,15 +44,15 @@ public enum TokenOpsUsageUtils {
 	TOKEN_OPS_USAGE_UTILS;
 
 	public TokenCreateMeta tokenCreateUsageFrom(final TransactionBody txn) {
-		int baseSize = getTokenTxnBaseSize(txn);
+		final var baseSize = getTokenTxnBaseSize(txn);
 
-		TokenCreateTransactionBody op = txn.getTokenCreation();
+		final var op = txn.getTokenCreation();
 		var lifetime = op.hasAutoRenewAccount()
 				? op.getAutoRenewPeriod().getSeconds()
 				: ESTIMATOR_UTILS.relativeLifetime(txn, op.getExpiry().getSeconds());
 		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
 
-		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		final var tokenOpsUsage = new TokenOpsUsage();
 		final var feeSchedulesSize = op.getCustomFeesCount() > 0
 				? tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()) : 0;
 
@@ -77,9 +77,9 @@ public enum TokenOpsUsageUtils {
 	}
 
 	public int getTokenTxnBaseSize(final TransactionBody txn) {
-		TokenCreateTransactionBody op = txn.getTokenCreation();
+		final var op = txn.getTokenCreation();
 
-		TokenEntitySizes tokenEntitySizes = TokenEntitySizes.TOKEN_ENTITY_SIZES;
+		final var tokenEntitySizes = TokenEntitySizes.TOKEN_ENTITY_SIZES;
 		var baseSize = tokenEntitySizes.totalBytesInTokenReprGiven(op.getSymbol(), op.getName());
 		baseSize += keySizeIfPresent(
 				op, TokenCreateTransactionBody::hasKycKey, TokenCreateTransactionBody::getKycKey);
@@ -100,7 +100,7 @@ public enum TokenOpsUsageUtils {
 		return baseSize;
 	}
 
-	public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
+	public static <T> long keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
 		return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
 	}
 }

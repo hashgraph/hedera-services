@@ -25,11 +25,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -55,15 +52,12 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-//import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static java.util.stream.Collectors.toList;
@@ -77,12 +71,12 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 class SignedTxnAccessorTest {
-	private final String memo = "Eternal sunshine of the spotless mind";
-	private final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
-	private final byte[] memoUtf8Bytes = memo.getBytes();
-	private final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
+	private static final String memo = "Eternal sunshine of the spotless mind";
+	private static final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
+	private static final byte[] memoUtf8Bytes = memo.getBytes();
+	private static final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
 
-	private final SignatureMap expectedMap = SignatureMap.newBuilder()
+	private static final SignatureMap expectedMap = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
 					.setPubKeyPrefix(ByteString.copyFromUtf8("f"))
 					.setEd25519(ByteString.copyFromUtf8("irst")))
@@ -93,10 +87,8 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void unsupportedOpsThrowByDefault() {
-		// setup:
 		final var subject = mock(TxnAccessor.class);
 
-		// given:
 		doCallRealMethod().when(subject).setSigMeta(any());
 		doCallRealMethod().when(subject).getSigMeta();
 		doCallRealMethod().when(subject).getPkToSigsFn();
@@ -106,7 +98,6 @@ class SignedTxnAccessorTest {
 		doCallRealMethod().when(subject).getSpanMap();
 		doCallRealMethod().when(subject).getSpanMapAccessor();
 
-		// expect:
 		assertThrows(UnsupportedOperationException.class, subject::getSigMeta);
 		assertThrows(UnsupportedOperationException.class, subject::getPkToSigsFn);
 		assertThrows(UnsupportedOperationException.class, subject::baseUsageMeta);
@@ -121,14 +112,13 @@ class SignedTxnAccessorTest {
 	void uncheckedPropagatesIaeOnNonsense() {
 		final var nonsenseTxn = buildTransactionFrom(ByteString.copyFromUtf8("NONSENSE"));
 
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
+		assertThrows(IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
 	}
 
 	@Test
 	void parsesLegacyCorrectly() throws Exception {
-		// setup:
 		final long offeredFee = 100_000_000L;
-		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
+		var transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
 				offeredFee,
 				Timestamp.getDefaultInstance(),
@@ -140,11 +130,9 @@ class SignedTxnAccessorTest {
 		transaction = transaction.toBuilder()
 				.setSigMap(expectedMap)
 				.build();
-		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
+		final var body = CommonUtils.extractTransactionBody(transaction);
 
-		// given:
-		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
-		// and:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
 		final var txnUsageMeta = accessor.baseUsageMeta();
 
 		assertEquals(transaction, accessor.getSignedTxnWrapper());
@@ -165,7 +153,6 @@ class SignedTxnAccessorTest {
 		assertEquals(zeroByteMemo, accessor.getMemo());
 		assertEquals(false, accessor.isTriggeredTxn());
 		assertEquals(false, accessor.canTriggerTxn());
-		// and:
 		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
 	}
 
@@ -188,8 +175,8 @@ class SignedTxnAccessorTest {
 				.build();
 
 		var txn = buildTokenTransferTxn(nftTransfers);
-		SignedTxnAccessor subject = new SignedTxnAccessor(txn);
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE , subject.availXferUsageMeta().getSubType());
+		var subject = new SignedTxnAccessor(txn);
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.availXferUsageMeta().getSubType());
 		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
 		// set customFee
@@ -200,7 +187,7 @@ class SignedTxnAccessorTest {
 
 		txn = buildTokenTransferTxn(fungibleTokenXfers);
 		subject = new SignedTxnAccessor(txn);
-		assertEquals(TOKEN_FUNGIBLE_COMMON , subject.availXferUsageMeta().getSubType());
+		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.availXferUsageMeta().getSubType());
 		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
 		// set customFee
@@ -254,7 +241,7 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void parseNewTransactionCorrectly() throws Exception {
-		Transaction transaction = RequestBuilder.getCryptoTransferRequest(
+		final var transaction = RequestBuilder.getCryptoTransferRequest(
 				1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
@@ -264,10 +251,10 @@ class SignedTxnAccessorTest {
 				memo,
 				5678l, -70000l,
 				5679l, 70000l);
-		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
-		SignedTransaction signedTransaction = signedTransactionFrom(body, expectedMap);
-		Transaction newTransaction = buildTransactionFrom(signedTransaction.toByteString());
-		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
+		final var body = CommonUtils.extractTransactionBody(transaction);
+		final var signedTransaction = signedTransactionFrom(body, expectedMap);
+		final var newTransaction = buildTransactionFrom(signedTransaction.toByteString());
+		final var accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
 		assertEquals(newTransaction, accessor.getSignedTxnWrapper());
 		assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
@@ -287,9 +274,8 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
-	void registersNoneOnMalformedCreation() throws Exception {
-		// setup:
-		var xferWithTopLevelBodyBytes = RequestBuilder.getCryptoTransferRequest(
+	void registersNoneOnMalformedCreation() throws InvalidProtocolBufferException {
+		final var xferWithTopLevelBodyBytes = RequestBuilder.getCryptoTransferRequest(
 				1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
@@ -299,66 +285,49 @@ class SignedTxnAccessorTest {
 				"test memo",
 				5678l, -70000l,
 				5679l, 70000l);
+		final var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
+		final var confusedTxn = Transaction.parseFrom(body.toByteArray());
 
-		// given:
-		var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
-		var confusedTxn = Transaction.parseFrom(body.toByteArray());
+		final var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);
 
-		// when:
-		var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);
-
-		// then:
 		assertEquals(HederaFunctionality.NONE, confusedAccessor.getFunction());
 	}
 
 	@Test
 	void throwsOnUnsupportedCallToGetScheduleRef() {
-		// given:
-		var subject = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+		final var subject = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 
-		// expect:
-		Assertions.assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
+		assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
 	}
 
 	@Test
 	void setsFeeScheduleUpdateMeta() {
-		// setup:
 		final var txn = signedFeeScheduleUpdateTxn();
 		final var tokenOpsUsage = new TokenOpsUsage();
 		final var expectedReprBytes = tokenOpsUsage.bytesNeededToRepr(fees());
-		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
-
-		// given:
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
-		// when:
 		final var expandedMeta = spanMapAccessor.getFeeScheduleUpdateMeta(accessor);
 
-		// then:
 		assertEquals(now, expandedMeta.effConsensusTime());
 		assertEquals(expectedReprBytes, expandedMeta.numBytesInNewFeeScheduleRepr());
 	}
 
 	@Test
 	void setTokenCreateUsageMetaWorks() {
-		// setup:
 		givenAutoRenewBasedOp();
 		final var txn = signedTokenCreateTxn();
-		final var tokenOpsUsage = new TokenOpsUsage();
-		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
-
-		// given:
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
-		// when:
 		final var expandedMeta = spanMapAccessor.getTokenCreateMeta(accessor);
 
-		// then:
 		assertEquals(0, expandedMeta.getNftsTransfers());
 		assertEquals(1, expandedMeta.getFungibleNumTransfers());
 		assertEquals(1, expandedMeta.getNumTokens());
 		assertEquals(1070, expandedMeta.getBaseSize());
-		assertEquals( TOKEN_FUNGIBLE_COMMON, accessor.getSubType());
+		assertEquals(TOKEN_FUNGIBLE_COMMON, accessor.getSubType());
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {
@@ -376,9 +345,9 @@ class SignedTxnAccessorTest {
 	}
 
 	private List<CustomFee> fees() {
-		final var collector = new EntityId(1, 2 ,3);
-		final var aDenom = new EntityId(2, 3 ,4);
-		final var bDenom = new EntityId(3, 4 ,5);
+		final var collector = new EntityId(1, 2, 3);
+		final var aDenom = new EntityId(2, 3, 4);
+		final var bDenom = new EntityId(3, 4, 5);
 
 		return List.of(
 				fixedFee(1, null, collector),
@@ -394,10 +363,10 @@ class SignedTxnAccessorTest {
 	}
 
 	private Transaction buildTokenTransferTxn(final TokenTransferList tokenTransferList) {
-		var op = CryptoTransferTransactionBody.newBuilder()
+		final var op = CryptoTransferTransactionBody.newBuilder()
 				.addTokenTransfers(tokenTransferList)
 				.build();
-		var txnBody = TransactionBody.newBuilder()
+		final var txnBody = TransactionBody.newBuilder()
 				.setMemo(memo)
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
@@ -420,7 +389,7 @@ class SignedTxnAccessorTest {
 		return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
 	}
 
-	private Transaction buildTransactionFrom(ByteString signedTransactionBytes) {
+	private Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(signedTransactionBytes)
 				.build();
@@ -438,7 +407,7 @@ class SignedTxnAccessorTest {
 	}
 
 	private TransactionBody tokenXfers() {
-		var hbarAdjusts = TransferList.newBuilder()
+		final var hbarAdjusts = TransferList.newBuilder()
 				.addAccountAmounts(adjustFrom(a, -100))
 				.addAccountAmounts(adjustFrom(b, 50))
 				.addAccountAmounts(adjustFrom(c, 50))
@@ -475,21 +444,19 @@ class SignedTxnAccessorTest {
 				.build();
 	}
 
-	private AccountAmount adjustFrom(AccountID account, long amount) {
+	private AccountAmount adjustFrom(final AccountID account, final long amount) {
 		return AccountAmount.newBuilder()
 				.setAmount(amount)
 				.setAccountID(account)
 				.build();
 	}
 
-
 	private Transaction signedTokenCreateTxn() {
 		return buildTransactionFrom(givenAutoRenewBasedOp());
 	}
 
-
 	private TransactionBody givenAutoRenewBasedOp() {
-		TokenCreateTransactionBody op = TokenCreateTransactionBody.newBuilder()
+		final var op = TokenCreateTransactionBody.newBuilder()
 				.setAutoRenewAccount(autoRenewAccount)
 				.setMemo(memo)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
@@ -500,9 +467,8 @@ class SignedTxnAccessorTest {
 				.setFreezeKey(freezeKey)
 				.setSupplyKey(supplyKey)
 				.setWipeKey(wipeKey)
-				.setInitialSupply(1)
-				.build();
-		TransactionBody txn = TransactionBody.newBuilder()
+				.setInitialSupply(1);
+		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
@@ -511,29 +477,21 @@ class SignedTxnAccessorTest {
 		return txn;
 	}
 
-	private Key kycKey = KeyUtils.A_COMPLEX_KEY;
-	private Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	private Key freezeKey = KeyUtils.A_KEY_LIST;
-	private Key supplyKey = KeyUtils.B_COMPLEX_KEY;
-	private Key wipeKey = KeyUtils.C_COMPLEX_KEY;
-//	private Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
-//	private long expiry = 2_345_678L;
-	private long autoRenewPeriod = 1_234_567L;
-	private String symbol = "ABCDEFGH";
-	private String name = "WhyWhyWHy";
-	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	private AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
+	private static final Key kycKey = KeyUtils.A_COMPLEX_KEY;
+	private static final Key adminKey = KeyUtils.A_THRESHOLD_KEY;
+	private static final Key freezeKey = KeyUtils.A_KEY_LIST;
+	private static final Key supplyKey = KeyUtils.B_COMPLEX_KEY;
+	private static final Key wipeKey = KeyUtils.C_COMPLEX_KEY;
+	private static final long autoRenewPeriod = 1_234_567L;
+	private static final String symbol = "ABCDEFGH";
+	private static final String name = "WhyWhyWHy";
+	private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
 
-//	private TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-//	private TokenCreateTransactionBody op;
-//	private TransactionBody txn;
-
-	private final long now = 1_234_567L;
-	private final AccountID a = asAccount("1.2.3");
-	private final AccountID b = asAccount("2.3.4");
-	private final AccountID c = asAccount("3.4.5");
-	private final TokenID anId = IdUtils.asToken("0.0.75231");
-	private final TokenID anotherId = IdUtils.asToken("0.0.75232");
-	private final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
+	private static final long now = 1_234_567L;
+	private static final AccountID a = asAccount("1.2.3");
+	private static final AccountID b = asAccount("2.3.4");
+	private static final AccountID c = asAccount("3.4.5");
+	private static final TokenID anId = IdUtils.asToken("0.0.75231");
+	private static final TokenID anotherId = IdUtils.asToken("0.0.75232");
+	private static final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
 }

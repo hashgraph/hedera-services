@@ -9,9 +9,9 @@ package com.hedera.services.usage.token.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,12 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TokenCreateMetaTest {
 	@Test
 	void allGettersAndToStringWork() {
-		// given:
 		final var expected = "TokenCreateMeta{baseSize=1235, " +
 				"lifeTime=1234567, customFeeScheduleSize=200, fungibleNumTransfers=1, " +
 				"numTokens=1, networkRecordRb=1000, nftsTransfers=0, subType=TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES}";
 
-		// when:
 		final var subject = new TokenCreateMeta.Builder()
 				.baseSize(1235)
 				.lifeTime(1_234_567L)
@@ -42,10 +40,9 @@ class TokenCreateMetaTest {
 				.nftsTranfers(0)
 				.numTokens(1)
 				.networkRecordRb(1000)
-				.subType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES )
+				.subType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)
 				.build();
 
-		// then:
 		assertEquals(1235, subject.getBaseSize());
 		assertEquals(1_234_567L, subject.getLifeTime());
 		assertEquals(200, subject.getCustomFeeScheduleSize());
@@ -59,7 +56,6 @@ class TokenCreateMetaTest {
 
 	@Test
 	void hashCodeAndEqualsWork() {
-		// given:
 		final var meta1 = new TokenCreateMeta.Builder()
 				.baseSize(1235)
 				.lifeTime(1_234_567L)
@@ -68,7 +64,7 @@ class TokenCreateMetaTest {
 				.nftsTranfers(0)
 				.numTokens(1)
 				.networkRecordRb(1000)
-				.subType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES )
+				.subType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)
 				.build();
 		final var meta2 = new TokenCreateMeta.Builder()
 				.baseSize(1235)
@@ -78,10 +74,10 @@ class TokenCreateMetaTest {
 				.nftsTranfers(0)
 				.numTokens(1)
 				.networkRecordRb(1000)
-				.subType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES )
+				.subType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)
 				.build();
 
-		// then:
 		assertEquals(meta1, meta2);
+		assertEquals(meta1.hashCode(), meta1.hashCode());
 	}
 }

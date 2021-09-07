@@ -48,14 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TokenOpsUsageUtilsTest {
 	@Test
 	void tokenCreateWithAutoRenewAccountWorks() {
-		// setup:
-		TransactionBody txn = givenTokenCreateWith(
+		final var txn = givenTokenCreateWith(
 				FUNGIBLE_COMMON, false, false, true);
 
-		// given:
-		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
-		// then:
 		assertEquals(1062, tokenCreateMeta.getBaseSize());
 		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
 		assertEquals(TOKEN_FUNGIBLE_COMMON, tokenCreateMeta.getSubType());
@@ -63,36 +60,29 @@ class TokenOpsUsageUtilsTest {
 		assertEquals(0, tokenCreateMeta.getNftsTransfers());
 		assertEquals(0, tokenCreateMeta.getCustomFeeScheduleSize());
 	}
+
 	@Test
 	void tokenCreateWithCustomFeesAndKeyWork() {
-		// setup:
-		TransactionBody txn = givenTokenCreateWith(
+		final var txn = givenTokenCreateWith(
 				FUNGIBLE_COMMON, true, true, false);
 
-		// given:
-		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
-		// then:
 		assertEquals(1138, tokenCreateMeta.getBaseSize());
 		assertEquals(1_111_111L, tokenCreateMeta.getLifeTime());
 		assertEquals(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
 		assertEquals(1, tokenCreateMeta.getNumTokens());
 		assertEquals(0, tokenCreateMeta.getNftsTransfers());
 		assertEquals(32, tokenCreateMeta.getCustomFeeScheduleSize());
-
 	}
-
 
 	@Test
 	void tokenCreateWithAutoRenewAcctNoCustomFeeKeyNoCustomFeesWorks() {
-		// setup:
-		TransactionBody txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
+		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
 				false, false, true);
 
-		// given:
-		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
-		// then:
 		assertEquals(1062, tokenCreateMeta.getBaseSize());
 		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
 		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, tokenCreateMeta.getSubType());
@@ -103,14 +93,11 @@ class TokenOpsUsageUtilsTest {
 
 	@Test
 	void tokenCreateWithOutAutoRenewAcctAndCustomFeeKeyNoCustomFeesWorks() {
-		// setup:
-		TransactionBody txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
+		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
 				true, false, true);
 
-		// given:
 		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
-		// then:
 		assertEquals(1162, tokenCreateMeta.getBaseSize());
 		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
 		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
@@ -118,16 +105,14 @@ class TokenOpsUsageUtilsTest {
 		assertEquals(0, tokenCreateMeta.getNftsTransfers());
 		assertEquals(0, tokenCreateMeta.getCustomFeeScheduleSize());
 	}
+
 	@Test
 	void tokenCreateWithAutoRenewAcctAndCustomFeesAndKeyWorks() {
-		// setup:
-		TransactionBody txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
+		final var txn = givenTokenCreateWith(NON_FUNGIBLE_UNIQUE,
 				true, true, true);
 
-		// given:
-		TokenCreateMeta tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 
-		// then:
 		assertEquals(1162, tokenCreateMeta.getBaseSize());
 		assertEquals(1_234_567L, tokenCreateMeta.getLifeTime());
 		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, tokenCreateMeta.getSubType());
@@ -142,7 +127,7 @@ class TokenOpsUsageUtilsTest {
 			final boolean withCustomFees,
 			final boolean withAutoRenewAccount
 	) {
-		var builder = TokenCreateTransactionBody.newBuilder()
+		final var builder = TokenCreateTransactionBody.newBuilder()
 				.setTokenType(type)
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setSymbol(symbol)
@@ -161,33 +146,31 @@ class TokenOpsUsageUtilsTest {
 					.setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
 					.setFixedFee(FixedFee.newBuilder().setAmount(123)));
 		}
-		if(withAutoRenewAccount) {
+		if (withAutoRenewAccount) {
 			builder.setAutoRenewAccount(autoRenewAccount)
 					.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
 		}
-		TransactionBody txn = TransactionBody.newBuilder()
+		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setTokenCreation(builder.build())
+				.setTokenCreation(builder)
 				.build();
 		return txn;
 	}
 
+	private static final Key kycKey = KeyUtils.A_COMPLEX_KEY;
+	private static final Key adminKey = KeyUtils.A_THRESHOLD_KEY;
+	private static final Key freezeKey = KeyUtils.A_KEY_LIST;
+	private static final Key supplyKey = KeyUtils.B_COMPLEX_KEY;
+	private static final Key wipeKey = KeyUtils.C_COMPLEX_KEY;
+	private static final Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
+	private static final long expiry = 2_345_678L;
+	private static final long autoRenewPeriod = 1_234_567L;
+	private static final String symbol = "DUMMYTOKEN";
+	private static final String name = "DummyToken";
+	private static final String memo = "A simple test token create";
+	private static final AccountID autoRenewAccount = asAccount("0.0.75231");
 
-	private Key kycKey = KeyUtils.A_COMPLEX_KEY;
-	private Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	private Key freezeKey = KeyUtils.A_KEY_LIST;
-	private Key supplyKey = KeyUtils.B_COMPLEX_KEY;
-	private Key wipeKey = KeyUtils.C_COMPLEX_KEY;
-	private Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
-	private long expiry = 2_345_678L;
-	private long autoRenewPeriod = 1_234_567L;
-	private String symbol = "DUMMYTOKEN";
-	private String name = "DummyToken";
-	private String memo = "A simple test token create";
-	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private AccountID autoRenewAccount = asAccount("0.0.75231");
-
-	private final long now = 1_234_567L;
+	private static final long now = 1_234_567L;
 }
