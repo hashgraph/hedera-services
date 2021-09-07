@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,56 +20,57 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.txns.contract.helpers.BesuAdapter;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-@Singleton
 public class ContractCallTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
-	private final LegacyCaller delegate;
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final Supplier<SequenceNumber> seqNo;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
+	private final GlobalDynamicProperties properties;
+	private final AccountStore accountStore;
+	private final BesuAdapter besuAdapter;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
 	@Inject
 	public ContractCallTransitionLogic(
-			LegacyCaller delegate,
-			OptionValidator validator,
 			TransactionContext txnCtx,
-			Supplier<SequenceNumber> seqNo,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
+			GlobalDynamicProperties properties,
+			AccountStore accountStore,
+			BesuAdapter besuAdapter
 	) {
-		this.delegate = delegate;
-		this.validator = validator;
 		this.txnCtx = txnCtx;
-		this.seqNo = seqNo;
-		this.contracts = contracts;
+		this.properties = properties;
+		this.accountStore = accountStore;
+		this.besuAdapter = besuAdapter;
 	}
 
 	@FunctionalInterface
@@ -79,18 +80,33 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var contractCallTxn = txnCtx.accessor().getTxn();
 
-			var legacyRecord = delegate.perform(contractCallTxn, txnCtx.consensusTime(), seqNo.get());
+		/* --- Translate from gRPC types --- */
+		var contractCallTxn = txnCtx.accessor().getTxn();
+		var op = contractCallTxn.getContractCall();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		final var contractId = Id.fromGrpcContract(op.getContractID());
 
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
-			txnCtx.setCallResult(legacyRecord.getContractCallResult());
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		validateFalse(op.getGas() > properties.maxGas(), MAX_GAS_LIMIT_EXCEEDED);
+		validateFalse(op.getGas() < 0, CONTRACT_NEGATIVE_GAS);
+		validateFalse(op.getAmount() < 0, CONTRACT_NEGATIVE_VALUE);
+
+		/* --- Load the model objects --- */
+		final var sender = accountStore.loadAccount(senderId);
+		final var receiver = accountStore.loadContract(contractId);
+
+		/* --- Do the business logic --- */
+		besuAdapter.executeTX(
+				false,
+				sender,
+				receiver,
+				op.getGas(),
+				op.getFunctionParameters(),
+				op.getAmount(),
+				txnCtx.consensusTime(),
+				null);
 	}
+
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
@@ -102,12 +118,11 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody contractCallTxn) {
-		var op = contractCallTxn.getContractCall();
+	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
+		var op = transactionBody.getContractCall();
 
-		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
-		if (status != OK) {
-			return status;
+		if (op.getGas() > properties.maxGas()) {
+			return MAX_GAS_LIMIT_EXCEEDED;
 		}
 		if (op.getGas() < 0) {
 			return CONTRACT_NEGATIVE_GAS;

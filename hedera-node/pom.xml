@@ -288,6 +288,36 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu.internal</groupId>
+      <artifactId>core</artifactId>
+      <version>21.7.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tuweni</groupId>
+      <artifactId>tuweni-units</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu</groupId>
+      <artifactId>plugin-api</artifactId>
+      <version>21.7.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu</groupId>
+      <artifactId>evm</artifactId>
+      <version>21.7.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu</groupId>
+      <artifactId>besu-datatypes</artifactId>
+      <version>21.7.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu.internal</groupId>
+      <artifactId>crypto</artifactId>
+      <version>21.7.3</version>
+    </dependency>
   </dependencies>
 
   <repositories>

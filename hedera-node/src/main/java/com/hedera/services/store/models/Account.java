@@ -26,6 +26,7 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAl
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -62,6 +64,7 @@ public class Account {
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
 	private int autoAssociationMetadata;
+	private boolean smartContract;
 
 	public Account(Id id) {
 		this.id = id;
@@ -116,6 +119,18 @@ public class Account {
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
+	public boolean isSmartContract() {
+		return smartContract;
+	}
+
+	public long getBalance() {
+		return balance;
+	}
+
+	public void setSmartContract(boolean smartContract) {
+		this.smartContract = smartContract;
+	}
+
 	public void incrementUsedAutomaticAssocitions() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(++count);
@@ -162,6 +177,16 @@ public class Account {
 			}
 		}
 		associatedTokens.removeAllIds(dissociatedTokenIds);
+	}
+
+
+	/**
+	 * Returns the EVM {@link Address} representation of a given {@link Account}.
+	 *
+	 * @return a {@link Address} object
+	 */
+	public Address getEvmAddress() {
+		return Address.fromHexString(asSolidityAddressHex(id));
 	}
 
 	public Id getId() {

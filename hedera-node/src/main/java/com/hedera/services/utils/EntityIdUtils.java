@@ -169,6 +169,9 @@ public final class EntityIdUtils {
 	public static byte[] asSolidityAddress(final ContractID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
+	public static String asSolidityAddressHex(Id id) {
+		return CommonUtils.hex(asSolidityAddress((int) id.getShard(), id.getRealm(), id.getNum()));
+	}
 
 	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
 		final byte[] solidityAddress = new byte[20];
@@ -194,6 +197,10 @@ public final class EntityIdUtils {
 				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
 				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
 				.build();
+	}
+
+	public static Id idParsedFromEvmAddress(final byte[] evmAddress) {
+		return Id.fromGrpcAccount(accountParsedFromSolidityAddress(evmAddress));
 	}
 
 	public static String asLiteralString(final AccountID id) {

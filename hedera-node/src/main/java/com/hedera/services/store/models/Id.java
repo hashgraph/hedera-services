@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.Comparator;
@@ -68,6 +69,10 @@ public class Id {
 
 	public static Id fromGrpcAccount(final AccountID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+
+	public static Id fromGrpcContract(final ContractID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
 	public static Id fromGrpcToken(final TokenID id) {

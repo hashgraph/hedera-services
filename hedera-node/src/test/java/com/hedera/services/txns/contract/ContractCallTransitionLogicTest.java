@@ -21,70 +21,69 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.helpers.BesuAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 
 class ContractCallTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+	final private AccountID beneficient = AccountID.newBuilder().setAccountNum(2_222L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	private long gas = 1_234L;
 	private long sent = 1_234L;
+	private int maxGas = 2000;
 
 	private Instant consensusTime;
 	private OptionValidator validator;
-	private SequenceNumber seqNo;
-	private ContractCallTransitionLogic.LegacyCaller delegate;
 	private TransactionBody contractCallTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private GlobalDynamicProperties properties;
+	private AccountStore accountStore;
+	private BesuAdapter besuAdapter;
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	ContractCallTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		consensusTime = Instant.now();
-
-		seqNo = mock(SequenceNumber.class);
-		delegate = mock(ContractCallTransitionLogic.LegacyCaller.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		properties = mock(GlobalDynamicProperties.class);
+		accountStore = mock(AccountStore.class);
+		besuAdapter = mock(BesuAdapter.class);
 		withRubberstampingValidator();
 
-		subject = new ContractCallTransitionLogic(delegate, validator, txnCtx, () -> seqNo, () -> contracts);
+		subject = new ContractCallTransitionLogic(txnCtx, properties, accountStore, besuAdapter);
 	}
 
 	@Test
@@ -97,53 +96,26 @@ class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	void capturesBadCall() {
+	void verifyExternaliseContractResultCall() {
 		// setup:
-		TransactionRecord callRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_CONTRACT_ID)
-						.build())
-				.setContractCallResult(ContractFunctionResult.newBuilder().setGasUsed(555))
-				.build();
-
 		givenValidTxnCtx();
 		// and:
-		given(delegate.perform(contractCallTxn, consensusTime, seqNo)).willReturn(callRec);
+		given(accountStore.loadAccount(new Id(payer.getShardNum(), payer.getRealmNum(), payer.getAccountNum())))
+				.willReturn(new Account(new Id(payer.getShardNum(), payer.getRealmNum(), payer.getAccountNum())));
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(new Account(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())));
+		given(txnCtx.submittingNodeAccount()).willReturn(beneficient);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(INVALID_CONTRACT_ID);
-		verify(txnCtx).setCallResult(callRec.getContractCallResult());
-	}
-
-	@Test
-	void followsHappyPathWithOverrides() {
-		// setup:
-		TransactionRecord callRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.setContractCallResult(ContractFunctionResult.newBuilder().setGasUsed(555))
-				.build();
-
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractCallTxn, consensusTime, seqNo)).willReturn(callRec);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCallResult(callRec.getContractCallResult());
+//		verify(contractsState).externaliseContractResult(any());
 	}
 
 	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
-
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
 	}
@@ -154,9 +126,18 @@ class ContractCallTransitionLogicTest {
 		sent = -1;
 
 		givenValidTxnCtx();
-
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.semanticCheck().apply(contractCallTxn));
+	}
+
+	@Test
+	void rejectMaxGasLimitExceeded() {
+		// setup:
+		givenValidTxnCtx();
+		given(properties.maxGas()).willReturn(100);
+
+		// expect:
+		assertEquals(MAX_GAS_LIMIT_EXCEEDED, subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test
@@ -170,29 +151,6 @@ class ContractCallTransitionLogicTest {
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
 	}
 
-	@Test
-	void rejectsInvalidCid() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
-
-		// expect:
-		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractCallTxn));
-	}
-
-	@Test
-	void translatesUnknownException() {
-		givenValidTxnCtx();
-
-		given(delegate.perform(any(), any(), any())).willThrow(IllegalStateException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
-
 	private void givenValidTxnCtx() {
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -202,6 +160,7 @@ class ContractCallTransitionLogicTest {
 								.setAmount(sent)
 								.setContractID(target));
 		contractCallTxn = op.build();
+		given(properties.maxGas()).willReturn(maxGas);
 		given(accessor.getTxn()).willReturn(contractCallTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
