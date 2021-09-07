@@ -52,14 +52,14 @@ public class BalanceChangeManager {
 		levelEnd = changesSoFar.size();
 	}
 
-	public void markRoyaltyPaid(Id uniqueToken, Id account) {
+	public void markRoyaltyPaid(final Id uniqueToken, final Id account) {
 		if (royaltiesPaid == null) {
 			royaltiesPaid = new HashSet<>();
 		}
 		royaltiesPaid.add(Pair.of(uniqueToken, account));
 	}
 
-	public boolean isRoyaltyPaid(Id uniqueToken, Id account) {
+	public boolean isRoyaltyPaid(final Id uniqueToken, final Id account) {
 		return royaltiesPaid != null && royaltiesPaid.contains(Pair.of(uniqueToken, account));
 	}
 
