@@ -22,535 +22,132 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
-import java.time.Instant;
+import java.util.List;
+import java.util.function.Function;
 
-import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.any;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class TokenFeeScheduleUpdateTransitionLogicTest {
-    private long thisSecond = 1_234_567L;
-    private Instant now = Instant.ofEpochSecond(thisSecond);
-    private TokenID target = IdUtils.asToken("1.2.666");
-    private JKey adminKey = new JEd25519Key("w/e".getBytes());
-    private TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTxn;
-    private TransactionBody tokenFeeScheduleUpdateTxnBody;
-    private Token token;
-    private GlobalDynamicProperties globalDynamicProperties;
+	private final TokenID target = IdUtils.asToken("0.0.666");
+	private TransactionBody tokenFeeScheduleUpdateTxnBody;
 
-    private TypedTokenStore typedTokenStore;
-    private AccountStore accountStore;
-    private TransactionContext txnCtx;
-    private PlatformTxnAccessor accessor;
+	@Mock
+	private Token token;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private PlatformTxnAccessor accessor;
+	@Mock
+	private Function<CustomFee, FcCustomFee> grpcFeeConverter;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private FcCustomFee firstMockFee;
+	@Mock
+	private FcCustomFee secondMockFee;
 
 	private TokenFeeScheduleUpdateTransitionLogic subject;
-    private com.hederahashgraph.api.proto.java.CustomFee customFixedFee = new CustomFeeBuilder(IdUtils.asAccount("7.7.7")).withFixedFee(fixedHts(300L));
-    private com.hederahashgraph.api.proto.java.CustomFee withOnlyFeeCollectorCustomFee = new CustomFeeBuilder(IdUtils.asAccount("7.7.7")).withOnlyFeeCollector();
 
-    private Token denom;
-    private Id denomId = Id.fromGrpcToken(IdUtils.asToken("17.71.77"));
-    private TokenID denonIdWithZeroNum = TokenID.newBuilder().setTokenNum(0).build();
-    private AccountID feeCollector = IdUtils.asAccount("6.6.6");
-    private Account collector = mock(Account.class);
-    private CopyOnWriteIds associatedTokens = mock(CopyOnWriteIds.class);
-
-    @BeforeEach
-    public void setup() {
-        typedTokenStore = mock(TypedTokenStore.class);
-        accountStore = mock(AccountStore.class);
-        accessor = mock(PlatformTxnAccessor.class);
-        txnCtx = mock(TransactionContext.class);
-        globalDynamicProperties = mock(GlobalDynamicProperties.class);
-        token = mock(Token.class);
-        denom = mock(Token.class);
-
-        given(typedTokenStore.loadToken(Id.fromGrpcToken(target))).willReturn(token);
-        subject = new TokenFeeScheduleUpdateTransitionLogic(typedTokenStore, txnCtx, accountStore, globalDynamicProperties);
-    }
-
-    @Test
-    void happyPathWorks() {
-        givenValidTxnCtx();
-        given(token.isDeleted()).willReturn(false);
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(100);
-        given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-
-        given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
-        given(denom.getId()).willReturn(denomId);
-        given(denom.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(typedTokenStore.loadPossiblyDeletedOrAutoRemovedToken(denomId)).willReturn(denom);
-
-        given(collector.getAssociatedTokens()).willReturn(associatedTokens);
-        given(associatedTokens.contains(denomId)).willReturn(true);
-        given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(feeCollector)), any())).willReturn(collector);
-
-        subject.doStateTransition();
-
-        verify(typedTokenStore).persistToken(any());
-    }
-
-    @Test
-    void setsFailInvalidIfUnhandledException() {
-        givenValidTxnCtxWithInvalidFee();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(100);
-
-        assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEE_NOT_FULLY_SPECIFIED);
-    }
-
-    @Test
-    void returnsFailingStatusFromUpdatingFeeScheduleInStore() {
-        givenValidTxnCtx();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(0);
-
-        assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEES_LIST_TOO_LONG);
-    }
-
-    private void givenValidTxnCtx() {
-        CustomFee customFixedFeeWithDenom = new CustomFeeBuilder(
-                feeCollector)
-                .withFixedFee(fixedHts(300L)
-                .setDenominatingTokenId(denomId.asGrpcToken())
-                );
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(customFixedFeeWithDenom)
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    private void givenValidTxnCtxWithInvalidFee() {
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(withOnlyFeeCollectorCustomFee)
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    private void givenValidTxnCtxWithRoyaltyFee() {
-       final var royaltyFee =  CustomFee.newBuilder()
-                .setRoyaltyFee(RoyaltyFee.newBuilder()
-                        .setExchangeValueFraction(Fraction.newBuilder()
-                                .setNumerator(9)
-                                .setDenominator(10)))
-                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(royaltyFee)
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    void givenValidTxnCtxWithFixedFeeWithInvalidDenominator(){
-        final var fixedFee = new CustomFeeBuilder(
-                IdUtils.asAccount("7.7.7"))
-                .withFixedFee(fixedHts(300L)
-                .setDenominatingTokenId(denomId.asGrpcToken())).getFixedFee();
-
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setFixedFee(fixedFee))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void rejectsFixedFeeWithInvalidDenominator() {
-        givenValidTxnCtxWithFixedFeeWithInvalidDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willThrow(new InvalidTransactionException(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
-
-        assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-    }
-
-    @Test
-    void rejectsFixedFeeWithInvalidDenominatorType() {
-        givenValidTxnCtxWithFixedFeeWithInvalidDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
-        given(denom.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
-        assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-    }
-
-    void givenValidTxnCtxWithFixedFeeWithNotAssociatedDenominator(){
-        final var fixedFee = new CustomFeeBuilder(
-                IdUtils.asAccount("7.7.7"))
-                .withFixedFee(fixedHts(300L)
-                        .setDenominatingTokenId(denomId.asGrpcToken())).getFixedFee();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setFixedFee(fixedFee) .setFeeCollectorAccountId(feeCollector))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-
-
-    @Test
-    void rejectFixedFeeWithNonAssociatedDenominator() {
-        givenValidTxnCtxWithFixedFeeWithNotAssociatedDenominator();
-
-        given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
-        given(denom.getId()).willReturn(denomId);
-        given(denom.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(feeCollector), INVALID_CUSTOM_FEE_COLLECTOR)).willReturn(collector);
-        given(collector.getAssociatedTokens()).willReturn(new CopyOnWriteIds()); //No associated tokens
-
-        assertFailsWith(() -> subject.doStateTransition(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
-    }
-
-
-
-    void givenValidTxnCtxWithRoyaltyWithInvalidDenominator(){
-        final var royaltyFee = RoyaltyFee.newBuilder()
-                .setExchangeValueFraction(Fraction.newBuilder()
-                        .setNumerator(9)
-                        .setDenominator(10))
-                .setFallbackFee(
-                        FixedFee.newBuilder()
-                                .setAmount(10)
-                                .setDenominatingTokenId(denomId.asGrpcToken())
-                                .build())
-                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setRoyaltyFee(royaltyFee))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void rejectsRoyaltyFeeWithInvalidFallbackDenominator() {
-        givenValidTxnCtxWithRoyaltyWithInvalidDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willThrow(new InvalidTransactionException(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
-
-        assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-    }
-
-    void givenValidTxnCtxWithRoyaltyFeeWithNoDenominator(){
-        final var royaltyFee = RoyaltyFee.newBuilder()
-                .setExchangeValueFraction(Fraction.newBuilder()
-                        .setNumerator(9)
-                        .setDenominator(10))
-                .setFallbackFee(
-                        FixedFee.newBuilder()
-                                .setAmount(10)
-                                .build())
-                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setRoyaltyFee(royaltyFee))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void persistsRoyaltyFeeWithNoDenominator() {
-        givenValidTxnCtxWithRoyaltyFeeWithNoDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
-        subject.doStateTransition();
-
-        verify(typedTokenStore).persistToken(token);
-    }
-
-    void givenValidTxnCtxWithRoyaltyFeeWithSameDenominator(){
-        final var royaltyFee = RoyaltyFee.newBuilder()
-                .setExchangeValueFraction(Fraction.newBuilder()
-                        .setNumerator(9)
-                        .setDenominator(10))
-                .setFallbackFee(
-                        FixedFee.newBuilder()
-                                .setAmount(10)
-                                .setDenominatingTokenId(TokenID.newBuilder().setTokenNum(0).build())
-                                .build())
-                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setRoyaltyFee(royaltyFee))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void persistsRoyaltyFeeWithSameDenominator() {
-        givenValidTxnCtxWithRoyaltyFeeWithSameDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
-        subject.doStateTransition();
-
-        verify(typedTokenStore).persistToken(token);
-    }
-
-    void givenValidTxnCtxWithFixedFeeWithSameTokenDenominator(){
-        final var fixedFee = FixedFee.newBuilder()
-                                .setAmount(10)
-                                .setDenominatingTokenId(denonIdWithZeroNum)
-                                .build();
-
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setFixedFee(fixedFee))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void rejectFixedFeeWithSameTokenDenominatorWithInvalidType() {
-        givenValidTxnCtxWithFixedFeeWithSameTokenDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(denom.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(typedTokenStore.loadTokenOrFailWith(eq(Id.fromGrpcToken(denonIdWithZeroNum)),any())).willReturn(denom);
-
-        assertFailsWith(() ->  subject.doStateTransition(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-    }
-
-    void givenValidTxnCtxWithFixedFeeWithNoDenominator(){
-        final var fixedFee = FixedFee.newBuilder()
-                                .setAmount(10)
-                                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setFixedFee(fixedFee))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void persistsFixedFeeWithNoDenominator() {
-        givenValidTxnCtxWithFixedFeeWithNoDenominator();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
-        subject.doStateTransition();
-
-        verify(typedTokenStore).persistToken(token);
-    }
-
-    void givenValidTxnCtxWithRoyaltyFeeWithNotAssociatedDenominator(){
-        final var royaltyFee = RoyaltyFee.newBuilder()
-                .setExchangeValueFraction(Fraction.newBuilder()
-                        .setNumerator(9)
-                        .setDenominator(10))
-                .setFallbackFee(
-                        FixedFee.newBuilder()
-                                .setAmount(10)
-                                .setDenominatingTokenId(denomId.asGrpcToken())
-                                .build())
-                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(CustomFee.newBuilder().setRoyaltyFee(royaltyFee) .setFeeCollectorAccountId(feeCollector))
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void rejectRoyaltyFeeWithNonAssociatedDenominator() {
-        givenValidTxnCtxWithRoyaltyFeeWithNotAssociatedDenominator();
-
-        given(typedTokenStore.loadTokenOrFailWith(eq(denomId), any())).willReturn(denom);
-        given(denom.getType()).willReturn(com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE);
-        given(denom.getId()).willReturn(denomId);
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(feeCollector), INVALID_CUSTOM_FEE_COLLECTOR)).willReturn(collector);
-        given(collector.getAssociatedTokens()).willReturn(new CopyOnWriteIds()); //No associated tokens
-
-        assertFailsWith(() -> subject.doStateTransition(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
-    }
-
-
-    private void givenValidTxnCtxWithRoyaltyFeeAndInvalidFraction() {
-        final var royaltyFee =  CustomFee.newBuilder()
-                .setRoyaltyFee(RoyaltyFee.newBuilder()
-                        .setExchangeValueFraction(Fraction.newBuilder()
-                                .setNumerator(11)
-                                .setDenominator(10)))
-                .build();
-
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(target)
-                .addCustomFees(royaltyFee)
-                .build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    @Test
-    void royaltyFeeFractionLessThanOne(){
-        givenValidTxnCtxWithRoyaltyFeeAndInvalidFraction();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-
-        assertFailsWith(() -> subject.doStateTransition(), ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
-    }
-
-    @Test
-    void royaltyFeeOnlyForNonFungibleTokens(){
-        givenValidTxnCtxWithRoyaltyFee();
-        given(globalDynamicProperties.maxCustomFeesAllowed()).willReturn(10);
-        given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-
-        assertFailsWith(() -> subject.doStateTransition(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-    }
-
-    @Test
-    void rejectsInvalidTokenId() {
-        givenInvalidTokenId();
-
-        assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenFeeScheduleUpdateTxnBody));
-    }
-
-    @Test
-    void acceptsValidTokenId() {
-        givenValidTokenId();
-
-        assertEquals(OK, subject.semanticCheck().apply(tokenFeeScheduleUpdateTxnBody));
-    }
-
-    @Test
-    void hasCorrectApplicability() {
-        givenValidTokenId();
-
-        assertTrue(subject.applicability().test(tokenFeeScheduleUpdateTxnBody));
-        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-    }
-
-    private void givenInvalidTokenId() {
-        tokenFeeScheduleUpdateTxnBody = TransactionBody.newBuilder().build();
-        tokenFeeScheduleUpdateTxn = TokenFeeScheduleUpdateTransactionBody.newBuilder().build();
-
-        TransactionBody txn = mock(TransactionBody.class);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(txn);
-        given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
-        given(txnCtx.consensusTime()).willReturn(now);
-    }
-
-    private void givenValidTokenId() {
-        tokenFeeScheduleUpdateTxnBody = TransactionBody.newBuilder()
-                .setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                        .setTokenId(target))
-                .build();
-    }
-
-    private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-        var ex = assertThrows(InvalidTransactionException.class, something::run);
-        assertEquals(status, ex.getResponseCode());
-    }
+	@BeforeEach
+	public void setup() {
+		subject = new TokenFeeScheduleUpdateTransitionLogic(tokenStore, txnCtx, accountStore, dynamicProperties);
+	}
+
+	@Test
+	void validatesFeesListLength() {
+		givenTxnCtx();
+
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEES_LIST_TOO_LONG);
+	}
+
+	@Test
+	void happyPathWorks() {
+		subject.setGrpcFeeConverter(grpcFeeConverter);
+		given(grpcFeeConverter.apply(CustomFee.getDefaultInstance()))
+				.willReturn(firstMockFee)
+				.willReturn(secondMockFee);
+
+		givenTxnCtx();
+		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
+
+		subject.doStateTransition();
+
+		verify(firstMockFee).validateWith(token, accountStore, tokenStore);
+		verify(secondMockFee).validateWith(token, accountStore, tokenStore);
+		verify(token).setCustomFees(List.of(firstMockFee, secondMockFee));
+		verify(tokenStore).persistToken(token);
+	}
+
+	@Test
+	void rejectsInvalidTokenId() {
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	void acceptsValidTokenId() {
+		givenValidTokenId();
+
+		assertEquals(OK, subject.semanticCheck().apply(tokenFeeScheduleUpdateTxnBody));
+	}
+
+	@Test
+	void hasCorrectApplicability() {
+		givenValidTokenId();
+
+		assertTrue(subject.applicability().test(tokenFeeScheduleUpdateTxnBody));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	private void givenValidTokenId() {
+		tokenFeeScheduleUpdateTxnBody = TransactionBody.newBuilder()
+				.setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
+						.setTokenId(target))
+				.build();
+	}
+
+	private void givenTxnCtx() {
+		final TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTxn =
+				TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(target)
+				.addCustomFees(CustomFee.getDefaultInstance())
+				.addCustomFees(CustomFee.getDefaultInstance())
+				.build();
+
+		final var txn = TransactionBody.newBuilder()
+				.setTokenFeeScheduleUpdate(tokenFeeScheduleUpdateTxn)
+				.build();
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(txn);
+		given(tokenStore.loadToken(Id.fromGrpcToken(target))).willReturn(token);
+	}
 }

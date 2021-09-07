@@ -97,7 +97,9 @@ class FixedFeeSpecTest {
 
 	@Test
 	void finalizationRequiresFungibleDenomAtCreationWithOtherDenom() {
-		given(tokenStore.loadToken(new Id(0, 0, otherDenom.num()))).willReturn(token);
+		given(tokenStore.loadTokenOrFailWith(
+				new Id(0, 0, otherDenom.num()),
+				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
 
 		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 
@@ -112,6 +114,7 @@ class FixedFeeSpecTest {
 		given(tokenStore.loadTokenOrFailWith(
 				new Id(0, 0, otherDenom.num()),
 				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
+		given(feeCollector.isAssociatedWith(otherDenom.asId())).willReturn(true);
 
 		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 

@@ -27,6 +27,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -46,23 +47,26 @@ import static java.util.stream.Collectors.toList;
  */
 @Singleton
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
-	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties globalDynamicProperties;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+
+	private Function<CustomFee, FcCustomFee> grpcFeeConverter = FcCustomFee::fromGrpc;
 
 	@Inject
 	public TokenFeeScheduleUpdateTransitionLogic(
 			final TypedTokenStore tokenStore,
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
-			final GlobalDynamicProperties globalDynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties
+	) {
+		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
-		this.txnCtx = txnCtx;
-		this.globalDynamicProperties = globalDynamicProperties;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -76,16 +80,17 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		var token = tokenStore.loadToken(targetTokenId);
 
 		/* --- Validate and initialize custom fees list --- */
-		validateFalse(op.getCustomFeesCount() > globalDynamicProperties.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+		final var tooManyFees = op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed();
+		validateFalse(tooManyFees, CUSTOM_FEES_LIST_TOO_LONG);
 		final var customFees = op.getCustomFeesList()
 				.stream()
-				.map(FcCustomFee::fromGrpc)
+				.map(grpcFeeConverter)
 				.peek(fee -> fee.validateWith(token, accountStore, tokenStore))
 				.collect(toList());
 		token.setCustomFees(customFees);
 
 		/* --- Persist the updated models --- */
-		this.tokenStore.persistToken(token);
+		tokenStore.persistToken(token);
 	}
 
 	@Override
@@ -100,10 +105,12 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody txnBody) {
 		final var op = txnBody.getTokenFeeScheduleUpdate();
-		if (!op.hasTokenId()) {
-			return INVALID_TOKEN_ID;
-		}
 
-		return OK;
+		return op.hasTokenId() ? OK : INVALID_TOKEN_ID;
+	}
+
+	/* --- Only used by unit tests --- */
+	void setGrpcFeeConverter(Function<CustomFee, FcCustomFee> grpcFeeConverter) {
+		this.grpcFeeConverter = grpcFeeConverter;
 	}
 }

@@ -1,8 +1,30 @@
 package com.hedera.services.txns.token.process;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -55,9 +77,13 @@ class CreationTest {
 	@Mock
 	private TokenRelationship newRel;
 	@Mock
+	private FcTokenAssociation autoAssociation;
+	@Mock
 	private OptionValidator validator;
 	@Mock
 	private AccountStore accountStore;
+	@Mock
+	private TypedTokenStore tokenStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -66,6 +92,31 @@ class CreationTest {
 	private Creation.TokenModelFactory modelFactory;
 
 	private Creation subject;
+
+	@Test
+	void getsExpectedAutoAssociations() {
+		givenSubjectWithEverything();
+		given(newRel.asAutoAssociation()).willReturn(autoAssociation);
+		subject.setNewRels(List.of(newRel));
+
+		final var actual = subject.newAssociations();
+
+		assertEquals(List.of(autoAssociation), actual);
+	}
+
+	@Test
+	void persistWorks() {
+		givenSubjectWithEverything();
+		given(newRel.getAccount()).willReturn(treasury);
+		subject.setNewRels(List.of(newRel));
+		subject.setProvisionalToken(provisionalToken);
+
+		subject.persistWith(accountStore, tokenStore);
+
+		verify(tokenStore).persistNew(provisionalToken);
+		verify(tokenStore).persistTokenRelationships(List.of(newRel));
+		verify(accountStore).persistAccount(treasury);
+	}
 
 	@Test
 	void verifiesExpiryBeforeLoading() {

@@ -74,7 +74,10 @@ public class FixedFeeSpec {
 		}
 	}
 
-	private void validateExplicitlyDenominatedWith(final Account feeCollector, final TypedTokenStore tokenStore) {
+	private void validateExplicitlyDenominatedWith(
+			final Account feeCollector,
+			final TypedTokenStore tokenStore
+	) {
 		final var denomId = tokenDenomination.asId();
 		final var denomToken = tokenStore.loadTokenOrFailWith(denomId, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
 		validateTrue(denomToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);

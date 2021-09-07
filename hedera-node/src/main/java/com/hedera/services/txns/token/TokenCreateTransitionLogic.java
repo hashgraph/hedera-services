@@ -60,6 +60,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
+	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
+
 	private BiFunction<GlobalDynamicProperties, TokenCreateTransactionBody, Creation> creationFactory = Creation::new;
 
 	private final AccountStore accountStore;
@@ -97,15 +100,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Create, update, and validate model objects  --- */
 		final var now = txnCtx.consensusTime().getEpochSecond();
-		creation.doProvisionallyWith(now, Token::fromGrpcOpAndMeta, NewRels::listFrom);
+		creation.doProvisionallyWith(now, MODEL_FACTORY, RELS_LISTING);
 
-//		/* --- Persist all new and updated models --- */
-//		typedTokenStore.persistNew(provisionalToken);
-//		typedTokenStore.persistTokenRelationships(newRels);
-//		newRels.forEach(rel -> accountStore.persistAccount(rel.getAccount()));
+		/* --- Persist all new and updated models --- */
 		creation.persistWith(accountStore, tokenStore);
 
-//		/* --- Record activity in the transaction context --- */
+		/* --- Record activity in the transaction context --- */
 		txnCtx.setNewTokenAssociations(creation.newAssociations());
 	}
 
