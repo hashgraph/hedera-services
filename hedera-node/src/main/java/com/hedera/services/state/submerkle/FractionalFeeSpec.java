@@ -43,9 +43,8 @@ public class FractionalFeeSpec {
 			boolean netOfTransfers
 	) {
 		validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
-		validateTrue(
-				allPositive(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect),
-				CUSTOM_FEE_MUST_BE_POSITIVE);
+		validateTrue(bothPositive(numerator, denominator), CUSTOM_FEE_MUST_BE_POSITIVE);
+		validateTrue(bothNonnegative(minimumUnitsToCollect, maximumUnitsToCollect), CUSTOM_FEE_MUST_BE_POSITIVE);
 		validateTrue(maximumUnitsToCollect >= minimumUnitsToCollect, FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
 
 		this.numerator = numerator;
@@ -108,7 +107,11 @@ public class FractionalFeeSpec {
 				.toString();
 	}
 
-	private boolean allPositive(long a, long b, long c, long d) {
-		return a > 0 && b > 0 && c > 0 && d > 0;
+	private boolean bothPositive(long a, long b) {
+		return a > 0 && b > 0;
+	}
+
+	private boolean bothNonnegative(long a, long b) {
+		return a >= 0 && b >= 0;
 	}
 }
