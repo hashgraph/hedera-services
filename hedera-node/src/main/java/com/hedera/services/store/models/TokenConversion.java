@@ -50,7 +50,7 @@ public final class TokenConversion {
 	 * 			Token Model based on the passed MerkleToken.
 	 */
 	public static Token fromMerkle(final MerkleToken merkleToken, final Id id, final AccountStore accountStore) {
-		var token = new Token(id);
+		final var token = new Token(id);
 		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount(), accountStore);
 		initModelFields(token, merkleToken);
 		return token;
@@ -164,17 +164,17 @@ public final class TokenConversion {
 
 	private static void initModelAccounts(
 			final Token token,
-			final EntityId _treasuryId,
-			@Nullable final EntityId _autoRenewId,
+			final EntityId treasuryId,
+			@Nullable final EntityId autoRenewId,
 			final AccountStore accountStore) {
-		if (_autoRenewId != null) {
-			final var autoRenewId = new Id(_autoRenewId.shard(), _autoRenewId.realm(), _autoRenewId.num());
-			final var autoRenew = accountStore.loadAccount(autoRenewId);
-			token.setAutoRenewAccount(autoRenew);
+		if (autoRenewId != null) {
+			final var autoRenew = new Id(autoRenewId.shard(), autoRenewId.realm(), autoRenewId.num());
+			final var autoRenewAccount = accountStore.loadAccount(autoRenew);
+			token.setAutoRenewAccount(autoRenewAccount);
 		}
-		final var treasuryId = new Id(_treasuryId.shard(), _treasuryId.realm(), _treasuryId.num());
-		final var treasury = accountStore.loadAccount(treasuryId);
-		token.setTreasury(treasury);
+		final var treasury = new Id(treasuryId.shard(), treasuryId.realm(), treasuryId.num());
+		final var treasuryAccount = accountStore.loadAccount(treasury);
+		token.setTreasury(treasuryAccount);
 	}
 
 	private static void initModelFields(final Token token, final MerkleToken immutableToken) {

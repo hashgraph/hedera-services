@@ -41,35 +41,35 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 class TokenConversionTest {
-	private long tokenNum = 777L;
-	final long serialNum = 10L;
-	private Id tokenId = new Id(0,0,tokenNum);
-	private Token token = new Token(tokenId);
-	private EntityId owner = new EntityId(0, 0, 3);
-	private byte[] metadata = "Test NFT".getBytes();
-	private UniqueToken uniqueToken = new UniqueToken(tokenId, serialNum);
-	private RichInstant timestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_567L));
-	private final long expiry = 1_234_567L;
-	private final long treasuryAccountNum = 2_234L;
-	private final long autoRenewAccountNum = 3_234L;
-	private final Id treasuryId = new Id(0, 0, treasuryAccountNum);
-	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
-	private final Account treasuryAccount = new Account(treasuryId);
-	private final Account autoRenewAccount = new Account(autoRenewId);
+	private static final long tokenNum = 777L;
+	private static final long serialNum = 10L;
+	private static final Id tokenId = new Id(0, 0, tokenNum);
+	private static final Token token = new Token(tokenId);
+	private static final EntityId owner = new EntityId(0, 0, 3);
+	private static final byte[] metadata = "Test NFT".getBytes();
+	private static final UniqueToken uniqueToken = new UniqueToken(tokenId, serialNum);
+	private static final RichInstant timestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_567L));
+	private static final long expiry = 1_234_567L;
+	private static final long treasuryAccountNum = 2_234L;
+	private static final long autoRenewAccountNum = 3_234L;
+	private static final Id treasuryId = new Id(0, 0, treasuryAccountNum);
+	private static final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
+	private static final Account treasuryAccount = new Account(treasuryId);
+	private static final Account autoRenewAccount = new Account(autoRenewId);
 
-	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
-	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
-	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
-	private final JKey wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
-	private final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
-	private final JKey feeScheduleKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
-	private final long tokenSupply = 777L;
-	private final long autoRenewPeriod = 1234L;
-	private final String name = "Testing123";
-	private final String symbol = "T123";
-	private final String memo = "memo";
-	private final boolean freezeDefault = true;
-	private final boolean kycGrantedDefault = true;
+	private static final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
+	private static final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
+	private static final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
+	private static final JKey wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
+	private static final JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private static final JKey feeScheduleKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	private static final long tokenSupply = 777L;
+	private static final long autoRenewPeriod = 1234L;
+	private static final String name = "Testing123";
+	private static final String symbol = "T123";
+	private static final String memo = "memo";
+	private static final boolean freezeDefault = true;
+	private static final boolean kycGrantedDefault = true;
 
 	private MerkleToken merkleToken;
 	private MerkleUniqueToken merkleUniqueToken;
@@ -83,6 +83,7 @@ class TokenConversionTest {
 		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
 		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
 	}
+
 	private void setupToken() {
 		merkleToken = new MerkleToken(
 				expiry, tokenSupply, 0,
