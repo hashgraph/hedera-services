@@ -144,6 +144,38 @@ class TokenTest {
 		assertEquals(123L, subject.getExpiry());
 		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
 		assertNotNull(subject.getFeeScheduleKey());
+		assertTrue(subject.isKycGrantedByDefault());
+	}
+
+	@Test
+	void setKycGrantedByDefaultFalseIfKycKeyPresent() {
+		final var kycKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey();
+		final var op = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
+						.setInitialSupply(25)
+						.setMaxSupply(21_000_000)
+						.setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE)
+						.setDecimals(10)
+						.setFreezeDefault(false)
+						.setMemo("the mother")
+						.setName("bitcoin")
+						.setSymbol("BTC")
+						.setKycKey(kycKey)
+						.setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
+						.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+						.build())
+				.build();
+
+		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
+
+		assertEquals("bitcoin", subject.getName());
+		assertEquals("the mother", subject.getMemo());
+		assertEquals("BTC", subject.getSymbol());
+		assertEquals(123L, subject.getExpiry());
+		assertEquals(TokenSupplyType.FINITE, subject.getSupplyType());
+		assertNotNull(subject.getKycKey());
+		assertFalse(subject.isKycGrantedByDefault());
 	}
 
 	@Test
