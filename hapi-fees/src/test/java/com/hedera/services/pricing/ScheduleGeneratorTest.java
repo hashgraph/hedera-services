@@ -20,6 +20,7 @@ package com.hedera.services.pricing;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.pricing.ScheduleGenerator.SUPPORTED_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -61,9 +63,11 @@ class ScheduleGeneratorTest {
 
 	@Test
 	void generatesExpectedSchedules() throws IOException {
-		final var expected = Files.readString(Paths.get(EXPECTED_SCHEDULES_LOC));
+		final var om = new ObjectMapper();
 
-		final var actual = subject.feeSchedulesFor(MISC_TEST_FUNCTIONS);
+		final var expected = om.readValue(Files.readString(Paths.get(EXPECTED_SCHEDULES_LOC)), List.class);
+
+		final var actual = om.readValue(subject.feeSchedulesFor(MISC_TEST_FUNCTIONS), List.class);
 
 		assertEquals(expected, actual);
 	}
