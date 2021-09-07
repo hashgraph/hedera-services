@@ -132,10 +132,9 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
-		if (TokenTypesMapper.mapToDomain(op.getTokenType()) == TokenType.NON_FUNGIBLE_UNIQUE) {
-			if (!dynamicProperties.areNftsEnabled()) {
-				return NOT_SUPPORTED;
-			}
+		final var domainType = TokenTypesMapper.mapToDomain(op.getTokenType());
+		if (domainType == TokenType.NON_FUNGIBLE_UNIQUE && !dynamicProperties.areNftsEnabled()) {
+			return NOT_SUPPORTED;
 		}
 
 		var validity = validator.memoCheck(op.getMemo());

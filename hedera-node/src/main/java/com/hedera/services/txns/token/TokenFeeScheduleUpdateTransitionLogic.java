@@ -85,8 +85,8 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		final var customFees = op.getCustomFeesList()
 				.stream()
 				.map(grpcFeeConverter)
-				.peek(fee -> fee.validateWith(token, accountStore, tokenStore))
 				.collect(toList());
+		customFees.forEach(fee -> fee.validateWith(token, accountStore, tokenStore));
 		token.setCustomFees(customFees);
 
 		/* --- Persist the updated models --- */

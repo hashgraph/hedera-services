@@ -145,19 +145,11 @@ public class Creation {
 		return provisionalId;
 	}
 
-	Token getProvisionalToken() {
-		return provisionalToken;
-	}
-
 	Account getTreasury() {
 		return treasury;
 	}
 
 	Account getAutoRenew() {
 		return autoRenew;
-	}
-
-	List<TokenRelationship> getNewRels() {
-		return newRels;
 	}
 }
