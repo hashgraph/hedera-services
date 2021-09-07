@@ -1278,6 +1278,21 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						)
 								.fee(ONE_HBAR)
 								.via(txnFromTreasury),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(zephyr, amelie)
+						)
+								.payingWith(zephyr)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						cryptoTransfer(
+								movingUnique(westWindArt, 1L)
+										.between(zephyr, amelie)
+						)
+								.signedBy(amelie, zephyr)
+								.payingWith(zephyr)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
 						cryptoTransfer(moving(2, usdc).between(usdcTreasury, amelie)),
 						cryptoTransfer(
 								movingUnique(westWindArt, 1L)
