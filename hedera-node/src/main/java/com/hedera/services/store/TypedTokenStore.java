@@ -461,7 +461,7 @@ public class TypedTokenStore {
 		mutableToken.setDeleted(token.isDeleted());
 
 		if (token.getCustomFees() != null) {
-			mutableToken.setFeeSchedule(token.getCustomFeesAsMerkle());
+			mutableToken.setFeeSchedule(token.getCustomFees());
 		}
 
 		mutableToken.setExpiry(token.getExpiry());
@@ -487,6 +487,7 @@ public class TypedTokenStore {
 		token.setWipeKey(immutableToken.getWipeKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setAdminKey(immutableToken.getAdminKey());
+		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());

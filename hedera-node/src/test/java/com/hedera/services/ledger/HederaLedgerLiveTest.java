@@ -217,10 +217,12 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 		final var tA = ids.newTokenId(a);
 		final var tB = ids.newTokenId(b);
-		final var rA = Token.fromGrpcTokenCreate(Id.fromGrpcToken(tA), stdWith("MINE", "MINE", a), aa, null,
-				List.of(), thisSecond);
-		final var rB = Token.fromGrpcTokenCreate(Id.fromGrpcToken(tB), stdWith("YOURS", "YOURS", b), ba, null,
-				List.of(), thisSecond);
+		final var rA = Token.fromGrpcOpAndMeta(
+				Id.fromGrpcToken(tA),
+				stdWith("MINE", "MINE", a), aa, null, thisSecond);
+		final var rB = Token.fromGrpcOpAndMeta(
+				Id.fromGrpcToken(tB),
+				stdWith("YOURS", "YOURS", b), ba, null, thisSecond);
 
 		aa.associateWith(List.of(rA, rB), 10, false);
 		ba.associateWith(List.of(rA, rB), 10, false);

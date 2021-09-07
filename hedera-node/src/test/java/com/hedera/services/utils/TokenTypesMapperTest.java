@@ -30,25 +30,25 @@ class TokenTypesMapperTest {
 	@Test
 	void grpcTokenTypeToModelType() {
 		assertEquals(TokenType.FUNGIBLE_COMMON,
-				TokenTypesMapper.grpcTokenTypeToModelType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
+				TokenTypesMapper.mapToDomain(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
 		assertEquals(TokenType.NON_FUNGIBLE_UNIQUE,
-				TokenTypesMapper.grpcTokenTypeToModelType(
+				TokenTypesMapper.mapToDomain(
 						com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
 	}
 
 	@Test
 	void grpcTokenSupplyTypeToModelSupplyType() {
 		assertEquals(TokenSupplyType.FINITE,
-				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(
+				TokenTypesMapper.mapToDomain(
 						com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
 
 		assertEquals(TokenSupplyType.INFINITE,
-				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(
+				TokenTypesMapper.mapToDomain(
 						com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
 
 		/* ensure default is infinite */
 		assertEquals(TokenSupplyType.INFINITE,
-				TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(
+				TokenTypesMapper.mapToDomain(
 						com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
 	}
 }

@@ -70,7 +70,6 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::commitCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::rollbackCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::isCreationPending);
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.updateFeeSchedule(null));
 		// and:
 		assertDoesNotThrow(() -> NOOP_TOKEN_STORE.setAccountsLedger(null));
 		assertDoesNotThrow(() -> NOOP_TOKEN_STORE.setHederaLedger(null));

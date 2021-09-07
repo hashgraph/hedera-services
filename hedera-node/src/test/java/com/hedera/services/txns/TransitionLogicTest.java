@@ -1,4 +1,4 @@
-package com.hedera.services.store.models.fees;
+package com.hedera.services.txns;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.store.models.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,30 +20,21 @@ package com.hedera.services.store.models.fees;
  * ‍
  */
 
-public class RoyaltyFee {
-	private final long numerator;
-	private final long denominator;
-	private final FixedFee fallbackFee;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	public RoyaltyFee(FixedFee fallback, long numerator, long denominator) {
-		this.fallbackFee = fallback;
-		this.numerator = numerator;
-		this.denominator = denominator;
-	}
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 
-	public boolean hasFallbackFee() {
-		return fallbackFee != null;
-	}
+class TransitionLogicTest {
+	@Test
+	void defaultMethodsAreNoops() {
+		final var subject = mock(TransitionLogic.class);
 
-	public FixedFee getFallbackFee() {
-		return fallbackFee;
-	}
+		willCallRealMethod().given(subject).resetCreatedIds();
+		willCallRealMethod().given(subject).reclaimCreatedIds();
 
-	public long getNumerator() {
-		return numerator;
-	}
-
-	public long getDenominator() {
-		return denominator;
+		Assertions.assertDoesNotThrow(subject::resetCreatedIds);
+		Assertions.assertDoesNotThrow(subject::reclaimCreatedIds);
 	}
 }
