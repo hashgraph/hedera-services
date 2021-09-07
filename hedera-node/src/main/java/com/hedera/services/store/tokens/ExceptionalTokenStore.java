@@ -28,7 +28,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
@@ -90,11 +89,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
 		throw new UnsupportedOperationException();
 	}
 

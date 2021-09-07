@@ -23,6 +23,11 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+
 public class FractionalFeeSpec {
 	private final long numerator;
 	private final long denominator;
@@ -37,15 +42,12 @@ public class FractionalFeeSpec {
 			long maximumUnitsToCollect,
 			boolean netOfTransfers
 	) {
-		if (denominator == 0) {
-			throw new IllegalArgumentException("Division by zero is not allowed");
-		}
-		if (numerator < 0 || denominator < 0 || minimumUnitsToCollect < 0) {
-			throw new IllegalArgumentException("Negative values are not allowed");
-		}
-		if (maximumUnitsToCollect < minimumUnitsToCollect) {
-			throw new IllegalArgumentException("maximumUnitsToCollect cannot be less than minimumUnitsToCollect");
-		}
+		validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
+		validateTrue(
+				allPositive(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect),
+				CUSTOM_FEE_MUST_BE_POSITIVE);
+		validateTrue(maximumUnitsToCollect >= minimumUnitsToCollect, FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
+
 		this.numerator = numerator;
 		this.denominator = denominator;
 		this.minimumUnitsToCollect = minimumUnitsToCollect;
@@ -104,5 +106,9 @@ public class FractionalFeeSpec {
 				.add("maximumUnitsToCollect", maximumUnitsToCollect)
 				.add("netOfTransfers", netOfTransfers)
 				.toString();
+	}
+
+	private boolean allPositive(long a, long b, long c, long d) {
+		return a > 0 && b > 0 && c > 0 && d > 0;
 	}
 }

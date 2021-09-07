@@ -31,7 +31,6 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -40,11 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -102,6 +101,15 @@ class TokenTest {
 	}
 
 	@Test
+	void recognizesFeeScheduleKey() {
+		assertFalse(subject.hasFeeScheduleKey());
+
+		subject.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
+		
+		assertTrue(subject.hasFeeScheduleKey());
+	}
+
+	@Test
 	void deleteFailsAsExpected() {
 		subject.setAdminKey(null);
 		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);
@@ -130,7 +138,7 @@ class TokenTest {
 						.build())
 				.build();
 
-		subject = Token.fromGrpcTokenCreate(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, new ArrayList<>(),123);
+		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
 
 		assertEquals("bitcoin", subject.getName());
 		assertEquals(123L, subject.getExpiry());
@@ -563,10 +571,5 @@ class TokenTest {
 				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, kycGrantedByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}";
 
 		assertEquals(desired, subject.toString());
-	}
-
-	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
-		final var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
 	}
 }

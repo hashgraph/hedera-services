@@ -32,14 +32,14 @@ import com.hedera.services.state.enums.TokenType;
  * @author Yoan Sredkov (yoansredkov@gmail.com)
  */
 public final class TokenTypesMapper {
-	public static TokenType grpcTokenTypeToModelType(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
+	public static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
 		if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
 			return TokenType.NON_FUNGIBLE_UNIQUE;
 		}
 		return TokenType.FUNGIBLE_COMMON;
 	}
 
-	public static TokenSupplyType grpcTokenSupplyTypeToModelSupplyType(
+	public static TokenSupplyType mapToDomain(
 			final com.hederahashgraph.api.proto.java.TokenSupplyType grpcType
 	) {
 		if (grpcType == com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE) {

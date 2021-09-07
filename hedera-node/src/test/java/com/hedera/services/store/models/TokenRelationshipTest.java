@@ -23,6 +23,7 @@ package com.hedera.services.store.models;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenRelationshipTest {
 	private final Id tokenId = new Id(0, 0, 1234);
-	private final Id accountId = new Id(1, 0, 1234);
+	private final Id accountId = new Id(1, 0, 4321);
 	private final long balance = 1_234L;
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
@@ -59,9 +60,16 @@ class TokenRelationshipTest {
 	}
 
 	@Test
+	void asAssociationWorks() {
+		final var expected = new FcTokenAssociation(1234, 4321);
+
+		assertEquals(expected, subject.asAutoAssociation());
+	}
+
+	@Test
 	void toStringAsExpected() {
 		// given:
-		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id{shard=1, realm=0, num=1234}," +
+		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id{shard=1, realm=0, num=4321}," +
 				" expiry=0, balance=0, deleted=false, tokens=<N/A>, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
 				"type=null, deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
