@@ -138,7 +138,7 @@ class RoyaltyFeeAssessorTest {
 		// and:
 		final var reclaimable = changesNoLongerWithOriginalUnits();
 
-		given(changeManager.isRoyaltyPaid(1, nonFungibleTokenId, payer)).willReturn(true);
+		given(changeManager.isRoyaltyPaid(nonFungibleTokenId, payer)).willReturn(true);
 
 		// when:
 		final var result = subject.assessAllRoyalties(
@@ -179,8 +179,8 @@ class RoyaltyFeeAssessorTest {
 				targetCollector.asId(), MISSING_ID, MISSING_ID, originalUnits / 2, changeManager);
 		verify(fungibleAdjuster).adjustedChange(
 				targetCollector.asId(), MISSING_ID, firstFungibleTokenId, originalUnits / 2, changeManager);
-		verify(changeManager).isRoyaltyPaid(1, nonFungibleTokenId, payer);
-		verify(changeManager).markRoyaltyPaid(1, nonFungibleTokenId, payer);
+		verify(changeManager).isRoyaltyPaid(nonFungibleTokenId, payer);
+		verify(changeManager).markRoyaltyPaid(nonFungibleTokenId, payer);
 		// and:
 		assertEquals(2, accumulator.size());
 		assertEquals(hbarAssessed, accumulator.get(0));

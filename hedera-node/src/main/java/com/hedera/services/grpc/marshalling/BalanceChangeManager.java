@@ -23,7 +23,6 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +39,7 @@ public class BalanceChangeManager {
 	private int levelNo = 0;
 	private int levelStart = 0;
 	private int levelEnd;
-	private Set<Triple<Integer, Id, Id>> royaltiesPaid = null;
+	private Set<Pair<Id, Id>> royaltiesPaid = null;
 
 	public interface ChangeManagerFactory {
 		BalanceChangeManager from(List<BalanceChange> changesSoFar, int numHbar);
@@ -53,15 +52,15 @@ public class BalanceChangeManager {
 		levelEnd = changesSoFar.size();
 	}
 
-	public void markRoyaltyPaid(final int royaltyFeeNum, final Id uniqueToken, final Id account) {
+	public void markRoyaltyPaid(final Id uniqueToken, final Id account) {
 		if (royaltiesPaid == null) {
 			royaltiesPaid = new HashSet<>();
 		}
-		royaltiesPaid.add(Triple.of(royaltyFeeNum, uniqueToken, account));
+		royaltiesPaid.add(Pair.of(uniqueToken, account));
 	}
 
-	public boolean isRoyaltyPaid(final int royaltyFeeNum, final Id uniqueToken, final Id account) {
-		return royaltiesPaid != null && royaltiesPaid.contains(Triple.of(royaltyFeeNum, uniqueToken, account));
+	public boolean isRoyaltyPaid(final Id uniqueToken, final Id account) {
+		return royaltiesPaid != null && royaltiesPaid.contains(Pair.of(uniqueToken, account));
 	}
 
 	public void includeChange(BalanceChange change) {

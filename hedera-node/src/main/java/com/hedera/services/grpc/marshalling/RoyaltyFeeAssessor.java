@@ -51,19 +51,22 @@ public class RoyaltyFeeAssessor {
 			List<FcAssessedCustomFee> accumulator
 	) {
 		final var payer = change.getAccount();
+		final var token = change.getToken();
+
+		/* If the same account sends multiple NFTs of the same type in the
+           same transfer, we only charge the royalties once. */
+		if (changeManager.isRoyaltyPaid(token, payer)) {
+			return OK;
+		}
+
 		final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
-		var royaltyFeeNum = 0;
 		for (var fee : feesWithRoyalties) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != ROYALTY_FEE) {
 				continue;
 			}
 			final var spec = fee.getRoyaltyFeeSpec();
-			final var token = change.getToken();
-			royaltyFeeNum++;
-			if (changeManager.isRoyaltyPaid(royaltyFeeNum, token, payer)) {
-				continue;
-			}
+
 			if (exchangedValue.isEmpty()) {
 				final var fallback = spec.getFallbackFee();
 				if (fallback != null) {
@@ -83,9 +86,11 @@ public class RoyaltyFeeAssessor {
 				if (fractionalValidity != OK) {
 					return fractionalValidity;
 				}
-				changeManager.markRoyaltyPaid(royaltyFeeNum, token, payer);
 			}
 		}
+
+		/* Note that this account has now paid all royalties for this NFT type */
+		changeManager.markRoyaltyPaid(token, payer);
 		return OK;
 	}
 
