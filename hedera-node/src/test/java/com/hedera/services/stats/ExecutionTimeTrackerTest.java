@@ -1,0 +1,92 @@
+package com.hedera.services.stats;
+
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
+@ExtendWith(MockitoExtension.class)
+class ExecutionTimeTrackerTest {
+	private final TransactionID aTxnId = TransactionID.newBuilder()
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.build();
+	private final TransactionID bTxnId = TransactionID.newBuilder()
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+			.setAccountID(IdUtils.asAccount("0.0.3"))
+			.build();
+
+	@Mock
+	private NodeLocalProperties nodeLocalProperties;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
+
+	private ExecutionTimeTracker subject;
+
+	@Test
+	void isNoopIfNotTrackingAnyTimes() {
+		withImpliedSubject();
+
+		assertTrue(subject.isShouldNoop());
+		assertNull(subject.getExecNanosCache());
+		assertDoesNotThrow(subject::stop);
+		assertDoesNotThrow(subject::start);
+		assertFalse(subject.hasExecNanosFor(aTxnId));
+		assertThrows(IllegalStateException.class, () -> subject.getExecNanosFor(aTxnId));
+	}
+
+	@Test
+	void tracksAtMostConfigured() {
+		final var busyNanos = 1_000_000;
+		final var epsilonNanos = 1_000;
+
+		given(nodeLocalProperties.numExecutionTimesToTrack()).willReturn(1);
+		withImpliedSubject();
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		given(accessor.getTxnId()).willReturn(aTxnId);
+
+		subject.start();
+		stayBusyFor(busyNanos);
+		subject.stop();
+
+		assertTrue(subject.hasExecNanosFor(aTxnId));
+		assertTrue(Math.abs(subject.getExecNanosFor(aTxnId) - busyNanos) < epsilonNanos);
+
+		given(accessor.getTxnId()).willReturn(bTxnId);
+		subject.start();
+		stayBusyFor(busyNanos);
+		subject.stop();
+
+		assertFalse(subject.hasExecNanosFor(aTxnId));
+		assertThrows(IllegalArgumentException.class, () -> subject.getExecNanosFor(aTxnId));
+		assertTrue(subject.hasExecNanosFor(bTxnId));
+		assertTrue(Math.abs(subject.getExecNanosFor(bTxnId) - busyNanos) < epsilonNanos);
+	}
+
+	private void stayBusyFor(long nanos) {
+		long now = System.nanoTime();
+		while (System.nanoTime() - now < nanos) {
+			/* No-op */
+		}
+	}
+
+	private void withImpliedSubject() {
+		subject = new ExecutionTimeTracker(txnCtx, nodeLocalProperties);
+	}
+}

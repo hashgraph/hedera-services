@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.context.annotations.BootstrapProps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -109,9 +108,7 @@ public class BootstrapProperties implements PropertySource {
 
 	private void resolveBootstrapProps(final Properties resourceProps) {
 		bootstrapProps = new HashMap<>();
-		BOOTSTRAP_PROP_NAMES
-				.stream()
-				.forEach(prop -> bootstrapProps.put(
+		BOOTSTRAP_PROP_NAMES.forEach(prop -> bootstrapProps.put(
 						prop,
 						transformFor(prop).apply(resourceProps.getProperty(prop))));
 
@@ -282,6 +279,7 @@ public class BootstrapProperties implements PropertySource {
 			"queries.blob.lookupRetries",
 			"precheck.account.maxLookupRetries",
 			"precheck.account.lookupRetryBackoffIncrementMs",
+			"stats.executionTimesToTrack",
 			"stats.hapiOps.speedometerUpdateIntervalMs",
 			"stats.runningAvgHalfLifeSecs",
 			"stats.speedometerHalfLifeSecs"
@@ -399,6 +397,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
 			entry("consensus.message.maxBytesAllowed", AS_INT),
-			entry("tokens.nfts.areEnabled", AS_BOOLEAN)
+			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
+			entry("stats.executionTimesToTrack", AS_INT)
 	);
 }
