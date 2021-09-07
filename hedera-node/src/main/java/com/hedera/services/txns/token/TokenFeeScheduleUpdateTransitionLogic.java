@@ -37,9 +37,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -78,6 +80,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 		/* --- Load the model objects --- */
 		var token = tokenStore.loadToken(targetTokenId);
+		validateTrue(token.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
 
 		/* --- Validate and initialize custom fees list --- */
 		final var tooManyFees = op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed();

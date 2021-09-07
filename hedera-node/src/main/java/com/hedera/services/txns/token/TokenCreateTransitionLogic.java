@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -62,8 +61,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
 	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
-
-	private BiFunction<GlobalDynamicProperties, TokenCreateTransactionBody, Creation> creationFactory = Creation::new;
+	private Creation.CreationFactory creationFactory = Creation::new;
 
 	private final AccountStore accountStore;
 	private final EntityIdSource ids;
@@ -93,17 +91,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenCreation();
-		final var creation = creationFactory.apply(dynamicProperties, op);
+		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
 		/* --- Load existing model objects --- */
-		creation.loadModelsWith(txnCtx.activePayer(), accountStore, ids, validator);
+		creation.loadModelsWith(txnCtx.activePayer(), ids, validator);
 
 		/* --- Create, update, and validate model objects  --- */
 		final var now = txnCtx.consensusTime().getEpochSecond();
 		creation.doProvisionallyWith(now, MODEL_FACTORY, RELS_LISTING);
 
 		/* --- Persist all new and updated models --- */
-		creation.persistWith(accountStore, tokenStore);
+		creation.persist();
 
 		/* --- Record activity in the transaction context --- */
 		txnCtx.setNewTokenAssociations(creation.newAssociations());
@@ -202,9 +200,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	}
 
 	/* --- Only used by unit tests --- */
-	void setCreationFactory(
-			BiFunction<GlobalDynamicProperties, TokenCreateTransactionBody, Creation> creationFactory
-	) {
+	public void setCreationFactory(Creation.CreationFactory creationFactory) {
 		this.creationFactory = creationFactory;
 	}
 }

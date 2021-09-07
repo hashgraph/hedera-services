@@ -46,6 +46,7 @@ import java.util.function.Function;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -86,8 +87,16 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	@Test
 	void validatesFeesListLength() {
 		givenTxnCtx();
+		given(token.hasFeeScheduleKey()).willReturn(true);
 
 		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), CUSTOM_FEES_LIST_TOO_LONG);
+	}
+
+	@Test
+	void validatesTokenHasFeeScheduleKey() {
+		givenTxnCtx();
+
+		TxnUtils.assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
 	}
 
 	@Test
@@ -99,6 +108,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
 		givenTxnCtx();
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
+		given(token.hasFeeScheduleKey()).willReturn(true);
 
 		subject.doStateTransition();
 

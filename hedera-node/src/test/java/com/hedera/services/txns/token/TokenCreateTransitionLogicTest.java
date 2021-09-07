@@ -49,7 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 
 import static com.hedera.services.txns.token.TokenCreateTransitionLogic.MODEL_FACTORY;
 import static com.hedera.services.txns.token.TokenCreateTransitionLogic.RELS_LISTING;
@@ -111,7 +110,7 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private BiFunction<GlobalDynamicProperties, TokenCreateTransactionBody, Creation> creationFactory;
+	private Creation.CreationFactory creationFactory;
 
 	private TokenCreateTransitionLogic subject;
 
@@ -131,14 +130,18 @@ class TokenCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(creationFactory.apply(dynamicProperties, tokenCreateTxn.getTokenCreation())).willReturn(creation);
+		given(creationFactory.processFrom(
+				accountStore,
+				tokenStore,
+				dynamicProperties,
+				tokenCreateTxn.getTokenCreation())).willReturn(creation);
 		given(creation.newAssociations()).willReturn(mockAssociations);
 
 		subject.doStateTransition();
 
-		verify(creation).loadModelsWith(payer, accountStore, ids, validator);
+		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
-		verify(creation).persistWith(accountStore, tokenStore);
+		verify(creation).persist();
 		verify(txnCtx).setNewTokenAssociations(mockAssociations);
 	}
 

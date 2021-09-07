@@ -660,6 +660,10 @@ public class Token {
 				.toString();
 	}
 
+	public boolean hasFeeScheduleKey() {
+		return feeScheduleKey != null;
+	}
+
 	public JKey getFeeScheduleKey() {
 		return feeScheduleKey;
 	}

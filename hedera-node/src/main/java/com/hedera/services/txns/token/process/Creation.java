@@ -22,6 +22,7 @@ package com.hedera.services.txns.token.process;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -48,6 +49,15 @@ import static java.util.stream.Collectors.toList;
  */
 public class Creation {
 	@FunctionalInterface
+	public interface CreationFactory {
+		Creation processFrom(
+				AccountStore accountStore,
+				TypedTokenStore tokenStore,
+				GlobalDynamicProperties dynamicProperties,
+				TokenCreateTransactionBody op);
+	}
+
+	@FunctionalInterface
 	public interface TokenModelFactory {
 		Token createFrom(
 				final Id tokenId,
@@ -68,20 +78,25 @@ public class Creation {
 	private Account autoRenew;
 	private List<TokenRelationship> newRels;
 
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TokenCreateTransactionBody op;
 
 	public Creation(
+			AccountStore accountStore,
+			TypedTokenStore tokenStore,
 			GlobalDynamicProperties dynamicProperties,
 			TokenCreateTransactionBody op
 	) {
-		this.dynamicProperties = dynamicProperties;
 		this.op = op;
+		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void loadModelsWith(
 			AccountID sponsor,
-			AccountStore accountStore,
 			EntityIdSource ids,
 			OptionValidator validator
 	) {
@@ -104,17 +119,16 @@ public class Creation {
 		validateTrue(op.getCustomFeesCount() <= maxCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
 		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
+		provisionalToken.getCustomFees().forEach(fee ->
+				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
 		newRels = listing.listFrom(provisionalToken, dynamicProperties.maxTokensPerAccount());
 		if (op.getInitialSupply() > 0) {
 			provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
 		}
+		provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
 	}
 
-	public void persistWith(AccountStore accountStore, TypedTokenStore tokenStore) {
-		provisionalToken.getCustomFees().forEach(fee -> {
-			fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
-			fee.nullOutCollector();
-		});
+	public void persist() {
 		tokenStore.persistNew(provisionalToken);
 		tokenStore.persistTokenRelationships(newRels);
 		newRels.forEach(rel -> accountStore.persistAccount(rel.getAccount()));

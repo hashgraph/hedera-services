@@ -793,6 +793,12 @@ class FcCustomFeeTest {
 				netOfTransfers), CUSTOM_FEE_MUST_BE_POSITIVE);
 		assertFailsWith(() -> new FractionalFeeSpec(
 				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				-maximumUnitsToCollect,
+				netOfTransfers), CUSTOM_FEE_MUST_BE_POSITIVE);
+		assertFailsWith(() -> new FractionalFeeSpec(
+				validNumerator,
 				-validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect,
@@ -803,12 +809,6 @@ class FcCustomFeeTest {
 				-minimumUnitsToCollect,
 				maximumUnitsToCollect,
 				netOfTransfers), CUSTOM_FEE_MUST_BE_POSITIVE);
-		assertFailsWith(() -> new FractionalFeeSpec(
-				validNumerator,
-				validDenominator,
-				minimumUnitsToCollect,
-				-maximumUnitsToCollect,
-				netOfTransfers), FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
 		assertFailsWith(() -> new FractionalFeeSpec(
 				validNumerator,
 				validDenominator,

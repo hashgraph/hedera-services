@@ -101,6 +101,15 @@ class TokenTest {
 	}
 
 	@Test
+	void recognizesFeeScheduleKey() {
+		assertFalse(subject.hasFeeScheduleKey());
+
+		subject.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
+		
+		assertTrue(subject.hasFeeScheduleKey());
+	}
+
+	@Test
 	void deleteFailsAsExpected() {
 		subject.setAdminKey(null);
 		assertFailsWith(() -> subject.delete(), TOKEN_IS_IMMUTABLE);

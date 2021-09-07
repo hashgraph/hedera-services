@@ -110,15 +110,12 @@ class CreationTest {
 	@Test
 	void persistWorks() {
 		givenSubjectWithEverything();
-		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 		given(newRel.getAccount()).willReturn(treasury);
 		subject.setNewRels(List.of(newRel));
 		subject.setProvisionalToken(provisionalToken);
 
-		subject.persistWith(accountStore, tokenStore);
+		subject.persist();
 
-		verify(customFee).validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
-		verify(customFee).nullOutCollector();
 		verify(tokenStore).persistNew(provisionalToken);
 		verify(tokenStore).persistTokenRelationships(List.of(newRel));
 		verify(accountStore).persistAccount(treasury);
@@ -129,7 +126,7 @@ class CreationTest {
 		givenSubjectWithInvalidExpiry();
 
 		assertFailsWith(
-				() -> subject.loadModelsWith(grpcSponsor, accountStore, ids, validator),
+				() -> subject.loadModelsWith(grpcSponsor, ids, validator),
 				INVALID_EXPIRATION_TIME);
 	}
 
@@ -139,7 +136,7 @@ class CreationTest {
 		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
 
-		subject.loadModelsWith(grpcSponsor, accountStore, ids, validator);
+		subject.loadModelsWith(grpcSponsor, ids, validator);
 
 		assertSame(treasury, subject.getTreasury());
 		assertNull(subject.getAutoRenew());
@@ -153,7 +150,7 @@ class CreationTest {
 		given(accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
 
-		subject.loadModelsWith(grpcSponsor, accountStore, ids, validator);
+		subject.loadModelsWith(grpcSponsor, ids, validator);
 
 		assertSame(treasury, subject.getTreasury());
 		assertSame(autoRenew, subject.getAutoRenew());
@@ -177,6 +174,7 @@ class CreationTest {
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
+		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
 		subject.setProvisionalToken(provisionalToken);
@@ -185,6 +183,8 @@ class CreationTest {
 
 		subject.doProvisionallyWith(now, modelFactory, listing);
 
+		verify(customFee).validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
+		verify(customFee).nullOutCollector();
 		verify(provisionalToken).mint(newRel, initialSupply, true);
 	}
 
@@ -208,19 +208,19 @@ class CreationTest {
 	}
 
 	private void givenSubjectWithEverything() {
-		subject = new Creation(dynamicProperties, creationWithEverything());
+		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverything());
 	}
 
 	private void givenSubjectWithEverythingExceptInitialSupply() {
-		subject = new Creation(dynamicProperties, creationWithEverythingExceptInitialSupply());
+		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverythingExceptInitialSupply());
 	}
 
 	private void givenSubjectNoAutoRenew() {
-		subject = new Creation(dynamicProperties, creationNoAutoRenew());
+		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationNoAutoRenew());
 	}
 
 	private void givenSubjectWithInvalidExpiry() {
-		subject = new Creation(dynamicProperties, creationInvalidExpiry());
+		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationInvalidExpiry());
 	}
 
 	private final AccountID grpcSponsor = IdUtils.asAccount("0.0.3");
