@@ -52,6 +52,7 @@ public class RoyaltyFeeAssessor {
 	) {
 		final var payer = change.getAccount();
 		final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
+		var royaltyFeeNum = 0;
 		for (var fee : feesWithRoyalties) {
 			final var collector = fee.getFeeCollectorAsId();
 			if (fee.getFeeType() != ROYALTY_FEE) {
@@ -59,10 +60,10 @@ public class RoyaltyFeeAssessor {
 			}
 			final var spec = fee.getRoyaltyFeeSpec();
 			final var token = change.getToken();
-			if (changeManager.isRoyaltyPaid(token, payer)) {
+			royaltyFeeNum++;
+			if (changeManager.isRoyaltyPaid(royaltyFeeNum, token, payer)) {
 				continue;
 			}
-
 			if (exchangedValue.isEmpty()) {
 				final var fallback = spec.getFallbackFee();
 				if (fallback != null) {
@@ -82,7 +83,7 @@ public class RoyaltyFeeAssessor {
 				if (fractionalValidity != OK) {
 					return fractionalValidity;
 				}
-				changeManager.markRoyaltyPaid(token, payer);
+				changeManager.markRoyaltyPaid(royaltyFeeNum, token, payer);
 			}
 		}
 		return OK;

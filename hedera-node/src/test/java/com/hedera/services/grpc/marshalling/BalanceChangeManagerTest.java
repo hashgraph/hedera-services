@@ -48,13 +48,13 @@ class BalanceChangeManagerTest {
 	@Test
 	void markingRoyaltiesWorks() {
 		// expect:
-		assertFalse(subject.isRoyaltyPaid(nonFungibleTokenId, misc));
+		assertFalse(subject.isRoyaltyPaid(1, nonFungibleTokenId, misc));
 
 		// and when:
-		subject.markRoyaltyPaid(nonFungibleTokenId, misc);
+		subject.markRoyaltyPaid(1, nonFungibleTokenId, misc);
 
 		// then:
-		assertTrue(subject.isRoyaltyPaid(nonFungibleTokenId, misc));
+		assertTrue(subject.isRoyaltyPaid(1, nonFungibleTokenId, misc));
 	}
 
 	@Test

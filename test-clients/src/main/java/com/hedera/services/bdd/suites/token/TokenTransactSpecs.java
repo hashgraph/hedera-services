@@ -61,6 +61,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
@@ -138,7 +139,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						nestedHtsCaseStudy(),
 						treasuriesAreExemptFromAllCustomFees(),
 						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-						royaltyFallbackCaseStudy(),
+						multipleRoyaltyFallbackCaseStudy(),
 						normalRoyaltyCaseStudy(),
 						canTransactInTokenWithSelfDenominatedFixedFee(),
 						nftOwnersChangeAtomically(),
@@ -1226,37 +1227,47 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec royaltyFallbackCaseStudy() {
+	public HapiApiSpec multipleRoyaltyFallbackCaseStudy() {
 		final var zephyr = "zephyr";
 		final var amelie = "amelie";
 		final var usdcTreasury = "bank";
 		final var westWindTreasury = "collection";
 		final var westWindArt = "westWindArt";
+		final var westWindDirector = "director";
+		final var westWindOwner = "owner";
 		final var usdc = "USDC";
 		final var supplyKey = "supply";
 
 		final var txnFromTreasury = "txnFromTreasury";
 		final var txnFromZephyr = "txnFromZephyr";
 
-		return defaultHapiSpec("RoyaltyFallbackCaseStudy")
+		return defaultHapiSpec("MultipleRoyaltyFallbackCaseStudy")
 				.given(
 						newKeyNamed(supplyKey),
 						cryptoCreate(zephyr),
 						cryptoCreate(amelie),
 						cryptoCreate(usdcTreasury),
 						cryptoCreate(westWindTreasury),
+						cryptoCreate(westWindDirector),
+						cryptoCreate(westWindOwner),
 						tokenCreate(usdc)
 								.treasury(usdcTreasury),
 						tokenAssociate(westWindTreasury, usdc),
+						tokenAssociate(westWindOwner, usdc),
 						tokenCreate(westWindArt)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)
 								.supplyKey(supplyKey)
 								.treasury(westWindTreasury)
 								.withCustom(royaltyFeeWithFallback(
-										1, 100,
+										10, 100,
 										fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
-										westWindTreasury)),
+										westWindTreasury))
+								.withCustom(royaltyFeeNoFallback(10, 100, westWindDirector))
+								.withCustom(royaltyFeeWithFallback(
+										5, 100,
+										fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
+										westWindOwner)),
 						tokenAssociate(amelie, List.of(westWindArt, usdc)),
 						tokenAssociate(zephyr, List.of(westWindArt, usdc)),
 						mintToken(westWindArt, List.of(ByteString.copyFromUtf8("Fugues and fantastics")))
@@ -1267,22 +1278,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						)
 								.fee(ONE_HBAR)
 								.via(txnFromTreasury),
-						cryptoTransfer(
-								movingUnique(westWindArt, 1L)
-										.between(zephyr, amelie)
-						)
-								.payingWith(zephyr)
-								.fee(ONE_HBAR)
-								.hasKnownStatus(INVALID_SIGNATURE),
-						cryptoTransfer(
-								movingUnique(westWindArt, 1L)
-										.between(zephyr, amelie)
-						)
-								.signedBy(amelie, zephyr)
-								.payingWith(zephyr)
-								.fee(ONE_HBAR)
-								.hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
-						cryptoTransfer(moving(1, usdc).between(usdcTreasury, amelie)),
+						cryptoTransfer(moving(2, usdc).between(usdcTreasury, amelie)),
 						cryptoTransfer(
 								movingUnique(westWindArt, 1L)
 										.between(zephyr, amelie)
