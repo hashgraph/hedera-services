@@ -21,7 +21,11 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
@@ -34,8 +38,14 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.io.IOException;
 import java.util.Objects;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 /**
  * Represents a custom fee attached to an HTS token type. Custom fees are
@@ -83,11 +93,13 @@ public class FcCustomFee implements SelfSerializable {
 		FRACTIONAL_FEE, FIXED_FEE, ROYALTY_FEE
 	}
 
+	private Account collector;
+
 	public FcCustomFee() {
 		/* For RuntimeConstructable */
 	}
 
-	private FcCustomFee(
+	FcCustomFee(
 			FeeType feeType,
 			EntityId feeCollector,
 			FixedFeeSpec fixedFeeSpec,
@@ -99,6 +111,69 @@ public class FcCustomFee implements SelfSerializable {
 		this.fixedFeeSpec = fixedFeeSpec;
 		this.royaltyFeeSpec = royaltyFeeSpec;
 		this.fractionalFeeSpec = fractionalFeeSpec;
+	}
+
+	public boolean requiresCollectorAutoAssociation() {
+		switch (feeType) {
+			case FRACTIONAL_FEE:
+				return true;
+			case FIXED_FEE:
+				return fixedFeeSpec.usedDenomWildcard();
+			case ROYALTY_FEE:
+				if (royaltyFeeSpec.hasFallbackFee()) {
+					return royaltyFeeSpec.getFallbackFee().usedDenomWildcard();
+				}
+		}
+		return false;
+	}
+
+	public void validateAndFinalizeWith(
+			final Token provisionalToken,
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore
+	) {
+		validate(provisionalToken, true, accountStore, tokenStore);
+	}
+
+	public void validateWith(
+			final Token owningToken,
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore
+	) {
+		validate(owningToken, false, accountStore, tokenStore);
+	}
+
+	private void validate(
+			final Token token,
+			final boolean beingCreated,
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore
+	) {
+		collector = accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR);
+
+		switch (feeType) {
+			case FIXED_FEE:
+				if (beingCreated) {
+					fixedFeeSpec.validateAndFinalizeWith(token, collector, tokenStore);
+				} else {
+					fixedFeeSpec.validateWith(collector, tokenStore);
+				}
+				break;
+			case ROYALTY_FEE:
+				validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+				if (beingCreated) {
+					royaltyFeeSpec.validateAndFinalizeWith(token, collector, tokenStore);
+				} else {
+					royaltyFeeSpec.validateWith(token, collector, tokenStore);
+				}
+				break;
+			case FRACTIONAL_FEE:
+				validateTrue(token.isFungibleCommon(), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+				if (!beingCreated) {
+					validateTrue(collector.isAssociatedWith(token.getId()), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+				}
+				break;
+		}
 	}
 
 	public static FcCustomFee royaltyFee(
@@ -136,16 +211,16 @@ public class FcCustomFee implements SelfSerializable {
 		return new FcCustomFee(FIXED_FEE, feeCollector, spec, null, null);
 	}
 
-	public static FcCustomFee fromGrpc(CustomFee source, EntityId targetId) {
+	public static FcCustomFee fromGrpc(CustomFee source) {
+		final var isSpecified = source.hasFixedFee() || source.hasFractionalFee() || source.hasRoyaltyFee();
+		validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
+
 		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
 			final var fixedSource = source.getFixedFee();
 			if (fixedSource.hasDenominatingTokenId()) {
 				denom = EntityId.fromGrpcTokenId(fixedSource.getDenominatingTokenId());
-				if (0 == denom.num()) {
-					denom = targetId;
-				}
 			}
 			return fixedFee(fixedSource.getAmount(), denom, feeCollector);
 		} else if (source.hasFractionalFee()) {
@@ -218,6 +293,14 @@ public class FcCustomFee implements SelfSerializable {
 
 	public FixedFeeSpec getFixedFeeSpec() {
 		return fixedFeeSpec;
+	}
+
+	public void nullOutCollector() {
+		collector = null;
+	}
+
+	public Account getValidatedCollector() {
+		return collector;
 	}
 
 	public FractionalFeeSpec getFractionalFeeSpec() {

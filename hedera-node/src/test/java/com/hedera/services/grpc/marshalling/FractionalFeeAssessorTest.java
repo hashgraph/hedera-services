@@ -343,8 +343,8 @@ class FractionalFeeAssessorTest {
 	private final FcCustomFee nonsenseFee = FcCustomFee.fractionalFee(
 			nonsenseNumerator,
 			nonsenseDenominator,
-			0,
-			0,
+			1,
+			1,
 			notNetOfTransfers,
 			secondFractionalFeeCollector);
 	private final BalanceChange vanillaTrigger = BalanceChange.tokenAdjust(

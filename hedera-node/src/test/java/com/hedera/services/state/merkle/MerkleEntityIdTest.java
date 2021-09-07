@@ -23,68 +23,61 @@ package com.hedera.services.state.merkle;
 import com.hedera.test.utils.IdUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class MerkleEntityIdTest {
-	long shard = 13;
-	long realm = 25;
-	long num = 7;
+	private static final long shard = 13;
+	private static final long realm = 25;
+	private static final long num = 7;
 
-	MerkleEntityId subject;
-
-	@BeforeEach
-	private void setup() {
-		subject = new MerkleEntityId(shard, realm, num);
-	}
+	private static final MerkleEntityId subject = new MerkleEntityId(shard, realm, num);
 
 	@Test
 	void toAbbrevStringWorks() {
-		// expect:
 		assertEquals("13.25.7", subject.toAbbrevString());
 	}
 
 	@Test
 	void toAccountIdWorks() {
-		// expect:
 		assertEquals(IdUtils.asAccount("13.25.7"), subject.toAccountId());
 	}
 
 	@Test
 	void objectContractMet() {
-		// given:
-		var one = new MerkleEntityId();
-		var two = new MerkleEntityId(1, 2, 3);
-		var three = new MerkleEntityId();
+		final var one = new MerkleEntityId();
+		final var two = new MerkleEntityId(1, 2, 3);
+		final var three = new MerkleEntityId();
+		final var twoRef = two;
 
-		// when:
 		three.setShard(1);
 		three.setRealm(2);
 		three.setNum(3);
 
-		// then:
-		assertNotEquals(null, one);
+		final var equalsForcedCallResult = one.equals(null);
+		assertFalse(equalsForcedCallResult);
+		assertNotEquals(one, new Object());
+		assertEquals(two, twoRef);
 		assertNotEquals(two, one);
 		assertEquals(two, three);
-		// and:
+
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		// expect;
 		assertEquals(MerkleEntityId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleEntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
@@ -92,15 +85,11 @@ class MerkleEntityIdTest {
 
 	@Test
 	void serializeWorks() throws IOException {
-		// setup:
-		var out = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = inOrder(out);
+		final var out = mock(SerializableDataOutputStream.class);
+		final var inOrder = inOrder(out);
 
-		// when:
 		subject.serialize(out);
 
-		// then:
 		inOrder.verify(out).writeLong(shard);
 		inOrder.verify(out).writeLong(realm);
 		inOrder.verify(out).writeLong(num);
@@ -108,23 +97,17 @@ class MerkleEntityIdTest {
 
 	@Test
 	void deserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var defaultSubject = new MerkleEntityId();
+		final var in = mock(SerializableDataInputStream.class);
+		final var defaultSubject = new MerkleEntityId();
+		given(in.readLong()).willReturn(shard, realm, num);
 
-		given(in.readLong()).willReturn(shard).willReturn(realm).willReturn(num);
-
-		// when:
 		defaultSubject.deserialize(in, MerkleEntityId.MERKLE_VERSION);
 
-		// then:
 		assertEquals(subject, defaultSubject);
 	}
 
 	@Test
 	void toStringWorks() {
-		// expect:
 		assertEquals(
 				"MerkleEntityId{shard=" + shard + ", realm=" + realm + ", entity=" + num + "}",
 				subject.toString());
@@ -132,17 +115,15 @@ class MerkleEntityIdTest {
 
 	@Test
 	void copyWorks() {
-		// when:
-		var subjectCopy = subject.copy();
+		final var subjectCopy = subject.copy();
 
-		// then:
-		assertTrue(subjectCopy != subject);
+		assertNotSame(subject, subjectCopy);
 		assertEquals(subject, subjectCopy);
+		assertTrue(subject.isImmutable());
 	}
 
 	@Test
 	void deleteIsNoop() {
-		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 }

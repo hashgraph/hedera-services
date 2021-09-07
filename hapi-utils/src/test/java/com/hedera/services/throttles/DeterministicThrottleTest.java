@@ -302,8 +302,9 @@ class DeterministicThrottleTest {
 		final var throttle1 = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps, 2, name);
 		final var bucketThrottle = BucketThrottle.withTps(tps);
 
-		assertTrue(throttle.equals(throttle1));
-		assertFalse(throttle.equals(null));
-		assertFalse(throttle.equals(bucketThrottle));
+		assertEquals(throttle, throttle1);
+		final var equalsForcedCallResult = throttle.equals(null);
+		assertFalse(equalsForcedCallResult);
+		assertNotEquals(throttle, bucketThrottle);
 	}
 }
