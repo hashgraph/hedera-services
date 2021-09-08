@@ -47,7 +47,8 @@ public class ExecutionTimeTracker {
 		this.txnCtx = txnCtx;
 
 		final var timesToTrack = properties.numExecutionTimesToTrack();
-		if (shouldNoop = (timesToTrack == 0)) {
+		shouldNoop = (timesToTrack == 0);
+		if (shouldNoop) {
 			execNanosCache = null;
 			log.info("Not tracking execution times (stats.executionTimesToTrack=0)");
 		} else {

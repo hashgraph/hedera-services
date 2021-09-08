@@ -22,7 +22,7 @@ package com.hedera.services.queries.meta;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.mock;
 
 class MetaAnswersTest {
@@ -46,9 +46,10 @@ class MetaAnswersTest {
 		subject = new MetaAnswers(execTime, txnRecord, txnReceipt, versionInfo, fastTxnRecord);
 
 		// then:
-		assertEquals(txnRecord, subject.getTxnRecord());
-		assertEquals(txnReceipt, subject.getTxnReceipt());
-		assertEquals(versionInfo, subject.getVersionInfo());
-		assertEquals(fastTxnRecord, subject.getFastTxnRecord());
+		assertSame(txnRecord, subject.getTxnRecord());
+		assertSame(txnReceipt, subject.getTxnReceipt());
+		assertSame(versionInfo, subject.getVersionInfo());
+		assertSame(fastTxnRecord, subject.getFastTxnRecord());
+		assertSame(execTime, subject.getExecTime());
 	}
 }

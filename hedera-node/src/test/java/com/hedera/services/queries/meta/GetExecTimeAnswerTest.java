@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -49,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -71,6 +73,21 @@ class GetExecTimeAnswerTest {
 	@BeforeEach
 	void setUp() {
 		subject = new GetExecTimeAnswer(executionTimeTracker);
+	}
+
+	@Test
+	void helpersWork() throws Throwable {
+		Query query = validQuery(ANSWER_ONLY, 5L);
+		Response response = Response.newBuilder()
+				.setNetworkGetExecutionTime(NetworkGetExecutionTimeResponse.newBuilder()
+						.setHeader(ResponseHeader.newBuilder()
+								.setNodeTransactionPrecheckCode(INVALID_TRANSACTION_ID)))
+				.build();
+
+		final var payment = subject.extractPaymentFrom(query);
+		assertTrue(payment.isPresent());
+		assertFalse(subject.needsAnswerOnlyCost(query));
+		assertEquals(INVALID_TRANSACTION_ID, subject.extractValidityFrom(response));
 	}
 
 	@Test
