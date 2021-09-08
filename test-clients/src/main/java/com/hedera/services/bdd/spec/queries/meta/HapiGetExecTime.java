@@ -33,7 +33,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -49,8 +52,18 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
 
 	private final List<String> txnsOfInterest;
 
+	private long unsafeExecDuration;
+	private TemporalUnit unsafeExecUnit = null;
+
 	public HapiGetExecTime(List<String> txnsOfInterest) {
 		this.txnsOfInterest = txnsOfInterest;
+	}
+
+
+	public HapiGetExecTime assertingNoneLongerThan(long unsafeExecDuration, TemporalUnit unsafeExecUnit) {
+		this.unsafeExecUnit = unsafeExecUnit;
+		this.unsafeExecDuration = unsafeExecDuration;
+		return this;
 	}
 
 	@Override
@@ -65,6 +78,21 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+		if (unsafeExecUnit != null) {
+			final var maxDuration = Duration.of(unsafeExecDuration, unsafeExecUnit);
+			final var nanosUsed = timesResponse.getExecutionTimesList();
+			for (int i = 0, n = txnsOfInterest.size(); i < n; i++) {
+				final var nanosUsedHere = nanosUsed.get(i);
+				final var durationHere = Duration.ofNanos(nanosUsedHere);
+				Assertions.assertTrue(
+						durationHere.compareTo(maxDuration) <= 0,
+						String.format(
+								"Transaction '%s' took %s, max allowed was %s!",
+								txnsOfInterest.get(i),
+								durationHere,
+								maxDuration));
+			}
+		}
 	}
 
 	@Override

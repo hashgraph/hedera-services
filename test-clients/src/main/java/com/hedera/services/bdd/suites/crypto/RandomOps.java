@@ -102,6 +102,8 @@ public class RandomOps extends HapiApiSuite {
 						/* NetworkGetExecutionTime requires superuser payer */
 						getExecTime(cryptoTransfer, submitMessage, contractCall)
 								.payingWith(GENESIS)
+								/* Uncomment to validate failure message */
+//								.assertingNoneLongerThan(1, ChronoUnit.MILLIS)
 								.logged()
 				);
 	}
