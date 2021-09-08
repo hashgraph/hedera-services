@@ -307,7 +307,7 @@
         <enabled>false</enabled>
       </snapshots>
       <id>sdk-staging</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1130</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1140</url>
     </repository>
     <repository>
       <snapshots>
