@@ -32,7 +32,6 @@ import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenBurnUsage;
-import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.TokenWipeUsage;
@@ -60,6 +59,7 @@ import java.util.List;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -265,11 +265,10 @@ class BaseOperationUsage {
 										.build())))
 						.build();
 
-		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
-		final var baseUsage = estimator.get();
-
-		return UsageAccumulator.fromGrpc(baseUsage);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenCreateUsage(QUAD_SIG_USAGE,  NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenCreateMeta, into);
+		return into;
 	}
 
 	UsageAccumulator fungibleTokenCreate() {
@@ -284,11 +283,10 @@ class BaseOperationUsage {
 						.setTokenType(TokenType.FUNGIBLE_COMMON))
 				.build();
 
-		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
-		final var baseUsage = estimator.get();
-
-		return UsageAccumulator.fromGrpc(baseUsage);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenCreateUsage(QUAD_SIG_USAGE,  NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenCreateMeta, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenCreate() {
@@ -305,11 +303,10 @@ class BaseOperationUsage {
 						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE))
 				.build();
 
-		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
-		final var baseUsage = estimator.get();
-
-		return UsageAccumulator.fromGrpc(baseUsage);
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenCreateUsage(QUAD_SIG_USAGE,  NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenCreateMeta, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenCreateWithCustomFees() {
@@ -333,11 +330,11 @@ class BaseOperationUsage {
 										.build())))
 				.build();
 
-		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
-		final var baseUsage = estimator.get();
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(canonicalTxn);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenCreateUsage(QUAD_SIG_USAGE,  NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenCreateMeta, into);
+		return into;
 
-		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
 	UsageAccumulator submitMessage() {
