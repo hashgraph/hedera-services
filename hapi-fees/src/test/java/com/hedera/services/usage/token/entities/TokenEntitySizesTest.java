@@ -20,7 +20,6 @@ package com.hedera.services.usage.token.entities;
  * ‍
  */
 
-import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
@@ -28,6 +27,8 @@ import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_FLAG
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,7 +38,7 @@ class TokenEntitySizesTest {
 	@Test
 	void sizesFixedAsExpected() {
 		// setup:
-		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * FeeBuilder.BOOL_SIZE
+		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE
 				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
 				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
@@ -84,7 +85,7 @@ class TokenEntitySizesTest {
 	void returnsRequiredBytesForRel() {
 		// expect:
 		assertEquals(
-				3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * FeeBuilder.BOOL_SIZE,
+				3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 3 * BOOL_SIZE + INT_SIZE,
 				subject.bytesUsedPerAccountRelationship());
 	}
 

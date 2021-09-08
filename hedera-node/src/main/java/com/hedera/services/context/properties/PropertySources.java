@@ -20,12 +20,13 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+
 /**
  * Defines a type able to validate the existence of required property sources and
  * resolve them as a single source through a principled override order.
- *
- * @author Michael Tinker
  */
 public interface PropertySources {
 	PropertySource asResolvingSource();
+	void reloadFrom(ServicesConfigurationList config);
 }

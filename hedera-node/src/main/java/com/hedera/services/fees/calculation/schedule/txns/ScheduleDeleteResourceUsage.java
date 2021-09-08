@@ -30,11 +30,15 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class ScheduleDeleteResourceUsage implements TxnResourceUsageEstimator {
     private final ScheduleOpsUsage scheduleOpsUsage;
     private final GlobalDynamicProperties properties;
 
+    @Inject
     public ScheduleDeleteResourceUsage(
             ScheduleOpsUsage scheduleOpsUsage,
             GlobalDynamicProperties properties

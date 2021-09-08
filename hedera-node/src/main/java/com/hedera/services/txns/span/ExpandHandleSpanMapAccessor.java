@@ -22,14 +22,24 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.utils.TxnAccessor;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Minimal helper class for getting/setting entries in a span map.
  */
+@Singleton
 public class ExpandHandleSpanMapAccessor {
 	private static final String IMPLIED_TRANSFERS_KEY = "impliedTransfers";
 	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
+	private static final String TOKEN_CREATE_META_KEY = "tokenCreateMeta";
+
+	@Inject
+	public ExpandHandleSpanMapAccessor() {
+	}
 
 	public void setFeeScheduleUpdateMeta(TxnAccessor accessor, FeeScheduleUpdateMeta feeScheduleUpdateMeta) {
 		accessor.getSpanMap().put(FEE_SCHEDULE_UPDATE_META_KEY, feeScheduleUpdateMeta);
@@ -45,5 +55,13 @@ public class ExpandHandleSpanMapAccessor {
 
 	public ImpliedTransfers getImpliedTransfers(TxnAccessor accessor) {
 		return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
+	}
+
+	public void setTokenCreate(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {
+		accessor.getSpanMap().put(TOKEN_CREATE_META_KEY, tokenCreateMeta);
+	}
+
+	public TokenCreateMeta getTokenCreateMeta(TxnAccessor accessor) {
+		return (TokenCreateMeta) accessor.getSpanMap().get(TOKEN_CREATE_META_KEY);
 	}
 }

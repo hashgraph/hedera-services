@@ -37,19 +37,15 @@ import java.util.Map;
 
 /**
  * Defines a type able to calculate the fees required for various operations within Hedera Services.
- *
- * @author Michael Tinker
  */
 public interface FeeCalculator {
 	void init();
-
-	long activeGasPriceInTinybars();
 
 	long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
 	long estimatedNonFeePayerAdjustments(TxnAccessor accessor, Timestamp at);
 
-	FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view);
+	FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant consensusTime);
 
 	FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 

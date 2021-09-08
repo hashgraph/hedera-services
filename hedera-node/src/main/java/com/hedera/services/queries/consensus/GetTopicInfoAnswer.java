@@ -40,6 +40,8 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
@@ -49,9 +51,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetTopicInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 
+	@Inject
 	public GetTopicInfoAnswer(OptionValidator optionValidator) {
 		this.optionValidator = optionValidator;
 	}

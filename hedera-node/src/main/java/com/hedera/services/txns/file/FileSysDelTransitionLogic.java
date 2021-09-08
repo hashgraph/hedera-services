@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -43,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class FileSysDelTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileSysDelTransitionLogic.class);
 
@@ -52,6 +55,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final Map<EntityId, Long> expiries;
 
+	@Inject
 	public FileSysDelTransitionLogic(
 			HederaFs hfs,
 			Map<EntityId, Long> expiries,

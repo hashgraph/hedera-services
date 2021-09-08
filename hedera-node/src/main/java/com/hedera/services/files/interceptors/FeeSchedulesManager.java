@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.OptionalInt;
@@ -38,6 +40,7 @@ import java.util.OptionalInt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+@Singleton
 public class FeeSchedulesManager implements FileUpdateInterceptor {
 	private static final Logger log = LogManager.getLogger(FeeSchedulesManager.class);
 	private static final int APPLICABLE_PRIORITY = 0;
@@ -50,10 +53,8 @@ public class FeeSchedulesManager implements FileUpdateInterceptor {
 	static final Map.Entry<ResponseCodeEnum, Boolean> OK_FOR_NOW_VERDICT =
 			new AbstractMap.SimpleImmutableEntry<>(FEE_SCHEDULE_FILE_PART_UPLOADED, true);
 
-	public FeeSchedulesManager(
-			FileNumbers fileNums,
-			FeeCalculator fees
-	) {
+	@Inject
+	public FeeSchedulesManager(FileNumbers fileNums, FeeCalculator fees) {
 		this.fees = fees;
 
 		fileNum = fileNums.feeSchedules();

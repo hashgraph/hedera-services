@@ -20,30 +20,54 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 
+@Singleton
 public class OpUsageCtxHelper {
 	private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX =
 			new ExtantFeeScheduleContext(0, 0);
 
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 
+	private final StateView workingView;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
-	public OpUsageCtxHelper(Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens) {
+	@Inject
+	public OpUsageCtxHelper(
+			StateView workingView,
+			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens
+	) {
 		this.tokens = tokens;
+		this.workingView = workingView;
+	}
+
+	public FileAppendMeta metaForFileAppend(TransactionBody txn) {
+		final var op = txn.getFileAppend();
+		final var fileMeta = workingView.attrOf(op.getFileID());
+
+		final var effCreationTime = txn.getTransactionID().getTransactionValidStart().getSeconds();
+		final var effExpiration = fileMeta.map(HFileMeta::getExpiry).orElse(effCreationTime);
+		final var effLifetime = effExpiration - effCreationTime;
+
+		return new FileAppendMeta(op.getContents().size(), effLifetime);
 	}
 
 	public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {

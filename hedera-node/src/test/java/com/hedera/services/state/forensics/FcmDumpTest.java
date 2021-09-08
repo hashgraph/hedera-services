@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.fcmap.FCMap;
@@ -41,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
@@ -79,7 +79,7 @@ class FcmDumpTest {
 	@Mock
 	FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

@@ -20,12 +20,18 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hedera.services.utils.TxnAccessor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class TransactionThrottling {
 	private final FunctionalityThrottling throttles;
 
-	public TransactionThrottling(FunctionalityThrottling throttles) {
+	@Inject
+	public TransactionThrottling(@HapiThrottle FunctionalityThrottling throttles) {
 		this.throttles = throttles;
 	}
 

@@ -9,9 +9,9 @@ package com.hedera.services.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,28 +30,18 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 /**
  * Provides a process object useful for tracking the time of the
  * earliest-expiring record associated to an {@link AccountID}.
- *
- * @author Michael Tinker
  */
 public class EarliestRecordExpiry implements Comparable<EarliestRecordExpiry> {
 	private final long earliestExpiry;
 	private final AccountID id;
 
-	public EarliestRecordExpiry(long earliestExpiry, AccountID id) {
+	public EarliestRecordExpiry(final long earliestExpiry, final AccountID id) {
 		this.earliestExpiry = earliestExpiry;
 		this.id = id;
 	}
 
-	public long getEarliestExpiry() {
-		return earliestExpiry;
-	}
-
-	public AccountID getId() {
-		return id;
-	}
-
 	@Override
-	public int compareTo(EarliestRecordExpiry that) {
+	public int compareTo(final EarliestRecordExpiry that) {
 		return Long.compare(this.earliestExpiry, that.earliestExpiry);
 	}
 
@@ -61,14 +51,14 @@ public class EarliestRecordExpiry implements Comparable<EarliestRecordExpiry> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (this == o) {
 			return true;
 		}
-		if ( o == null || !o.getClass().equals(EarliestRecordExpiry.class) ) {
+		if (o == null || !o.getClass().equals(EarliestRecordExpiry.class)) {
 			return false;
 		}
-		EarliestRecordExpiry that = (EarliestRecordExpiry)o;
+		final var that = (EarliestRecordExpiry) o;
 		return Objects.equals(this.id, that.id) && (this.earliestExpiry == that.earliestExpiry);
 	}
 

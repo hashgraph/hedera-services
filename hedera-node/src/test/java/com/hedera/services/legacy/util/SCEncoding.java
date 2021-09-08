@@ -25,7 +25,6 @@ import org.ethereum.core.CallTransaction;
 import java.math.BigInteger;
 
 /**
- * @author peter
  * 		Smart contract call encoding for use by smart contract unit tests.
  * 		Copied from SmartContractSimpleStorage regression test.
  */

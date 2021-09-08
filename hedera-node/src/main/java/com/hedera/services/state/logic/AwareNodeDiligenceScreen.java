@@ -30,6 +30,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -40,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
+@Singleton
 public class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
@@ -50,6 +54,7 @@ public class AwareNodeDiligenceScreen {
 	private final TransactionContext txnCtx;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
+	@Inject
 	public AwareNodeDiligenceScreen(
 			OptionValidator validator,
 			TransactionContext txnCtx,
@@ -65,10 +70,14 @@ public class AwareNodeDiligenceScreen {
 
 		var submittingAccount = txnCtx.submittingNodeAccount();
 		var designatedAccount = accessor.getTxn().getNodeAccountID();
-
 		boolean designatedNodeExists = backingAccounts.contains(designatedAccount);
 		if (!designatedNodeExists) {
-			logAccountWarning(MISSING_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
+			logAccountWarning(
+					MISSING_NODE_LOG_TPL,
+					submittingAccount,
+					txnCtx.submittingSwirldsMember(),
+					designatedAccount,
+					accessor);
 			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
 			return true;
 		}
@@ -89,7 +98,12 @@ public class AwareNodeDiligenceScreen {
 		}
 
 		if (!submittingAccount.equals(designatedAccount)) {
-			logAccountWarning(WRONG_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
+			logAccountWarning(
+					WRONG_NODE_LOG_TPL,
+					submittingAccount,
+					txnCtx.submittingSwirldsMember(),
+					designatedAccount,
+					accessor);
 			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
 			return true;
 		}
@@ -128,11 +142,16 @@ public class AwareNodeDiligenceScreen {
 	/**
 	 * Logs account warnings
 	 *
-	 * @param message template for the log which includes each of the additional parameters
-	 * @param submittingNodeAccount submitting node account for the transaction
-	 * @param submittingMember submitting member
-	 * @param relatedAccount related account as to which the warning applies to
-	 * @param accessor transaction accessor
+	 * @param message
+	 * 		template for the log which includes each of the additional parameters
+	 * @param submittingNodeAccount
+	 * 		submitting node account for the transaction
+	 * @param submittingMember
+	 * 		submitting member
+	 * @param relatedAccount
+	 * 		related account as to which the warning applies to
+	 * @param accessor
+	 * 		transaction accessor
 	 */
 	private void logAccountWarning(
 			String message,

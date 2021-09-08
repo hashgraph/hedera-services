@@ -26,7 +26,11 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class ThrottlesJsonToProtoSerde {
+public final class ThrottlesJsonToProtoSerde {
+	private ThrottlesJsonToProtoSerde() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	public static ThrottleDefinitions loadProtoDefs(InputStream in) throws IOException {
 		return loadPojoDefs(in).toProto();
 	}

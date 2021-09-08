@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -41,11 +43,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetContractRecordsAnswer implements AnswerService {
 	public static final List<TransactionRecord> GUARANTEED_EMPTY_PAYER_RECORDS = Collections.emptyList();
 
 	private final OptionValidator optionValidator;
 
+	@Inject
 	public GetContractRecordsAnswer(OptionValidator optionValidator) {
 		this.optionValidator = optionValidator;
 	}

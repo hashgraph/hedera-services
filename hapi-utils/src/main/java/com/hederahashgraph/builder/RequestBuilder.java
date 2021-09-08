@@ -2,7 +2,7 @@ package com.hederahashgraph.builder;
 
 /*-
  * ‌
- * Hedera Services API
+ * Hedera Services API Utilities
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -73,10 +73,10 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * @author Akshay
- */
-public class RequestBuilder {
+public final class RequestBuilder {
+  private RequestBuilder() {
+    throw new UnsupportedOperationException("Utility Class");
+  }
 
   public static Transaction getCreateAccountBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,

@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -89,6 +90,10 @@ public interface TxnAccessor {
     }
 
     default Map<String, Object> getSpanMap() {
+        throw new UnsupportedOperationException();
+    }
+
+    default ExpandHandleSpanMapAccessor getSpanMapAccessor() {
         throw new UnsupportedOperationException();
     }
 }

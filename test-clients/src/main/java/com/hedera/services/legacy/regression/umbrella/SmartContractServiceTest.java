@@ -67,8 +67,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class contains smart contract tests.
- *
- * @author hua Created on 2018-10-09
  */
 public class SmartContractServiceTest extends FileServiceTest {
 

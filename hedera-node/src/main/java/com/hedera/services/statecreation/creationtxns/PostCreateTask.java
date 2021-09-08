@@ -1,14 +1,13 @@
 package com.hedera.services.statecreation.creationtxns;
 
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.statecreation.SavedStateHandler;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -22,14 +21,15 @@ public class PostCreateTask implements Runnable {
 	private final static int HALF_MINUE = 30000;
 	private final static int TWO_MINUTES = 120000;
 
-	final ServicesContext ctx;
+	final BasicSubmissionFlow submissionFlow;
 	private final AtomicBoolean allCreated;
 	private final Properties properties;
 	public PostCreateTask(final AtomicBoolean allCreated,
-			final ServicesContext ctx, final Properties properties) {
+			final BasicSubmissionFlow submissionFlow,
+			final Properties properties) {
 		this.allCreated = allCreated;
 		this.properties = properties;
-		this.ctx = ctx;
+		this.submissionFlow = submissionFlow;
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class PostCreateTask implements Runnable {
 			Transaction txn = FreezeTxnFactory.newFreezeTxn().
 					freezeStartAt(Instant.now().plusSeconds(10))
 					.get();
-			TransactionResponse resp = ctx.submissionFlow().submit(txn);
+			TransactionResponse resp = submissionFlow.submit(txn);
 			ResponseCodeEnum retCode = resp.getNodeTransactionPrecheckCode();
 			if(retCode != OK) {
 				log.info("Response code is {} for Freeze txn response code is, txn body {}."
@@ -73,7 +73,6 @@ public class PostCreateTask implements Runnable {
 			finalWaitTime = TWO_MINUTES;
 		}
 
-
 		try {
 			Thread.sleep(finalWaitTime);
 		} catch (InterruptedException e) { }
@@ -89,6 +88,5 @@ public class PostCreateTask implements Runnable {
 			targetDir = "auto-upload-test-dir";
 		}
 		SavedStateHandler.uploadStateFileGsutil(bucketName, targetDir);
-
 	}
 }

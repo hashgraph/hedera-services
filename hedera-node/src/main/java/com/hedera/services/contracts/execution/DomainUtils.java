@@ -45,8 +45,12 @@ import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidity
 import static java.util.Collections.emptyList;
 import static org.ethereum.core.BlockchainImpl.EMPTY_LIST_HASH;
 
-public class DomainUtils {
-	public static Block fakeBlock(Instant at) {
+public final class DomainUtils {
+	private DomainUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
+	public static Block fakeBlock(final Instant at) {
 		return new Block(
 				EMPTY_LIST_HASH,
 				EMPTY_LIST_HASH,
@@ -68,14 +72,14 @@ public class DomainUtils {
 	}
 
 	public static Consumer<byte[]> newScopedAccountInitializer(
-			long startTimeEpochSecs,
-			long contractDurationSecs,
-			byte[] sponsorAddress,
-			ServicesRepositoryImpl repository
+			final long startTimeEpochSecs,
+			final long contractDurationSecs,
+			final byte[] sponsorAddress,
+			final ServicesRepositoryImpl repository
 	) {
 		return address -> {
-			var id = accountParsedFromSolidityAddress(address);
-			var sponsor = repository.getAccount(sponsorAddress);
+			final var id = accountParsedFromSolidityAddress(address);
+			final var sponsor = repository.getAccount(sponsorAddress);
 
 			repository.setSmartContract(address, true);
 			repository.setRealmId(address, sponsor.getRealmId());
@@ -88,13 +92,13 @@ public class DomainUtils {
 	}
 
 	public static TransactionReceipt asReceipt(
-			long cumulativeGas,
-			String errorMsg,
-			Transaction solidityTxn,
-			List<LogInfo> vmLogs,
-			ProgramResult result
+			final long cumulativeGas,
+			final String errorMsg,
+			final Transaction solidityTxn,
+			final List<LogInfo> vmLogs,
+			final ProgramResult result
 	) {
-		var receipt = new TransactionReceipt();
+		final var receipt = new TransactionReceipt();
 		receipt.setCumulativeGas(cumulativeGas);
 		receipt.setTransaction(solidityTxn);
 		receipt.setLogInfoList(vmLogs);
@@ -105,10 +109,10 @@ public class DomainUtils {
 	}
 
 	public static ContractFunctionResult asHapiResult(
-			TransactionReceipt receipt,
-			Optional<List<ContractID>> created
+			final TransactionReceipt receipt,
+			final Optional<List<ContractID>> created
 	) {
-		var result = ContractFunctionResult.newBuilder();
+		final var result = ContractFunctionResult.newBuilder();
 
 		result.setGasUsed(ByteUtil.byteArrayToLong(receipt.getGasUsed()));
 		result.setErrorMessage(receipt.getError());
@@ -129,16 +133,16 @@ public class DomainUtils {
 		return result.build();
 	}
 
-	private static boolean isCreation(TransactionReceipt receipt) {
+	private static boolean isCreation(final TransactionReceipt receipt) {
 		return receipt.getTransaction().getContractAddress() != null;
 	}
 
-	private static boolean isFailed(TransactionReceipt receipt) {
+	private static boolean isFailed(final TransactionReceipt receipt) {
 		return StringUtils.isNotEmpty(receipt.getError());
 	}
 
-	public static ContractLoginfo asHapiLog(LogInfo logInfo) {
-		var log = ContractLoginfo.newBuilder();
+	public static ContractLoginfo asHapiLog(final LogInfo logInfo) {
+		final var log = ContractLoginfo.newBuilder();
 
 		log.setContractID(contractParsedFromSolidityAddress(logInfo.getAddress()));
 		Optional.ofNullable(logInfo.getBloom())

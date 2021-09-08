@@ -1,10 +1,15 @@
 package com.hedera.services.statecreation;
 
-import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.statecreation.creationtxns.PostCreateTask;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -16,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
+@Singleton
 public class StateCreationManager {
 	static Logger log = LogManager.getLogger(StateCreationManager.class);
 
@@ -24,17 +29,31 @@ public class StateCreationManager {
 	private Properties properties;
 
 	ExecutorService executorService;
-	private ServicesContext ctx;
+	private PlatformSubmissionManager submissionManager;
+	private BasicSubmissionFlow submissionFlow;
+	private NodeLocalProperties nodeLocalProperties;
+	private NetworkCtxManager networkCtxManager;
 
 
-	public StateCreationManager(ServicesContext ctx) {
-		this.ctx = ctx;
+	@Inject
+	public StateCreationManager(final PlatformSubmissionManager submissionManager,
+			final BasicSubmissionFlow submissionFlow,
+			final NodeLocalProperties nodeLocalProperties,
+			final NetworkCtxManager networkCtxManager) {
+		this.submissionManager = submissionManager;
+		this.nodeLocalProperties = nodeLocalProperties;
+		this.networkCtxManager = networkCtxManager;
+		this.submissionFlow = submissionFlow;
 	}
 
-	public void create() {
-		loadAndProcessProperties();
-		if(processOrders.size() > 0) {
-			startCreation();
+	public void startIfNeeded() {
+		if (nodeLocalProperties.isCreateStateFile()
+				&& Files.exists(Path.of("data/config/entity-layout.properties"))) {
+
+			loadAndProcessProperties();
+			if(processOrders.size() > 0) {
+				startCreation();
+			}
 		}
 	}
 
@@ -68,13 +87,14 @@ public class StateCreationManager {
 		AtomicBoolean allCreated = new AtomicBoolean(false);
 		executorService = Executors.newFixedThreadPool(2);
 
-		BuiltinClient client = new BuiltinClient(properties, processOrders, ctx, allCreated);
+		BuiltinClient client = new BuiltinClient(properties, processOrders,
+				submissionManager, submissionFlow, networkCtxManager, allCreated);
 
 		log.info("kicked off builtin client to send creation traffic");
 
 		executorService.execute(client);
 
-		PostCreateTask waiter = new PostCreateTask(allCreated, ctx, properties);
+		PostCreateTask waiter = new PostCreateTask(allCreated, submissionFlow, properties);
 
 		executorService.execute(waiter);
 	}

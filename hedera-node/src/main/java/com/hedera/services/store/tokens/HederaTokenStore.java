@@ -35,23 +35,22 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,7 +71,6 @@ import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
@@ -85,25 +83,14 @@ import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -114,7 +101,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static java.util.stream.Collectors.toList;
@@ -122,6 +108,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Provides a managing store for arbitrary tokens.
  */
+@Singleton
 public class HederaTokenStore extends HederaStore implements TokenStore {
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
@@ -141,6 +128,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
 
+	@Inject
 	public HederaTokenStore(
 			final EntityIdSource ids,
 			final OptionValidator validator,
@@ -157,7 +145,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
-		rebuildViewOfKnownTreasuries();
+		/* Known-treasuries view is re-built on restart or reconnect */
 	}
 
 	@Override
@@ -199,7 +187,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum associate(final AccountID aId, final List<TokenID> tokens) {
+	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
 			final var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (var id : tokenIds) {
@@ -211,19 +199,38 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if ((accountTokens.numAssociations() + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			} else {
-				accountTokens.associateAll(new HashSet<>(tokenIds));
-				for (var id : tokenIds) {
-					final var relationship = asTokenRel(aId, id);
-					tokenRelsLedger.create(relationship);
-					final var token = get(id);
-					tokenRelsLedger.set(
-							relationship,
-							TokenRelProperty.IS_FROZEN,
-							token.hasFreezeKey() && token.accountsAreFrozenByDefault());
-					tokenRelsLedger.set(
-							relationship,
-							TokenRelProperty.IS_KYC_GRANTED,
-							!token.hasKycKey());
+				var maxAutomaticAssociations = hederaLedger.maxAutomaticAssociations(aId);
+				var alreadyUsedAutomaticAssociations = hederaLedger.alreadyUsedAutomaticAssociations(aId);
+
+				if (automaticAssociation && alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
+					validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+				}
+
+				if (validity == OK) {
+					accountTokens.associateAll(new HashSet<>(tokenIds));
+					for (var id : tokenIds) {
+						final var relationship = asTokenRel(aId, id);
+						tokenRelsLedger.create(relationship);
+						final var token = get(id);
+						tokenRelsLedger.set(
+								relationship,
+								TokenRelProperty.IS_FROZEN,
+								token.hasFreezeKey() && token.accountsAreFrozenByDefault());
+						tokenRelsLedger.set(
+								relationship,
+								TokenRelProperty.IS_KYC_GRANTED,
+								!token.hasKycKey());
+						tokenRelsLedger.set(
+								relationship,
+								TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
+								automaticAssociation);
+
+						hederaLedger.addNewAssociationToList(
+								new FcTokenAssociation(id.getTokenNum(), aId.getAccountNum()));
+						if (automaticAssociation) {
+							hederaLedger.setAlreadyUsedAutomaticAssociations(aId, alreadyUsedAutomaticAssociations + 1);
+						}
+					}
 				}
 			}
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
@@ -409,168 +416,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			return OK;
 		});
-	}
-
-	private ResponseCodeEnum validateFeeSchedule(
-			final List<CustomFee> feeSchedule,
-			final boolean isUpdate,
-			final TokenID targetTokenId,
-			final MerkleToken targetToken
-	) {
-		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
-			return CUSTOM_FEES_LIST_TOO_LONG;
-		}
-
-		for (var customFee : feeSchedule) {
-			final var feeCollector = customFee.getFeeCollectorAccountId();
-			final var feeCollectorValidity = usableOrElse(feeCollector, INVALID_CUSTOM_FEE_COLLECTOR);
-
-			if (feeCollectorValidity != OK) {
-				return INVALID_CUSTOM_FEE_COLLECTOR;
-			}
-			ResponseCodeEnum responseCode;
-			if (customFee.hasFixedFee()) {
-				responseCode = validateFixed(customFee.getFixedFee(), feeCollector, targetTokenId);
-				if (responseCode != OK) {
-					return responseCode;
-				}
-			} else if (customFee.hasFractionalFee()) {
-				responseCode = validateFractional(customFee, isUpdate, targetToken, targetTokenId, feeCollector);
-				if (responseCode != OK) {
-					return responseCode;
-				}
-			} else if (customFee.hasRoyaltyFee()) {
-				responseCode = validateRoyalty(customFee, isUpdate, targetToken, targetTokenId, feeCollector);
-				if (responseCode != OK) {
-					return responseCode;
-				}
-			} else {
-				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
-			}
-		}
-
-		return OK;
-	}
-
-	private ResponseCodeEnum validateRoyalty(
-			final CustomFee customFee,
-			final boolean isUpdate,
-			final MerkleToken targetToken,
-			final TokenID targetTokenId,
-			final AccountID feeCollector
-	) {
-		final var typeValidity = validateTypeConstraints(
-				isUpdate, NON_FUNGIBLE_UNIQUE, targetToken, CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-		if (typeValidity != OK) {
-			return typeValidity;
-		}
-
-		final var royaltyFee = customFee.getRoyaltyFee();
-
-		final var fraction = royaltyFee.getExchangeValueFraction();
-		final var fractionalValidity = validateFeeFraction(fraction);
-		if (fractionalValidity != OK) {
-			return fractionalValidity;
-		}
-		if (fraction.getNumerator() > fraction.getDenominator()) {
-			return ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
-		}
-
-		if (royaltyFee.hasFallbackFee()) {
-			final var fallback = royaltyFee.getFallbackFee();
-			return validateFixed(fallback, feeCollector, targetTokenId);
-		}
-
-		return OK;
-	}
-
-	private ResponseCodeEnum validateFractional(
-			final CustomFee customFee,
-			final boolean isUpdate,
-			final MerkleToken targetToken,
-			final TokenID targetTokenId,
-			final AccountID feeCollector
-	) {
-		final var typeValidity = validateTypeConstraints(
-				isUpdate, FUNGIBLE_COMMON, targetToken, CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-		if (typeValidity != OK) {
-			return typeValidity;
-		}
-		if (isUpdate && !associationExists(feeCollector, targetTokenId)) {
-			return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-		}
-		final var spec = customFee.getFractionalFee();
-		final var fraction = spec.getFractionalAmount();
-		final var fractionalValidity = validateFeeFraction(fraction);
-		if (fractionalValidity != OK) {
-			return fractionalValidity;
-		}
-		if (spec.getMaximumAmount() < 0 || spec.getMinimumAmount() < 0) {
-			return CUSTOM_FEE_MUST_BE_POSITIVE;
-		}
-		if (spec.getMaximumAmount() > 0 && spec.getMaximumAmount() < spec.getMinimumAmount()) {
-			return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
-		}
-		return OK;
-	}
-
-	private ResponseCodeEnum validateTypeConstraints(
-			final boolean isUpdate,
-			final TokenType requiredType,
-			final MerkleToken targetToken,
-			final ResponseCodeEnum failureCode
-	) {
-		if (!isUpdate) {
-			if (pendingCreation.tokenType() != requiredType) {
-				return failureCode;
-			}
-		} else {
-			if (targetToken.tokenType() != requiredType) {
-				return failureCode;
-			}
-		}
-		return OK;
-	}
-
-	private ResponseCodeEnum validateFeeFraction(final Fraction f) {
-		if (f.getDenominator() == 0) {
-			return FRACTION_DIVIDES_BY_ZERO;
-		}
-		if (!areValidPositiveNumbers(f.getNumerator(), f.getDenominator())) {
-			return CUSTOM_FEE_MUST_BE_POSITIVE;
-		}
-		return OK;
-	}
-
-	private ResponseCodeEnum validateFixed(
-			final FixedFee fixedFee,
-			final AccountID feeCollector,
-			final TokenID targetTokenId
-	) {
-		if (fixedFee.getAmount() <= 0) {
-			return CUSTOM_FEE_MUST_BE_POSITIVE;
-		}
-		if (fixedFee.hasDenominatingTokenId()) {
-			var denom = fixedFee.getDenominatingTokenId();
-			if (0 == denom.getTokenNum()) {
-				denom = targetTokenId;
-			}
-			if (resolve(denom) == MISSING_TOKEN) {
-				return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-			}
-			final var merkleToken = get(denom);
-			if (merkleToken.tokenType() == NON_FUNGIBLE_UNIQUE) {
-				return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-			}
-			if (!pendingId.equals(denom) && !associationExists(feeCollector, denom)) {
-				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-			}
-		}
-		return OK;
-	}
-
-	private boolean areValidPositiveNumbers(final long a, final long b) {
-		return (a > 0 && b > 0);
 	}
 
 	@Override
@@ -848,31 +693,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 	}
 
-	@Override
-	public ResponseCodeEnum updateFeeSchedule(final TokenFeeScheduleUpdateTransactionBody changes) {
-		final var tId = resolve(changes.getTokenId());
-		if (tId == MISSING_TOKEN) {
-			return INVALID_TOKEN_ID;
-		}
-
-		final var token = get(tId);
-		if (!token.hasFeeScheduleKey()) {
-			return TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-		}
-		final var customFees = changes.getCustomFeesList();
-		if (customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
-			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
-		}
-
-		final var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId, token);
-		if (validity != OK) {
-			return validity;
-		}
-		token.setFeeScheduleFrom(customFees, EntityId.fromGrpcTokenId(tId));
-
-		return OK;
-	}
-
 	public static boolean affectsExpiryAtMost(final TokenUpdateTransactionBody op) {
 		return !op.hasAdminKey() &&
 				!op.hasKycKey() &&
@@ -1001,17 +821,35 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 
 		var key = asTokenRel(aId, tId);
+		/*
+		 * Instead of returning  TOKEN_NOT_ASSOCIATED_TO_ACCOUNT when a token is not associated,
+		 * we check if the account has any maxAutoAssociations set up, if they do check if we reached the limit and
+		 * auto associate. If not return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT
+		 */
 		if (!tokenRelsLedger.exists(key)) {
-			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+			validity = validateAndAutoAssociate(aId, tId);
+			if (validity != OK) {
+				return validity;
+			}
 		}
 		if (aCounterPartyId != null) {
 			key = asTokenRel(aCounterPartyId, tId);
 			if (!tokenRelsLedger.exists(key)) {
-				return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+				validity = validateAndAutoAssociate(aId, tId);
+				if (validity != OK) {
+					return validity;
+				}
 			}
 		}
 
 		return action.apply(token);
+	}
+
+	private ResponseCodeEnum validateAndAutoAssociate(AccountID aId, TokenID tId) {
+		if (hederaLedger.maxAutomaticAssociations(aId) > 0) {
+			return associate(aId, List.of(tId), true);
+		}
+		return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 	}
 
 	private ResponseCodeEnum checkExistence(final AccountID aId, final TokenID tId) {

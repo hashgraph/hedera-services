@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -37,8 +39,13 @@ import java.util.function.Predicate;
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 
+@Singleton
 public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 	static Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
+
+	@Inject
+	public GetTokenInfoResourceUsage() {
+	}
 
 	@Override
 	public boolean applicableTo(Query query) {

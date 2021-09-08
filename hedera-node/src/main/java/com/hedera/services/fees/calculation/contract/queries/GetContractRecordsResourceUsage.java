@@ -28,25 +28,30 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class GetContractRecordsResourceUsage implements QueryResourceUsageEstimator {
 	private final SmartContractFeeBuilder usageEstimator;
 
-	public GetContractRecordsResourceUsage(SmartContractFeeBuilder usageEstimator) {
+	@Inject
+	public GetContractRecordsResourceUsage(final SmartContractFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}
 
 	@Override
-	public boolean applicableTo(Query query) {
+	public boolean applicableTo(final Query query) {
 		return query.hasContractGetRecords();
 	}
 
 	@Override
-	public FeeData usageGiven(Query query, StateView view) {
+	public FeeData usageGiven(final Query query, final StateView view) {
 		return usageGivenType(query, view, query.getContractGetRecords().getHeader().getResponseType());
 	}
 
 	@Override
-	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
 		return usageEstimator.getContractRecordsQueryFeeMatrices(GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS,
 				type);
 	}

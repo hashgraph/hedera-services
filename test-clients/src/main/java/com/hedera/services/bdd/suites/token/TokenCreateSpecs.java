@@ -111,6 +111,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
+	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						creationValidatesNonFungiblePrechecks(),
@@ -134,6 +139,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						numAccountsAllowedIsDynamic(),
 						worksAsExpectedWithDefaultTokenId(),
 						cannotCreateWithExcessiveLifetime(),
+						validateNewTokenAssociations(),
 						/* HIP-18 */
 						onlyValidCustomFeeScheduleCanBeCreated(),
 						feeCollectorSigningReqsWorkForTokenCreate(),
@@ -141,6 +147,36 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						baseCreationsHaveExpectedPrices(),
 				}
 		);
+	}
+
+	private HapiApiSpec validateNewTokenAssociations() {
+		final String aToken = "TokenA";
+		final String firstUser = "Client1";
+		final String secondUser = "Client2";
+		final String treasury = "treasury";
+		return defaultHapiSpec("ValidateNewTokenAssociations")
+				.given(
+						cryptoCreate(firstUser),
+						cryptoCreate(secondUser),
+						cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS)
+				)
+				.when(
+						tokenCreate(aToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasury)
+								.withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), firstUser))
+								.withCustom(fixedHtsFee(2L, "0.0.0", secondUser))
+								.signedBy(DEFAULT_PAYER, treasury, firstUser, secondUser)
+								.via("tokenCreateTxn")
+				)
+				.then(
+						getTxnRecord("tokenCreateTxn")
+								.hasNewTokenAssociation(aToken, treasury)
+								.hasNewTokenAssociation(aToken, firstUser)
+								.hasNewTokenAssociation(aToken, secondUser)
+								.logged()
+				);
 	}
 
 	private HapiApiSpec createsFungibleInfiniteByDefault() {

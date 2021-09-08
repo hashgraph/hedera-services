@@ -27,8 +27,12 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 
-public class FixedUsageEstimates {
+public final class FixedUsageEstimates {
 	private static final int BYTES_PER_SEMANTIC_VERSION = 12;
+
+	private FixedUsageEstimates() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
 	private static final FeeComponents ZERO_USAGE = FeeComponents.getDefaultInstance();
 

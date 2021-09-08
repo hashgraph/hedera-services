@@ -20,6 +20,10 @@ package com.hedera.services.queries.contract;
  * ‍
  */
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class ContractAnswers {
 	private final GetBytecodeAnswer getBytecode;
 	private final GetContractInfoAnswer getContractInfo;
@@ -27,6 +31,7 @@ public class ContractAnswers {
 	private final ContractCallLocalAnswer contractCallLocal;
 	private final GetContractRecordsAnswer getContractRecords;
 
+	@Inject
 	public ContractAnswers(
 			GetBytecodeAnswer getBytecode,
 			GetContractInfoAnswer getContractInfo,

@@ -48,6 +48,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -78,7 +79,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -188,7 +188,7 @@ class StateViewTest {
 	private UniqTokenViewFactory uniqTokenViewFactory;
 	private StateChildren children;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
@@ -224,6 +224,8 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
+		tokenAccount.setNftsOwned(10);
+		tokenAccount.setMaxAutomaticAssociations(123);
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
@@ -250,7 +252,7 @@ class StateViewTest {
 		tokenRels = new FCMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(tokenAccountId, tokenId),
-				new MerkleTokenRelStatus(123L, false, true));
+				new MerkleTokenRelStatus(123L, false, true, false));
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
@@ -270,7 +272,7 @@ class StateViewTest {
 		token.setDeleted(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
-		token.setFeeScheduleFrom(grpcCustomFees, null);
+		token.setFeeScheduleFrom(grpcCustomFees);
 
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
@@ -631,6 +633,7 @@ class StateViewTest {
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
 
 		// when:

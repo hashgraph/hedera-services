@@ -44,8 +44,6 @@ import java.util.List;
 
 /**
  * Integration tests for upload a large file.
- *
- * @author hua
  */
 public class LargeFileUploadIT extends FileServiceIT {
 

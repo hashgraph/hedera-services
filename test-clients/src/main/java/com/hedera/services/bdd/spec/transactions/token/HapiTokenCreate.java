@@ -24,15 +24,19 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.usage.token.TokenCreateUsage;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -55,6 +59,12 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	static final Logger log = LogManager.getLogger(HapiTokenCreate.class);
@@ -226,12 +236,30 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+		final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenCreate, this::usageEstimate, txn, numPayerKeys);
+				HederaFunctionality.TokenCreate, txnSubType, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private SubType getTxnSubType(final TransactionBody txn) {
+		final var op = txn.getTokenCreation();
+		SubType chosenType;
+		final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
+		if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
+			chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
+		} else {
+			chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
+		}
+		return chosenType;
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return TokenCreateUsage.newEstimate(txn, suFrom(svo)).get();
+		UsageAccumulator accumulator = new UsageAccumulator();
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		tokenOpsUsage.tokenCreateUsage(suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator );
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override

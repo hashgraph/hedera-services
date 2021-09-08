@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
-
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;

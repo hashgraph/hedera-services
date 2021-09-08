@@ -20,14 +20,19 @@ package com.hedera.services.contracts.persistence;
  * ‍
  */
 
+import com.hedera.services.contracts.annotations.StorageSource;
 import org.ethereum.datasource.StoragePersistence;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 
+@Singleton
 public class BlobStoragePersistence implements StoragePersistence {
 	private final Map<byte[], byte[]> storage;
 
-	public BlobStoragePersistence(Map<byte[], byte[]> storage) {
+	@Inject
+	public BlobStoragePersistence(@StorageSource Map<byte[], byte[]> storage) {
 		this.storage = storage;
 	}
 

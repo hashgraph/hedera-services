@@ -27,6 +27,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.NodeId;
@@ -41,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -75,7 +75,7 @@ class FreezeHandlerTest {
 	private HbarCentExchange exchange;
 	private SwirldDualState dualState;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private FreezeHandler subject;

@@ -28,6 +28,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -45,7 +47,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
+@Singleton
 public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
@@ -56,6 +60,7 @@ public class TransitionRunner {
 			TokenAssociateToAccount, TokenDissociateFromAccount,
 			TokenAccountWipe,
 			TokenCreate,
+			TokenFeeScheduleUpdate,
 			CryptoTransfer,
 			TokenDelete
 	);
@@ -63,6 +68,7 @@ public class TransitionRunner {
 	private final TransactionContext txnCtx;
 	private final TransitionLogicLookup lookup;
 
+	@Inject
 	public TransitionRunner(TransactionContext txnCtx, TransitionLogicLookup lookup) {
 		this.txnCtx = txnCtx;
 		this.lookup = lookup;

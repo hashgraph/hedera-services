@@ -24,9 +24,11 @@ package com.hedera.services.state.merkle.internals;
  * Minimal helper class that "encodes" {@code int} values as non-negative
  * {@code long}s in the range 0 to 4,294,967,295.
  */
-public class IdentityCodeUtils {
+public final class IdentityCodeUtils {
 	private static final long MASK_AS_UNSIGNED_LONG = (1L << 32) - 1;
 	private static final long EPOCH_SECONDS_MASK = MASK_AS_UNSIGNED_LONG << 32;
+	private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
+	private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = MAX_AUTOMATIC_ASSOCIATIONS_MASK << 16;
 
 	public static final long MAX_NUM_ALLOWED = -1 & 0xFFFFFFFFL;
 
@@ -89,6 +91,71 @@ public class IdentityCodeUtils {
 	}
 
 	/**
+	 * Returns a {@code int} whose higher-order 16 bits "encode" an unsigned int value which represent the
+	 * already used AutomaticAssociations of an account and lower-order 16 bits "encode" an unsigned int value  which represent
+	 * the maximum allowed AutomaticAssociations for that account.
+	 *
+	 * @param maxAutoAssociations
+	 * 		maximum allowed automatic associations of an account.
+	 * @param alreadyUsedAutoAssociations
+	 * 		already used automatic associations of an account.
+	 * @return
+	 * 		metadata of
+	 */
+	public static int buildAutomaticAssociationMetaData(int maxAutoAssociations, int alreadyUsedAutoAssociations) {
+		return (alreadyUsedAutoAssociations << 16) | maxAutoAssociations;
+	}
+
+	/**
+	 * Returns the lower-order 16 bits of a given {@code int}
+	 *
+	 * @param autoAssociationMetadata any int
+	 * @return the low-order 16-bits
+	 */
+	public static int getMaxAutomaticAssociationsFrom(int autoAssociationMetadata) {
+		return autoAssociationMetadata & MAX_AUTOMATIC_ASSOCIATIONS_MASK;
+	}
+
+	/**
+	 * Returns the higher-order 16 bits of a given {@code int}
+	 *
+	 * @param autoAssociationMetadata any int
+	 * @return the higher-order 16-bits
+	 */
+	public static int getAlreadyUsedAutomaticAssociationsFrom(int autoAssociationMetadata) {
+		return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) >>> 16;
+	}
+
+	/**
+	 * Set the lower-order 16 bits of automatic association Metadata
+	 *
+	 * @param autoAssociationMetadata
+	 * 		metadata of already used automatic associations and max allowed automatic associations
+	 * @param maxAutomaticAssociations
+	 * 		new max allowed automatic associations to set
+	 * @return
+	 * 		metadata after changing the new max.
+	 */
+	public static int setMaxAutomaticAssociationsTo(int autoAssociationMetadata, int maxAutomaticAssociations) {
+		return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
+
+	}
+
+	/**
+	 * Set the higher-order 16 bits of automatic association Metadata
+	 *
+	 * @param autoAssociationMetadata
+	 * 		metadata of already used automatic associations and max allowed automatic associations
+	 * @param alreadyUsedAutoAssociations
+	 * 		new already used automatic associations to set
+	 * @return
+	 * 		metadata after changing the already used associations count.
+	 */
+	public static int setAlreadyUsedAutomaticAssociationsTo(int autoAssociationMetadata, int alreadyUsedAutoAssociations) {
+		return (alreadyUsedAutoAssociations << 16) | getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+	}
+
+	/**
 	 * Throws an exception if the given long is not a number in the allowed range.
 	 *
 	 * @param num the long to check
@@ -100,7 +167,7 @@ public class IdentityCodeUtils {
 		}
 	}
 
-	IdentityCodeUtils() {
-		throw new IllegalStateException("Utility class");
+	private IdentityCodeUtils() {
+		throw new UnsupportedOperationException("Utility class");
 	}
 }

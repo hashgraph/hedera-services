@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class FreezeTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FreezeTransitionLogic.class);
 
@@ -49,6 +52,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	@Inject
 	public FreezeTransitionLogic(FileNumbers fileNums, LegacyFreezer delegate, TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;
 		this.delegate = delegate;
@@ -65,9 +69,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var freezeTxn = txnCtx.accessor().getTxn();
-
 			var legacyRecord = delegate.perform(freezeTxn, txnCtx.consensusTime());
-
 			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);

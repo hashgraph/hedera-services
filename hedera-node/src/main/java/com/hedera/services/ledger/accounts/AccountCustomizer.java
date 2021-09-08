@@ -29,12 +29,14 @@ import com.hedera.services.state.submerkle.EntityId;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
 import static java.util.Collections.unmodifiableMap;
@@ -48,8 +50,6 @@ import static java.util.Collections.unmodifiableMap;
  * @param <A> the type of the account stored in the ledger.
  * @param <P> the type of the properties applicable to the account.
  * @param <T> the type of a customizer appropriate to {@code K}, {@code A}, {@code P}.
- *
- * @author Michael Tinker
  */
 public abstract class AccountCustomizer<
 		K,
@@ -64,6 +64,8 @@ public abstract class AccountCustomizer<
 		IS_SMART_CONTRACT,
 		AUTO_RENEW_PERIOD,
 		IS_RECEIVER_SIG_REQUIRED,
+		MAX_AUTOMATIC_ASSOCIATIONS,
+		ALREADY_USED_AUTOMATIC_ASSOCIATIONS
 	};
 
 	private final Map<Option, P> optionProperties;
@@ -136,6 +138,16 @@ public abstract class AccountCustomizer<
 
 	public T isReceiverSigRequired(boolean option) {
 		changeManager.update(changes, optionProperties.get(IS_RECEIVER_SIG_REQUIRED), option);
+		return self();
+	}
+
+	public T maxAutomaticAssociations(int option) {
+		changeManager.update(changes, optionProperties.get(MAX_AUTOMATIC_ASSOCIATIONS), option);
+		return self();
+	}
+
+	public T alreadyUsedAutomaticAssociations(int option) {
+		changeManager.update(changes, optionProperties.get(ALREADY_USED_AUTOMATIC_ASSOCIATIONS), option);
 		return self();
 	}
 }

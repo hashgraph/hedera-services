@@ -41,8 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 /**
  * Provides a utility method to update a stored {@code MerkleSchedule} with any
  * new Ed25519 keys witnessed to have signed the schedule.
- *
- * @author Michael Tinker
  */
 public class SignatoryUtils {
 	@FunctionalInterface

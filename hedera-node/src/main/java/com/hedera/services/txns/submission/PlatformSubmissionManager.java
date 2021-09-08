@@ -30,9 +30,13 @@ import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
+@Singleton
 public class PlatformSubmissionManager {
 	private static final Logger log = LogManager.getLogger(PlatformSubmissionManager.class);
 
@@ -40,6 +44,7 @@ public class PlatformSubmissionManager {
 	private final RecordCache recordCache;
 	private final MiscSpeedometers speedometers;
 
+	@Inject
 	public PlatformSubmissionManager(
 			Platform platform,
 			RecordCache recordCache,

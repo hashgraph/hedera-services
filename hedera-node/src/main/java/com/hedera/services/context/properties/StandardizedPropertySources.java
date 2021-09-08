@@ -20,10 +20,12 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.context.annotations.BootstrapProps;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -33,8 +35,6 @@ import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTR
 /**
  * Implements a {@link PropertySources} that re-resolves every property
  * reference by delegating to a supplier.
- *
- * @author Michael Tinker
  */
 public class StandardizedPropertySources implements PropertySources {
 	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
@@ -50,13 +50,18 @@ public class StandardizedPropertySources implements PropertySources {
 	private final ScreenedSysFileProps dynamicGlobalProps;
 	private final ScreenedNodeFileProps nodeProps;
 
-	public StandardizedPropertySources(PropertySource bootstrapProps) {
+	@Inject
+	public StandardizedPropertySources(
+			@BootstrapProps PropertySource bootstrapProps,
+			ScreenedSysFileProps dynamicGlobalProps,
+			ScreenedNodeFileProps nodeProps
+	) {
+		this.nodeProps = nodeProps;
 		this.bootstrapProps = bootstrapProps;
-
-		nodeProps = nodePropertiesSupplier.get();
-		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
+		this.dynamicGlobalProps = dynamicGlobalProps;
 	}
 
+	@Override
 	public void reloadFrom(ServicesConfigurationList config) {
 		log.info("Reloading global dynamic properties from {} candidates", config.getNameValueCount());
 		dynamicGlobalProps.screenNew(config);

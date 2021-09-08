@@ -23,7 +23,6 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
-import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -52,8 +51,6 @@ class EntityAutoRenewalTest {
 	@Mock
 	private SequenceNumber seqNo;
 	@Mock
-	private ServicesContext ctx;
-	@Mock
 	private RenewalProcess renewalProcess;
 	@Mock
 	private NetworkCtxManager networkCtxManager;
@@ -65,7 +62,7 @@ class EntityAutoRenewalTest {
 	@BeforeEach
 	void setUp() {
 		subject = new EntityAutoRenewal(
-				mockHederaNums, renewalProcess, ctx, properties, networkCtxManager, () -> networkCtx);
+				mockHederaNums, renewalProcess, properties, networkCtxManager, () -> networkCtx, () -> seqNo);
 	}
 
 	@Test
@@ -126,7 +123,7 @@ class EntityAutoRenewalTest {
 		}
 		// and:
 		verify(renewalProcess).endRenewalCycle();
-		verify(ctx).updateLastScannedEntity(aNum + numToScan - 1);
+		verify(networkCtx).updateLastScannedEntity(aNum + numToScan - 1);
 	}
 
 	@Test
@@ -150,7 +147,7 @@ class EntityAutoRenewalTest {
 		// and:
 		verify(renewalProcess, never()).process(cNum);
 		verify(renewalProcess).endRenewalCycle();
-		verify(ctx).updateLastScannedEntity(bNum);
+		verify(networkCtx).updateLastScannedEntity(bNum);
 	}
 
 	@Test
@@ -177,18 +174,17 @@ class EntityAutoRenewalTest {
 		// and:
 		verify(renewalProcess, never()).process(cNum);
 		verify(renewalProcess).endRenewalCycle();
-		verify(ctx).updateLastScannedEntity(bNum);
+		verify(networkCtx).updateLastScannedEntity(bNum);
 		// and:
 		verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);
 	}
 
 
 	private void givenWrapNum(long num) {
-		given(ctx.seqNo()).willReturn(seqNo);
 		given(seqNo.current()).willReturn(num);
 	}
 
 	private void givenLastScanned(long num) {
-		given(ctx.lastScannedEntity()).willReturn(num);
+		given(networkCtx.lastScannedEntity()).willReturn(num);
 	}
 }

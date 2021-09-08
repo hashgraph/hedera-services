@@ -25,12 +25,14 @@ import com.hedera.services.ledger.properties.TestAccountProperty;
 
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
@@ -47,7 +49,9 @@ public class TestAccountCustomizer extends
 			IS_DELETED, FLAG,
 			AUTO_RENEW_PERIOD, LONG,
 			IS_SMART_CONTRACT, FLAG,
-			IS_RECEIVER_SIG_REQUIRED, FLAG
+			IS_RECEIVER_SIG_REQUIRED, FLAG,
+			MAX_AUTOMATIC_ASSOCIATIONS, LONG,
+			ALREADY_USED_AUTOMATIC_ASSOCIATIONS, LONG
 	);
 
 	public TestAccountCustomizer(ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {

@@ -22,7 +22,5 @@ package com.hedera.services.context.properties;
 
 /**
  * Convenience type giving the scope of a property.
- *
- * @author Michael Tinker
  */
 public enum Profile { DEV, TEST, PROD }

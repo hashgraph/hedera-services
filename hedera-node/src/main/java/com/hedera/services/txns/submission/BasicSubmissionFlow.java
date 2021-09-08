@@ -26,6 +26,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -34,11 +37,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Performs precheck on a top-level transaction and submits it to the Platform if precheck passes.
  */
+@Singleton
 public class BasicSubmissionFlow implements SubmissionFlow {
 	private final ServicesNodeType nodeType;
 	private final TransactionPrecheck precheck;
 	private final PlatformSubmissionManager submissionManager;
 
+	@Inject
 	public BasicSubmissionFlow(
 			ServicesNodeType nodeType,
 			TransactionPrecheck precheck,

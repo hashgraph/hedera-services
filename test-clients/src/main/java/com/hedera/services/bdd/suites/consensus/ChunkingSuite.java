@@ -42,7 +42,12 @@ public class ChunkingSuite extends HapiApiSuite {
 	private static final int CHUNK_SIZE = 1024;
 
 	public static void main(String... args) {
-		new ChunkingSuite().runSuiteSync();
+		new ChunkingSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override

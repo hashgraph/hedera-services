@@ -49,19 +49,21 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
- *
- * @author Michael Tinker
  */
 public class SignedTxnAccessor implements TxnAccessor {
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
+
+	private static final String ACCESSOR_LITERAL = " accessor";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
@@ -154,6 +156,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public SubType getSubType() {
 		if(getFunction() == CryptoTransfer) {
 			return xferUsageMeta.getSubType();
+		} else if (getFunction() == TokenCreate) {
+			return SPAN_MAP_ACCESSOR.getTokenCreateMeta(this).getSubType();
 		}
 		return SubType.DEFAULT;
 	}
@@ -246,7 +250,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public CryptoTransferMeta availXferUsageMeta() {
 		if (function != CryptoTransfer) {
-			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + " accessor");
+			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
 		}
 		return xferUsageMeta;
 	}
@@ -254,7 +258,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SubmitMessageMeta availSubmitUsageMeta() {
 		if (function != ConsensusSubmitMessage) {
-			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + " accessor");
+			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
 		}
 		return submitMessageMeta;
 	}
@@ -279,6 +283,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return spanMap;
 	}
 
+	@Override
+	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
+		return SPAN_MAP_ACCESSOR;
+	}
+
 	private void setOpUsageMeta() {
 		if (function == CryptoTransfer) {
 			setXferUsageMeta();
@@ -286,6 +295,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setSubmitUsageMeta();
 		} else if (function == TokenFeeScheduleUpdate) {
 			setFeeScheduleUpdateMeta();
+		} else if (function == TokenCreate) {
+			setTokenCreateUsageMeta();
 		}
 	}
 
@@ -313,5 +324,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 		final var meta = new FeeScheduleUpdateMeta(effConsTime, reprBytes);
 		SPAN_MAP_ACCESSOR.setFeeScheduleUpdateMeta(this, meta);
+	}
+
+	private void setTokenCreateUsageMeta() {
+		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenCreate(this, tokenCreateMeta);
 	}
 }

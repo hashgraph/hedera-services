@@ -31,6 +31,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
@@ -40,11 +42,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
+@Singleton
 public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	@Inject
 	public AccountStore(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
@@ -100,6 +104,8 @@ public class AccountStore {
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
+		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
 
 		return account;
 	}
@@ -119,6 +125,8 @@ public class AccountStore {
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		mutableAccount.setNftsOwned(account.getOwnedNfts());
+		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
+		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {

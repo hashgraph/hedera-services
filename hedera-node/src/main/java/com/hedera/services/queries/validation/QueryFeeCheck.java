@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -45,11 +47,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class QueryFeeCheck {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	@Inject
 	public QueryFeeCheck(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,

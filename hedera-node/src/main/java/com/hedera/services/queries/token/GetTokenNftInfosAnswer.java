@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosResponse;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,13 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+@Singleton
 public class GetTokenNftInfosAnswer implements AnswerService {
-
-	public static final String TOKEN_NFT_INFOS_CTX_KEY = GetTokenNftInfosAnswer.class.getSimpleName() +
-			"_tokenNftInfos";
+	public static final String TOKEN_NFT_INFOS_CTX_KEY = GetTokenNftInfosAnswer.class.getSimpleName() + "_tokenNftInfos";
 
 	private OptionValidator validator;
 
+	@Inject
 	public GetTokenNftInfosAnswer(OptionValidator validator) {
 		this.validator = validator;
 	}

@@ -34,6 +34,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private int minCongestionPeriod = 2;
 	private long gracePeriod = 604800;
 	private boolean useAutoRenew = true;
+	private boolean exportBalances = true;
 	private CongestionMultipliers currentMultipliers = defaultMultipliers;
 
 	public MockGlobalDynamicProps() {
@@ -93,9 +94,13 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 		return 600;
 	}
 
+	public void turnOffBalancesExport()	 {
+		exportBalances = false;
+	}
+
 	@Override
 	public boolean shouldExportBalances() {
-		return true;
+		return exportBalances;
 	}
 
 	@Override
@@ -183,7 +188,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 		return currentMultipliers;
 	}
 
-
 	@Override
 	public boolean autoRenewEnabled() {
 		return useAutoRenew;
@@ -210,10 +214,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public long autoRenewGracePeriod() {
 		return gracePeriod;
-	}
-
-	public void endGracePeriod() {
-		gracePeriod = 0L;
 	}
 
 	public void useDifferentMultipliers() {

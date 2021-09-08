@@ -95,11 +95,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-/**
- * @author peter
- * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
- */
-
 class SmartContractRequestHandlerPayableTest {
 
   private static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
@@ -215,6 +210,8 @@ class SmartContractRequestHandlerPayableTest {
     payerMerkleEntityId.setNum(payerAccount);
     payerMerkleEntityId.setRealm(0);
     payerMerkleEntityId.setShard(0);
+
+    backingAccounts.rebuildFromSources();
   }
 
   @Test

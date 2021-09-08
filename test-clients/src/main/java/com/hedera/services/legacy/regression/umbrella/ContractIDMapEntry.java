@@ -24,8 +24,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 
 /**
  * This class represents the key and value for the contractIDMap in SmartContractServiceTest
- *
- * @author pal Created on 2019-04-16
  */
 public class ContractIDMapEntry {
   private ContractID id;

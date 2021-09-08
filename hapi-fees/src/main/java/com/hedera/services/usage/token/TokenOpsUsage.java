@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,14 +25,20 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
+@Singleton
 public class TokenOpsUsage {
 	/* Sizes of various fee types, _not_ including the collector entity id */
 	private static final int FIXED_HBAR_REPR_SIZE = LONG_SIZE;
@@ -41,15 +47,18 @@ public class TokenOpsUsage {
 	private static final int ROYALTY_NO_FALLBACK_REPR_SIZE = 2 * LONG_SIZE;
 	private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
 	private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
-
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 
+	@Inject
+	public TokenOpsUsage() {
+	}
+
 	public void feeScheduleUpdateUsage(
-			SigUsage sigUsage,
-			BaseTransactionMeta baseMeta,
-			FeeScheduleUpdateMeta opMeta,
-			ExtantFeeScheduleContext ctx,
-			UsageAccumulator accumulator
+			final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final FeeScheduleUpdateMeta opMeta,
+			final ExtantFeeScheduleContext ctx,
+			final UsageAccumulator accumulator
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
@@ -70,7 +79,7 @@ public class TokenOpsUsage {
 		int numRoyaltyNoFallbackFees = 0;
 		int numRoyaltyHtsFallbackFees = 0;
 		int numRoyaltyHbarFallbackFees = 0;
-		for (var fee : feeSchedule) {
+		for (final var fee : feeSchedule) {
 			if (fee.hasFixedFee()) {
 				if (fee.getFixedFee().hasDenominatingTokenId()) {
 					numFixedHtsFees++;
@@ -102,12 +111,12 @@ public class TokenOpsUsage {
 	}
 
 	public int bytesNeededToRepr(
-			int numFixedHbarFees,
-			int numFixedHtsFees,
-			int numFractionalFees,
-			int numRoyaltyNoFallbackFees,
-			int numRoyaltyHtsFallbackFees,
-			int numRoyaltyHbarFallbackFees
+			final int numFixedHbarFees,
+			final int numFixedHtsFees,
+			final int numFractionalFees,
+			final int numRoyaltyNoFallbackFees,
+			final int numRoyaltyHtsFallbackFees,
+			final int numRoyaltyHbarFallbackFees
 	) {
 		return numFixedHbarFees * plusCollectorSize(FIXED_HBAR_REPR_SIZE)
 				+ numFixedHtsFees * plusCollectorSize(FIXED_HTS_REPR_SIZE)
@@ -118,7 +127,25 @@ public class TokenOpsUsage {
 
 	}
 
-	private int plusCollectorSize(int feeReprSize) {
+	public void tokenCreateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final TokenCreateMeta tokenCreateMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		accumulator.addBpt(tokenCreateMeta.getBaseSize());
+		accumulator.addRbs((tokenCreateMeta.getBaseSize() + tokenCreateMeta.getCustomFeeScheduleSize()) *
+				tokenCreateMeta.getLifeTime());
+
+		final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(tokenCreateMeta.getNumTokens(),
+				tokenCreateMeta.getFungibleNumTransfers(), tokenCreateMeta.getNftsTransfers()) *
+				USAGE_PROPERTIES.legacyReceiptStorageSecs();
+		accumulator.addRbs(tokenSizes);
+
+		accumulator.addNetworkRbs(tokenCreateMeta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	private int plusCollectorSize(final int feeReprSize) {
 		return feeReprSize + BASIC_ENTITY_ID_SIZE;
 	}
 }

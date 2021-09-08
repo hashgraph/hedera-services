@@ -28,9 +28,14 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class FileDeleteResourceUsage implements TxnResourceUsageEstimator {
 	private final FileFeeBuilder usageEstimator;
 
+	@Inject
 	public FileDeleteResourceUsage(FileFeeBuilder usageEstimator) {
 		this.usageEstimator = usageEstimator;
 	}

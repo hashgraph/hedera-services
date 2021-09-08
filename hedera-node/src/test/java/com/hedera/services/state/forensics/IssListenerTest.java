@@ -25,11 +25,12 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.events.Event;
-import com.swirlds.common.CommonUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.time.Instant;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -74,7 +74,7 @@ class IssListenerTest {
 	@Mock
 	private NodeLocalProperties nodeLocalProperties;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

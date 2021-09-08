@@ -38,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -46,9 +48,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAc
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class GetAccountBalanceAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 
+	@Inject
 	public GetAccountBalanceAnswer(OptionValidator optionValidator) {
 		this.optionValidator = optionValidator;
 	}

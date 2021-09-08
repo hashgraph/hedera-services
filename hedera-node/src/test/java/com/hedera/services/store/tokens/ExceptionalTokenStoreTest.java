@@ -55,7 +55,7 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.apply(null, token -> { }));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.associate(null, null));
+				() -> NOOP_TOKEN_STORE.associate(null, null, false));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.associationExists(null, null));
 		assertThrows(UnsupportedOperationException.class,
@@ -70,7 +70,6 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::commitCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::rollbackCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::isCreationPending);
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.updateFeeSchedule(null));
 		// and:
 		assertDoesNotThrow(() -> NOOP_TOKEN_STORE.setAccountsLedger(null));
 		assertDoesNotThrow(() -> NOOP_TOKEN_STORE.setHederaLedger(null));

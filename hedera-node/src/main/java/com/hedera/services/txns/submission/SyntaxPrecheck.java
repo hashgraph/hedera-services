@@ -26,6 +26,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -46,11 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
+@Singleton
 public class SyntaxPrecheck {
 	private final RecordCache recordCache;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	@Inject
 	public SyntaxPrecheck(
 			RecordCache recordCache,
 			OptionValidator validator,

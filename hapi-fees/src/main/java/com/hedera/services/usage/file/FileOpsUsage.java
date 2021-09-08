@@ -20,10 +20,12 @@ package com.hedera.services.usage.file;
  * ‍
  */
 
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -32,6 +34,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
@@ -44,7 +48,10 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
+@Singleton
 public class FileOpsUsage {
+	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
@@ -56,6 +63,23 @@ public class FileOpsUsage {
 	static int bytesInBaseRepr() {
 		return NUM_FLAGS_IN_BASE_FILE_REPR * BOOL_SIZE
 				+ NUM_LONG_FIELDS_IN_BASE_FILE_REPR * LONG_SIZE;
+	}
+
+	@Inject
+	public FileOpsUsage() {
+	}
+
+	public void fileAppendUsage(
+			SigUsage sigUsage,
+			FileAppendMeta appendMeta,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator accumulator
+	) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		final var bytesAdded = appendMeta.getBytesAdded();
+		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + bytesAdded);
+		accumulator.addSbs(bytesAdded * appendMeta.getLifetime());
 	}
 
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {

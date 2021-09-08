@@ -28,8 +28,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 
 /**
  * Trivial file metadata lookup.
- *
- * @author Michael Tinker
  */
 public class HfsSigMetaLookup implements FileSigMetaLookup {
 	private final HederaFs hfs;

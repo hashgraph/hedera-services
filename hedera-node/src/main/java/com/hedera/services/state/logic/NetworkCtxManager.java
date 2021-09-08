@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -29,11 +30,14 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.function.BiPredicate;
@@ -43,6 +47,7 @@ import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
+@Singleton
 public class NetworkCtxManager {
 	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
 
@@ -61,15 +66,16 @@ public class NetworkCtxManager {
 
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
+	@Inject
 	public NetworkCtxManager(
 			IssEventInfo issInfo,
-			PropertySource properties,
+			@CompositeProps PropertySource properties,
 			HapiOpCounters opCounters,
 			HbarCentExchange exchange,
 			SystemFilesManager systemFilesManager,
 			FeeMultiplierSource feeMultiplierSource,
 			GlobalDynamicProperties dynamicProperties,
-			FunctionalityThrottling handleThrottling,
+			@HandleThrottle FunctionalityThrottling handleThrottling,
 			Supplier<MerkleNetworkContext> networkCtx
 	) {
 		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
@@ -173,6 +179,13 @@ public class NetworkCtxManager {
 		this.shouldUpdateMidnightRates = shouldUpdateMidnightRates;
 	}
 
+	public HapiOpCounters opCounters() {
+		return opCounters;
+	}
+
+	public MerkleNetworkContext networkContext() {
+		return networkCtx.get();
+	}
 	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
 		return shouldUpdateMidnightRates;
 	}

@@ -30,6 +30,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -44,7 +45,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.inject.Inject;
 import java.time.Instant;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -86,7 +86,7 @@ class AwareNodeDiligenceScreenTest {
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-	@Inject
+	@LoggingTarget
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

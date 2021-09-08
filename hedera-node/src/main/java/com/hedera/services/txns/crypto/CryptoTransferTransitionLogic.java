@@ -33,6 +33,8 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -44,9 +46,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * possible that the <i>semantics</i> of the transaction will still be wrong;
  * for example, if one of the accounts involved no longer has the necessary
  * funds available after consensus.)
- *
- * @author Michael Tinker
  */
+@Singleton
 public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
@@ -55,6 +56,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private final PureTransferSemanticChecks transferSemanticChecks;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
 
+	@Inject
 	public CryptoTransferTransitionLogic(
 			HederaLedger ledger,
 			TransactionContext txnCtx,

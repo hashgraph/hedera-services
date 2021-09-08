@@ -55,6 +55,11 @@ public class DeprecatedContractKeySuite extends HapiApiSuite {
 		);
 	}
 
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
+
 	private HapiApiSpec createWithDeprecatedKeyCreatesImmutableContract() {
 		return defaultHapiSpec("CreateWithDeprecatedKeyCreatesImmutableContract")
 				.given(

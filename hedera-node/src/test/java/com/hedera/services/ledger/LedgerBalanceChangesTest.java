@@ -138,7 +138,7 @@ class LedgerBalanceChangesTest {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -147,6 +147,7 @@ class LedgerBalanceChangesTest {
 				() -> tokens,
 				tokenRelsLedger,
 				nftsLedger);
+		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
@@ -238,7 +239,7 @@ class LedgerBalanceChangesTest {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
-				false);
+				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -251,6 +252,7 @@ class LedgerBalanceChangesTest {
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
+		tokenStore.rebuildViews();
 
 		givenInitialBalancesAndOwnership();
 
@@ -428,44 +430,44 @@ class LedgerBalanceChangesTest {
 		backingAccounts.put(cModel, cAccount);
 
 		Pair<AccountID, TokenID> bTokenKey = rel(bModel, token);
-		final var bTokenRel = new MerkleTokenRelStatus(bTokenStartBalance, false, true);
+		final var bTokenRel = new MerkleTokenRelStatus(bTokenStartBalance, false, true, false);
 		backingRels.put(bTokenKey, bTokenRel);
 		Pair<AccountID, TokenID> cTokenKey = rel(cModel, token);
-		final var cTokenRel = new MerkleTokenRelStatus(cTokenStartBalance, false, true);
+		final var cTokenRel = new MerkleTokenRelStatus(cTokenStartBalance, false, true, false);
 		backingRels.put(cTokenKey, cTokenRel);
 		Pair<AccountID, TokenID> aAnotherTokenKey = rel(aModel, anotherToken);
-		final var aAnotherTokenRel = new MerkleTokenRelStatus(aAnotherTokenStartBalance, false, true);
+		final var aAnotherTokenRel = new MerkleTokenRelStatus(aAnotherTokenStartBalance, false, true, true);
 		backingRels.put(aAnotherTokenKey, aAnotherTokenRel);
 		Pair<AccountID, TokenID> bAnotherTokenKey = rel(bModel, anotherToken);
-		final var bAnotherTokenRel = new MerkleTokenRelStatus(bAnotherTokenStartBalance, false, true);
+		final var bAnotherTokenRel = new MerkleTokenRelStatus(bAnotherTokenStartBalance, false, true, false);
 		backingRels.put(bAnotherTokenKey, bAnotherTokenRel);
 		Pair<AccountID, TokenID> cAnotherTokenKey = rel(cModel, anotherToken);
-		final var cAnotherTokenRel = new MerkleTokenRelStatus(cAnotherTokenStartBalance, false, true);
+		final var cAnotherTokenRel = new MerkleTokenRelStatus(cAnotherTokenStartBalance, false, true, true);
 		backingRels.put(cAnotherTokenKey, cAnotherTokenRel);
 		Pair<AccountID, TokenID> aYaTokenKey = rel(aModel, yetAnotherToken);
-		final var aYaTokenRel = new MerkleTokenRelStatus(aYetAnotherTokenBalance, false, true);
+		final var aYaTokenRel = new MerkleTokenRelStatus(aYetAnotherTokenBalance, false, true, false);
 		backingRels.put(aYaTokenKey, aYaTokenRel);
 		Pair<AccountID, TokenID> bYaTokenKey = rel(bModel, yetAnotherToken);
-		final var bYaTokenRel = new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true);
+		final var bYaTokenRel = new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true, false);
 		backingRels.put(bYaTokenKey, bYaTokenRel);
 
 		Pair<AccountID, TokenID> aaNftTokenKey = rel(aModel, aNft);
-		final var aaNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var aaNftTokenRel = new MerkleTokenRelStatus(2, false, true, false);
 		backingRels.put(aaNftTokenKey, aaNftTokenRel);
 		Pair<AccountID, TokenID> abNftTokenKey = rel(aModel, bNft);
-		final var abNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var abNftTokenRel = new MerkleTokenRelStatus(2, false, true, true);
 		backingRels.put(abNftTokenKey, abNftTokenRel);
 		Pair<AccountID, TokenID> baNftTokenKey = rel(bModel, aNft);
-		final var baNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var baNftTokenRel = new MerkleTokenRelStatus(2, false, true, false);
 		backingRels.put(baNftTokenKey, baNftTokenRel);
 		Pair<AccountID, TokenID> bbNftTokenKey = rel(bModel, bNft);
-		final var bbNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var bbNftTokenRel = new MerkleTokenRelStatus(2, false, true, true);
 		backingRels.put(bbNftTokenKey, bbNftTokenRel);
 		Pair<AccountID, TokenID> caNftTokenKey = rel(cModel, aNft);
-		final var caNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var caNftTokenRel = new MerkleTokenRelStatus(2, false, true, true);
 		backingRels.put(caNftTokenKey, caNftTokenRel);
 		Pair<AccountID, TokenID> cbNftTokenKey = rel(cModel, bNft);
-		final var cbNftTokenRel = new MerkleTokenRelStatus(2, false, true);
+		final var cbNftTokenRel = new MerkleTokenRelStatus(2, false, true, false);
 		backingRels.put(cbNftTokenKey, cbNftTokenRel);
 
 		backingNfts.put(
@@ -477,6 +479,8 @@ class LedgerBalanceChangesTest {
 		backingNfts.put(
 				bbNft,
 				new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+
+		backingRels.rebuildFromSources();
 	}
 
 	private List<BalanceChange> fixtureChanges() {

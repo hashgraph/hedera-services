@@ -23,8 +23,6 @@ package com.hedera.services.utils;
 /**
  * Defines a type able to pause for a given number of ms; used to increase testability
  * of the {@code RetryingFCMapAccountLookup} implementation.
- *
- * @author Michael Tinker
  */
 public interface Pause {
 	boolean forMs(long n);

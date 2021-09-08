@@ -27,7 +27,6 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.models.fees.CustomFee;
 import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -39,7 +38,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -61,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Encapsulates the state and operations of a Hedera token.
@@ -102,7 +101,7 @@ public class Token {
 	private int decimals;
 	private long autoRenewPeriod;
 	private long lastUsedSerialNumber;
-	private List<CustomFee> customFees;
+	private List<FcCustomFee> customFees;
 
 	public Token(Id id) {
 		this.id = id;
@@ -119,18 +118,15 @@ public class Token {
 	 * 		treasury of the token
 	 * @param autoRenewAccount
 	 * 		optional(nullable) account used for auto-renewal
-	 * @param customFees
-	 * 		a list of valid custom fees
 	 * @param consensusTimestamp
 	 * 		the consensus time of the token create transaction
 	 * @return a new instance of the {@link Token} class
 	 */
-	public static Token fromGrpcTokenCreate(
+	public static Token fromGrpcOpAndMeta(
 			final Id tokenId,
 			final TokenCreateTransactionBody op,
 			final Account treasury,
-			@Nullable Account autoRenewAccount,
-			final List<CustomFee> customFees,
+			@Nullable final Account autoRenewAccount,
 			final long consensusTimestamp
 	) {
 		final var token = new Token(tokenId);
@@ -152,9 +148,8 @@ public class Token {
 		supplyKey.ifPresent(token::setSupplyKey);
 		feeScheduleKey.ifPresent(token::setFeeScheduleKey);
 
-		token.initSupplyConstraints(TokenTypesMapper.grpcTokenSupplyTypeToModelSupplyType(op.getSupplyType()),
-				op.getMaxSupply());
-		token.setType(TokenTypesMapper.grpcTokenTypeToModelType(op.getTokenType()));
+		token.initSupplyConstraints(TokenTypesMapper.mapToDomain(op.getSupplyType()), op.getMaxSupply());
+		token.setType(TokenTypesMapper.mapToDomain(op.getTokenType()));
 
 		token.setTreasury(treasury);
 		if (autoRenewAccount != null) {
@@ -168,7 +163,7 @@ public class Token {
 		token.setDecimals(op.getDecimals());
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
-		token.setCustomFees(customFees);
+		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).collect(toList()));
 
 		token.setNew(true);
 		return token;
@@ -331,12 +326,13 @@ public class Token {
 		return adminKey != null;
 	}
 
-	public TokenRelationship newRelationshipWith(final Account account) {
+	public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
 		final var newRel = new TokenRelationship(this, account);
 		if (hasFreezeKey() && frozenByDefault) {
 			newRel.setFrozen(true);
 		}
 		newRel.setKycGranted(!hasKycKey());
+		newRel.setAutomaticAssociation(automaticAssociation);
 		return newRel;
 	}
 
@@ -509,6 +505,14 @@ public class Token {
 		return type;
 	}
 
+	public boolean isFungibleCommon() {
+		return type == TokenType.FUNGIBLE_COMMON;
+	}
+
+	public boolean isNonFungibleUnique() {
+		return type == TokenType.NON_FUNGIBLE_UNIQUE;
+	}
+
 	public void setLastUsedSerialNumber(long lastUsedSerialNumber) {
 		this.lastUsedSerialNumber = lastUsedSerialNumber;
 	}
@@ -656,6 +660,10 @@ public class Token {
 				.toString();
 	}
 
+	public boolean hasFeeScheduleKey() {
+		return feeScheduleKey != null;
+	}
+
 	public JKey getFeeScheduleKey() {
 		return feeScheduleKey;
 	}
@@ -664,15 +672,11 @@ public class Token {
 		this.feeScheduleKey = feeScheduleKey;
 	}
 
-	public List<CustomFee> getCustomFees() {
+	public List<FcCustomFee> getCustomFees() {
 		return customFees;
 	}
 
-	public List<FcCustomFee> getCustomFeesAsMerkle() {
-		return customFees.stream().map(CustomFee::toMerkle).collect(Collectors.toList());
-	}
-
-	public void setCustomFees(final List<CustomFee> customFees) {
+	public void setCustomFees(final List<FcCustomFee> customFees) {
 		this.customFees = customFees;
 	}
 }

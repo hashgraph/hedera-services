@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
@@ -49,18 +48,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class HederaKeyActivationTest {
-	static JKey complexKey;
-	byte[] pk = "PK".getBytes();
-	byte[] sig = "SIG".getBytes();
-	byte[] data = "DATA".getBytes();
-	Function<byte[], TransactionSignature> sigsFn;
-	BiPredicate<JKey, TransactionSignature> tests;
-	final TransactionSignature VALID_SIG = SigWrappers.asValid(List.of(createEd25519(pk, sig, data))).get(0);
-	final TransactionSignature INVALID_SIG = SigWrappers.asInvalid(List.of(createEd25519(pk, sig, data))).get(0);
+	private static JKey complexKey;
+	private static final byte[] pk = "PK".getBytes();
+	private static final byte[] sig = "SIG".getBytes();
+	private static final byte[] data = "DATA".getBytes();
+	private Function<byte[], TransactionSignature> sigsFn;
+	private static final TransactionSignature VALID_SIG = SigWrappers
+			.asValid(List.of(createEd25519(pk, sig, data)))
+			.get(0);
+	private static final TransactionSignature INVALID_SIG = SigWrappers
+			.asInvalid(List.of(createEd25519(pk, sig, data)))
+			.get(0);
 
-	Function<Integer, TransactionSignature> mockSigFn = i -> createEd25519(
+	private static final Function<Integer, TransactionSignature> mockSigFn = i -> createEd25519(
 			String.format("PK%d", i).getBytes(),
 			String.format("SIG%d", i).getBytes(),
 			String.format("DATA%d", i).getBytes());
@@ -81,106 +85,79 @@ class HederaKeyActivationTest {
 	@BeforeEach
 	void setup() {
 		sigsFn = (Function<byte[], TransactionSignature>) mock(Function.class);
-		tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 	}
 
 	@Test
 	void revocationServiceActivatesWithOneTopLevelSig() {
-		// setup:
-		KeyActivationCharacteristics characteristics =
-				RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
+		final var characteristics = RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
+		given(sigsFn.apply(any())).willReturn(
+				VALID_SIG,
+				INVALID_SIG, INVALID_SIG, INVALID_SIG, VALID_SIG,
+				INVALID_SIG,
+				INVALID_SIG, INVALID_SIG, VALID_SIG);
 
-		given(sigsFn.apply(any()))
-				.willReturn(VALID_SIG)
-				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(VALID_SIG)
-				.willReturn(INVALID_SIG)
-				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(VALID_SIG);
-
-		// when:
 		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID, characteristics));
+		verify(sigsFn, times(9)).apply(any());
 	}
 
 	@Test
-	void revocationServiceiRequiresOneTopLevelSig() {
-		// setup:
-		KeyActivationCharacteristics characteristics =
-				RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
+	void revocationServiceRequiresOneTopLevelSig() {
+		final var characteristics = RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
+		given(sigsFn.apply(any())).willReturn(INVALID_SIG);
 
-		given(sigsFn.apply(any()))
-				.willReturn(INVALID_SIG)
-				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG)
-				.willReturn(INVALID_SIG)
-				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG);
-
-		// when:
 		assertFalse(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID, characteristics));
+		verify(sigsFn, times(9)).apply(any());
 	}
 
 	@Test
 	void mapSupplierReflectsInputList() {
-		// setup:
-		List<TransactionSignature> presentSigs = List.of(mockSigFn.apply(0), mockSigFn.apply(1));
-		TransactionSignature missingSig = mockSigFn.apply(2);
+		final var presentSigs = List.of(mockSigFn.apply(0), mockSigFn.apply(1));
+		final var missingSig = mockSigFn.apply(2);
+		final var sigsFn = pkToSigMapFrom(presentSigs);
 
-		// given:
-		Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(presentSigs);
+		final var present0 = sigsFn.apply(presentSigs.get(0).getExpandedPublicKeyDirect());
+		final var present1 = sigsFn.apply(presentSigs.get(1).getExpandedPublicKeyDirect());
+		final var missing = sigsFn.apply(missingSig.getExpandedPublicKeyDirect());
 
-		// when:
-		TransactionSignature present0 = sigsFn.apply(presentSigs.get(0).getExpandedPublicKeyDirect());
-		TransactionSignature present1 = sigsFn.apply(presentSigs.get(1).getExpandedPublicKeyDirect());
-		// and:
-		TransactionSignature missing = sigsFn.apply(missingSig.getExpandedPublicKeyDirect());
-
-		// then:
 		assertEquals(presentSigs.get(0), present0);
 		assertEquals(presentSigs.get(1), present1);
-		// and:
 		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG, missing);
 	}
 
 	@Test
 	void topLevelListActivatesOnlyIfAllChildrenAreActive() {
-		given(sigsFn.apply(any())).willReturn(INVALID_SIG).willReturn(VALID_SIG);
+		given(sigsFn.apply(any())).willReturn(INVALID_SIG, VALID_SIG);
 
-		// when:
 		assertFalse(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID));
+		verify(sigsFn, times(9)).apply(any());
 	}
 
 	@Test
 	void topLevelActivatesIfAllChildrenAreActive() {
-		given(sigsFn.apply(any()))
-				.willReturn(VALID_SIG)
-				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(VALID_SIG)
-				.willReturn(VALID_SIG)
-				.willReturn(INVALID_SIG).willReturn(VALID_SIG).willReturn(VALID_SIG);
+		given(sigsFn.apply(any())).willReturn(
+				VALID_SIG,
+				INVALID_SIG, INVALID_SIG, INVALID_SIG, VALID_SIG,
+				VALID_SIG,
+				INVALID_SIG, VALID_SIG, VALID_SIG);
 
-		// when:
 		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID));
+		verify(sigsFn, times(9)).apply(any());
 	}
 
 	@Test
 	void throwsIfNoSigMetaHasBeenRationalized() {
-		// setup:
 		final var accessor = mock(TxnAccessor.class);
 
-		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
 	}
 
 	@Test
 	void immediatelyReturnsFalseForNoRationalizedPayerData() {
-		// setup:
 		final var accessor = mock(TxnAccessor.class);
 
 		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
 
-		// expect:
 		assertFalse(HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
-	}
-
-	@Test
-	void throwsInConstructor() {
-		assertThrows(IllegalStateException.class, () -> new HederaKeyActivation());
 	}
 }
