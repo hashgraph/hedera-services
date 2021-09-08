@@ -111,8 +111,8 @@
         <enabled>false</enabled>
       </snapshots>
       <id>proto-staging</id>
-      <name>0.18.0-alpha.1 Protobufs</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1350</url>
+      <name>0.18.0-alpha.3 Protobufs</name>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1354</url>
     </repository>
     <repository>
       <id>ossrh-snapshots</id>
@@ -171,7 +171,7 @@
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.39.0</grpc.version>
     <guava.version>30.1.1-jre</guava.version>
-    <hapi-proto.version>0.18.0-alpha.1</hapi-proto.version>
+    <hapi-proto.version>0.18.0-alpha.3</hapi-proto.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.14.1</log4j.version>
@@ -191,10 +191,13 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+    <sonar.issue.ignore.multicriteria>e1,e2</sonar.issue.ignore.multicriteria>
     <!-- for license header -->
     <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S125</sonar.issue.ignore.multicriteria.e1.ruleKey>
+    <!-- for deprecated code, mostly protobufs, to support backward compatibility for clients -->
+    <sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
+    <sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
     <project.build.outputTimestamp>2021-08-30T23:02:07Z</project.build.outputTimestamp>
   </properties>
@@ -284,12 +287,6 @@ ${git.signoff}
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>com/hederahashgraph/**/*</exclude>
-            <exclude>com/hedera/services/proto/utils/**/*</exclude>
-          </excludes>
-        </configuration>
         <executions>
           <execution>
             <id>jacoco-agent</id>

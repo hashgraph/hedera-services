@@ -39,7 +39,7 @@ import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMa
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTO_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
@@ -112,7 +112,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTO_ASSOCIATIONS );
+		validateTrue(alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations(), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -170,6 +170,10 @@ public class Account {
 
 	public CopyOnWriteIds getAssociatedTokens() {
 		return associatedTokens;
+	}
+
+	public boolean isAssociatedWith(Id token) {
+		return associatedTokens.contains(token);
 	}
 
 	/* NOTE: The object methods below are only overridden to improve

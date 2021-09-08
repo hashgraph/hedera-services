@@ -21,6 +21,7 @@ package com.hedera.test.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.test.factories.keys.KeyTree;
@@ -30,6 +31,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -41,6 +43,8 @@ import java.util.UUID;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TxnUtils {
 	public static TransferList withAdjustments(AccountID a, long A, AccountID b, long B, AccountID c, long C) {
@@ -223,5 +227,11 @@ public class TxnUtils {
 			final var descendantKeys = nestJKeys(additionalKeysToNest - 1);
 			return new JKeyList(List.of(descendantKeys));
 		}
+	}
+
+
+	public static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 }

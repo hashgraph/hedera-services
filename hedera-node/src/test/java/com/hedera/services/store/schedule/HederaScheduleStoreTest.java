@@ -73,7 +73,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class HederaScheduleStoreTest {
-	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final String entityMemo = "Some memo here";
 	private static final RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 	private static final long expectedExpiry = 1_234_567L;
@@ -221,7 +221,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void provisionalApplicationWorks() {
+	void provisionalApplicationWorks() {
 		final var change = mock(Consumer.class);
 		subject.pendingId = created;
 		subject.pendingCreation = schedule;
@@ -540,7 +540,6 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void throwsUsoOnDelete() {
-		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.delete(created));
 	}
 }

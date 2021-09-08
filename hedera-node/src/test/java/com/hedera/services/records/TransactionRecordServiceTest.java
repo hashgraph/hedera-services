@@ -173,12 +173,11 @@ class TransactionRecordServiceTest {
 	@Test
 	void updatesReceiptForNewToken() {
 		final var treasury = new Account(Id.DEFAULT);
-		final var token = Token.fromGrpcTokenCreate(
+		final var token = Token.fromGrpcOpAndMeta(
 				Id.DEFAULT,
 				TokenCreateTransactionBody.newBuilder().build(),
 				treasury,
 				null,
-				List.of(),
 				10L);
 		
 		subject.includeChangesToToken(token);
