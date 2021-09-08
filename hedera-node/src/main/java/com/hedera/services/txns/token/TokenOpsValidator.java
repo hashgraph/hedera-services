@@ -27,13 +27,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class TokenOpsValidator {
+public final class TokenOpsValidator {
 	/**
 	 * Validate the token operations mint/wipe/burn  given the attributes of the transaction.
 	 * @param nftCount
@@ -59,7 +60,7 @@ public class TokenOpsValidator {
 			final boolean areNftEnabled,
 			final ResponseCodeEnum invalidTokenAmount,
 			final List<Object> metaDataList,
-			final Function<Integer, ResponseCodeEnum> batchSizeCheck,
+			final IntFunction<ResponseCodeEnum> batchSizeCheck,
 			@Nullable Function<byte[], ResponseCodeEnum> nftMetaDataCheck)  {
 
 		if (nftCount > 0 && !areNftEnabled) {
@@ -97,5 +98,9 @@ public class TokenOpsValidator {
 			}
 		}
 		return OK;
+	}
+
+	private TokenOpsValidator()  {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 }
