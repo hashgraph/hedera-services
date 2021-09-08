@@ -110,6 +110,9 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
                         System.gc();
                         //noinspection BusyWait
                         Thread.sleep(2000);
+                        System.gc();
+                        //noinspection BusyWait
+                        Thread.sleep(2000);
                     }
                 }
 
