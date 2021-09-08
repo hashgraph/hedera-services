@@ -54,6 +54,7 @@ jump.bin
 jumpdest.bin
 jumpi.bin
 jumpi2.bin
+keccak.bin
 log0.bin
 log1.bin
 log2.bin
@@ -105,8 +106,6 @@ push29.bin
 push30.bin
 push31.bin
 push32.bin
-returndatacopy.bin
-returndatasize.bin
 sar.bin
 sdiv_small.bin
 sgt.bin
@@ -147,6 +146,8 @@ xor.bin
 #staticcall.bin
 #returndatacopy.bin
 #returndatasize.bin
+#revert.bin
+#selfdestruct.bin
 
 ## Istanbul Opcodes
 #chainid.bin
