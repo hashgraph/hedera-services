@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenCountsWith;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
@@ -117,7 +117,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		return validateTokenCountsWith(
+		return validateTokenOpsWith(
 				op.getSerialNumbersCount(),
 				op.getAmount(),
 				dynamicProperties.areNftsEnabled(),

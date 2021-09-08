@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenCountsWith;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
@@ -121,7 +121,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		if (!op.hasAccount()) {
 			return INVALID_ACCOUNT_ID;
 		}
-		return validateTokenCountsWith(
+		return validateTokenOpsWith(
 				op.getSerialNumbersCount(),
 				op.getAmount(),
 				dynamicProperties.areNftsEnabled(),

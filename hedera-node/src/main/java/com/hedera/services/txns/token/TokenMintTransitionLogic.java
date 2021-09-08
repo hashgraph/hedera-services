@@ -44,7 +44,7 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenCountsWith;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
@@ -130,7 +130,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		return validateTokenCountsWith(
+		return validateTokenOpsWith(
 				op.getMetadataCount(),
 				op.getAmount(),
 				dynamicProperties.areNftsEnabled(),

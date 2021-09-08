@@ -54,7 +54,7 @@ public final class TokenOpsValidator {
 	 * @return
 	 * 			The validity of the token operation.
 	 */
-	public static ResponseCodeEnum validateTokenCountsWith(
+	public static ResponseCodeEnum validateTokenOpsWith(
 			final int nftCount,
 			final long fungibleCount,
 			final boolean areNftEnabled,

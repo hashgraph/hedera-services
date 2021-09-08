@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenCountsWith;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -101,7 +101,7 @@ class TokenOpsValidatorTest {
 	void nftTokenBurnHappyPath() {
 		given(validator.maxBatchSizeBurnCheck(4)).willReturn(OK);
 
-		assertEquals(OK, validateTokenCountsWith(
+		assertEquals(OK, validateTokenOpsWith(
 				4, 0, true,
 				INVALID_TOKEN_BURN_AMOUNT,
 				new ArrayList<>(List.of(1L, 2L, 3L, 4L)),
@@ -113,7 +113,7 @@ class TokenOpsValidatorTest {
 	void nftTokenBurnFailsWithInvalidSerialNum() {
 		given(validator.maxBatchSizeBurnCheck(4)).willReturn(OK);
 
-		assertEquals(INVALID_NFT_ID, validateTokenCountsWith(
+		assertEquals(INVALID_NFT_ID, validateTokenOpsWith(
 				4, 0, true,
 				INVALID_TOKEN_BURN_AMOUNT,
 				new ArrayList<>(List.of(1L, -2L, 3L, 4L)),
@@ -122,7 +122,7 @@ class TokenOpsValidatorTest {
 	}
 
 	private ResponseCodeEnum forMintWith(int nftCount, long fungibleCount, boolean areNftEnabled) {
-		return validateTokenCountsWith(
+		return validateTokenOpsWith(
 				nftCount, fungibleCount, areNftEnabled,
 				INVALID_TOKEN_MINT_AMOUNT,
 				new ArrayList<>(List.of(ByteString.copyFromUtf8("memo"))),
