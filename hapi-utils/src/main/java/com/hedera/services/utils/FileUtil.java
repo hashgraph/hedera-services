@@ -42,6 +42,7 @@ public class FileUtil {
 	private static final Logger log = LogManager.getLogger(FileUtil.class);
 	private static final int BUFFER_SIZE = 4096;
 
+	private FileUtil() { }
 
 	public static Path findNewestDirOrFileUnder(String pathName) {
 		return findNewestDirOrFileUnder(Path.of(pathName));
@@ -59,7 +60,7 @@ public class FileUtil {
 					List<Path> paths = entries.collect(Collectors.toList());
 					newest = getLatestFileOrDir(paths);
 				} catch (IOException e) {
-					log.info("Can't get newest file or directory under {}", path.toString());
+					log.warn("Can't get newest file or directory under {}", path);
 					newest = path;
 				}
 			}
@@ -85,24 +86,6 @@ public class FileUtil {
 		return newestFile;
 	}
 
-	public static void createZip(String srcDirName, String zipFile, String defaultScript) {
-		try (FileOutputStream fos = new FileOutputStream(zipFile);
-			 ZipOutputStream zos = new ZipOutputStream(fos)) {
-
-			if (defaultScript != null) {
-				Path src = Paths.get(defaultScript);
-				Path dest = Paths.get(srcDirName + src.getFileName());
-				Files.copy(src, dest);
-			}
-
-			File srcDir = new File(srcDirName);
-			addZipEntry(zos, srcDir, srcDir);
-			zos.flush();
-			fos.flush();
-		} catch (IOException e) {
-			log.error(e);
-		}
-	}
 
 	public static Path gzipDir(Path srcPath, String zipFile) {
 		Path zipFilePath = null;
@@ -134,7 +117,6 @@ public class FileUtil {
 	 * 		current working directory
 	 */
 	public static void addZipEntry(ZipOutputStream zos, File rootDirectory, File currentDirectory) {
-		log.info("Root = " + rootDirectory + ", current = " + currentDirectory);
 		if (!rootDirectory.equals(currentDirectory)) {
 			try {
 				String pathDiff = currentDirectory.toString().replace(rootDirectory.toString(), "");
@@ -143,14 +125,12 @@ public class FileUtil {
 					pathDiff = pathDiff.substring(1);
 				}
 				String dirName = pathDiff + File.separator;
-				log.info("Adding dir " + dirName);
 				zos.putNextEntry(new ZipEntry(dirName));
 			} catch (IOException e) {
 				log.error(e);
 			}
 		}
 
-		log.info("Current directory " + currentDirectory.toString());
 		File[] files = currentDirectory.listFiles();
 		byte[] buffer = new byte[BUFFER_SIZE];
 
@@ -164,7 +144,7 @@ public class FileUtil {
 
 				try (FileInputStream fis = new FileInputStream(file)) {
 					String name = file.getAbsolutePath().replace(rootDirectory.getAbsolutePath(), "");
-					log.info("Adding file:" + name);
+					log.info("Adding file: {}", name);
 					zos.putNextEntry(new ZipEntry(name));
 					int length;
 					while ((length = fis.read(buffer)) > 0) {
@@ -174,9 +154,9 @@ public class FileUtil {
 				} catch (IOException e) {
 					log.error(e);
 				}
-			}//for
+			}
 		} else {
-			log.info("Directory " + currentDirectory + " is empty");
+			log.info("Directory {} is empty.", currentDirectory);
 		}
 
 	}

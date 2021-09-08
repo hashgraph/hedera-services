@@ -25,6 +25,8 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
@@ -46,42 +48,30 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.DrbgParameters;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 
 public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 
-	public final static class Builder {
+	public static final class Builder {
 
 		public Builder withPassword(final char[] password) {
 			this.password = password;
 			return this;
 		}
 
-		public Ed25519KeyStore build() throws KeyStoreException {
+		public Ed25519KeyStore build() {
 			if (password == null) {
 				password = new char[0];
 			}
 			if (converter == null) {
 				this.converter = new JcaPEMKeyConverter().setProvider(ED_PROVIDER);
 			}
-			if (random == null) {
-				try {
-					this.random = SecureRandom.getInstance("DRBG",
-							DrbgParameters.instantiation(256, DrbgParameters.Capability.RESEED_ONLY, null));
-				} catch (NoSuchAlgorithmException ex) {
-					throw new KeyStoreException(ex);
-				}
-			}
-			return new Ed25519KeyStore(password, converter, random);
+			return new Ed25519KeyStore(password, converter);
 		}
 
-		private SecureRandom random;
 		private JcaPEMKeyConverter converter;
 		private char[] password;
 	}
@@ -172,13 +162,21 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 		}
 	}
 
-	private final SecureRandom random;
-	private final JcaPEMKeyConverter converter;
+	private final transient JcaPEMKeyConverter converter;
 	private final char[] password;
 
-	private Ed25519KeyStore(final char[] password, final JcaPEMKeyConverter converter, final SecureRandom random) {
+	private Ed25519KeyStore(final char[] password, final JcaPEMKeyConverter converter) {
 		this.password = password;
 		this.converter = converter;
-		this.random = random;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 }

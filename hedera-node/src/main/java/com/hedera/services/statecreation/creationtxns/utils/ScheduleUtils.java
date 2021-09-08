@@ -24,6 +24,8 @@ import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class ScheduleUtils {
+	private ScheduleUtils() {}
+
 	public static SchedulableTransactionBody fromOrdinary(TransactionBody txn) {
 		var scheduleBuilder = SchedulableTransactionBody.newBuilder();
 

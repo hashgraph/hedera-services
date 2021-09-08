@@ -21,10 +21,10 @@ package com.hedera.services.statecreation.creationtxns;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
 import com.hedera.services.statecreation.creationtxns.utils.SigFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -33,6 +33,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -44,10 +47,7 @@ import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asA
 public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	public static final String DEFAULT_MEMO = "default memo.";
 	public static final String DEFAULT_NODE_ID = "0.0.3";
-	public static final AccountID DEFAULT_NODE = asAccount(DEFAULT_NODE_ID);
 	public static final String DEFAULT_PAYER_ID = "0.0.2";
-	public static final String MASTER_PAYER_ID = "0.0.50";
-	public static final AccountID DEFAULT_PAYER = asAccount(DEFAULT_PAYER_ID);
 	public static final Instant DEFAULT_VALID_START = Instant.now();
 	public static final Integer DEFAULT_VALID_DURATION = 60;
 	public static final SigFactory DEFAULT_SIG_FACTORY = new SigFactory();
@@ -55,7 +55,7 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 	protected KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	protected FeeBuilder fees = new FeeBuilder();
 
-	String memo = DEFAULT_MEMO;
+	String defaultMemo = DEFAULT_MEMO;
 	String node = DEFAULT_NODE_ID;
 	String payer = DEFAULT_PAYER_ID;
 	boolean skipTxnId = false;
@@ -72,11 +72,17 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 
 	protected abstract void customizeTxn(TransactionBody.Builder txn);
 
-	public Transaction get() throws Throwable {
-		Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
-		return customFee.isPresent()
-				? provisional
-				: signed(signableTxn(feeFor(provisional, keys.size())));
+	public Transaction get() throws IllegalStateException {
+		Transaction signedTxn;
+		try {
+			Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
+			signedTxn = customFee.isPresent() ? provisional
+					: signed(signableTxn(feeFor(provisional, keys.size())));
+		} catch (InvalidKeyException | SignatureException | InvalidProtocolBufferException
+				| InvalidKeySpecException e) {
+			throw new IllegalStateException("Error occurred when signing transaction.", e);
+		}
+		return signedTxn;
 	}
 
 	private Transaction.Builder signableTxn(long fee) {
@@ -86,8 +92,9 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 		return Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(txn.build().toByteArray()));
 	}
 
-	private Transaction signed(Transaction.Builder txnWithSigs) throws Throwable {
-		KeyPairObj keyPairObj = KeyFactory.genesisKeyPair;
+	private Transaction signed(Transaction.Builder txnWithSigs)
+			throws InvalidKeyException, SignatureException, InvalidProtocolBufferException, InvalidKeySpecException {
+		KeyPairObj keyPairObj = keyFactory.getGenesisKeyPair();
 		Key genKey = KeyFactory.asPublicKey(keyPairObj.getPublicKeyAbyteStr());
 		keys = Collections.singletonList(genKey);
 
@@ -98,7 +105,7 @@ public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {
 		TransactionBody.Builder txn = TransactionBody.newBuilder()
 				.setNodeAccountID(asAccount(node))
 				.setTransactionValidDuration(validDuration())
-				.setMemo(memo);
+				.setMemo(defaultMemo);
 		if (!skipTxnId) {
 			txn.setTransactionID(txnId());
 		}

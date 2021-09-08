@@ -21,27 +21,22 @@ package com.hedera.services.statecreation.creationtxns;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.statecreation.creationtxns.utils.KeyFactory;
 import com.hedera.services.statecreation.creationtxns.utils.TempUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Random;
 
 
 public class NftCreateTxnFactory extends CreateTxnFactory<NftCreateTxnFactory> {
-	private final Random random = new Random();
-	private final static int META_DATA_BASE_LENGTH = 50;
-	private final static int META_DATA_MAX_VAR =50;
+	private final SecureRandom random = new SecureRandom();
+	private static final int META_DATA_BASE_LENGTH = 50;
+	private static final int META_DATA_MAX_VAR =50;
 	private OptionalInt totalNftsPerToken = OptionalInt.of(1000);
 	private TokenID tokenID;
 

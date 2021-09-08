@@ -64,14 +64,12 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		final var precheckResultMeta = precheckResult.getLeft();
 		final var precheckResultValidity = precheckResultMeta.getValidity();
 		if (precheckResultValidity != OK) {
-			System.out.println("Txn failed in precheck: " + precheckResultValidity);
 			return responseWith(precheckResultValidity, precheckResultMeta.getRequiredFee());
 		} else if (precheckResult.getRight().isEmpty()) {
 			return responseWith(FAIL_INVALID);
 		}
 
 		final var accessor = precheckResult.getRight().get();
-		//System.out.println("Now submit to platform: ");
 		return responseWith(submissionManager.trySubmission(accessor));
 	}
 

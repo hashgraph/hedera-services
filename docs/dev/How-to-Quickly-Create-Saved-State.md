@@ -11,37 +11,39 @@ what you need.
 
 For example :
 ```
+# this file shall not be deployed
+
 position.0=accounts
-accounts.total=100000
+accounts.total=30000
 
 position.1=topics
-topics.total=1000
+topics.total=100
 
 position.2=tokens
-tokens.total=1000
+tokens.total=100
 
 position.3=uniqueTokens
-uniqueTokens.total=2000
+uniqueTokens.total=1000
 
 position.4=files
-files.total=1000
+files.total=100
 
 position.5=smartContracts
-smartContracts.total=0
-smartContracts.total.file=0
+smartContracts.total=100
+smartContracts.total.file=10
 
 position.6=schedules
-schedules.total=2000
+schedules.total=200
 
 position.7=nfts
-nfts.total=250000
+nfts.total=25000
 
 position.8=tokenAssociations
 tokenAssociations.total=5000
 
 cloud.bucketname=services-regression-jrs-files
 cloud.dirForStateFile=auto-upload-test-dir
-millseconds.waiting.server.down=60000
+millseconds.waiting.server.down=120000
 
 ```
 
@@ -69,32 +71,27 @@ You can observe the log from the `Run` pane of Intellij or from `hgcaa.log`.
 
 ``` 
 ...
-2021-08-27 13:07:30.881 INFO  245  BuiltinClient - Current seqNo: 2021178
-2021-08-27 13:07:43.051 INFO  243  BuiltinClient - Successfully submitted TokenAssociateToAccount txn #50000, handled so far: 49402 
-2021-08-27 13:07:43.052 INFO  245  BuiltinClient - Current seqNo: 2021178
-2021-08-27 13:07:43.054 INFO  411  BuiltinClient - Successfully submitted 50000 for tokenAssociation , handled so far: 49403
-2021-08-27 13:07:43.055 INFO  414  BuiltinClient - Done creating 50000 Token Associations
-2021-08-27 13:07:43.055 INFO  109  BuiltinClient - tokenAssociations value range [2011001 - 2061000]
-2021-08-27 13:07:43.055 INFO  112  BuiltinClient - Current seqNo: 2021178
-2021-08-27 13:07:43.056 INFO  92   BuiltinClient - All entities created. Shutdown the client thread
-2021-08-27 13:07:48.986 INFO  39   PostCreateTask - Wait for builtin client to finish...
-2021-08-27 13:08:15.439 INFO  144  SignedStateBalancesExporter - Took 195250ms to summarize signed state balances
-2021-08-27 13:08:18.991 INFO  39   PostCreateTask - Wait for builtin client to finish...
-2021-08-27 13:08:21.173 INFO  161  SignedStateBalancesExporter -  -> Took 5725ms to export and sign proto balances file at 2021-08-27T18:05:00.025242Z
-2021-08-27 13:08:43.086 INFO  99   BuiltinClient - Current seqNo: 2021178
-2021-08-27 13:08:49.003 INFO  46   PostCreateTask - Done create the state file and shut down the server.
-2021-08-27 13:08:50.328 INFO  58   PostCreateTask - Successfully submitted Freeze txn 
-2021-08-27 13:08:50.328 INFO  64   PostCreateTask - Sent the freeze command to server and wait its final state file export to finish...
-2021-08-27 13:08:53.056 INFO  104  FreezeHandler - Dual state freeze time set to 2021-08-27T18:08:59Z (now is 2021-08-27T18:08:50.269055Z)
-2021-08-27 13:08:59.348 INFO  125  ServicesMain - Now current platform status = MAINTENANCE in HederaNode#0.
-2021-08-27 13:08:59.359 INFO  226  RecordStreamManager - RecordStream inFreeze is set to be true 
-2021-08-27 13:08:59.509 INFO  153  FreezeHandler - NETWORK_UPDATE Node 0 Update file id is not defined, no update will be conducted
-2021-08-27 13:10:51.474 INFO  35   SavedStateHandler - Zip fle name base: 20214
-2021-08-27 13:10:51.497 INFO  137  FileUtil - Root = /Users/leojiang/projects/R6/hedera-services/hedera-node/./data/saved/com.hedera.services.ServicesMain/0/123/20214, current = /Users/leojiang/projects/R6/hedera-services/hedera-node/./data/saved/com.hedera.services.ServicesMain/0/123/20214
-2021-08-27 13:10:51.498 INFO  153  FileUtil - Current directory /Users/leojiang/projects/R6/hedera-services/hedera-node/./data/saved/com.hedera.services.ServicesMain/0/123/20214
-2021-08-27 13:10:51.503 INFO  167  FileUtil - Adding file:/PostgresBackup.tar.gz
-2021-08-27 13:10:51.679 INFO  167  FileUtil - Adding file:/SignedState.swh.tmp
-2021-08-27 13:11:01.899 INFO  95   PostCreateTask - Done uploading state file /Users/leojiang/projects/R6/hedera-services/hedera-node/20214.gz
+2021-09-08 18:39:00.385 INFO  124  BuiltinClient - Current seqNo: 32611
+2021-09-08 18:39:00.385 INFO  102  BuiltinClient - All entities created. Shutdown the client thread
+2021-09-08 18:39:10.210 INFO  42   PostCreateTask - Wait for builtin client to finish...
+2021-09-08 18:39:40.211 INFO  42   PostCreateTask - Wait for builtin client to finish...
+Storage Path: /Users/leojiang/projects/R6/hedera-services/hedera-node/data/saved/com.hedera.services.ServicesMain/0/123/2075
+2021-09-08 18:40:00.288 INFO  152  SignedStateBalancesExporter - Took 133ms to summarize signed state balances
+2021-09-08 18:40:00.326 INFO  174  SignedStateBalancesExporter -  -> Took 38ms to export and sign proto balances file at 2021-09-08T23:40:00.037823Z
+2021-09-08 18:40:00.391 INFO  111  BuiltinClient - Current seqNo: 32611
+2021-09-08 18:40:10.216 INFO  49   PostCreateTask - Done create the state file and shut down the server.
+2021-09-08 18:40:10.281 INFO  60   PostCreateTask - Successfully submitted Freeze txn.
+2021-09-08 18:40:10.281 INFO  66   PostCreateTask - Sent the freeze command to server and wait its final state file export to finish...
+Storage Path: /Users/leojiang/projects/R6/hedera-services/hedera-node/data/saved/com.hedera.services.ServicesMain/0/123/2457
+2021-09-08 18:40:20.209 INFO  74   ServicesMain - Now current platform status = MAINTENANCE in HederaNode#0.
+2021-09-08 18:40:20.210 INFO  227  RecordStreamManager - RecordStream inFreeze is set to be true 
+2021-09-08 18:42:10.289 INFO  25   ServiceGCPUploadHelper - User.home: /Users/leojiang
+2021-09-08 18:42:10.290 INFO  28   ServiceGCPUploadHelper - Path to credential file: /Users/leojiang/.ssh/gcp-credit.json
+2021-09-08 18:42:10.369 INFO  38   SavedStateHandler - Zip fle name base: 2457
+2021-09-08 18:42:10.373 INFO  147  FileUtil - Adding file:/SignedState.swh
+2021-09-08 18:42:10.964 INFO  147  FileUtil - Adding file:/PostgresBackup.tar.gz
+2021-09-08 18:42:10.967 INFO  147  FileUtil - Adding file:/settingsUsed.txt
+2021-09-08 18:42:14.675 INFO  96   ServiceGCPUploadHelper - Done uploading state file /Users/leojiang/projects/R6/hedera-services/hedera-node/2457.gz
 ```
 
 ### Verify the created state file.
@@ -106,18 +103,18 @@ After above steps, you can re-start `ServicesMain` from Intellij, and meanwhile,
 and you should be able to find following lines:
 
 ```
-2021-08-27 12:49:07.221 9        DEBUG STARTUP          <main> Browser: Starting platforms
-2021-08-27 12:49:07.224 10       DEBUG STARTUP          <main> Browser: Scanning the classpath for RuntimeConstructable classes
-2021-08-27 12:49:08.360 11       DEBUG STARTUP          <main> Browser: Done with registerConstructables, time taken 1135ms
-2021-08-27 12:49:17.662 12       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 999780, treeSize = 999780 ]
-2021-08-27 12:49:17.736 13       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 55998, treeSize = 55998 ]
-2021-08-27 12:49:17.746 14       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 1000, treeSize = 1000 ]
-2021-08-27 12:49:17.763 15       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 3207, treeSize = 3207 ]
-2021-08-27 12:49:19.984 16       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 1001192, treeSize = 1001192 ]
-2021-08-27 12:49:20.000 17       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 6000, treeSize = 6000 ]
-2021-08-27 12:49:20.009 18       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 1000, treeSize = 1000 ]
-2021-08-27 12:49:27.455 19       INFO  STARTUP          <main> SwirldsPlatform: Signed state loaded from disk has a valid hash.
-2021-08-27 12:49:31.928 20       DEBUG SNAPSHOT_MANAGER <main> SnapshotManager: SnapshotManager: Successfully queued snapshot request [taskType='RESTORE', applicationName='com.hedera.services.ServicesMain', worldId='123', nodeId=0, roundNumber=9633, snapshotId=restore, timeStarted=2021-08-27T17:49:31.920242Z, timeCompleted=null, complete=false, error=false ]
+2021-09-08 18:43:48.805 10       DEBUG STARTUP          <main> Browser: Scanning the classpath for RuntimeConstructable classes
+2021-09-08 18:43:50.125 11       DEBUG STARTUP          <main> Browser: Done with registerConstructables, time taken 1319ms
+2021-09-08 18:43:50.953 12       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 30000, treeSize = 30000 ]
+2021-09-08 18:43:50.965 13       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 6095, treeSize = 6095 ]
+2021-09-08 18:43:50.966 14       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 100, treeSize = 100 ]
+2021-09-08 18:43:50.969 15       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 335, treeSize = 335 ]
+2021-09-08 18:43:51.097 16       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 30301, treeSize = 30301 ]
+2021-09-08 18:43:51.100 17       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 1100, treeSize = 1100 ]
+2021-09-08 18:43:51.101 18       DEBUG RECONNECT        <main> FCMap: FCMap Initialized [ internalMapSize = 200, treeSize = 200 ]
+2021-09-08 18:43:51.838 19       INFO  STARTUP          <main> SwirldsPlatform: Signed state loaded from disk has a valid hash.
+2021-09-08 18:43:52.613 20       DEBUG SNAPSHOT_MANAGER <main> SnapshotManager: SnapshotManager: Successfully queued snapshot request [taskType='RESTORE', applicationName='com.hedera.services.ServicesMain', worldId='123', nodeId=0, roundNumber=2457, snapshotId=restore, timeStarted=2021-09-08T23:43:52.603475Z, timeCompleted=null, complete=false, error=false ]
+
 ```
 
 The `FCMAP` lines shall tell you the number of entity types that created in ths saved state file.

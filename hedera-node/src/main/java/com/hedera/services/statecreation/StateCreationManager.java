@@ -2,7 +2,6 @@ package com.hedera.services.statecreation;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.NetworkCtxManager;
-import com.hedera.services.statecreation.creationtxns.PostCreateTask;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import org.apache.logging.log4j.LogManager;
@@ -88,7 +87,7 @@ public class StateCreationManager {
 		executorService = Executors.newFixedThreadPool(2);
 
 		BuiltinClient client = new BuiltinClient(properties, processOrders,
-				submissionManager, submissionFlow, networkCtxManager, allCreated);
+				submissionManager, networkCtxManager, allCreated);
 
 		log.info("kicked off builtin client to send creation traffic");
 

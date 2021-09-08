@@ -31,6 +31,7 @@ import javax.inject.Singleton;
 
 @Module
 public abstract class StateCreateModule {
+	private StateCreateModule() {}
 	@Provides
 	@Singleton
 	public static StateCreationManager provideStateCreateManager(final PlatformSubmissionManager submissionManager,

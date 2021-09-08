@@ -37,7 +37,7 @@ import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asA
 
 public class ScheduleCreateTxnFactory extends CreateTxnFactory<ScheduleCreateTxnFactory> {
 	private boolean omitAdmin = false;
-	private Optional<AccountID> payer = Optional.empty();
+	private Optional<AccountID> designatingPayer = Optional.empty();
 
 	private static Key adminKey = KeyFactory.getKey();
 
@@ -68,7 +68,7 @@ public class ScheduleCreateTxnFactory extends CreateTxnFactory<ScheduleCreateTxn
 	}
 
 	public ScheduleCreateTxnFactory designatingPayer(AccountID id) {
-		payer = Optional.of(id);
+		designatingPayer = Optional.of(id);
 		return this;
 	}
 
@@ -95,7 +95,7 @@ public class ScheduleCreateTxnFactory extends CreateTxnFactory<ScheduleCreateTxn
 		if (!omitAdmin) {
 			op.setAdminKey(adminKey);
 		}
-		payer.ifPresent(op::setPayerAccountID);
+		designatingPayer.ifPresent(op::setPayerAccountID);
 		SchedulableTransactionBody scheduledTxn = getScheduledTxn(from, to);
 		op.setScheduledTransactionBody(scheduledTxn);
 		memo.ifPresent(txn::setMemo);

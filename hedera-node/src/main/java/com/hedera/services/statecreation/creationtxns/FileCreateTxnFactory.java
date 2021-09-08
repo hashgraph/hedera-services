@@ -28,16 +28,16 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Random;
 
 import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.randomUtf8ByteString;
 
 public class FileCreateTxnFactory extends CreateTxnFactory<FileCreateTxnFactory> {
 
-	Random random = new Random();
+	SecureRandom random = new SecureRandom();
 	private static KeyList waclKeys;
-	{
+	static {
 		waclKeys = KeyList.newBuilder().addKeys(0, KeyFactory.getKey()).build();
 	}
 

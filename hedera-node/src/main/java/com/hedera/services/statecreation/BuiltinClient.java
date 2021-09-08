@@ -10,8 +10,6 @@ import com.hedera.services.statecreation.creationtxns.TokenAssociateCreateTxnFac
 import com.hedera.services.statecreation.creationtxns.TokenCreateTxnFactory;
 import com.hedera.services.statecreation.creationtxns.TopicCreateTxnFactory;
 import com.hedera.services.statecreation.creationtxns.FileCreateTxnFactory;
-import com.hedera.services.statecreation.creationtxns.UniqTokenCreateTxnFactory;
-import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -21,9 +19,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,52 +38,49 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 
 public class BuiltinClient implements Runnable {
-	static Logger log = LogManager.getLogger(BuiltinClient.class);
+	private static Logger log = LogManager.getLogger(BuiltinClient.class);
 
-	final private static String DEFAULT_ACCT = "0.0.2";
-	final private static long FEE_ALLOWED = 100_000_000L;
-	final private static long BASE_INIT_BALANCE = 10_000_000_000L;
-	final private static int BALANCE_VAR = 1000_000_000;
-	final private static long GAS_TO_PAY = 5_000_000;
+	private static final String DEFAULT_ACCT = "0.0.2";
+	private static final long FEE_ALLOWED = 100_000_000L;
+	private static final long BASE_INIT_BALANCE = 10_000_000_000L;
+	private static final int BALANCE_VAR = 1000_000_000;
+	private static final long GAS_TO_PAY = 5_000_000;
 
-	final private static int ONE_SECOND = 1000;
-	final private static int ONE_MINUTE = 60000;
-	final private static int BACK_OFF_MS = 100;
+	private static final long ONE_SECOND = 1000L;
+	private static final long ONE_MINUTE = 60000;
+	private static final long BACK_OFF_MS = 100;
 
-	final private static int MAX_NFT_PER_TOKEN = 1000;
-	final private static int NFT_MINT_BATCH_SIZE = 10;
+	private static final int MAX_NFT_PER_TOKEN = 1000;
+	private static final int NFT_MINT_BATCH_SIZE = 10;
 
-	final private static int SYSTEM_ACCOUNTS = 1000;
-	final private Map<Integer, String> processOrders;
-	final private Properties properties;
-	final private AtomicBoolean allCreated;
-	final private PlatformSubmissionManager submissionManager;
-	final private BasicSubmissionFlow submissionFlow;
-	final private NetworkCtxManager networkCtxManager;
+	private static final int SYSTEM_ACCOUNTS = 1000;
+	private final Map<Integer, String> processOrders;
+	private final Properties properties;
+	private final AtomicBoolean allCreated;
+	private final PlatformSubmissionManager submissionManager;
+	private final NetworkCtxManager networkCtxManager;
 
-	private Random random = new Random();
+	private final SecureRandom random = new SecureRandom();
 
-	private static int totalAccounts;
-	private static int tokenNumStart;
-	private static int totalTokens;
-	private static int uniqTokenNumStart;
-	private static int totalUniqTokens;
-	private static int totalRandomFiles;
-	private static int contractFileNumStart;
-	private static int totalContractFiles;
+	private int totalAccounts;
+	private int tokenNumStart;
+	private int totalTokens;
+	private int uniqTokenNumStart;
+	private int totalUniqTokens;
+	private int totalRandomFiles;
+	private int contractFileNumStart;
+	private int totalContractFiles;
 
 	private static AtomicInteger currentEntityNumEnd = new AtomicInteger(1001);
 
 	public BuiltinClient(final Properties layoutProps,
 			final Map<Integer, String> processOrders,
 			final PlatformSubmissionManager submissionManager,
-			final BasicSubmissionFlow submissionFlow,
 			final NetworkCtxManager networkCtxManager,
 			final AtomicBoolean allCreated) {
 		this.processOrders = processOrders;
 		this.properties = layoutProps;
 		this.submissionManager = submissionManager;
-		this.submissionFlow = submissionFlow;
 		this.networkCtxManager = networkCtxManager;
 		this.allCreated = allCreated;
 	}
@@ -95,7 +90,9 @@ public class BuiltinClient implements Runnable {
 		log.info("In built client, wait for server to start up from genesis...");
 		try {
 			Thread.sleep(5 * ONE_SECOND);
-		} catch (InterruptedException e) {	}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 
 		processOrders.forEach(this::createEntitiesFor);
 
@@ -103,10 +100,11 @@ public class BuiltinClient implements Runnable {
 
 		try {
 			Thread.sleep(ONE_MINUTE);
-		} catch (InterruptedException e) {	}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 
 		allCreated.set(true);
-		log.info("Current seqNo: " + networkCtxManager.networkContext().seqNo().current());
 	}
 
 	private void createEntitiesFor(Integer posi, String entityType) {
@@ -114,20 +112,20 @@ public class BuiltinClient implements Runnable {
 		int totalToCreate = Integer.parseInt(valStr);
 
 		if(totalToCreate > 0) {
-			log.info("Start to build " + valStr + " " + entityType + ". Starting number: " + currentEntityNumEnd.get());
-			createEntitiesFor(entityType,  totalToCreate, properties, processOrders);
-			log.info( entityType + " value range [{} - {}]",
+			log.info("Start to build {} {}. Starting number: {}", valStr, entityType, currentEntityNumEnd.get());
+			createEntitiesFor(entityType,  totalToCreate, properties);
+			log.info(  "{} value range [{} - {}]",entityType,
 					currentEntityNumEnd.get(),currentEntityNumEnd.get() + totalToCreate - 1);
 
-			log.info("Current seqNo: " + networkCtxManager.networkContext().seqNo().current());
+			log.info("SeqNo is {} after creating {}",
+					networkCtxManager.networkContext().seqNo().current(), entityType);
 			currentEntityNumEnd.set(currentEntityNumEnd.get() + totalToCreate);
 		}
 	}
 
 	private void createEntitiesFor(final String entityType,
 			final int totalToCreate,
-			final Properties properties,
-			final Map<Integer, String> layoutProps) {
+			final Properties properties) {
 
 		switch (entityType) {
 			case "accounts":
@@ -158,20 +156,14 @@ public class BuiltinClient implements Runnable {
 				createSchedules(totalToCreate);
 				break;
 			default:
-				log.info("not implemented yet for " + entityType);
+				log.info("not implemented yet for {}", entityType);
 				break;
 		}
 	}
 
-	private static void backOff() {
-		try {
-			Thread.sleep(BACK_OFF_MS);
-		} catch (InterruptedException e) { }
-	}
-
 	@FunctionalInterface
 	interface CreateTxnThrows<R, T> {
-		R create(T t) throws Throwable;
+		R create(T t) throws IllegalStateException;
 	}
 
 	private int getReportStep(final int totalToCreate) {
@@ -217,17 +209,24 @@ public class BuiltinClient implements Runnable {
 			}
 		}
 
+		private static void backOff() {
+			try {
+				Thread.sleep(BACK_OFF_MS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
 	}
 
 	private boolean submitOneTxn(final Transaction txn,
 			final HederaFunctionality txnType,
-			final int index) throws Throwable {
+			final int index) throws InvalidProtocolBufferException {
 		SignedTxnAccessor accessor = new SignedTxnAccessor(txn);
 		ResponseCodeEnum responseCode = submissionManager.trySubmission(accessor);
 
 		if(responseCode != OK) {
 			log.info("Response code is {} for {} txn #{} and body {}",
-					responseCode , txnType, index, txn.toString());
+					responseCode , txnType, index, txn);
 			return false;
 		}
 		return true;
@@ -247,15 +246,14 @@ public class BuiltinClient implements Runnable {
 		}
 		int i = 0;
 		while(i < totalToCreate) {
-			int j = 0;
 			try {
 				Transaction txn = createOne.create(i);
 				if(submitOneTxn(txn, txnType, i)) {
 					i++;
 					if(i % reportEvery  == 0 ) {
-						log.info("Successfully submitted {} txn #{}, handled so far: {} ", txnType, i,
-								networkCtxManager.opCounters().handledSoFar(txnType));
-						log.info("Current seqNo: " + networkCtxManager.networkContext().seqNo().current());
+						log.info("Successfully submitted {} txn #{}, handled so far: {}. Current SeqNo = {} ",
+								txnType, i,	networkCtxManager.opCounters().handledSoFar(txnType),
+								networkCtxManager.networkContext().seqNo().current());
 					}
 				}
 				else {
@@ -264,7 +262,7 @@ public class BuiltinClient implements Runnable {
 				}
 			} catch (InvalidProtocolBufferException e) {
 				log.warn("Bad transaction body for {}: ", txnType, e);
-			} catch (Throwable e) {
+			} catch (IllegalStateException e) {
 				log.warn("Possible invalid signature for transaction {}: ", txnType, e);
 			}
 			if(flowControl.isPresent()) {
@@ -274,15 +272,14 @@ public class BuiltinClient implements Runnable {
 	}
 
 	private void createAccounts(final int totalToCreate) {
-		CreateTxnThrows<Transaction, Integer> createAccount = (Integer i) -> {
-			Transaction txn = CryptoCreateTxnFactory.newSignedCryptoCreate()
+		CreateTxnThrows<Transaction, Integer> createAccount = i ->
+			CryptoCreateTxnFactory.newSignedCryptoCreate()
 					.balance(BASE_INIT_BALANCE + random.nextInt(BALANCE_VAR))
 					.receiverSigRequired(false)
 					.fee(FEE_ALLOWED)
 					.memo("Memo for account " + i)
 					.get();
-			return txn;
-		};
+
 
 		FlowControl acctFlowControl = new FlowControl(CryptoCreate,
 				2000,1000,10, 0, networkCtxManager);
@@ -292,21 +289,21 @@ public class BuiltinClient implements Runnable {
 		totalAccounts = totalToCreate;
 
 		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) { }
+			Thread.sleep(10 * ONE_SECOND);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 
 		log.info("Done creating {} accounts", totalToCreate);
 	}
 
 	private void createTopics(final int totalToCreate) {
-		CreateTxnThrows<Transaction, Integer> createTopic = (Integer i) -> {
-			Transaction txn = TopicCreateTxnFactory.newSignedConsensusCreateTopic()
+		CreateTxnThrows<Transaction, Integer> createTopic = (Integer i) ->
+			TopicCreateTxnFactory.newSignedConsensusCreateTopic()
 					.fee(FEE_ALLOWED)
 					.payer("0.0." + selectRandomAccount())
 					.memo("Memo for topics " + i)
 					.get();
-			return txn;
-		};
 
 		FlowControl topicFlowControl = new FlowControl(ConsensusCreateTopic,
 				1000,2000,10, 0, networkCtxManager);
@@ -316,15 +313,13 @@ public class BuiltinClient implements Runnable {
 	}
 
 	private void createTokens(final int totalToCreate) {
-		CreateTxnThrows<Transaction, Integer> createToken = (Integer i) -> {
-			Transaction txn = TokenCreateTxnFactory.newSignedTokenCreate()
+		CreateTxnThrows<Transaction, Integer> createToken = i ->
+			TokenCreateTxnFactory.newSignedTokenCreate()
 					.fee(FEE_ALLOWED)
 					.name("token" + i)
 					.symbol("SYMBOL" + i)
 					.treasury(asAccount("0.0." + selectRandomAccount()))
 					.get();
-			return txn;
-		};
 
 		FlowControl tokenFlowControl = new FlowControl(TokenCreate,
 				1000,2000,10, 0, networkCtxManager);
@@ -339,13 +334,11 @@ public class BuiltinClient implements Runnable {
 	private void createFiles(final int totalToCreate, final int preExisting,
 			final boolean forContractFile) {
 
-		CreateTxnThrows<Transaction, Integer> createFile = (Integer i) -> {
-			Transaction txn = FileCreateTxnFactory.newSignedFileCreate()
+		CreateTxnThrows<Transaction, Integer> createFile = i ->
+			FileCreateTxnFactory.newSignedFileCreate()
 					.fee(FEE_ALLOWED)
 					.forContractFile(forContractFile)
 					.get();
-			return txn;
-		};
 
 		FlowControl fileFlowControl = new FlowControl(FileCreate,
 				5000,100,10, preExisting, networkCtxManager);
@@ -365,8 +358,8 @@ public class BuiltinClient implements Runnable {
 		final int totalContractFile = Integer.parseInt(properties.getProperty("smartContracts.total.file"));
 		createFiles(totalContractFile, totalRandomFiles, true);
 
-		CreateTxnThrows<Transaction, Integer> createContract = (Integer i) -> {
-			Transaction txn = ContractCreateTxnFactory.newSignedContractCreate()
+		CreateTxnThrows<Transaction, Integer> createContract = i ->
+			ContractCreateTxnFactory.newSignedContractCreate()
 					.fee(FEE_ALLOWED)
 					.initialBalance(BASE_INIT_BALANCE)
 					.fileID(FileID.newBuilder()
@@ -375,8 +368,6 @@ public class BuiltinClient implements Runnable {
 					.payer(DEFAULT_ACCT)
 					.gas(GAS_TO_PAY)
 					.get();
-			return txn;
-		};
 
 		FlowControl contractFlowControl = new FlowControl(ContractCreate,
 				5000,100,10, 0, networkCtxManager);
@@ -386,8 +377,8 @@ public class BuiltinClient implements Runnable {
 	}
 
 	private void createSchedules(final int totalToCreate) {
-		CreateTxnThrows<Transaction, Integer> createSchedule = (Integer i) -> {
-			Transaction txn = ScheduleCreateTxnFactory.newSignedScheduleCreate()
+		CreateTxnThrows<Transaction, Integer> createSchedule = i ->
+			ScheduleCreateTxnFactory.newSignedScheduleCreate()
 					.fee(FEE_ALLOWED)
 					.designatingPayer(asAccount("0.0." + selectRandomAccount()))
 					.memo("Schedule " + i)
@@ -395,8 +386,6 @@ public class BuiltinClient implements Runnable {
 					.to(selectRandomAccount())
 					.payer(DEFAULT_ACCT)
 					.get();
-			return txn;
-		};
 
 		FlowControl scheduleFlowControl = new FlowControl(ScheduleCreate,
 				5000,500,50, 0, networkCtxManager);
@@ -406,37 +395,30 @@ public class BuiltinClient implements Runnable {
 		log.info("Done creating {} schedule transactions", totalToCreate);
 	}
 
-	private void createTokenAssociations(final int totalToCreate//, final int creationRate
-	) {
-		CreateTxnThrows<Transaction, Integer> createTokenAssociation = (Integer i) -> {
-			Transaction txn = TokenAssociateCreateTxnFactory.newSignedTokenAssociate()
+	private void createTokenAssociations(final int totalToCreate) {
+		CreateTxnThrows<Transaction, Integer> createTokenAssociation = i ->
+			TokenAssociateCreateTxnFactory.newSignedTokenAssociate()
 					.fee(FEE_ALLOWED)
 					.targeting(selectRandomAccount())
 					.associating(selectRandomToken())
 					.get();
-			return txn;
-		};
 		FlowControl tokenAssoFlowControl = new FlowControl(TokenAssociateToAccount,
 				5000,1000,100, 0, networkCtxManager);
 		createWithFlowControl(createTokenAssociation, totalToCreate,
 				TokenAssociateToAccount, 0, Optional.of(tokenAssoFlowControl));
 
-		log.info("Successfully submitted {} tokenAssociation txns, handled so far: {}",
-				totalToCreate, networkCtxManager.opCounters().handledSoFar(TokenAssociateToAccount));
-
 		log.info("Done creating {} Token Associations", totalToCreate);
 	}
 
 	private void createUniqTokens(final int totalToCreate) {
-		CreateTxnThrows<Transaction, Integer> createUniqueToken = (Integer i) -> {
-			Transaction txn = UniqTokenCreateTxnFactory.newSignedUniqTokenCreate()
+		CreateTxnThrows<Transaction, Integer> createUniqueToken = i ->
+			TokenCreateTxnFactory.newSignedTokenCreate()
 					.fee(FEE_ALLOWED)
+					.unique(true)
 					.name("uniqToken" + i)
 					.symbol("UNIQ" + i)
 					.treasury(asAccount("0.0." + selectRandomAccount()))
 					.get();
-			return txn;
-		};
 
 		FlowControl uniqTokenFlowControl = new FlowControl(TokenCreate,
 				10000,1000,10, totalTokens, networkCtxManager);
@@ -446,13 +428,11 @@ public class BuiltinClient implements Runnable {
 		uniqTokenNumStart = currentEntityNumEnd.get();
 		totalUniqTokens = totalToCreate;
 
-		log.info("Total token  handled so far: {}", networkCtxManager.opCounters().handledSoFar(TokenCreate));
-
-		log.info("Done creating {} uniqTokens", totalToCreate);
+		log.info("Done creating {} unique tokens", totalToCreate);
 	}
 
 	private void createNfts(int totalToCreate) {
-		int nftsPerToken = (int) Math.ceil(totalToCreate / totalUniqTokens);
+		int nftsPerToken = (int) Math.ceil((double)totalToCreate / totalUniqTokens);
 		if (nftsPerToken > MAX_NFT_PER_TOKEN) {
 			log.warn("One token can't have {} NFTs. Max is {}", nftsPerToken, MAX_NFT_PER_TOKEN);
 			nftsPerToken = MAX_NFT_PER_TOKEN;
@@ -464,7 +444,7 @@ public class BuiltinClient implements Runnable {
 		int totalMintTimes;
 		int batchSize;
 		if(nftsPerToken > NFT_MINT_BATCH_SIZE) {
-			totalMintTimes = (int)Math.ceil(nftsPerToken / NFT_MINT_BATCH_SIZE) * totalUniqTokens;
+			totalMintTimes = (int)Math.ceil((double)nftsPerToken / NFT_MINT_BATCH_SIZE) * totalUniqTokens;
 			batchSize = NFT_MINT_BATCH_SIZE;
 		} else {
 			totalMintTimes = totalUniqTokens;
@@ -481,7 +461,8 @@ public class BuiltinClient implements Runnable {
 				50000, 1000, 100, 0, networkCtxManager);
 		nftFinalWait.shallWaitHere(totalMintTimes);
 		log.info("Successfully submitted {} {} for unique token #{} with {} NFTs, handled so far: {}",
-				totalMintTimes, TokenMint, totalUniqTokens, nftsPerToken, networkCtxManager.opCounters().handledSoFar(TokenMint));
+				totalMintTimes, TokenMint, totalUniqTokens, nftsPerToken,
+				networkCtxManager.opCounters().handledSoFar(TokenMint));
 
 		log.info("Done creating {} NFTs", nftsPerToken * totalUniqTokens);
 	}
@@ -502,23 +483,24 @@ public class BuiltinClient implements Runnable {
 				}
 				int remaining = nftsPerToken - rounds * batchSize;
 				if(remaining > 0) {
-					log.info("Submit remaining {} NFTs creation for unique token #{}", remaining, i);
+					//log.info("Submit remaining {} NFTs creation for unique token #{}", remaining, i);
 					boolean success = false;
 					do {
 						success = mintOneBatchNFTs(i, nftsPerToken, j, batchSize, remaining);
-					} while (success == false);
+					} while (!success);
 				}
-			} catch (Throwable e) {
-				log.warn("Something happened while creating nfts: ", e);
+			} catch (InvalidProtocolBufferException e) {
+				log.warn("Bad transaction body for {}: ", TokenMint, e);
+			} catch (IllegalStateException e) {
+				log.warn("Possible invalid signature for transaction {}: ", TokenMint, e);
 			}
 
 			int mintSubmitted = i * nftsPerToken / batchSize;
-
 			nftCreationFlowControl.shallWaitHere(mintSubmitted);
-
 			if(i % reportEvery == 0) {
 				log.info("Successfully submitted {} {} for unique token #{} with {} NFTs, handled so far: {}",
-						mintSubmitted, TokenMint, i, nftsPerToken, networkCtxManager.opCounters().handledSoFar(TokenMint));
+						mintSubmitted, TokenMint, i, nftsPerToken,
+						networkCtxManager.opCounters().handledSoFar(TokenMint));
 			}
 		}
 	}
@@ -527,14 +509,14 @@ public class BuiltinClient implements Runnable {
 			final int nftsPerToken,
 			final int round,
 			final int batchSize,
-			final int remaining) throws Throwable {
+			final int remaining) throws IllegalStateException, InvalidProtocolBufferException {
 		Transaction txn = NftCreateTxnFactory.newSignedNftCreate()
 				.fee(FEE_ALLOWED)
-				.forUniqToken(i + uniqTokenNumStart)
+				.forUniqToken( (long)i + uniqTokenNumStart)
 				.metaDataPer(batchSize)
 				.get();
 		int nftsSubmittedSofar = i * nftsPerToken + (round + 1) * batchSize + remaining;
-		return submitOneTxn(txn, TokenMint, (int)Math.ceil(nftsSubmittedSofar / batchSize));
+		return submitOneTxn(txn, TokenMint, (int)Math.ceil((double)nftsSubmittedSofar / batchSize));
 	}
 
 	private int selectRandomAccount() {

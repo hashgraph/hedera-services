@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -38,23 +40,23 @@ import java.util.Optional;
 import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
 
 public class TokenCreateTxnFactory extends CreateTxnFactory<TokenCreateTxnFactory> {
-	private boolean frozen = false;
-	private boolean omitAdmin = false;
-	private boolean omitTreasury = false;
 	private AccountID treasury = null;
 	private Optional<AccountID> autoRenew = Optional.empty();
 	private List<FcCustomFee> customFees = new ArrayList<>();
 
 	public static final String DEFAULT_TREASURE_ID = "0.0.2";
-	private static AccountID DEFAULT_TREASURY = asAccount(DEFAULT_TREASURE_ID);
-	private static Key adminKey = KeyFactory.getKey();
-	private static Key freezeKey = KeyFactory.getKey();
-	private static Key kycKey = KeyFactory.getKey();
-	private static Key wipeKey = KeyFactory.getKey();
-	private static Key feeScheduleKey = KeyFactory.getKey();
+	private static final AccountID DEFAULT_TREASURY = asAccount(DEFAULT_TREASURE_ID);
+	private static final Key adminKey = KeyFactory.getKey();
+	private static final Key freezeKey = KeyFactory.getKey();
+	private static final Key supplyKey = KeyFactory.getKey();
 
 	private String name;
 	private String symbol;
+
+	private boolean frozen = false;
+	private boolean omitAdmin = false;
+	private boolean omitTreasury = false;
+	private Optional<Boolean> isUniqToken = Optional.empty();
 
 	private TokenCreateTxnFactory() {}
 
@@ -87,6 +89,11 @@ public class TokenCreateTxnFactory extends CreateTxnFactory<TokenCreateTxnFactor
 		return this;
 	}
 
+	public TokenCreateTxnFactory unique(final boolean uniqToken) {
+		isUniqToken = Optional.of(uniqToken);
+		return this;
+	}
+
 	public TokenCreateTxnFactory missingAdmin() {
 		omitAdmin = true;
 		return this;
@@ -112,6 +119,13 @@ public class TokenCreateTxnFactory extends CreateTxnFactory<TokenCreateTxnFactor
 		var op = TokenCreateTransactionBody.newBuilder();
 		op.setName(name);
 		op.setSymbol(symbol);
+		if(isUniqToken.isPresent() && Boolean.TRUE.equals(isUniqToken.get())) {
+			op.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+			op.setInitialSupply(0);
+			op.setSupplyType(TokenSupplyType.INFINITE);
+			op.setInitialSupply(0);
+			op.setSupplyKey(supplyKey);
+		}
 		Timestamp.Builder expiry = Timestamp.newBuilder()
 				.setSeconds(Instant.now().getEpochSecond() + 1000000)
 				.setNanos(0);

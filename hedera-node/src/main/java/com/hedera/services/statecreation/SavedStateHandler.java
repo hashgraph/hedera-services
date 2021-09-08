@@ -11,18 +11,22 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
-public class SavedStateHandler {
+public final class SavedStateHandler {
 	private static final Logger log = LogManager.getLogger(SavedStateHandler.class);
 
-	private static String CREDENTIALS_PATH = ".ssh/gcp-credit.json";
+	private SavedStateHandler() {}
 
-	private final static String HEDERA_SERVICES_PROJECTID = "hedera-regression";
-	private final static String SERVICES_REGRESSION_BUCKET = "services-regression-jrs-files";
-	private final static String FIXED_PATH_TO_STATE = "data/saved/com.hedera.services.ServicesMain/0/123";
-	private final static String FILE_TYPE = "text/plain";
+	private static final String CREDENTIALS_PATH = ".ssh/gcp-credit.json";
 
-	private static ServiceGCPUploadHelper serviceGCPUploadHelper = new ServiceGCPUploadHelper(CREDENTIALS_PATH, HEDERA_SERVICES_PROJECTID);
+	private static final String PROJECT_ID = "hedera-regression";
+	private static final String SERVICES_REGRESSION_BUCKET = "services-regression-jrs-files";
+	private static final String FIXED_PATH_TO_STATE = "data/saved/com.hedera.services.ServicesMain/0/123";
+	private static final String FILE_TYPE = "text/plain";
+
+	private static ServiceGCPUploadHelper serviceGCPUploadHelper =
+			new ServiceGCPUploadHelper(CREDENTIALS_PATH, PROJECT_ID);
 	private static String zipFileName;
 
 	private static Path zipFilePath;
@@ -32,19 +36,20 @@ public class SavedStateHandler {
 		Path target = FileUtil.findNewestDirOrFileUnder(currentDir.resolve(FIXED_PATH_TO_STATE));
 		zipFileName = target.getFileName().toString();
 
-		log.info("Zip fle name base: " + zipFileName);
+		log.info("Zip fle name base: {}", zipFileName);
 		zipFilePath = FileUtil.gzipDir(target, zipFileName+".gz");
 	}
 
-	public static void uploadStateFileGsutil(final String buckerName, final String targetDir) {
-		serviceGCPUploadHelper.uploadFileWithGsutil(zipFilePath.toString(), buckerName, targetDir);
+	public static void uploadStateFileGsutil(final String buckerName,
+			final String targetDir, final Properties properties) {
+		serviceGCPUploadHelper.uploadFileWithGsutil(zipFilePath.toString(), buckerName, targetDir, properties);
 	}
 
 	public static void uploadStateFile() {
 		try {
 			serviceGCPUploadHelper.uploadFile(zipFileName, zipFilePath.toString(), FILE_TYPE, SERVICES_REGRESSION_BUCKET);
 		} catch (IOException e) {
-			log.error("Upload zipped state file to GCP cloud storage failed! {}", e);
+			log.error("Upload zipped state file to GCP cloud storage failed! ", e);
 		}
 	}
 
@@ -56,15 +61,14 @@ public class SavedStateHandler {
 			String fileToUpload = currentDir.resolve("2644.gz").toString();
 			String absolutePathToFile = Paths.get(System.getProperty("user.home")).resolve(fileToUpload).toString();
 
-			System.out.println("file to upload: " + absolutePathToFile);
+			log.info("file to upload: {}", absolutePathToFile);
 
 			String tmpFileName = FilenameUtils.getName(absolutePathToFile);
-			System.out.println("Just file name: " + tmpFileName);
 			String targetFileName = "auto-upload-test-dir/" + tmpFileName;
 
 			serviceGCPUploadHelper.uploadFile(targetFileName, absolutePathToFile, FILE_TYPE, SERVICES_REGRESSION_BUCKET);
 		} catch (IOException e) {
-			log.error("Upload zipped state file to GCP cloud storage failed! {}", e);
+			log.error("Upload zipped state file to GCP cloud storage failed! ", e);
 		}
 	}
 }

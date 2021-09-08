@@ -25,37 +25,37 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.crypto.SignatureType;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SigMapGenerator {
 	private static final byte[] NONSENSE_SIG = "'Twas brillig, and the slithy toves...".getBytes();
-	private final Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn;
+	private final Function<ByteTrie, UnaryOperator<byte[]>> prefixCalcFn;
 	private int entryNo = 0;
-	private Set<Integer> invalidEntries = Collections.EMPTY_SET;
+	private Set<Integer> invalidEntries = Collections.emptySet();
 
 	public static SigMapGenerator withUniquePrefixes() {
 		return new SigMapGenerator(trie -> key -> trie.shortestPrefix(key, 1));
 	}
 
-	public SigMapGenerator(Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn) {
+	public SigMapGenerator(Function<ByteTrie, UnaryOperator<byte[]>> prefixCalcFn) {
 		this.prefixCalcFn = prefixCalcFn;
 	}
 
 	SignatureMap generate(List<Entry<byte[], byte[]>> keySigs, Supplier<SignatureType> sigTypes) {
 		List<byte[]> keys = keySigs.stream().map(Entry::getKey).collect(toList());
 		ByteTrie trie = new ByteTrie(keys);
-		Function<byte[], byte[]> prefixCalc = prefixCalcFn.apply(trie);
+		UnaryOperator<byte[]> prefixCalc = prefixCalcFn.apply(trie);
 
 		return keySigs.stream()
 				.map(keySig -> from(prefixCalc.apply(keySig.getKey()), keySig.getValue(), sigTypes.get()))
@@ -87,10 +87,10 @@ public class SigMapGenerator {
 		}
 
 		Node root = new Node();
-		Random r = new Random();
+		SecureRandom r = new SecureRandom();
 
 		public ByteTrie(List<byte[]> allA) {
-			allA.stream().forEach(a -> insert(a));
+			allA.stream().forEach(this::insert);
 		}
 
 		private void insert(byte[] a) {
@@ -131,7 +131,9 @@ public class SigMapGenerator {
 		}
 
 		private byte[] shortestPrefix(byte[] a, Node n, int maxPrefixCard, int lenUsed) {
-			assertTrue(lenUsed <= a.length, "No unique prefix exists!");
+			if(lenUsed > a.length) {
+				throw new IllegalArgumentException("No unique prefix exists.");
+			}
 			int v = vAt(a, lenUsed - 1);
 			if (n.children[v].count <= maxPrefixCard) {
 				return Arrays.copyOfRange(a, 0, lenUsed);

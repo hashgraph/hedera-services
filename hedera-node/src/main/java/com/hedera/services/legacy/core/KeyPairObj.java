@@ -27,6 +27,8 @@ import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Serializable;
 import java.security.KeyPair;
@@ -37,6 +39,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
 public class KeyPairObj implements Serializable {
+  private static final Logger log = LogManager.getLogger(KeyPairObj.class);
   private static final long serialVersionUID = 9146375644904969927L;
   private String publicKey;
   private String privateKey;
@@ -53,7 +56,7 @@ public class KeyPairObj implements Serializable {
     try {
       privArray = CommonUtils.unhex(privateKey);
     } catch (IllegalArgumentException e) {
-      e.printStackTrace();
+      log.info("Bad decoding: ", e);
     }
     if (privateKey.length() == 128) {
       EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
@@ -63,8 +66,8 @@ public class KeyPairObj implements Serializable {
       PKCS8EncodedKeySpec encoded = new PKCS8EncodedKeySpec(privArray);
       try {
         privKey = new EdDSAPrivateKey(encoded);
-      } catch (Exception e) {
-        e.printStackTrace();
+      } catch (InvalidKeySpecException e) {
+        log.info("Private key is invalid: ", e);
       }
     }
 

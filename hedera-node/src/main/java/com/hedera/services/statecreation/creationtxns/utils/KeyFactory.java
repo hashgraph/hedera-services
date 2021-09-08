@@ -36,7 +36,7 @@ import java.util.Map;
 public class KeyFactory {
 	private static final Logger log = LogManager.getLogger(KeyFactory.class);
 
-	public static KeyPairObj genesisKeyPair;
+	private static KeyPairObj genesisKeyPair;
 
 	private static String pemFile = "data/onboard/devGenesisKeypair.pem";
 
@@ -66,9 +66,16 @@ public class KeyFactory {
 	public PrivateKey lookupPrivateKey(String pubKeyHex) {
 		return publicToPrivateKey.get(pubKeyHex);
 	}
+	public KeyPairObj getGenesisKeyPair() {
+		return genesisKeyPair;
+	}
 
 	public static String asPubKeyHex(Key key) {
-		assert(!key.hasKeyList() && !key.hasThresholdKey());
+		//assert(!key.hasKeyList() && !key.hasThresholdKey());
+		if(key.hasKeyList() || key.hasThresholdKey()) {
+			log.error("Key {} shouldn't be list or threshold key", key);
+			return null;
+		}
 		if (key.getRSA3072() != ByteString.EMPTY) {
 			return CommonUtils.hex(key.getRSA3072().toByteArray());
 		} else if (key.getECDSA384() != ByteString.EMPTY) {

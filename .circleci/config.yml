@@ -1201,7 +1201,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 01956-D-state-creation-from-server
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

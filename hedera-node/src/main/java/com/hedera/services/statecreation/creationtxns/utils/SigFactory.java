@@ -21,13 +21,16 @@ package com.hedera.services.statecreation.creationtxns.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.SignatureType;
 
+import java.security.InvalidKeyException;
 import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -40,8 +43,8 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 
 public class SigFactory {
 	private final SigMapGenerator sigMapGen;
-	public static final byte[] NONSENSE_RSA_SIG = "MOME".getBytes();
-	public static final byte[] NONSENSE_ECDSA_SIG = "OUTGRABE".getBytes();
+	protected static final byte[] NONSENSE_RSA_SIG = "MOME".getBytes();
+	protected static final byte[] NONSENSE_ECDSA_SIG = "OUTGRABE".getBytes();
 
 	public SigFactory() {
 		this(SigMapGenerator.withUniquePrefixes());
@@ -54,7 +57,7 @@ public class SigFactory {
 			Transaction.Builder txn,
 			List<Key> keys,
 			KeyFactory factory
-	) throws Throwable {
+	) throws InvalidKeyException, SignatureException, InvalidProtocolBufferException {
 		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), keys, factory);
 		List<Map.Entry<byte[], byte[]>> sigs = signing.simplySigned();
 		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
@@ -89,14 +92,14 @@ public class SigFactory {
 			};
 		}
 
-		public List<Map.Entry<byte[], byte[]>> simplySigned() throws Throwable {
+		public List<Map.Entry<byte[], byte[]>> simplySigned() throws InvalidKeyException, SignatureException {
 			for (Key key : keys) {
 				signIfNecessary(key);
 			}
 			return keySigs;
 		}
 
-		private void signIfNecessary(Key key) throws Throwable {
+		private void signIfNecessary(Key key) throws InvalidKeyException, SignatureException {
 			String pubKeyHex = KeyFactory.asPubKeyHex(key);
 			if (!used.contains(pubKeyHex)) {
 				signFor(pubKeyHex, key);
@@ -104,7 +107,7 @@ public class SigFactory {
 			}
 		}
 
-		private void signFor(String pubKeyHex, Key key) throws Throwable {
+		private void signFor(String pubKeyHex, Key key) throws InvalidKeyException, SignatureException {
 			SignatureType sigType = sigTypeOf(key);
 			if (sigType == SignatureType.ED25519) {
 				PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);

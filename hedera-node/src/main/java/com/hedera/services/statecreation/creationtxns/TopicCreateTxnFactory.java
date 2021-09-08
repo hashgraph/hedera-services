@@ -37,8 +37,8 @@ public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactor
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 	private String autoRenewAccountId = null;
 
-	private static Key adminKey = KeyFactory.getKey();
-	private static Key submitKey = KeyFactory.getKey();
+	private Key adminKey = KeyFactory.getKey();
+	private Key submitKey = KeyFactory.getKey();
 
 	private TopicCreateTxnFactory() {}
 	public static TopicCreateTxnFactory newSignedConsensusCreateTopic() {

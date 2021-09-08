@@ -7,6 +7,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public class TempUtils {
+	private TempUtils() {}
+
 	public static byte[] randomUtf8Bytes(int n) {
 		byte[] data = new byte[n];
 		int i = 0;
