@@ -1341,7 +1341,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests -PdevSetup;
+                mvn --no-transfer-progress clean install -DskipTests ;
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
