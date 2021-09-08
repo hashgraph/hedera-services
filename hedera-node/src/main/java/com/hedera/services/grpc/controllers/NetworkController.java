@@ -34,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 @Singleton
@@ -63,7 +64,8 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	}
 
 	@Override
-	public void getExecutionTime(final Query request, final StreamObserver<Response> observer) {
+	public void getExecutionTime(final Query query, final StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, metaAnswers.getExecTime(), NetworkGetExecutionTime);
 	}
 
 	@Override

@@ -21,57 +21,56 @@ package com.hedera.services.queries.meta;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.ActiveVersions;
-import com.hedera.services.context.properties.SemanticVersions;
-import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
-import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
+import com.hedera.services.stats.ExecutionTimeTracker;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
+import java.util.List;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
-class GetVersionInfoAnswerTest {
+@ExtendWith(MockitoExtension.class)
+class GetExecTimeAnswerTest {
 	private final String node = "0.0.3";
 	private final long fee = 1_234L;
+	private final long nanos = 1_234_567L;
 	private final String payer = "0.0.12345";
-	private final SemanticVersion expectedVersions = SemanticVersion.newBuilder()
-			.setMajor(0)
-			.setMinor(4)
-			.setPatch(0)
-			.build();
 
 	private Transaction paymentTxn;
-	private StateView view;
 
-	private SemanticVersions semanticVersions;
-	private GetVersionInfoAnswer subject;
+	@Mock
+	private StateView view;
+	@Mock
+	private ExecutionTimeTracker executionTimeTracker;
+
+	private GetExecTimeAnswer subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
-		view = mock(StateView.class);
-		semanticVersions = mock(SemanticVersions.class);
-		given(semanticVersions.getDeployed())
-				.willReturn(Optional.of(new ActiveVersions(expectedVersions, expectedVersions)));
-
-		subject = new GetVersionInfoAnswer(semanticVersions);
+	void setUp() {
+		subject = new GetExecTimeAnswer(executionTimeTracker);
 	}
 
 	@Test
@@ -83,10 +82,10 @@ class GetVersionInfoAnswerTest {
 		Response response = subject.responseGiven(query, view, FAIL_INVALID, fee);
 
 		// then:
-		assertTrue(response.hasNetworkGetVersionInfo());
-		assertEquals(FAIL_INVALID, response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getNetworkGetVersionInfo().getHeader().getResponseType());
-		assertEquals(fee, response.getNetworkGetVersionInfo().getHeader().getCost());
+		assertTrue(response.hasNetworkGetExecutionTime());
+		assertEquals(FAIL_INVALID, response.getNetworkGetExecutionTime().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(COST_ANSWER, response.getNetworkGetExecutionTime().getHeader().getResponseType());
+		assertEquals(fee, response.getNetworkGetExecutionTime().getHeader().getCost());
 	}
 
 	@Test
@@ -98,28 +97,29 @@ class GetVersionInfoAnswerTest {
 		Response response = subject.responseGiven(query, view, OK, fee);
 
 		// then:
-		assertTrue(response.hasNetworkGetVersionInfo());
-		NetworkGetVersionInfoResponse opResponse = response.getNetworkGetVersionInfo();
+		assertTrue(response.hasNetworkGetExecutionTime());
+		NetworkGetExecutionTimeResponse opResponse = response.getNetworkGetExecutionTime();
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(COST_ANSWER, opResponse.getHeader().getResponseType());
 		assertEquals(fee, opResponse.getHeader().getCost());
+		assertEquals(OK, subject.checkValidity(query, view));
 	}
 
 	@Test
-	void complainsWhenVersionInfoAvailable() throws Throwable {
-		// setup:
-		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+	void complainsWhenAnyExecutionTimeUnavailable() throws Throwable {
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, aTxnId, bTxnId);
+		given(executionTimeTracker.getExecNanosIfPresentFor(bTxnId)).willReturn(null);
 
-		given(semanticVersions.getDeployed()).willReturn(Optional.empty());
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
-		// given:
-		assertEquals(FAIL_INVALID, subject.checkValidity(sensibleQuery, view));
+		final var opResponse = response.getNetworkGetExecutionTime();
+		assertEquals(INVALID_TRANSACTION_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
-	void getsVersionInfoWhenAvailable() throws Throwable {
+	void getsExecutionTimeWhenAvailable() throws Throwable {
 		// setup:
-		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, aTxnId, bTxnId, cTxnId);
 
 		// given:
 		assertEquals(OK, subject.checkValidity(sensibleQuery, view));
@@ -128,11 +128,10 @@ class GetVersionInfoAnswerTest {
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
 		// then:
-		var opResponse = response.getNetworkGetVersionInfo();
+		var opResponse = response.getNetworkGetExecutionTime();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(expectedVersions, opResponse.getHederaServicesVersion());
-		assertEquals(expectedVersions, opResponse.getHapiProtoVersion());
+		assertEquals(List.of(nanos, nanos, nanos), opResponse.getExecutionTimesList());
 	}
 
 	@Test
@@ -144,18 +143,37 @@ class GetVersionInfoAnswerTest {
 		Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
 
 		// then:
-		var opResponse = response.getNetworkGetVersionInfo();
+		var opResponse = response.getNetworkGetExecutionTime();
 		assertEquals(INVALID_TRANSACTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
 	}
 
-	private Query validQuery(ResponseType type, long payment) throws Throwable {
+	private Query validQuery(ResponseType type, long payment, TransactionID... txnIds) throws Throwable {
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 
 		QueryHeader.Builder header = QueryHeader.newBuilder()
 				.setPayment(this.paymentTxn)
 				.setResponseType(type);
-		NetworkGetVersionInfoQuery.Builder op = NetworkGetVersionInfoQuery.newBuilder()
-				.setHeader(header);
-		return Query.newBuilder().setNetworkGetVersionInfo(op).build();
+		NetworkGetExecutionTimeQuery.Builder op = NetworkGetExecutionTimeQuery.newBuilder()
+				.setHeader(header)
+				.addAllTransactionIds(List.of(txnIds));
+
+		for (var txnId : txnIds) {
+			given(executionTimeTracker.getExecNanosIfPresentFor(txnId)).willReturn(nanos);
+		}
+
+		return Query.newBuilder().setNetworkGetExecutionTime(op).build();
 	}
+
+	private final TransactionID aTxnId = TransactionID.newBuilder()
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.build();
+	private final TransactionID bTxnId = TransactionID.newBuilder()
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+			.setAccountID(IdUtils.asAccount("0.0.3"))
+			.build();
+	private final TransactionID cTxnId = TransactionID.newBuilder()
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+			.setAccountID(IdUtils.asAccount("0.0.4"))
+			.build();
 }

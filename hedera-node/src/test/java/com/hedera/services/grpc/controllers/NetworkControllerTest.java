@@ -32,6 +32,7 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
@@ -74,8 +75,8 @@ class NetworkControllerTest {
 		subject.getExecutionTime(query, queryObserver);
 
 		// expect:
-		verify(answers).getVersionInfo();
-		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.GetVersionInfo);
+		verify(answers).getExecTime();
+		verify(queryResponseHelper).answer(query, queryObserver, null, NetworkGetExecutionTime);
 	}
 
 	@Test

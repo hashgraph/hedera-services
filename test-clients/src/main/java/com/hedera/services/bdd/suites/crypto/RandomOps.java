@@ -21,28 +21,30 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -56,16 +58,56 @@ public class RandomOps extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[]{
-						freezeWorks(),
-						limitOnRetryWorks()
-//						createThenTransferThenUpdateDeleteThenUpdate()
+				new HapiApiSpec[] {
+//						freezeDemo(),
+//						retryLimitDemo()
+						execTimesDemo(),
 				}
 		);
 	}
 
-	private HapiApiSpec limitOnRetryWorks() {
-		return defaultHapiSpec("GetAccountInfoRetryWorks")
+	private HapiApiSpec execTimesDemo() {
+		final var cryptoTransfer = "cryptoTransfer";
+		final var submitMessage = "submitMessage";
+		final var contractCall = "contractCall";
+
+		final var topic = "ofGeneralInterest";
+		final var contract = "binding";
+		final var bytecode = "bytecode";
+
+		return defaultHapiSpec("execTimesDemo")
+				.given(
+						inParallel(IntStream.range(0, 1000)
+								.mapToObj(i -> cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+										.deferStatusResolution()
+										.noLogging())
+								.toArray(HapiSpecOperation[]::new)),
+						sleepFor(5_000),
+						createTopic(topic),
+						fileCreate(bytecode)
+								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
+						contractCreate(contract)
+								.bytecode(bytecode)
+				).when(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+								.payingWith(GENESIS)
+								.via(cryptoTransfer),
+						submitMessageTo(topic)
+								.message(randomUppercase(256))
+								.via(submitMessage),
+						contractCall(contract)
+								.sending(ONE_HBAR)
+								.via(contractCall)
+				).then(
+						/* NetworkGetExecutionTime requires superuser payer */
+						getExecTime(cryptoTransfer, submitMessage, contractCall)
+								.payingWith(GENESIS)
+								.logged()
+				);
+	}
+
+	private HapiApiSpec retryLimitDemo() {
+		return defaultHapiSpec("RetryLimitDemo")
 				.given()
 				.when()
 				.then(
@@ -76,44 +118,16 @@ public class RandomOps extends HapiApiSuite {
 								.hasRetryPrecheckFrom(OK)
 								.setRetryLimit(3),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L))
-//						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-//								.hasRetryPrecheckFrom(OK)
-
 				);
 	}
 
-	private HapiApiSpec freezeWorks() {
-		return customHapiSpec("FreezeWorks")
+	private HapiApiSpec freezeDemo() {
+		return customHapiSpec("FreezeDemo")
 				.withProperties(Map.of(
 						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"
-				)).given( ).when(
+				)).given().when(
 				).then(
 						freeze().startingIn(60).seconds().andLasting(1).minutes()
-				);
-	}
-
-	private HapiApiSpec createThenTransferThenUpdateDeleteThenUpdate() {
-		return defaultHapiSpec("createThenTransferThenUpdateDeleteThenUpdate")
-				.given(
-						newKeyNamed("bombKey"),
-						cryptoCreate("sponsor").sendThreshold(1L),
-						cryptoCreate("beneficiary"),
-						cryptoCreate("tbd"),
-						fileCreate("bytecode").path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
-						contractCreate("simpleStorage").bytecode("bytecode")
-				).when(
-						contractCall("simpleStorage",
-								ContractResources.SIMPLE_STORAGE_SETTER_ABI,
-								BigInteger.valueOf(1)),
-						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1_234L))
-								.payingWith("sponsor")
-								.memo("Hello World!")
-				).then(
-						cryptoUpdate("beneficiary").key("bombKey"),
-						sleepFor(2_000),
-						cryptoDelete("tbd"),
-						sleepFor(2_000),
-						cryptoUpdate("beneficiary").key("bombKey")
 				);
 	}
 
