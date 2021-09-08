@@ -1,20 +1,12 @@
 package virtual;
 
 import com.hedera.services.state.merkle.virtual.ContractKey;
-import com.hedera.services.state.merkle.virtual.ContractValue;
+import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.virtualmap.VirtualMap;
 import disruptor.Transaction;
 import disruptor.TransactionProcessor;
 import disruptor.TransactionPublisher;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
+public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256> {
     @Param({"5", "15", "25"})
     public int numUpdatesPerOperation;
 
@@ -60,14 +52,14 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
     public int preFetchEventHandlers;
 
     // This is the map we will be testing!
-    private VirtualMap<ContractKey, ContractValue> virtualMap;
+    private VirtualMap<ContractKey, ContractUint256> virtualMap;
     private int[] keyValuePairsPerContract;
 
-    private TransactionProcessor<ContractKey, ContractValue, Data> txProcessor;
+    private TransactionProcessor<ContractKey, ContractUint256, Data> txProcessor;
 
     // Need to wrap in accessor since lambdas need a level of indirection so they can fetch
     // the latest copy of the map after the copy() call.
-    VirtualMap<ContractKey, ContractValue> getVirtualMap() {
+    VirtualMap<ContractKey, ContractUint256> getVirtualMap() {
         return virtualMap;
     }
 
@@ -75,22 +67,21 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
     public void prepare() throws Exception {
         virtualMap = createMap(dsType,
                 ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                ContractValue.SERIALIZED_SIZE, ContractValue::new,
+                ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                 numContracts);
 
         final var rand = new Random();
-        txProcessor = new TransactionProcessor<ContractKey, ContractValue, Data>(
+        txProcessor = new TransactionProcessor<ContractKey, ContractUint256, Data>(
                 preFetchEventHandlers,
                 (Transaction<Data> tx) -> {   // preFetch logic
-                    VirtualMap<ContractKey, ContractValue> map = getVirtualMap();
+                    VirtualMap<ContractKey, ContractUint256> map = getVirtualMap();
 
                     final Data data = tx.getData();
                     data.setValue(map.getForModify(data.getKey()));
                 },
                 (Transaction<Data> tx) -> {   // handleTransaction logic
                     final Data data = tx.getData();
-                    final ContractValue value = data.getValue();
-                    value.setValue(asContractUint256(data.getUint256()));
+                    final ContractUint256 value = data.getValue();
                 }
         );
 
@@ -104,14 +95,14 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
 
                 // We generate a different number of key/value pairs depending on whether it is
                 // a huge contract, big contract, or normal contract
-                final var randomNumber = (1.0/(double)rand.nextInt(1000)); // Random number from 0.001 to 1
+                final var randomNumber = Math.max(0.001+rand.nextDouble(),1); // Random number from 0.001 to 1
                 final var kb = randomNumber < hugePercent ? kbPerHugeContract : randomNumber < bigPercent ? kbPerBigContract : kbPerContract;
-                final var numKeyValuePairs = (kb * 1024) / (ContractKey.SERIALIZED_SIZE + ContractValue.SERIALIZED_SIZE);
+                final var numKeyValuePairs = (kb * 1024) / (ContractKey.SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE);
                 keyValuePairsPerContract[i] = numKeyValuePairs;
 
                 for (int j=0; j<numKeyValuePairs; j++) {
                     final var key = asContractKey(i, j);
-                    final var value = new ContractValue(asContractUint256(j));
+                    final var value = new ContractUint256(j);
                     try {
                         virtualMap.put(key, value);
                     } catch (Exception e) {
@@ -173,19 +164,22 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractValue> {
     }
 
     public static class Data {
-        int uint256;
         ContractKey key;
-        ContractValue value;
+        ContractUint256 value;
 
-        public Data(ContractKey key, int uint256) {
+        public Data(ContractKey key, int value) {
             this.key = key;
-            this.uint256 = uint256;
+            this.value = new ContractUint256(value);
         }
 
-        public int getUint256() { return this.uint256; }
-        public ContractKey getKey() { return this.key; }
-        public ContractValue getValue() { return this.value; }
+        public Data(ContractKey key, ContractUint256 value) {
+            this.key = key;
+            this.value = value;
+        }
 
-        public void setValue(ContractValue value) { this.value = value; }
+        public ContractKey getKey() { return this.key; }
+        public ContractUint256 getValue() { return this.value; }
+
+        public void setValue(ContractUint256 value) { this.value = value; }
     }
 }

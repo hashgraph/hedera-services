@@ -106,7 +106,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
         entrySize = entryHeaderSize + VALUE_SIZE; // key hash code, key serialization version, serialized key, long value
         entriesPerBucket = ((DISK_PAGE_SIZE_BYTES-BUCKET_HEADER_SIZE) / entrySize);
         minimumBuckets = (int)Math.ceil(((double)mapSize/LOADING_FACTOR)/entriesPerBucket);
-        numOfBuckets = Integer.highestOneBit(minimumBuckets)*2; // nearest greater power of two
+        numOfBuckets = Math.max(4096,Integer.highestOneBit(minimumBuckets)*2); // nearest greater power of two with a min of 4096
         bucket = ThreadLocal.withInitial(() -> new Bucket<>(entrySize, entryHeaderSize, entriesPerBucket, keyConstructor));
         // create file collection
         fileCollection = new DataFileCollection(storeDir,storeName,DISK_PAGE_SIZE_BYTES,

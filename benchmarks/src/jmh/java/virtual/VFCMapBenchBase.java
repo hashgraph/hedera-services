@@ -84,10 +84,6 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                 new ContractUint256(BigInteger.valueOf(index)));
     }
 
-    protected ContractUint256 asContractUint256(long index) {
-        return new ContractUint256(BigInteger.valueOf(index));
-    }
-
     protected Id asId(long index) {
         return new Id(index);
     }
