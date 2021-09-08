@@ -136,7 +136,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 				dynamicProperties.areNftsEnabled(),
 				INVALID_TOKEN_MINT_AMOUNT,
 				new ArrayList<>(op.getMetadataList()),
-				validator::maxBatchSizeBurnCheck,
+				validator::maxBatchSizeMintCheck,
 				validator::nftMetadataCheck
 		);
 	}
