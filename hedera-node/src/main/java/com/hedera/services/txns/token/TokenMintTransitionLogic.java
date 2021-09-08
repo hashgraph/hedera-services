@@ -20,7 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
@@ -37,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -44,12 +44,10 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenCountsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for token minting.
@@ -132,40 +130,14 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		final var numMetadata = op.getMetadataCount();
-		if (numMetadata > 0 && !dynamicProperties.areNftsEnabled()) {
-			return NOT_SUPPORTED;
-		}
-
-		boolean bothPresent = (op.getAmount() > 0 && numMetadata > 0);
-		boolean nonePresent = (op.getAmount() <= 0 && numMetadata == 0);
-		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && numMetadata > 0);
-		if (nonePresent) {
-			return INVALID_TOKEN_MINT_AMOUNT;
-		}
-		if (bothPresent) {
-			return INVALID_TRANSACTION_BODY;
-		}
-
-		if (onlyMetadataIsPresent) {
-			return validateNfts(op);
-		}
-
-		return OK;
-	}
-
-	private ResponseCodeEnum validateNfts(final TokenMintTransactionBody op) {
-		var validity = validator.maxBatchSizeMintCheck(op.getMetadataCount());
-		if (validity != OK) {
-			return validity;
-		}
-
-		for (ByteString bytes : op.getMetadataList()) {
-			validity = validator.nftMetadataCheck(bytes.toByteArray());
-			if (validity != OK) {
-				return validity;
-			}
-		}
-		return OK;
+		return validateTokenCountsWith(
+				op.getMetadataCount(),
+				op.getAmount(),
+				dynamicProperties.areNftsEnabled(),
+				INVALID_TOKEN_MINT_AMOUNT,
+				new ArrayList<>(op.getMetadataList()),
+				validator::maxBatchSizeBurnCheck,
+				validator::nftMetadataCheck
+		);
 	}
 }
