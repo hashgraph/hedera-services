@@ -425,23 +425,30 @@ public final class RequestBuilder {
    *
    * @return transaction for file deletion
    */
-  public static Transaction getFileDeleteBuilder(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee, Timestamp timestamp, Duration transactionDuration,
-      boolean generateRecord, String memo,
-      FileID fileID) {
-    FileDeleteTransactionBody fileDeleteTransaction = FileDeleteTransactionBody.newBuilder()
+  public static Transaction getFileDeleteBuilder(
+          final Long payerAccountNum,
+          final Long payerRealmNum,
+          final Long payerShardNum,
+          final Long nodeAccountNum,
+          final Long nodeRealmNum,
+          final Long nodeShardNum,
+          final long transactionFee,
+          final Timestamp timestamp,
+          final Duration transactionDuration,
+          final boolean generateRecord,
+          final String memo,
+          final FileID fileID
+  ) {
+    final var fileDeleteTransaction = FileDeleteTransactionBody.newBuilder()
         .setFileID(fileID)
         .build();
-    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
+    final var body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum,
         nodeRealmNum, nodeShardNum, transactionFee, timestamp,
         transactionDuration, generateRecord, memo);
     body.setFileDelete(fileDeleteTransaction);
-    byte[] bodyBytesArr = body.build().toByteArray();
-    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-    System.out.println(bodyBytes);
+    final var bodyBytesArr = body.build().toByteArray();
+    final var bodyBytes = ByteString.copyFrom(bodyBytesArr);
     return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
   }
 

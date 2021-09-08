@@ -24,11 +24,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class RequestBuilderTest {
 	@Test
@@ -38,11 +40,11 @@ class RequestBuilderTest {
 		final var now = Instant.now();
 
 		final var expirationTime = RequestBuilder.getExpirationTime(now, duration);
-		Assertions.assertNotNull(expirationTime);
+		assertNotNull(expirationTime);
 
 		final var expirationInstant = RequestBuilder.convertProtoTimeStamp(expirationTime);
 		final var between = Duration.between(now, expirationInstant);
-		Assertions.assertEquals(seconds, between.getSeconds());
+		assertEquals(seconds, between.getSeconds());
 	}
 
 	@Test
@@ -67,14 +69,14 @@ class RequestBuilderTest {
 				nodeAccountNum, realmNum, shardNum, transactionFee, timestamp, duration, generateRecord, memo, fileId);
 		final var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
 
-		Assertions.assertEquals(fileId, transactionBody.getFileDelete().getFileID());
-		Assertions.assertEquals(payerAccountNum, transactionBody.getTransactionID().getAccountID().getAccountNum());
-		Assertions.assertEquals(timestamp, transactionBody.getTransactionID().getTransactionValidStart());
-		Assertions.assertEquals(realmNum, transactionBody.getTransactionID().getAccountID().getRealmNum());
-		Assertions.assertEquals(shardNum, transactionBody.getTransactionID().getAccountID().getShardNum());
-		Assertions.assertEquals(nodeAccountNum, transactionBody.getNodeAccountID().getAccountNum());
-		Assertions.assertEquals(duration, transactionBody.getTransactionValidDuration());
-		Assertions.assertEquals(generateRecord, transactionBody.getGenerateRecord());
-		Assertions.assertEquals(memo, transactionBody.getMemo());
+		assertEquals(fileId, transactionBody.getFileDelete().getFileID());
+		assertEquals(payerAccountNum, transactionBody.getTransactionID().getAccountID().getAccountNum());
+		assertEquals(timestamp, transactionBody.getTransactionID().getTransactionValidStart());
+		assertEquals(realmNum, transactionBody.getTransactionID().getAccountID().getRealmNum());
+		assertEquals(shardNum, transactionBody.getTransactionID().getAccountID().getShardNum());
+		assertEquals(nodeAccountNum, transactionBody.getNodeAccountID().getAccountNum());
+		assertEquals(duration, transactionBody.getTransactionValidDuration());
+		assertEquals(generateRecord, transactionBody.getGenerateRecord());
+		assertEquals(memo, transactionBody.getMemo());
 	}
 }
