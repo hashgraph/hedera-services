@@ -12,16 +12,16 @@ import java.util.function.Consumer;
  * It is expected that any IO required by the VirtualMap will have already been done
  * during the preFetch phase.
  */
-public class TransactionHandler<K extends VirtualKey, V extends VirtualValue> implements EventHandler<Transaction> {
-    Consumer<Transaction> txLogic;
+public class TransactionHandler<K extends VirtualKey, V extends VirtualValue, T> implements EventHandler<Transaction<T>> {
+    Consumer<Transaction<T>> txLogic;
     Latch latch;
 
-    public TransactionHandler(Latch latch, Consumer<Transaction> txLogic) {
+    public TransactionHandler(Latch latch, Consumer<Transaction<T>> txLogic) {
         this.latch = latch;
         this.txLogic = txLogic;
     }
 
-    public void onEvent(Transaction tx, long sequence, boolean endOfBatch) {
+    public void onEvent(Transaction<T> tx, long sequence, boolean endOfBatch) {
         try {
             if (!tx.isLast()) {
                 txLogic.accept(tx);

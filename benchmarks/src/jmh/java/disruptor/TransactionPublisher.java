@@ -2,21 +2,21 @@ package disruptor;
 
 import com.lmax.disruptor.RingBuffer;
 
-public class TransactionPublisher {
-    RingBuffer<Transaction> ringBuffer;
+public class TransactionPublisher<T> {
+    RingBuffer<Transaction<T>> ringBuffer;
     Latch latch;
 
-    public TransactionPublisher(RingBuffer<Transaction> ringBuffer, Latch latch) {
+    public TransactionPublisher(RingBuffer<Transaction<T>> ringBuffer, Latch latch) {
         this.ringBuffer = ringBuffer;
         this.latch = latch;
     }
 
-    public void publish(Transaction tx) {
+    public void publish(T data) {
         long sequence = ringBuffer.next();
         try
         {
-            Transaction event = ringBuffer.get(sequence);
-            event.copy(tx);
+            Transaction<T> event = ringBuffer.get(sequence);
+            event.setData(data);
             event.setLast(false);
         }
         finally
@@ -29,15 +29,13 @@ public class TransactionPublisher {
         long sequence = ringBuffer.next();
         try
         {
-            Transaction event = ringBuffer.get(sequence);
+            Transaction<T> event = ringBuffer.get(sequence);
             event.setLast(true);
         }
         finally
         {
             ringBuffer.publish(sequence);
-//            System.out.println("Publishing END message into disruptor, awaiting...");
             latch.await();
-//            System.out.println("... finished waiting for END message");
         }
     }
 }

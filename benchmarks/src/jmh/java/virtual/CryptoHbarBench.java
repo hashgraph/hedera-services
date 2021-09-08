@@ -16,16 +16,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Benchmark for simulating swirlds/hedera lifecycle doing chunks of 10k crypto transfers. Results are multiplied by 10k
@@ -60,45 +52,42 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
     // This is the map we will be testing!
     private VirtualMap<Id, Account> virtualMap;
 
-    private TransactionProcessor<Id, Account> txProcessor;
-
-    private ExecutorService prepService;
-
-    private final AtomicReference<CompletableFuture<List<Transaction>>> txsFutureRef = new AtomicReference<>();
+    private TransactionProcessor<Id, Account, Data> txProcessor;
 
     // Need to wrap in accessor since lambdas need a level of indirection so they can fetch
     // the latest copy of the map after the copy() call.
-    private VirtualMap<Id, Account> getVirtualMap() {
+    VirtualMap<Id, Account> getVirtualMap() {
         return virtualMap;
     }
 
     @Setup
     public void prepare() throws Exception {
         virtualMap = createMap(dsType, Id.SERIALIZED_SIZE, Id::new, Account.SERIALIZED_SIZE, Account::new, numEntities);
-//        prepService = Executors.newFixedThreadPool(prepperThreadCount, Pipeline.threadFactory("Preppers", PREPPER_GROUP));
 
         final var rand = new Random();
-        txProcessor = new TransactionProcessor<VFCMapBenchBase.Id, VFCMapBenchBase.Account>(
+        txProcessor = new TransactionProcessor<VFCMapBenchBase.Id, VFCMapBenchBase.Account, Data>(
                 preFetchEventHandlers,
-                (Transaction tx) -> {   // preFetch logic
+                (Transaction<Data> tx) -> {   // preFetch logic
                     VirtualMap<Id, Account> map = getVirtualMap();
 
-                    final Account sender = map.getForModify((Id) tx.getSenderId());
+                    final Data data = tx.getData();
+                    final Account sender = map.getForModify((Id) data.getSenderId());
                     if (sender == null) {
-                        System.out.println("NULL SENDER " + tx.getSenderId() + ", last = " + tx.isLast());
+                        System.out.println("NULL SENDER " + data.getSenderId() + ", last = " + tx.isLast());
                     }
 
-                    final Account receiver = map.getForModify((Id) tx.getReceiverId());
+                    final Account receiver = map.getForModify((Id) data.getReceiverId());
                     if (receiver == null)
-                        System.out.println("NULL RECEIVER " + tx.getReceiverId() + ", last = " + tx.isLast());
+                        System.out.println("NULL RECEIVER " + data.getReceiverId() + ", last = " + tx.isLast());
 
-                    tx.setSender(map.getForModify((Id) tx.getSenderId()));
-                    tx.setReceiver(map.getForModify((Id) tx.getReceiverId()));
+                    data.setSender(map.getForModify((Id) data.getSenderId()));
+                    data.setReceiver(map.getForModify((Id) data.getReceiverId()));
                 },
-                (Transaction tx) -> {   // handleTransaction logic
+                (Transaction<Data> tx) -> {   // handleTransaction logic
                     final var tinyBars = rand.nextInt(10);
-                    final Account sender = (Account) tx.getSender();
-                    final Account receiver = (Account) tx.getReceiver();
+                    final Data data = tx.getData();
+                    final Account sender = (Account) data.getSender();
+                    final Account receiver = (Account) data.getReceiver();
 
                     sender.setHbarBalance(sender.getHbarBalance() - tinyBars);
                     receiver.setHbarBalance(receiver.getHbarBalance() + tinyBars);
@@ -199,12 +188,12 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
      */
     @Benchmark
     public void handleTransactions() throws Exception {
-        TransactionPublisher publisher = txProcessor.getPublisher();
+        TransactionPublisher<Data> publisher = txProcessor.getPublisher();
         for (int j=0; j<targetOpsPerSecond; j++) {
             final var senderId = new Id(rand.nextInt((int)numEntities));
             final var receiverId = new Id(rand.nextInt((int)numEntities));
 
-            publisher.publish(new Transaction(senderId, receiverId));
+            publisher.publish(new Data(senderId, receiverId));
         }
 
         // In EventFlow, copy() is called before noMoreTransactions() but since the disruptor
@@ -213,5 +202,27 @@ public class CryptoHbarBench extends VFCMapBenchBase<VFCMapBenchBase.Id, VFCMapB
         //
         publisher.end();
         virtualMap = pipeline.endRound(virtualMap);
+    }
+
+    public static class Data {
+        Id senderId;
+        Id receiverId;
+
+        Account sender;
+        Account receiver;
+
+        public Data(Id senderId, Id receiverId) {
+            this.senderId = senderId;
+            this.receiverId = receiverId;
+        }
+
+        public Id getSenderId() { return this.senderId; }
+        public Id getReceiverId() { return this.receiverId; }
+
+        public Account getSender() { return this.sender; }
+        public Account getReceiver() { return this.receiver; }
+
+        public void setSender(Account sender) { this.sender = sender; }
+        public void setReceiver(Account receiver) { this.receiver = receiver; }
     }
 }

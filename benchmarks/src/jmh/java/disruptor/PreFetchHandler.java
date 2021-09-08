@@ -12,23 +12,23 @@ import java.util.function.Consumer;
  * attached to the transaction. The entry will not incur any IO during the
  * handleTransaction phase of eventFlow.
  */
-public class PreFetchHandler<K extends VirtualKey, V extends VirtualValue> implements EventHandler<Transaction> {
+public class PreFetchHandler<K extends VirtualKey, V extends VirtualValue, T> implements EventHandler<Transaction<T>> {
     long id;
     int numHandlers;
 
-    Consumer<Transaction> preFetchLogic;
+    Consumer<Transaction<T>> preFetchLogic;
 
     public PreFetchHandler(
             int id,     // handler id
             int numHandlers,    // total number of handlers in set
-            Consumer<Transaction> preFetchLogic
+            Consumer<Transaction<T>> preFetchLogic
     ) {
         this.id = id;
         this.numHandlers = numHandlers;
         this.preFetchLogic = preFetchLogic;
     }
 
-    public void onEvent(Transaction tx, long sequence, boolean endOfBatch) {
+    public void onEvent(Transaction<T> tx, long sequence, boolean endOfBatch) {
         // Only handle events assigned to this handler
         if (sequence % numHandlers != id) {
             return;
