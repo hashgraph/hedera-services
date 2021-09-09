@@ -355,7 +355,14 @@ public class BuiltinClient implements Runnable {
 
 	private void createSmartContracts(final int totalToCreate,
 			final Properties properties ) {
-		final int totalContractFile = Integer.parseInt(properties.getProperty("smartContracts.total.file"));
+		int totalContractFile = totalToCreate;
+		String contractFile = properties.getProperty("smartContracts.total.file");
+		if(contractFile != null ) {
+			int t = Integer.parseInt(contractFile);
+			if(t > 0 && t <= totalContractFile) {
+				totalContractFile = t;
+			}
+		}
 		createFiles(totalContractFile, totalRandomFiles, true);
 
 		CreateTxnThrows<Transaction, Integer> createContract = i ->

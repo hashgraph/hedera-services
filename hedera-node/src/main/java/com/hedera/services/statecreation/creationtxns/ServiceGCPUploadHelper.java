@@ -30,8 +30,6 @@ public class ServiceGCPUploadHelper {
 					.resolve(pathToConfig).toString();
 			log.info("Path to credential file: {}", absolutePathToConfig);
 
-			//Credentials credentials = GoogleCredentials.getApplicationDefault();
-
 			Credentials credentials = GoogleCredentials.fromStream(new FileInputStream(absolutePathToConfig));
 			storage = StorageOptions.newBuilder().setCredentials(credentials).setProjectId(
 					projectId).build().getService();

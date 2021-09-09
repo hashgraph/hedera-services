@@ -61,6 +61,10 @@ Basically, keep in mind that first 1000 entity ids are reserved for system accou
 above sample `entity-layout.properties` file, we can assume that entities with id range from `0.0.1001` and
 `0.0.31000` will be Crypto accounts, and id range from `0.0.31001` to `0.0.32000` will be topics, so on and so forth.
 
+For SmartContract properties, the `smartContracts.total.file` property is to specify the file number that is used 
+to save binary files for SmartContract. If it's not provided, then number of files created will be same to that of 
+SmartContract. 
+
 Normally you may want to keep the entity ordering as it is, as some of the entity types depend on other 
 entity types' existence. That is, don't change the `position.N` of the entity. 
 If you really need to change the relative position of these entities, you need to be clear their dependency relationship.
