@@ -60,7 +60,7 @@ class StandardExemptionsTest {
 	@Test
 	void authorizedOpsAreExempt() {
 		given(accessor.getPayer()).willReturn(account(60));
-		given(policies.check(accessor)).willReturn(AUTHORIZED);
+		given(policies.checkAccessor(accessor)).willReturn(AUTHORIZED);
 
 		// expect:
 		assertTrue(subject.hasExemptPayer(accessor));
@@ -69,7 +69,7 @@ class StandardExemptionsTest {
 	@Test
 	void unnecessaryOpsAreNotExempt() {
 		given(accessor.getPayer()).willReturn(account(60));
-		given(policies.check(accessor)).willReturn(UNNECESSARY);
+		given(policies.checkAccessor(accessor)).willReturn(UNNECESSARY);
 
 		// expect:
 		assertFalse(subject.hasExemptPayer(accessor));
