@@ -203,7 +203,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
-		if (deserializedVersion == StateVersions.RELEASE_0170_VERSION && platform != platformForDeferredInit) {
+		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
