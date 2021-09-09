@@ -9,9 +9,9 @@ package com.hedera.services.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,115 +37,92 @@ import static com.hedera.services.files.MetadataMapFactory.toAttr;
 import static com.hedera.services.files.MetadataMapFactory.toFid;
 import static com.hedera.services.files.MetadataMapFactory.toKeyString;
 import static com.hedera.services.files.MetadataMapFactory.toValueBytes;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class MetadataMapFactoryTest {
-	private long expiry = 1_234_567L;
+	private static final long expiry = 1_234_567L;
 
 	@Test
-	void toAttrMirrorsNulls()  {
-		// expect:
-		assertTrue(null == toAttr(null));
+	void toAttrMirrorsNulls() {
+		assertNull(toAttr(null));
 	}
 
 	@Test
 	void toAttrThrowsIaeOnError() {
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> toAttr("NONSENSE".getBytes()));
 	}
 
 	@Test
 	void toValueThrowsIaeOnError() throws IOException {
-		HFileMeta suspect = mock(HFileMeta.class);
+		final var suspect = mock(HFileMeta.class);
+		given(suspect.serialize()).willThrow(IOException.class);
 
-		given(suspect.serialize()).willThrow(IllegalStateException.class);
-
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> toValueBytes(suspect));
 	}
 
 	@Test
-	void toValueConversionWorks() throws Throwable {
-		// given:
-		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var attr = new HFileMeta(false, validKey, expiry);
-		// and:
-		var expected = attr.serialize();
+	void toValueConversionWorks() throws Exception {
+		final var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
+		final var attr = new HFileMeta(false, validKey, expiry);
+		final var expected = attr.serialize();
 
-		// when:
-		var actual = toValueBytes(attr);
+		final var actual = toValueBytes(attr);
 
-		// then:
-		assertTrue(Arrays.equals(expected, actual));
+		assertArrayEquals(expected, actual);
 	}
 
 	@Test
-	void toAttrConversionWorks() throws Throwable {
-		// given:
-		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var expected = new HFileMeta(false, validKey, expiry);
-		// and:
-		var bytes = expected.serialize();
+	void toAttrConversionWorks() throws Exception {
+		final var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
+		final var expected = new HFileMeta(false, validKey, expiry);
+		final var bytes = expected.serialize();
 
-		// when:
-		var actual = toAttr(bytes);
+		final var actual = toAttr(bytes);
 
-		// then:
 		assertEquals(expected.toString(), actual.toString());
 	}
 
 	@Test
 	void toFidConversionWorks() {
-		// given:
-		var key = "/666/k888";
-		// and:
-		var expected = IdUtils.asFile("0.666.888");
+		final var key = "/666/k888";
+		final var expected = IdUtils.asFile("0.666.888");
 
-		// when:
-		var actual = toFid(key);
+		final var actual = toFid(key);
 
-		// then:
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	void toKeyConversionWorks() {
-		// given:
-		var fid = IdUtils.asFile("0.2.3");
-		// and:
-		var expected = FeeCalcUtilsTest.pathOfMeta(fid);
+		final var fid = IdUtils.asFile("0.2.3");
+		final var expected = FeeCalcUtilsTest.pathOfMeta(fid);
 
-		// when:
-		var actual = toKeyString(fid);
+		final var actual = toKeyString(fid);
 
-		// then:
 		assertEquals(expected, actual);
 	}
 
 	@Test
-	void productHasMapSemantics() throws Throwable {
-		// setup:
-		Map<String, byte[]> delegate = new HashMap<>();
-		var wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var attr0 = new HFileMeta(true, wacl, 1_234_567L);
-		var attr1 = new HFileMeta(true, wacl, 7_654_321L);
-		var attr2 = new HFileMeta(false, wacl, 7_654_321L);
-		var attr3 = new HFileMeta(false, wacl, 1_234_567L);
+	void productHasMapSemantics() throws Exception {
+		final Map<String, byte[]> delegate = new HashMap<>();
+		final var wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
+		final var attr0 = new HFileMeta(true, wacl, 1_234_567L);
+		final var attr1 = new HFileMeta(true, wacl, 7_654_321L);
+		final var attr2 = new HFileMeta(false, wacl, 7_654_321L);
+		final var attr3 = new HFileMeta(false, wacl, 1_234_567L);
 		delegate.put(asLegacyPath("0.2.7"), attr0.serialize());
-		// and:
-		var fid1 = IdUtils.asFile("0.2.3");
-		var fid2 = IdUtils.asFile("0.3333.4");
-		var fid3 = IdUtils.asFile("0.4.555555");
+		final var fid1 = IdUtils.asFile("0.2.3");
+		final var fid2 = IdUtils.asFile("0.3333.4");
+		final var fid3 = IdUtils.asFile("0.4.555555");
+		final var metaMap = metaMapFrom(delegate);
 
-		// given:
-		var metaMap = metaMapFrom(delegate);
-
-		// when:
 		metaMap.put(fid1, attr1);
 		metaMap.put(fid2, attr2);
 		metaMap.put(fid3, attr3);
@@ -179,13 +156,7 @@ class MetadataMapFactoryTest {
 		assertTrue(metaMap.isEmpty());
 	}
 
-	private String asLegacyPath(String fid) {
+	private String asLegacyPath(final String fid) {
 		return FeeCalcUtilsTest.pathOfMeta(IdUtils.asFile(fid));
-	}
-
-	@Test
-	void cannotBeConstructed() {
-		// expect:
-		assertThrows(IllegalStateException.class, MetadataMapFactory::new);
 	}
 }

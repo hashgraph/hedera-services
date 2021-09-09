@@ -344,6 +344,26 @@
             <executions>
               <execution>
                 <phase>generate-resources</phase>
+                <id>ensure-node-properties</id>
+                <configuration>
+                  <target>
+                    <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
+                    <if>
+                      <not>
+                        <available file="data/config/node.properties" />
+                      </not>
+                      <then>
+                        <copy file="configuration/dev/node.properties" tofile="data/config/node.properties" />
+                      </then>
+                    </if>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+              <execution>
+                <phase>generate-resources</phase>
                 <id>ensure-application-properties</id>
                 <configuration>
                   <target>

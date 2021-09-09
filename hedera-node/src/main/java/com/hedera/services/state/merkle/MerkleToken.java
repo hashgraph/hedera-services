@@ -632,9 +632,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 		return grpcList;
 	}
 
-	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule, EntityId targetId) {
+	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
 		throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
-		feeSchedule = grpcFeeSchedule.stream().map(fee -> FcCustomFee.fromGrpc(fee, targetId)).collect(toList());
+		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
 	}
 
 	public void setFeeScheduleKey(final JKey feeScheduleKey) {

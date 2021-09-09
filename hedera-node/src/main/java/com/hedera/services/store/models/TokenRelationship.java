@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -63,6 +64,10 @@ public class TokenRelationship {
 	public TokenRelationship(Token token, Account account) {
 		this.token = token;
 		this.account = account;
+	}
+
+	public FcTokenAssociation asAutoAssociation() {
+		return new FcTokenAssociation(token.getId().getNum(), account.getId().getNum());
 	}
 
 	public long getBalance() {

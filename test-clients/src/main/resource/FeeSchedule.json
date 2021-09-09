@@ -1909,6 +1909,51 @@
 	  },
 	  {
 		"transactionFeeSchedule": {
+		  "hederaFunctionality": "TokenGetNftInfo",
+		  "fees": [
+			{
+			  "nodedata": {
+				"constant": 54605,
+				"bpt": 87,
+				"vpt": 218244,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 1,
+				"bpr": 87,
+				"sbpr": 2,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 0,
+				"bpr": 0,
+				"sbpr": 0,
+				"min": 0,
+				"max": 0
+			  },
+			  "servicedata": {
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 0,
+				"bpr": 0,
+				"sbpr": 0,
+				"min": 0,
+				"max": 0
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
 		  "hederaFunctionality": "ScheduleCreate",
 		  "fees": [
 			{
@@ -2677,39 +2722,40 @@
 		  "hederaFunctionality": "FileAppend",
 		  "fees": [
 			{
+			  "subType": "DEFAULT",
 			  "nodedata": {
-				"constant": 3680730029,
-				"bpt": 5884384,
-				"vpt": 14710960791,
-				"rbh": 3923,
-				"sbh": 294,
-				"gas": 39229,
-				"bpr": 5884384,
-				"sbpr": 147110,
+				"constant": 2981423158,
+				"bpt": 4766402,
+				"vpt": 11916005477,
+				"rbh": 3178,
+				"sbh": 238,
+				"gas": 31776,
+				"bpr": 4766402,
+				"sbpr": 119160,
 				"min": 0,
 				"max": 1000000000000000
 			  },
 			  "networkdata": {
-				"constant": 58891680462,
-				"bpt": 94150149,
-				"vpt": 235375372652,
-				"rbh": 62767,
-				"sbh": 4708,
-				"gas": 627668,
-				"bpr": 94150149,
-				"sbpr": 2353754,
+				"constant": 59628463168,
+				"bpt": 95328044,
+				"vpt": 238320109546,
+				"rbh": 63552,
+				"sbh": 4766,
+				"gas": 635520,
+				"bpr": 95328044,
+				"sbpr": 2383201,
 				"min": 0,
 				"max": 1000000000000000
 			  },
 			  "servicedata": {
-				"constant": 58891680462,
-				"bpt": 94150149,
-				"vpt": 235375372652,
-				"rbh": 62767,
-				"sbh": 4708,
-				"gas": 627668,
-				"bpr": 94150149,
-				"sbpr": 2353754,
+				"constant": 59628463168,
+				"bpt": 95328044,
+				"vpt": 238320109546,
+				"rbh": 63552,
+				"sbh": 4766,
+				"gas": 635520,
+				"bpr": 95328044,
+				"sbpr": 2383201,
 				"min": 0,
 				"max": 1000000000000000
 			  }
@@ -5037,6 +5083,51 @@
 	  },
 	  {
 		"transactionFeeSchedule": {
+		  "hederaFunctionality": "TokenGetNftInfo",
+		  "fees": [
+			{
+			  "nodedata": {
+				"constant": 54605,
+				"bpt": 87,
+				"vpt": 218244,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 1,
+				"bpr": 87,
+				"sbpr": 2,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 0,
+				"bpr": 0,
+				"sbpr": 0,
+				"min": 0,
+				"max": 0
+			  },
+			  "servicedata": {
+				"constant": 0,
+				"bpt": 0,
+				"vpt": 0,
+				"rbh": 0,
+				"sbh": 0,
+				"gas": 0,
+				"bpr": 0,
+				"sbpr": 0,
+				"min": 0,
+				"max": 0
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
 		  "hederaFunctionality": "ScheduleSign",
 		  "fees": [
 			{
@@ -5760,39 +5851,40 @@
 		  "hederaFunctionality": "FileAppend",
 		  "fees": [
 			{
+			  "subType": "DEFAULT",
 			  "nodedata": {
-				"constant": 3680730029,
-				"bpt": 5884384,
-				"vpt": 14710960791,
-				"rbh": 3923,
-				"sbh": 294,
-				"gas": 39229,
-				"bpr": 5884384,
-				"sbpr": 147110,
+				"constant": 2981423158,
+				"bpt": 4766402,
+				"vpt": 11916005477,
+				"rbh": 3178,
+				"sbh": 238,
+				"gas": 31776,
+				"bpr": 4766402,
+				"sbpr": 119160,
 				"min": 0,
 				"max": 1000000000000000
 			  },
 			  "networkdata": {
-				"constant": 58891680462,
-				"bpt": 94150149,
-				"vpt": 235375372652,
-				"rbh": 62767,
-				"sbh": 4708,
-				"gas": 627668,
-				"bpr": 94150149,
-				"sbpr": 2353754,
+				"constant": 59628463168,
+				"bpt": 95328044,
+				"vpt": 238320109546,
+				"rbh": 63552,
+				"sbh": 4766,
+				"gas": 635520,
+				"bpr": 95328044,
+				"sbpr": 2383201,
 				"min": 0,
 				"max": 1000000000000000
 			  },
 			  "servicedata": {
-				"constant": 58891680462,
-				"bpt": 94150149,
-				"vpt": 235375372652,
-				"rbh": 62767,
-				"sbh": 4708,
-				"gas": 627668,
-				"bpr": 94150149,
-				"sbpr": 2353754,
+				"constant": 59628463168,
+				"bpt": 95328044,
+				"vpt": 238320109546,
+				"rbh": 63552,
+				"sbh": 4766,
+				"gas": 635520,
+				"bpr": 95328044,
+				"sbpr": 2383201,
 				"min": 0,
 				"max": 1000000000000000
 			  }

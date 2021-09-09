@@ -39,6 +39,10 @@ class AssetsLoader {
 	private static final String CONSTANT_WEIGHTS_RESOURCE = "constant-weights.json";
 	private static final String CANONICAL_PRICES_RESOURCE = "canonical-prices.json";
 
+	private Map<UsableResource, BigDecimal> cachedCapacities = null;
+	private Map<HederaFunctionality, BigDecimal> cachedConstWeights = null;
+	private Map<HederaFunctionality, Map<SubType, BigDecimal>> cachedCanonicalPrices = null;
+
 	/**
 	 * Loads a map that, for each supported operation, gives the fraction of that
 	 * operation's total price that should come from its constant term in the fee
@@ -51,6 +55,9 @@ class AssetsLoader {
 	 * @throws IOException if the backing JSON resource cannot be loaded
 	 */
 	Map<HederaFunctionality, BigDecimal> loadConstWeights() throws IOException {
+		if (cachedConstWeights != null) {
+			return cachedConstWeights;
+		}
 		try (var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CONSTANT_WEIGHTS_RESOURCE)) {
 			final var om = new ObjectMapper();
 			final var constWeights = om.readValue(fin, Map.class);
@@ -62,6 +69,7 @@ class AssetsLoader {
 				typedConstWeights.put(function, bdWeight);
 			});
 
+			cachedConstWeights = typedConstWeights;
 			return typedConstWeights;
 		}
 	}
@@ -75,6 +83,9 @@ class AssetsLoader {
 	 * @throws IOException if the backing JSON resource cannot be loaded
 	 */
 	Map<UsableResource, BigDecimal> loadCapacities() throws IOException {
+		if (cachedCapacities != null) {
+			return cachedCapacities;
+		}
 		try (var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CAPACITIES_RESOURCE)) {
 			final var om = new ObjectMapper();
 			final var capacities = om.readValue(fin, Map.class);
@@ -88,6 +99,7 @@ class AssetsLoader {
 				typedCapacities.put(resource, bdAmount);
 			});
 
+			cachedCapacities = typedCapacities;
 			return typedCapacities;
 		}
 	}
@@ -102,6 +114,9 @@ class AssetsLoader {
 	 * @throws IOException if the backing JSON resource cannot be loaded
 	 */
 	Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
+		if (cachedCanonicalPrices != null) {
+			return cachedCanonicalPrices;
+		}
 		try (var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CANONICAL_PRICES_RESOURCE)) {
 			final var om = new ObjectMapper();
 			final var prices = om.readValue(fin, Map.class);
@@ -121,6 +136,7 @@ class AssetsLoader {
 				typedPrices.put(function, scopedPrices);
 			});
 
+			cachedCanonicalPrices = typedPrices;
 			return typedPrices;
 		}
 	}

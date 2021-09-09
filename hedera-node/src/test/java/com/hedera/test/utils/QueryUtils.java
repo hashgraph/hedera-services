@@ -21,6 +21,7 @@ package com.hedera.test.utils;
  */
 
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
+import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -92,7 +93,11 @@ public final class QueryUtils {
 	}
 
 	public static QueryHeader.Builder queryHeaderOf(final ResponseType type, final Transaction paymentTxn) {
-		return QueryHeader.newBuilder().setResponseType(type).setPayment(paymentTxn);
+		return queryHeaderOf(type).setPayment(paymentTxn);
+	}
+
+	public static QueryHeader.Builder queryHeaderOf(final ResponseType type) {
+		return QueryHeader.newBuilder().setResponseType(type);
 	}
 
 	public static Query queryOf(final TransactionGetRecordQuery op) {
@@ -101,6 +106,10 @@ public final class QueryUtils {
 
 	public static Query queryOf(final CryptoGetAccountRecordsQuery.Builder op) {
 		return Query.newBuilder().setCryptoGetAccountRecords(op).build();
+	}
+
+	public static Query queryOf(final FileGetContentsQuery.Builder op) {
+		return Query.newBuilder().setFileGetContents(op).build();
 	}
 
 	public static Transaction defaultPaymentTxn(final long payment) {

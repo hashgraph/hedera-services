@@ -172,6 +172,10 @@ public class Account {
 		return associatedTokens;
 	}
 
+	public boolean isAssociatedWith(Id token) {
+		return associatedTokens.contains(token);
+	}
+
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */

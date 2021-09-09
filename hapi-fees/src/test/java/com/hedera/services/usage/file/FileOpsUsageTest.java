@@ -23,10 +23,12 @@ package com.hedera.services.usage.file;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.test.KeyUtils;
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
@@ -61,14 +63,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class FileOpsUsageTest {
-	private byte[] contents = "Pineapple and eggplant and avocado too".getBytes();
-	private long now = 1_234_567L;
-	private long expiry = 2_345_678L;
-	private long period = expiry - now;
-	private Key wacl = KeyUtils.A_KEY_LIST;
-	private String memo = "Verily, I say unto you";
-	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private final byte[] contents = "Pineapple and eggplant and avocado too".getBytes();
+	private final long now = 1_234_567L;
+	private final long expiry = 2_345_678L;
+	private final long period = expiry - now;
+	private final Key wacl = KeyUtils.A_KEY_LIST;
+	private final String memo = "Verily, I say unto you";
+	private final int numSigs = 3;
+	private final int sigSize = 100;
+	private final int numPayerKeys = 1;
+	private final SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private final BaseTransactionMeta baseMeta = new BaseTransactionMeta(100, 0);
 
 	private Function<ResponseType, QueryUsage> queryEstimatorFactory;
 	private EstimatorFactory factory;
@@ -80,7 +85,7 @@ class FileOpsUsageTest {
 	private TransactionBody txn;
 	private Query query;
 
-	private FileOpsUsage subject = new FileOpsUsage();
+	private final FileOpsUsage subject = new FileOpsUsage();
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -103,6 +108,23 @@ class FileOpsUsageTest {
 	void cleanup() {
 		FileOpsUsage.txnEstimateFactory = TxnUsageEstimator::new;
 		FileOpsUsage.queryEstimateFactory = QueryUsage::new;
+	}
+
+	@Test
+	void estimatesAppendAsExpected() {
+		// setup:
+		final var accumulator = mock(UsageAccumulator.class);
+		final int byteAdded = 1_234;
+		final long lifetime = 1_234_567L;
+		final var meta = new FileAppendMeta(byteAdded, lifetime);
+
+		// when:
+		subject.fileAppendUsage(sigUsage, meta, baseMeta, accumulator);
+
+		// then:
+		verify(accumulator).resetForTransaction(baseMeta, sigUsage);
+		verify(accumulator).addBpt(byteAdded + (long)BASIC_ENTITY_ID_SIZE);
+		verify(accumulator).addSbs(byteAdded * lifetime);
 	}
 
 	@Test
