@@ -44,10 +44,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -75,7 +75,7 @@ class TokenGrantKycTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		accountStore = mock(AccountStore.class);
+	accountStore = mock(AccountStore.class);
 		tokenStore = mock(TypedTokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		tokenRelationship = mock(TokenRelationship.class);

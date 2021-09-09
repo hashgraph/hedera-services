@@ -21,172 +21,198 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.OwnershipTracker;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * Provides the state transition for token updates.
  */
 @Singleton
 public class TokenUpdateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenUpdateTransitionLogic.class);
-
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final boolean allowChangedTreasuryToOwnNfts;
-	private final TokenStore store;
-	private final HederaLedger ledger;
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
+	private final OptionValidator validator;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final TypedTokenStore tokenStore;
+	private final AccountStore accountStore;
 
 	@Inject
 	public TokenUpdateTransitionLogic(
 			@AreTreasuryWildcardsEnabled boolean allowChangedTreasuryToOwnNfts,
 			OptionValidator validator,
-			TokenStore store,
-			HederaLedger ledger,
 			TransactionContext txnCtx,
-			Predicate<TokenUpdateTransactionBody> affectsExpiryOnly
+			TypedTokenStore tokenStore,
+			AccountStore accountStore
 	) {
 		this.validator = validator;
-		this.store = store;
-		this.ledger = ledger;
 		this.txnCtx = txnCtx;
-		this.affectsExpiryOnly = affectsExpiryOnly;
 		this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
+		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			transitionFor(txnCtx.accessor().getTxn().getTokenUpdate());
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			abortWith(FAIL_INVALID);
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getTokenUpdate();
+		validateExpiry(op);
+
+		/* --- Load model objects --- */
+		final var token = tokenStore.loadToken(Id.fromGrpcToken(op.getToken()));
+		validateTokenIsMutable(token, op);
+
+		Account newAutoRenew = null;
+		Account newTreasury = null;
+		TokenRelationship newTreasuryRel = null;
+		TokenRelationship currentTreasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
+		boolean updatesTreasury = op.hasTreasury() && (!token.getTreasury().getId().equals(Id.fromGrpcAccount(op.getTreasury())));
+		if (updatesTreasury) {
+			newTreasury = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getTreasury()), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			validateAssociationBetween(newTreasury, token);
+			newTreasuryRel = tokenStore.loadTokenRelationship(token, newTreasury);
+			if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+				validateTrue(newTreasuryRel.getBalance() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+				if (!allowChangedTreasuryToOwnNfts) {
+					validateTrue(currentTreasuryRel.getBalance() == 0, CURRENT_TREASURY_STILL_OWNS_NFTS);
+				}
+			}
+		}
+		if (op.hasAutoRenewAccount()) {
+			newAutoRenew = accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(op.getAutoRenewAccount()), INVALID_AUTORENEW_ACCOUNT);
+		}
+
+		/* --- Do the business logic --- */
+		final var tracker = new OwnershipTracker();
+		token.update(op, newAutoRenew, newTreasury, validator);
+		if (updatesTreasury) {
+			prepareNewTreasury(newTreasuryRel, token);
+			transferTreasuryBalance(token, currentTreasuryRel, newTreasuryRel, tracker);
+		}
+
+		/* --- Persist changes --- */
+		tokenStore.persistToken(token);
+		if (updatesTreasury) {
+			if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+				accountStore.persistAccount(currentTreasuryRel.getAccount());
+				accountStore.persistAccount(newTreasuryRel.getAccount());
+			}
+			tokenStore.persistTokenRelationships(List.of(newTreasuryRel, currentTreasuryRel));
+			tokenStore.persistTrackers(tracker);
 		}
 	}
 
-	private void transitionFor(TokenUpdateTransactionBody op) {
-		var id = store.resolve(op.getToken());
-		if (id == MISSING_TOKEN) {
-			txnCtx.setStatus(INVALID_TOKEN_ID);
-			return;
-		}
+	private void validateExpiry(TokenUpdateTransactionBody op) {
+		final var expirationIsInvalid = op.hasExpiry() && !validator.isValidExpiry(op.getExpiry());
+		validateFalse(expirationIsInvalid, INVALID_EXPIRATION_TIME);
+	}
 
-		var outcome = OK;
-		MerkleToken token = store.get(id);
+	private void validateTokenIsMutable(final Token token, final TokenUpdateTransactionBody op) {
+		final var tokenIsImmutable = !token.hasAdminKey() && !affectsExpiryAtMost(op);
+		validateFalse(tokenIsImmutable, TOKEN_IS_IMMUTABLE);
+	}
 
-		if (op.hasExpiry() && !validator.isValidExpiry(op.getExpiry())) {
-			txnCtx.setStatus(INVALID_EXPIRATION_TIME);
-			return;
-		}
+	private boolean affectsExpiryAtMost(TokenUpdateTransactionBody changes) {
+		return !changes.hasAdminKey() &&
+				!changes.hasKycKey() &&
+				!changes.hasWipeKey() &&
+				!changes.hasFreezeKey() &&
+				!changes.hasSupplyKey() &&
+				!changes.hasFeeScheduleKey() &&
+				!changes.hasTreasury() &&
+				!changes.hasAutoRenewAccount() &&
+				changes.getSymbol().length() == 0 &&
+				changes.getName().length() == 0 &&
+				changes.getAutoRenewPeriod().getSeconds() == 0;
+	}
 
-		if (token.adminKey().isEmpty() && !affectsExpiryOnly.test(op)) {
-			txnCtx.setStatus(TOKEN_IS_IMMUTABLE);
-			return;
-		}
+	private void validateAssociationBetween(final Account newTreasury, final Token token) {
+		final var associationDoesNotExist = !newTreasury.getAssociatedTokens().contains(token.getId());
+		validateFalse(associationDoesNotExist, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+	}
 
-		if (token.isDeleted()) {
-			txnCtx.setStatus(TOKEN_WAS_DELETED);
-			return;
-		}
+	private void transferTreasuryBalance(final Token token,
+										 final TokenRelationship currentTreasuryRel,
+										 final TokenRelationship newTreasuryRel,
+										 final OwnershipTracker tracker) {
 
-		outcome = autoRenewAttachmentCheck(op, token);
-		if (outcome != OK) {
-			txnCtx.setStatus(outcome);
-			return;
-		}
+		final var balance = currentTreasuryRel.getBalance();
+		final var isEligibleTransfer = balance > 0L;
 
-		Optional<AccountID> replacedTreasury = Optional.empty();
-		if (op.hasTreasury()) {
-			var newTreasury = op.getTreasury();
-			if (ledger.isDetached(newTreasury)) {
-				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-				return;
-			}
-			if (!store.associationExists(newTreasury, id)) {
-				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-				return;
-			}
-			var existingTreasury = token.treasury().toGrpcAccountId();
-			if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
-				var existingTreasuryBalance = ledger.getTokenBalance(existingTreasury, id);
-				if (existingTreasuryBalance > 0L) {
-					abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
-					return;
-				}
-			}
-			if (!newTreasury.equals(existingTreasury)) {
-				if (ledger.isDetached(existingTreasury)) {
-					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-					return;
-				}
-				outcome = prepNewTreasury(id, token, newTreasury);
-				if (outcome != OK) {
-					abortWith(outcome);
-					return;
-				}
-				replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
+		if (isEligibleTransfer) {
+			if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
+				doFungibleTransfer(currentTreasuryRel, newTreasuryRel, balance);
+			} else {
+				doNonFungibleTransfer(token.getId(), currentTreasuryRel, newTreasuryRel, tracker);
 			}
 		}
+	}
 
-		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
-		if (outcome == OK && replacedTreasury.isPresent()) {
-			final var oldTreasury = replacedTreasury.get();
-			long replacedTreasuryBalance = ledger.getTokenBalance(oldTreasury, id);
-			if (replacedTreasuryBalance > 0) {
-				if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-					outcome = ledger.doTokenTransfer(
-							id,
-							oldTreasury,
-							op.getTreasury(),
-							replacedTreasuryBalance);
-				} else {
-					outcome = store.changeOwnerWildCard(
-							new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1), oldTreasury, op.getTreasury());
-				}
-			}
-		}
-		if (outcome != OK) {
-			abortWith(outcome);
-			return;
-		}
+	private void doFungibleTransfer(final TokenRelationship currentTreasuryRel,
+									final TokenRelationship newTreasuryRel,
+									final long balance) {
+		currentTreasuryRel.setBalance(0L);
+		newTreasuryRel.setBalance(balance);
+	}
 
-		txnCtx.setStatus(SUCCESS);
+	private void doNonFungibleTransfer(final Id token,
+									   final TokenRelationship fromTokenRelationship,
+									   final TokenRelationship toTokenRelationship,
+									   final OwnershipTracker tracker) {
+		final var currentTreasury = fromTokenRelationship.getAccount();
+		final var newTreasury = toTokenRelationship.getAccount();
+
+		final var fromNftsOwned = currentTreasury.getOwnedNfts();
+		final var toNftsOwned = newTreasury.getOwnedNfts();
+		final var fromThisNftsOwned = fromTokenRelationship.getBalance();
+		final var toThisNftsOwned = toTokenRelationship.getBalance();
+
+		currentTreasury.setOwnedNfts(fromNftsOwned - fromThisNftsOwned);
+		newTreasury.setOwnedNfts(toNftsOwned + fromThisNftsOwned);
+		fromTokenRelationship.setBalance(0L);
+		toTokenRelationship.setBalance(toThisNftsOwned + fromThisNftsOwned);
+
+		tracker.add(token, new OwnershipTracker.Change(currentTreasury.getId(), newTreasury.getId(), -1));
+	}
+
+	private void prepareNewTreasury(final TokenRelationship newTreasuryRel, final Token token) {
+		if (token.hasFreezeKey()) {
+			newTreasuryRel.changeFrozenState(false);
+		}
+		if (token.hasKycKey()) {
+			newTreasuryRel.changeKycState(true);
+		}
 	}
 
 	@Override
@@ -235,42 +261,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				op.hasSupplyKey(), op.getSupplyKey(),
 				op.hasFreezeKey(), op.getFreezeKey(),
 				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
-		if (validity != OK) {
-			return validity;
-		}
 
 		return validity;
-	}
-
-	private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
-		if (op.hasAutoRenewAccount()) {
-			final var newAutoRenew = op.getAutoRenewAccount();
-			if (ledger.isDetached(newAutoRenew)) {
-				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-			}
-			if (token.hasAutoRenewAccount()) {
-				final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
-				if (ledger.isDetached(existingAutoRenew)) {
-					return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-				}
-			}
-		}
-		return OK;
-	}
-
-	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
-		var status = OK;
-		if (token.hasFreezeKey()) {
-			status = ledger.unfreeze(newTreasury, id);
-		}
-		if (status == OK && token.hasKycKey()) {
-			status = ledger.grantKyc(newTreasury, id);
-		}
-		return status;
-	}
-
-	private void abortWith(ResponseCodeEnum cause) {
-		ledger.dropPendingTokenChanges();
-		txnCtx.setStatus(cause);
 	}
 }

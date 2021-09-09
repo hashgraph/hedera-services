@@ -88,12 +88,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -102,13 +111,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -117,8 +122,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
@@ -709,51 +712,7 @@ class HederaTokenStoreTest {
 		verify(uniqTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
 		verify(hederaLedger).updateOwnershipChanges(tNft, primaryTreasury, counterparty);
 	}
-
-	@Test
-	void changingOwnerWildCardDoesTheExpectedWithTreasury() {
-		final long startTreasuryNfts = 1;
-		final long startCounterpartyNfts = 0;
-		final long startTreasuryTNfts = 1;
-		final long startCounterpartyTNfts = 0;
-		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
-			add(nonfungible);
-		}});
-		subject.knownTreasuries.put(counterparty, new HashSet<>() {{
-			add(nonfungible);
-		}});
-		given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
-		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
-		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
-		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
-
-		final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
-
-		assertEquals(OK, status);
-		verify(accountsLedger).set(primaryTreasury, NUM_NFTS_OWNED, 0L);
-		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, 1L);
-		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
-		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
-		verify(hederaLedger).updateOwnershipChanges(tNft, primaryTreasury, counterparty);
-	}
-
-	@Test
-	void changingOwnerWildCardRejectsFromFreezeAndKYC() {
-		given(tokenRelsLedger.get(treasuryNft, IS_FROZEN)).willReturn(true);
-
-		final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
-
-		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
-	}
-
-	@Test
-	void changingOwnerWildCardRejectsToFreezeAndKYC() {
-		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(true);
-
-		final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
-
-		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
-	}
+	
 
 	@Test
 	void changingOwnerRejectsFromFreezeAndKYC() {
@@ -771,138 +730,6 @@ class HederaTokenStoreTest {
 		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
 		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
-	}
-
-	@Test
-	void updateRejectsInvalidExpiry() {
-		var op = updateWith(NO_KEYS, misc, true, true, false);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(INVALID_EXPIRATION_TIME, outcome);
-	}
-
-	@Test
-	void canExtendImmutableExpiry() {
-		given(token.hasAdminKey()).willReturn(false);
-		var op = updateWith(NO_KEYS, misc, false, false, false);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-	}
-
-	@Test
-	void cannotUpdateImmutableTokenWithNewFeeScheduleKey() {
-		given(token.hasAdminKey()).willReturn(false);
-		given(token.hasFeeScheduleKey()).willReturn(true);
-		var op = updateWith(NO_KEYS, misc, false, false, false);
-		op = op.toBuilder()
-				.setFeeScheduleKey(feeScheduleKey)
-				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
-	}
-
-	@Test
-	void ifImmutableWillStayImmutable() {
-		givenUpdateTarget(ALL_KEYS, token);
-		given(token.hasFeeScheduleKey()).willReturn(false);
-		var op = updateWith(ALL_KEYS, misc, false, false, false);
-		op = op.toBuilder().setFeeScheduleKey(feeScheduleKey).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_HAS_NO_FEE_SCHEDULE_KEY, outcome);
-	}
-
-	@Test
-	void updateRejectsInvalidNewAutoRenew() {
-		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
-		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
-	}
-
-	@Test
-	void updateRejectsInvalidNewAutoRenewPeriod() {
-		var op = updateWith(NO_KEYS, misc, true, true, false, false, false);
-		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(INVALID_RENEWAL_PERIOD, outcome);
-	}
-
-	@Test
-	void updateRejectsMissingToken() {
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
-		givenUpdateTarget(ALL_KEYS, token);
-		final var op = updateWith(ALL_KEYS, misc, true, true, true);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(INVALID_TOKEN_ID, outcome);
-	}
-
-
-	@Test
-	void updateRejectsInappropriateKycKey() {
-		givenUpdateTarget(NO_KEYS, token);
-		final var op = updateWith(EnumSet.of(KeyType.KYC), misc, false, false, false);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_HAS_NO_KYC_KEY, outcome);
-	}
-
-	@Test
-	void updateRejectsInappropriateFreezeKey() {
-		givenUpdateTarget(NO_KEYS, token);
-		final var op = updateWith(EnumSet.of(KeyType.FREEZE), misc, false, false, false);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, outcome);
-	}
-
-	@Test
-	void updateRejectsInappropriateWipeKey() {
-		givenUpdateTarget(NO_KEYS, token);
-		final var op = updateWith(EnumSet.of(KeyType.WIPE), misc, false, false, false);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_HAS_NO_WIPE_KEY, outcome);
-	}
-
-	@Test
-	void updateRejectsInappropriateSupplyKey() {
-		givenUpdateTarget(NO_KEYS, token);
-		final var op = updateWith(EnumSet.of(KeyType.SUPPLY), misc, false, false, false);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
-	}
-
-	@Test
-	void updateRejectsZeroTokenBalanceKey() {
-		final Set<TokenID> tokenSet = new HashSet<>();
-		tokenSet.add(nonfungible);
-		givenUpdateTarget(ALL_KEYS, nonfungibleToken);
-		var op = updateWith(ALL_KEYS, nonfungible, true, true, true);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, outcome);
 	}
 
 	@Test
@@ -981,120 +808,6 @@ class HederaTokenStoreTest {
 		subject.knownTreasuries.clear();
 
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(treasury, misc));
-	}
-
-	@Test
-	void updateHappyPathIgnoresZeroExpiry() {
-		subject.addKnownTreasury(treasury, misc);
-		final Set<TokenID> tokenSet = new HashSet<>();
-		tokenSet.add(misc);
-		givenUpdateTarget(ALL_KEYS, token);
-		var op = updateWith(ALL_KEYS, misc, true, true, true);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-		verify(token, never()).setExpiry(anyLong());
-		assertFalse(subject.knownTreasuries.containsKey(treasury));
-		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
-	}
-
-	@Test
-	void updateRemovesAdminKeyWhenAppropos() {
-		subject.addKnownTreasury(treasury, misc);
-		final Set<TokenID> tokenSet = new HashSet<>();
-		tokenSet.add(misc);
-		givenUpdateTarget(EnumSet.noneOf(KeyType.class), token);
-		final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), misc, false, false, false);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-		verify(token).setAdminKey(MerkleToken.UNUSED_KEY);
-	}
-
-	@Test
-	void updateHappyPathWorksForEverythingWithNewExpiry() {
-		subject.addKnownTreasury(treasury, misc);
-		final Set<TokenID> tokenSet = new HashSet<>();
-		tokenSet.add(misc);
-		givenUpdateTarget(ALL_KEYS, token);
-		var op = updateWith(ALL_KEYS, misc, true, true, true);
-		op = op.toBuilder()
-				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-				.setFeeScheduleKey(newKey)
-				.build();
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-		verify(token).setSymbol(newSymbol);
-		verify(token).setName(newName);
-		verify(token).setExpiry(newExpiry);
-		verify(token).setTreasury(EntityId.fromGrpcAccountId(newTreasury));
-		verify(token).setAdminKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		verify(token).setFreezeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		verify(token).setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		assertFalse(subject.knownTreasuries.containsKey(treasury));
-		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
-	}
-
-	@Test
-	void updateHappyPathWorksWithNewMemo() {
-		subject.addKnownTreasury(treasury, misc);
-		givenUpdateTarget(ALL_KEYS, token);
-		final var op = updateWith(NO_KEYS,
-				misc,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				true);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-		verify(token).setMemo(newMemo);
-	}
-
-	@Test
-	void updateHappyPathWorksWithNewMemoForNonfungible() {
-		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		subject.addKnownTreasury(treasury, misc);
-		givenUpdateTarget(ALL_KEYS, token);
-		final var op = updateWith(NO_KEYS,
-				misc,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				true);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-		verify(token).setMemo(newMemo);
-	}
-
-	@Test
-	void updateHappyPathWorksWithNewAutoRenewAccount() {
-		subject.addKnownTreasury(treasury, misc);
-		givenUpdateTarget(ALL_KEYS, token);
-		final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		assertEquals(OK, outcome);
-		verify(token).setAutoRenewAccount(EntityId.fromGrpcAccountId(newAutoRenewAccount));
-		verify(token).setAutoRenewPeriod(newAutoRenewPeriod);
 	}
 
 	enum KeyType {

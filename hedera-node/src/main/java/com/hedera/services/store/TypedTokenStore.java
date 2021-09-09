@@ -343,6 +343,9 @@ public class TypedTokenStore {
 	public void persistToken(Token token) {
 		final var key = token.getId().asMerkle();
 		final var mutableToken = tokens.get().getForModify(key);
+		/* Note: this variable must be extracted BEFORE the mapping!! */
+		final var oldTreasury = mutableToken.treasury().asId().asGrpcAccount();
+
 		mapModelChangesToMutable(token, mutableToken);
 
 		final var treasury = mutableToken.treasury();
@@ -352,7 +355,13 @@ public class TypedTokenStore {
 		if (token.hasRemovedUniqueTokens()) {
 			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
+		if (token.hasUpdatedTreasury()) {
+			final var newTreasury = token.getTreasury().getId().asGrpcAccount();
+			final var grpcToken = token.getId().asGrpcToken();
 
+			delegate.removeKnownTreasuryForToken(oldTreasury, grpcToken);
+			addKnownTreasury.perform(newTreasury, grpcToken);
+		}
 		/* Only needed during HTS refactor.
 		Will be removed once all operations that refer to the knownTreasuries in-memory structure are refactored */
 		if (token.isDeleted()) {
@@ -456,6 +465,10 @@ public class TypedTokenStore {
 		mutableToken.setFreezeKey(token.getFreezeKey());
 		mutableToken.setKycKey(token.getKycKey());
 		mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
+		mutableToken.setSymbol(token.getSymbol());
+		mutableToken.setName(token.getName());
+		mutableToken.setExpiry(token.getExpiry());
+		mutableToken.setDecimals(token.getDecimals());
 
 		mutableToken.setMaxSupply(token.getMaxSupply());
 		mutableToken.setDeleted(token.isDeleted());
@@ -494,6 +507,10 @@ public class TypedTokenStore {
 		token.setExpiry(immutableToken.expiry());
 		token.setMemo(immutableToken.memo());
 		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
+		token.setSymbol(immutableToken.symbol());
+		token.setName(immutableToken.name());
+		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
+		token.setDecimals(immutableToken.decimals());
 	}
 
 	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {

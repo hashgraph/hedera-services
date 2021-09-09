@@ -22,19 +22,16 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -141,12 +138,6 @@ public abstract class TokenLogicModule {
 	@FunctionKey(TokenDissociateFromAccount)
 	public static List<TransitionLogic> provideTokenDissocLogic(TokenDissociateTransitionLogic tokenDissocLogic) {
 		return List.of(tokenDissocLogic);
-	}
-
-	@Provides
-	@Singleton
-	public static Predicate<TokenUpdateTransactionBody> provideAffectsExpiryOnly() {
-		return HederaTokenStore::affectsExpiryAtMost;
 	}
 
 	@Provides

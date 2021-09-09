@@ -27,7 +27,6 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -59,8 +58,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 
-	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
-
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
@@ -72,8 +69,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
-
-	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

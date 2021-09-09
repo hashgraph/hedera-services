@@ -245,7 +245,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.adjustTokenBalance(c, tB, +50);
 		subject.adjustTokenBalance(c, tB, -50);
 		subject.adjustTokenBalance(c, tA, +5000);
-		subject.freeze(a, tB);
 		subject.adjustTokenBalance(a, tB, +1_000_000);
 
 		assertThat(

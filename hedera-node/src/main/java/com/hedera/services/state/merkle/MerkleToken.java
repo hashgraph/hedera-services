@@ -335,6 +335,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return decimals;
 	}
 
+	public void setDecimals(final int decimals) {
+		this.decimals = decimals;
+	}
+
 	public boolean hasAdminKey() {
 		return adminKey != UNUSED_KEY;
 	}

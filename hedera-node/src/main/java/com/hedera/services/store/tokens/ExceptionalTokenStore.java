@@ -29,7 +29,6 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -88,22 +87,12 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -21,19 +21,26 @@ package com.hedera.services.store.models;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.IdentityCodeUtils;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -60,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,18 +78,22 @@ import static org.mockito.Mockito.verify;
 
 class TokenTest {
 	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
+	private final Key key = TxnHandlingScenario.TOKEN_KYC_KT.asKey();
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
 	private final Id id = new Id(1, 2, 3);
 	private final Id treasuryId = new Id(0, 0, 0);
 	private final Id nonTreasuryId = new Id(3, 2, 3);
+	private final Id autoRenewId = new Id(117, 14, 25);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
+	private final Account autoRenew = new Account(autoRenewId);
+	private final OptionValidator validator = mock(OptionValidator.class);
 
 	private Token subject;
 	private TokenRelationship treasuryRel;
 	private TokenRelationship nonTreasuryRel;
-
+	
 	@BeforeEach
 	void setUp() {
 		subject = new Token(id);
@@ -92,6 +104,84 @@ class TokenTest {
 		treasuryRel.initBalance(initialTreasuryBalance);
 		treasuryRel.setAutomaticAssociation(true);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
+	}
+	
+	@Test
+	void updatesAsExpected() throws DecoderException {
+		final var newTreasuryId = new Id(1, 2, 12);
+		final var newTreasury = new Account(newTreasuryId);
+		final var changes = TokenUpdateTransactionBody.newBuilder()
+				.setToken(id.asGrpcToken())
+				.setAutoRenewAccount(autoRenewId.asGrpcAccount())
+				.setSymbol("smb")
+				.setName("name")
+				.setMemo(StringValue.newBuilder().setValue("memo").build())
+				.setFreezeKey(key)
+				.setKycKey(key)
+				.setFeeScheduleKey(key)
+				.setSupplyKey(key)
+				.setWipeKey(key)
+				.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(1000L).build())
+				.setTreasury(newTreasuryId.asGrpcAccount())
+				.setAdminKey(key)
+				.build();
+		
+		given(validator.isValidExpiry(any())).willReturn(true);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		/* set some values before update */
+		subject.setFreezeKey(someKey);
+		subject.setFeeScheduleKey(someKey);
+		subject.setSupplyKey(someKey);
+		subject.setKycKey(someKey);
+		subject.setWipeKey(someKey);
+		subject.setCustomFees(List.of());
+		subject.setAutoRenewAccount(autoRenew);
+		subject.setAutoRenewPeriod(10);
+		subject.setName("old");
+		subject.setMemo("oldMemo");
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		treasuryRel.initBalance(0);
+		
+		subject.update(changes,
+				autoRenew,
+				newTreasury,
+				validator);
+		
+		assertEquals(subject.getName(), "name");
+		assertEquals(subject.getSymbol(), "smb");
+		assertEquals(subject.getMemo(), "memo");
+		assertEquals(1000, subject.getAutoRenewPeriod());
+		assertFalse(subject.isDeleted());
+		assertFalse(subject.isNew());
+		assertEquals(0, subject.getDecimals());
+		assertTrue(subject.hasUpdatedTreasury());
+		
+		assertNotNull(subject.getSupplyKey());
+		assertNotNull(subject.getFeeScheduleKey());
+		assertNotNull(subject.getWipeKey());
+		assertNotNull(subject.getFreezeKey());
+		assertNotNull(subject.getKycKey());
+
+		assertEquals(subject.getCustomFees(), List.of());
+	}
+	
+	@Test
+	void removesAdminKey() {
+		final var changes = TokenUpdateTransactionBody.newBuilder()
+				.setToken(id.asGrpcToken())
+				.setAutoRenewAccount(autoRenewId.asGrpcAccount())
+				.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
+				.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build())
+				.build();
+		
+		given(validator.isValidExpiry(any())).willReturn(true);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+
+		subject.setAdminKey(someKey);
+		subject.update(changes, autoRenew, null, validator);
+		
+		assertNull(subject.getAdminKey());
 	}
 
 	@Test

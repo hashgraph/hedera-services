@@ -39,13 +39,9 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.changeOwner(null, null, null));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.changeOwnerWildCard(null, null, null));
-		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.exists(null));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.get(null));
-		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.update(null, 0));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.isKnownTreasury(null));
 		assertThrows(UnsupportedOperationException.class,

@@ -22,19 +22,27 @@ package com.hedera.services.txns.token;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -43,8 +51,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
@@ -61,13 +67,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -75,249 +82,209 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
 
 class TokenUpdateTransitionLogicTest {
+	private final TokenID target = IdUtils.asToken("1.2.666");
+	private final NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
+	private final AccountID oldTreasuryId = IdUtils.asAccount("1.2.4");
+	private final AccountID newTreasuryId = IdUtils.asAccount("1.2.5");
+	private final AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
+	private final AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
+	private final String symbol = "SYMBOL";
+	private final String name = "Name";
+	private final JKey adminKey = new JEd25519Key("w/e".getBytes());
 	long thisSecond = 1_234_567L;
-	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private TokenID target = IdUtils.asToken("1.2.666");
-	private NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
-	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
-	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
-	private AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
-	private AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
-	private String symbol = "SYMBOL";
-	private String name = "Name";
-	private JKey adminKey = new JEd25519Key("w/e".getBytes());
+	private final Instant now = Instant.ofEpochSecond(thisSecond);
 	private TransactionBody tokenUpdateTxn;
-	private MerkleToken token;
+	private MerkleToken merkleToken;
+	private Token token;
+	private Account oldTreasury = mock(Account.class);
+	private Account newTreasury = mock(Account.class);
+	private CopyOnWriteIds treasuryAssociatedTokens = mock(CopyOnWriteIds.class);
+	private CopyOnWriteIds newTreasuryAssociatedTokens = mock(CopyOnWriteIds.class);
+
+	private TokenRelationship currentTreasuryRel;
+
 
 	private OptionValidator validator;
-	private TokenStore store;
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private Predicate<TokenUpdateTransactionBody> expiryOnlyCheck;
+	private TypedTokenStore tokenStore;
+	private AccountStore accountStore;
 
 	private TokenUpdateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
+		tokenStore = mock(TypedTokenStore.class);
+		accountStore = mock(AccountStore.class);
 		validator = mock(OptionValidator.class);
-		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		merkleToken = mock(MerkleToken.class);
+		token = mock(Token.class);
 
-		token = mock(MerkleToken.class);
-		given(token.adminKey()).willReturn(Optional.of(adminKey));
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(oldTreasury));
-		given(token.autoRenewAccount()).willReturn(EntityId.fromGrpcAccountId(oldAutoRenew));
-		given(token.hasAutoRenewAccount()).willReturn(true);
-		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(store.resolve(target)).willReturn(target);
-		given(store.get(target)).willReturn(token);
-		given(store.associationExists(newTreasury, target)).willReturn(true);
-		given(store.associationExists(oldTreasury, target)).willReturn(true);
+		currentTreasuryRel = mock(TokenRelationship.class);
+
 		withAlwaysValidValidator();
 
 		txnCtx = mock(TransactionContext.class);
 
-		expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
-		given(expiryOnlyCheck.test(any())).willReturn(false);
-
 		subject = new TokenUpdateTransitionLogic(
-				true, validator, store, ledger, txnCtx, expiryOnlyCheck);
+				true, validator, txnCtx, tokenStore, accountStore);
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 
 	@Test
 	void abortsOnInvalidIdForSafety() {
-		givenValidTxnCtx(true);
-		given(store.resolve(target)).willReturn(TokenStore.MISSING_TOKEN);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
-	}
-
-	@Test
-	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx(false);
-		givenToken(true, true);
-
-		// and:
-		given(store.update(any(), anyLong())).willThrow(IllegalStateException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-		// and:
-		verify(ledger).dropPendingTokenChanges();
+		given(tokenStore.loadToken(any())).willThrow(new InvalidTransactionException(FAIL_INVALID));
+		assertFailsWith(() -> subject.doStateTransition(), FAIL_INVALID);
 	}
 
 	@Test
 	void abortsIfCreationFails() {
-		givenValidTxnCtx();
-		// and:
-		given(store.update(any(), anyLong())).willReturn(INVALID_TOKEN_SYMBOL);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(INVALID_TOKEN_SYMBOL);
-		// and:
-		verify(ledger).dropPendingTokenChanges();
+		givenValidTxnCtx(false);
+		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(currentTreasuryRel);
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(false);
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_IS_IMMUTABLE);
 	}
 
 	@Test
-	void rollsbackNewTreasuryChangesIfUpdateFails() {
+	void rollsBackNewTreasuryChangesIfUpdateFails() {
 		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(INVALID_TOKEN_SYMBOL);
 
+		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
+
+		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(currentTreasuryRel);
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(token.getId()).willReturn(new Id(1, 2, 3));
+		given(token.getTreasury()).willReturn(oldTreasury);
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any())).willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any())).willReturn(newTreasury);
+
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		given(treasuryAssociatedTokens.contains(token.getId())).willReturn(true);
+		given(newTreasuryAssociatedTokens.contains(token.getId())).willReturn(true);
+
+		doThrow(new InvalidTransactionException(FAIL_INVALID))
+				.when(token)
+				.update(any(),
+						any(),
+						any(),
+						any());
 		// when:
-		subject.doStateTransition();
-
+		assertFailsWith(() -> subject.doStateTransition(), FAIL_INVALID);
 		// then:
-		verify(ledger).dropPendingTokenChanges();
 		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-		// and:
-		verify(txnCtx).setStatus(INVALID_TOKEN_SYMBOL);
 	}
 
 	@Test
 	void abortsOnUnassociatedNewTreasury() {
 		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(store.associationExists(newTreasury, target)).willReturn(false);
 
-		// when:
-		subject.doStateTransition();
+		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
 
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		// and:
-		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-		// and:
+		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(currentTreasuryRel);
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any())).willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any())).willReturn(newTreasury);
+
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(false);
+
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		given(token.getId()).willReturn(new Id(1, 2, 3));
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(oldTreasury.getId()).willReturn(new Id(110, 14, 17));
+
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
 		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 	}
 
 	@Test
 	void abortsOnInvalidNewTreasury() {
 		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(INVALID_ACCOUNT_ID);
+//		givenToken(true, true);
 
-		// when:
-		subject.doStateTransition();
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
 
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		verify(ledger).unfreeze(newTreasury, target);
-		// and:
-		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
-		// and:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any())).willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any())).willReturn(oldTreasury);
+
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_ACCOUNT_ID);
 	}
 
 	@Test
-	void abortsOnDetachedNewTreasury() {
+	void abortsOnDetachedOldAccount() {
 		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.isDetached(newTreasury)).willReturn(true);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-	}
-
-	@Test
-	void abortsOnDetachedOldTreasury() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.isDetached(oldTreasury)).willReturn(true);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-	}
-
-	@Test
-	void abortsOnDetachedOldAutoRenew() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.isDetached(oldAutoRenew)).willReturn(true);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-	}
-
-	@Test
-	void abortsOnDetachedNewAutoRenew() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.isDetached(newAutoRenew)).willReturn(true);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		given(tokenStore.loadToken(any())).willThrow(new InvalidTransactionException(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+		assertFailsWith(() -> subject.doStateTransition(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 	}
 
 	@Test
 	void permitsExtendingExpiry() {
-		givenValidTxnCtx(false);
-		// and:
-		given(token.adminKey()).willReturn(Optional.empty());
-		given(expiryOnlyCheck.test(any())).willReturn(true);
-		given(store.update(any(), anyLong())).willReturn(OK);
-
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setToken(target)
+						.setName("")
+						.setSymbol("")
+						.setAutoRenewPeriod(Duration.newBuilder()
+								.setSeconds(0)
+								.build())
+						.build())
+				.build();
+		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(false);
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(tokenStore).persistToken(any());
 	}
 
 	@Test
 	void abortsOnNotSetAdminKey() {
 		givenValidTxnCtx(true);
 		// and:
-		given(token.adminKey()).willReturn(Optional.empty());
+
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(token.getAdminKey()).willReturn(null);
+		given(token.hasAdminKey()).willReturn(false);
 
 		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(TOKEN_IS_IMMUTABLE);
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_IS_IMMUTABLE);
 	}
 
 	@Test
@@ -332,41 +299,36 @@ class TokenUpdateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.isValidExpiry(expiry)).willReturn(false);
 
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
 		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
+		assertFailsWith(() -> subject.doStateTransition(), INVALID_EXPIRATION_TIME);
 	}
 
 	@Test
 	void abortsOnAlreadyDeletedToken() {
 		givenValidTxnCtx(true);
 		// and:
-		given(token.isDeleted()).willReturn(true);
-
+		given(tokenStore.loadToken(any())).willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
 		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(TOKEN_WAS_DELETED);
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
 	}
 
 	@Test
 	void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
-		givenToken(true, true);
-		given(store.update(any(), anyLong())).willReturn(OK);
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
 
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(oldTreasuryRel);
 		// when:
 		subject.doStateTransition();
-
-		// then:
-		verify(ledger, never()).getTokenBalance(oldTreasury, target);
-		// and:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-		// and:
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(oldTreasuryRel, never()).setBalance(0);
 	}
 
 	@Test
@@ -374,19 +336,38 @@ class TokenUpdateTransitionLogicTest {
 		// setup:
 		long oldTreasuryBalance = 1000;
 		givenValidTxnCtx(true);
-		givenToken(true, true);
+
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(token.getId()).willReturn(Id.DEFAULT);
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
+		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
+		final var newTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
 		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(oldTreasuryRel).setBalance(0);
+		verify(newTreasuryRel).setBalance(oldTreasuryBalance);
 	}
 
 	@Test
@@ -394,23 +375,41 @@ class TokenUpdateTransitionLogicTest {
 		// setup:
 		long oldTreasuryBalance = 0;
 		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(token.getId()).willReturn(Id.DEFAULT);
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(token.hasFreezeKey()).willReturn(true);
+		given(token.hasKycKey()).willReturn(true);
+
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
+		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
+		final var newTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger).unfreeze(newTreasury, target);
-		verify(ledger).grantKyc(newTreasury, target);
-		verify(ledger).getTokenBalance(oldTreasury, target);
-		verify(ledger, never()).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
-		// and:
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(oldTreasuryRel, never()).setBalance(0);
+		verify(newTreasuryRel, never()).setBalance(oldTreasuryBalance);
+		verify(newTreasuryRel).changeFrozenState(anyBoolean());
+		verify(newTreasuryRel).changeKycState(anyBoolean());
 	}
 
 	@Test
@@ -418,44 +417,80 @@ class TokenUpdateTransitionLogicTest {
 		// setup:
 		long oldTreasuryBalance = 1;
 		givenValidTxnCtx(true);
-		givenToken(true, true);
-		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-		given(store.changeOwnerWildCard(nftId, oldTreasury, newTreasury)).willReturn(OK);
 
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(token.getId()).willReturn(Id.DEFAULT);
+		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(oldTreasury.getOwnedNfts()).willReturn(oldTreasuryBalance);
+		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
+
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
+		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
+		given(oldTreasuryRel.getAccount()).willReturn(oldTreasury);
+		final var newTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
+		given(newTreasuryRel.getAccount()).willReturn(newTreasury);
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger).unfreeze(newTreasury, target);
-		verify(ledger).grantKyc(newTreasury, target);
-		verify(ledger).getTokenBalance(oldTreasury, target);
-		verify(store).changeOwnerWildCard(nftId, oldTreasury, newTreasury);
-		// and:
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(oldTreasury).setOwnedNfts(0);
+		verify(newTreasury).setOwnedNfts(1);
+		verify(oldTreasuryRel).setBalance(0);
+		verify(newTreasuryRel).setBalance(1);
 	}
 
 	@Test
 	void doesntGrantKycOrUnfreezeNewTreasuryIfNoKeyIsPresent() {
 		givenValidTxnCtx(true);
 		// and:
-		givenToken(false, false);
-		// and:
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.doTokenTransfer(eq(target), eq(oldTreasury), eq(newTreasury), anyLong())).willReturn(OK);
 
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(token.getId()).willReturn(Id.DEFAULT);
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
 		// when:
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
+		given(oldTreasuryRel.getAccount()).willReturn(oldTreasury);
+		final var newTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
+		given(newTreasuryRel.getAccount()).willReturn(newTreasury);
+
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger, never()).unfreeze(newTreasury, target);
-		verify(ledger, never()).grantKyc(newTreasury, target);
+		verify(newTreasuryRel, never()).changeFrozenState(anyBoolean());
+		verify(newTreasuryRel, never()).changeKycState(anyBoolean());
 		// and:
-		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -570,24 +605,49 @@ class TokenUpdateTransitionLogicTest {
 	@Test
 	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
 		// setup:
-		long oldTreasuryBalance = 1;
-		// and:
 		subject = new TokenUpdateTransitionLogic(
-				false, validator, store, ledger, txnCtx, expiryOnlyCheck);
+				false, validator, txnCtx, tokenStore, accountStore);
 
 		givenValidTxnCtx(true);
-		givenToken(true, true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+		long oldTreasuryBalance = 1;
 
+		given(tokenStore.loadToken(any())).willReturn(token);
+		given(token.hasAdminKey()).willReturn(true);
+		given(token.getTreasury()).willReturn(oldTreasury);
+		given(token.getId()).willReturn(Id.DEFAULT);
+		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		given(oldTreasury.getId()).willReturn(Id.fromGrpcAccount(oldTreasuryId));
+		given(oldTreasury.getOwnedNfts()).willReturn(oldTreasuryBalance);
+		given(newTreasury.getId()).willReturn(Id.fromGrpcAccount(newTreasuryId));
+
+
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(oldTreasuryId)), any()))
+				.willReturn(oldTreasury);
+		given(accountStore.loadAccountOrFailWith(eq(Id.fromGrpcAccount(newTreasuryId)), any()))
+				.willReturn(newTreasury);
+
+		given(treasuryAssociatedTokens.contains(any(Id.class))).willReturn(true);
+		given(oldTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+		given(newTreasury.getAssociatedTokens()).willReturn(treasuryAssociatedTokens);
+
+		final var oldTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, oldTreasury)).willReturn(oldTreasuryRel);
+		given(oldTreasuryRel.getBalance()).willReturn(oldTreasuryBalance);
+		given(oldTreasuryRel.getAccount()).willReturn(oldTreasury);
+		final var newTreasuryRel = mock(TokenRelationship.class);
+		given(tokenStore.loadTokenRelationship(token, newTreasury)).willReturn(newTreasuryRel);
+		given(newTreasuryRel.getAccount()).willReturn(newTreasury);
 		// when:
-		subject.doStateTransition();
+		doThrow(new InvalidTransactionException(CURRENT_TREASURY_STILL_OWNS_NFTS)).when(token).update(any(), any(), any(), any());
+		assertFailsWith(() -> subject.doStateTransition(), CURRENT_TREASURY_STILL_OWNS_NFTS);
+		// then:
+		verify(oldTreasury, never()).setOwnedNfts(0);
+		verify(newTreasury, never()).setOwnedNfts(1);
+		verify(oldTreasuryRel, never()).setBalance(0);
+		verify(newTreasuryRel, never()).setBalance(1);
 
 		// then:
-		verify(txnCtx).setStatus(CURRENT_TREASURY_STILL_OWNS_NFTS);
 	}
 
 	private void givenValidTxnCtx() {
@@ -599,12 +659,12 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	private void givenToken(boolean hasKyc, boolean hasFreeze, boolean isUnique) {
-		given(token.hasKycKey()).willReturn(hasKyc);
-		given(token.hasFreezeKey()).willReturn(hasFreeze);
+		given(merkleToken.hasKycKey()).willReturn(hasKyc);
+		given(merkleToken.hasFreezeKey()).willReturn(hasFreeze);
 		if (isUnique) {
-			given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+			given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		} else {
-			given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+			given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		}
 	}
 
@@ -622,18 +682,18 @@ class TokenUpdateTransitionLogicTest {
 						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
-					.setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);
+					.setTreasury(useDuplicateTreasury ? oldTreasuryId : newTreasuryId);
 		}
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(ledger.exists(newTreasury)).willReturn(true);
+		given(ledger.exists(newTreasuryId)).willReturn(true);
 		given(ledger.exists(newAutoRenew)).willReturn(true);
-		given(ledger.isDeleted(newTreasury)).willReturn(false);
-		given(ledger.exists(oldTreasury)).willReturn(true);
-		given(ledger.isDeleted(oldTreasury)).willReturn(false);
-		given(ledger.isDetached(newTreasury)).willReturn(false);
+		given(ledger.isDeleted(newTreasuryId)).willReturn(false);
+		given(ledger.exists(oldTreasuryId)).willReturn(true);
+		given(ledger.isDeleted(oldTreasuryId)).willReturn(false);
+		given(ledger.isDetached(newTreasuryId)).willReturn(false);
 	}
 
 	private void givenMissingToken() {

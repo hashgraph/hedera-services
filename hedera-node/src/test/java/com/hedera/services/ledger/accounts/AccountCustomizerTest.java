@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;

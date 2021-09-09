@@ -36,14 +36,15 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -59,9 +60,10 @@ public class TransitionRunner {
 			TokenGrantKycToAccount, TokenRevokeKycFromAccount,
 			TokenAssociateToAccount, TokenDissociateFromAccount,
 			TokenAccountWipe,
-			TokenCreate,
 			TokenFeeScheduleUpdate,
 			CryptoTransfer,
+			TokenCreate,
+			TokenUpdate,
 			TokenDelete
 	);
 

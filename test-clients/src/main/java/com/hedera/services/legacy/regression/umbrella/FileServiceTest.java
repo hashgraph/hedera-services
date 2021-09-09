@@ -21,6 +21,7 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -41,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;

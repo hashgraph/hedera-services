@@ -369,22 +369,6 @@ public class HederaLedger {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}
 
-	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
-		return tokenStore.grantKyc(aId, tId);
-	}
-
-	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
-		return tokenStore.revokeKyc(aId, tId);
-	}
-
-	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
-		return tokenStore.freeze(aId, tId);
-	}
-
-	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
-		return tokenStore.unfreeze(aId, tId);
-	}
-
 	public void dropPendingTokenChanges() {
 		if (tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
@@ -405,7 +389,7 @@ public class HederaLedger {
 			AccountID to,
 			long adjustment
 	) {
-		var validity = OK;
+	var validity = OK;
 		validity = adjustTokenBalance(from, tId, -adjustment);
 		if (validity == OK) {
 			validity = adjustTokenBalance(to, tId, adjustment);

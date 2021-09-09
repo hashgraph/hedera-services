@@ -68,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -169,6 +170,22 @@ class TypedTokenStoreTest {
 		verify(tokenRels).remove(miscTokenRelId);
 		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
 		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+	}
+	
+	@Test
+	void persistsUpdatedTokenAsExpected() {
+		final var mockToken = mock(Token.class);
+		given(tokens.getForModify(any())).willReturn(merkleToken);
+		
+		given(mockToken.hasUpdatedTreasury()).willReturn(true);
+		given(mockToken.getId()).willReturn(Id.DEFAULT);
+		given(mockToken.getTreasury()).willReturn(treasuryAccount);
+		
+		subject.persistToken(mockToken);
+		
+		var inOrder = inOrder(mockToken);
+		inOrder.verify(mockToken).getTreasury();
+		inOrder.verify(mockToken).getTreasury();
 	}
 
 	@Test
