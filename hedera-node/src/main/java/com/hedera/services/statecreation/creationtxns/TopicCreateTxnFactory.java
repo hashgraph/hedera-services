@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
+import static com.hedera.services.statecreation.creationtxns.utils.SimpleUtils.asAccount;
 
 
 public class TopicCreateTxnFactory extends CreateTxnFactory<TopicCreateTxnFactory> {

@@ -6,8 +6,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public class TempUtils {
-	private TempUtils() {}
+public class SimpleUtils {
+	private SimpleUtils() {}
 
 	public static byte[] randomUtf8Bytes(int n) {
 		byte[] data = new byte[n];

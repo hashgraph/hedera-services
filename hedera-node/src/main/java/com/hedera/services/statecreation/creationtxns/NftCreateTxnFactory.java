@@ -21,7 +21,7 @@ package com.hedera.services.statecreation.creationtxns;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.statecreation.creationtxns.utils.TempUtils;
+import com.hedera.services.statecreation.creationtxns.utils.SimpleUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -75,7 +75,7 @@ public class NftCreateTxnFactory extends CreateTxnFactory<NftCreateTxnFactory> {
 		final List<ByteString> allMeta = new ArrayList<>();
 
 		for (int i = 0; i < totalNftsPerToken.getAsInt() ; i++) {
-			var aMeta = TempUtils.randomUtf8ByteString(META_DATA_BASE_LENGTH + random.nextInt(META_DATA_MAX_VAR));
+			var aMeta = SimpleUtils.randomUtf8ByteString(META_DATA_BASE_LENGTH + random.nextInt(META_DATA_MAX_VAR));
 			allMeta.add(aMeta);
 		}
 

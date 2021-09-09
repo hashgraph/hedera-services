@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.util.Optional;
 
-import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
+import static com.hedera.services.statecreation.creationtxns.utils.SimpleUtils.asAccount;
 
 public class ScheduleCreateTxnFactory extends CreateTxnFactory<ScheduleCreateTxnFactory> {
 	private boolean omitAdmin = false;

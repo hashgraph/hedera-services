@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
+import static com.hedera.services.statecreation.creationtxns.utils.SimpleUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;

@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
+import static com.hedera.services.statecreation.creationtxns.utils.SimpleUtils.asAccount;
 
 public class TokenCreateTxnFactory extends CreateTxnFactory<TokenCreateTxnFactory> {
 	private AccountID treasury = null;

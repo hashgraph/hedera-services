@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.security.SecureRandom;
 import java.time.Instant;
 
-import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.randomUtf8ByteString;
+import static com.hedera.services.statecreation.creationtxns.utils.SimpleUtils.randomUtf8ByteString;
 
 public class FileCreateTxnFactory extends CreateTxnFactory<FileCreateTxnFactory> {
 

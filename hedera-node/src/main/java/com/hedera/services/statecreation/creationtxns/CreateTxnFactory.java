@@ -41,7 +41,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.statecreation.creationtxns.utils.TempUtils.asAccount;
+import static com.hedera.services.statecreation.creationtxns.utils.SimpleUtils.asAccount;
 
 
 public abstract class CreateTxnFactory<T extends CreateTxnFactory<T>> {

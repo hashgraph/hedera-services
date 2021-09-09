@@ -201,5 +201,142 @@ large saved state, you probably have to do that through JRS workflow (either run
 However, right now JRS framework is in the process of a major refactoring. Before this process is completed, we have to take  
 some manual actions to create large state for the moment.
 
+### (Only for the transition period)Change `RegressionMain.java` to not kill GCP instances after the workflow
+The purpose for doing so is to give you enough time to manually download the created saved state. If the saved state file
+is large, sometimes it can take some time to finish the zipping and download.
+
+You always want to zip the saved state files before downloading.
+
+Before JRS provide the parameter to keep the GCP instances after finish the workflow, you need to do it manually. One way to do so 
+is to comment out the lines in `RegressionMain#RunCloudExperiment` method:
+
+```
+...
+	private void RunCloudExperiment() {
+		final CloudService cloud;
+		try {
+			cloud = setUpCloudService();
+		} catch (CloudStartupException e) {
+			reportErrorToSlack(e, null);
+			return;
+		}
+		//TODO Unit test for system.exit after cloud service set up
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			@Override
+			public void run() {
+//				log.error(ERROR, "Shutdown hook invoked. Destroying cloud instances");
+//				cloud.destroyInstances();
+//				log.info(MARKER, "cloud instances destroyed");
+			}
+		}));
+
+		try {
+			runExperiments(cloud);
+		} finally {
+			// always destroy instances if anything goes wrong
+//			cloud.destroyInstances();
+		}
+	}
+...
+```
+and following the steps below to run the workflow to create large saved state.
+
+NOTE: right now, the following steps are still based on legacy JRS framework before refactoring. They will be updated once the
+new JRS framework is stable.
+
+### Create saved state by running JRS workflow from local
+If you are running local, you only need to re-built your `regression` repo and then follow the steps below.
+
+#### 1. Change the `hedera-services` repo's `entity-layout.properties` and `node.properties` as described above
+#### 2. Run the workflow with the command:
+
+```
+./regression_services.sh configs/services/suites/ci/GCP-Create-SavedState-With-Layout.json <target-hedera-services-repo>
+```
+The `<target-hedera-services-repo>` should be the one with your configuration changes.
+
+#### 3. Monitor the above workflow 
+You can monitor the regression log output to check the process of the workflow.
+
+You may need to navigate to the ([GCP cloud Compute Engine](https://console.cloud.google.com/compute/instanceGroups/list?authuser=3&orgonly=true&project=hedera-regression&supportedpurview=organizationId))
+, identify the server instance and `ssh` to it. 
+
+As the workflow is kicked off by `services_nightly_regression`, You may need to get into  `/home/services_nightly_regression` once 
+you log on to the instance.
+
+#### 4. Zip and download the saved state
+You can now check the status of the latest state file like this:
+
+```
+gcp-commit-comp-basic-4n-1c-2021-09-08-185758-0-3fr7:/home/services_nightly_regression/remoteExperiment/data/saved/com.hedera.services.ServicesMain/3/123$ ls -l 
+total 12
+drwxrwxr-x 2 services_nightly_regression services_nightly_regression 4096 Sep  8 19:10 14357
+drwxrwxr-x 2 services_nightly_regression services_nightly_regression 4096 Sep  8 19:15 18271
+drwxrwxr-x 2 services_nightly_regression services_nightly_regression 4096 Sep  8 19:20 22042
+```
+
+make sure the (newest) round is completely written before zip it and download:
+
+```
+gcp-commit-comp-basic-4n-1c-2021-09-08-185758-0-3fr7:/home/services_nightly_regression/remoteExperiment/data/saved/com.hedera.services.ServicesMain/3/123/22042$ ls -lrt
+total 2184
+-rw-rw-r-- 1 services_nightly_regression services_nightly_regression 2039355 Sep  8 19:20 SignedState.swh
+-rw-rw-r-- 1 services_nightly_regression services_nightly_regression    6223 Sep  8 19:20 settingsUsed.txt
+-rw-rw-r-- 1 services_nightly_regression services_nightly_regression  187625 Sep  8 19:20 PostgresBackup.tar.gz
+```
+If you don't see the 3 files as listed above, or the `.swh` is still ending with `.tmp`, that means this round's state creation 
+is still in process. You have to wait or pick another (previous) round's state files.
+#### 5. Kill the instance group after you are done
+Do NOT forget to kill the instance groups (server and client) created by this workflow.
 
 
+### Create saved state by running JRS workflow from CircleCi
+
+If you decide to run the workflow from CircleCi, you will do the following:
+
+#### 1. Change the `hedera-services` repo's `entity-layout.properties` and `node.properties` as described above
+#### 2. Create a branch off of master and modify the config.yml 
+In the `config.yml`, you need to have the 
+
+```
+  # This workflow is for generating state file with large volume of NFTs
+  # It's not intended to run on a daily basis.
+  GCP-Create-SavedState-With-Layout:
+    triggers:
+      - schedule:
+          cron: "46 18 * * *"   <=== change the cron schedule
+          filters:
+            branches:
+              only:
+                - <your-branch-for-the-workflow>  <=== change the branch name to the one you plan to run
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/1N-1C/SavedStateWithLayout
+          config_type: "ci"
+          workflow-name: "GCP-Create-SavedState-With-Layout"
+          slack_results_channel: "hedera-regression-test"
+          slack_summary_channel: "hedera-regression-test"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+```
+
+commit and push the above changes to github, you should checkout ([CircleCi Dashboard](https://app.circleci.com/pipelines/github/hashgraph/hedera-services))
+to make sure your workflow is scheduled and/or started.
+
+After this, the following steps are the same as running JRS workflow from local.
+
+#### 3. Monitor the workflow 
+#### 4. Zip and download generated state files
+#### 5. Kill the GCP instance groups 
+
+
+## Some generated state file
+
+Some generated sample states are ([here](https://console.cloud.google.com/storage/browser/services-regression-jrs-files/StartFromSavedState/SavedStateWithLayouts?authuser=3&orgonly=true&project=hedera-regression&supportedpurview=organizationId&pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%255D%22))&prefix=&forceOnObjectsSortingFiltering=false))  
