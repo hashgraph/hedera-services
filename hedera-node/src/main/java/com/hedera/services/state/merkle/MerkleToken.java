@@ -642,6 +642,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<PermHashInt
 		this.feeScheduleKey = feeScheduleKey;
 	}
 
+	public JKey getFeeScheduleKey() {
+		return feeScheduleKey;
+	}
+
 	public boolean hasFeeScheduleKey() {
 		return feeScheduleKey != UNUSED_KEY;
 	}

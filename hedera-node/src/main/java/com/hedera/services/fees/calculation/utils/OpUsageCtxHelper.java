@@ -20,24 +20,17 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

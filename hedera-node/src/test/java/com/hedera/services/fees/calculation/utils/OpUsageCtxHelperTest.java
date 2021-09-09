@@ -20,6 +20,11 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.files.HFileMeta;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -32,9 +37,9 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,7 +83,7 @@ class OpUsageCtxHelperTest {
 
 	@Mock
 	private MerkleMap<PermHashInteger, MerkleToken> tokens;
-        @Mock
+	@Mock
 	private StateView workingView;
 
 	private OpUsageCtxHelper subject;
