@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -182,6 +184,42 @@ class TransactionRecordServiceTest {
 		
 		subject.includeChangesToToken(token);
 		verify(txnCtx).setCreated(Id.DEFAULT.asGrpcToken());
+	}
+	
+	@Test
+	void updatesReceiptOnNewAccount() {
+		final var acc = new Account(new Id(1, 2 ,3));
+		acc.setNew(true);
+		subject.includeChangesToAccount(acc);
+		verify(txnCtx).setCreated(AccountID.newBuilder()
+				.setShardNum(1)
+				.setRealmNum(2)
+				.setAccountNum(3).build());
+	}
+	
+	@Test
+	void updatesReceiptOnHbarTransfer() {
+		final List<BalanceChange> emptyChanges = List.of();
+		subject.includeHbarBalanceChanges(emptyChanges);
+		verify(txnCtx, never()).setHbarTransfers(TransferList.newBuilder().build());
+		final var recipient = new Id(1, 2, 3);
+		final var sender = new Id(4, 5, 6);
+		
+		final var changes = List.of(
+				BalanceChange.hbarAdjust(sender, 10),
+				BalanceChange.hbarAdjust(recipient, -10)
+		);
+		
+		subject.includeHbarBalanceChanges(changes);
+		verify(txnCtx).setHbarTransfers(
+				TransferList.newBuilder()
+						.addAccountAmounts(AccountAmount.newBuilder()
+								.setAmount(-10)
+								.setAccountID(recipient.asGrpcAccount()).build())
+						.addAccountAmounts(AccountAmount.newBuilder()
+								.setAmount(10)
+								.setAccountID(sender.asGrpcAccount()).build())
+						.build());
 	}
 
 }

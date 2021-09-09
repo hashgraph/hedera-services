@@ -44,6 +44,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.GrpcTransfersBuilder;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -104,10 +105,12 @@ public class HederaLedger {
 	private static final long[] NO_NEW_BALANCES = new long[0];
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
+
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
 			.comparingLong(AccountID::getAccountNum)
 			.thenComparingLong(AccountID::getShardNum)
 			.thenComparingLong(AccountID::getRealmNum);
+
 	public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator
 			.comparingLong(TokenID::getTokenNum)
 			.thenComparingLong(TokenID::getRealmNum)
@@ -303,7 +306,7 @@ public class HederaLedger {
 		long newBalance = computeNewBalance(id, adjustment);
 		setBalance(id, newBalance);
 
-		updateXfers(id, adjustment, netTransfers);
+		GrpcTransfersBuilder.includeTransfer(id, adjustment, netTransfers);
 	}
 
 	public void doTransfers(TransferList accountAmounts) {
@@ -314,7 +317,7 @@ public class HederaLedger {
 		}
 
 		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
-			updateXfers(aa.getAccountID(), aa.getAmount(), netTransfers);
+			GrpcTransfersBuilder.includeTransfer(aa.getAccountID(), aa.getAmount(), netTransfers);
 		}
 	}
 
@@ -324,8 +327,8 @@ public class HederaLedger {
 		setBalance(from, newFromBalance);
 		setBalance(to, newToBalance);
 
-		updateXfers(from, -1 * adjustment, netTransfers);
-		updateXfers(to, adjustment, netTransfers);
+		GrpcTransfersBuilder.includeTransfer(from, -1 * adjustment, netTransfers);
+		GrpcTransfersBuilder.includeTransfer(to, adjustment, netTransfers);
 	}
 
 	/* --- TOKEN MANIPULATION --- */
@@ -449,17 +452,17 @@ public class HederaLedger {
 		var id = ids.newAccountId(sponsor);
 		spawn(id, balance, customizer);
 
-		updateXfers(sponsor, -1 * balance, netTransfers);
+		GrpcTransfersBuilder.includeTransfer(sponsor, -1 * balance, netTransfers);
 
 		return id;
 	}
-
+	
 	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
 		accountsLedger.create(id);
 		setBalance(id, balance);
 		customizer.customize(id, accountsLedger);
 
-		updateXfers(id, balance, netTransfers);
+		GrpcTransfersBuilder.includeTransfer(id, balance, netTransfers);
 	}
 
 	public void customize(AccountID id, HederaAccountCustomizer customizer) {
@@ -603,7 +606,7 @@ public class HederaLedger {
 	public void updateTokenXfers(TokenID tId, AccountID aId, long amount) {
 		tokensTouched[numTouches++] = tId;
 		var xfers = netTokenTransfers.computeIfAbsent(tId, ignore -> TransferList.newBuilder());
-		updateXfers(aId, amount, xfers);
+		GrpcTransfersBuilder.includeTransfer(aId, amount, xfers);
 	}
 
 	public void updateOwnershipChanges(NftId nftId, AccountID from, AccountID to) {
@@ -611,32 +614,6 @@ public class HederaLedger {
 		tokensTouched[numTouches++] = tId;
 		var xfers = uniqueTokenTransfers.computeIfAbsent(tId, ignore -> TokenTransferList.newBuilder());
 		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
-	}
-
-	private void updateXfers(AccountID account, long amount, TransferList.Builder xfers) {
-		int loc = 0, diff = -1;
-		var soFar = xfers.getAccountAmountsBuilderList();
-		for (; loc < soFar.size(); loc++) {
-			diff = ACCOUNT_ID_COMPARATOR.compare(account, soFar.get(loc).getAccountID());
-			if (diff <= 0) {
-				break;
-			}
-		}
-		if (diff == 0) {
-			var aa = soFar.get(loc);
-			long current = aa.getAmount();
-			aa.setAmount(current + amount);
-		} else {
-			if (loc == soFar.size()) {
-				xfers.addAccountAmounts(aaBuilderWith(account, amount));
-			} else {
-				xfers.addAccountAmounts(loc, aaBuilderWith(account, amount));
-			}
-		}
-	}
-
-	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
-		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 
 	private NftTransfer.Builder nftTransferBuilderWith(AccountID senderId, AccountID receiverId, long serialNumber) {
@@ -676,7 +653,7 @@ public class HederaLedger {
 			if (change.isForHbar()) {
 				final var accountId = change.accountId();
 				setBalance(accountId, change.getNewBalance());
-				updateXfers(accountId, change.units(), netTransfers);
+				GrpcTransfersBuilder.includeTransfer(accountId, change.units(), netTransfers);
 			}
 		}
 	}

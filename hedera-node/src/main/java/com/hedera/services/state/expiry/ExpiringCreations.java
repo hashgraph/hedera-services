@@ -38,6 +38,7 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
 import javax.inject.Inject;
@@ -104,12 +105,14 @@ public class ExpiringCreations implements EntityCreator {
 			final TxnAccessor accessor,
 			final Instant consensusTime,
 			final TxnReceipt receipt,
+			final TransferList explicitHbarTransfers,
 			final List<TokenTransferList> explicitTokenTransfers,
 			final List<FcAssessedCustomFee> customFeesCharged,
 			final List<FcTokenAssociation> newTokenAssociations
 	) {
 		final long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		final var transfersList = ledger.netTransfersInTxn();
+		final var transfersList = explicitHbarTransfers != null ? explicitHbarTransfers
+				: ledger.netTransfersInTxn();
 		final var tokenTransferList = explicitTokenTransfers != null
 				? explicitTokenTransfers
 				: ledger.netTokenTransfersInTxn();

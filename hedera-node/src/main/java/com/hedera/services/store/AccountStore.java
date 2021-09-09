@@ -34,6 +34,7 @@ import com.swirlds.fcmap.FCMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.annotation.Nullable;
+
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -92,20 +93,25 @@ public class AccountStore {
 	 * @return a usable model of the account if available
 	 */
 	public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
-		Account account;
-
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
 		final var merkleAccount = accounts.get().get(key);
 
 		validateUsable(merkleAccount, code);
 
-		account = new Account(id);
+		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
-		account.initBalance(merkleAccount.getBalance());
+		account.setBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
+		account.setProxy(merkleAccount.getProxy().asId());
+		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
+		account.setKey(merkleAccount.getKey());
+		account.setMemo(merkleAccount.getMemo());
+		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
+		account.setDeleted(merkleAccount.isDeleted());
+		account.setSmartContract(merkleAccount.isSmartContract());
 
 		return account;
 	}
@@ -121,12 +127,37 @@ public class AccountStore {
 		final var id = account.getId();
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
 
-		final var currentAccounts = accounts.get();
-		final var mutableAccount = currentAccounts.getForModify(key);
+		final var mutableAccount = accounts.get().getForModify(key);
+		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
-		mutableAccount.setNftsOwned(account.getOwnedNfts());
-		mutableAccount.setMaxAutomaticAssociations(account.getMaxAutomaticAssociations());
-		mutableAccount.setAlreadyUsedAutomaticAssociations(account.getAlreadyUsedAutomaticAssociations());
+	}
+
+	/**
+	 * Creates the given {@link Account} to the Swirlds state
+	 * @param account the account to create
+	 */
+	public void persistNew(Account account) {
+		final var newMerkleId = account.getId().asMerkle();
+		final var mutableAccount = new MerkleAccount();
+
+		mapModelToMutable(account, mutableAccount);
+		mutableAccount.setMemo(account.getMemo());
+		mutableAccount.setSmartContract(account.isSmartContract());
+
+		accounts.get().put(newMerkleId, mutableAccount);
+	}
+
+	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
+		mutableAccount.setExpiry(model.getExpiry());
+		mutableAccount.setBalanceUnchecked(model.getBalance());
+		mutableAccount.setNftsOwned(model.getOwnedNfts());
+		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
+		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.setKey(model.getKey());
+		mutableAccount.setProxy(model.getProxy().asEntityId());
+		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
+		mutableAccount.setDeleted(model.isDeleted());
+		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse) {
@@ -143,4 +174,5 @@ public class AccountStore {
 	public OptionValidator getValidator() {
 		return validator;
 	}
+
 }

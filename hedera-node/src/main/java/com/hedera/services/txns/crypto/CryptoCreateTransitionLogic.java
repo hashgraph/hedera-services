@@ -22,30 +22,27 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -53,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_R
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoCreate transaction,
@@ -64,65 +60,57 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  */
 @Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final HederaLedger ledger;
+	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final TransactionRecordService transactionRecordService;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
-	) {
-		this.ledger = ledger;
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties,
+			final EntityIdSource ids,
+			final TransactionRecordService transactionRecordService
+			) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
+		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
+		this.ids = ids;
+		this.transactionRecordService = transactionRecordService;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
+		/* --- Translate from gRPC types --- */
+		final var txnBody = txnCtx.accessor().getTxn();
+		final var op = txnBody.getCryptoCreateAccount();
+		final var sponsorGrpc = txnBody.getTransactionID().getAccountID();
+		final var sponsorId = Id.fromGrpcAccount(sponsorGrpc);
 
-			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
-			long balance = op.getInitialBalance();
-			AccountID created = ledger.create(sponsor, balance, asCustomizer(op));
+		/* --- Load the model objects --- */
+		final var sponsor = accountStore.loadAccount(sponsorId);
+		validateFalse(sponsor.isSmartContract(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-			txnCtx.setCreated(created);
-			txnCtx.setStatus(SUCCESS);
-		} catch (InsufficientFundsException ife) {
-			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+		/* --- Do the business logic --- */
+		var createdIdGrpc = ids.newAccountId(sponsor.getId().asGrpcAccount());
+		final var created = Account.createFromGrpc(Id.fromGrpcAccount(createdIdGrpc), op, txnCtx.consensusTime().getEpochSecond());
+		final var balanceChanges = sponsor.transferHbar(created, op.getInitialBalance());
 
-	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
-		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
-		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
+		/* --- Persist the models --- */
+		this.accountStore.persistNew(created);
+		this.accountStore.persistAccount(sponsor);
 
-		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-		JKey key = asFcKeyUnchecked(op.getKey());
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
-				.key(key)
-				.memo(op.getMemo())
-				.expiry(expiry)
-				.autoRenewPeriod(autoRenewPeriod)
-				.isReceiverSigRequired(op.getReceiverSigRequired())
-				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
-		}
-		return customizer;
+		/* --- Externalise the transaction effects in the record stream */
+		transactionRecordService.includeChangesToAccount(created);
+		transactionRecordService.includeHbarBalanceChanges(balanceChanges);
 	}
 
 	@Override
@@ -173,7 +161,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
-
 		return OK;
 	}
 }

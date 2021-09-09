@@ -21,15 +21,19 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.utils.GrpcTransfersBuilder;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -45,6 +49,17 @@ public class TransactionRecordService {
 	@Inject
 	public TransactionRecordService(TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;
+	}
+
+	/**
+	 * Update the record of the active transaction with the changes to given to the account.
+	 * At the moment, the only change being externalised is when the Account was just created and the receipt should include its id
+	 * @param account the model of the changed account
+	 */
+	public void includeChangesToAccount(Account account) {
+		if (account.isNew()) {
+			txnCtx.setCreated(account.getId().asGrpcAccount());
+		}
 	}
 
 	/**
@@ -111,6 +126,25 @@ public class TransactionRecordService {
 			}
 			txnCtx.setTokenTransferLists(transferList);
 		}
+	}
+
+	/**
+	 * Updates the record of the active transaction with the HBAR balance changes it caused.
+	 * @param changes The balance changes that occurred
+	 */
+	public void includeHbarBalanceChanges(List<BalanceChange> changes) {
+		if (changes.isEmpty()) {
+			return;
+		}
+
+		final var builder = TransferList.newBuilder();
+		for (var change : changes) {
+			if (change.isForHbar()) {
+				GrpcTransfersBuilder.includeTransfer(
+						change.accountId(), change.units(), builder);
+			}
+		}
+		txnCtx.setHbarTransfers(builder.build());
 	}
 
 	/**
