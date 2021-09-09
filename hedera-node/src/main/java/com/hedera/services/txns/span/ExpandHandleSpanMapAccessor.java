@@ -71,7 +71,7 @@ public class ExpandHandleSpanMapAccessor {
 		accessor.getSpanMap().put(CRYPTO_CREATE_META_KEY, cryptoCreateMeta);
 	}
 
-	public CryptoCreateMeta getCryptoCreate(TxnAccessor accessor) {
+	public CryptoCreateMeta getCryptoCreateMeta(TxnAccessor accessor) {
 		return (CryptoCreateMeta) accessor.getSpanMap().get(CRYPTO_CREATE_META_KEY);
 	}
 }

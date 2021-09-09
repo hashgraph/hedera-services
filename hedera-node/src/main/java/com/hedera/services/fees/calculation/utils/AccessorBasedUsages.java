@@ -119,7 +119,7 @@ public class AccessorBasedUsages {
 
 	private void estimateCryptoCreate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
 			UsageAccumulator into) {
-		final var cryptoCreateMeta = accessor.getSpanMapAccessor().getCryptoCreate(accessor);
+		final var cryptoCreateMeta = accessor.getSpanMapAccessor().getCryptoCreateMeta(accessor);
 		cryptoOpsUsage.cryptoCreateUsage(sigUsage, baseMeta, cryptoCreateMeta, into);
 	}
 

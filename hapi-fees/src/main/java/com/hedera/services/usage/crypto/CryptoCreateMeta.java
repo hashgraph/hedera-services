@@ -20,8 +20,11 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -36,6 +39,12 @@ public class CryptoCreateMeta {
 		baseSize = getCryptoCreateTxnBaseSize(op);
 		lifeTime = op.getAutoRenewPeriod().getSeconds();
 		maxAutomaticAssociations = op.getMaxAutomaticTokenAssociations();
+	}
+
+	public CryptoCreateMeta(Builder builder) {
+		this.baseSize = builder.baseSize;
+		this.lifeTime = builder.lifeTime;
+		this.maxAutomaticAssociations = builder.maxAutomaticAssociations;
 	}
 
 	private long getCryptoCreateTxnBaseSize(CryptoCreateTransactionBody op) {
@@ -57,5 +66,53 @@ public class CryptoCreateMeta {
 
 	public int getMaxAutomaticAssociations() {
 		return maxAutomaticAssociations;
+	}
+
+	public static class Builder {
+		private long baseSize;
+		private long lifeTime;
+		private int maxAutomaticAssociations;
+
+		public Builder() {
+			// empty here on purpose.
+		}
+
+		public CryptoCreateMeta.Builder baseSize(final int baseSize) {
+			this.baseSize = baseSize;
+			return this;
+		}
+
+		public CryptoCreateMeta.Builder lifeTime(final long lifeTime) {
+			this.lifeTime = lifeTime;
+			return this;
+		}
+
+		public CryptoCreateMeta.Builder maxAutomaticAssociations(final int maxAutomaticAssociations) {
+			this.maxAutomaticAssociations = maxAutomaticAssociations;
+			return this;
+		}
+
+		public CryptoCreateMeta build() {
+			return new CryptoCreateMeta(this);
+		}
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("baseSize", baseSize)
+				.add("lifeTime", lifeTime)
+				.add("maxAutomaticAssociations", maxAutomaticAssociations)
+				.toString();
 	}
 }

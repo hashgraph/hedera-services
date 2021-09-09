@@ -30,6 +30,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.file.FileAppendMeta;
@@ -62,6 +63,7 @@ import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static java.util.stream.Collectors.toList;
@@ -225,6 +227,25 @@ class AccessorBasedUsagesTest {
 		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta,  accumulator);
 	}
 
+	@Test
+	void worksAsExpectedForCryptoCreate() {
+		final var baseMeta = new BaseTransactionMeta(100, 0);
+		final var opMeta = new CryptoCreateMeta.Builder()
+				.baseSize(1_234)
+				.lifeTime(1_234_567L)
+				.maxAutomaticAssociations(3)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(CryptoCreate);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getCryptoCreateMeta(any())).willReturn(opMeta);
+
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		verify(cryptoOpsUsage).cryptoCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
+	}
 
 
 	@Test
@@ -232,7 +253,8 @@ class AccessorBasedUsagesTest {
 		// expect:
 		assertTrue(subject.supports(CryptoTransfer));
 		assertTrue(subject.supports(ConsensusSubmitMessage));
-		assertFalse(subject.supports(CryptoCreate));
+		assertTrue(subject.supports(CryptoCreate));
+		assertFalse(subject.supports(CryptoUpdate));
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {
