@@ -1,4 +1,4 @@
-package com.hedera.services.pricing;
+package com.hedera.services.usage.crypto;
 
 /*-
  * ‌
@@ -20,22 +20,6 @@ package com.hedera.services.pricing;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-
-class FileFeeSchedulesTest extends FeeSchedulesTestHelper {
-	@Test
-	void computesExpectedPriceForBaseAppend() throws IOException {
-		testExpectedPriceFor(FileAppend, DEFAULT);
-	}
-
-	@Test
-	void computesExpectedPriceForBaseCryptoCreate() throws IOException {
-		testExpectedPriceFor(CryptoCreate, DEFAULT);
-	}
+public class CryptoUpdateMeta {
+	// TODO
 }

@@ -160,6 +160,13 @@ public class CryptoOpsUsage {
 		return estimate.get();
 	}
 
+	public void cryptoUpdateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoUpdateMeta cryptoUpdateMeta,
+			final UsageAccumulator accumulator) {
+
+	}
+
 	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
 		var op = cryptoCreation.getCryptoCreateAccount();
 
@@ -186,5 +193,31 @@ public class CryptoOpsUsage {
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
+	}
+
+	public void cryptoCreateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoCreateMeta cryptoCreateMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		var baseSize = cryptoCreateMeta.getBaseSize();
+
+		var maxAutomaticTokenAssociations = cryptoCreateMeta.getMaxAutomaticAssociations();
+
+		var lifeTime = cryptoCreateMeta.getLifeTime();
+
+		if(maxAutomaticTokenAssociations > 0) {
+			baseSize += INT_SIZE;
+		}
+
+		/* Variable bytes plus two additional longs for balance and auto-renew period;
+		   plus a boolean for receiver sig required. */
+		accumulator.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
+		accumulator.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime);
+		/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
+			one additional association in a tokenAssociate call */
+		accumulator.addRbs(maxAutomaticTokenAssociations * INT_SIZE * lifeTime * 27);
+		accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 }
