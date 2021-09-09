@@ -21,8 +21,8 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt32Value;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -526,7 +526,7 @@ class CryptoUpdateTransitionLogicTest {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
 		}
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
-			op.setMaxAutomaticTokenAssociations(UInt32Value.of(newMaxAutomaticAssociations));
+			op.setMaxAutomaticTokenAssociations(Int32Value.of(newMaxAutomaticAssociations));
 		}
 		op.setAccountIDToUpdate(target);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();

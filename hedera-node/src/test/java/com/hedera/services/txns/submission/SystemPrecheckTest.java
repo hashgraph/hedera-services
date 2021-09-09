@@ -94,7 +94,7 @@ class SystemPrecheckTest {
 	@Test
 	void rejectsUnprivilegedPayer() {
 		givenPermissible(civilianPayer);
-		given(systemOpPolicies.check(civilianXferAccessor)).willReturn(SystemOpAuthorization.IMPERMISSIBLE);
+		given(systemOpPolicies.checkAccessor(civilianXferAccessor)).willReturn(SystemOpAuthorization.IMPERMISSIBLE);
 
 		// when:
 		var actual = subject.screen(civilianXferAccessor);
@@ -150,6 +150,6 @@ class SystemPrecheckTest {
 	}
 
 	private void givenPriviliged() {
-		given(systemOpPolicies.check(any())).willReturn(SystemOpAuthorization.UNNECESSARY);
+		given(systemOpPolicies.checkAccessor(any())).willReturn(SystemOpAuthorization.UNNECESSARY);
 	}
 }
