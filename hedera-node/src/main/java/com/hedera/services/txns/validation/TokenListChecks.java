@@ -109,9 +109,7 @@ public final class TokenListChecks {
 			final boolean hasFreezeKey, final Key freezeKey,
 			final boolean hasFeeScheduleKey, final Key feeScheduleKey
 	) {
-		ResponseCodeEnum validity = OK;
-
-		validity = checkAdminKey(hasAdminKey, adminKey);
+		ResponseCodeEnum validity = checkAdminKey(hasAdminKey, adminKey);
 		if (validity != OK) {
 			return validity;
 		}

@@ -28,7 +28,9 @@ import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 public class UsageEstimate {
 	static EstimatorUtils estimatorUtils = ESTIMATOR_UTILS;
 
-	private long rbs, sbs;
+	private long rbs;
+	private long sbs;
+
 	private final FeeComponents.Builder base;
 
 	public UsageEstimate(FeeComponents.Builder base) {
