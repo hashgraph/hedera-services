@@ -45,22 +45,20 @@ import org.hyperledger.besu.ethereum.core.Difficulty;
 import org.hyperledger.besu.ethereum.core.GasAndAccessedState;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.mainnet.BerlinTransactionGasCalculator;
-import org.hyperledger.besu.ethereum.mainnet.ImmutableTransactionValidationParams;
-import org.hyperledger.besu.ethereum.mainnet.MainnetTransactionValidator;
 import org.hyperledger.besu.ethereum.mainnet.ValidationResult;
 import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
-import org.hyperledger.besu.evm.AccountState;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.MainnetEvms;
-import org.hyperledger.besu.evm.MainnetPrecompiledContracts;
-import org.hyperledger.besu.evm.MessageCallProcessor;
-import org.hyperledger.besu.evm.MessageFrame;
-import org.hyperledger.besu.evm.OperationTracer;
-import org.hyperledger.besu.evm.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.WorldUpdater;
+import org.hyperledger.besu.evm.MainnetEVMs;
+import org.hyperledger.besu.evm.account.AccountState;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -145,6 +143,7 @@ public class BesuAdapter {
                 sender.getEvmAddress(),
                 Optional.empty());
 
+        /* --- Execute the TX and persist the updated models --- */
         var result = processTX(
                 isContractCreation,
                 worldUpdater,
@@ -153,9 +152,6 @@ public class BesuAdapter {
                 transaction,
                 isContractCreation ? Address.fromHexString(asSolidityAddressHex(contractId)) : null
                 );
-
-        /* --- Persist the updated models --- */
-        worldUpdater.commit();
 
         /* --- Externalises the result of the transaction to the transaction record service. --- */
         externalizeResult(result);
@@ -181,27 +177,7 @@ public class BesuAdapter {
                     0,
                     transaction.getGasLimit(),
                     timestamp,
-                    1L);
-
-            var transactionValidator = new MainnetTransactionValidator(
-                    gasCalculator,
-                    false,
-                    Optional.empty(),
-                    false);
-
-            ValidationResult<TransactionInvalidReason> validationResult =
-                    transactionValidator.validate(
-                            transaction,
-                            blockHeader.getBaseFee(),
-                            ImmutableTransactionValidationParams.builder().build());
-
-            // Make sure the transaction is intrinsically valid before trying to
-            // compare against a sender account (because the transaction may not
-            // be signed correctly to extract the sender).
-            if (!validationResult.isValid()) {
-                LOG.warn("Invalid transaction: {}", validationResult.getErrorMessage());
-                return TransactionProcessingResult.invalid(validationResult);
-            }
+                    transaction.getGasPrice().get().toLong());
 
             final GasAndAccessedState gasAndAccessedState =
                     gasCalculator.transactionIntrinsicGasCostAndAccessedState(transaction);
@@ -213,7 +189,7 @@ public class BesuAdapter {
                     transaction.getGasLimit(),
                     intrinsicGas);
 
-            final EVM evm = MainnetEvms.berlin();
+            final EVM evm = MainnetEVMs.berlin();
             final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
             MainnetPrecompiledContracts.populateForIstanbul(
                     precompileContractRegistry, evm.getGasCalculator());
@@ -252,7 +228,7 @@ public class BesuAdapter {
                                 .build();
             } else {
                 final Address to = transaction.getTo().get();
-                final Optional<org.hyperledger.besu.evm.Account> maybeContract =
+                final Optional<org.hyperledger.besu.evm.account.Account> maybeContract =
                         Optional.ofNullable(worldUpdater.get(to));
                 initialFrame =
                         commonMessageFrameBuilder
@@ -335,16 +311,19 @@ public class BesuAdapter {
                         gasUsedByTransaction.toLong(),
                         //todo use refunded
                         initialFrame.getGasRefund().toLong(),
-//                        refunded.toLong(),
+//                        refunded.toLong(),,
                         initialFrame.getOutputData(),
-                        validationResult);
+                        ValidationResult.valid()
+                        );
             } else {
                 return TransactionProcessingResult.failed(
                         gasUsedByTransaction.toLong(),
                         //todo use refunded
                         initialFrame.getGasRefund().toLong(),
 //                        refunded.toLong(),
-                        validationResult,
+                        //todo
+                        ValidationResult.invalid(TransactionInvalidReason.valueOf("test")),
+//                        validationResult,
                         initialFrame.getRevertReason());
             }
         } catch (final RuntimeException re) {
