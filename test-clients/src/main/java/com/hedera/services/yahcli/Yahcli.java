@@ -60,7 +60,7 @@ import java.util.concurrent.Callable;
 				FeesCommand.class,
 				SysFreezeCommand.class
 		},
-		description = "Perform operations against well-known entities on a Hedera Services network")
+		description = "Performs DevOps actions against configured Hedera Services networks")
 public class Yahcli implements Callable<Integer> {
 	private static final Logger log = LogManager.getLogger(Yahcli.class);
 

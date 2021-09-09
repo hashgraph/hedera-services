@@ -33,7 +33,7 @@ import java.util.concurrent.Callable;
 				HelpCommand.class,
 				BalanceCommand.class
 		},
-		description = "Perform account operations")
+		description = "Performs account operations")
 public class AccountsCommand implements Callable<Integer> {
 	@ParentCommand
 	Yahcli yahcli;

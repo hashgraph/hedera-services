@@ -49,7 +49,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 		subcommands = {
 				picocli.CommandLine.HelpCommand.class,
 		},
-		description = "Perform system file operations")
+		description = "Validates network services")
 public class ValidationCommand implements Callable<Integer> {
 	public static final String PAYER = "yahcliPayer";
 	public static final String TOPIC = "yahcliTopic";

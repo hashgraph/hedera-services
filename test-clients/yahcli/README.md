@@ -1,18 +1,23 @@
-# Yahcli v0.1.0
-Yahcli (Yet Another Hedera Command Line Interface) is able to perform the 
-listed actions against a specified network.
+# Yahcli v0.1.4
+Yahcli (Yet Another Hedera Command Line Interface) supports DevOps
+actions against Hedera networks given by a _config.yml_.
 
-1. Account Operations
-  - Check balances for one or more accounts.
-2. System File Operations
-  - Download one or more system files.
-  - Upload a system file.
-3. Fee Snapshot Operations
-  - Run examples of all "canonical" transactions and queries, reporting the fees charged.
-4. Post-Upgrade Validations
-  - "Smoke test" one or more services
+These actions include updating system files, running validation tests,
+re-keying accounts, and freezing the network for maintenance.
 
-# Setting up the working directory 
+:warning:&nbsp;Besides the _config.yml_, yahcli requires keys and
+other assets to be present in a specific directory layout. The details
+appear below. 
+
+**Table of contents**
+1. [Setting up the working directory](#setting-up-the-working-directory)
+2. [Understanding general usage](#general-usage)
+3. [Checking account balances](#getting-account-balances)
+4. [Updating system files](#updating-system-files)
+5. [Validating network services](#validating-network-services)
+6. [Scheduling a network freeze](#scheduling-a-network-freeze)
+
+# Setting up the working directory
 
 Yahcli needs the key for a "default" payer to use for each network. 
 To specify a key for account `0.0.2` on previewnet, you would create
@@ -53,80 +58,58 @@ networks:
 For each network we add, we need a _{network}/keys/_ folder 
 that contains a `account{num}.pem` for each account we will 
 use with that network. :guard: &nbsp; If there is no corresponding
-`account{num}.pass` for a PEM file, please be prepared to enter 
+`account{num}.pass` for a PEM file, please be ready to enter 
 the passphrase interactively in the console. For example,
 ```
-$ docker run -it -v $(pwd):/launch yahcli:0.1.0 -p 2 sysfiles download all 
+$ docker run -it -v $(pwd):/launch yahcli:0.1.4 -p 2 sysfiles download all 
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file localhost/keys/account2.pem: 
 ```
 
-**IMPORTANT** Without the `-it` flags above, Docker will not attach
-STDIN as a TTY, and you will either not be prompted for the passphrase;
-or (given just `-i`) your passphrase will appear in clear text.
+:turtle: &nbsp; The docker image needs to launch a JAR, which is fairly slow. 
+Please allow a few seconds for the the above command to run.
 
-Note that yahcli does not currently support multisig accounts.
+:warning:&nbsp;Without the `-it` flags above, Docker will not attach
+STDIN as a TTY, and you will either not be prompted for the passphrase,
+or your passphrase will appear in clear text.
 
-# Running commands
+Note that yahcli does not support multi-sig accounts.
 
-To list all available commands, we run:
+# General usage
+
+To list all available commands,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 help
-Usage: yahcli [-c=config YAML] [-f=fee] [-n=network] [-p=payer] [COMMAND]
-Perform operations against well-known entities on a Hedera Services network
-  -c, --config=config YAML
-  -f, --fixed-fee=fee
-  -n, --network=network
-  -p, --payer=payer
-Commands:
-  help      Displays help information about the specified command
-  accounts  Perform account operations
-  sysfiles  Perform system file operations
-  fees      Perform system fee operations
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 help
 ``` 
+
 :information_desk_person: &nbsp; Since the only key we have for previewnet
 is for account `0.0.2`, we will need to use `-p 2` for the payer argument 
 when running against this network.
 
-To download the fee schedules from previewnet given the config above, we run:
+To download the fee schedules from previewnet given the config above, we run,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -p 2 -n previewnet sysfiles download fees
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n previewnet sysfiles download fees
 Targeting previewnet, paying with 0.0.2
 Downloading the fees...OK
 $ ls previewnet/sysfiles/
 feeSchedules.json
 ```
-:turtle: &nbsp; The docker image needs to launch a JAR, which is fairly slow. Please allow a few 
-seconds for the the above command to run.
 
 The fee schedules were downloaded in JSON form to _previewnet/sysfiles/feeSchedules.json_.
 To see more options for the `download` subcommand (including a custom download directory), 
-we run:
+we run,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 sysfiles download help
-Usage: yahcli sysfiles download [-d=destination directory] <sysfiles>...
-                                [COMMAND]
-Download system files
-      <sysfiles>...   one or more from { address-book, node-details, fees,
-                        rates, props, permissions, throttles } (or { 101, 102,
-                        111, 112, 121, 122, 123 })---or 'all'
-  -d, --dest-dir=destination directory
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 sysfiles download help
 ```
 
 The remaining sections of this document focus on specific use cases.
 
-## Getting account balances
+# Getting account balances
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n previewnet -p 2 accounts balance 56 50
-Targeting previewnet, paying with 0.0.2
----------------------|----------------------|
-          Account Id |              Balance |
----------------------|----------------------|
-              0.0.56 |                    0 |
-              0.0.50 |          15000000000 |
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n previewnet -p 2 accounts balance 56 50
 ```
 
-## Updating the address book and/or node details system files
+# Updating system files
 For this example, we will run against a `localhost` network since we will modify a system file.
 
 Our goal in the example is to add a completely new address book entry for a node with `nodeId=3`. 
@@ -148,7 +131,7 @@ localhost
 
 We first download the existing address book,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 ```
@@ -181,13 +164,12 @@ files, respectively.
 
 And now we upload the new address book, this time using the address book admin `0.0.55` as the payer:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 55 sysfiles upload address-book
 ```
 
-Finally we re-download the book to see that the hex-encoded cert hash 
-and RSA public key were uploaded as expected:
+Finally we re-download the book to see that the hex-encoded cert hash and RSA public key were uploaded as expected:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 $ tail -17 localhost/sysfiles/addressBook.json 
@@ -210,10 +192,8 @@ $ tail -17 localhost/sysfiles/addressBook.json
 }
 ```
  
-### Making a mistake
-
-Yahcli provides some client-side validation to catch errors early. For example,
-note that **all three** of the `deprecated*` fields must be set to "reasonable"
+In some cases, yahcli does client-side validation to catch errors early. 
+For example, **all three** of the `deprecated*` fields must be set to "reasonable"
 values. Suppose we try to update the address book again, changing the 
 `deprecatedMemo` field to something other than an account literal,
 ```
@@ -229,7 +209,7 @@ values. Suppose we try to update the address book again, changing the
 We then get a messy error and the update aborts before sending
 any `FileUpdate` transaction to the network:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 55 sysfiles upload address-book
 Targeting localhost, paying with 0.0.55
 java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This node is the best!'
 	at com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.toValidatedRawFile(AddrBkJsonToGrpcBytes.java:70)
@@ -240,8 +220,18 @@ java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This no
 ...
 ```
 
-## Validating the scheduled transactions service
+# Validating network services
+
+Services are validated by type; as usual, to see all options, run,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 validate scheduling
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 validate help
+```
+
+# Scheduling a network freeze
+
+A freeze time (in consensus UTC) is specified in the pattern `yyyy-MM-dd.HH:mm:ss`; for example,
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 freeze --start-time 2021-09-09.20:11:13
 ```
