@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -36,9 +35,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.security.KeyStoreException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.hedera.services.bdd.suites.utils.keypairs.SpecUtils.asOcKeystore;
 
 public class SpecKeyFromPem extends UtilOp {
 	static final Logger log = LogManager.getLogger(SpecKeyFromPem.class);
@@ -102,24 +104,41 @@ public class SpecKeyFromPem extends UtilOp {
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
 		pemLoc = pemLocFn.map(Supplier::get).orElse(pemLoc);
-		var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), passphrase);
-		var key = populatedFrom(ocKeystore);
-		var real = actualName();
+
+		incorporatePem(spec, control, pemLoc, passphrase, actualName(), linkedId, linkSupplier);
+
+		return false;
+	}
+
+	static void incorporatePem(
+			HapiApiSpec spec,
+			SigControl control,
+			String pemLoc,
+			String passphrase,
+			String name,
+			Optional<String> linkedId,
+			Optional<Supplier<String>> linkSupplier
+	) throws KeyStoreException, InvalidKeySpecException {
+
+		var ocKeystore = asOcKeystore(new File(pemLoc), passphrase);
+		var key = populatedFrom(control, ocKeystore);
 		linkedId.ifPresent(s -> {
-			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+			spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
 			spec.registry().saveKey(s, key);
 		});
 		linkSupplier.ifPresent(fn -> {
 			var s = fn.get();
-			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+			spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
 			spec.registry().saveKey(s, key);
 		});
-		spec.registry().saveKey(real, key);
-		spec.keys().incorporate(real, ocKeystore, control);
-		return false;
+		spec.registry().saveKey(name, key);
+		spec.keys().incorporate(name, ocKeystore, control);
 	}
 
-	private Key populatedFrom(KeyPairObj ocKeystore) throws InvalidKeySpecException, IllegalArgumentException {
+	private static Key populatedFrom(
+			SigControl control,
+			KeyPairObj ocKeystore
+	) throws InvalidKeySpecException, IllegalArgumentException {
 		if (control == SIMPLE) {
 			return Key.newBuilder()
 					.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))

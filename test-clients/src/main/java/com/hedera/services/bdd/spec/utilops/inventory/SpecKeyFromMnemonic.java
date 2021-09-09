@@ -34,6 +34,9 @@ import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.crypto.ShortBufferException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
 public class SpecKeyFromMnemonic extends UtilOp {
@@ -55,10 +58,20 @@ public class SpecKeyFromMnemonic extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+		createAndLinkFromMnemonic(spec, mnemonic, name, linkedId, log);
+		return false;
+	}
+
+	static void createAndLinkFromMnemonic(
+			HapiApiSpec spec,
+			String mnemonic,
+			String name,
+			Optional<String> linkedId,
+			Logger logToUse
+	) throws ShortBufferException, NoSuchAlgorithmException, InvalidKeyException {
 		byte[] seed = Bip0032.seedFrom(mnemonic);
 		byte[] privateKey = Bip0032.privateKeyFrom(seed);
-		createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
-		return false;
+		createAndLinkSimpleKey(spec, privateKey, name, linkedId, logToUse);
 	}
 
 	static void createAndLinkSimpleKey(
@@ -66,7 +79,8 @@ public class SpecKeyFromMnemonic extends UtilOp {
 			byte[] privateKey,
 			String name,
 			Optional<String> linkedId,
-			Logger logToUse) {
+			Logger logToUse
+	) {
 		var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 		var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
 		var pk = new EdDSAPrivateKey(privateKeySpec);

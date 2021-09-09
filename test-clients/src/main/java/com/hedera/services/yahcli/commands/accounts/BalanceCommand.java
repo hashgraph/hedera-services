@@ -34,7 +34,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 @Command(
 		name = "balance",
 		subcommands = { HelpCommand.class },
-		description = "Retrieve the balance of account(s) on the target network")
+		description = "Checks account balances")
 public class BalanceCommand implements Callable<Integer> {
 	@ParentCommand
 	AccountsCommand accountsCommand;
