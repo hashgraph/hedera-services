@@ -30,11 +30,10 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class StateCreateModule {
-	private StateCreateModule() {}
+public interface StateCreateModule {
 	@Provides
 	@Singleton
-	public static StateCreationManager provideStateCreateManager(final PlatformSubmissionManager submissionManager,
+	static StateCreationManager provideStateCreateManager(final PlatformSubmissionManager submissionManager,
 			final BasicSubmissionFlow submissionFlow,
 			final NodeLocalProperties nodeLocalProperties,
 			final NetworkCtxManager networkCtxManager) {
