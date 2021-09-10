@@ -23,6 +23,7 @@ package com.hedera.services.store;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.models.Account;
@@ -48,7 +49,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -67,7 +70,16 @@ class AccountStoreTest {
 	void setUp() {
 		setupAccounts();
 
+		final var ids = mock(EntityIdSource.class);
 		subject = new AccountStore(validator, dynamicProperties, () -> accounts);
+	}
+	
+	@Test
+	void persistsNewWorks() {
+		final var acc = new Account(Id.DEFAULT);
+		
+		subject.persistNew(acc);
+		verify(accounts).put(any(), any());
 	}
 
 	@Test
@@ -220,12 +232,12 @@ class AccountStoreTest {
 				.get();
 
 		miscAccount.setExpiry(expiry);
-		miscAccount.initBalance(balance);
+		miscAccount.setBalance(balance);
 		miscAccount.setAssociatedTokens(miscMerkleAccount.tokens().getIds());
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		autoRenewAccount.setExpiry(expiry);
-		autoRenewAccount.initBalance(balance);
+		autoRenewAccount.setBalance(balance);
 	}
 
 	private final long expiry = 1_234_567L;
