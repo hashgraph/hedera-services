@@ -23,6 +23,10 @@ package com.hedera.services.txns.schedule;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -30,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
 
@@ -40,10 +45,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith({ LogCaptureExtension.class })
 class ScheduleDeleteTransitionLogicTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
@@ -55,6 +63,11 @@ class ScheduleDeleteTransitionLogicTest {
     private final ScheduleID schedule = IdUtils.asSchedule("1.2.3");
 
     private TransactionBody scheduleDeleteTxn;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
     private ScheduleDeleteTransitionLogic subject;
 
     @BeforeEach
@@ -95,6 +108,8 @@ class ScheduleDeleteTransitionLogicTest {
         subject.doStateTransition();
 
         verify(store).deleteAt(schedule, consensusNow);
+        assertThat(logCaptor.warnLogs(), contains("Unhandled error while processing :: null! " +
+                "java.lang.IllegalArgumentException: null"));
         verify(txnCtx).setStatus(FAIL_INVALID);
     }
 

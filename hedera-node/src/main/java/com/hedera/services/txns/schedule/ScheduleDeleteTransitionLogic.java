@@ -46,13 +46,13 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	ScheduleStore store;
-	TransactionContext txnCtx;
+	private final ScheduleStore store;
+	private final TransactionContext txnCtx;
 
 	@Inject
 	public ScheduleDeleteTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx
+			final ScheduleStore store,
+			final TransactionContext txnCtx
 	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
@@ -68,7 +68,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(ScheduleDeleteTransactionBody op, Instant consensusTime) {
+	private void transitionFor(final ScheduleDeleteTransactionBody op, final Instant consensusTime) {
 		final var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
@@ -83,7 +83,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
+	public ResponseCodeEnum validate(final TransactionBody txnBody) {
 		ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
 		if (!op.hasScheduleID()) {
 			return INVALID_SCHEDULE_ID;
