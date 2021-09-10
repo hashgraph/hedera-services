@@ -79,17 +79,16 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						eh(),
-//						transferWithMissingAccountGetsInvalidAccountId(),
-//						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						transferToTopicReturnsInvalidAccountId(),
-//						tokenTransferFeesScaleAsExpected(),
-//						okToSetInvalidPaymentHeaderForCostAnswer(),
-//						baseCryptoTransferFeeChargedAsExpected(),
-//						autoAssociationSuite()
+						transferWithMissingAccountGetsInvalidAccountId(),
+						vanillaTransferSucceeds(),
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						specialAccountsBalanceCheck(),
+						transferToTopicReturnsInvalidAccountId(),
+						tokenTransferFeesScaleAsExpected(),
+						okToSetInvalidPaymentHeaderForCostAnswer(),
+						baseCryptoTransferFeeChargedAsExpected(),
+						autoAssociationSuite()
 				}
 		);
 	}
@@ -524,17 +523,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						)
 								.signedBy(DEFAULT_PAYER, "payeeSigReq")
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
-				).then(
-				);
-	}
-
-	private HapiApiSpec eh() {
-		return defaultHapiSpec("Eh")
-				.given(
-				).when(
-						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)
-						).payingWith(GENESIS)
 				).then(
 				);
 	}
