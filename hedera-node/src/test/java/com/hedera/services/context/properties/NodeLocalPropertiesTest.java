@@ -45,17 +45,29 @@ class NodeLocalPropertiesTest {
 	}
 
 	@Test
-	void constructsAsExpected() {
+	void constructsIntsAsExpected() {
 		givenPropsWithSeed(1);
 
-		// when:
 		subject = new NodeLocalProperties(properties);
 
-		// expect:
 		assertEquals(1, subject.port());
 		assertEquals(2, subject.tlsPort());
 		assertEquals(3, subject.precheckLookupRetries());
 		assertEquals(4, subject.precheckLookupRetryBackoffMs());
+		assertEquals(12, subject.recordStreamQueueCapacity());
+		assertEquals(13, subject.queryBlobLookupRetries());
+		assertEquals(19, subject.nettyMaxConcurrentCalls());
+		assertEquals(20, subject.nettyFlowControlWindow());
+		assertEquals(23, subject.nettyStartRetries());
+		assertEquals(25, subject.numExecutionTimesToTrack());
+	}
+
+	@Test
+	void constructsOthersAsExpected() {
+		givenPropsWithSeed(1);
+
+		subject = new NodeLocalProperties(properties);
+
 		assertEquals(TEST, subject.activeProfile());
 		assertEquals(6L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
 		assertEquals(7.0, subject.statsSpeedometerHalfLifeSecs());
@@ -63,8 +75,6 @@ class NodeLocalPropertiesTest {
 		assertEquals(logDir(9), subject.recordLogDir());
 		assertEquals(10L, subject.recordLogPeriod());
 		assertTrue(subject.isRecordStreamEnabled());
-		assertEquals(12, subject.recordStreamQueueCapacity());
-		assertEquals(13, subject.queryBlobLookupRetries());
 		assertEquals(14L, subject.nettyProdKeepAliveTime());
 		assertEquals("hedera1.crt", subject.nettyTlsCrtPath());
 		assertEquals("hedera2.key", subject.nettyTlsKeyPath());
@@ -72,20 +82,17 @@ class NodeLocalPropertiesTest {
 		assertEquals(16L, subject.nettyMaxConnectionAge());
 		assertEquals(17L, subject.nettyMaxConnectionAgeGrace());
 		assertEquals(18L, subject.nettyMaxConnectionIdle());
-		assertEquals(19, subject.nettyMaxConcurrentCalls());
-		assertEquals(20, subject.nettyFlowControlWindow());
 		assertEquals("0.0.4", subject.devListeningAccount());
 		assertFalse(subject.devOnlyDefaultNodeListens());
 		assertEquals("B", subject.accountsExportPath());
 		assertFalse(subject.exportAccountsOnStartup());
 		assertEquals(Profile.PROD, subject.nettyMode());
-		assertEquals(23, subject.nettyStartRetries());
 		assertEquals(24L, subject.nettyStartRetryIntervalMs());
 		assertTrue(subject.shouldDumpFcmsOnIss());
 	}
 
 	@Test
-	void reloadWorksAsExpected() {
+	void reloadWorksAsExpectedForInts() {
 		givenPropsWithSeed(2);
 
 		// when:
@@ -96,6 +103,23 @@ class NodeLocalPropertiesTest {
 		assertEquals(3, subject.tlsPort());
 		assertEquals(4, subject.precheckLookupRetries());
 		assertEquals(5, subject.precheckLookupRetryBackoffMs());
+		assertEquals(logDir(10), subject.recordLogDir());
+		assertEquals(13, subject.recordStreamQueueCapacity());
+		assertEquals(14, subject.queryBlobLookupRetries());
+		assertEquals(20, subject.nettyMaxConcurrentCalls());
+		assertEquals(21, subject.nettyFlowControlWindow());
+		assertEquals(24, subject.nettyStartRetries());
+		assertEquals(26, subject.numExecutionTimesToTrack());
+	}
+
+	@Test
+	void reloadWorksAsExpectedForOthers() {
+		givenPropsWithSeed(2);
+
+		// when:
+		subject = new NodeLocalProperties(properties);
+
+		// expect:
 		assertEquals(DEV, subject.activeProfile());
 		assertEquals(7L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
 		assertEquals(8.0, subject.statsSpeedometerHalfLifeSecs());
@@ -103,8 +127,6 @@ class NodeLocalPropertiesTest {
 		assertEquals(logDir(10), subject.recordLogDir());
 		assertEquals(11L, subject.recordLogPeriod());
 		assertFalse(subject.isRecordStreamEnabled());
-		assertEquals(13, subject.recordStreamQueueCapacity());
-		assertEquals(14, subject.queryBlobLookupRetries());
 		assertEquals(15L, subject.nettyProdKeepAliveTime());
 		assertEquals("hedera2.crt", subject.nettyTlsCrtPath());
 		assertEquals("hedera3.key", subject.nettyTlsKeyPath());
@@ -112,14 +134,11 @@ class NodeLocalPropertiesTest {
 		assertEquals(17L, subject.nettyMaxConnectionAge());
 		assertEquals(18L, subject.nettyMaxConnectionAgeGrace());
 		assertEquals(19L, subject.nettyMaxConnectionIdle());
-		assertEquals(20, subject.nettyMaxConcurrentCalls());
-		assertEquals(21, subject.nettyFlowControlWindow());
 		assertEquals("0.0.3", subject.devListeningAccount());
 		assertTrue(subject.devOnlyDefaultNodeListens());
 		assertEquals("A", subject.accountsExportPath());
 		assertTrue(subject.exportAccountsOnStartup());
 		assertEquals(Profile.TEST, subject.nettyMode());
-		assertEquals(24, subject.nettyStartRetries());
 		assertEquals(25L, subject.nettyStartRetryIntervalMs());
 		assertFalse(subject.shouldDumpFcmsOnIss());
 	}
@@ -156,6 +175,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
 		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
 		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
+		given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
 	}
 
 	static String logDir(int num) {

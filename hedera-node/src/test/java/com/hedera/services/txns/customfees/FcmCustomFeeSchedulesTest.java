@@ -56,9 +56,9 @@ class FcmCustomFeeSchedulesTest {
 		// setup:
 		final var tokenAFees = List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
 		final var tokenBFees = List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
-		aToken.setFeeScheduleFrom(tokenAFees, null);
+		aToken.setFeeScheduleFrom(tokenAFees);
 		aToken.setTreasury(aTreasury);
-		bToken.setFeeScheduleFrom(tokenBFees, null);
+		bToken.setFeeScheduleFrom(tokenBFees);
 		bToken.setTreasury(bTreasury);
 
 		tokenFCMap.put(tokenA.asMerkle(), aToken);
@@ -93,7 +93,7 @@ class FcmCustomFeeSchedulesTest {
 		MerkleToken token = new MerkleToken();
 		final var missingFees = List.of(
 				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
-		token.setFeeScheduleFrom(missingFees, null);
+		token.setFeeScheduleFrom(missingFees);
 		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
 		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
 		final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);

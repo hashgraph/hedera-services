@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -44,27 +45,31 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class AccountTest {
-	private Id subjectId = new Id(0, 0, 12345);
-	private Id treasuryId = new Id(0, 0, 123456);
-	private CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
-	private long ownedNfts = 5;
-	private int alreadyUsedAutoAssociations = 123;
-	private int maxAutoAssociations = 1234;
-	private int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
+	private final Id subjectId = new Id(0, 0, 12345);
+	private final CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
+	private final long ownedNfts = 5;
+	private final int alreadyUsedAutoAssociations = 123;
+	private final int maxAutoAssociations = 1234;
+	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
 
 	private Account subject;
-	private Account treasuryAccount;
 	private OptionValidator validator;
 
 	@BeforeEach
 	void setUp() {
 		subject = new Account(subjectId);
-		treasuryAccount = new Account(treasuryId);
 		subject.setAssociatedTokens(assocTokens);
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
+	}
+
+	@Test
+	void associationTestedAsExpected() {
+		assertTrue(subject.isAssociatedWith(new Id(0, 0, 666)));
+		assertTrue(subject.isAssociatedWith(new Id(0, 0, 777)));
+		assertFalse(subject.isAssociatedWith(new Id(0, 0, 888)));
 	}
 
 	@Test

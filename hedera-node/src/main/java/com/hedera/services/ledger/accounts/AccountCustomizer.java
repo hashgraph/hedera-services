@@ -74,7 +74,7 @@ public abstract class AccountCustomizer<
 
 	protected abstract T self();
 
-	public AccountCustomizer(
+	protected AccountCustomizer(
 			Class<P> propertyType,
 			Map<Option, P> optionProperties,
 			ChangeSummaryManager<A, P> changeManager

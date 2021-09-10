@@ -230,8 +230,7 @@ public final class CommonUtils {
   public static String toReadableTransactionID(
           Transaction grpcTransaction) throws InvalidProtocolBufferException {
     TransactionBody body = extractTransactionBody(grpcTransaction);
-    String rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
-    return rv;
+    return "txID=" + TextFormat.shortDebugString(body.getTransactionID());
   }
 
   public static ByteString extractTransactionBodyByteString(TransactionOrBuilder transaction)

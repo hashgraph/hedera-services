@@ -321,10 +321,6 @@ public class UsageAccumulator {
 		this.vpt = vpt;
 	}
 
-	private void setGas(long gas) {
-		this.gas = gas;
-	}
-
 	private void setRbs(long rbs) {
 		this.rbs = rbs;
 	}

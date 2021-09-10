@@ -77,6 +77,7 @@ import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -209,6 +210,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -548,8 +550,7 @@ class MiscUtilsTest {
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-			put(ConsensusController.SUBMIT_MESSAGE_METRIC,
-					new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
@@ -604,6 +605,7 @@ class MiscUtilsTest {
 			put(TransactionGetRecord, new BodySetter<>(TransactionGetRecordQuery.class));
 			put(TokenGetInfo, new BodySetter<>(TokenGetInfoQuery.class));
 			put(ScheduleGetInfo, new BodySetter<>(ScheduleGetInfoQuery.class));
+			put(NetworkGetExecutionTime, new BodySetter<>(NetworkGetExecutionTimeQuery.class));
 		}};
 
 		setters.forEach((function, setter) -> {
@@ -644,6 +646,7 @@ class MiscUtilsTest {
 			add(new BodySetter<>(TransactionGetRecordQuery.class));
 			add(new BodySetter<>(TransactionGetFastRecordQuery.class));
 			add(new BodySetter<>(NetworkGetVersionInfoQuery.class));
+			add(new BodySetter<>(NetworkGetExecutionTimeQuery.class));
 		}};
 
 		for (var setter : setters) {

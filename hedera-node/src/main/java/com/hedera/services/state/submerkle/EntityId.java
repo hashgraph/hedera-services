@@ -167,6 +167,10 @@ public class EntityId implements SelfSerializable {
 		return num;
 	}
 
+	public void setNum(long num) {
+		this.num = num;
+	}
+
 	/* --- Helpers --- */
 	public static EntityId fromGrpcAccountId(AccountID id) {
 		if (id == null) {

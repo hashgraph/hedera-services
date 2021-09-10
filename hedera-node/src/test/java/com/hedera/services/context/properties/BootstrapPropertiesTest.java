@@ -171,6 +171,7 @@ class BootstrapPropertiesTest {
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),
+			entry("stats.executionTimesToTrack", 0),
 			entry("consensus.message.maxBytesAllowed", 1024),
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),
