@@ -26,7 +26,6 @@ import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -39,7 +38,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -165,34 +163,6 @@ public class CryptoOpsUsage {
 			final CryptoUpdateMeta cryptoUpdateMeta,
 			final UsageAccumulator accumulator) {
 
-	}
-
-	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
-		var op = cryptoCreation.getCryptoCreateAccount();
-
-		long variableBytes = 0;
-		variableBytes += op.getMemoBytes().size();
-		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
-		if (op.hasProxyAccountID()) {
-			variableBytes += BASIC_ENTITY_ID_SIZE;
-		}
-		if(op.getMaxAutomaticTokenAssociations() != 0) {
-			variableBytes += INT_SIZE;
-		}
-
-		var lifetime = op.getAutoRenewPeriod().getSeconds();
-
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
-		/* Variable bytes plus two additional longs for balance and auto-renew period;
-		   plus a boolean for receiver sig required. */
-		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
-		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-		/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
-			one additional association in a tokenAssociate call */
-		estimate.addRbs(op.getMaxAutomaticTokenAssociations() * INT_SIZE * lifetime * 27);
-		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-
-		return estimate.get();
 	}
 
 	public void cryptoCreateUsage(final SigUsage sigUsage,

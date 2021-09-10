@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.pricing.ScheduleGenerator.SUPPORTED_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -58,7 +57,7 @@ class ScheduleGeneratorTest {
 			final var allSupportedSchedules = subject.feeSchedulesFor(SUPPORTED_FUNCTIONS);
 			Files.writeString(file, allSupportedSchedules);
 		});
-		Files.delete(file);
+//		Files.delete(file);
 	}
 
 	@Test
