@@ -289,7 +289,7 @@ class MerkleAccountStateTest {
 
 		// expect:
 		assertEquals(subject, identical);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, new Object());
 	}
 

@@ -57,6 +57,12 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
+	void gettersWork() {
+		assertEquals(fromNum, subject.getFromNum());
+		assertEquals(toNum, subject.getToNum());
+	}
+
+	@Test
 	void toAbbrevStringWorks() {
 		assertEquals("13.25.7 <-> 31.52.0", subject.toAbbrevString());
 	}

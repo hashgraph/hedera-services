@@ -59,6 +59,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.merkle.map.FCMapMigration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
@@ -80,6 +81,7 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,7 +92,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -140,6 +145,8 @@ class ServicesStateTest {
 	private ServicesInitFlow initFlow;
 	@Mock
 	private ServicesApp.Builder appBuilder;
+	@Mock
+	private ServicesState.FcmMigrator fcmMigrator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -358,12 +365,61 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateFromRelease0170() {
+	void doesntMigrateWhenInitializingFromRelease0170() {
 		// given:
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::initialize);
+	}
+
+	@Test
+	void defersInitWhenInitializingFromRelease0170() {
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
+
+		subject.init(platform, addressBook);
+
+		assertSame(platform, subject.getPlatformForDeferredInit());
+		assertSame(addressBook, subject.getAddressBookForDeferredInit());
+	}
+
+	@Test
+	void doesntMigrateWhenInitializingFromRelease0180() {
+		// given:
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0180_VERSION);
+
+		// expect:
+		assertDoesNotThrow(subject::migrate);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0180() {
+		ServicesState.setFcmMigrator(fcmMigrator);
+
+		subject = mock(ServicesState.class);
+
+		willCallRealMethod().given(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+
+		subject.migrate();
+
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.UNIQUE_TOKENS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKEN_ASSOCIATIONS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOPICS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.STORAGE), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.ACCOUNTS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
+		verify(subject).init(platform, addressBook);
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(
+						equalTo("Beginning FCMap -> MerkleMap migrations"),
+						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
+
+		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
 	}
 
 	@Test

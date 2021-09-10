@@ -29,7 +29,7 @@ class PermHashLongTest {
 
 		assertNotEquals(a, b);
 		assertNotEquals(null, a);
-		assertNotEquals(new Object(), a);
+		assertNotEquals(a, new Object());
 		assertEquals(a, c);
 	}
 

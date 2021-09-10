@@ -31,8 +31,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;

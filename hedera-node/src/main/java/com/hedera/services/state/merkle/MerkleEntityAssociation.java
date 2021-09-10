@@ -71,20 +71,6 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 		return PermHashLong.fromLongs(account.getAccountNum(), token.getTokenNum());
 	}
 
-	public Pair<AccountID, TokenID> asAccountTokenRel() {
-		return Pair.of(
-				AccountID.newBuilder()
-						.setShardNum(fromShard)
-						.setRealmNum(fromRealm)
-						.setAccountNum(fromNum)
-						.build(),
-				TokenID.newBuilder()
-						.setShardNum(toShard)
-						.setRealmNum(toRealm)
-						.setTokenNum(toNum)
-						.build());
-	}
-
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
