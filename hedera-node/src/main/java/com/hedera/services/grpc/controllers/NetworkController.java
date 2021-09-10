@@ -34,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 @Singleton
@@ -43,6 +44,7 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	private final QueryResponseHelper queryHelper;
 
 	public static final String GET_VERSION_INFO_METRIC = "getVersionInfo";
+	public static final String GET_EXECUTION_TIME_METRIC = "getExecutionTime";
 	public static final String UNCHECKED_SUBMIT_METRIC = "uncheckedSubmit";
 
 	@Inject
@@ -59,6 +61,11 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	@Override
 	public void getVersionInfo(final Query query, final StreamObserver<Response> observer) {
 		queryHelper.answer(query, observer, metaAnswers.getVersionInfo(), GetVersionInfo);
+	}
+
+	@Override
+	public void getExecutionTime(final Query query, final StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, metaAnswers.getExecTime(), NetworkGetExecutionTime);
 	}
 
 	@Override

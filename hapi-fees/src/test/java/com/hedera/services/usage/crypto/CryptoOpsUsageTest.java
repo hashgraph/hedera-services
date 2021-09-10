@@ -20,9 +20,9 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt32Value;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -346,7 +346,7 @@ class CryptoOpsUsageTest {
 				.setProxyAccountID(proxy)
 				.setMemo(StringValue.newBuilder().setValue(memo))
 				.setKey(key)
-				.setMaxAutomaticTokenAssociations(UInt32Value.of(maxAutoAssociations))
+				.setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations))
 				.build();
 		setUpdateTxn();
 	}
