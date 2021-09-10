@@ -20,7 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -39,7 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class TxnResponseHelper {
-	private static final Logger log = LogManager.getLogger(QueryResponseHelper.class);
+	private static final Logger log = LogManager.getLogger(TxnResponseHelper.class);
 
 	static final TransactionResponse FAIL_INVALID_RESPONSE = TransactionResponse.newBuilder()
 			.setNodeTransactionPrecheckCode(FAIL_INVALID)
