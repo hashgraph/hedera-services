@@ -42,8 +42,8 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -86,8 +86,8 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
+import static com.hedera.services.utils.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.PermHashInteger.fromContractId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -160,7 +160,7 @@ public class StateView {
 		if (stateChildren == null) {
 			return Optional.empty();
 		}
-		final var diskFs = stateChildren.getDiskFs();
+		final var diskFs = stateChildren.getSpecialFiles();
 		if (diskFs.contains(id)) {
 			return Optional.ofNullable(diskFs.contentsOf(id));
 		} else {

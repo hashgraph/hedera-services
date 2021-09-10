@@ -20,6 +20,7 @@ package com.hedera.services.store.tokens.views.internals;
  * ‍
  */
 
+import com.hedera.services.utils.PermHashInteger;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

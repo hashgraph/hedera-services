@@ -21,7 +21,7 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashLong;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ConstructableRegistryException;

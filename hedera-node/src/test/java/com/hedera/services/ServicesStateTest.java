@@ -38,8 +38,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -455,7 +455,7 @@ class ServicesStateTest {
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
-		assertNotNull(subject.diskFs());
+		assertNotNull(subject.specialFiles());
 		// and:
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
@@ -471,7 +471,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitReusesContextIfPresent() {
-		subject.setChild(StateChildIndices.DISK_FS, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 
 		given(app.hashLogger()).willReturn(hashLogger);
@@ -630,7 +630,7 @@ class ServicesStateTest {
 		// setup:
 		subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-		subject.setChild(StateChildIndices.DISK_FS, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		// and:
 		subject.setMetadata(metadata);
 		subject.setDeserializedVersion(10);
@@ -652,7 +652,7 @@ class ServicesStateTest {
 		// and:
 		assertSame(addressBook, copy.addressBook());
 		assertSame(networkContext, copy.networkCtx());
-		assertSame(diskFs, copy.diskFs());
+		assertSame(diskFs, copy.specialFiles());
 	}
 
 	private List<MerkleNode> legacyChildrenWith(

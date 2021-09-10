@@ -21,7 +21,7 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

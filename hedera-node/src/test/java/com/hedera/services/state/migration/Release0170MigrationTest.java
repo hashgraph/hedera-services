@@ -24,7 +24,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashLong;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.merkle.map.MerkleMap;

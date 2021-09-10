@@ -21,7 +21,7 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import com.swirlds.merkle.map.MerkleMap;
 
 public interface AccountsExporter {

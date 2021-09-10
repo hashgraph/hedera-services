@@ -178,7 +178,7 @@ class HfsSystemFilesManagerTest {
 		diskFs = mock(MerkleDiskFs.class);
 		given(hfs.getData()).willReturn(data);
 		given(hfs.getMetadata()).willReturn(metadata);
-		given(hfs.diskFs()).willReturn(diskFs);
+		given(hfs.specialFiles()).willReturn(diskFs);
 		fileNumbers = new MockFileNumbers();
 		fileNumbers.setShard(1L);
 		fileNumbers.setRealm(22L);
@@ -313,7 +313,7 @@ class HfsSystemFilesManagerTest {
 
 		// setup:
 		given(hfs.exists(file150)).willReturn(false);
-		given(hfs.diskFs()).willReturn(diskFs);
+		given(hfs.specialFiles()).willReturn(diskFs);
 		given(diskFs.contains(file150)).willReturn(true);
 
 		// when:

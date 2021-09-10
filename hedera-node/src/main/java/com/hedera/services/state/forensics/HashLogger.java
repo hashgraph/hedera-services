@@ -56,7 +56,7 @@ public class HashLogger {
 				state.topics().getHash(),
 				state.tokens().getHash(),
 				state.tokenAssociations().getHash(),
-				state.diskFs().getHash(),
+				state.specialFiles().getHash(),
 				state.scheduleTxs().getHash(),
 				state.networkCtx().getHash(),
 				state.addressBook().getHash(),

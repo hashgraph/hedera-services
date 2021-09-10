@@ -24,8 +24,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.store.tokens.views.utils.MultiSourceRange;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
+import static com.hedera.services.utils.PermHashInteger.fromInt;
 
 /**
  * A {@link UniqTokenView} that answers requests for an account's unique tokens using

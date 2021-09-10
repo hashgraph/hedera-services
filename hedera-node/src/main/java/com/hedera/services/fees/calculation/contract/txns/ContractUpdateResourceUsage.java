@@ -35,7 +35,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
+import static com.hedera.services.utils.PermHashInteger.fromContractId;
 
 @Singleton
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {

@@ -40,8 +40,8 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -327,7 +327,7 @@ class StateViewTest {
 		children.setUniqueTokenAssociations(nftsByType);
 		children.setUniqueTokenAssociations(nftsByOwner);
 		children.setUniqueOwnershipTreasuryAssociations(treasuryNftsByType);
-		children.setDiskFs(diskFs);
+		children.setSpecialFiles(diskFs);
 
 		given(uniqTokenViewFactory.viewFor(any(), any(), any(), any(), any(), any())).willReturn(uniqTokenView);
 

@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
+import static com.hedera.services.utils.PermHashInteger.fromContractId;
 
 public class DefaultContractLookup implements ContractSigMetaLookup {
 	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;

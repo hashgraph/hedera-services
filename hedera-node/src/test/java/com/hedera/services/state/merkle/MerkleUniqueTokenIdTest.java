@@ -22,7 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashLong;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;

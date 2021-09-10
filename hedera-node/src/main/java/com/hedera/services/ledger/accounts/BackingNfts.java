@@ -22,7 +22,7 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashLong;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
@@ -30,7 +30,7 @@ import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashLong.fromNftId;
+import static com.hedera.services.utils.PermHashLong.fromNftId;
 
 @Singleton
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {

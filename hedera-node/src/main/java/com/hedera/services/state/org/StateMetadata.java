@@ -21,7 +21,7 @@ package com.hedera.services.state.org;
  */
 
 import com.hedera.services.ServicesApp;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
 import com.swirlds.fchashmap.FCOneToManyRelation;

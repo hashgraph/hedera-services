@@ -47,10 +47,10 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -62,11 +62,11 @@ import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.Address;
@@ -313,10 +313,10 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleDiskFs> provideWorkingDiskFs(
+	public static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
 			@WorkingState StateAccessor accessor
 	) {
-		return accessor::diskFs;
+		return accessor::specialFiles;
 	}
 
 	@Provides

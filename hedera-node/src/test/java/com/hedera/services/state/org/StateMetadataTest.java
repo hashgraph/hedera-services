@@ -21,7 +21,7 @@ package com.hedera.services.state.org;
  */
 
 import com.hedera.services.ServicesApp;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

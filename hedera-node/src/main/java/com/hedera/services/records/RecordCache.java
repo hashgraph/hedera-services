@@ -52,11 +52,14 @@ public class RecordCache {
 	static final Boolean MARKER = Boolean.TRUE;
 
 	private EntityCreator creator;
-	private Cache<TransactionID, Boolean> timedReceiptCache;
-	private Map<TransactionID, TxnIdRecentHistory> histories;
+	private final Cache<TransactionID, Boolean> timedReceiptCache;
+	private final Map<TransactionID, TxnIdRecentHistory> histories;
 
 	@Inject
-	public RecordCache(Cache<TransactionID, Boolean> cache, Map<TransactionID, TxnIdRecentHistory> histories) {
+	public RecordCache(
+			final Cache<TransactionID, Boolean> cache,
+			final Map<TransactionID, TxnIdRecentHistory> histories
+	) {
 		this.histories = histories;
 		this.timedReceiptCache = cache;
 	}

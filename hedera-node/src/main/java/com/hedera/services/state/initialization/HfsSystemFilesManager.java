@@ -230,7 +230,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private void materialize(FileID fid, HFileMeta info, byte[] contents) {
 		hfs.getMetadata().put(fid, info);
 		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
-			hfs.diskFs().put(fid, contents);
+			hfs.specialFiles().update(fid, contents);
 		} else {
 			hfs.getData().put(fid, contents);
 		}

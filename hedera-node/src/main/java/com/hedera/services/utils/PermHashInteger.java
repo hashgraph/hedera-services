@@ -1,4 +1,4 @@
-package com.hedera.services.store.tokens.views.internals;
+package com.hedera.services.utils;
 
 /*-
  * ‌
@@ -20,7 +20,6 @@ package com.hedera.services.store.tokens.views.internals;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;

@@ -24,12 +24,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -41,8 +41,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
@@ -72,7 +72,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.store.tokens.views.internals.PermHashLong.fromLongs;
+import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
+import static com.hedera.services.utils.PermHashLong.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -149,6 +150,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
+		}
+		if (deserializedVersion < StateVersions.CURRENT_VERSION) {
+			final var specialFiles = new MerkleSpecialFiles();
+			setChild(SPECIAL_FILES, specialFiles);
 		}
 	}
 
@@ -351,8 +356,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.ADDRESS_BOOK);
 	}
 
-	public MerkleDiskFs diskFs() {
-		return getChild((StateChildIndices.DISK_FS));
+	public MerkleSpecialFiles specialFiles() {
+		return getChild(StateChildIndices.SPECIAL_FILES);
 	}
 
 	public RecordsRunningHashLeaf runningHashLeaf() {
@@ -377,7 +382,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	private void internalInit(Platform platform, BootstrapProperties bootstrapProps) {
 		networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
-		diskFs().checkHashesAgainstDiskContents();
 
 		final var selfId = platform.getSelfId().getId();
 
@@ -421,7 +425,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
-		setChild(StateChildIndices.DISK_FS, new MerkleDiskFs());
+		setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);

@@ -21,7 +21,7 @@ package com.hedera.test.factories.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import com.swirlds.merkle.map.MerkleMap;
 
 import static com.hedera.test.utils.IdUtils.asAccount;

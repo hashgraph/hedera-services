@@ -20,7 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.PermHashInteger;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;

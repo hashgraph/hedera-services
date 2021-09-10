@@ -22,17 +22,17 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.utils.PermHashInteger;
+import com.hedera.services.utils.PermHashLong;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -72,7 +72,7 @@ class HashLoggerTest {
 	@Mock
 	private AddressBook addressBook;
 	@Mock
-	private MerkleDiskFs diskFs;
+	private MerkleSpecialFiles specialFiles;
 	@Mock
 	private ServicesState state;
 	@Mock
@@ -135,8 +135,8 @@ class HashLoggerTest {
 		given(networkCtx.getHash()).willReturn(hashOf('8'));
 		given(state.addressBook()).willReturn(addressBook);
 		given(addressBook.getHash()).willReturn(hashOf('9'));
-		given(state.diskFs()).willReturn(diskFs);
-		given(diskFs.getHash()).willReturn(hashOf('Z'));
+		given(state.specialFiles()).willReturn(specialFiles);
+		given(specialFiles.getHash()).willReturn(hashOf('Z'));
 		// and:
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);

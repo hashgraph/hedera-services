@@ -1,4 +1,4 @@
-package com.hedera.services.store.tokens.views.internals;
+package com.hedera.services.utils;
 
 /*-
  * ‌
@@ -23,7 +23,6 @@ package com.hedera.services.store.tokens.views.internals;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
