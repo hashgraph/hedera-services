@@ -57,6 +57,7 @@ class TokenFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForUniqueTokenBurn() throws IOException {
 		testExpectedPriceFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		testExpectedPriceFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
 	}
 
 	@Test

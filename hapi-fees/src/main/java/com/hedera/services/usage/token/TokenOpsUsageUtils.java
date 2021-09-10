@@ -20,8 +20,12 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.usage.token.entities.TokenEntitySizes;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -38,10 +42,14 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
 public enum TokenOpsUsageUtils {
 	TOKEN_OPS_USAGE_UTILS;
+
+	private static final int AMOUNT_REPR_BYTES = 8;
 
 	public TokenCreateMeta tokenCreateUsageFrom(final TransactionBody txn) {
 		final var baseSize = getTokenTxnBaseSize(txn);
@@ -75,6 +83,70 @@ public enum TokenOpsUsageUtils {
 				.subType(chosenType)
 				.build();
 	}
+
+	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn, final SubType subType) {
+		var op = txn.getTokenBurn();
+
+		int serialNumsCount = 0;
+		int bpt = 0;
+		int transferRecordRb = 0;
+		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			serialNumsCount = op.getSerialNumbersCount();
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
+			bpt = serialNumsCount * LONG_SIZE;
+		} else {
+			bpt = AMOUNT_REPR_BYTES;
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
+		}
+		bpt += BASIC_ENTITY_ID_SIZE;
+
+		return new TokenBurnMeta( bpt, serialNumsCount, subType, transferRecordRb );
+	}
+
+	public TokenMintMeta tokenMintUsageFrom(final TransactionBody txn, final SubType subType, final long expectedLifeTime) {
+		var op = txn.getTokenMint();
+
+		int serialNumsCount = 0;
+		int bpt = 0;
+		long rbs = 0;
+		int transferRecordRb = 0;
+		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			var metadataBytes = 0;
+			for (ByteString o : op.getMetadataList()) {
+				metadataBytes += o.size();
+			}
+			bpt = metadataBytes;
+			rbs = metadataBytes * expectedLifeTime;
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
+		} else {
+			bpt = AMOUNT_REPR_BYTES;
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
+		}
+		bpt += BASIC_ENTITY_ID_SIZE;
+
+		return new TokenMintMeta( bpt, rbs, subType, transferRecordRb );
+	}
+
+	public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn, final SubType subType) {
+		var op = txn.getTokenWipe();
+
+		int serialNumsCount = 0;
+		int bpt = 0;
+		int transferRecordRb = 0;
+		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			serialNumsCount = op.getSerialNumbersCount();
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
+			bpt = serialNumsCount * LONG_SIZE;
+		} else {
+			bpt = AMOUNT_REPR_BYTES;
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
+		}
+		bpt += BASIC_ENTITY_ID_SIZE;
+
+		return new TokenWipeMeta( bpt, serialNumsCount, subType, transferRecordRb );
+	}
+
+
 
 	public int getTokenTxnBaseSize(final TransactionBody txn) {
 		final var op = txn.getTokenCreation();

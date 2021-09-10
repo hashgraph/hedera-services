@@ -58,6 +58,7 @@ import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
@@ -175,6 +176,8 @@ class BaseOperationUsage {
 			case TokenBurn:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
+				} else if (type == TOKEN_FUNGIBLE_COMMON) {
+					return fungibleTokenBurn();
 				}
 				break;
 			case TokenFeeScheduleUpdate:
@@ -203,12 +206,26 @@ class BaseOperationUsage {
 						.setToken(target)
 						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
 				.build();
-		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenBurnUsage(canonicalTxn, helper);
-		final var baseUsage = estimator
-				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
-				.get();
-		return UsageAccumulator.fromGrpc(baseUsage);
+
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(canonicalTxn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenBurnUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenBurnMeta, into);
+		return into;
+	}
+
+	UsageAccumulator fungibleTokenBurn() {
+		final var target = TokenID.newBuilder().setTokenNum(1_235).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
+						.setToken(target)
+						.setAmount(1000L)
+						)
+				.build();
+
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(canonicalTxn, TOKEN_FUNGIBLE_COMMON);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenBurnUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenBurnMeta, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenMint() {
@@ -219,13 +236,11 @@ class BaseOperationUsage {
 						.addMetadata(CANONICAL_NFT_METADATA))
 				.build();
 
-		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
-		final var estimator = new TokenMintUsage(canonicalTxn, helper);
-		final var baseUsage = estimator
-				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
-				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
-				.get();
-		return UsageAccumulator.fromGrpc(baseUsage);
+		final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(canonicalTxn,
+				TOKEN_NON_FUNGIBLE_UNIQUE, THREE_MONTHS_IN_SECONDS);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenMintUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into);
+		return into;
 	}
 
 	UsageAccumulator uniqueTokenWipe() {

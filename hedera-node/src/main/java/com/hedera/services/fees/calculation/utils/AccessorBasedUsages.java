@@ -3,8 +3,11 @@ package com.hedera.services.fees.calculation.utils;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 import java.util.EnumSet;
 
@@ -46,7 +49,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 @Singleton
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(FileAppend, CryptoTransfer,
-			ConsensusSubmitMessage, TokenFeeScheduleUpdate, TokenCreate);
+			ConsensusSubmitMessage, TokenFeeScheduleUpdate,
+			TokenCreate, TokenBurn, TokenMint, TokenAccountWipe);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -87,6 +91,12 @@ public class AccessorBasedUsages {
 			estimateFileAppend(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenCreate) {
 			estimateTokenCreate(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenBurn) {
+			estimateTokenBurn(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenMint) {
+			estimateTokenMint(sigUsage, accessor, baseMeta, into);
+		} else if (function == TokenAccountWipe) {
+			estimateTokenWipe(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -124,5 +134,20 @@ public class AccessorBasedUsages {
 			UsageAccumulator into) {
 		final var tokenCreateMeta = accessor.getSpanMapAccessor().getTokenCreateMeta(accessor);
 		tokenOpsUsage.tokenCreateUsage(sigUsage, baseMeta, tokenCreateMeta, into);
+	}
+	private void estimateTokenBurn(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var tokenBurnMeta = opUsageCtxHelper.metaForTokenBurn(accessor);
+		tokenOpsUsage.tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, into);
+	}
+	private void estimateTokenMint(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var tokenMintMeta = opUsageCtxHelper.metaForTokenMint(accessor);
+		tokenOpsUsage.tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, into);
+	}
+	private void estimateTokenWipe(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var tokenWipeMeta = opUsageCtxHelper.metaForTokenWipe(accessor);
+		tokenOpsUsage.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, into);
 	}
 }

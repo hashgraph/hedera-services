@@ -22,6 +22,7 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.utils.TxnAccessor;
 
@@ -36,6 +37,7 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String IMPLIED_TRANSFERS_KEY = "impliedTransfers";
 	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
 	private static final String TOKEN_CREATE_META_KEY = "tokenCreateMeta";
+	private static final String TOKEN_BURN_META_KEY = "tokenBurnMeta";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -64,4 +66,11 @@ public class ExpandHandleSpanMapAccessor {
 	public TokenCreateMeta getTokenCreateMeta(TxnAccessor accessor) {
 		return (TokenCreateMeta) accessor.getSpanMap().get(TOKEN_CREATE_META_KEY);
 	}
+//	public void setTokenBurnMeta(TxnAccessor accessor, TokenBurnMeta tokenBurnMeta) {
+//		accessor.getSpanMap().put(TOKEN_BURN_META_KEY, tokenBurnMeta);
+//	}
+//
+//	public TokenBurnMeta getTokenBurnMeta(TxnAccessor accessor) {
+//		return (TokenBurnMeta) accessor.getSpanMap().get(TOKEN_BURN_META_KEY);
+//	}
 }

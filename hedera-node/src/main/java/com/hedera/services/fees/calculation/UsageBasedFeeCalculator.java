@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
@@ -59,7 +61,11 @@ import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
@@ -222,7 +228,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	) {
 		final var function = accessor.getFunction();
 		if (pricedUsageCalculator.supports(function)) {
-			final var applicablePrices = prices.get(accessor.getSubType());
+			SubType subType = getSubTypeFor(accessor, view);
+			final var applicablePrices = prices.get(subType);
 			return inHandle
 					? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
 					: pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);
@@ -268,5 +275,38 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
 		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
+	}
+
+	private SubType getSubTypeFor(final TxnAccessor accessor, final StateView view) {
+		if (accessor.getSubType() != SubType.DEFAULT) {
+			return accessor.getSubType();
+		}
+		if(isTokenTxn(accessor)) {
+			return getTokenTxnSubType(accessor, view);
+		}
+
+		return SubType.DEFAULT;
+	}
+
+	private boolean isTokenTxn(final TxnAccessor accessor) {
+		final var function = accessor.getFunction();
+		return function == TokenMint || function == TokenBurn || function == TokenAccountWipe;
+	}
+
+	private SubType getTokenTxnSubType(final TxnAccessor accessor, final StateView view) {
+		final var function = accessor.getFunction();
+		TokenID tokenID = null;
+		if (function == TokenBurn) {
+			tokenID = accessor.getTxn().getTokenBurn().getToken();
+		} else if (function == TokenMint) {
+			tokenID = accessor.getTxn().getTokenMint().getToken();
+		} else if (function == TokenAccountWipe) {
+			tokenID = accessor.getTxn().getTokenWipe().getToken();
+		}
+		Optional<TokenType> tokenType = view.tokenType(tokenID);
+		if (tokenType.isPresent() && tokenType.get() == TokenType.NON_FUNGIBLE_UNIQUE) {
+			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+		}
+		return SubType.TOKEN_FUNGIBLE_COMMON;
 	}
 }

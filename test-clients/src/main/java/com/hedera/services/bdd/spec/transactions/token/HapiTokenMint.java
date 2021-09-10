@@ -23,11 +23,16 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenMintUsage;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -36,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,6 +52,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenFeeScheduleUpdate.lookupInfo;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
@@ -56,6 +63,8 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	private boolean rememberingNothing = false;
 	private List<ByteString> metadata;
 	private SubType subType;
+
+	private TokenInfo info;
 
     @Override
 	public HederaFunctionality type() {
@@ -101,23 +110,26 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			final TokenInfo info = lookupInfo(spec, token, log, loggingOff);
-			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
-				var estimate = TokenMintUsage
-						.newEstimate(_txn, suFrom(svo))
-						.givenSubType(subType);
-				if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-					final var lifetime = info.getExpiry().getSeconds() -
-							_txn.getTransactionID().getTransactionValidStart().getSeconds();
-					estimate.givenExpectedLifetime(lifetime);
-				}
-				return estimate.get();
-			};
-			return spec.fees().forActivityBasedOp(
-					HederaFunctionality.TokenMint, subType, metricsCalc, txn, numPayerKeys);
+			info = lookupInfo(spec, token, log, loggingOff);
 		} catch (Throwable ignore) {
-			return HapiApiSuite.ONE_HBAR;
+
 		}
+		return spec.fees().forActivityBasedOp(
+					HederaFunctionality.TokenMint, subType, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) throws Throwable {
+		UsageAccumulator accumulator = new UsageAccumulator();
+
+		long lifetime = 0L;
+		if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
+			lifetime = info.getExpiry().getSeconds() - txn.getTransactionID().getTransactionValidStart().getSeconds();
+		}
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, subType, lifetime);
+		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+		tokenOpsUsage.tokenMintUsage(suFrom(svo), baseTransactionMeta, tokenBurnMeta, accumulator);
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	private SubType figureSubType() {

@@ -27,7 +27,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.TokenOpsUsageUtils;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.TokenBurnMeta;
+import com.hedera.services.usage.token.meta.TokenMintMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
@@ -39,6 +45,10 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class OpUsageCtxHelper {
@@ -78,6 +88,84 @@ public class OpUsageCtxHelper {
 		}
 		return new ExtantFeeScheduleContext(token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
 	}
+
+//  reduce duplcated code with generic method
+//	public <T> metaForTokenOp(Supplier<T> TxnAccessor txn) {
+//		final var op = txn.getTxn().getTokenBurn();
+//		final var token = op.getToken();
+//		final var tokenType = workingView.tokenType(token);
+//		SubType subType;
+//		if(tokenType.isPresent()) {
+//			if(tokenType.get() == NON_FUNGIBLE_UNIQUE) {
+//				subType = TOKEN_NON_FUNGIBLE_UNIQUE;
+//			} else {
+//				subType = TOKEN_FUNGIBLE_COMMON;
+//			}
+//		} else {
+//			return null;
+//		}
+//		return TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn.getTxn(), subType);
+//	}
+
+	public TokenBurnMeta metaForTokenBurn(TxnAccessor txn) {
+		final var op = txn.getTxn().getTokenBurn();
+		final var token = op.getToken();
+		final var tokenType = workingView.tokenType(token);
+		SubType subType;
+		if(tokenType.isPresent()) {
+			if(tokenType.get() == NON_FUNGIBLE_UNIQUE) {
+				subType = TOKEN_NON_FUNGIBLE_UNIQUE;
+			} else {
+				subType = TOKEN_FUNGIBLE_COMMON;
+			}
+		} else {
+			return null;
+		}
+		return TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn.getTxn(), subType);
+	}
+
+	public TokenWipeMeta metaForTokenWipe(TxnAccessor txn) {
+		final var op = txn.getTxn().getTokenWipe();
+		final var token = op.getToken();
+		final var tokenType = workingView.tokenType(token);
+		SubType subType;
+		if(tokenType.isPresent()) {
+			if(tokenType.get() == NON_FUNGIBLE_UNIQUE) {
+				subType = TOKEN_NON_FUNGIBLE_UNIQUE;
+			} else {
+				subType = TOKEN_FUNGIBLE_COMMON;
+			}
+		} else {
+			return null;
+		}
+		return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTxn(), subType);
+	}
+
+	public TokenMintMeta metaForTokenMint(TxnAccessor txn) {
+		final var op = txn.getTxn().getTokenMint();
+		final var token = op.getToken();
+		final var tokenType = workingView.tokenType(token);
+		SubType subType;
+		if(tokenType.isPresent()) {
+			if(tokenType.get() == NON_FUNGIBLE_UNIQUE) {
+				subType = TOKEN_NON_FUNGIBLE_UNIQUE;
+			} else {
+				subType = TOKEN_FUNGIBLE_COMMON;
+			}
+		} else {
+			return null;
+		}
+
+		long lifeTime = 0L;
+		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			final var now = txn.getTxnId().getTransactionValidStart().getSeconds();
+			final var tokenIfPresent = workingView.tokenWith(token);
+			lifeTime = tokenIfPresent.map(t -> Math.max(0L, t.expiry() - now)).orElse(0L);
+		}
+
+		return TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn.getTxn(), subType, lifeTime);
+	}
+
 
 	private int curFeeScheduleReprSize(List<FcCustomFee> feeSchedule) {
 		int numFixedHbarFees = 0;
