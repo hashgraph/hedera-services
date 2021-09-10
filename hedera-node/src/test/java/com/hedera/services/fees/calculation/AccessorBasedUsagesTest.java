@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -110,7 +111,7 @@ class AccessorBasedUsagesTest {
 		// setup:
 		final var accumulator = new UsageAccumulator();
 
-		given(txnAccessor.getFunction()).willReturn(CryptoCreate);
+		given(txnAccessor.getFunction()).willReturn(TokenMint);
 
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.assess(sigUsage, txnAccessor, accumulator));
