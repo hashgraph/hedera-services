@@ -1,9 +1,9 @@
 # Yahcli v0.1.4
-Yahcli (Yet Another Hedera Command Line Interface) supports DevOps
-actions against Hedera networks given by a _config.yml_.
+Yahcli (_Yet Another Hedera Command Line Interface_) supports DevOps
+actions against the Hedera networks listed in a _config.yml_ file.
 
-These actions include updating system files, running validation tests,
-re-keying accounts, and freezing the network for maintenance.
+Actions include updating system files, running validation tests,
+re-keying accounts, and freezing networks for maintenance.
 
 :warning:&nbsp;Besides the _config.yml_, yahcli requires keys and
 other assets to be present in a specific directory layout. The details
@@ -244,7 +244,8 @@ can be either PEM files or BIP-39 mnemonics.)
 
 Our first example uses a randomly generated new key,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n localhost accounts rekey --gen-new-key 57
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n localhost \
+> accounts rekey --gen-new-key 57
 Targeting localhost, paying with 0.0.2
 .i. Exported a newly generated key in PEM format to localhost/keys/account57.pem
 ```
@@ -264,7 +265,8 @@ localhost/keys
 
 For the next example, we specify an existing PEM file, and enter its passphrase when prompted,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost accounts rekey -k new-account57.pem 57
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost \
+> accounts rekey -k new-account57.pem 57
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file new-account55.pem: 
 .i. Exported key from new-account55 to localhost/keys/account57.pem
@@ -274,7 +276,8 @@ In our final example, we replace the `0.0.57` key from a mnemonic,
 ```
 $ cat new-account57.words
 goddess maze eternal small normal october ... author
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost accounts rekey -k new-account57.words 57
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost \
+> accounts rekey -k new-account57.words 57
 Targeting localhost, paying with 0.0.2
 .i. Exported key from new-account55 to localhost/keys/account57.pem
 ```

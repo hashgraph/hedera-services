@@ -33,7 +33,7 @@ public enum CommonMessages {
 	COMMON_MESSAGES;
 
 	public void warn(String notice) {
-		System.out.println(".!.️ " + notice);
+		System.out.println(".!. " + notice);
 	}
 
 	public void info(String notice) {
