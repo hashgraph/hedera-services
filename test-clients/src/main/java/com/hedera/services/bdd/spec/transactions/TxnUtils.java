@@ -368,6 +368,16 @@ public class TxnUtils {
 	private static final SplittableRandom r = new SplittableRandom();
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
+	public static String readableTxnId(TransactionID txnId) {
+		final var validStart = txnId.getTransactionValidStart();
+		final var startInstant = Instant.ofEpochSecond(validStart.getSeconds(), validStart.getNanos());
+		return new StringBuilder()
+				.append(HapiPropertySource.asAccountString(txnId.getAccountID()))
+				.append("@")
+				.append(startInstant)
+				.toString();
+	}
+
 	public static String readableTokenTransfers(List<TokenTransferList> tokenTransfers) {
 		return tokenTransfers.stream()
 				.map(scopedXfers -> String.format("%s(%s)(%s)",

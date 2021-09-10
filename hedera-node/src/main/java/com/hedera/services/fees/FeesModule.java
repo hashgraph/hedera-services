@@ -33,6 +33,7 @@ import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceU
 import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.file.txns.SystemDeleteFileResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResourceUsage;
+import com.hedera.services.fees.calculation.meta.queries.GetExecTimeResourceUsage;
 import com.hedera.services.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
@@ -90,9 +91,10 @@ public abstract class FeesModule {
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideMetaQueryEstimators(
 			GetVersionInfoResourceUsage getVersionInfoResourceUsage,
-			GetTxnRecordResourceUsage getTxnRecordResourceUsage
+			GetTxnRecordResourceUsage getTxnRecordResourceUsage,
+			GetExecTimeResourceUsage getExecTimeResourceUsage
 	) {
-		return Set.of(getVersionInfoResourceUsage, getTxnRecordResourceUsage);
+		return Set.of(getVersionInfoResourceUsage, getTxnRecordResourceUsage, getExecTimeResourceUsage);
 	}
 
 	@Provides
