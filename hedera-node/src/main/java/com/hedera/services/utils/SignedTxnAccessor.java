@@ -46,7 +46,6 @@ import org.bouncycastle.util.Arrays;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
@@ -88,8 +87,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
-	private Optional<SubType> subType;
-
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -333,10 +330,4 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 		SPAN_MAP_ACCESSOR.setTokenCreate(this, tokenCreateMeta);
 	}
-
-//	private void setTokenBurnUsageMeta() {
-//		// How to get the token type
-//		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
-//		SPAN_MAP_ACCESSOR.setTokenBurnMeta(this, tokenBurnMeta);
-//	}
 }

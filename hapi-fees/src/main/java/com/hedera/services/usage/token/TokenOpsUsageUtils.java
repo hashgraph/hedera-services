@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
 import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
@@ -84,29 +85,8 @@ public enum TokenOpsUsageUtils {
 				.build();
 	}
 
-	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn, final SubType subType) {
-		var op = txn.getTokenBurn();
-
-		int serialNumsCount = 0;
-		int bpt = 0;
-		int transferRecordRb = 0;
-		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
-			serialNumsCount = op.getSerialNumbersCount();
-			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
-			bpt = serialNumsCount * LONG_SIZE;
-		} else {
-			bpt = AMOUNT_REPR_BYTES;
-			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
-		}
-		bpt += BASIC_ENTITY_ID_SIZE;
-
-		return new TokenBurnMeta( bpt, serialNumsCount, subType, transferRecordRb );
-	}
-
 	public TokenMintMeta tokenMintUsageFrom(final TransactionBody txn, final SubType subType, final long expectedLifeTime) {
 		var op = txn.getTokenMint();
-
-		int serialNumsCount = 0;
 		int bpt = 0;
 		long rbs = 0;
 		int transferRecordRb = 0;
@@ -117,24 +97,32 @@ public enum TokenOpsUsageUtils {
 			}
 			bpt = metadataBytes;
 			rbs = metadataBytes * expectedLifeTime;
-			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
+			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, op.getMetadataCount());
 		} else {
 			bpt = AMOUNT_REPR_BYTES;
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;
+		return new TokenMintMeta( bpt, subType, transferRecordRb, rbs);
+	}
 
-		return new TokenMintMeta( bpt, rbs, subType, transferRecordRb );
+	public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn, final SubType subType) {
+		var op = txn.getTokenBurn();
+		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
 	}
 
 	public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn, final SubType subType) {
 		var op = txn.getTokenWipe();
 
+		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new );
+	}
+
+	public <R> R retrieveRawDataFrom(SubType subType, IntSupplier getDataForNFT,  Producer<R> producer) {
 		int serialNumsCount = 0;
 		int bpt = 0;
 		int transferRecordRb = 0;
 		if(subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
-			serialNumsCount = op.getSerialNumbersCount();
+			serialNumsCount = getDataForNFT.getAsInt();
 			transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
 			bpt = serialNumsCount * LONG_SIZE;
 		} else {
@@ -143,10 +131,13 @@ public enum TokenOpsUsageUtils {
 		}
 		bpt += BASIC_ENTITY_ID_SIZE;
 
-		return new TokenWipeMeta( bpt, serialNumsCount, subType, transferRecordRb );
+		return producer.create(bpt, subType, transferRecordRb, serialNumsCount);
 	}
 
-
+	@FunctionalInterface
+	interface Producer<R> {
+		R create(int bpt, SubType subType, long recordDb, int t);
+	}
 
 	public int getTokenTxnBaseSize(final TransactionBody txn) {
 		final var op = txn.getTokenCreation();

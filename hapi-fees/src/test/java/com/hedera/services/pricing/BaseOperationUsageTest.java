@@ -61,11 +61,20 @@ class BaseOperationUsageTest {
 		mock.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		verify(mock).nftCryptoTransferWithCustomFee();
 
+		mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
+		verify(mock).fungibleCommonTokenWipe();
+
 		mock.baseUsageFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
 		verify(mock).uniqueTokenWipe();
 
+		mock.baseUsageFor(TokenBurn, TOKEN_FUNGIBLE_COMMON);
+		verify(mock).fungibleCommonTokenBurn();
+
 		mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
 		verify(mock).uniqueTokenBurn();
+
+		mock.baseUsageFor(TokenMint, TOKEN_FUNGIBLE_COMMON);
+		verify(mock).fungibleCommonTokenMint();
 
 		mock.baseUsageFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
 		verify(mock).uniqueTokenMint();
@@ -102,7 +111,7 @@ class BaseOperationUsageTest {
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenMint, TOKEN_FUNGIBLE_COMMON));
+				() -> mock.baseUsageFor(TokenMint, UNRECOGNIZED));
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
 		assertThrows(IllegalArgumentException.class,

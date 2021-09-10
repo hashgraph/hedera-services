@@ -20,48 +20,13 @@ package com.hedera.services.usage.token.meta;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.SubType;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class TokenBurnMeta {
-	private final int bpt;
-	private final int serialNumsCount;
-	private final SubType subType;
-	private final long transferRecordRb;
-
+public class TokenBurnMeta extends TokenBurnWipeMeta {
 	public TokenBurnMeta(final int bpt,
-			final int serialNumsCount, final SubType subType,
-			final long transferRecordRb) {
-		this.bpt = bpt;
-		this.serialNumsCount = serialNumsCount;
-		this.subType = subType;
-		this.transferRecordRb = transferRecordRb;
-	}
-
-	public int getSerialNumsCount() { return serialNumsCount;}
-	public SubType getSubType() { return subType;}
-	public int getBpt() { return bpt;}
-	public long getTransferRecordDb() { return transferRecordRb;}
-
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
-
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
-
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("bpt", bpt)
-				.add("transferRecordDb", transferRecordRb)
-				.add("serialNumsCount", serialNumsCount)
-				.add("subType", subType)
-				.toString();
+			final SubType subType,
+			final long transferRecordRb,
+			final int serialNumsCount) {
+		super(bpt, subType, transferRecordRb, serialNumsCount);
 	}
 }

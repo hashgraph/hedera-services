@@ -25,18 +25,18 @@ import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class TokenMintMeta extends TokenOpMetaBase {
-	private final long rbs;
+public class TokenBurnWipeMeta extends TokenOpMetaBase {
+	private final int serialNumsCount;
 
-	public TokenMintMeta(final int bpt,
+	public TokenBurnWipeMeta(final int bpt,
 			final SubType subType,
 			final long transferRecordRb,
-			final long rbs) {
+			final int serialNumsCount) {
 		super(bpt, subType, transferRecordRb);
-		this.rbs = rbs;
+		this.serialNumsCount = serialNumsCount;
 	}
 
-	public long getRbs() { return rbs;}
+	public int getSerialNumsCount() { return serialNumsCount;}
 
 	@Override
 	public boolean equals(Object obj) {
@@ -51,6 +51,6 @@ public class TokenMintMeta extends TokenOpMetaBase {
 	@Override
 	public MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper()
-				.add("rbs", rbs);
+				.add("serialNumsCount", serialNumsCount);
 	}
 }

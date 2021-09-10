@@ -20,16 +20,20 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.hedera.services.pricing.ResourceProvider;
+import com.hedera.services.pricing.UsableResource;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -137,4 +141,19 @@ class TokenOpsUsageTest {
 		assertEquals(feeDataFrom(exp), feeDataFrom(ans));
 	}
 
+	@Test
+	void tokenWipeUsageAccumulatorWorks() {
+		final var sigUsage = new SigUsage(1, 2, 3);
+		final var baseMeta = new BaseTransactionMeta(0, 0);
+		final var tokenWipeMeta = new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 12345, 1);
+		final var accumulator = new UsageAccumulator();
+
+		subject.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, accumulator);
+
+		assertEquals( 1078, accumulator.get(ResourceProvider.NETWORK, UsableResource.BPT));
+		assertEquals( 1, accumulator.get(ResourceProvider.NETWORK, UsableResource.VPT));
+		assertEquals( 1078, accumulator.get(ResourceProvider.NODE, UsableResource.BPT));
+		assertEquals(0 , accumulator.get(ResourceProvider.SERVICE, UsableResource.BPR));
+		assertEquals( 3, accumulator.get(ResourceProvider.NODE, UsableResource.VPT));
+	}
 }

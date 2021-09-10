@@ -31,8 +31,6 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenBurnUsage;
-import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
@@ -166,18 +164,22 @@ class BaseOperationUsage {
 			case TokenMint:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
+				} else if(type == TOKEN_FUNGIBLE_COMMON) {
+					return fungibleCommonTokenMint();
 				}
 				break;
 			case TokenAccountWipe:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
+				} else if(type == TOKEN_FUNGIBLE_COMMON) {
+					return fungibleCommonTokenWipe();
 				}
 				break;
 			case TokenBurn:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
 				} else if (type == TOKEN_FUNGIBLE_COMMON) {
-					return fungibleTokenBurn();
+					return fungibleCommonTokenBurn();
 				}
 				break;
 			case TokenFeeScheduleUpdate:
@@ -213,7 +215,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	UsageAccumulator fungibleTokenBurn() {
+	UsageAccumulator fungibleCommonTokenBurn() {
 		final var target = TokenID.newBuilder().setTokenNum(1_235).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
@@ -243,6 +245,21 @@ class BaseOperationUsage {
 		return into;
 	}
 
+	UsageAccumulator fungibleCommonTokenMint() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenMint(TokenMintTransactionBody.newBuilder()
+						.setToken(target)
+						.setAmount(1000))
+				.build();
+
+		final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(canonicalTxn,
+				TOKEN_FUNGIBLE_COMMON, THREE_MONTHS_IN_SECONDS);
+		final var into = new UsageAccumulator();
+		TOKEN_OPS_USAGE.tokenMintUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into);
+		return into;
+	}
+
 	UsageAccumulator uniqueTokenWipe() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
@@ -257,6 +274,25 @@ class BaseOperationUsage {
 		final var estimator = new TokenWipeUsage(canonicalTxn, helper);
 		final var baseUsage = estimator
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
+				.get();
+
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+	UsageAccumulator fungibleCommonTokenWipe() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(target)
+						.setAccount(targetAcct)
+						.setAmount(100))
+				.build();
+
+		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenWipeUsage(canonicalTxn, helper);
+		final var baseUsage = estimator
+				.givenSubType(TOKEN_FUNGIBLE_COMMON)
 				.get();
 
 		return UsageAccumulator.fromGrpc(baseUsage);

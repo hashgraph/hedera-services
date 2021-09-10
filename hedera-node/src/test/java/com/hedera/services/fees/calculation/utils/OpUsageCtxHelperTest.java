@@ -31,18 +31,25 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -68,7 +75,7 @@ class OpUsageCtxHelperTest {
 	private final MerkleToken extant = new MerkleToken(now, 1, 2,
 			"Three", "FOUR", false, true,
 			EntityId.MISSING_ENTITY_ID);
-	private final TokenID target = IdUtils.asToken("1.2.3");
+	private final TokenID target = IdUtils.asToken("0.0.1003");
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final HFileMeta fileMeta = new HFileMeta(false, wacl, then);
 	private final TransactionBody appendTxn = TransactionBody.newBuilder()
@@ -85,6 +92,9 @@ class OpUsageCtxHelperTest {
 	private StateView workingView;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
+
+	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
+	private SignedTxnAccessor accessor;
 
 	private OpUsageCtxHelper subject;
 
@@ -144,6 +154,62 @@ class OpUsageCtxHelperTest {
 		assertEquals(expBytes, ctx.numBytesInFeeScheduleRepr());
 	}
 
+	@Test
+	void getMetaForTokenMintWorks() {
+		TokenMintTransactionBody mintTxnBody = getUniqueTokenMintOp();
+		TransactionBody txn = getTxnBody(mintTxnBody);
+
+		given(accessor.getTxn()).willReturn(txn);
+		Optional<TokenType> tokenType = Optional.of(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(workingView.tokenType(target)).willReturn(tokenType);
+		given(workingView.tokenWith(target)).willReturn(Optional.of(extant));
+
+		final var tokenMintMeta = subject.metaForTokenMint(accessor);
+
+		// then:
+		assertEquals(34, tokenMintMeta.getBpt());
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, tokenMintMeta.getSubType());
+		assertEquals(12345670, tokenMintMeta.getRbs());
+		assertEquals(80, tokenMintMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void getMetaForTokenBurnWorks() {
+		TokenBurnTransactionBody burnTxnBody = getFungibleCommonTokenBurnOp();
+		TransactionBody txn = getTxnBody(burnTxnBody);
+
+		given(accessor.getTxn()).willReturn(txn);
+		Optional<TokenType> tokenType = Optional.of(TokenType.FUNGIBLE_COMMON);
+		given(workingView.tokenType(target)).willReturn(tokenType);
+
+		final var tokenBurnMeta = subject.metaForTokenBurn(accessor);
+
+		// then:
+		assertEquals(32, tokenBurnMeta.getBpt());
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON, tokenBurnMeta.getSubType());
+		assertEquals(0, tokenBurnMeta.getSerialNumsCount());
+		assertEquals(56, tokenBurnMeta.getTransferRecordDb());
+	}
+
+	@Test
+	void getMetaForTokenWipeWorks() {
+		TokenWipeAccountTransactionBody wipeTxnBody = getUniqueTokenWipeOp();
+		TransactionBody txn = getTxnBody(wipeTxnBody);
+
+		given(accessor.getTxn()).willReturn(txn);
+		Optional<TokenType> tokenType = Optional.of(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(workingView.tokenType(target)).willReturn(tokenType);
+		//given(workingView.tokenWith(target)).willReturn(Optional.of(extant));
+
+		final var tokenWipeMeta = subject.metaForTokenWipe(accessor);
+
+		// then:
+		assertEquals(32, tokenWipeMeta.getBpt());
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, tokenWipeMeta.getSubType());
+		assertEquals(1, tokenWipeMeta.getSerialNumsCount());
+		assertEquals(80, tokenWipeMeta.getTransferRecordDb());
+	}
+
 	private TokenFeeScheduleUpdateTransactionBody op() {
 		return TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(target)
@@ -171,5 +237,54 @@ class OpUsageCtxHelperTest {
 				royaltyFee(1, 10,
 						new FixedFeeSpec(1, aDenom), collector)
 		);
+	}
+
+
+	private TokenMintTransactionBody getUniqueTokenMintOp() {
+		return TokenMintTransactionBody.newBuilder()
+				.setToken(target)
+				.addAllMetadata(List.of(
+						ByteString.copyFromUtf8("NFT meta 1")
+				)).build();
+	}
+
+	private TokenBurnTransactionBody getFungibleCommonTokenBurnOp() {
+		return TokenBurnTransactionBody.newBuilder()
+				.setToken(target)
+				.setAmount(1000L)
+				.build();
+	}
+
+	private TokenWipeAccountTransactionBody getUniqueTokenWipeOp() {
+		return TokenWipeAccountTransactionBody.newBuilder()
+				.setToken(target)
+				.addAllSerialNumbers(List.of(1L))
+				.build();
+	}
+
+	private TransactionBody getTxnBody(final TokenMintTransactionBody op) {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenMint(op)
+				.build();
+	}
+
+	private TransactionBody getTxnBody(final TokenBurnTransactionBody op) {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenBurn(op)
+				.build();
+	}
+	private TransactionBody getTxnBody(final TokenWipeAccountTransactionBody op) {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenWipe(op)
+				.build();
 	}
 }
