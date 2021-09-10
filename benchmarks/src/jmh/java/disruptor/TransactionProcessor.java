@@ -1,5 +1,6 @@
 package disruptor;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.YieldingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
@@ -31,7 +32,7 @@ public class TransactionProcessor<K extends VirtualKey, V extends VirtualValue, 
                     return t;
                 },
                 ProducerType.SINGLE,
-                new YieldingWaitStrategy());
+                new BlockingWaitStrategy());
 
         PreFetchHandler preFetchHandlers[] = new PreFetchHandler[preFetchEventHandlers];
         for (int j = 0; j < preFetchEventHandlers; j++) {

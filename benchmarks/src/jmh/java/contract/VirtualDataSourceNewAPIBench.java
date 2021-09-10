@@ -3,7 +3,6 @@ package contract;
 import com.hedera.services.state.jasperdb.VirtualDataSourceJasperDB;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
-import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -57,25 +56,27 @@ public class VirtualDataSourceNewAPIBench {
         try {
             final boolean storeExists = Files.exists(storePath);
             // get slot index suppliers
-            dataSource = switch (impl) {
-                case "lmdb" ->
-                    new VFCDataSourceLmdb<>(
-                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
-                            storePath);
+            switch (impl) {
+                case "lmdb":
+                    dataSource = new VFCDataSourceLmdb<>(
+                        ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                        ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                        storePath);
+                    break;
 //                case "rocksdb" ->
 //                    new VFCDataSourceRocksDb<>(
 //                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
 //                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
 //                            storePath);
-                case "jasperdb" ->
-                    new VirtualDataSourceJasperDB<>(
+                case "jasperdb":
+                    dataSource = new VirtualDataSourceJasperDB<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath,
                             numEntities+10_000_000,  // TODO see if 10 millionls extra is enough for add method
                             Long.MAX_VALUE);
-                default ->
+                    break;
+                default:
                     throw new IllegalStateException("Unexpected value: " + impl);
             };
             // create data
@@ -91,7 +92,7 @@ public class VirtualDataSourceNewAPIBench {
                             numEntities,numEntities*2,
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualInternalRecord(i,hash((int)i))),
                             LongStream.range(iHaveWritten,iHaveWritten+batchSize).mapToObj(i -> new VirtualLeafRecord<>(
-                                    i+numEntities,hash((int)i),new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(i) )
+                                    i+numEntities,hash((int)i),new ContractKey(i, new ContractUint256(i)), new ContractUint256(i) )
                             )
                     );
                     iHaveWritten += batchSize;
@@ -138,7 +139,7 @@ public class VirtualDataSourceNewAPIBench {
     public void randomIndex(){
         randomNodeIndex1 = (long)(random.nextDouble()*numEntities);
         randomLeafIndex1 = numEntities + randomNodeIndex1;
-        key1 = new ContractKey(new Id(0,0,randomNodeIndex1),new ContractUint256(randomNodeIndex1));
+        key1 = new ContractKey(randomNodeIndex1,new ContractUint256(randomNodeIndex1));
         random10kLeafPaths.clear();
         for (int i = 0; i < 10_000; i++) {
             random10kLeafPaths.add(numEntities + ((long)(random.nextDouble()*numEntities)));
@@ -166,7 +167,7 @@ public class VirtualDataSourceNewAPIBench {
                 numEntities,numEntities*2,
                 null,
                 LongStream.range(0,Math.min(10_000,numEntities)).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(randomNodeIndex1) )
+                        i+numEntities,hash((int)i),new ContractKey(i, new ContractUint256(i)), new ContractUint256(randomNodeIndex1) )
                 )
         );
         // add a small delay between iterations for merging to get a chance on write heavy benchmarks
@@ -186,7 +187,7 @@ public class VirtualDataSourceNewAPIBench {
         for (int i = 0; i < 10_000; i++) {
             long path = random10kLeafPaths.get(i);
             changes.add(new VirtualLeafRecord<>(
-                    path,hash((int)path),new ContractKey(new Id(0, 0, path), new ContractUint256(path)), new ContractUint256(i) ));
+                    path,hash((int)path),new ContractKey(path, new ContractUint256(path)), new ContractUint256(i) ));
         }
         dataSource.saveRecords(
                 numEntities,numEntities*2,
@@ -217,7 +218,7 @@ public class VirtualDataSourceNewAPIBench {
                 numEntities,numEntities*2,
                 null,
                 LongStream.range(nextPath,nextPath+10_000).mapToObj(i -> new VirtualLeafRecord<>(
-                        i+numEntities,hash((int)i),new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(i) )
+                        i+numEntities,hash((int)i),new ContractKey(i, new ContractUint256(i)), new ContractUint256(i) )
                 )
         );
         nextPath += 10_000;

@@ -4,6 +4,7 @@ import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
 import com.hedera.services.state.jasperdb.files.DataFileReaderAsynchronous;
 import com.swirlds.virtualmap.VirtualKey;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
@@ -14,7 +15,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static com.hedera.services.state.jasperdb.files.DataFileCommon.MB;
 
 /**
  * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk. It maps a VKey to a
@@ -27,7 +31,7 @@ import java.util.function.Supplier;
  *
  * IMPORTANT: This implementation assumes a single writing thread. There can be multiple readers while writing is happening.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "DuplicatedCode"})
 public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /**
      * Nominal value for a bucket location that doesn't exist. It is zero, so we don't need to fill empty index memory
@@ -51,7 +55,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /** The amount of data used for a header in each bucket */
     private static final int BUCKET_HEADER_SIZE = BUCKET_INDEX_SIZE + BUCKET_ENTRY_COUNT_SIZE + BUCKET_NEXT_BUCKET_POINTER_SIZE;
     /** how full should all available bins be if we are at the specified map size */
-    private static final double LOADING_FACTOR = 0.5;
+    public static final double LOADING_FACTOR = 0.5;
     /** Long list used for mapping bucketIndex(index into list) to disk location for latest copy of bucket */
     private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
@@ -116,20 +120,55 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     /**
      * Merge all read only files
      *
-     * @param maxSizeMb all files returned are smaller than this number of MB
+     * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @throws IOException if there was a problem merging
      */
-    public void mergeAll(int maxSizeMb) throws IOException {
-        List<DataFileReader> filesToMerge = fileCollection.getAllFullyWrittenFiles(maxSizeMb);
+    public void mergeAll(Function<List<DataFileReader>,List<DataFileReader>> filterForFilesToMerge) throws IOException {
+        final long START = System.currentTimeMillis();
+        final List<DataFileReader> allFilesBefore = fileCollection.getAllFullyWrittenFiles();
+        final List<DataFileReader> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
         final int size = filesToMerge == null ? 0 : filesToMerge.size();
-        if (size > 1) {
-            System.out.println("Merging " + size+" files in collection "+storeName);
-            fileCollection.mergeFiles(
-                    moves -> {
-                        // update index with all moved data
-                        moves.forEach(bucketIndexToBucketLocation::putIfEqual);
-                    }, filesToMerge);
+        if (size < 2) {
+            System.out.println("["+storeName+"] No meed to merge as only "+size+" files.");
+            return;
         }
+        double filesToMergeSizeMb = filesToMerge.stream().mapToDouble(file -> {
+            try {
+                return file.getSize();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }).sum() / MB;
+        System.out.printf("[%s] Starting merging %,d files total %,.2f Gb...\n",storeName,size,filesToMergeSizeMb/1024);
+        final List<Path> newFilesCreated = fileCollection.mergeFiles(
+                // update index with all moved data
+                moves -> moves.forEach(bucketIndexToBucketLocation::putIfEqual),
+                filesToMerge);
+
+
+        final double tookSeconds = (double) (System.currentTimeMillis() - START) / 1000d;
+
+        double mergedFilesCreatedSizeMb = newFilesCreated.stream().mapToDouble(path -> {
+            try {
+                return Files.size(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }).sum() / MB;
+
+        System.out.printf("[%s] Merged %,.2f Gb files into %,.2f Gb files in %,.2f seconds. Read at %,.2f Mb/sec Written at %,.2f\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
+                storeName,
+                filesToMergeSizeMb / 1024d,
+                mergedFilesCreatedSizeMb / 1024d,
+                tookSeconds,
+                filesToMergeSizeMb / tookSeconds,
+                mergedFilesCreatedSizeMb / tookSeconds,
+                Arrays.toString(filesToMerge.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
+                Arrays.toString(allFilesBefore.stream().map(reader -> reader.getMetadata().getIndex()).toArray()),
+                Arrays.toString(fileCollection.getAllFullyWrittenFiles().stream().map(reader -> reader.getMetadata().getIndex()).toArray())
+        );
     }
 
     /**
@@ -145,6 +184,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
 
     // =================================================================================================================
     // Writing API - Single thead safe
+    private Thread writingThread;
 
     /**
      * Start a writing session to the map. Each new writing session results in a new data file on disk, so you should
@@ -152,6 +192,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
      */
     public void startWriting() {
         oneTransactionsData = new IntObjectHashMap<>();
+        writingThread = Thread.currentThread();
     }
 
     /**
@@ -164,6 +205,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     public void put(K key, long value) {
         if (key == null) throw new IllegalArgumentException("Can not put a null key");
         if (oneTransactionsData == null) throw new IllegalStateException("Trying to write to a HalfDiskHashMap when you have not called startWriting().");
+        if (Thread.currentThread() != writingThread) throw new IllegalStateException("Tried calling write with different thread to startWriting()");
         // store key and value in transaction cache
         int bucketIndex = computeBucketIndex(hash(key));
         ObjectLongHashMap<K> bucketMap = oneTransactionsData.getIfAbsentPut(bucketIndex, ObjectLongHashMap::new);
@@ -176,16 +218,26 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
      * @throws IOException If there was a problem committing data to store
      */
     public void endWriting() throws IOException {
+        // TODO JASPER, need to filter bucket for lim/max leaf path when we write them
+        if (Thread.currentThread() != writingThread) throw new IllegalStateException("Tried calling endWriting with different thread to startWriting()");
+        writingThread = null;
+        System.out.printf("Finishing writing to %s, num of changed bins = %,d, num of changed keys = %,d \n",
+                storeName,
+                oneTransactionsData.size(),
+                oneTransactionsData.stream().mapToLong(ObjectLongHashMap::size).sum()
+        );
         // iterate over transaction cache and save it all to file
         if (oneTransactionsData != null && !oneTransactionsData.isEmpty()) {
             //  write to files
             fileCollection.startWriting();
-            // for each changed bucket
+            // for each changed bucket, write the new buckets to file but do not update index yet
+            final LongArrayList indexChanges = new LongArrayList();
+            final Bucket<K> bucket = this.bucket.get();
             try {
                 oneTransactionsData.forEachKeyValue((bucketIndex, bucketMap) -> {
                     try {
                         long currentBucketLocation = bucketIndexToBucketLocation.get(bucketIndex, NON_EXISTENT_BUCKET);
-                        Bucket<K> bucket = this.bucket.get().clear();
+                        bucket.clear();
                         if (currentBucketLocation == NON_EXISTENT_BUCKET) {
                             // create a new bucket
                             bucket.setBucketIndex(bucketIndex);
@@ -199,8 +251,14 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                         long bucketLocation;
                         bucket.bucketBuffer.rewind();
                         bucketLocation = fileCollection.storeData(bucketIndex, bucket.bucketBuffer);
-                        // update bucketIndexToBucketLocation
-                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                        // stash update bucketIndexToBucketLocation
+                        indexChanges.add(bucketIndex);
+                        indexChanges.add(bucketLocation);
+                    } catch (IllegalStateException e) { // wrap IOExceptions
+                        printStats();
+                        debugDumpTransactionCacheCondensed();
+                        debugDumpTransactionCache();
+                        throw e;
                     } catch (IOException e) { // wrap IOExceptions
                         throw new RuntimeException(e);
                     }
@@ -211,6 +269,18 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
             }
             // close files session
             fileCollection.endWriting(0,numOfBuckets);
+            // for each changed bucket update index
+            try {
+                for (int i = 0; i < indexChanges.size(); i+=2) {
+                    final long bucketIndex = indexChanges.get(i);
+                    final long bucketLocation = indexChanges.get(i+1);
+                    // update bucketIndexToBucketLocation
+                    bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                }
+            } catch (RuntimeException e) { // unwrap IOExceptions
+                if (e.getCause() instanceof IOException) throw (IOException) e.getCause();
+                throw e;
+            }
         }
         // clear put cache
         oneTransactionsData = null;
@@ -247,14 +317,31 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
 
     /** Debug dump stats for this map */
     public void printStats() {
-        System.out.println("HalfDiskHashMap Stats {");
-        System.out.println("    mapSize = " + mapSize);
-        System.out.println("    minimumBuckets = " + minimumBuckets);
-        System.out.println("    numOfBuckets = " + numOfBuckets);
-        System.out.println("    entriesPerBucket = " + entriesPerBucket);
-        System.out.println("    entrySize = " + entrySize);
-        System.out.println("    valueOffsetInEntry = " + entryHeaderSize);
-        System.out.println("}");
+        System.out.printf(
+                "HalfDiskHashMap Stats {\n"+
+                "    mapSize = %,d\n"+
+                "    minimumBuckets = %,d\n"+
+                "    numOfBuckets = %,d\n"+
+                "    entriesPerBucket = %,d\n"+
+                "    entrySize = %,d\n"+
+                "    valueOffsetInEntry = %,d\n"+
+                "}\n"
+                , mapSize,minimumBuckets,numOfBuckets,entriesPerBucket,entrySize,entryHeaderSize);
+    }
+
+    /** Useful debug method to print the current state of the transaction cache */
+    public void debugDumpTransactionCacheCondensed() {
+        System.out.println("=========== TRANSACTION CACHE ==========================");
+        for (int bucketIndex = 0; bucketIndex < numOfBuckets; bucketIndex++) {
+            ObjectLongHashMap<K> bucketMap = oneTransactionsData.get(bucketIndex);
+            if (bucketMap != null) {
+                String tooBig = (bucketMap.size() > entriesPerBucket) ? " TOO MANY! > "+entriesPerBucket : "";
+                System.out.println("bucketIndex ["+bucketIndex+"] , count="+bucketMap.size()+tooBig);
+            } else {
+                System.out.println("bucketIndex ["+bucketIndex+"] , EMPTY!");
+            }
+        }
+        System.out.println("========================================================");
     }
 
     /** Useful debug method to print the current state of the transaction cache */
@@ -266,10 +353,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
                 String tooBig = (bucketMap.size() > entriesPerBucket) ? " TOO MANY! > "+entriesPerBucket : "";
                 System.out.println("bucketIndex ["+bucketIndex+"] , count="+bucketMap.size()+tooBig);
                 bucketMap.forEachKeyValue((k, l) ->
-                        System.out.println("        keyHash ["+k.hashCode()+"] bucket ["+(k.hashCode()% numOfBuckets)+
-                                "]  key ["+k+"] value ["+l+"]"));
-            } else {
-                System.out.println("bucketIndex ["+bucketIndex+"] , EMPTY!");
+                        System.out.println("        keyHash ["+k.hashCode()+"]["+hash(k)+"] bucket ["+(hash(k)% numOfBuckets)+
+                                ","+computeBucketIndex(hash(k))+"]  key ["+k+"] value ["+l+"]"));
+//            } else {
+//                System.out.println("bucketIndex ["+bucketIndex+"] , EMPTY!");
             }
         }
         System.out.println("========================================================");
@@ -310,6 +397,13 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable {
     private static int hash(Object key) {
         int h;
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+//        if (key == null) return 0;
+//        int k = key.hashCode();
+//        k ^= k >> 12;
+//        k ^= k << 25;
+//        k ^= k >> 27;
+//        k *= 0x2545F4914F6CDD1DL;
+//        return k;
     }
 
     /**

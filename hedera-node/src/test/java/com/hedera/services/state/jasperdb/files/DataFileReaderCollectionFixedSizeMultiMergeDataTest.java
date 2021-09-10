@@ -11,8 +11,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.state.jasperdb.HashTools.byteBufferToHash;
-import static com.hedera.services.state.jasperdb.HashTools.hashToByteBuffer;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.byteBufferToHash;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.hashToByteBuffer;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.hash;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.KEY_SIZE;
 import static org.junit.jupiter.api.Assertions.*;

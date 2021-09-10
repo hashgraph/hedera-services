@@ -1,8 +1,8 @@
 package com.hedera.services.state.jasperdb;
 
+import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
-import com.hedera.services.store.models.Id;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -29,7 +29,7 @@ public class JasperDbTestUtils {
 
     public static ContractKey newContractKey(long num) {
 //        return new ContractKey(new Id(num,num,num),new ContractUint256(num));
-        return new ContractKey(new Id(0,0,num),new ContractUint256(num));
+        return new ContractKey(num,new ContractUint256(num));
     }
 
     public static void deleteDirectoryAndContents(Path dir) {

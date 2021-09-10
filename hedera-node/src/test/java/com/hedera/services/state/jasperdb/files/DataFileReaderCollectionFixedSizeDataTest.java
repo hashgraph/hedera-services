@@ -16,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.state.jasperdb.HashTools.*;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.*;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.hash;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZE;

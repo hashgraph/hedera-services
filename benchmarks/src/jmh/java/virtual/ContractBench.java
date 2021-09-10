@@ -8,12 +8,11 @@ import disruptor.TransactionProcessor;
 import disruptor.TransactionPublisher;
 import org.openjdk.jmh.annotations.*;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
  */
-@SuppressWarnings("jol")
+@SuppressWarnings({"jol", "BusyWait"})
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -57,7 +56,7 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 
     private TransactionProcessor<ContractKey, ContractUint256, Data> txProcessor;
 
-    // Need to wrap in accessor since lambdas need a level of indirection so they can fetch
+    // Need to wrap in accessor since lambdas need a level of indirection, so they can fetch
     // the latest copy of the map after the copy() call.
     VirtualMap<ContractKey, ContractUint256> getVirtualMap() {
         return virtualMap;
@@ -65,13 +64,18 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 
     @Setup
     public void prepare() throws Exception {
+        final long keyValueSize = ContractKey.SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE;
+        final long estimatedNumKeyValuePairs =
+                (long)(numContracts * (1-bigPercent-hugePercent) * ((kbPerContract * 1024L) / keyValueSize)) +
+                (long)(numContracts * bigPercent * ((kbPerBigContract * 1024L) / keyValueSize)) +
+                (long)(numContracts * hugePercent * ((kbPerHugeContract * 1024L) / keyValueSize));
+        System.out.println("estimatedNumKeyValuePairs = " + estimatedNumKeyValuePairs);
         virtualMap = createMap(dsType,
                 ContractKey.SERIALIZED_SIZE, ContractKey::new,
                 ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
-                numContracts);
+                estimatedNumKeyValuePairs);
 
-        final var rand = new Random();
-        txProcessor = new TransactionProcessor<ContractKey, ContractUint256, Data>(
+        txProcessor = new TransactionProcessor<>(
                 preFetchEventHandlers,
                 (Transaction<Data> tx) -> {   // preFetch logic
                     VirtualMap<ContractKey, ContractUint256> map = getVirtualMap();
@@ -87,18 +91,38 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
 
         if (preFill) {
             keyValuePairsPerContract = new int[numContracts];
+            long countOfKeyValuePairs = 0;
+            long lastCountOfKeyValuePairs = 0;
+            int numBigContracts = (int)(numContracts*bigPercent);
+            System.out.println("numBigContracts = " + numBigContracts);
+            int numHugeContracts = (int)(numContracts*hugePercent);
+            System.out.println("numHugeContracts = " + numHugeContracts);
             for (int i = 0; i < numContracts; i++) {
-                if (i % 100 == 0 && i > 0) {
-                    System.out.println("Completed: " + i);
+                if ((countOfKeyValuePairs-lastCountOfKeyValuePairs) > 100_000) {
+                    lastCountOfKeyValuePairs = countOfKeyValuePairs;
+                    System.out.printf("Completed: %,d contracts and %,d key/value pairs\n", i, countOfKeyValuePairs);
                     virtualMap = pipeline.endRound(virtualMap);
+                }
+                if (i>0 && i%50==0) {
+                    // loading is really intense so give GC a chance to catch up
+                    System.gc(); Thread.sleep(2000);
                 }
 
                 // We generate a different number of key/value pairs depending on whether it is
                 // a huge contract, big contract, or normal contract
-                final var randomNumber = Math.max(0.001+rand.nextDouble(),1); // Random number from 0.001 to 1
-                final var kb = randomNumber < hugePercent ? kbPerHugeContract : randomNumber < bigPercent ? kbPerBigContract : kbPerContract;
-                final var numKeyValuePairs = (kb * 1024) / (ContractKey.SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE);
-                keyValuePairsPerContract[i] = numKeyValuePairs;
+                final int kb;
+                if (i>0 && (i%100) == 0 && numHugeContracts > 0) {
+                    kb = kbPerHugeContract;
+                    numHugeContracts --;
+                } else if (i>0 && (i%10) == 0 && numBigContracts > 0) {
+                    kb = kbPerBigContract;
+                    numBigContracts --;
+                } else {
+                    kb = kbPerContract;
+                }
+                final var numKeyValuePairs = (kb * 1024L) / (ContractKey.SERIALIZED_SIZE + ContractUint256.SERIALIZED_SIZE);
+                countOfKeyValuePairs += numKeyValuePairs;
+                keyValuePairsPerContract[i] = (int)numKeyValuePairs;
 
                 for (int j=0; j<numKeyValuePairs; j++) {
                     final var key = asContractKey(i, j);
@@ -113,8 +137,9 @@ public class ContractBench extends VFCMapBenchBase<ContractKey, ContractUint256>
                 }
             }
 
-            // During setup we perform the full hashing and release the old copy. This way,
+            // During setup, we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
+            System.out.printf("Completed: %,d contracts and %,d key/value pairs\n",numContracts,countOfKeyValuePairs);
             virtualMap = pipeline.endRound(virtualMap);
         }
 

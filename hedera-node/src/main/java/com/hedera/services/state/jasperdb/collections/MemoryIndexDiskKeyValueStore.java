@@ -79,7 +79,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
         final List<DataFileReader> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
         final int size = filesToMerge == null ? 0 : filesToMerge.size();
         if (size < 2) {
-            System.out.println("Mo meed to merge as only "+size+" files.");
+            System.out.println("["+storeName+"] No meed to merge as only "+size+" files.");
             return;
         }
         double filesToMergeSizeMb = filesToMerge.stream().mapToDouble(file -> {
@@ -90,7 +90,7 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
                 return 0;
             }
         }).sum() / MB;
-        System.out.printf("Starting merging %,d files in collection %s total %,.2f Gb...\n",size,storeName,filesToMergeSizeMb/1024);
+        System.out.printf("[%s] Starting merging %,d files, total %,.2f Gb...\n",storeName,size,filesToMergeSizeMb/1024);
         if (ENABLE_DEEP_VALIDATION) startChecking();
         final List<Path> newFilesCreated = fileCollection.mergeFiles(
                 // update index with all moved data
@@ -113,7 +113,8 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable {
             }
         }).sum() / MB;
 
-        System.out.printf("Merged %,.2f Gb files into %,.2f Gb files in %,.2f seconds. Read at %,.2f Mb/sec Written at %,.2f\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
+        System.out.printf("[%s] Merged %,.2f Gb files into %,.2f Gb files in %,.2f seconds. Read at %,.2f Mb/sec Written at %,.2f\n        filesToMerge = %s\n       allFilesBefore = %s\n       allFilesAfter = %s\n",
+                storeName,
                 filesToMergeSizeMb / 1024d,
                 mergedFilesCreatedSizeMb / 1024d,
                 tookSeconds,

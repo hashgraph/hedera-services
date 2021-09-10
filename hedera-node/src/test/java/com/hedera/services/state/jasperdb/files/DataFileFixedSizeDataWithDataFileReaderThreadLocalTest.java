@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.state.jasperdb.HashTools.*;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.*;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.*;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.FOOTER_SIZE;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.KEY_SIZE;

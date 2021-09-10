@@ -1,6 +1,6 @@
 package com.hedera.services.state.jasperdb.collections;
 
-import com.hedera.services.state.jasperdb.HashTools;
+import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.swirlds.common.crypto.Hash;
 
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hedera.services.state.jasperdb.HashTools.HASH_SIZE_BYTES;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.HASH_SIZE_BYTES;
 
 /**
  * An off-heap in memory store of hashes, it stores them in 46Mb direct buffers and adds buffers as needed

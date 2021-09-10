@@ -12,22 +12,25 @@ import java.util.Objects;
 
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
+ *
+ * We only store the number part of the contract ID as the ideas ia there will be a virtual merkle tree for each shard
+ * and realm.
  */
 public final class ContractKey implements VirtualKey {
-    public static final int SERIALIZED_SIZE = Long.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES + ContractUint256.SERIALIZED_SIZE;
-    private Id contractId;
+    public static final int SERIALIZED_SIZE = Long.BYTES + Integer.BYTES + ContractUint256.SERIALIZED_SIZE;
+    private long contractId;
     private ContractUint256 key;
 
     public ContractKey() {
         // there has to be a default constructor for deserialize
     }
 
-    public ContractKey(Id contractId, ContractUint256 key) {
+    public ContractKey(long contractId, ContractUint256 key) {
         this.contractId = contractId;
         this.key = key;
     }
 
-    public Id getContractId() {
+    public long getContractId() {
         return contractId;
     }
 
@@ -46,23 +49,6 @@ public final class ContractKey implements VirtualKey {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
-        contractId = new Id(in.readLong(),in.readLong(),in.readLong());
-        int version = in.readInt();
-        key = new ContractUint256();
-        key.deserialize(in,version);
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeLong(contractId.getShard());
-        out.writeLong(contractId.getRealm());
-        out.writeLong(contractId.getNum());
-        out.writeInt(key.getVersion());
-        key.serialize(out);
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -70,35 +56,53 @@ public final class ContractKey implements VirtualKey {
         return Objects.equals(contractId, that.contractId) && Objects.equals(key, that.key);
     }
 
+    /**
+     * Special hash to make sure we get good distribution.
+     */
     @Override
     public int hashCode() {
-        // was using Objects.hash but it is horrible in hot spot as it creates a Object[] because of var args
+//        long contractIdHash = contractId;
+//        contractIdHash ^= contractIdHash >> 12;
+//        contractIdHash ^= contractIdHash << 25;
+//        contractIdHash ^= contractIdHash >> 27;
+//        contractIdHash *= 0x2545F4914F6CDD1DL;
         int result = 1;
-        result = 31 * result + (contractId == null ? 0 : contractId.hashCode());
+//        result = 31 * result + (int)contractIdHash;
+        result = 31 * result + (int)(contractId ^ (contractId >>> 32));
         result = 31 * result + (key == null ? 0 : key.hashCode());
         return result;
     }
 
     @Override
     public String toString() {
-        return "ContractKey{" +
-                "id={" + contractId.getShard()+","+contractId.getRealm()+","+contractId.getNum()+"}, " +
-                key +
-                '}';
+        return "ContractKey{id=" + contractId+", key=" +key +'}';
+    }
+
+    @Override
+    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+        contractId = in.readLong();
+        int version = in.readInt();
+        key = new ContractUint256();
+        key.deserialize(in,version);
+    }
+
+    @Override
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        out.writeLong(contractId);
+        out.writeInt(key.getVersion());
+        key.serialize(out);
     }
 
     @Override
     public void serialize(ByteBuffer byteBuffer) throws IOException {
-        byteBuffer.putLong(contractId.getShard());
-        byteBuffer.putLong(contractId.getRealm());
-        byteBuffer.putLong(contractId.getNum());
+        byteBuffer.putLong(contractId);
         byteBuffer.putInt(key.getVersion());
         key.serialize(byteBuffer);
     }
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-        contractId = new Id(byteBuffer.getLong(), byteBuffer.getLong(), byteBuffer.getLong());
+        contractId = byteBuffer.getLong();
         int version = byteBuffer.getInt();
         key = new ContractUint256();
         key.deserialize(byteBuffer, version);
@@ -106,9 +110,7 @@ public final class ContractKey implements VirtualKey {
 
     @Override
     public boolean equals(ByteBuffer byteBuffer, int version) throws IOException {
-        if (contractId.getShard() != byteBuffer.getLong()) return false;
-        if (contractId.getRealm() != byteBuffer.getLong()) return false;
-        if (contractId.getNum() != byteBuffer.getLong()) return false;
+        if (contractId != byteBuffer.getLong()) return false;
         if (key.getVersion() != byteBuffer.getInt()) return false;
         return key.equals(byteBuffer, version);
     }

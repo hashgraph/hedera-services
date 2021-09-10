@@ -3,6 +3,7 @@ package com.hedera.services.state.jasperdb;
 import com.hedera.services.state.jasperdb.collections.*;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
+import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -25,8 +26,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.hedera.services.state.jasperdb.HashTools.HASH_SIZE_BYTES;
-import static com.hedera.services.state.jasperdb.HashTools.byteBufferToHash;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.HASH_SIZE_BYTES;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.byteBufferToHash;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static com.hedera.services.state.jasperdb.files.DataFileCommon.newestFilesSmallerThan;
 import static java.nio.ByteBuffer.allocate;
@@ -187,6 +188,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     @Override
     public void saveRecords(long firstLeafPath, long lastLeafPath, Stream<VirtualInternalRecord> internalRecords,
                             Stream<VirtualLeafRecord<K, V>> leafRecords) {
+        System.out.println("VirtualDataSourceJasperDB.saveRecords "+Thread.currentThread());
         final var countDownLatch = new CountDownLatch(1);
         // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
         storeInternalExecutor.execute(() -> {
@@ -281,7 +283,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         } else {
             ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
             internalHashStoreDisk.get(path,buf);
-            return new VirtualInternalRecord(path,HashTools.byteBufferToHashNoCopy(buf));
+            return new VirtualInternalRecord(path, HashTools.byteBufferToHashNoCopy(buf));
         }
     }
 
@@ -374,6 +376,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     private void writeLeavesToPathToKeyHashValue(long firstLeafPath, long lastLeafPath,
                                                  Stream<VirtualLeafRecord<K, V>> leafRecords) {
+
         if (leafRecords != null) {
             try {
                 pathToKeyHashValue.startWriting();
@@ -458,11 +461,13 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             lastMediumMerge = startMerge;
             filesToMergeFilter = newestFilesSmallerThan(10*1024); // < 10Gb
         } else { // every 5 minutes
-            filesToMergeFilter = newestFilesSmallerThan(2*1024); // < 2Gb
+            filesToMergeFilter = newestFilesSmallerThan(3*1024); // < 3Gb
         }
         try {
             // we need to merge disk files for internal hashes if they exist and pathToKeyHashValue store
             if (hasDiskStoreForInternalHashes) internalHashStoreDisk.mergeAll(filesToMergeFilter);
+            // merge objectKeyToPath files
+            if(!isLongKeyMode) objectKeyToPath.mergeAll(filesToMergeFilter);
             // now do main merge of pathToKeyHashValue store
             pathToKeyHashValue.mergeAll(filesToMergeFilter);
         } catch (Throwable t) {

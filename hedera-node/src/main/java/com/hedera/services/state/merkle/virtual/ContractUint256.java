@@ -77,7 +77,7 @@ public class ContractUint256 implements VirtualKey, VirtualValue {
 
     @Override
     public int hashCode() {
-        // was using Objects.hash but it is horrible in hot spot as has to box longs into Longs and create a Object[]
+        // was using Objects.hash, but it is horrible in a hot spot as has to box longs into Longs and create an Object[]
         int result = 1;
         result = 31 * result + (int)(value_0 ^ (value_0 >>> 32));
         result = 31 * result + (int)(value_1 ^ (value_1 >>> 32));

@@ -1,4 +1,4 @@
-package com.hedera.services.state.jasperdb;
+package com.hedera.services.state.jasperdb.utilities;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

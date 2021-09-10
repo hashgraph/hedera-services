@@ -38,20 +38,26 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
             Supplier<V> valueConstructor,
             long numEntities) throws IOException {
 
-        return switch (type) {
-            case lmdb -> new VirtualMap<>(new VFCDataSourceLmdb<>(
+        VirtualMap<K,V> map;
+        //noinspection CommentedOutCode
+        switch (type) {
+            case lmdb:
+                map = new VirtualMap<>(new VFCDataSourceLmdb<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
                     valueConstructor,
                     Path.of("lmdb")));
-//            case rocksdb -> new VirtualMap<>(new VFCDataSourceRocksDb<>(
-//                    keySizeBytes,
-//                    keyConstructor,
-//                    valueSizeBytes,
-//                    valueConstructor,
-//                    Path.of("rocksdb")));
-            case jasperdbIhRam -> new VirtualMap<>(new VirtualDataSourceJasperDB<>(
+                break;
+/*            case rocksdb -> new VirtualMap<>(new VFCDataSourceRocksDb<>(
+                    keySizeBytes,
+                    keyConstructor,
+                    valueSizeBytes,
+                    valueConstructor,
+                    Path.of("rocksdb")));
+ */
+            case jasperdbIhRam:
+                map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -59,7 +65,10 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     Path.of("jasperdb_ih_ram"),
                     numEntities,
                     Long.MAX_VALUE));
-            case jasperdbIhDisk -> new VirtualMap<>(new VirtualDataSourceJasperDB<>(
+                break;
+            case jasperdbIhDisk:
+            default:
+                map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -67,7 +76,9 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     Path.of("jasperdb_ih_disk"),
                     numEntities,
                     0));
-            case jasperdbIhHalf -> new VirtualMap<>(new VirtualDataSourceJasperDB<>(
+                break;
+            case jasperdbIhHalf:
+                map = new VirtualMap<>(new VirtualDataSourceJasperDB<>(
                     keySizeBytes,
                     keyConstructor,
                     valueSizeBytes,
@@ -75,13 +86,13 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
                     Path.of("jasperdb_ih_half"),
                     numEntities,
                     numEntities/2));
-        };
+                break;
+        }
+        return map;
     }
 
     protected ContractKey asContractKey(long contractIndex, long index) {
-        return new ContractKey(
-                new com.hedera.services.store.models.Id(0, 0, contractIndex),
-                new ContractUint256(BigInteger.valueOf(index)));
+        return new ContractKey(contractIndex, new ContractUint256(BigInteger.valueOf(index)));
     }
 
     protected Id asId(long index) {
@@ -140,17 +151,17 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
 
         @Override
-        public void serialize(ByteBuffer byteBuffer) throws IOException {
+        public void serialize(ByteBuffer byteBuffer) {
             byteBuffer.putLong(num);
         }
 
         @Override
-        public void deserialize(ByteBuffer byteBuffer, int v) throws IOException {
+        public void deserialize(ByteBuffer byteBuffer, int v) {
             num = byteBuffer.getLong();
         }
 
         @Override
-        public boolean equals(ByteBuffer byteBuffer, int v) throws IOException {
+        public boolean equals(ByteBuffer byteBuffer, int v) {
             return byteBuffer.getLong() == num;
         }
 
@@ -198,6 +209,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
     }
 
+    @SuppressWarnings("unused")
     public static class Account implements VirtualValue {
         private static final int MAX_STRING_BYTES = 120;
         public static final int SERIALIZED_SIZE = (4*Long.BYTES) + // key
@@ -280,7 +292,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         // TODO A long array of tokens. This is an open-ended list. We haven't solved for that yet.
 
         @Override
-        public void serialize(ByteBuffer byteBuffer) throws IOException {
+        public void serialize(ByteBuffer byteBuffer) {
             final int initialPosition = byteBuffer.position();
             byteBuffer.put(key);
             byteBuffer.putLong(expiry);
@@ -320,7 +332,7 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
         }
 
         @Override
-        public void deserialize(ByteBuffer byteBuffer, int v) throws IOException {
+        public void deserialize(ByteBuffer byteBuffer, int v) {
             byteBuffer.get(key);
             expiry = byteBuffer.getLong();
             hbarBalance = byteBuffer.getLong();
@@ -372,9 +384,6 @@ public abstract class VFCMapBenchBase<K extends VirtualKey, V extends VirtualVal
 
         @Override
         public void serialize(SerializableDataOutputStream out) throws IOException {
-//            final var buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-//            serialize(buf);
-//            serializableDataOutputStream.write(buf.array());
             final int initialPosition = out.size();
             out.write(key);
             out.writeLong(expiry);

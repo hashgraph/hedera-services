@@ -1,4 +1,4 @@
-package com.hedera.services.state.jasperdb;
+package com.hedera.services.state.jasperdb.utilities;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;

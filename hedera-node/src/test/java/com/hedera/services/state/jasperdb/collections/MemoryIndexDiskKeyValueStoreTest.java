@@ -1,6 +1,5 @@
 package com.hedera.services.state.jasperdb.collections;
 
-import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -8,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static com.hedera.services.state.jasperdb.HashTools.*;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.*;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.jasperdb.JasperDbTestUtils.hash;
 import static org.junit.jupiter.api.Assertions.assertEquals;

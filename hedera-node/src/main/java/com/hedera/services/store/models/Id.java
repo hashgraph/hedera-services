@@ -103,10 +103,15 @@ public class Id {
 	public int hashCode() {
 		// was using Objects.hash but it is horrible in hot spot as has to box longs into Longs and create a Object[]
 		int result = 1;
-		result = 31 * result + (int)(shard ^ (shard >>> 32));
-		result = 31 * result + (int)(realm ^ (realm >>> 32));
-		result = 31 * result + (int)(num ^ (num >>> 32));
-		return result;
+//		result = 31 * result + (int)(shard ^ (shard >>> 32));
+//		result = 31 * result + (int)(realm ^ (realm >>> 32));
+//		result = 31 * result + (int)(num ^ (num >>> 32));
+		long k = num;
+		k ^= k >> 12;
+		k ^= k << 25;
+		k ^= k >> 27;
+		k *= 0x2545F4914F6CDD1DL;
+		return (int)k;
 	}
 
 	@Override

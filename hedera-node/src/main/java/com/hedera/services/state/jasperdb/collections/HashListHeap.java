@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hedera.services.state.jasperdb.HashTools.*;
+import static com.hedera.services.state.jasperdb.utilities.HashTools.*;
 
 /**
  * An on-heap in memory store of hashes, it stores them in 46Mb heap buffers and adds buffers as needed
