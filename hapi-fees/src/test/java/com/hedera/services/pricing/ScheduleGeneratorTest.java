@@ -57,7 +57,7 @@ class ScheduleGeneratorTest {
 			final var allSupportedSchedules = subject.feeSchedulesFor(SUPPORTED_FUNCTIONS);
 			Files.writeString(file, allSupportedSchedules);
 		});
-//		Files.delete(file);
+		Files.delete(file);
 	}
 
 	@Test
