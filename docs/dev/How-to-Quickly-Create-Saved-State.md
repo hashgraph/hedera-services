@@ -69,7 +69,7 @@ Normally you may want to keep the entity ordering as it is, as some of the entit
 entity types' existence. That is, don't change the `position.N` of the entity. 
 If you really need to change the relative position of these entities, you need to be clear their dependency relationship.
 
-Many a time, you don't need all entity types in your state file, in this case, you can simply remove the entries
+Often you don't need all entity types in your state file, in this case, you can simply remove the entries
 for those entity types you don't want or change their `.total=0`. 
 
 #### 2. For GCP cloud storage bucket and directory entities
@@ -168,7 +168,7 @@ Storage Path: /Users/leojiang/projects/R6/hedera-services/hedera-node/data/saved
 
 ### 6. Verify the created state file.
 Now, without changing any of the environment, except the following:
-#### 1. Remove or commend out the property `create.state.file=true` in `node.properties`
+#### 1. Remove or comment out the property `create.state.file=true` in `node.properties`
 #### 2. (Optional) remove the files under hedera-node/output/*. This is to make it easier to verify the created state file
 
 After above steps, you can re-start `ServicesMain` from Intellij, and meanwhile, you can check the file `hedera-services/hedera-node/output/swirlds.log`,
@@ -199,7 +199,7 @@ You can run `test-clietn`s `src/main/java/com/hedera/services/bdd/suites/regress
 to verify and check the boundary of saved state's entity types. (You need to modify those Id values based on your layout config).
 
 ## Create saved state file on GCP instances from JRS workflow
-Simply put, the size of state file generated depends on the RAM of you server node size. So if you need to generate very
+Simply put, the size of state file generated depends on the RAM of you server. So if you need to generate very
 large saved state, you probably have to do that through JRS workflow (either run local JRS workflow or through CircleCi workflow).
 
 However, right now JRS framework is in the process of a major refactoring. Before this process is completed, we have to take  
