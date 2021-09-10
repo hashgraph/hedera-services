@@ -21,7 +21,6 @@ package com.hedera.services.pricing;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.StringValue;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
@@ -30,7 +29,6 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -42,7 +40,6 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -159,11 +156,6 @@ class BaseOperationUsage {
 					return cryptoCreate();
 				}
 				break;
-			case CryptoUpdate:
-				if (type == DEFAULT) {
-					return cryptoUpdate();
-				}
-				break;
 			case TokenCreate:
 				switch (type) {
 					case TOKEN_FUNGIBLE_COMMON:
@@ -214,19 +206,6 @@ class BaseOperationUsage {
 		final var cryptoCreateMeta = new CryptoCreateMeta(canonicalTxn);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoCreateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoCreateMeta, into);
-		return into;
-	}
-
-	UsageAccumulator cryptoUpdate() {
-		// TODO : will be implemented in a separate PR
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-						.setMemo(StringValue.of(BLANK_MEMO))
-				)
-				.build();
-		final var cryptoUpdateMeta = new CryptoUpdateMeta();
-		final var into = new UsageAccumulator();
-		CRYPTO_OPS_USAGE.cryptoUpdateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, into);
 		return into;
 	}
 

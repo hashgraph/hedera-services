@@ -158,13 +158,6 @@ public class CryptoOpsUsage {
 		return estimate.get();
 	}
 
-	public void cryptoUpdateUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final CryptoUpdateMeta cryptoUpdateMeta,
-			final UsageAccumulator accumulator) {
-		// TODO : will be implemented in a separate PR
-	}
-
 	public void cryptoCreateUsage(final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
 			final CryptoCreateMeta cryptoCreateMeta,
