@@ -29,6 +29,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAl
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -225,6 +227,15 @@ public class Account {
 
 	public boolean isAssociatedWith(Id token) {
 		return associatedTokens.contains(token);
+	}
+
+	/**
+	 * Returns the EVM {@link Address} representation of a given {@link Account}.
+	 *
+	 * @return a {@link Address} object
+	 */
+	public Address getEvmAddress() {
+		return Address.fromHexString(asSolidityAddressHex(id));
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
