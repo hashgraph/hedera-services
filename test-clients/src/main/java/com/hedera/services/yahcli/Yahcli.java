@@ -27,18 +27,19 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
+import com.hedera.services.yahcli.commands.accounts.RekeyCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.system.SysFreezeCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
 import com.hedera.services.yahcli.suites.FreezeSuite;
+import com.hedera.services.yahcli.suites.RekeySuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -58,12 +59,11 @@ import java.util.concurrent.Callable;
 				SysFilesCommand.class,
 				ValidationCommand.class,
 				FeesCommand.class,
-				SysFreezeCommand.class
+				SysFreezeCommand.class,
+				RekeyCommand.class
 		},
-		description = "Performs DevOps actions against configured Hedera Services networks")
+		description = "Performs DevOps-type actions against a Hedera Services network")
 public class Yahcli implements Callable<Integer> {
-	private static final Logger log = LogManager.getLogger(Yahcli.class);
-
 	public static final long NO_FIXED_FEE = Long.MIN_VALUE;
 
 	@Spec
@@ -121,6 +121,7 @@ public class Yahcli implements Callable<Integer> {
 	private static void setLogLevelsToLessNoisy() {
 		List.of(
 				BalanceSuite.class,
+				RekeySuite.class,
 				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
 				SchedulesValidationSuite.class,

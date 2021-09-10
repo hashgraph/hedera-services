@@ -136,7 +136,7 @@ public class ConfigManager {
 		return passphrase.isPresent() && unlocks(keyFile, passphrase.get());
 	}
 
-	private String keysLoc() {
+	public String keysLoc() {
 		return targetName + "/keys";
 	}
 

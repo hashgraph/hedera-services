@@ -1,8 +1,12 @@
 package com.hedera.services.yahcli.commands.accounts;
 
+import com.google.common.io.Files;
 import com.hedera.services.yahcli.config.ConfigManager;
+import com.hedera.services.yahcli.config.ConfigUtils;
 import picocli.CommandLine;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
@@ -17,7 +21,7 @@ public class RekeyCommand implements Callable<Integer> {
 
 	@CommandLine.Option(names = { "-k", "--replacement-key" },
 			paramLabel = "path to new key file")
-	String newKeyLoc;
+	String replKeyLoc;
 
 	@CommandLine.Option(names = { "-g", "--gen-new-key" },
 			paramLabel = "path to new key file",
@@ -41,5 +45,23 @@ public class RekeyCommand implements Callable<Integer> {
 //		delegate.runSuiteSync();
 
 		return 0;
+	}
+
+	private void backupCurrentKey(ConfigManager configManager, String num) throws IOException {
+		var optKeyFile = ConfigUtils.keyFileFor(configManager.keysLoc(), "account" + num);
+		if (optKeyFile.isPresent()) {
+			final var keyFile = optKeyFile.get();
+			final var keyLoc = keyFile.getAbsolutePath();
+			final var backupLoc = keyLoc + ".bkup";
+			Files.copy(keyFile, java.nio.file.Files.newOutputStream(Paths.get(backupLoc)));
+			if (keyLoc.endsWith(".pem")) {
+				final var optPassFile = ConfigUtils.passFileFor(keyFile);
+				if (optPassFile.isPresent()) {
+						
+				}
+			}
+		} else {
+			System.out.println("⚠️ No current key for account " + num + ", payer will need special privileges");
+		}
 	}
 }

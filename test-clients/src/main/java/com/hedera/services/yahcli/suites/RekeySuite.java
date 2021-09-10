@@ -9,21 +9,23 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
+import static com.hedera.services.yahcli.suites.Utils.extractAccount;
 
 public class RekeySuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RekeySuite.class);
 
 	private final String account;
-	private final String pathToRekeyPem;
-	private final String rekeyPassphrase;
+	private final String replKeyLoc;
 	private final Map<String, String> specConfig;
 
-	public RekeySuite(Map<String, String> specConfig, String account, String pathToRekeyPem, String rekeyPassphrase) {
+	public RekeySuite(
+			Map<String, String> specConfig,
+			String account,
+			String replKeyLoc
+	) {
 		this.specConfig = specConfig;
-		this.pathToRekeyPem = pathToRekeyPem;
-		this.rekeyPassphrase = rekeyPassphrase;
-		this.account = Utils.getAccount(account);
+		this.replKeyLoc = replKeyLoc;
+		this.account = extractAccount(account);
 	}
 
 	@Override
@@ -37,9 +39,6 @@ public class RekeySuite extends HapiApiSuite {
 		return HapiApiSpec.customHapiSpec("rekey" + account)
 				.withProperties(specConfig)
 				.given(
-						keyFromPem(pathToRekeyPem)
-								.name(replKey)
-								.passphrase(rekeyPassphrase)
 				).when( ).then(
 						cryptoUpdate(account)
 								.signedBy(DEFAULT_PAYER, replKey)
