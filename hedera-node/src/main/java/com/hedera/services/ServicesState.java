@@ -443,11 +443,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface FcmMigrator {
-		<OK extends MerkleNode, OV extends MerkleNode, K, V extends MerkleNode & Keyed<K>> void toMerkleMap(
+		<KEY extends MerkleNode, VALUE extends MerkleNode, K, V extends MerkleNode & Keyed<K>> void toMerkleMap(
 				MerkleInternal parent,
 				int mapIndex,
-				Function<OK, K> keyConverter,
-				Function<OV, V> valueConverter);
+				Function<KEY, K> keyConverter,
+				Function<VALUE, V> valueConverter);
 	}
 
 	private static FcmMigrator fcmMigrator = FCMapMigration::FCMapToMerkleMap;
