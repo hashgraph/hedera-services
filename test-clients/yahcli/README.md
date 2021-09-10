@@ -223,7 +223,9 @@ java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This no
 
 # Validating network services
 
-Services are validated by type; as usual, to see all options, run,
+:building_construction:&nbsp;**TODO** the _ValidationScenarios.jar_ functionality to be migrated here.
+
+Services will be validated by type; to see all supported options, run,
 
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 validate help
