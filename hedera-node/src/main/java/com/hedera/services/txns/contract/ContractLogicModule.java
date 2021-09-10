@@ -62,14 +62,6 @@ public class ContractLogicModule {
 	}
 
 	@Provides
-	@Singleton
-	public static ContractCallTransitionLogic.LegacyCaller provideLegacyCaller(
-			SmartContractRequestHandler contracts
-	) {
-		return contracts::contractCall;
-	}
-
-	@Provides
 	@IntoMap
 	@FunctionKey(ContractCreate)
 	public static List<TransitionLogic> provideContractCreateLogic(

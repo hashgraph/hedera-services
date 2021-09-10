@@ -22,30 +22,23 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.BesuAdapter;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
-import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties properties;
@@ -67,11 +60,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		this.besuAdapter = besuAdapter;
 	}
 
-	@FunctionalInterface
-	public interface LegacyCaller {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime, SequenceNumber seqNo);
-	}
-
 	@Override
 	public void doStateTransition() {
 
@@ -80,10 +68,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		var op = contractCallTxn.getContractCall();
 		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
 		final var contractId = Id.fromGrpcContract(op.getContractID());
-
-		validateFalse(op.getGas() > properties.maxGas(), MAX_GAS_LIMIT_EXCEEDED);
-		validateFalse(op.getGas() < 0, CONTRACT_NEGATIVE_GAS);
-		validateFalse(op.getAmount() < 0, CONTRACT_NEGATIVE_VALUE);
 
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
@@ -100,7 +84,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				txnCtx.consensusTime(),
 				null);
 	}
-
 
 	@Override
 	public Predicate<TransactionBody> applicability() {

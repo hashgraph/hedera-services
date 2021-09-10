@@ -34,6 +34,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -73,12 +74,12 @@ public class BesuStateAdapter implements WorldUpdater {
   }
 
   @Override
-  public Account get(final Address address) {
+  public HederaUpdateTrackingAccount get(final Address address) {
 
     Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
 
     if (provisionalAccountCreations.containsKey(id)) {
-      return new EvmAccountImpl(address, Wei.of(0));
+      return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(0)));
     }
 
     if (accountStore.exists(id)) {
@@ -88,14 +89,24 @@ public class BesuStateAdapter implements WorldUpdater {
       if (hederaAccount.isSmartContract()) {
         var code = provisionalCodeUpdates.containsKey(address) ?
                 provisionalCodeUpdates.get(address) : Bytes.of(blobStorageSource.get(address.toArray()));
-        return new EvmAccountImpl(address, Wei.of(balance), code);
+        return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(balance), code));
       }
       // TODO we must address nonces and mitigate all EVM related operations since Hedera does not have the concept of nonces
-      return new EvmAccountImpl(address, Wei.of(balance));
+      return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(balance)));
     }
 
     // TODO: test out when you want to send to a non-existing address in Hedera
     return null;
+  }
+
+  @Override
+  public EvmAccount getOrCreateSenderAccount(Address address) {
+    return getOrCreate(address);
+  }
+
+  @Override
+  public EvmAccount getOrCreate(Address address) {
+    return getAccount(address); //todo or create?
   }
 
   public void put(Address address, long nonce, Wei balance) {
@@ -123,8 +134,7 @@ public class BesuStateAdapter implements WorldUpdater {
 
   @Override
   public EvmAccount getAccount(final Address address) {
-    //todo is this ok?
-    return new UpdateTrackingAccount<>(get(address));
+    return new HederaUpdateTrackingAccount(get(address));
   }
 
   @Override
@@ -308,6 +318,17 @@ public class BesuStateAdapter implements WorldUpdater {
       return acc == null
               ? null
               : wrapped.new WorldStateAccount(acc.getAddress(), acc.getNonce(), acc.getBalance());
+    }
+
+    @Override
+    public Account get(Address address) {
+      //todo is this okay?
+      return parentUpdater().get().get(address);
+    }
+
+    @Override
+    public EvmAccount getAccount(Address address) {
+      return new HederaUpdateTrackingAccount(get(address));
     }
 
     @Override

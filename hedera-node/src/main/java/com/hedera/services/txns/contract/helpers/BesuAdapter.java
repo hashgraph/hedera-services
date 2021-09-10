@@ -44,16 +44,22 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.Difficulty;
 import org.hyperledger.besu.ethereum.core.GasAndAccessedState;
 import org.hyperledger.besu.ethereum.core.Transaction;
+import org.hyperledger.besu.ethereum.core.feemarket.CoinbaseFeePriceCalculator;
 import org.hyperledger.besu.ethereum.mainnet.BerlinTransactionGasCalculator;
+import org.hyperledger.besu.ethereum.mainnet.TransactionGasCalculator;
 import org.hyperledger.besu.ethereum.mainnet.ValidationResult;
 import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
+import org.hyperledger.besu.ethereum.worldstate.GoQuorumMutablePrivateWorldStateUpdater;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.AccountState;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.BerlinGasCalculator;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -80,6 +86,7 @@ public class BesuAdapter {
     private final TransactionContext txnCtx;
     private final AccountStore accountStore;
     private final BlobStorageSource blobStorageSource;
+    private final TransactionGasCalculator transactionGasCalculator;
 
     @Inject
     public BesuAdapter(
@@ -94,6 +101,8 @@ public class BesuAdapter {
         this.txnCtx = txnCtx;
         this.accountStore = accountStore;
         this.blobStorageSource = blobStorageSource;
+        this.transactionGasCalculator = new BerlinTransactionGasCalculator();
+
     }
 
     public void executeTX(
@@ -102,7 +111,7 @@ public class BesuAdapter {
             Account receiver,
             long gas,
             ByteString callData,
-            long ethValue,
+            long value,
             Instant consensusTime,
             final AccountID contractId) {
 
@@ -137,7 +146,7 @@ public class BesuAdapter {
                 Wei.of(callGasPrice),
                 gas,
                 Optional.of(receiver.getEvmAddress()),
-                Wei.of(ethValue),
+                Wei.of(value),
                 null,
                 payload,
                 sender.getEvmAddress(),
@@ -151,7 +160,7 @@ public class BesuAdapter {
                 txnCtx.consensusTime().getEpochSecond(),
                 transaction,
                 isContractCreation ? Address.fromHexString(asSolidityAddressHex(contractId)) : null
-                );
+        );
 
         /* --- Externalises the result of the transaction to the transaction record service. --- */
         externalizeResult(result);
@@ -169,7 +178,6 @@ public class BesuAdapter {
         try {
 
             LOG.trace("Starting execution of {}", transaction);
-            var gasCalculator = new BerlinTransactionGasCalculator();
             final var blockHeader = new ProcessableBlockHeader(
                     Hash.EMPTY,
                     miningBeneficiary,
@@ -177,10 +185,25 @@ public class BesuAdapter {
                     0,
                     transaction.getGasLimit(),
                     timestamp,
-                    transaction.getGasPrice().get().toLong());
+                    1L);
+
+            var gasCalculator = new BerlinGasCalculator();
+
+            final EvmAccount sender = worldUpdater.getOrCreateSenderAccount(transaction.getSender());
+
+            final var senderMutableAccount = sender.getMutable();
+
+            final Wei upfrontGasCost = transaction.getUpfrontGasCost(transaction.getGasPrice().orElse(Wei.of(1)));
+            final Wei previousBalance = senderMutableAccount.decrementBalance(upfrontGasCost);
+            LOG.trace(
+                    "Deducted sender {} upfront gas cost {} ({} -> {})",
+                    transaction.getSender(),
+                    upfrontGasCost,
+                    previousBalance,
+                    sender.getBalance());
 
             final GasAndAccessedState gasAndAccessedState =
-                    gasCalculator.transactionIntrinsicGasCostAndAccessedState(transaction);
+                    transactionGasCalculator.transactionIntrinsicGasCostAndAccessedState(transaction);
             final Gas intrinsicGas = gasAndAccessedState.getGas();
             final Gas gasAvailable = Gas.of(transaction.getGasLimit()).minus(intrinsicGas);
             LOG.trace(
@@ -209,7 +232,8 @@ public class BesuAdapter {
                             .apparentValue(transaction.getValue())
                             .blockHeader(blockHeader)
                             .depth(0)
-                            .completer(__ -> {})
+                            .completer(__ -> {
+                            })
                             .miningBeneficiary(miningBeneficiary)
                             .blockHashLookup(h -> null)
                             .accessListWarmAddresses(gasAndAccessedState.getAccessListAddressSet())
@@ -233,8 +257,8 @@ public class BesuAdapter {
                 initialFrame =
                         commonMessageFrameBuilder
                                 .type(MessageFrame.Type.MESSAGE_CALL)
-                                .address(transaction.getTo().get())
-                                .contract(transaction.getTo().get())
+                                .address(to)
+                                .contract(to)
                                 .inputData(transaction.getPayload())
                                 .code(new Code(maybeContract.map(AccountState::getCode).orElse(Bytes.EMPTY)))
                                 .build();
@@ -265,43 +289,41 @@ public class BesuAdapter {
                         () -> gasAvailable.minus(initialFrame.getRemainingGas()));
             }
 
-            //todo gasCalculators are different in this besu version than what we used in mainnetTXProcessor
             //Refund the sender by what we should and pay the miner fee (note that we're doing them one
             // after the other so that if it is the same account somehow, we end up with the right result)
-//            final Gas selfDestructRefund =
-//                    gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size());
-//            final Gas refundGas = initialFrame.getGasRefund().plus(selfDestructRefund);
-//            final Gas refunded = refunded(transaction, initialFrame.getRemainingGas(), refundGas);
-//            final Wei refundedWei = refunded.priceFor(transactionGasPrice);
-//            senderMutableAccount.incrementBalance(refundedWei);
-//
+            final Gas selfDestructRefund =
+                    gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size());
+            final Gas refundGas = initialFrame.getGasRefund().plus(selfDestructRefund);
+            final Gas refunded = refunded(transaction, initialFrame.getRemainingGas(), refundGas);
+            final Wei refundedWei = refunded.priceFor(transaction.getGasPrice().get());
+
+            senderMutableAccount.incrementBalance(refundedWei);
+
             final Gas gasUsedByTransaction =
                     Gas.of(transaction.getGasLimit()).minus(initialFrame.getRemainingGas());
-//
-//            if (!worldUpdater.getClass().equals(GoQuorumMutablePrivateWorldStateUpdater.class)) {
-//                // if this is not a private GoQuorum transaction we have to update the coinbase
-//                final MutableAccount coinbase = worldUpdater.getOrCreate(miningBeneficiary).getMutable();
-//                final Gas coinbaseFee = callGasAmount.minus(refunded);
-//                if (blockHeader.getBaseFee().isPresent()) {
-//                    final Wei baseFee = Wei.of(blockHeader.getBaseFee().get());
-//                    if (transactionGasPrice.compareTo(baseFee) < 0) {
-//                        return TransactionProcessingResult.failed(
-//                                gasUsedByTransaction.toLong(),
-//                                refunded.toLong(),
-//                                ValidationResult.invalid(
-//                                        TransactionInvalidReason.TRANSACTION_PRICE_TOO_LOW,
-//                                        "transaction price must be greater than base fee"),
-//                                Optional.empty());
-//                    }
-//                }
-//                final CoinbaseFeePriceCalculator coinbaseCalculator = CoinbaseFeePriceCalculator.frontier();
-//                final Wei coinbaseWeiDelta =
-//                        coinbaseCalculator.price(coinbaseFee, transactionGasPrice, blockHeader.getBaseFee());
-//
-//                coinbase.incrementBalance(coinbaseWeiDelta);
-//            }
 
-            // state updates start here?
+            if (!worldUpdater.getClass().equals(GoQuorumMutablePrivateWorldStateUpdater.class)) {
+                // if this is not a private GoQuorum transaction we have to update the coinbase
+                final MutableAccount coinbase = worldUpdater.getOrCreate(miningBeneficiary).getMutable();
+                final Gas coinbaseFee = Gas.of(transaction.getGasLimit()).minus(refunded);
+                if (blockHeader.getBaseFee().isPresent()) {
+                    final Wei baseFee = Wei.of(blockHeader.getBaseFee().get());
+                    if (transaction.getGasPrice().get().compareTo(baseFee) < 0) {
+                        return TransactionProcessingResult.failed(
+                                gasUsedByTransaction.toLong(),
+                                refunded.toLong(),
+                                ValidationResult.invalid(
+                                        TransactionInvalidReason.TRANSACTION_PRICE_TOO_LOW,
+                                        "transaction price must be greater than base fee"),
+                                Optional.empty());
+                    }
+                }
+                final CoinbaseFeePriceCalculator coinbaseCalculator = CoinbaseFeePriceCalculator.frontier();
+                final Wei coinbaseWeiDelta =
+                        coinbaseCalculator.price(coinbaseFee, transaction.getGasPrice().get(), blockHeader.getBaseFee());
+
+                coinbase.incrementBalance(coinbaseWeiDelta);
+            }
 
             initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
 
@@ -309,18 +331,14 @@ public class BesuAdapter {
                 return TransactionProcessingResult.successful(
                         initialFrame.getLogs(),
                         gasUsedByTransaction.toLong(),
-                        //todo use refunded
-                        initialFrame.getGasRefund().toLong(),
-//                        refunded.toLong(),,
+                        refunded.toLong(),
                         initialFrame.getOutputData(),
                         ValidationResult.valid()
-                        );
+                );
             } else {
                 return TransactionProcessingResult.failed(
                         gasUsedByTransaction.toLong(),
-                        //todo use refunded
-                        initialFrame.getGasRefund().toLong(),
-//                        refunded.toLong(),
+                        refunded.toLong(),
                         //todo
                         ValidationResult.invalid(TransactionInvalidReason.valueOf("test")),
 //                        validationResult,
@@ -346,7 +364,7 @@ public class BesuAdapter {
         return Math.max(1L, feeInTinyBars);
     }
 
-    private void externalizeResult(TransactionProcessingResult result){
+    private void externalizeResult(TransactionProcessingResult result) {
         var contractFunctionResult = ContractFunctionResult.newBuilder()
                 .setGasUsed(result.getEstimateGasUsedByTransaction())
                 .setErrorMessage(result.getRevertReason().toString());
@@ -355,5 +373,16 @@ public class BesuAdapter {
                 .ifPresent(contractFunctionResult::setContractCallResult);
 
         txnCtx.setCallResult(contractFunctionResult.build());
+    }
+
+    protected Gas refunded(
+            final Transaction transaction, final Gas gasRemaining, final Gas gasRefund) {
+        // Integer truncation takes care of the the floor calculation needed after the divide.
+        final Gas maxRefundAllowance =
+                Gas.of(transaction.getGasLimit())
+                        .minus(gasRemaining)
+                        .dividedBy(transactionGasCalculator.getMaxRefundQuotient());
+        final Gas refundAllowance = maxRefundAllowance.min(gasRefund);
+        return gasRemaining.plus(refundAllowance);
     }
 }
