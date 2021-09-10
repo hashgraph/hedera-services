@@ -52,7 +52,7 @@ class ScheduleDeleteTransitionLogicTest {
     private TransactionContext txnCtx;
     private final ResponseCodeEnum NOT_OK = null;
 
-    private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+    private final ScheduleID schedule = IdUtils.asSchedule("1.2.3");
 
     private TransactionBody scheduleDeleteTxn;
     private ScheduleDeleteTransitionLogic subject;
@@ -67,32 +67,22 @@ class ScheduleDeleteTransitionLogicTest {
 
     @Test
     void followsHappyPath() {
-        // given:
         givenValidTxnCtx();
-
-        // and:
         given(store.deleteAt(schedule, consensusNow)).willReturn(OK);
 
-        // when:
         subject.doStateTransition();
 
-        // then
         verify(store).deleteAt(schedule, consensusNow);
         verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test
     void capturesInvalidSchedule() {
-        // given:
         givenValidTxnCtx();
-
-        // and:
         given(store.deleteAt(schedule, consensusNow)).willReturn(NOT_OK);
 
-        // when:
         subject.doStateTransition();
 
-        // then
         verify(store).deleteAt(schedule, consensusNow);
         verify(txnCtx).setStatus(NOT_OK);
     }
@@ -100,15 +90,11 @@ class ScheduleDeleteTransitionLogicTest {
     @Test
     void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
-        // and:
         given(store.deleteAt(schedule, consensusNow)).willThrow(IllegalArgumentException.class);
 
-        // when:
         subject.doStateTransition();
 
-        // then:
         verify(store).deleteAt(schedule, consensusNow);
-        // and:
         verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
@@ -116,7 +102,6 @@ class ScheduleDeleteTransitionLogicTest {
     void hasCorrectApplicability() {
         givenValidTxnCtx();
 
-        // expect:
         assertTrue(subject.applicability().test(scheduleDeleteTxn));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
     }
@@ -125,7 +110,6 @@ class ScheduleDeleteTransitionLogicTest {
     void failsOnInvalidSchedule() {
         givenCtx(true);
 
-        // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleDeleteTxn));
     }
 
@@ -143,23 +127,15 @@ class ScheduleDeleteTransitionLogicTest {
         assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
-    void syntaxCheckWorks() {
-        givenValidTxnCtx();
-
-        // expect:
-        assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
-    }
-
     private void givenValidTxnCtx() {
         givenCtx(false);
     }
 
-
     private void givenCtx(
             boolean invalidScheduleId
     ) {
-        var builder = TransactionBody.newBuilder();
-        var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
+        final var builder = TransactionBody.newBuilder();
+        final var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
                 .setScheduleID(schedule);
 
         if (invalidScheduleId) {

@@ -32,10 +32,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class RecordCacheFactoryTest {
-	private TransactionID txnIdA = TransactionID.newBuilder()
+	private final TransactionID txnIdA = TransactionID.newBuilder()
 			.setAccountID(asAccount("0.0.2"))
 			.build();
-	private TransactionID txnIdB = TransactionID.newBuilder()
+	private final TransactionID txnIdB = TransactionID.newBuilder()
 			.setAccountID(asAccount("2.2.0"))
 			.build();
 
@@ -44,17 +44,14 @@ class RecordCacheFactoryTest {
 
 	@Test
 	void hasExpectedExpiry() {
-		// setup:
 		properties = mock(PropertySource.class);
 		subject = new RecordCacheFactory(properties);
 
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(1);
 
-		// when:
 		var cache = subject.getCache();
 		cache.put(txnIdA, RecordCache.MARKER);
 
-		// then:
 		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		assertNull(cache.getIfPresent(txnIdB));
 		SLEEPING_PAUSE.forMs(50L);

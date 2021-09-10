@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
+	private static final Logger log = LogManager.getLogger(ScheduleDeleteTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -69,7 +69,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(ScheduleDeleteTransactionBody op, Instant consensusTime) {
-		var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
+		final var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 

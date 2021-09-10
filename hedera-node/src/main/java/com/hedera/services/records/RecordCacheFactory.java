@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Singleton
 public class RecordCacheFactory {
-	private static final Logger log = LogManager.getLogger(RecordCache.class);
+	private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
 	private final PropertySource properties;
 
@@ -48,7 +48,7 @@ public class RecordCacheFactory {
 	}
 
 	public Cache<TransactionID, Boolean> getCache() {
-		int ttl = properties.getIntProperty("cache.records.ttl");
+		final int ttl = properties.getIntProperty("cache.records.ttl");
 
 		log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
 		return CacheBuilder
