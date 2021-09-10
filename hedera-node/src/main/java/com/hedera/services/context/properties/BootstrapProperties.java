@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.context.annotations.BootstrapProps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
