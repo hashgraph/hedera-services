@@ -198,8 +198,4 @@ public class ConfigManager {
 	public String getTargetName() {
 		return targetName;
 	}
-
-	public NetConfig getTargetNet() {
-		return targetNet;
-	}
 }

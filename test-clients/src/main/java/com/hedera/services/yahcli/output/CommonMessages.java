@@ -32,6 +32,14 @@ import static com.hedera.services.yahcli.config.ConfigUtils.asId;
 public enum CommonMessages {
 	COMMON_MESSAGES;
 
+	public void warn(String notice) {
+		System.out.println(".!.️ " + notice);
+	}
+
+	public void info(String notice) {
+		System.out.println(".i. " + notice);
+	}
+
 	public void printGlobalInfo(ConfigManager config) {
 		var msg = String.format("Targeting %s, paying with %s", config.getTargetName(), asId(config.getDefaultPayer()));
 		System.out.println(msg);

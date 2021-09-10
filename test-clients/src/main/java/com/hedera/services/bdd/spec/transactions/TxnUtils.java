@@ -358,15 +358,24 @@ public class TxnUtils {
 	}
 
 	public static String randomUppercase(int l) {
+		return randomSampling(l, UPPER);
+	}
+
+	public static String randomAlphaNumeric(int l) {
+		return randomSampling(l, ALNUM);
+	}
+
+	private static String randomSampling(int l, char[] src) {
 		var sb = new StringBuilder();
-		for (int i = 0, n = CANDIDATES.length; i < l; i++) {
-			sb.append(CANDIDATES[r.nextInt(n)]);
+		for (int i = 0, n = src.length; i < l; i++) {
+			sb.append(src[r.nextInt(n)]);
 		}
 		return sb.toString();
 	}
 
 	private static final SplittableRandom r = new SplittableRandom();
-	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+	private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+	private static final char[] ALNUM = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
 	public static String readableTokenTransfers(List<TokenTransferList> tokenTransfers) {
 		return tokenTransfers.stream()

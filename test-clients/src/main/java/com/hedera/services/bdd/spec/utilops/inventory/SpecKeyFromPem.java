@@ -31,8 +31,6 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.security.KeyStoreException;
@@ -43,8 +41,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.bdd.suites.utils.keypairs.SpecUtils.asOcKeystore;
 
 public class SpecKeyFromPem extends UtilOp {
-	static final Logger log = LogManager.getLogger(SpecKeyFromPem.class);
-
 	private static final String DEFAULT_PASSPHRASE = "swirlds";
 
 	private static final SigControl SIMPLE = SigControl.ON;

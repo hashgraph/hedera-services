@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
-import com.hedera.services.yahcli.commands.accounts.RekeyCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.system.SysFreezeCommand;
@@ -59,8 +58,7 @@ import java.util.concurrent.Callable;
 				SysFilesCommand.class,
 				ValidationCommand.class,
 				FeesCommand.class,
-				SysFreezeCommand.class,
-				RekeyCommand.class
+				SysFreezeCommand.class
 		},
 		description = "Performs DevOps-type actions against a Hedera Services network")
 public class Yahcli implements Callable<Integer> {

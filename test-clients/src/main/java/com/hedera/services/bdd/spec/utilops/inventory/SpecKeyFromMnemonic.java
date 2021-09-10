@@ -34,6 +34,7 @@ import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.crypto.ShortBufferException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -79,13 +80,15 @@ public class SpecKeyFromMnemonic extends UtilOp {
 			byte[] privateKey,
 			String name,
 			Optional<String> linkedId,
-			Logger logToUse
+			@Nullable Logger logToUse
 	) {
 		var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 		var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
 		var pk = new EdDSAPrivateKey(privateKeySpec);
 		var pubKeyHex = CommonUtils.hex(pk.getAbyte());
-		logToUse.info("Hex-encoded public key: " + pubKeyHex);
+		if (logToUse != null) {
+			logToUse.info("Hex-encoded public key: " + pubKeyHex);
+		}
 		var key = Ed25519Factory.populatedFrom(pk.getAbyte());
 		spec.registry().saveKey(name, key);
 		spec.keys().incorporate(name, pubKeyHex, pk, KeyShape.SIMPLE);

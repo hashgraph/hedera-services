@@ -16,6 +16,7 @@ appear below.
 4. [Updating system files](#updating-system-files)
 5. [Validating network services](#validating-network-services)
 6. [Scheduling a network freeze](#scheduling-a-network-freeze)
+7. [Re-keying an account](#updating-account-keys)
 
 # Setting up the working directory
 
@@ -234,4 +235,46 @@ A freeze time (in consensus UTC) is specified in the pattern `yyyy-MM-dd.HH:mm:s
 
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -n localhost -p 2 freeze --start-time 2021-09-09.20:11:13
+```
+
+# Updating account keys
+
+You can use yahcli to replace an account's key with either a newly generated key, or an existing key. (Existing keys
+can be either PEM files or BIP-39 mnemonics.) 
+
+Our first example uses a randomly generated new key,
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n localhost accounts rekey --gen-new-key 57
+Targeting localhost, paying with 0.0.2
+.i. Exported a newly generated key in PEM format to localhost/keys/account57.pem
+```
+
+This leaves the existing key info under _localhost/keys_ with _.bkup_ extensions, and overwrites
+_localhost/keys/account57.pem_ and _localhost/keys/account57.pass_ in-place.
+```
+$ tree localhost/keys
+localhost/keys
+├── account2.pass
+├── account2.pem
+├── account57.pass
+├── account57.pass.bkup
+├── account57.pem
+└── account57.pem.bkup
+```
+
+For the next example, we specify an existing PEM file, and enter its passphrase when prompted,
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost accounts rekey -k new-account57.pem 57
+Targeting localhost, paying with 0.0.2
+Please enter the passphrase for key file new-account55.pem: 
+.i. Exported key from new-account55 to localhost/keys/account57.pem
+```
+
+In our final example, we replace the `0.0.57` key from a mnemonic,
+```
+$ cat new-account57.words
+goddess maze eternal small normal october ... author
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n localhost accounts rekey -k new-account57.words 57
+Targeting localhost, paying with 0.0.2
+.i. Exported key from new-account55 to localhost/keys/account57.pem
 ```
