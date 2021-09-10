@@ -95,8 +95,8 @@ class BaseOperationUsageTest {
 		mock.baseUsageFor(CryptoCreate, DEFAULT);
 		verify(mock).cryptoCreate();
 
-		mock.baseUsageFor(CryptoUpdate, DEFAULT);
-		verify(mock).cryptoUpdate();
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
 
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));
