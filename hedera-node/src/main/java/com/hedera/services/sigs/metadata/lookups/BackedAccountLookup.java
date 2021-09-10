@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,26 +20,30 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.fcmap.FCMap;
+
+import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 
 public class BackedAccountLookup implements AccountSigMetaLookup {
-	private final BackingStore<AccountID, MerkleAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public BackedAccountLookup(BackingStore<AccountID, MerkleAccount> accounts) {
+	public BackedAccountLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
-		if (!accounts.contains(id)) {
+		final var merkleId = MerkleEntityId.fromAccountId(id);
+		if (!accounts.get().containsKey(merkleId)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		}
-		var account = accounts.getImmutableRef(id);
+		var account = accounts.get().get(merkleId);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
 						account.getKey(),

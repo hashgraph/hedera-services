@@ -67,7 +67,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 
 	@Override
 	public boolean contains(AccountID id) {
-		return existingAccounts.contains(id);
+		return delegate.get().containsKey(fromAccountId(id));
 	}
 
 	@Override

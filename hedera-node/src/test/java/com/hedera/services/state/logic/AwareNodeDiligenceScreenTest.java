@@ -94,7 +94,8 @@ class AwareNodeDiligenceScreenTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
+		// TODO:
+		subject = new AwareNodeDiligenceScreen(validator, txnCtx, null);
 	}
 
 	@Test

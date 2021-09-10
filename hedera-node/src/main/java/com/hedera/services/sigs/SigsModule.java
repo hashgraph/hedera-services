@@ -25,7 +25,6 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
-import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.HandleSigReqs;
 import com.hedera.services.sigs.annotations.PayerSigReqs;
@@ -92,13 +91,11 @@ public abstract class SigsModule {
 			ScheduleStore scheduleStore,
 			SignatureWaivers signatureWaivers,
 			GlobalDynamicProperties dynamicProperties,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = backedLookupsFor(
 				hfs,
-				backingAccounts,
 				topics,
 				accounts,
 				REF_LOOKUP_FACTORY.apply(tokenStore),

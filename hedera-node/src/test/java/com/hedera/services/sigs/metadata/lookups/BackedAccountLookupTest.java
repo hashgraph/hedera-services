@@ -20,17 +20,20 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,14 +41,14 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class BackedAccountLookupTest {
-	private final AccountID id = IdUtils.asAccount("1.2.3");
+	private final AccountID accountID = IdUtils.asAccount("1.2.3");
 	private final MerkleAccount account = MerkleAccountFactory.newAccount()
 			.receiverSigRequired(true)
 			.accountKeys(TxnHandlingScenario.MISC_ADMIN_KT.asJKeyUnchecked())
 			.get();
 
 	@Mock
-	private BackingStore<AccountID, MerkleAccount> accounts;
+	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	private BackedAccountLookup subject;
 
@@ -56,11 +59,12 @@ class BackedAccountLookupTest {
 
 	@Test
 	void usesRefForImpureLookup() {
-		given(accounts.contains(id)).willReturn(true);
-		given(accounts.getImmutableRef(id)).willReturn(account);
+		final var id = MerkleEntityId.fromAccountId(accountID);
+		given(accounts.get().containsKey(id)).willReturn(true);
+		given(accounts.get().get(id)).willReturn(account);
 
 		// when:
-		final var result = subject.safeLookup(id);
+		final var result = subject.safeLookup(accountID);
 
 		// then:
 		assertTrue(result.metadata().isReceiverSigRequired());
