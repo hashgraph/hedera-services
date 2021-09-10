@@ -41,10 +41,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
-public class ScheduleDeleteTransitionLogic implements TransitionLogic {
+public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleDeleteTransitionLogic.class);
-
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
@@ -62,7 +60,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete(), txnCtx.consensusTime());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
@@ -80,11 +78,11 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
-	public ResponseCodeEnum validate(final TransactionBody txnBody) {
-		ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
+	private ResponseCodeEnum validate(final TransactionBody txnBody) {
+		final var op = txnBody.getScheduleDelete();
 		if (!op.hasScheduleID()) {
 			return INVALID_SCHEDULE_ID;
 		}

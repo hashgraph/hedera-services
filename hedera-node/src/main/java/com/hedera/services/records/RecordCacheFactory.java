@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
  * configured in the Hedera Services properties.
  */
 @Singleton
-public class RecordCacheFactory {
+public final class RecordCacheFactory {
 	private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
 	private final PropertySource properties;

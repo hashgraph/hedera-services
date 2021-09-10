@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,9 +33,6 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import static com.hedera.services.txns.submission.TxnResponseHelper.FAIL_INVALID_RESPONSE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -46,7 +43,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith({ LogCaptureExtension.class })
 class TxnResponseHelperTest {
@@ -57,7 +54,6 @@ class TxnResponseHelperTest {
 	private SubmissionFlow submissionFlow;
 	private HapiOpCounters opCounters;
 	private StreamObserver<TransactionResponse> observer;
-
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -79,7 +75,7 @@ class TxnResponseHelperTest {
 
 	@Test
 	void helpsWithSubmitHappyPath() {
-		InOrder inOrder = inOrder(submissionFlow, opCounters, observer);
+		final var inOrder = inOrder(submissionFlow, opCounters, observer);
 		given(submissionFlow.submit(txn)).willReturn(okResponse);
 
 		subject.submit(txn, observer, CryptoTransfer);
@@ -93,7 +89,7 @@ class TxnResponseHelperTest {
 
 	@Test
 	void helpsWithSubmitUnhappyPath() {
-		InOrder inOrder = inOrder(submissionFlow, opCounters, observer);
+		final var inOrder = inOrder(submissionFlow, opCounters, observer);
 		given(submissionFlow.submit(txn)).willReturn(notOkResponse);
 
 		subject.submit(txn, observer, CryptoTransfer);
@@ -109,10 +105,10 @@ class TxnResponseHelperTest {
 	void helpsWithExceptionOnSubmit() {
 		final var accessor = mock(SignedTxnAccessor.class);
 		given(accessor.getSignedTxnWrapper()).willReturn(null);
-		InOrder inOrder = inOrder(submissionFlow, opCounters, accessor, observer);
+		final var inOrder = inOrder(submissionFlow, opCounters, accessor, observer);
 
-		try (MockedStatic<SignedTxnAccessor> accessors = Mockito.mockStatic(SignedTxnAccessor.class)) {
-			accessors.when(() -> SignedTxnAccessor.uncheckedFrom(txn))
+		try (final var accessorFactory = mockStatic(SignedTxnAccessor.class)) {
+			accessorFactory.when(() -> SignedTxnAccessor.uncheckedFrom(txn))
 					.thenReturn(accessor);
 			given(submissionFlow.submit(txn)).willThrow(IllegalArgumentException.class);
 
@@ -120,9 +116,9 @@ class TxnResponseHelperTest {
 
 			inOrder.verify(opCounters).countReceived(CryptoTransfer);
 			inOrder.verify(submissionFlow).submit(txn);
-			inOrder.verify(accessor, times(1)).getSignedTxnWrapper();
-			assertThat(logCaptor.warnLogs(), contains("Submission flow unable to submit null! " +
-					"java.lang.IllegalArgumentException: null"));
+			inOrder.verify(accessor).getSignedTxnWrapper();
+			assertThat(logCaptor.warnLogs(), contains(
+					"Submission flow unable to submit null! java.lang.IllegalArgumentException: null"));
 			inOrder.verify(observer).onNext(FAIL_INVALID_RESPONSE);
 			inOrder.verify(observer).onCompleted();
 			inOrder.verify(opCounters, never()).countSubmitted(CryptoTransfer);

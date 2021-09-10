@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class TxnResponseHelper {
+public final class TxnResponseHelper {
 	private static final Logger log = LogManager.getLogger(TxnResponseHelper.class);
 
 	static final TransactionResponse FAIL_INVALID_RESPONSE = TransactionResponse.newBuilder()
@@ -76,8 +76,8 @@ public class TxnResponseHelper {
 
 		try {
 			response = submissionFlow.submit(signedTxn);
-		} catch (Exception surprising) {
-			SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+		} catch (final Exception surprising) {
+			final var accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
 			log.warn("Submission flow unable to submit {}!", accessor.getSignedTxnWrapper(), surprising);
 			response = FAIL_INVALID_RESPONSE;
 		}
