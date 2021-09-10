@@ -248,6 +248,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 2 -n l
 > accounts rekey --gen-new-key 57
 Targeting localhost, paying with 0.0.2
 .i. Exported a newly generated key in PEM format to localhost/keys/account57.pem
+.i. SUCCESS - account 0.0.57 has been re-keyed
 ```
 
 This leaves the existing key info under _localhost/keys_ with _.bkup_ extensions, and overwrites
@@ -270,6 +271,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n 
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file new-account55.pem: 
 .i. Exported key from new-account55 to localhost/keys/account57.pem
+.i. SUCCESS - account 0.0.57 has been re-keyed
 ```
 
 In our final example, we replace the `0.0.57` key from a mnemonic,
@@ -280,4 +282,5 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.4 -p 57 -n 
 > accounts rekey -k new-account57.words 57
 Targeting localhost, paying with 0.0.2
 .i. Exported key from new-account55 to localhost/keys/account57.pem
+.i. SUCCESS - account 0.0.57 has been re-keyed
 ```

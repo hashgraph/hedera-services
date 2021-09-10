@@ -57,6 +57,7 @@ public class RekeyCommand implements Callable<Integer> {
 
 		final var delegate = new RekeySuite(config.asSpecConfig(), accountNum, replKeyLoc, genNewKey, replTarget);
 		delegate.runSuiteSync();
+		COMMON_MESSAGES.info("SUCCESS - account 0.0." + accountNum + " has been re-keyed");
 
 		return 0;
 	}
