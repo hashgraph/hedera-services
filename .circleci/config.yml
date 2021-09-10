@@ -1174,7 +1174,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 02091-M-PolishYahcli
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
