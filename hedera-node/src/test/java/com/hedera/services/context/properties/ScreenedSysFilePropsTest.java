@@ -30,6 +30,8 @@ import com.hederahashgraph.api.proto.java.Setting;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Map;
 import java.util.Set;
@@ -79,15 +81,6 @@ class ScreenedSysFilePropsTest {
 	}
 
 	@Test
-	void warnsOfUnparseableGlobalDynamic() {
-		subject.screenNew(withJust("tokens.maxPerAccount", "ABC"));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNPARSEABLE_PROP_TPL, "ABC", "tokens.maxPerAccount", "NumberFormatException")));
-	}
-
-	@Test
 	void incorporatesStandardGlobalDynamic() {
 		final var oldMap = subject.from121;
 
@@ -117,82 +110,32 @@ class ScreenedSysFilePropsTest {
 				String.format(DEPRECATED_PROP_TPL, "defaultFeeCollectionAccount", "ledger.fundingAccount")));
 	}
 
-	@Test
-	void warnsOfUnparseableWhitelist() {
-		final var unparseableValue = "CryptoCreate,CryptoTransfer,Oops";
+	@ParameterizedTest
+	@CsvSource({
+			"ABC, tokens.maxPerAccount, false, NumberFormatException",
+			"CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
+			"CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
+			(MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1) + ", tokens.maxTokenNameUtf8Bytes, true,",
+			"1, ledger.transfers.maxLen, true,",
+			"1, ledger.tokenTransfers.maxLen, true,",
+			(MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
+			"-1, rates.intradayChangeLimitPercent, true,"
+	})
+	void warnsOfUnusableOrUnparseable(
+			String unsupported,
+			final String prop,
+			final boolean isUnusable,
+			String exception
+	) {
+		unsupported = unsupported.replaceAll(";", ",");
+		final var expectedLog = isUnusable
+				? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
+				: String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
 
-		subject.screenNew(withJust("scheduling.whitelist", unparseableValue));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(
-						UNPARSEABLE_PROP_TPL, unparseableValue, "scheduling.whitelist", "IllegalArgumentException")));
-	}
-
-	@Test
-	void warnsOfUnusableWhitelist() {
-		final var unusableValue = "CryptoCreate,CryptoTransfer,CryptoGetAccountBalance";
-
-		subject.screenNew(withJust("scheduling.whitelist", unusableValue));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, unusableValue, "scheduling.whitelist")));
-	}
-
-	@Test
-	void warnsOfUnusableMaxTokenNameUtf8Bytes() {
-		final var unsupportableValue = String.valueOf(MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1);
-
-		subject.screenNew(withJust("tokens.maxTokenNameUtf8Bytes", unsupportableValue));
+		subject.screenNew(withJust(prop, unsupported));
 
 		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "tokens.maxTokenNameUtf8Bytes")));
-	}
-
-	@Test
-	void warnsOfUnusableTransfersMaxLen() {
-		final var unsupportableValue = "1";
-
-		subject.screenNew(withJust("ledger.transfers.maxLen", unsupportableValue));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "ledger.transfers.maxLen")));
-	}
-
-	@Test
-	void warnsOfUnusableTokenTransfersMaxLen() {
-		final var unsupportableValue = "1";
-
-		subject.screenNew(withJust("ledger.tokenTransfers.maxLen", unsupportableValue));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "ledger.tokenTransfers.maxLen")));
-	}
-
-	@Test
-	void warnsOfUnusableMaxTokenSymbolUtf8Bytes() {
-		final var unsupportableValue = String.valueOf(MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1);
-
-		subject.screenNew(withJust("tokens.maxSymbolUtf8Bytes", unsupportableValue));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "tokens.maxSymbolUtf8Bytes")));
-	}
-
-	@Test
-	void warnsOfUnusableGlobalDynamic() {
-		final var unsupportableValue = "-1";
-
-		subject.screenNew(withJust("rates.intradayChangeLimitPercent", unsupportableValue));
-
-		assertTrue(subject.from121.isEmpty());
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "rates.intradayChangeLimitPercent")));
+		assertThat(logCaptor.warnLogs(), contains(expectedLog));
 	}
 
 	@Test
