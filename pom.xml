@@ -116,6 +116,11 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    <repository>
+      <id>google-maven</id>
+      <name>Google Maven Repo</name>
+      <url>https://maven.google.com</url>
+    </repository>
   </repositories>
   <distributionManagement>
     <snapshotRepository>
