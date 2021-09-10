@@ -175,10 +175,10 @@ public class CryptoOpsUsage {
 		}
 
 		/* Variable bytes plus two additional longs for balance and auto-renew period;
-		   plus a boolean for receiver sig required. */
+			plus a boolean for receiver sig required. */
 		accumulator.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
 		accumulator.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime);
-		/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
+		/* A multiplier '27' is used here to match the cost of each auto-association slot with cost for
 			one additional association in a tokenAssociate call */
 		accumulator.addRbs(maxAutomaticTokenAssociations * INT_SIZE * lifeTime * 27);
 		accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
