@@ -44,7 +44,7 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
 @Singleton
-public class ScreenedSysFileProps implements PropertySource {
+public final class ScreenedSysFileProps implements PropertySource {
 	private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
 	static final String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
@@ -106,9 +106,10 @@ public class ScreenedSysFileProps implements PropertySource {
 
 	@Inject
 	public ScreenedSysFileProps() {
+		// Nothing to initialize
 	}
 
-	void screenNew(ServicesConfigurationList rawProps) {
+	void screenNew(final ServicesConfigurationList rawProps) {
 		from121 = rawProps.getNameValueList()
 				.stream()
 				.map(this::withStandardizedName)
@@ -116,7 +117,7 @@ public class ScreenedSysFileProps implements PropertySource {
 				.filter(this::hasParseableValue)
 				.filter(this::isUsableGlobalDynamic)
 				.collect(Collectors.toMap(Setting::getName, this::asTypedValue, (a, b) -> b));
-		var msg = "Global/dynamic properties overridden in system file are:\n  " + GLOBAL_DYNAMIC_PROPS.stream()
+		final var msg = "Global/dynamic properties overridden in system file are:\n  " + GLOBAL_DYNAMIC_PROPS.stream()
 				.filter(from121::containsKey)
 				.sorted()
 				.map(name -> String.format("%s=%s", name, from121.get(name)))
@@ -124,11 +125,11 @@ public class ScreenedSysFileProps implements PropertySource {
 		log.info(msg);
 	}
 
-	private boolean isUsableGlobalDynamic(Setting prop) {
-		var name = prop.getName();
+	private boolean isUsableGlobalDynamic(final Setting prop) {
+		final var name = prop.getName();
 		return Optional.ofNullable(VALUE_SCREENS.get(name))
 				.map(screen -> {
-					var usable = screen.test(asTypedValue(prop));
+					final var usable = screen.test(asTypedValue(prop));
 					if (!usable) {
 						log.warn(String.format(
 								UNUSABLE_PROP_TPL,
@@ -139,16 +140,16 @@ public class ScreenedSysFileProps implements PropertySource {
 				}).orElse(true);
 	}
 
-	private boolean isValidGlobalDynamic(Setting prop) {
-		var name = prop.getName();
-		var clearlyBelongs = GLOBAL_DYNAMIC_PROPS.contains(name);
+	private boolean isValidGlobalDynamic(final Setting prop) {
+		final var name = prop.getName();
+		final var clearlyBelongs = GLOBAL_DYNAMIC_PROPS.contains(name);
 		if (!clearlyBelongs) {
 			log.warn(String.format(MISPLACED_PROP_TPL, name));
 		}
 		return clearlyBelongs;
 	}
 
-	private Setting withStandardizedName(Setting rawProp) {
+	private Setting withStandardizedName(final Setting rawProp) {
 		/* Note rawName is never null as gRPC object getters return a non-null default value for any missing field */
 		final var rawName = rawProp.getName();
 		final var standardizedName = STANDARDIZED_NAMES.getOrDefault(rawName, rawName);
@@ -171,11 +172,11 @@ public class ScreenedSysFileProps implements PropertySource {
 		return builder.build();
 	}
 
-	private Object asTypedValue(Setting prop) {
+	private Object asTypedValue(final Setting prop) {
 		return transformFor(prop.getName()).apply(prop.getValue());
 	}
 
-	private boolean hasParseableValue(Setting prop) {
+	private boolean hasParseableValue(final Setting prop) {
 		try {
 			transformFor(prop.getName()).apply(prop.getValue());
 			return true;
@@ -190,12 +191,12 @@ public class ScreenedSysFileProps implements PropertySource {
 	}
 
 	@Override
-	public boolean containsProperty(String name) {
+	public boolean containsProperty(final String name) {
 		return from121.containsKey(name);
 	}
 
 	@Override
-	public Object getProperty(String name) {
+	public Object getProperty(final String name) {
 		return from121.get(name);
 	}
 

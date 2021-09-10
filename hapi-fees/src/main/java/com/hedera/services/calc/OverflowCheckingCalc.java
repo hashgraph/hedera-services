@@ -41,12 +41,13 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
  * checking for an overflow means just checking for a number less than zero.)
  */
 @Singleton
-public class OverflowCheckingCalc {
+public final class OverflowCheckingCalc {
 	private static final String OVERFLOW_ERROR = "A fee calculation step overflowed; " +
 			"the operation cannot be priced, and therefore cannot be performed";
 
 	@Inject
 	public OverflowCheckingCalc() {
+		// Nothing to initialize
 	}
 
 	/**
@@ -63,15 +64,24 @@ public class OverflowCheckingCalc {
 	 * between tinybar and tinycent); and the final input is a multiplier that is
 	 * almost always one, except in cases of extreme congestion pricing.
 	 *
-	 * @param usage the resources used by an operation
-	 * @param prices the prices of those resources, in units of 1/1000th of a tinycent
-	 * @param rate the exchange rate between ℏ and ¢
-	 * @param multiplier a scale factor determined by congestion pricing
-	 *
+	 * @param usage
+	 * 		the resources used by an operation
+	 * @param prices
+	 * 		the prices of those resources, in units of 1/1000th of a tinycent
+	 * @param rate
+	 * 		the exchange rate between ℏ and ¢
+	 * @param multiplier
+	 * 		a scale factor determined by congestion pricing
 	 * @return fee object containing the node, network, and service fees
-	 * @throws IllegalArgumentException if any step of the calculation overflows
+	 * @throws IllegalArgumentException
+	 * 		if any step of the calculation overflows
 	 */
-	public FeeObject fees(UsageAccumulator usage, FeeData prices, ExchangeRate rate, long multiplier) {
+	public FeeObject fees(
+			final UsageAccumulator usage,
+			final FeeData prices,
+			final ExchangeRate rate,
+			final long multiplier
+	) {
 		final long networkFeeTinycents = networkFeeInTinycents(usage, prices.getNetworkdata());
 		final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata());
 		final long serviceFeeTinycents = serviceFeeInTinycents(usage, prices.getServicedata());
@@ -91,7 +101,7 @@ public class OverflowCheckingCalc {
 				unscaledServiceFee * multiplier);
 	}
 
-	long tinycentsToTinybars(long amount, ExchangeRate rate) {
+	long tinycentsToTinybars(final long amount, final ExchangeRate rate) {
 		final var product = amount * rate.getHbarEquiv();
 		if (product < 0) {
 			return FeeBuilder.getTinybarsFromTinyCents(rate, amount);
@@ -99,7 +109,7 @@ public class OverflowCheckingCalc {
 		return product / rate.getCentEquiv();
 	}
 
-	private long networkFeeInTinycents(UsageAccumulator usage, FeeComponents networkPrices) {
+	private long networkFeeInTinycents(final UsageAccumulator usage, final FeeComponents networkPrices) {
 		final var nominal = safeAccumulateThree(networkPrices.getConstant(),
 				usage.getUniversalBpt() * networkPrices.getBpt(),
 				usage.getNetworkVpt() * networkPrices.getVpt(),
@@ -107,7 +117,7 @@ public class OverflowCheckingCalc {
 		return constrainedTinycentFee(nominal, networkPrices.getMin(), networkPrices.getMax());
 	}
 
-	private long nodeFeeInTinycents(UsageAccumulator usage, FeeComponents nodePrices) {
+	private long nodeFeeInTinycents(final UsageAccumulator usage, final FeeComponents nodePrices) {
 		final var nominal = safeAccumulateFour(nodePrices.getConstant(),
 				usage.getUniversalBpt() * nodePrices.getBpt(),
 				usage.getNodeBpr() * nodePrices.getBpr(),
@@ -116,7 +126,7 @@ public class OverflowCheckingCalc {
 		return constrainedTinycentFee(nominal, nodePrices.getMin(), nodePrices.getMax());
 	}
 
-	private long serviceFeeInTinycents(UsageAccumulator usage, FeeComponents servicePrices) {
+	private long serviceFeeInTinycents(final UsageAccumulator usage, final FeeComponents servicePrices) {
 		final var nominal = safeAccumulateTwo(servicePrices.getConstant(),
 				usage.getServiceRbh() * servicePrices.getRbh(),
 				usage.getServiceSbh() * servicePrices.getSbh());
@@ -124,9 +134,9 @@ public class OverflowCheckingCalc {
 	}
 
 	/* Prices in file 0.0.111 are actually set in units of 1/1000th of a tinycent,
-	* so here we constrain the nominal price by the max/min and then divide by
-	* 1000 (the value of FEE_DIVISOR_FACTOR). */
-	private long constrainedTinycentFee(long nominal, long min, long max) {
+	 * so here we constrain the nominal price by the max/min and then divide by
+	 * 1000 (the value of FEE_DIVISOR_FACTOR). */
+	private long constrainedTinycentFee(long nominal, final long min, final long max) {
 		if (nominal < min) {
 			nominal = min;
 		} else if (nominal > max) {
@@ -136,8 +146,8 @@ public class OverflowCheckingCalc {
 	}
 
 	/* These verbose accumulators signatures are to avoid any performance hit from varargs */
-	long safeAccumulateFour(long base, long a, long b, long c, long d) {
-		if (base < 0 || a < 0 || b < 0 || c < 0 || d < 0) {
+	long safeAccumulateFour(final long base, final long a, final long b, final long c, final long d) {
+		if (d < 0) {
 			throw new IllegalArgumentException(OVERFLOW_ERROR);
 		}
 		var sum = safeAccumulateThree(base, a, b, c);
@@ -148,8 +158,8 @@ public class OverflowCheckingCalc {
 		return sum;
 	}
 
-	long safeAccumulateThree(long base, long a, long b, long c) {
-		if (base < 0 || a < 0 || b < 0 || c < 0) {
+	long safeAccumulateThree(final long base, final long a, final long b, final long c) {
+		if (c < 0) {
 			throw new IllegalArgumentException(OVERFLOW_ERROR);
 		}
 		var sum = safeAccumulateTwo(base, a, b);
@@ -160,7 +170,7 @@ public class OverflowCheckingCalc {
 		return sum;
 	}
 
-	long safeAccumulateTwo(long base, long a, long b) {
+	long safeAccumulateTwo(long base, final long a, final long b) {
 		if (base < 0 || a < 0 || b < 0) {
 			throw new IllegalArgumentException(OVERFLOW_ERROR);
 		}
@@ -174,5 +184,4 @@ public class OverflowCheckingCalc {
 		}
 		return base;
 	}
-
 }

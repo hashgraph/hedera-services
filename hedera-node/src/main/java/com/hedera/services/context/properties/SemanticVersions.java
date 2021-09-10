@@ -27,18 +27,18 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 @Singleton
-public class SemanticVersions {
+public final class SemanticVersions {
 	private static final Logger log = LogManager.getLogger(SemanticVersions.class);
 
 	@Inject
 	public SemanticVersions() {
+		// Nothing to initialize
 	}
 
 	/* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
@@ -61,13 +61,13 @@ public class SemanticVersions {
 						HEDERA_VERSION_KEY)));
 	}
 
-	ActiveVersions fromResource(String propertiesFile, String protoKey, String servicesKey) {
-		try (InputStream in = GetVersionInfoAnswer.class.getClassLoader().getResourceAsStream(propertiesFile)) {
-			var props = new Properties();
+	ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
+		try (final var in = GetVersionInfoAnswer.class.getClassLoader().getResourceAsStream(propertiesFile)) {
+			final var props = new Properties();
 			props.load(in);
 			log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
-			var protoSemVer = asSemVer((String) props.get(protoKey));
-			var hederaSemVer = asSemVer((String) props.get(servicesKey));
+			final var protoSemVer = asSemVer((String) props.get(protoKey));
+			final var hederaSemVer = asSemVer((String) props.get(servicesKey));
 			knownActive.set(new ActiveVersions(protoSemVer, hederaSemVer));
 		} catch (Exception surprising) {
 			log.warn(
@@ -76,13 +76,13 @@ public class SemanticVersions {
 					protoKey,
 					servicesKey,
 					surprising);
-			var emptySemver = SemanticVersion.getDefaultInstance();
+			final var emptySemver = SemanticVersion.getDefaultInstance();
 			knownActive.set(new ActiveVersions(emptySemver, emptySemver));
 		}
 		return knownActive.get();
 	}
 
-	SemanticVersion asSemVer(String value) {
+	SemanticVersion asSemVer(final String value) {
 		final var matcher = SEMVER_SPEC_REGEX.matcher(value);
 		if (matcher.matches()) {
 			final var builder = SemanticVersion.newBuilder()
@@ -101,7 +101,7 @@ public class SemanticVersions {
 		}
 	}
 
-	void setVersionInfoResource(String versionInfoResource) {
+	void setVersionInfoResource(final String versionInfoResource) {
 		this.versionInfoResource = versionInfoResource;
 	}
 }

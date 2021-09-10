@@ -27,7 +27,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,8 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(LogCaptureExtension.class)
 class ScreenedSysFilePropsTest {
-	Logger log;
-
 	@LoggingTarget
 	private LogCaptor logCaptor;
 
@@ -64,10 +61,8 @@ class ScreenedSysFilePropsTest {
 
 	@Test
 	void delegationWorks() {
-		// given:
 		subject.from121 = Map.of("tokens.maxPerAccount", 42);
 
-		// expect:
 		assertEquals(Set.of("tokens.maxPerAccount"), subject.allPropertyNames());
 		assertEquals(42, subject.getProperty("tokens.maxPerAccount"));
 		assertTrue(subject.containsProperty("tokens.maxPerAccount"));
@@ -76,79 +71,59 @@ class ScreenedSysFilePropsTest {
 
 	@Test
 	void ignoresNonGlobalDynamic() {
-		// when:
 		subject.screenNew(withJust("notGlobalDynamic", "42"));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
 	}
 
 	@Test
 	void warnsOfUnparseableGlobalDynamic() {
-		// when:
 		subject.screenNew(withJust("tokens.maxPerAccount", "ABC"));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(UNPARSEABLE_PROP_TPL, "ABC", "tokens.maxPerAccount", "NumberFormatException")));
 	}
 
 	@Test
 	void incorporatesStandardGlobalDynamic() {
-		// setup:
-		var oldMap = subject.from121;
+		final var oldMap = subject.from121;
 
-		// when:
 		subject.screenNew(withJust("tokens.maxPerAccount", "42"));
 
-		// then:
 		assertEquals(Map.of("tokens.maxPerAccount", 42), subject.from121);
-		// and:
 		assertNotSame(oldMap, subject.from121);
 	}
 
 	@Test
 	void incorporatesLegacyGlobalDynamic() {
-		// when:
 		subject.screenNew(withJust("configAccountNum", "42"));
 
-		// then:
 		assertEquals(1, subject.from121.size());
 		assertEquals(42L, subject.from121.get("ledger.maxAccountNum"));
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(DEPRECATED_PROP_TPL, "configAccountNum", "ledger.maxAccountNum")));
 	}
 
 	@Test
 	void incorporatesLegacyGlobalDynamicWithTransform() {
-		// when:
 		subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
 
-		// then:
 		assertEquals(1, subject.from121.size());
 		assertEquals(98L, subject.from121.get("ledger.fundingAccount"));
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(DEPRECATED_PROP_TPL, "defaultFeeCollectionAccount", "ledger.fundingAccount")));
 	}
 
 	@Test
 	void warnsOfUnparseableWhitelist() {
-		// given:
-		var unparseableValue = "CryptoCreate,CryptoTransfer,Oops";
+		final var unparseableValue = "CryptoCreate,CryptoTransfer,Oops";
 
-		// when:
 		subject.screenNew(withJust("scheduling.whitelist", unparseableValue));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(
 						UNPARSEABLE_PROP_TPL, unparseableValue, "scheduling.whitelist", "IllegalArgumentException")));
@@ -156,109 +131,90 @@ class ScreenedSysFilePropsTest {
 
 	@Test
 	void warnsOfUnusableWhitelist() {
-		// given:
-		var unusableValue = "CryptoCreate,CryptoTransfer,CryptoGetAccountBalance";
+		final var unusableValue = "CryptoCreate,CryptoTransfer,CryptoGetAccountBalance";
 
-		// when:
 		subject.screenNew(withJust("scheduling.whitelist", unusableValue));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(UNUSABLE_PROP_TPL, unusableValue, "scheduling.whitelist")));
 	}
 
 	@Test
 	void warnsOfUnusableMaxTokenNameUtf8Bytes() {
-		// setup:
-		String unsupportableValue = "" + (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1);
-		// when:
+		final var unsupportableValue = String.valueOf(MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1);
+
 		subject.screenNew(withJust("tokens.maxTokenNameUtf8Bytes", unsupportableValue));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "tokens.maxTokenNameUtf8Bytes")));
 	}
 
 	@Test
 	void warnsOfUnusableTransfersMaxLen() {
-		// setup:
-		String unsupportableValue = "" + 1;
-		// when:
+		final var unsupportableValue = "1";
+
 		subject.screenNew(withJust("ledger.transfers.maxLen", unsupportableValue));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "ledger.transfers.maxLen")));
 	}
 
 	@Test
 	void warnsOfUnusableTokenTransfersMaxLen() {
-		// setup:
-		String unsupportableValue = "" + 1;
-		// when:
+		final var unsupportableValue = "1";
+
 		subject.screenNew(withJust("ledger.tokenTransfers.maxLen", unsupportableValue));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "ledger.tokenTransfers.maxLen")));
 	}
 
 	@Test
 	void warnsOfUnusableMaxTokenSymbolUtf8Bytes() {
-		// setup:
-		String unsupportableValue = "" + (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1);
-		// when:
+		final var unsupportableValue = String.valueOf(MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1);
+
 		subject.screenNew(withJust("tokens.maxSymbolUtf8Bytes", unsupportableValue));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
 				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "tokens.maxSymbolUtf8Bytes")));
 	}
 
 	@Test
 	void warnsOfUnusableGlobalDynamic() {
-		// when:
-		subject.screenNew(withJust("rates.intradayChangeLimitPercent", "-1"));
+		final var unsupportableValue = "-1";
 
-		// then:
+		subject.screenNew(withJust("rates.intradayChangeLimitPercent", unsupportableValue));
+
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
-				String.format(UNUSABLE_PROP_TPL, "-1", "rates.intradayChangeLimitPercent")));
+				String.format(UNUSABLE_PROP_TPL, unsupportableValue, "rates.intradayChangeLimitPercent")));
 	}
 
 	@Test
 	void warnsOfUntransformableGlobalDynamic() {
-		// when:
 		subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
 
-		// then:
 		assertTrue(subject.from121.isEmpty());
-		// and:
 		assertThat(logCaptor.warnLogs(), contains(
-				"Property name 'defaultFeeCollectionAccount' is deprecated, please use 'ledger.fundingAccount' instead!",
+				"Property name 'defaultFeeCollectionAccount' is deprecated, please use 'ledger.fundingAccount' " +
+						"instead!",
 				String.format(
 						UNTRANSFORMABLE_PROP_TPL, "abc", "defaultFeeCollectionAccount", "IllegalArgumentException"),
 				"Property 'defaultFeeCollectionAccount' is not global/dynamic, please find it a proper home!"));
 	}
 
-	private ServicesConfigurationList withJust(String name, String value) {
+	private static final ServicesConfigurationList withJust(final String name, final String value) {
 		return ServicesConfigurationList.newBuilder()
 				.addNameValue(from(name, value))
 				.build();
 	}
 
-	private Setting from(String name, String value) {
+	private static final Setting from(final String name, final String value) {
 		return Setting.newBuilder().setName(name).setValue(value).build();
 	}
 }

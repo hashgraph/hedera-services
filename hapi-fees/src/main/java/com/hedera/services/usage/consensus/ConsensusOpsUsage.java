@@ -33,18 +33,19 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
 
 @Singleton
-public class ConsensusOpsUsage {
+public final class ConsensusOpsUsage {
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 
 	@Inject
 	public ConsensusOpsUsage() {
+		// Nothing to initialize
 	}
 
 	public void submitMessageUsage(
-			SigUsage sigUsage,
-			SubmitMessageMeta submitMeta,
-			BaseTransactionMeta baseMeta,
-			UsageAccumulator accumulator
+			final SigUsage sigUsage,
+			final SubmitMessageMeta submitMeta,
+			final BaseTransactionMeta baseMeta,
+			final UsageAccumulator accumulator
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
