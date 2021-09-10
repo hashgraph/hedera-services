@@ -48,15 +48,15 @@ public class TxnResponseHelper {
 	private final HapiOpCounters opCounters;
 
 	@Inject
-	public TxnResponseHelper(SubmissionFlow submissionFlow, HapiOpCounters opCounters) {
+	public TxnResponseHelper(final SubmissionFlow submissionFlow, final HapiOpCounters opCounters) {
 		this.opCounters = opCounters;
 		this.submissionFlow = submissionFlow;
 	}
 
 	public void submit(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			HederaFunctionality statedFunction
+			final Transaction signedTxn,
+			final StreamObserver<TransactionResponse> observer,
+			final HederaFunctionality statedFunction
 	) {
 		respondWithMetrics(
 				signedTxn,
@@ -66,10 +66,10 @@ public class TxnResponseHelper {
 	}
 
 	private void respondWithMetrics(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			Runnable incReceivedCount,
-			Runnable incSubmittedCount
+			final Transaction signedTxn,
+			final StreamObserver<TransactionResponse> observer,
+			final Runnable incReceivedCount,
+			final Runnable incSubmittedCount
 	) {
 		incReceivedCount.run();
 		TransactionResponse response;

@@ -23,11 +23,16 @@ package com.hedera.services.txns.submission;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -35,22 +40,30 @@ import org.mockito.Mockito;
 import static com.hedera.services.txns.submission.TxnResponseHelper.FAIL_INVALID_RESPONSE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.Mockito.times;
 
+@ExtendWith({ LogCaptureExtension.class })
 class TxnResponseHelperTest {
-	final Transaction txn = Transaction.getDefaultInstance();
-	TransactionResponse okResponse;
-	TransactionResponse notOkResponse;
+	private static final Transaction txn = Transaction.getDefaultInstance();
+	private TransactionResponse okResponse;
+	private TransactionResponse notOkResponse;
 
-	SubmissionFlow submissionFlow;
-	HapiOpCounters opCounters;
-	StreamObserver<TransactionResponse> observer;
-	SignedTxnAccessor accessor;
-	TxnResponseHelper subject;
+	private SubmissionFlow submissionFlow;
+	private HapiOpCounters opCounters;
+	private StreamObserver<TransactionResponse> observer;
+
+
+	@LoggingTarget
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private TxnResponseHelper subject;
 
 	@BeforeEach
 	private void setup() {
@@ -60,8 +73,6 @@ class TxnResponseHelperTest {
 		okResponse = mock(TransactionResponse.class);
 		given(okResponse.getNodeTransactionPrecheckCode()).willReturn(OK);
 		notOkResponse = mock(TransactionResponse.class);
-		accessor = mock(SignedTxnAccessor.class);
-		given(accessor.getSignedTxnWrapper()).willReturn(null);
 
 		subject = new TxnResponseHelper(submissionFlow, opCounters);
 	}
@@ -96,6 +107,8 @@ class TxnResponseHelperTest {
 
 	@Test
 	void helpsWithExceptionOnSubmit() {
+		final var accessor = mock(SignedTxnAccessor.class);
+		given(accessor.getSignedTxnWrapper()).willReturn(null);
 		InOrder inOrder = inOrder(submissionFlow, opCounters, accessor, observer);
 
 		try (MockedStatic<SignedTxnAccessor> accessors = Mockito.mockStatic(SignedTxnAccessor.class)) {
@@ -108,6 +121,8 @@ class TxnResponseHelperTest {
 			inOrder.verify(opCounters).countReceived(CryptoTransfer);
 			inOrder.verify(submissionFlow).submit(txn);
 			inOrder.verify(accessor, times(1)).getSignedTxnWrapper();
+			assertThat(logCaptor.warnLogs(), contains("Submission flow unable to submit null! " +
+					"java.lang.IllegalArgumentException: null"));
 			inOrder.verify(observer).onNext(FAIL_INVALID_RESPONSE);
 			inOrder.verify(observer).onCompleted();
 			inOrder.verify(opCounters, never()).countSubmitted(CryptoTransfer);
