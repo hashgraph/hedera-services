@@ -63,7 +63,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
-	void setup() throws Throwable {
+	void setup() {
 		topics = mock(FCMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();
@@ -81,7 +81,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	@Test
 	void recognizesApplicableQuery() {
 		final var topicInfoQuery = topicInfoQuery(topicId, COST_ANSWER);
-		final var nonTopicInfoQuery = nonTopicInfoQuery();
+		final var nonTopicInfoQuery = Query.getDefaultInstance();
 
 		assertTrue(subject.applicableTo(topicInfoQuery));
 		assertFalse(subject.applicableTo(nonTopicInfoQuery));
@@ -108,12 +108,12 @@ class GetMerkleTopicInfoResourceUsageTest {
 			// for auto renew account
 	})
 	void feeDataAsExpected(
-			String memo,
-			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
-			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
-			@ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
-			int expectedBpt,  // query header + topic id size
-			int expectedBpr  // query response header + topic id size + topic info size
+			final String memo,
+			@ConvertWith(JEd25519KeyConverter.class) final JEd25519Key adminKey,
+			@ConvertWith(JEd25519KeyConverter.class) final JEd25519Key submitKey,
+			@ConvertWith(EntityIdConverter.class) final EntityId autoRenewAccountId,
+			final int expectedBpt,  // query header + topic id size
+			final int expectedBpr  // query response header + topic id size + topic info size
 	) {
 		final var merkleTopic = new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId,
 				new RichInstant(1, 0));
@@ -138,9 +138,5 @@ class GetMerkleTopicInfoResourceUsageTest {
 		return Query.newBuilder()
 				.setConsensusGetTopicInfo(op)
 				.build();
-	}
-
-	private Query nonTopicInfoQuery() {
-		return Query.newBuilder().build();
 	}
 }

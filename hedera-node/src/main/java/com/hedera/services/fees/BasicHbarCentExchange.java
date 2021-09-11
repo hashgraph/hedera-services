@@ -9,9 +9,9 @@ package com.hedera.services.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,16 +30,17 @@ import javax.inject.Singleton;
 import java.time.Instant;
 
 @Singleton
-public class BasicHbarCentExchange implements HbarCentExchange {
+public final class BasicHbarCentExchange implements HbarCentExchange {
 	private ExchangeRates fcRates = null;
 	private ExchangeRateSet grpcRates = null;
 
 	@Inject
 	public BasicHbarCentExchange() {
+		/* No-op */
 	}
 
 	@Override
-	public ExchangeRate activeRate(Instant now) {
+	public ExchangeRate activeRate(final Instant now) {
 		return rateAt(now.getEpochSecond());
 	}
 
@@ -49,12 +50,12 @@ public class BasicHbarCentExchange implements HbarCentExchange {
 	}
 
 	@Override
-	public ExchangeRate rate(Timestamp now) {
+	public ExchangeRate rate(final Timestamp now) {
 		return rateAt(now.getSeconds());
 	}
 
 	@Override
-	public void updateRates(ExchangeRateSet rates) {
+	public void updateRates(final ExchangeRateSet rates) {
 		this.grpcRates = rates;
 		this.fcRates = ExchangeRates.fromGrpc(rates);
 	}
@@ -64,9 +65,9 @@ public class BasicHbarCentExchange implements HbarCentExchange {
 		return fcRates;
 	}
 
-	private ExchangeRate rateAt(long now) {
-		var currentRate = grpcRates.getCurrentRate();
-		long currentExpiry = currentRate.getExpirationTime().getSeconds();
+	private ExchangeRate rateAt(final long now) {
+		final var currentRate = grpcRates.getCurrentRate();
+		final var currentExpiry = currentRate.getExpirationTime().getSeconds();
 		return (now < currentExpiry) ? currentRate : grpcRates.getNextRate();
 	}
 }
