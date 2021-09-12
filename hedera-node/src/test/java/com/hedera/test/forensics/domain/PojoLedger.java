@@ -22,7 +22,7 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.io.MerkleDataInputStream;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -40,13 +40,13 @@ public class PojoLedger {
 
 	public static PojoLedger fromDisk(String dumpLoc) throws Exception {
 		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(dumpLoc)), false)) {
-			MerkleMap<PermHashInteger, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+			MerkleMap<EntityNum, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
 			var pojo = from(fcm);
 			return pojo;
 		}
 	}
 
-	public static PojoLedger from(MerkleMap<PermHashInteger, MerkleAccount> ledger) {
+	public static PojoLedger from(MerkleMap<EntityNum, MerkleAccount> ledger) {
 		var pojo = new PojoLedger();
 		var readable = ledger.entrySet()
 				.stream()

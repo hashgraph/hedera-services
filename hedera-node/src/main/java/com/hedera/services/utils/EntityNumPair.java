@@ -1,4 +1,4 @@
-package com.hedera.services.store.tokens.views.internals;
+package com.hedera.services.utils;
 
 /*-
  * ‌
@@ -23,7 +23,6 @@ package com.hedera.services.store.tokens.views.internals;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,27 +32,27 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 
-public class PermHashLong {
+public class EntityNumPair {
 	private final long value;
 
-	public PermHashLong(long value) {
+	public EntityNumPair(long value) {
 		this.value = value;
 	}
 
-	public static PermHashLong fromLongs(long hi, long lo) {
+	public static EntityNumPair fromLongs(long hi, long lo) {
 		final var value = packedNums(hi, lo);
-		return new PermHashLong(value);
+		return new EntityNumPair(value);
 	}
 
-	public static PermHashLong fromNftId(NftId id) {
+	public static EntityNumPair fromNftId(NftId id) {
 		return fromLongs(id.num(), id.serialNo());
 	}
 
-	public PermHashInteger getHiPhi() {
-		return PermHashInteger.fromLong(unsignedHighOrder32From(value));
+	public EntityNum getHiPhi() {
+		return EntityNum.fromLong(unsignedHighOrder32From(value));
 	}
 
-	public static PermHashLong fromModelRel(TokenRelationship tokenRelationship) {
+	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
 		final var token = tokenRelationship.getToken();
 		final var account = tokenRelationship.getAccount();
 		return fromLongs(account.getId().getNum(), token.getId().getNum());
@@ -79,11 +78,11 @@ public class PermHashLong {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || PermHashLong.class != o.getClass()) {
+		if (o == null || EntityNumPair.class != o.getClass()) {
 			return false;
 		}
 
-		var that = (PermHashLong) o;
+		var that = (EntityNumPair) o;
 
 		return this.value == that.value;
 	}

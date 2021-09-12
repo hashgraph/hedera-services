@@ -24,7 +24,7 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
@@ -62,7 +62,7 @@ class GetContractRecordsAnswerTest {
 	String target = payer;
 	StateView view;
 	Transaction paymentTxn;
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	OptionValidator optionValidator;
 	GetContractRecordsAnswer subject;

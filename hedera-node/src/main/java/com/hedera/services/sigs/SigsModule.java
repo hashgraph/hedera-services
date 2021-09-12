@@ -42,7 +42,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -93,8 +93,8 @@ public abstract class SigsModule {
 			SignatureWaivers signatureWaivers,
 			GlobalDynamicProperties dynamicProperties,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = backedLookupsFor(
 				hfs,
@@ -118,8 +118,8 @@ public abstract class SigsModule {
 			MiscSpeedometers speedometers,
 			NodeLocalProperties nodeLocalProperties,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = defaultAccountRetryingLookupsFor(
 				hfs,
@@ -142,8 +142,8 @@ public abstract class SigsModule {
 			ScheduleStore scheduleStore,
 			SignatureWaivers signatureWaivers,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = defaultLookupsFor(
 				hfs,

@@ -39,8 +39,8 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -78,13 +78,13 @@ class TypedTokenStoreTest {
 	@Mock
 	private UniqTokenViewsManager uniqTokenViewsManager;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private BackingTokenRels backingTokenRels;
 	@Mock
@@ -336,11 +336,11 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
 		// and:
-		final var expectedNewUniqTokenId = PermHashLong.fromLongs(tokenEntityId.num(), mintedSerialNo);
-		final var expectedNewUniqTokenId2 = PermHashLong.fromLongs(tokenEntityId.num(), mintedSerialNo2);
+		final var expectedNewUniqTokenId = EntityNumPair.fromLongs(tokenEntityId.num(), mintedSerialNo);
+		final var expectedNewUniqTokenId2 = EntityNumPair.fromLongs(tokenEntityId.num(), mintedSerialNo2);
 		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
-		final var expectedPastUniqTokenId = PermHashLong.fromLongs(tokenEntityId.num(), wipedSerialNo);
-		final var expectedPastUniqTokenId2 = PermHashLong.fromLongs(tokenEntityId.num(), burnedSerialNo);
+		final var expectedPastUniqTokenId = EntityNumPair.fromLongs(tokenEntityId.num(), wipedSerialNo);
+		final var expectedPastUniqTokenId2 = EntityNumPair.fromLongs(tokenEntityId.num(), burnedSerialNo);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -424,7 +424,7 @@ class TypedTokenStoreTest {
 	@Test
 	void loadOrFailsWorksAsExpected() {
 		assertFailsWith(() -> subject.loadTokenOrFailWith(Id.DEFAULT, FAIL_INVALID), FAIL_INVALID);
-		given(tokens.get(any(PermHashInteger.class))).willReturn(merkleToken);
+		given(tokens.get(any(EntityNum.class))).willReturn(merkleToken);
 		assertNotNull(subject.loadTokenOrFailWith(IdUtils.asModelId("0.0.3"), FAIL_INVALID));
 	}
 
@@ -433,19 +433,19 @@ class TypedTokenStoreTest {
 		assertEquals(status, ex.getResponseCode());
 	}
 
-	private void givenRelationship(final PermHashLong anAssoc, MerkleTokenRelStatus aRelationship) {
+	private void givenRelationship(final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.get(anAssoc)).willReturn(aRelationship);
 	}
 
-	private void givenModifiableRelationship(final PermHashLong anAssoc, final MerkleTokenRelStatus aRelationship) {
+	private void givenModifiableRelationship(final EntityNumPair anAssoc, final MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.getForModify(anAssoc)).willReturn(aRelationship);
 	}
 
-	private void givenToken(final PermHashInteger anId, final MerkleToken aToken) {
+	private void givenToken(final EntityNum anId, final MerkleToken aToken) {
 		given(tokens.get(anId)).willReturn(aToken);
 	}
 
-	private void givenModifiableToken(final PermHashInteger anId, final MerkleToken aToken) {
+	private void givenModifiableToken(final EntityNum anId, final MerkleToken aToken) {
 		given(tokens.getForModify(anId)).willReturn(aToken);
 	}
 
@@ -520,14 +520,14 @@ class TypedTokenStoreTest {
 	private final String name = "Testing123";
 	private final String symbol = "T123";
 	private final String memo = "memo";
-	private final PermHashInteger merkleTokenId = PermHashInteger.fromLong(tokenNum);
+	private final EntityNum merkleTokenId = EntityNum.fromLong(tokenNum);
 	private final Id tokenId = new Id(0, 0, tokenNum);
 	private final Token token = new Token(tokenId);
 
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
 	private final boolean freezeDefault = true;
-	private final PermHashLong miscTokenRelId = PermHashLong.fromLongs(miscAccountNum, tokenNum);
+	private final EntityNumPair miscTokenRelId = EntityNumPair.fromLongs(miscAccountNum, tokenNum);
 	private final boolean automaticAssociation = true;
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
 	private MerkleToken merkleToken;

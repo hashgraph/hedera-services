@@ -26,7 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -149,7 +149,7 @@ class MerkleAccountTest {
 	@Test
 	void gettersDelegate() {
 		// expect:
-		assertEquals(new PermHashInteger(number), subject.getKey());
+		assertEquals(new EntityNum(number), subject.getKey());
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
@@ -188,7 +188,7 @@ class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setAccountKey(otherKey);
-		subject.setKey(new PermHashInteger(number));
+		subject.setKey(new EntityNum(number));
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 

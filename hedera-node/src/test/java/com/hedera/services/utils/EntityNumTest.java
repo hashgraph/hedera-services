@@ -1,4 +1,4 @@
-package com.hedera.services.store.tokens.views.internals;
+package com.hedera.services.utils;
 
 /*-
  * ‌
@@ -28,20 +28,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PermHashIntegerTest {
+class EntityNumTest {
 	@Test
 	void overridesJavaLangImpl() {
 		final var v = 1_234_567;
 
-		final var subject = new PermHashInteger(v);
+		final var subject = new EntityNum(v);
 
 		assertNotEquals(v, subject.hashCode());
 	}
 
 	@Test
 	void equalsWorks() {
-		final var a = new PermHashInteger(1);
-		final var b = new PermHashInteger(2);
+		final var a = new EntityNum(1);
+		final var b = new EntityNum(2);
 		final var c = a;
 
 		assertNotEquals(a, b);
@@ -53,27 +53,27 @@ class PermHashIntegerTest {
 	@Test
 	void throwsOnUnusableNum() {
 		// expect:
-		Assertions.assertThrows(IllegalArgumentException.class, () -> PermHashInteger.fromLong(Long.MAX_VALUE));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> EntityNum.fromLong(Long.MAX_VALUE));
 	}
 
 	@Test
 	void factoriesWork() {
 		// setup:
-		final var expected = PermHashInteger.fromInt(123);
+		final var expected = EntityNum.fromInt(123);
 
 		// expect:
-		assertEquals(expected, PermHashInteger.fromLong(123L));
-		assertEquals(expected, PermHashInteger.fromAccountId(IdUtils.asAccount("0.0.123")));
-		assertEquals(expected, PermHashInteger.fromTokenId(IdUtils.asToken("0.0.123")));
-		assertEquals(expected, PermHashInteger.fromScheduleId(IdUtils.asSchedule("0.0.123")));
-		assertEquals(expected, PermHashInteger.fromTopicId(IdUtils.asTopic("0.0.123")));
-		assertEquals(expected, PermHashInteger.fromContractId(IdUtils.asContract("0.0.123")));
+		assertEquals(expected, EntityNum.fromLong(123L));
+		assertEquals(expected, EntityNum.fromAccountId(IdUtils.asAccount("0.0.123")));
+		assertEquals(expected, EntityNum.fromTokenId(IdUtils.asToken("0.0.123")));
+		assertEquals(expected, EntityNum.fromScheduleId(IdUtils.asSchedule("0.0.123")));
+		assertEquals(expected, EntityNum.fromTopicId(IdUtils.asTopic("0.0.123")));
+		assertEquals(expected, EntityNum.fromContractId(IdUtils.asContract("0.0.123")));
 	}
 
 	@Test
 	void viewsWork() {
 		// given:
-		final var subject = PermHashInteger.fromInt(123);
+		final var subject = EntityNum.fromInt(123);
 
 		// expect:
 		assertEquals(123, subject.toGrpcAccountId().getAccountNum());
@@ -88,7 +88,7 @@ class PermHashIntegerTest {
 		final long realNum = (long)Integer.MAX_VALUE + 10;
 
 		// given:
-		final var subject = PermHashInteger.fromLong(realNum);
+		final var subject = EntityNum.fromLong(realNum);
 
 		// expect:
 		assertEquals(realNum, subject.toGrpcAccountId().getAccountNum());
@@ -103,7 +103,7 @@ class PermHashIntegerTest {
 		final long realNum = (long)Integer.MAX_VALUE + 10;
 
 		// given:
-		final var subject = PermHashInteger.fromLong(realNum);
+		final var subject = EntityNum.fromLong(realNum);
 
 		// expect:
 		assertEquals(realNum, subject.longValue());

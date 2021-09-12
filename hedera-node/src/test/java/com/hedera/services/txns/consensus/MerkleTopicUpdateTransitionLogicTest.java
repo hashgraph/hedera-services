@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -98,8 +98,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<PermHashInteger, MerkleTopic> topics = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private TopicUpdateTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -164,7 +164,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		assertNotNull(topic);
 		verify(transactionContext).setStatus(SUCCESS);
 		assertEquals(VALID_MEMO, topic.getMemo());
@@ -185,7 +185,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		assertNotNull(topic);
 		verify(transactionContext).setStatus(SUCCESS);
 		assertEquals(EXISTING_MEMO, topic.getMemo());
@@ -202,7 +202,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidMemo();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -219,7 +219,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAdminKey();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -236,7 +236,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidSubmitKey();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -253,7 +253,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAutoRenewPeriod();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -270,7 +270,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidExpirationTime();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -287,7 +287,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithReducedExpirationTime();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -304,7 +304,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithoutAdminKey();
 		givenTransactionWithMemo();
 
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -391,13 +391,13 @@ class MerkleTopicUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		verify(transactionContext).setStatus(SUCCESS);
 		assertFalse(topic.hasAutoRenewAccountId());
 	}
 
 	private void assertTopicNotUpdated(MerkleTopic originalMerkleTopic, MerkleTopic originalMerkleTopicClone) {
-		var updatedTopic = topics.get(PermHashInteger.fromTopicId(TOPIC_ID));
+		var updatedTopic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		assertSame(originalMerkleTopic, updatedTopic); // No change
 		assertEquals(originalMerkleTopicClone, updatedTopic); // No change in values
 	}
@@ -406,21 +406,21 @@ class MerkleTopicUpdateTransitionLogicTest {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null,
 				EXISTING_AUTORENEW_PERIOD_SECONDS, null,
 				EXISTING_EXPIRATION_TIME);
-		topics.put(PermHashInteger.fromTopicId(TOPIC_ID), existingTopic);
+		topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 
 	private void givenExistingTopicWithBothKeys() throws Throwable {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), JKey.mapKey(existingKey),
 				EXISTING_AUTORENEW_PERIOD_SECONDS, null, EXISTING_EXPIRATION_TIME);
-		topics.put(PermHashInteger.fromTopicId(TOPIC_ID), existingTopic);
+		topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 
 	private void givenExistingTopicWithoutAdminKey() throws Throwable {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, null, null, EXISTING_AUTORENEW_PERIOD_SECONDS, null,
 				EXISTING_EXPIRATION_TIME);
-		topics.put(PermHashInteger.fromTopicId(TOPIC_ID), existingTopic);
+		topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 
@@ -428,7 +428,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null,
 				EXISTING_AUTORENEW_PERIOD_SECONDS,
 				EntityId.fromGrpcAccountId(MISC_ACCOUNT), EXISTING_EXPIRATION_TIME);
-		topics.put(PermHashInteger.fromTopicId(TOPIC_ID), existingTopic);
+		topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 

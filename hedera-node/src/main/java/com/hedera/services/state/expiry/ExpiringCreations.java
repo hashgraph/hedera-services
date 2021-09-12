@@ -34,7 +34,7 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -57,14 +57,14 @@ public class ExpiringCreations implements EntityCreator {
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public ExpiringCreations(
 			final ExpiryManager expiries,
 			final NarratedCharging narratedCharging,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;
@@ -90,7 +90,7 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 
-		final var key = PermHashInteger.fromAccountId(payer);
+		final var key = EntityNum.fromAccountId(payer);
 		addToState(key, expiringRecord);
 		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 
@@ -167,7 +167,7 @@ public class ExpiringCreations implements EntityCreator {
 		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments).setNftTokenAdjustments(nftTokenAdjustments);
 	}
 
-	private void addToState(final PermHashInteger key, final ExpirableTxnRecord expirableTxnRecord) {
+	private void addToState(final EntityNum key, final ExpirableTxnRecord expirableTxnRecord) {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.records().offer(expirableTxnRecord);

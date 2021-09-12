@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromTopicId;
+import static com.hedera.services.utils.EntityNum.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;

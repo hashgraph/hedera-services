@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -119,7 +119,7 @@ class SmartContractRequestHandlerStorageTest {
 	public static String ADDRESS_PATH = "/{0}/s{1}";
 	SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  MerkleMap<PermHashInteger, MerkleAccount> contracts = null;
+  MerkleMap<EntityNum, MerkleAccount> contracts = null;
   private MerkleMap<String, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -214,7 +214,7 @@ class SmartContractRequestHandlerStorageTest {
   private void createAccount(AccountID payerAccount, long balance) throws NegativeAccountBalanceException {
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
-    contracts.put(PermHashInteger.fromAccountId(payerAccount), mv);
+    contracts.put(EntityNum.fromAccountId(payerAccount), mv);
   }
 
   private byte[] createFile(String filePath, FileID fileId) {
@@ -285,7 +285,7 @@ class SmartContractRequestHandlerStorageTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MerkleAccount mv = contracts.get(PermHashInteger.fromLong(contractId.getContractNum()));
+    MerkleAccount mv = contracts.get(EntityNum.fromLong(contractId.getContractNum()));
     Assertions.assertNotNull(mv);
     Assertions.assertNotNull(mv.getAccountKey());
     Assertions.assertNotNull(mv.getAccountKey());

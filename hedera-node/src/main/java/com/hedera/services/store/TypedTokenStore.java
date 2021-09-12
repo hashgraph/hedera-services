@@ -34,8 +34,8 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -84,9 +84,9 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final TransactionRecordService transactionRecordService;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
-	private final Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> uniqueTokens;
-	private final Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels;
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
@@ -97,9 +97,9 @@ public class TypedTokenStore {
 	public TypedTokenStore(
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
-			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
-			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> uniqueTokens,
-			Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels,
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			UniqTokenViewsManager uniqTokenViewsManager,
 			LegacyTreasuryAdder legacyStoreDelegate,
@@ -162,7 +162,7 @@ public class TypedTokenStore {
 //		final var key = new MerkleEntityAssociation(
 //				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
 //				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
-		final var key = PermHashLong.fromLongs(accountId.getNum(), tokenId.getNum());
+		final var key = EntityNumPair.fromLongs(accountId.getNum(), tokenId.getNum());
 		final var merkleTokenRel = tokenRels.get().get(key);
 
 		validateUsable(merkleTokenRel);
@@ -190,7 +190,7 @@ public class TypedTokenStore {
 		final var currentTokenRels = tokenRels.get();
 
 		for (var tokenRelationship : tokenRelationships) {
-			final var key = PermHashLong.fromModelRel(tokenRelationship);
+			final var key = EntityNumPair.fromModelRel(tokenRelationship);
 			if (tokenRelationship.isDestroyed()) {
 				currentTokenRels.remove(key);
 				backingTokenRels.removeFromExistingRels(legacyReprOf(tokenRelationship));
@@ -203,8 +203,8 @@ public class TypedTokenStore {
 
 	private void persistNonDestroyed(
 			TokenRelationship modelRel,
-			PermHashLong key,
-			MerkleMap<PermHashLong, MerkleTokenRelStatus> currentTokenRels
+			EntityNumPair key,
+			MerkleMap<EntityNumPair, MerkleTokenRelStatus> currentTokenRels
 	) {
 		final var isNewRel = modelRel.isNotYetPersisted();
 		final var mutableTokenRel = isNewRel
@@ -249,7 +249,7 @@ public class TypedTokenStore {
 	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
-		final var merkleToken = tokens.get().get(PermHashInteger.fromLong(id.getNum()));
+		final var merkleToken = tokens.get().get(EntityNum.fromLong(id.getNum()));
 
 		validateUsable(merkleToken);
 
@@ -277,7 +277,7 @@ public class TypedTokenStore {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		final var curUniqueTokens = uniqueTokens.get();
 		for (long serialNumber : serialNumbers) {
-			final var uniqueTokenKey = PermHashLong.fromLongs(tokenAsEntityId.num(), serialNumber);
+			final var uniqueTokenKey = EntityNumPair.fromLongs(tokenAsEntityId.num(), serialNumber);
 			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
 			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
@@ -296,7 +296,7 @@ public class TypedTokenStore {
 	 * @return a usable model of the token
 	 */
 	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
-		final var key = PermHashInteger.fromLong(id.getNum());
+		final var key = EntityNum.fromLong(id.getNum());
 		final var merkleToken = tokens.get().get(key);
 
 		final var token = new Token(id);
@@ -320,7 +320,7 @@ public class TypedTokenStore {
 	 * @return - the loaded token
 	 */
 	public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
-		final var key = PermHashInteger.fromLong(id.getNum());
+		final var key = EntityNum.fromLong(id.getNum());
 		final var merkleToken = tokens.get().get(key);
 
 		validateUsable(merkleToken, code);
@@ -340,7 +340,7 @@ public class TypedTokenStore {
 	 * 		the token to save
 	 */
 	public void persistToken(Token token) {
-		final var key = PermHashInteger.fromLong(token.getId().getNum());
+		final var key = EntityNum.fromLong(token.getId().getNum());
 		final var mutableToken = tokens.get().getForModify(key);
 		mapModelChangesToMutable(token, mutableToken);
 
@@ -372,7 +372,7 @@ public class TypedTokenStore {
 	 */
 	public void persistNew(Token token) {
 		/* create new merkle token */
-		final var newMerkleTokenId = PermHashInteger.fromLong(token.getId().getNum());
+		final var newMerkleTokenId = EntityNum.fromLong(token.getId().getNum());
 		final var newMerkleToken = new MerkleToken(
 				token.getExpiry(),
 				token.getTotalSupply(),
@@ -395,7 +395,7 @@ public class TypedTokenStore {
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
-			final var merkleNftId = PermHashLong.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
+			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
 			curNfts.remove(merkleNftId);
 			if (treasury.matches(nft.getOwner())) {
 				uniqTokenViewsManager.burnNotice(merkleNftId, treasury);
@@ -408,7 +408,7 @@ public class TypedTokenStore {
 	private void persistMinted(List<UniqueToken> nfts, EntityId treasury) {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
-			final var merkleNftId = PermHashLong.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
+			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
 			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
 			curNfts.put(merkleNftId, merkleNft);
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);

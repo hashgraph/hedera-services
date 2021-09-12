@@ -27,8 +27,8 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -68,8 +68,8 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromTokenId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,9 +87,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 	private static final NodeId nodeId = new NodeId(false, 1);
-	private MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 
 	private MerkleToken token;
 	private MerkleToken deletedToken;

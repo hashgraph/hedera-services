@@ -23,7 +23,7 @@ package com.hedera.services.txns.consensus;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -55,12 +55,12 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final GlobalDynamicProperties globalDynamicProperties;
 
 	@Inject
 	public SubmitMessageTransitionLogic(
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext,
 			GlobalDynamicProperties globalDynamicProperties
@@ -110,7 +110,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		var topicId = PermHashInteger.fromTopicId(op.getTopicID());
+		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
 			mutableTopic.updateRunningHashAndSequenceNumber(

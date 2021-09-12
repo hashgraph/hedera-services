@@ -24,8 +24,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.store.tokens.views.utils.MultiSourceRange;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
+import static com.hedera.services.utils.EntityNum.fromInt;
 
 /**
  * A {@link UniqTokenView} that answers requests for an account's unique tokens using
@@ -57,16 +57,16 @@ import static com.hedera.services.store.tokens.views.internals.PermHashInteger.f
  */
 public class TreasuryWildcardsUniqTokenView extends AbstractUniqTokenView {
 	private final TokenStore tokenStore;
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
-	private final Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
+	private final Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner;
+	private final Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType;
 
 	public TreasuryWildcardsUniqTokenView(
 			TokenStore tokenStore,
-			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
-			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType
 	) {
 		super(tokens, nfts, nftsByType);
 

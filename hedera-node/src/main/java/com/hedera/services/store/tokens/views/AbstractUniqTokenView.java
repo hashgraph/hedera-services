@@ -24,8 +24,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,7 +40,7 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
+import static com.hedera.services.utils.EntityNum.fromInt;
 
 /**
  * Provides implementation support for a {@link UniqTokenView} via a method able to
@@ -52,14 +52,14 @@ import static com.hedera.services.store.tokens.views.internals.PermHashInteger.f
  * and builds the {@link TokenNftInfo} accordingly.
  */
 public abstract class AbstractUniqTokenView implements UniqTokenView {
-	protected final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
-	protected final Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts;
-	protected final Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
+	protected final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+	protected final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts;
+	protected final Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType;
 
 	protected AbstractUniqTokenView(
-			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
-			Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> nfts,
-			Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts,
+			Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType
 	) {
 		this.tokens = tokens;
 		this.nfts = nfts;
@@ -96,7 +96,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 	 * @return the requested list
 	 */
 	protected List<TokenNftInfo> accumulatedInfo(
-			FCOneToManyRelation<PermHashInteger, Long> relation,
+			FCOneToManyRelation<EntityNum, Long> relation,
 			EntityId key,
 			int start,
 			int end,
@@ -106,7 +106,7 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		final var curNfts = nfts.get();
 		final List<TokenNftInfo> answer = new ArrayList<>();
 		relation.get(fromInt(key.identityCode()), start, end).forEachRemaining(nftIdCode -> {
-			final var nft = curNfts.get(new PermHashLong(nftIdCode));
+			final var nft = curNfts.get(new EntityNumPair(nftIdCode));
 			if (nft == null) {
 				throw new ConcurrentModificationException("NFT was removed during query answering");
 			}
@@ -123,8 +123,8 @@ public abstract class AbstractUniqTokenView implements UniqTokenView {
 		return answer;
 	}
 
-	private AccountID treasuryOf(MerkleMap<PermHashInteger, MerkleToken> curTokens, EntityId tokenId) {
-		final var token = curTokens.get(PermHashInteger.fromLong(tokenId.num()));
+	private AccountID treasuryOf(MerkleMap<EntityNum, MerkleToken> curTokens, EntityId tokenId) {
+		final var token = curTokens.get(EntityNum.fromLong(tokenId.num()));
 		if (token == null) {
 			throw new ConcurrentModificationException(
 					"Token " + tokenId.toAbbrevString() + " was removed during query answering");

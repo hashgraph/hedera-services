@@ -41,8 +41,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
@@ -72,7 +72,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.store.tokens.views.internals.PermHashLong.fromLongs;
+import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -165,38 +165,45 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.UNIQUE_TOKENS,
-					(MerkleUniqueTokenId uniqueTokenId) -> new PermHashLong(uniqueTokenId.identityCode()),
+					(MerkleUniqueTokenId uniqueTokenId) -> new EntityNumPair(uniqueTokenId.identityCode()),
 					(MerkleUniqueToken v) -> v);
+			log.info("  ↪ Migrated {} NFTs", uniqueTokens().size());
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.TOKEN_ASSOCIATIONS,
 					(MerkleEntityAssociation tokenRel) -> fromLongs(tokenRel.getFromNum(), tokenRel.getToNum()),
 					(MerkleTokenRelStatus v) -> v);
+			log.info("  ↪ Migrated {} token associations", tokenAssociations().size());
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.TOPICS,
-					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
 					(MerkleTopic v) -> v);
+			log.info("  ↪ Migrated {} topics", topics().size());
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.STORAGE,
 					MerkleBlobMeta::getPath,
 					(MerkleOptionalBlob v) -> v);
+			log.info("  ↪ Migrated {} blobs", storage().size());
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.ACCOUNTS,
-					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
 					(MerkleAccount v) -> v);
+			log.info("  ↪ Migrated {} accounts", accounts().size());
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.TOKENS,
-					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
 					(MerkleToken v) -> v);
+			log.info("  ↪ Migrated {} tokens", tokens().size());
 			fcmMigrator.toMerkleMap(
 					this,
 					StateChildIndices.SCHEDULE_TXS,
-					(MerkleEntityId id) -> PermHashInteger.fromLong(id.getNum()),
+					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
 					(MerkleSchedule v) -> v);
+			log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
@@ -319,7 +326,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		log.info(networkCtx());
 	}
 
-	public MerkleMap<PermHashInteger, MerkleAccount> accounts() {
+	public MerkleMap<EntityNum, MerkleAccount> accounts() {
 		return getChild(StateChildIndices.ACCOUNTS);
 	}
 
@@ -327,19 +334,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.STORAGE);
 	}
 
-	public MerkleMap<PermHashInteger, MerkleTopic> topics() {
+	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		return getChild(StateChildIndices.TOPICS);
 	}
 
-	public MerkleMap<PermHashInteger, MerkleToken> tokens() {
+	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return getChild(StateChildIndices.TOKENS);
 	}
 
-	public MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations() {
+	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
 		return getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
-	public MerkleMap<PermHashInteger, MerkleSchedule> scheduleTxs() {
+	public MerkleMap<EntityNum, MerkleSchedule> scheduleTxs() {
 		return getChild(StateChildIndices.SCHEDULE_TXS);
 	}
 
@@ -359,19 +366,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
 		return metadata.getUniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
 		return metadata.getUniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations() {
 		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 

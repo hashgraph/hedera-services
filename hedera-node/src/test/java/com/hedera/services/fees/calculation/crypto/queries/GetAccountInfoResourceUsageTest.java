@@ -23,7 +23,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
@@ -61,7 +61,7 @@ import static org.mockito.BDDMockito.verify;
 
 class GetAccountInfoResourceUsageTest {
 	StateView view;
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 	GetAccountInfoResourceUsage subject;
 	Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 	String a = "0.0.1234";

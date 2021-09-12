@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -66,16 +66,16 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			this::validatePreSignatureValidation;
 
 	private final HederaLedger ledger;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
 	@Inject
 	public TopicCreateTransitionLogic(
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			EntityIdSource entityIdSource,
 			OptionValidator validator,
 			TransactionContext transactionContext,
@@ -120,7 +120,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 					.setTopicNum(newEntityId.getAccountNum())
 					.build();
 
-			topics.get().put(PermHashInteger.fromTopicId(newTopicId), topic);
+			topics.get().put(EntityNum.fromTopicId(newTopicId), topic);
 			transactionContext.setCreated(newTopicId);
 			transactionContext.setStatus(SUCCESS);
 		} catch (DecoderException e) {

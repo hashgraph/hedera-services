@@ -21,7 +21,7 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -60,14 +60,14 @@ class BackingTokenRelsTest {
 	private TokenID bt = asToken("0.0.6");
 	private TokenID ct = asToken("0.0.5");
 
-	private PermHashLong aKey = fromAccountTokenRel(a, at);
-	private PermHashLong bKey = fromAccountTokenRel(b, bt);
-	private PermHashLong cKey = fromAccountTokenRel(c, ct);
+	private EntityNumPair aKey = fromAccountTokenRel(a, at);
+	private EntityNumPair bKey = fromAccountTokenRel(b, bt);
+	private EntityNumPair cKey = fromAccountTokenRel(c, ct);
 	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
 	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
 	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
 
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> rels;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels;
 
 	private BackingTokenRels subject;
 

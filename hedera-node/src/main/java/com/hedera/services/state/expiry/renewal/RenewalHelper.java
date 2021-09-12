@@ -28,8 +28,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -50,7 +50,7 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
@@ -61,23 +61,23 @@ public class RenewalHelper {
 
 	private final TokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
-	private final Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels;
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
 	/* Only needed for interoperability, will be removed during refactor */
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	private MerkleAccount lastClassifiedAccount = null;
-	private PermHashInteger lastClassifiedEntityId;
+	private EntityNum lastClassifiedEntityId;
 
 	@Inject
 	public RenewalHelper(
 			TokenStore tokenStore,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<PermHashInteger, MerkleToken>> tokens,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
-			Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> tokenRels,
+			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
 			BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		this.tokens = tokens;
@@ -89,7 +89,7 @@ public class RenewalHelper {
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
-		lastClassifiedEntityId = PermHashInteger.fromLong(candidateNum);
+		lastClassifiedEntityId = EntityNum.fromLong(candidateNum);
 		var currentAccounts = accounts.get();
 
 		if (!currentAccounts.containsKey(lastClassifiedEntityId)) {
@@ -177,7 +177,7 @@ public class RenewalHelper {
 			AccountID expired,
 			TokenID scopedToken,
 			Pair<List<EntityId>, List<CurrencyAdjustments>> displacements,
-			MerkleMap<PermHashInteger, MerkleToken> currentTokens
+			MerkleMap<EntityNum, MerkleToken> currentTokens
 	) {
 		final var currentTokenRels = tokenRels.get();
 		final var expiredRel = fromAccountTokenRel(expired, scopedToken);
@@ -186,7 +186,7 @@ public class RenewalHelper {
 
 		currentTokenRels.remove(expiredRel);
 
-		final var tKey = PermHashInteger.fromTokenId(scopedToken);
+		final var tKey = EntityNum.fromTokenId(scopedToken);
 		if (!currentTokens.containsKey(tKey)) {
 			return;
 		}

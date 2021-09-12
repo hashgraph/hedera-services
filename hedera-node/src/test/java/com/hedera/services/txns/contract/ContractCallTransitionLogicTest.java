@@ -23,7 +23,7 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -69,7 +69,7 @@ class ContractCallTransitionLogicTest {
 	private TransactionBody contractCallTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	MerkleMap<PermHashInteger, MerkleAccount> contracts;
+	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractCallTransitionLogic subject;
 
 	@BeforeEach

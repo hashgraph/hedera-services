@@ -25,7 +25,7 @@ import com.hedera.services.keys.SyncActivationCheck;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -58,7 +58,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	TransactionContext txnCtx;
 	SyncActivationCheck areActive;
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	TxnAwareSoliditySigsVerifier subject;
 
@@ -82,10 +82,10 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 
 		accounts = mock(MerkleMap.class);
-		given(accounts.get(PermHashInteger.fromAccountId(payer))).willReturn(sigReqAccount);
-		given(accounts.get(PermHashInteger.fromAccountId(sigRequired))).willReturn(sigReqAccount);
-		given(accounts.get(PermHashInteger.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
-		given(accounts.get(PermHashInteger.fromAccountId(smartContract))).willReturn(contract);
+		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(sigReqAccount);
+		given(accounts.get(EntityNum.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+		given(accounts.get(EntityNum.fromAccountId(smartContract))).willReturn(contract);
 
 		areActive = mock(SyncActivationCheck.class);
 

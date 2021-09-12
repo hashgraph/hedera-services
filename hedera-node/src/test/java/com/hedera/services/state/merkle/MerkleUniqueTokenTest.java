@@ -23,7 +23,7 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -74,13 +74,13 @@ class MerkleUniqueTokenTest {
 		otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
 
 		subject = new MerkleUniqueToken(owner, metadata, timestamp);
-		subject.setKey(new PermHashLong(numbers));
+		subject.setKey(new EntityNumPair(numbers));
 	}
 
 	@Test
 	void equalsContractWorks() {
 		// setup:
-		final var key = new PermHashLong(numbers);
+		final var key = new EntityNumPair(numbers);
 		// given
 		var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
 		other.setKey(key);
@@ -89,7 +89,7 @@ class MerkleUniqueTokenTest {
 		var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
 		other3.setKey(key);
 		var other4 = new MerkleUniqueToken(owner, metadata, timestamp);
-		other4.setKey(new PermHashLong(numbers + 1));
+		other4.setKey(new EntityNumPair(numbers + 1));
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 		identical.setKey(key);
 
@@ -106,7 +106,7 @@ class MerkleUniqueTokenTest {
 	void hashCodeWorks() {
 		// given:
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
-		identical.setKey(new PermHashLong(numbers));
+		identical.setKey(new EntityNumPair(numbers));
 		var other = new MerkleUniqueToken(otherOwner, otherMetadata, otherTimestamp);
 
 		// expect:
@@ -173,7 +173,7 @@ class MerkleUniqueTokenTest {
 		// then:
 		assertNotEquals(subject, read);
 		// and when:
-		read.setKey(new PermHashLong(numbers));
+		read.setKey(new EntityNumPair(numbers));
 		// then:
 		assertEquals(subject, read);
 	}

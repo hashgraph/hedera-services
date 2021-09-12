@@ -35,7 +35,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -60,7 +60,7 @@ import static org.mockito.BDDMockito.mock;
 class RepoNewCacheTest {
 	@Disabled
 	public void test() {
-		MerkleMap<PermHashInteger, MerkleAccount> accountMap = new MerkleMap<>();
+		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
 		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
@@ -140,7 +140,7 @@ class RepoNewCacheTest {
 
 	@Test
 	void rollbackTest() {
-		MerkleMap<PermHashInteger, MerkleAccount> accountMap = new MerkleMap<>();
+		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
 		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 

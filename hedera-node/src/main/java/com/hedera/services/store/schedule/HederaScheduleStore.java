@@ -27,7 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromScheduleId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -63,17 +63,17 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final GlobalDynamicProperties properties;
-	private final Supplier<MerkleMap<PermHashInteger, MerkleSchedule>> schedules;
+	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
-	Map<MerkleSchedule, PermHashInteger> extantSchedules = new HashMap<>();
+	Map<MerkleSchedule, EntityNum> extantSchedules = new HashMap<>();
 
 	@Inject
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
-			Supplier<MerkleMap<PermHashInteger, MerkleSchedule>> schedules
+			Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
 	) {
 		super(ids);
 		this.schedules = schedules;
@@ -217,7 +217,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 					readableId(id)));
 		}
 		var schedule = get(id);
-		schedules.get().remove(PermHashInteger.fromLong(entityId.num()));
+		schedules.get().remove(EntityNum.fromLong(entityId.num()));
 		extantSchedules.remove(schedule);
 	}
 
@@ -271,7 +271,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	/* --- Only used by unit tests --- */
-	Map<MerkleSchedule, PermHashInteger> getExtantSchedules() {
+	Map<MerkleSchedule, EntityNum> getExtantSchedules() {
 		return extantSchedules;
 	}
 }

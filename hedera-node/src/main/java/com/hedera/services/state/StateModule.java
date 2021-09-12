@@ -62,8 +62,8 @@ import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
@@ -230,7 +230,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<PermHashInteger, MerkleAccount>> provideWorkingAccounts(
+	public static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::accounts;
@@ -246,7 +246,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<PermHashInteger, MerkleTopic>> provideWorkingTopics(
+	public static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::topics;
@@ -254,7 +254,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<PermHashInteger, MerkleToken>> provideWorkingTokens(
+	public static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokens;
@@ -262,7 +262,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<PermHashLong, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
+	public static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokenAssociations;
@@ -270,7 +270,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<PermHashInteger, MerkleSchedule>> provideWorkingSchedules(
+	public static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::schedules;
@@ -278,7 +278,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<PermHashLong, MerkleUniqueToken>> provideWorkingNfts(
+	public static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokens;
@@ -287,7 +287,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@NftsByType
-	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideWorkingNftsByType(
+	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByType(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokenAssociations;
@@ -296,7 +296,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@NftsByOwner
-	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideWorkingNftsByOwner(
+	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByOwner(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueOwnershipAssociations;
@@ -305,7 +305,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@TreasuryNftsByType
-	public static Supplier<FCOneToManyRelation<PermHashInteger, Long>> provideWorkingTreasuryNftsByType(
+	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingTreasuryNftsByType(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueOwnershipTreasuryAssociations;

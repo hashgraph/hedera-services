@@ -27,8 +27,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -99,7 +98,7 @@ class GetTxnRecordAnswerTest {
 	private RecordCache recordCache;
 	private AnswerFunctions answerFunctions;
 	private OptionValidator optionValidator;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
 	private NodeLocalProperties nodeProps;

@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -137,10 +137,10 @@ class ToStringAccountsExporterTest {
 				"num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0}, # records=0, tokens=[1234.0.0]}\n";
 
 		// given:
-		MerkleMap<PermHashInteger, MerkleAccount> accounts = new MerkleMap<>();
+		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 		// and:
-		accounts.put(PermHashInteger.fromInt(2), account2);
-		accounts.put(PermHashInteger.fromInt(1), account1);
+		accounts.put(EntityNum.fromInt(2), account2);
+		accounts.put(EntityNum.fromInt(1), account1);
 		// and:
 		given(nodeLocalProperties.exportAccountsOnStartup()).willReturn(true);
 		given(nodeLocalProperties.accountsExportPath()).willReturn(testExportLoc);

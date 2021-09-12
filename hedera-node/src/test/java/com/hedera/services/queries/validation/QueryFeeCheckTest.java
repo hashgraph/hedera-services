@@ -22,7 +22,7 @@ package com.hedera.services.queries.validation;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -67,18 +67,18 @@ class QueryFeeCheckTest {
 	private static final long aLittle = 2L;
 	private static final long aLot = Long.MAX_VALUE - 1L;
 	private static final long aFew = 100L;
-	private static final PermHashInteger missingKey = PermHashInteger.fromAccountId(aMissing);
-	private static final PermHashInteger richKey = PermHashInteger.fromAccountId(aRich);
-	private static final PermHashInteger brokeKey = PermHashInteger.fromAccountId(aBroke);
-	private static final PermHashInteger nodeKey = PermHashInteger.fromAccountId(aNode);
-	private static final PermHashInteger anotherNodeKey = PermHashInteger.fromAccountId(anotherNode);
-	private static final PermHashInteger queryPayerKey = PermHashInteger.fromAccountId(aQueryPayer);
-	private static final PermHashInteger testPayerKey = PermHashInteger.fromAccountId(aTestPayer);
+	private static final EntityNum missingKey = EntityNum.fromAccountId(aMissing);
+	private static final EntityNum richKey = EntityNum.fromAccountId(aRich);
+	private static final EntityNum brokeKey = EntityNum.fromAccountId(aBroke);
+	private static final EntityNum nodeKey = EntityNum.fromAccountId(aNode);
+	private static final EntityNum anotherNodeKey = EntityNum.fromAccountId(anotherNode);
+	private static final EntityNum queryPayerKey = EntityNum.fromAccountId(aQueryPayer);
+	private static final EntityNum testPayerKey = EntityNum.fromAccountId(aTestPayer);
 
 	private MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	private OptionValidator validator;
 	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private QueryFeeCheck subject;
 
@@ -103,7 +103,7 @@ class QueryFeeCheckTest {
 		given(accounts.get(brokeKey)).willReturn(broke);
 		given(accounts.get(testPayerKey)).willReturn(testPayer);
 		given(accounts.get(queryPayerKey)).willReturn(queryPayer);
-		given(accounts.get(PermHashInteger.fromAccountId(aDetached))).willReturn(detached);
+		given(accounts.get(EntityNum.fromAccountId(aDetached))).willReturn(detached);
 
 		given(accounts.containsKey(missingKey)).willReturn(false);
 		given(accounts.containsKey(richKey)).willReturn(true);

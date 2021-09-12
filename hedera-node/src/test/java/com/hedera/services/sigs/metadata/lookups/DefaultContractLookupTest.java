@@ -25,7 +25,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DefaultContractLookupTest {
 	private final String id = "0.0.1337";
 	private final ContractID contract = IdUtils.asContract(id);
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private DefaultContractLookup subject;
 
 	@Test

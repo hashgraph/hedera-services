@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenDissociateUsage;
 import com.hedera.test.utils.IdUtils;
@@ -49,7 +49,7 @@ class TokenDissociateResourceUsageTest {
 
 	AccountID target = IdUtils.asAccount("1.2.3");
 	MerkleAccount account;
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private TransactionBody nonTokenDissociateTxn;
 	private TransactionBody tokenDissociateTxn;
@@ -73,7 +73,7 @@ class TokenDissociateResourceUsageTest {
 		account = mock(MerkleAccount.class);
 		given(account.getExpiry()).willReturn(expiry);
 		accounts = mock(MerkleMap.class);
-		given(accounts.get(PermHashInteger.fromAccountId(target))).willReturn(account);
+		given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
 		view = mock(StateView.class);
 		given(view.accounts()).willReturn(accounts);
 
@@ -118,7 +118,7 @@ class TokenDissociateResourceUsageTest {
 
 	@Test
 	void returnsDefaultIfInfoMissing() throws Exception {
-		given(accounts.get(PermHashInteger.fromAccountId(target))).willReturn(null);
+		given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
 
 		// expect:
 		assertEquals(

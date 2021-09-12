@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -46,7 +46,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromScheduleId;
+import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -88,7 +88,7 @@ class HederaScheduleStoreTest {
 	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
 
 	private EntityIdSource ids;
-	private MerkleMap<PermHashInteger, MerkleSchedule> schedules;
+	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private HederaLedger hederaLedger;
 	private GlobalDynamicProperties globalDynamicProperties;
@@ -123,7 +123,7 @@ class HederaScheduleStoreTest {
 		given(accountsLedger.get(payerId, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(false);
 
-		schedules = (MerkleMap<PermHashInteger, MerkleSchedule>) mock(MerkleMap.class);
+		schedules = (MerkleMap<EntityNum, MerkleSchedule>) mock(MerkleMap.class);
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
@@ -141,7 +141,7 @@ class HederaScheduleStoreTest {
 				entitySchedulingAccount.toGrpcAccountId(),
 				schedulingTXValidStart.toGrpc());
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
-		expected.setKey(PermHashInteger.fromLong(created.getScheduleNum()));
+		expected.setKey(EntityNum.fromLong(created.getScheduleNum()));
 		final var captor = forClass(Consumer.class);
 		final var expectedKey = expected.toContentAddressableView();
 

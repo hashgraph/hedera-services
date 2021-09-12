@@ -27,8 +27,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -66,17 +66,17 @@ class FcmDumpTest {
 	@Mock
 	Function<String, MerkleDataOutputStream> merkleOutFn;
 	@Mock
-	MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	MerkleMap<String, MerkleOptionalBlob> storage;
 	@Mock
-	MerkleMap<PermHashInteger, MerkleTopic> topics;
+	MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
-	MerkleMap<PermHashInteger, MerkleToken> tokens;
+	MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations;
+	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	MerkleMap<PermHashInteger, MerkleSchedule> scheduleTxs;
+	MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;

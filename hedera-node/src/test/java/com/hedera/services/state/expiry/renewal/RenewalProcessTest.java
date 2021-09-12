@@ -25,7 +25,7 @@ import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -184,7 +184,7 @@ class RenewalProcessTest {
 		assertTrue(wasTouched);
 		verify(helper).removeLastClassifiedAccount();
 		verify(recordsHelper).streamCryptoRemoval(
-				PermHashInteger.fromLong(brokeExpiredAccountNum),
+				EntityNum.fromLong(brokeExpiredAccountNum),
 				Collections.emptyList(),
 				Collections.emptyList());
 	}
@@ -192,7 +192,7 @@ class RenewalProcessTest {
 	@Test
 	void renewsAtExpectedFee() {
 		// setup:
-		var key = PermHashInteger.fromLong(fundedExpiredAccountNum);
+		var key = EntityNum.fromLong(fundedExpiredAccountNum);
 
 		given(helper.classify(fundedExpiredAccountNum, now)).willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
 		given(helper.getLastClassifiedAccount()).willReturn(expiredAccountNonZeroBalance);

@@ -27,7 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -57,7 +57,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHashInteger> {
+public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
 
@@ -273,12 +273,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<PermHash
 	}
 
 	@Override
-	public PermHashInteger getKey() {
-		return new PermHashInteger(number);
+	public EntityNum getKey() {
+		return new EntityNum(number);
 	}
 
 	@Override
-	public void setKey(PermHashInteger phi) {
+	public void setKey(EntityNum phi) {
 		number = phi.intValue();
 	}
 

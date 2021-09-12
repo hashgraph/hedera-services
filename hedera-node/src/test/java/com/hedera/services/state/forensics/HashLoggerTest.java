@@ -30,8 +30,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -54,19 +54,19 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class HashLoggerTest {
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleSchedule> schedules;
+	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	@Mock
 	private MerkleMap<String, MerkleOptionalBlob> storage;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock

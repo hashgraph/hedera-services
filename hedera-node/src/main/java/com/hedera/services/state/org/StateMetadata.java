@@ -21,7 +21,7 @@ package com.hedera.services.state.org;
  */
 
 import com.hedera.services.ServicesApp;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -33,9 +33,9 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 public class StateMetadata implements FastCopyable, Archivable {
 	private final ServicesApp app;
 
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
 
 	public StateMetadata(ServicesApp app) {
 		this.app = app;
@@ -72,28 +72,28 @@ public class StateMetadata implements FastCopyable, Archivable {
 		return app;
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> getUniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations() {
 		return uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> getUniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations() {
 		return uniqueOwnershipAssociations;
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> getUniqueTreasuryOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> getUniqueTreasuryOwnershipAssociations() {
 		return uniqueTreasuryOwnershipAssociations;
 	}
 
 	/* --- Only used by unit tests --- */
-	void setUniqueTokenAssociations(FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations) {
+	void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	void setUniqueOwnershipAssociations(FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations) {
+	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
-	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations) {
+	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations) {
 		this.uniqueTreasuryOwnershipAssociations = uniqueTreasuryOwnershipAssociations;
 	}
 }

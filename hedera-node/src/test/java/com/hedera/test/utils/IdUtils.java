@@ -22,7 +22,7 @@ package com.hedera.test.utils;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -67,7 +67,7 @@ public class IdUtils {
 				.build();
 	}
 
-	public static AccountID fromKey(PermHashInteger mk) {
+	public static AccountID fromKey(EntityNum mk) {
 		return asAccount(String.format("0.0.%d", mk.longValue()));
 	}
 

@@ -25,8 +25,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromInt;
+import static com.hedera.services.utils.EntityNum.fromInt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -59,15 +59,15 @@ class TreasuryWildcardsUniqTokenViewTest {
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<PermHashLong, MerkleUniqueToken> nfts;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByType;
+	private FCOneToManyRelation<EntityNum, Long> nftsByType;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> nftsByOwner;
+	private FCOneToManyRelation<EntityNum, Long> nftsByOwner;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> treasuryNftsByType;
+	private FCOneToManyRelation<EntityNum, Long> treasuryNftsByType;
 
 	private TreasuryWildcardsUniqTokenView subject;
 
@@ -168,9 +168,9 @@ class TreasuryWildcardsUniqTokenViewTest {
 	private final MerkleUniqueToken someExplicitNft = new MerkleUniqueToken(ownerId, someMeta, someCreationTime);
 	private final MerkleUniqueToken wildcardNft = new MerkleUniqueToken(MISSING_ENTITY_ID, wildMeta, someCreationTime);
 	private final MerkleUniqueToken otherWildNft = new MerkleUniqueToken(MISSING_ENTITY_ID, om, someCreationTime);
-	private final PermHashLong someExplicitNftId = PermHashLong.fromLongs(tokenId.num(), someSerial);
-	private final PermHashLong wildcardNftId = PermHashLong.fromLongs(otherTokenId.num(), wildcardSerial);
-	private final PermHashLong otherWildcardNftId = PermHashLong.fromLongs(treasuryTokenId.num(), treasurySerial);
+	private final EntityNumPair someExplicitNftId = EntityNumPair.fromLongs(tokenId.num(), someSerial);
+	private final EntityNumPair wildcardNftId = EntityNumPair.fromLongs(otherTokenId.num(), wildcardSerial);
+	private final EntityNumPair otherWildcardNftId = EntityNumPair.fromLongs(treasuryTokenId.num(), treasurySerial);
 	private final TokenNftInfo explicitInfo =
 			GrpcUtils.reprOf(tokenId.toGrpcTokenId(), someSerial, someExplicitNft, null);
 	private final TokenNftInfo interpolatedInfo =

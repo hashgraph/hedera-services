@@ -24,7 +24,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -50,7 +50,7 @@ public class BasedLedgerValidator implements LedgerValidator {
 	}
 
 	@Override
-	public void validate(MerkleMap<PermHashInteger, MerkleAccount> accounts) {
+	public void validate(MerkleMap<EntityNum, MerkleAccount> accounts) {
 		var totalFloat = new AtomicReference<>(BigInteger.ZERO);
 		MiscUtils.forEach(accounts, (id, account) -> {
 			final var num = id.longValue();

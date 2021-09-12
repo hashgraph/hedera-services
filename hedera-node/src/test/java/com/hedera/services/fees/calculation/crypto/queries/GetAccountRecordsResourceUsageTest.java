@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +56,7 @@ import static org.mockito.BDDMockito.mock;
 class GetAccountRecordsResourceUsageTest {
 	private StateView view;
 	private CryptoFeeBuilder usageEstimator;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private GetAccountRecordsResourceUsage subject;
 	private String a = "0.0.1234";
 	private MerkleAccount aValue;
@@ -96,7 +95,7 @@ class GetAccountRecordsResourceUsageTest {
 		// setup:
 		final var costAnswerUsage = mock(FeeData.class);
 		final var answerOnlyUsage = mock(FeeData.class);
-		final var key = PermHashInteger.fromAccountId(asAccount(a));
+		final var key = EntityNum.fromAccountId(asAccount(a));
 
 		// given:
 		final var answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);

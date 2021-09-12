@@ -36,7 +36,7 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -155,7 +155,7 @@ class BasicTransactionContextTest {
 	@Mock
 	private MerkleAccount payerAccount;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private EntityCreator creator;
 
@@ -199,7 +199,7 @@ class BasicTransactionContextTest {
 	@Test
 	void getsPayerKeyIfSigActive() {
 		given(payerAccount.getAccountKey()).willReturn(payerKey);
-		given(accounts.get(PermHashInteger.fromAccountId(payer))).willReturn(payerAccount);
+		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(payerAccount);
 		given(accessor.getPayer()).willReturn(payer);
 
 		// when:

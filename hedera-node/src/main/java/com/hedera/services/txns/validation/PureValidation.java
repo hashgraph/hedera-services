@@ -23,7 +23,7 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -36,7 +36,7 @@ import org.apache.commons.codec.DecoderException;
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromContractId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -62,9 +62,9 @@ public final class PureValidation {
 
 	public static ResponseCodeEnum queryableAccountStatus(
 			final AccountID id,
-			final MerkleMap<PermHashInteger, MerkleAccount> accounts
+			final MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
-		final var account = accounts.get(PermHashInteger.fromAccountId(id));
+		final var account = accounts.get(EntityNum.fromAccountId(id));
 
 		return Optional.ofNullable(account)
 				.map(v -> v.isDeleted()
@@ -75,7 +75,7 @@ public final class PureValidation {
 
 	public static ResponseCodeEnum queryableContractStatus(
 			final ContractID cid,
-			final MerkleMap<PermHashInteger, MerkleAccount> contracts
+			final MerkleMap<EntityNum, MerkleAccount> contracts
 	) {
 		final var contract = contracts.get(fromContractId(cid));
 

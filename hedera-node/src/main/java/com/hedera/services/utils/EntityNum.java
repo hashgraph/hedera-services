@@ -1,4 +1,4 @@
-package com.hedera.services.store.tokens.views.internals;
+package com.hedera.services.utils;
 
 /*-
  * ‌
@@ -20,7 +20,6 @@ package com.hedera.services.store.tokens.views.internals;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -36,39 +35,39 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCod
  * the risk of hash collisions in structured data using this type,
  * when compared to the {@code java.lang.Integer} boxed type.
  */
-public class PermHashInteger {
+public class EntityNum {
 	private final int value;
 
-	public PermHashInteger(int value) {
+	public EntityNum(int value) {
 		this.value = value;
 	}
 
-	public static PermHashInteger fromInt(int i) {
-		return new PermHashInteger(i);
+	public static EntityNum fromInt(int i) {
+		return new EntityNum(i);
 	}
 
-	public static PermHashInteger fromLong(long l) {
+	public static EntityNum fromLong(long l) {
 		final var value = codeFromNum(l);
-		return new PermHashInteger(value);
+		return new EntityNum(value);
 	}
 
-	public static PermHashInteger fromAccountId(AccountID grpc) {
+	public static EntityNum fromAccountId(AccountID grpc) {
 		return fromLong(grpc.getAccountNum());
 	}
 
-	public static PermHashInteger fromTokenId(TokenID grpc) {
+	public static EntityNum fromTokenId(TokenID grpc) {
 		return fromLong(grpc.getTokenNum());
 	}
 
-	public static PermHashInteger fromTopicId(TopicID grpc) {
+	public static EntityNum fromTopicId(TopicID grpc) {
 		return fromLong(grpc.getTopicNum());
 	}
 
-	public static PermHashInteger fromContractId(ContractID grpc) {
+	public static EntityNum fromContractId(ContractID grpc) {
 		return fromLong(grpc.getContractNum());
 	}
 
-	public static PermHashInteger fromScheduleId(ScheduleID grpc) {
+	public static EntityNum fromScheduleId(ScheduleID grpc) {
 		return fromLong(grpc.getScheduleNum());
 	}
 
@@ -106,11 +105,11 @@ public class PermHashInteger {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || PermHashInteger.class != o.getClass()) {
+		if (o == null || EntityNum.class != o.getClass()) {
 			return false;
 		}
 
-		var that = (PermHashInteger) o;
+		var that = (EntityNum) o;
 
 		return this.value == that.value;
 	}

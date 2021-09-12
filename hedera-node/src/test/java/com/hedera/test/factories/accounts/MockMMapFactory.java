@@ -21,7 +21,7 @@ package com.hedera.test.factories.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -39,17 +39,17 @@ public class MockMMapFactory {
 	}
 
 	public MockMMapFactory withAccount(String id, MerkleAccount meta) {
-		final var account = PermHashInteger.fromAccountId(asAccount(id));
+		final var account = EntityNum.fromAccountId(asAccount(id));
 		given(mock.get(account)).willReturn(meta);
 		return this;
 	}
 	public MockMMapFactory withContract(String id, MerkleAccount meta) {
-		final var contract = PermHashInteger.fromContractId(asContract(id));
+		final var contract = EntityNum.fromContractId(asContract(id));
 		given(mock.get(contract)).willReturn(meta);
 		return this;
 	}
 
-	public MerkleMap<PermHashInteger, MerkleAccount> get() {
-		return (MerkleMap<PermHashInteger, MerkleAccount>)mock;
+	public MerkleMap<EntityNum, MerkleAccount> get() {
+		return (MerkleMap<EntityNum, MerkleAccount>)mock;
 	}
 }

@@ -21,7 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -32,7 +32,7 @@ import java.io.IOException;
 
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
-public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
+public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
@@ -197,12 +197,12 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Pe
 	}
 
 	@Override
-	public PermHashLong getKey() {
-		return new PermHashLong(numbers);
+	public EntityNumPair getKey() {
+		return new EntityNumPair(numbers);
 	}
 
 	@Override
-	public void setKey(PermHashLong numbers) {
+	public void setKey(EntityNumPair numbers) {
 		this.numbers = numbers.getValue();
 	}
 }

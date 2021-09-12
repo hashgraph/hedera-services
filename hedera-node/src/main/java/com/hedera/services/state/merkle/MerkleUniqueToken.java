@@ -24,7 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -43,7 +43,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHi
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
-public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermHashLong> {
+public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	private static final int TREASURY_OWNER_CODE = 0;
 
 	static final int PRE_RELEASE_0180_VERSION = 1;
@@ -200,12 +200,12 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<PermH
 	}
 
 	@Override
-	public PermHashLong getKey() {
-		return new PermHashLong(numbers);
+	public EntityNumPair getKey() {
+		return new EntityNumPair(numbers);
 	}
 
 	@Override
-	public void setKey(PermHashLong phl) {
+	public void setKey(EntityNumPair phl) {
 		this.numbers = phl.getValue();
 	}
 }

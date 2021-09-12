@@ -31,8 +31,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -62,11 +62,11 @@ public class StateAccessor {
 		children.setRunningHashLeaf(state.runningHashLeaf());
 	}
 
-	public MerkleMap<PermHashInteger, MerkleAccount> accounts() {
+	public MerkleMap<EntityNum, MerkleAccount> accounts() {
 		return children.getAccounts();
 	}
 
-	public MerkleMap<PermHashInteger, MerkleTopic> topics() {
+	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		return children.getTopics();
 	}
 
@@ -74,31 +74,31 @@ public class StateAccessor {
 		return children.getStorage();
 	}
 
-	public MerkleMap<PermHashInteger, MerkleToken> tokens() {
+	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return children.getTokens();
 	}
 
-	public MerkleMap<PermHashLong, MerkleTokenRelStatus> tokenAssociations() {
+	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
 		return children.getTokenAssociations();
 	}
 
-	public MerkleMap<PermHashInteger, MerkleSchedule> schedules() {
+	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
 		return children.getSchedules();
 	}
 
-	public MerkleMap<PermHashLong, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return children.getUniqueTokens();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
 		return children.getUniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
 		return children.getUniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
 		return children.getUniqueOwnershipTreasuryAssociations();
 	}
 

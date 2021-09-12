@@ -26,7 +26,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.topics.TopicFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -102,7 +102,7 @@ class GetMerkleTopicInfoAnswerTest {
 				.get();
 		merkleTopic.setRunningHash(hash);
 		merkleTopic.setSequenceNumber(seqNo);
-		PermHashInteger key = PermHashInteger.fromTopicId(asTopic(target));
+		EntityNum key = EntityNum.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
 
 		nodeProps = mock(NodeLocalProperties.class);

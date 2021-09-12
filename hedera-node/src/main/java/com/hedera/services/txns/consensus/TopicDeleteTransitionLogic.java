@@ -22,7 +22,7 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -43,13 +43,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 public class TopicDeleteTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
-	private final Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
 	@Inject
 	public TopicDeleteTransitionLogic(
-			Supplier<MerkleMap<PermHashInteger, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext
 	) {
@@ -70,7 +70,7 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicMapKey = PermHashInteger.fromTopicId(topicId);
+		var topicMapKey = EntityNum.fromTopicId(topicId);
 		var topic = topics.get().get(topicMapKey);
 		if (!topic.hasAdminKey()) {
 			// Topics without adminKeys can't be deleted.

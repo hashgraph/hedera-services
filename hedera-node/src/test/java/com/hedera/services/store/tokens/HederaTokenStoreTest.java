@@ -39,8 +39,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
-import com.hedera.services.store.tokens.views.internals.PermHashLong;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -72,7 +72,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.store.tokens.views.internals.PermHashInteger.fromTokenId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -182,7 +182,7 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private UniqTokenViewsManager uniqTokenViewsManager;
-	private MerkleMap<PermHashInteger, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -258,7 +258,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(counterpartyNft, IS_KYC_GRANTED)).willReturn(true);
 		given(tokenRelsLedger.get(newTreasuryNft, TOKEN_BALANCE)).willReturn(1L);
 
-		tokens = (MerkleMap<PermHashInteger, MerkleToken>) mock(MerkleMap.class);
+		tokens = (MerkleMap<EntityNum, MerkleToken>) mock(MerkleMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
 		given(tokens.containsKey(fromTokenId(nonfungible))).willReturn(true);
@@ -292,15 +292,15 @@ class HederaTokenStoreTest {
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
 
 		// setup:
-		token.setKey(PermHashInteger.fromLong(1L));
+		token.setKey(EntityNum.fromLong(1L));
 		// and:
 		final var deletedToken = new MerkleToken();
-		deletedToken.setKey(PermHashInteger.fromLong(2L));
+		deletedToken.setKey(EntityNum.fromLong(2L));
 		deletedToken.setDeleted(true);
 		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
 
 		given(token.cast()).willReturn(token);
-		given(token.getKey()).willReturn(PermHashInteger.fromLong(1L));
+		given(token.getKey()).willReturn(EntityNum.fromLong(1L));
 
 		subject.rebuildViews();
 
@@ -639,7 +639,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyANfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(sponsor);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
-		final var muti = PermHashLong.fromLongs(aNft.tokenId().getTokenNum(), aNft.serialNo());
+		final var muti = EntityNumPair.fromLongs(aNft.tokenId().getTokenNum(), aNft.serialNo());
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
@@ -665,7 +665,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(counterparty);
 		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
-		final var muti = PermHashLong.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
+		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
 		}});
@@ -695,7 +695,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyTNfts = 1;
 		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
-		final var muti = PermHashLong.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
+		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
 		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
 			add(nonfungible);
 		}});

@@ -25,7 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -49,7 +49,7 @@ class TopicResourceUsageTestBase {
     protected static final int baseBpt = 140; // size of transaction fields and sigs
 
     protected StateView view;
-    protected MerkleMap<PermHashInteger, MerkleTopic> topics;
+    protected MerkleMap<EntityNum, MerkleTopic> topics;
     protected TopicID topicId = asTopic("0.0.1234");
     protected SigValueObj sigValueObj = new SigValueObj(totalSigCount, payerAcctSigCount, signatureSize);
     protected NodeLocalProperties nodeProps;

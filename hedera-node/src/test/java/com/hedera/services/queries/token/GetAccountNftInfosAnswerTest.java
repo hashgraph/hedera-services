@@ -23,7 +23,7 @@ package com.hedera.services.queries.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -71,7 +71,7 @@ class GetAccountNftInfosAnswerTest {
 	String payer = "0.0.1";
 	AccountID accountId = asAccount("0.0.2");
 	AccountID invalidAccountId = asAccount("0.0.4");
-	MerkleMap<PermHashInteger, MerkleAccount> accountMap;
+	MerkleMap<EntityNum, MerkleAccount> accountMap;
 
 	private List<TokenNftInfo> accountNftInfos;
 	long start = 0, end = 2;
@@ -97,7 +97,7 @@ class GetAccountNftInfosAnswerTest {
 		));
 		accountMap = new MerkleMap<>();
 		accountMap.put(
-				PermHashInteger.fromAccountId(accountId),
+				EntityNum.fromAccountId(accountId),
 				new MerkleAccount());
 	}
 

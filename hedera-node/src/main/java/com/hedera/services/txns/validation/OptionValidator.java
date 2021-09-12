@@ -23,7 +23,7 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -65,13 +65,13 @@ public interface OptionValidator {
 	ResponseCodeEnum maxNftTransfersLenCheck(int length);
 	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
-	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<PermHashInteger, MerkleTopic> topics);
+	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
 
-	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<PermHashInteger, MerkleAccount> accounts) {
+	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);
 	}
 
-	default ResponseCodeEnum queryableContractStatus(ContractID cid, MerkleMap<PermHashInteger, MerkleAccount> contracts) {
+	default ResponseCodeEnum queryableContractStatus(ContractID cid, MerkleMap<EntityNum, MerkleAccount> contracts) {
 		return PureValidation.queryableContractStatus(cid, contracts);
 	}
 

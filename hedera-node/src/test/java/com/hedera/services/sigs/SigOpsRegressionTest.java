@@ -27,6 +27,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -41,7 +42,6 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -95,7 +95,7 @@ class SigOpsRegressionTest {
 	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
 	private SigRequirements signingOrder;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);

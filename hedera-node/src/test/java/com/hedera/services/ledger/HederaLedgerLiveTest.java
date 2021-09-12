@@ -41,7 +41,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
@@ -77,10 +77,10 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		final MerkleMap<PermHashInteger, MerkleToken> tokens = new MerkleMap<>();
-		final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<PermHashInteger, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
+		final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,

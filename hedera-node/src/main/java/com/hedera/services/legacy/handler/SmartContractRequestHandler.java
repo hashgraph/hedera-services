@@ -35,7 +35,7 @@ import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -113,7 +113,7 @@ public class SmartContractRequestHandler {
 
 	private HederaLedger ledger;
 	private ServicesRepositoryRoot repository;
-	private Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts;
+	private Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -126,7 +126,7 @@ public class SmartContractRequestHandler {
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
 			HederaLedger ledger,
-			Supplier<MerkleMap<PermHashInteger, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,

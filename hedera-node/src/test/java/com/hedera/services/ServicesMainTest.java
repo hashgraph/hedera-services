@@ -33,7 +33,7 @@ import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.txns.network.UpdateHelper;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -105,7 +105,7 @@ class ServicesMainTest {
 	@Mock
 	private SystemAccountsCreator systemAccountsCreator;
 	@Mock
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private LedgerValidator ledgerValidator;
 	@Mock

@@ -28,7 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -85,8 +85,8 @@ class MerkleTopicCreateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
 	private TopicCreateTransitionLogic subject;
-	private MerkleMap<PermHashInteger, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<PermHashInteger, MerkleTopic> topics = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private EntityIdSource entityIdSource;
 	private HederaLedger ledger;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(2_345L).build();
@@ -157,7 +157,7 @@ class MerkleTopicCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(PermHashInteger.fromAccountId(NEW_TOPIC_ID));
+		var topic = topics.get(EntityNum.fromAccountId(NEW_TOPIC_ID));
 		assertNotNull(topic);
 		assertEquals(VALID_MEMO, topic.getMemo());
 		assertArrayEquals(JKey.mapKey(key).serialize(), topic.getAdminKey().serialize());
