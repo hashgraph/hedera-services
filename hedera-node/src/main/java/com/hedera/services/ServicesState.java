@@ -66,6 +66,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -74,6 +75,7 @@ import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONS
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
 import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -162,48 +164,65 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void migrate() {
 		if (getDeserializedVersion() < StateVersions.RELEASE_0180_VERSION) {
 			log.info("Beginning FCMap -> MerkleMap migrations");
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.UNIQUE_TOKENS,
-					(MerkleUniqueTokenId uniqueTokenId) -> new EntityNumPair(uniqueTokenId.identityCode()),
-					(MerkleUniqueToken v) -> v);
-			log.info("  ↪ Migrated {} NFTs", uniqueTokens().size());
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.TOKEN_ASSOCIATIONS,
-					(MerkleEntityAssociation tokenRel) -> fromLongs(tokenRel.getFromNum(), tokenRel.getToNum()),
-					(MerkleTokenRelStatus v) -> v);
-			log.info("  ↪ Migrated {} token associations", tokenAssociations().size());
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.TOPICS,
-					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-					(MerkleTopic v) -> v);
-			log.info("  ↪ Migrated {} topics", topics().size());
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.STORAGE,
-					MerkleBlobMeta::getPath,
-					(MerkleOptionalBlob v) -> v);
-			log.info("  ↪ Migrated {} blobs", storage().size());
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.ACCOUNTS,
-					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-					(MerkleAccount v) -> v);
-			log.info("  ↪ Migrated {} accounts", accounts().size());
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.TOKENS,
-					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-					(MerkleToken v) -> v);
-			log.info("  ↪ Migrated {} tokens", tokens().size());
-			fcmMigrator.toMerkleMap(
-					this,
-					StateChildIndices.SCHEDULE_TXS,
-					(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
-					(MerkleSchedule v) -> v);
-			log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
+			CompletableFuture.allOf(
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.UNIQUE_TOKENS,
+								(MerkleUniqueTokenId uniqueTokenId) -> new EntityNumPair(uniqueTokenId.identityCode()),
+								(MerkleUniqueToken v) -> v);
+						log.info("  ↪ Migrated {} NFTs", uniqueTokens().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.TOKEN_ASSOCIATIONS,
+								(MerkleEntityAssociation tokenRel) -> fromLongs(tokenRel.getFromNum(),
+										tokenRel.getToNum()),
+								(MerkleTokenRelStatus v) -> v);
+						log.info("  ↪ Migrated {} token associations", tokenAssociations().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.TOPICS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleTopic v) -> v);
+						log.info("  ↪ Migrated {} topics", topics().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.STORAGE,
+								MerkleBlobMeta::getPath,
+								(MerkleOptionalBlob v) -> v);
+						log.info("  ↪ Migrated {} blobs", storage().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.ACCOUNTS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleAccount v) -> v);
+						log.info("  ↪ Migrated {} accounts", accounts().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.TOKENS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleToken v) -> v);
+						log.info("  ↪ Migrated {} tokens", tokens().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.SCHEDULE_TXS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleSchedule v) -> v);
+						log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
+					})
+			).join();
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
