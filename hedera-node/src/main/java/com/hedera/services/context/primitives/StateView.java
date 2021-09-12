@@ -160,9 +160,9 @@ public class StateView {
 		if (stateChildren == null) {
 			return Optional.empty();
 		}
-		final var diskFs = stateChildren.getSpecialFiles();
-		if (diskFs.contains(id)) {
-			return Optional.ofNullable(diskFs.contentsOf(id));
+		final var specialFiles = stateChildren.getSpecialFiles();
+		if (specialFiles.contains(id)) {
+			return Optional.ofNullable(specialFiles.get(id));
 		} else {
 			return Optional.ofNullable(fileContents.get(id));
 		}

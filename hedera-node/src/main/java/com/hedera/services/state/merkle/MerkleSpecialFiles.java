@@ -1,12 +1,14 @@
 package com.hedera.services.state.merkle;
 
 import com.hederahashgraph.api.proto.java.FileID;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,14 +18,29 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	private static final long CLASS_ID = 0x1608d4b49c28983aL;
 	private static final int CURRENT_VERSION = 1;
 
+	private final Map<FileID, byte[]> hashCache;
 	private final Map<FileID, byte[]> fileContents;
 
 	public MerkleSpecialFiles() {
+		this.hashCache = new HashMap<>();
 		this.fileContents = new LinkedHashMap<>();
 	}
 
 	public MerkleSpecialFiles(MerkleSpecialFiles that) {
+		hashCache = new HashMap<>(that.hashCache);
 		fileContents = new LinkedHashMap<>(that.fileContents);
+	}
+
+	public synchronized boolean hashMatches(FileID fid, byte[] sha384Hash) {
+		if (!fileContents.containsKey(fid)) {
+			return false;
+		}
+		return Arrays.equals(sha384Hash, hashOfKnown(fid));
+	}
+
+	private byte[] hashOfKnown(FileID fid) {
+		return hashCache.computeIfAbsent(fid, missingFid ->
+				CryptoFactory.getInstance().digestSync(fileContents.get(missingFid)).getValue());
 	}
 
 	public synchronized byte[] get(FileID fid) {
@@ -42,15 +59,17 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 			update(fid, extraContents);
 			return;
 		}
-		final var newLen =  oldContents.length + extraContents.length;
+		final var newLen = oldContents.length + extraContents.length;
 		final var newContents = Arrays.copyOf(oldContents, newLen);
 		System.arraycopy(extraContents, 0, newContents, oldContents.length, extraContents.length);
 		fileContents.put(fid, newContents);
+		hashCache.remove(fid);
 	}
 
 	public synchronized void update(FileID fid, byte[] newContents) {
 		throwIfImmutable();
 		fileContents.put(fid, newContents);
+		hashCache.remove(fid);
 	}
 
 	@Override
@@ -88,5 +107,10 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	@Override
 	public int getVersion() {
 		return CURRENT_VERSION;
+	}
+
+	/* --- Only used by unit tests --- */
+	Map<FileID, byte[]> getHashCache() {
+		return hashCache;
 	}
 }

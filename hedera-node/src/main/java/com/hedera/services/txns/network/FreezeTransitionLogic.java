@@ -22,6 +22,7 @@ package com.hedera.services.txns.network;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -36,6 +37,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -49,12 +51,19 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	private final FileID softwareUpdateZipFid;
 	private final LegacyFreezer delegate;
 	private final TransactionContext txnCtx;
+	private final Supplier<MerkleSpecialFiles> specialFiles;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
-	public FreezeTransitionLogic(FileNumbers fileNums, LegacyFreezer delegate, TransactionContext txnCtx) {
+	public FreezeTransitionLogic(
+			FileNumbers fileNums,
+			LegacyFreezer delegate,
+			TransactionContext txnCtx,
+			Supplier<MerkleSpecialFiles> specialFiles
+	) {
 		this.txnCtx = txnCtx;
+		this.specialFiles = specialFiles;
 		this.delegate = delegate;
 
 		softwareUpdateZipFid = fileNums.toFid(fileNums.softwareUpdateZip());
@@ -88,6 +97,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody freezeTxn) {
+		/* TODO - the details of this validation will be quite different based on the enum types */
 		final var op = freezeTxn.getFreeze();
 
 		if (op.hasStartTime()) {
@@ -102,11 +112,16 @@ public class FreezeTransitionLogic implements TransitionLogic {
 		}
 
 		if (op.hasUpdateFile()) {
-			if (!op.getUpdateFile().equals(softwareUpdateZipFid)) {
-				return INVALID_FILE_ID;
-			}
+			final var fileHash = op.getFileHash();
 			if (op.getFileHash().isEmpty()) {
 				return INVALID_FREEZE_TRANSACTION_BODY;
+			}
+			final var updateFile = op.getUpdateFile();
+			if (!specialFiles.get().hashMatches(updateFile, fileHash.toByteArray())) {
+				return INVALID_FREEZE_TRANSACTION_BODY;
+			}
+			if (!op.getUpdateFile().equals(softwareUpdateZipFid)) {
+				return INVALID_FILE_ID;
 			}
 		}
 		return OK;
