@@ -27,15 +27,14 @@ import com.swirlds.fcmap.FCMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 @Singleton
 public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	Set<AccountID> existingAccounts = new HashSet<>();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
@@ -46,10 +45,6 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 
 	@Override
 	public void rebuildFromSources() {
-		existingAccounts.clear();
-		delegate.get().keySet().stream()
-				.map(MerkleEntityId::toAccountId)
-				.forEach(existingAccounts::add);
 	}
 
 	@Override
@@ -59,9 +54,8 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 
 	@Override
 	public void put(AccountID id, MerkleAccount account) {
-		if (!existingAccounts.contains(id)) {
+		if (!delegate.get().containsKey(fromAccountId(id))) {
 			delegate.get().put(fromAccountId(id), account);
-			existingAccounts.add(id);
 		}
 	}
 
@@ -72,13 +66,15 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 
 	@Override
 	public void remove(AccountID id) {
-		existingAccounts.remove(id);
 		delegate.get().remove(fromAccountId(id));
 	}
 
 	@Override
 	public Set<AccountID> idSet() {
-		return existingAccounts;
+		return delegate.get().keySet()
+				.stream()
+				.map(MerkleEntityId::toAccountId)
+				.collect(Collectors.toSet());
 	}
 
 	@Override

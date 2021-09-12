@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,14 +57,29 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
+	private final long expiry = 1_234_567L;
+	private final long balance = 1_000L;
+	private final long miscAccountNum = 1_234L;
+	private final long autoRenewAccountNum = 3_234L;
+	private final long firstAssocTokenNum = 666L;
+	private final long secondAssocTokenNum = 777L;
+	private final int alreadyUsedAutoAssociations = 12;
+	private final int maxAutoAssociations = 123;
+	private final Id miscId = new Id(0, 0, miscAccountNum);
+	private final Account miscAccount = new Account(miscId);
+	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
+	private final Account autoRenewAccount = new Account(autoRenewId);
+	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
+	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+	private final MerkleEntityId miscMerkleId = new MerkleEntityId(0, 0, miscAccountNum);
 	@Mock
 	private OptionValidator validator;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-
 	private AccountStore subject;
+	private MerkleAccount miscMerkleAccount;
 
 	@BeforeEach
 	void setUp() {
@@ -73,11 +88,11 @@ class AccountStoreTest {
 		final var ids = mock(EntityIdSource.class);
 		subject = new AccountStore(validator, dynamicProperties, () -> accounts);
 	}
-	
+
 	@Test
 	void persistsNewWorks() {
 		final var acc = new Account(Id.DEFAULT);
-		
+
 		subject.persistNew(acc);
 		verify(accounts).put(any(), any());
 	}
@@ -114,6 +129,7 @@ class AccountStoreTest {
 	@Test
 	void canAlwaysLoadWithNonzeroBalance() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
 
 		// when:
@@ -196,7 +212,7 @@ class AccountStoreTest {
 		// when:
 		model.setMaxAutomaticAssociations(newMax);
 		// decrease the already Used automatic associations by 10
-		for (int i=0; i<11; i++){
+		for (int i = 0; i < 11; i++) {
 			model.decrementUsedAutomaticAssocitions();
 		}
 		model.incrementUsedAutomaticAssocitions();
@@ -239,22 +255,4 @@ class AccountStoreTest {
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.setBalance(balance);
 	}
-
-	private final long expiry = 1_234_567L;
-	private final long balance = 1_000L;
-	private final long miscAccountNum = 1_234L;
-	private final long autoRenewAccountNum = 3_234L;
-	private final long firstAssocTokenNum = 666L;
-	private final long secondAssocTokenNum = 777L;
-	private final int alreadyUsedAutoAssociations = 12;
-	private final int maxAutoAssociations = 123;
-	private final Id miscId = new Id(0, 0, miscAccountNum);
-	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
-	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
-	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final MerkleEntityId miscMerkleId = new MerkleEntityId(0, 0, miscAccountNum);
-	private final Account miscAccount = new Account(miscId);
-	private final Account autoRenewAccount = new Account(autoRenewId);
-
-	private MerkleAccount miscMerkleAccount;
 }

@@ -33,8 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -48,20 +46,20 @@ class BackedAccountLookupTest {
 			.get();
 
 	@Mock
-	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private BackedAccountLookup subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new BackedAccountLookup(accounts);
+		subject = new BackedAccountLookup(() -> accounts);
 	}
 
 	@Test
 	void usesRefForImpureLookup() {
 		final var id = MerkleEntityId.fromAccountId(accountID);
-		given(accounts.get().containsKey(id)).willReturn(true);
-		given(accounts.get().get(id)).willReturn(account);
+		given(accounts.containsKey(id)).willReturn(true);
+		given(accounts.get(id)).willReturn(account);
 
 		// when:
 		final var result = subject.safeLookup(accountID);

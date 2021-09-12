@@ -35,15 +35,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
@@ -53,7 +51,7 @@ import static org.mockito.BDDMockito.verify;
 class BackingAccountsTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("3.2.1");
-	private final AccountID c = asAccount("4.3.0");
+	private final AccountID c = asAccount("4.3.1");
 	private final AccountID d = asAccount("1.3.4");
 	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(a);
 	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
@@ -74,53 +72,8 @@ class BackingAccountsTest {
 
 		subject = new BackingAccounts(() -> map);
 	}
+	
 
-	@Test
-	void rebuildsFromChangedSources() {
-		// setup:
-		map = new FCMap<>();
-		map.put(aKey, aValue);
-		map.put(bKey, bValue);
-		// and:
-		subject = new BackingAccounts(() -> map);
-
-		// when:
-		map.clear();
-		map.put(cKey, cValue);
-		map.put(dKey, dValue);
-		// and:
-		subject.rebuildFromSources();
-
-		// then:
-		assertFalse(subject.existingAccounts.contains(a));
-		assertFalse(subject.existingAccounts.contains(b));
-		// and:
-		assertTrue(subject.existingAccounts.contains(c));
-		assertTrue(subject.existingAccounts.contains(d));
-	}
-
-	@Test
-	void containsDelegatesToKnownActive() {
-		// setup:
-		subject.existingAccounts = Set.of(a, b);
-
-		// expect:
-		assertTrue(subject.contains(a));
-		assertTrue(subject.contains(b));
-		// and:
-		verify(map, never()).containsKey(any());
-	}
-
-	@Test
-	void putUpdatesKnownAccounts() {
-		// when:
-		subject.put(a, aValue);
-
-		// then:
-		assertTrue(subject.existingAccounts.contains(a));
-		// and:
-		verify(map, never()).containsKey(any());
-	}
 
 	@Test
 	void getRefIsReadThrough() {
@@ -133,19 +86,6 @@ class BackingAccountsTest {
 		verify(map, times(2)).getForModify(aKey);
 	}
 
-	@Test
-	void removeUpdatesBothCacheAndDelegate() {
-		// given:
-		subject.existingAccounts.add(a);
-
-		// when:
-		subject.remove(a);
-
-		// then:
-		verify(map).remove(aKey);
-		// and:
-		assertFalse(subject.existingAccounts.contains(a));
-	}
 
 	@Test
 	void returnsMutableRef() {
@@ -170,7 +110,6 @@ class BackingAccountsTest {
 	@Test
 	void putDoesNothingIfPresent() {
 		// setup:
-		subject.existingAccounts.add(a);
 
 		given(map.getForModify(aKey)).willReturn(aValue);
 
@@ -185,12 +124,17 @@ class BackingAccountsTest {
 	@Test
 	void returnsExpectedIds() {
 		// setup:
-		var s = Set.of(a, b, c, d);
+		HashSet<AccountID> s = new HashSet<>(Set.of(a, b));
 		// given:
-		subject.existingAccounts = s;
+		final var map1 = new FCMap<MerkleEntityId, MerkleAccount>();
+		subject = new BackingAccounts(() -> map1);
+		subject.put(a, MerkleAccountFactory.newAccount()
+				.get());
+		subject.put(b, MerkleAccountFactory.newAccount()
+				.get());
 
 		// expect:
-		assertSame(s, subject.idSet());
+		assertEquals(s, subject.idSet());
 	}
 
 	@Test

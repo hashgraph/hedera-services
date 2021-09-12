@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +87,8 @@ class AwareNodeDiligenceScreenTest {
 	private OptionValidator validator;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
-
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	@LoggingTarget
 	private LogCaptor logCaptor;
 
@@ -95,14 +98,14 @@ class AwareNodeDiligenceScreenTest {
 	@BeforeEach
 	void setUp() {
 		// TODO:
-		subject = new AwareNodeDiligenceScreen(validator, txnCtx, null);
+		subject = new AwareNodeDiligenceScreen(validator, txnCtx, () -> accounts);
 	}
 
 	@Test
 	void flagsMissingNodeAccount() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(false);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(false);
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -118,7 +121,8 @@ class AwareNodeDiligenceScreenTest {
 	void flagsNodeSubmittingTxnWithDiffNodeAccountId() throws InvalidProtocolBufferException {
 		givenHandleCtx(bNodeAccount, aNodeAccount);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 		handleValidPayerAccount();
 
 		// then:
@@ -134,7 +138,8 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsInvalidPayerSig() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
 		handleValidPayerAccount();
 
@@ -147,7 +152,8 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsNodeDuplicate() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		handleValidPayerAccount();
 
@@ -160,7 +166,8 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsInvalidDuration() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(false);
 		handleValidPayerAccount();
@@ -174,7 +181,8 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsInvalidChronology() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(TRANSACTION_EXPIRED);
@@ -190,7 +198,8 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void flagsInvalidMemo() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
@@ -208,7 +217,7 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void doesntFlagWithAllOk() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
@@ -226,7 +235,8 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void payerAccountDoesntExist() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
+
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -238,11 +248,11 @@ class AwareNodeDiligenceScreenTest {
 	@Test
 	void payerAccountDeleted() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
-		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(aNodeAccount))).willReturn(true);
 		var payerAccountRef = mock(MerkleAccount.class);
 		given(payerAccountRef.isDeleted()).willReturn(true);
-		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
-		given(backingAccounts.contains(payerAccountId)).willReturn(true);
+		given(accounts.get(MerkleEntityId.fromAccountId(payerAccountId))).willReturn(payerAccountRef);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(payerAccountId))).willReturn(true);
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -286,7 +296,7 @@ class AwareNodeDiligenceScreenTest {
 	private void handleValidPayerAccount() {
 		var payerAccountRef = mock(MerkleAccount.class);
 		given(payerAccountRef.isDeleted()).willReturn(false);
-		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
-		given(backingAccounts.contains(payerAccountId)).willReturn(true);
+		given(accounts.get(MerkleEntityId.fromAccountId(payerAccountId))).willReturn(payerAccountRef);
+		given(accounts.containsKey(MerkleEntityId.fromAccountId(payerAccountId))).willReturn(true);
 	}
 }
