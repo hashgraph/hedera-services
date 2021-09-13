@@ -76,8 +76,7 @@ public abstract class JKey implements Serializable {
 		}
 
 		if (!(key.hasThresholdKey() || key.hasKeyList())) {
-			JKey result = convertBasic(key);
-			return result;
+			return convertBasic(key);
 		} else if (key.hasThresholdKey()) {
 			List<Key> tKeys = key.getThresholdKey().getKeys().getKeysList();
 			List<JKey> jkeys = new ArrayList<>();
@@ -173,8 +172,7 @@ public abstract class JKey implements Serializable {
 		}
 
 		if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
-			Key result = convertJKeyBasic(jkey);
-			return result;
+			return convertJKeyBasic(jkey);
 		} else if (jkey.hasThresholdKey()) {
 			List<JKey> jKeys = jkey.getThresholdKey().getKeys().getKeysList();
 			List<Key> tkeys = new ArrayList<>();
@@ -195,7 +193,6 @@ public abstract class JKey implements Serializable {
 				tkeys.add(res);
 			}
 			KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
-			int thd = jKeys.size();
 			Key result = Key.newBuilder().setKeyList(keys).build();
 			return (result);
 		}

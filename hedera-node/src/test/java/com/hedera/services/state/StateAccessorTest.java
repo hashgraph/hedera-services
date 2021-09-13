@@ -22,10 +22,7 @@ package com.hedera.services.state;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -33,12 +30,12 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,17 +51,17 @@ class StateAccessorTest {
 	@Mock
 	private ServicesState state;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+	private MerkleMap<String, MerkleOptionalBlob> storage;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
+	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
@@ -72,13 +69,13 @@ class StateAccessorTest {
 	@Mock
 	private MerkleDiskFs diskFs;
 	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
 	@Mock
-	private FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations;
+	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 

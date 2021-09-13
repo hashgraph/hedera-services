@@ -25,16 +25,16 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,16 +66,16 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			this::validatePreSignatureValidation;
 
 	private final HederaLedger ledger;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
 	@Inject
 	public TopicCreateTransitionLogic(
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			EntityIdSource entityIdSource,
 			OptionValidator validator,
 			TransactionContext transactionContext,
@@ -120,7 +120,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 					.setTopicNum(newEntityId.getAccountNum())
 					.build();
 
-			topics.get().put(MerkleEntityId.fromTopicId(newTopicId), topic);
+			topics.get().put(EntityNum.fromTopicId(newTopicId), topic);
 			transactionContext.setCreated(newTopicId);
 			transactionContext.setStatus(SUCCESS);
 		} catch (DecoderException e) {

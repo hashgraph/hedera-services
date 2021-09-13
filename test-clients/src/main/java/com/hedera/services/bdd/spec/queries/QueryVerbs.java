@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountRecords;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetExecTime;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
@@ -41,6 +42,7 @@ import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfos;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -99,10 +101,6 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
-	public static HapiContractCallLocal callContractLocal(String contract) {
-		return new HapiContractCallLocal(contract);
-	}
-
 	public static HapiContractCallLocal contractCallLocal(String contract, String abi, Object... params) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
@@ -131,6 +129,10 @@ public class QueryVerbs {
 
 	public static HapiGetVersionInfo getVersionInfo() {
 		return new HapiGetVersionInfo();
+	}
+
+	public static HapiGetExecTime getExecTime(String... txnIds) {
+		return new HapiGetExecTime(List.of(txnIds));
 	}
 
 	public static HapiGetTokenInfo getTokenInfo(String token) {

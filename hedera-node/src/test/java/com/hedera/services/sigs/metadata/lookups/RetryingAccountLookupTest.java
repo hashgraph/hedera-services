@@ -25,15 +25,15 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,16 +52,16 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verifyZeroInteractions;
 
-class RetryingFCMapAccountLookupTest {
+class RetryingAccountLookupTest {
 	private NodeLocalProperties properties;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private RetryingFCMapAccountLookup subject;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private RetryingAccountLookup subject;
 	private Pause pause;
 	private final Pause defaultPause = SleepingPause.SLEEPING_PAUSE;
 	private final AccountID account = IdUtils.asAccount("0.0.1337");
-	private final MerkleEntityId accountKey = MerkleEntityId.fromAccountId(account);
+	private final EntityNum accountKey = EntityNum.fromAccountId(account);
 	private final MerkleAccount accountValue = newAccount().receiverSigRequired(true).accountKeys(accountKeys).get();
 	private static JKey accountKeys;
 	private static final int RETRY_WAIT_MS = 10;
@@ -76,7 +76,7 @@ class RetryingFCMapAccountLookupTest {
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
 		pause = mock(Pause.class);
-		accounts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
+		accounts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 		properties = mock(NodeLocalProperties.class);
 		given(properties.precheckLookupRetries()).willReturn(2);
 		given(properties.precheckLookupRetryBackoffMs()).willReturn(RETRY_WAIT_MS);
@@ -86,7 +86,7 @@ class RetryingFCMapAccountLookupTest {
 	void neverRetriesIfAccountAlreadyExists() throws Exception {
 		given(accounts.get(accountKey)).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 
 		// when:
 		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
@@ -102,7 +102,7 @@ class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(pause, speedometers, runningAvgs);
 
@@ -125,7 +125,7 @@ class RetryingFCMapAccountLookupTest {
 	void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(defaultPause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(defaultPause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(runningAvgs, speedometers);
 
@@ -147,7 +147,7 @@ class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(pause, runningAvgs, speedometers);
 
@@ -169,7 +169,7 @@ class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true).willReturn(false);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(pause);
 

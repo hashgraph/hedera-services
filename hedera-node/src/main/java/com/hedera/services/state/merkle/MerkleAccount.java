@@ -26,9 +26,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal {
+public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
@@ -54,6 +56,16 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
 	static DomainSerdes serdes = new DomainSerdes();
+
+	@Override
+	public EntityNum getKey() {
+		return new EntityNum(state().number());
+	}
+
+	@Override
+	public void setKey(EntityNum phi) {
+		state().setNumber(phi.intValue());
+	}
 
 	/* Order of Merkle node children */
 	public static final class ChildIndices {
@@ -231,13 +243,13 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setReceiverSigRequired(receiverSigRequired);
 	}
 
-	public JKey getKey() {
+	public JKey getAccountKey() {
 		return state().key();
 	}
 
-	public void setKey(final JKey key) {
+	public void setAccountKey(final JKey key) {
 		throwIfImmutable("Cannot change this account's key if it's immutable.");
-		state().setKey(key);
+		state().setAccountKey(key);
 	}
 
 	public EntityId getProxy() {

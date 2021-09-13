@@ -25,12 +25,12 @@ import com.hedera.services.keys.SyncActivationCheck;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	TransactionContext txnCtx;
 	SyncActivationCheck areActive;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	TxnAwareSoliditySigsVerifier subject;
 
@@ -72,7 +72,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(contract.isReceiverSigRequired()).willReturn(true);
 		sigReqAccount = mock(MerkleAccount.class);
 		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getKey()).willReturn(expectedKey);
+		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
 		noSigReqAccount = mock(MerkleAccount.class);
 		given(noSigReqAccount.isReceiverSigRequired()).willReturn(false);
 
@@ -81,11 +81,11 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(sigReqAccount);
-		given(accounts.get(MerkleEntityId.fromAccountId(sigRequired))).willReturn(sigReqAccount);
-		given(accounts.get(MerkleEntityId.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
-		given(accounts.get(MerkleEntityId.fromAccountId(smartContract))).willReturn(contract);
+		accounts = mock(MerkleMap.class);
+		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(sigReqAccount);
+		given(accounts.get(EntityNum.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+		given(accounts.get(EntityNum.fromAccountId(smartContract))).willReturn(contract);
 
 		areActive = mock(SyncActivationCheck.class);
 

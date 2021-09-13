@@ -23,7 +23,7 @@ package com.hedera.test.forensics.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 
 import java.util.Collections;
 import java.util.List;
@@ -75,19 +75,16 @@ public class PojoAccount {
 	private boolean deleted;
 	private boolean receiverSigRequired;
 
-	public static PojoAccount fromEntry(Map.Entry<MerkleEntityId, MerkleAccount> e) {
+	public static PojoAccount fromEntry(Map.Entry<EntityNum, MerkleAccount> e) {
 		return from(e.getKey(), e.getValue());
 	}
 
-	public static PojoAccount from(MerkleEntityId mk, MerkleAccount value) {
+	public static PojoAccount from(EntityNum mk, MerkleAccount value) {
 		var pojo = new PojoAccount();
-		if (mk.getNum() == 6237) {
-			System.out.println(value);
-		}
 		pojo.setId(asAccountString(fromKey(mk)));
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
-		pojo.setKeys(value.getKey().toString());
+		pojo.setKeys(value.getAccountKey().toString());
 		pojo.setNumPayerRecords(value.records().size());
 		pojo.setHasMutablePayerRecords(!value.records().isImmutable());
 		if (pojo.getNumPayerRecords() > 0) {

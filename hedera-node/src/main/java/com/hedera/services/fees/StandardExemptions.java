@@ -45,7 +45,7 @@ public class StandardExemptions implements FeeExemptions {
 		if (isAlwaysExempt(accessor.getPayer().getAccountNum())) {
 			return true;
 		}
-		return systemOpPolicies.check(accessor) == AUTHORIZED;
+		return systemOpPolicies.checkAccessor(accessor) == AUTHORIZED;
 	}
 
 	private boolean isAlwaysExempt(long payerAccount) {

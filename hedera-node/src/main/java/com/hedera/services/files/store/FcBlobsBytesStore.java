@@ -20,9 +20,8 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,18 +37,18 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 
 	private final Function<byte[], MerkleOptionalBlob> blobFactory;
-	private final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> pathedBlobs;
+	private final Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs;
 
 	public FcBlobsBytesStore(
 			Function<byte[], MerkleOptionalBlob> blobFactory,
-			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> pathedBlobs
+			Supplier<MerkleMap<String, MerkleOptionalBlob>> pathedBlobs
 	) {
 		this.blobFactory = blobFactory;
 		this.pathedBlobs = pathedBlobs;
 	}
 
-	private MerkleBlobMeta at(Object key) {
-		return new MerkleBlobMeta((String) key);
+	private String at(Object key) {
+		return (String) key;
 	}
 
 	@Override
@@ -130,7 +129,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	public Set<Entry<String, byte[]>> entrySet() {
 		return pathedBlobs.get().entrySet()
 				.stream()
-				.map(entry -> new SimpleEntry<>(entry.getKey().getPath(), entry.getValue().getData()))
+				.map(entry -> new SimpleEntry<>(entry.getKey(), entry.getValue().getData()))
 				.collect(toSet());
 	}
 }

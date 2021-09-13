@@ -22,12 +22,12 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -76,15 +76,15 @@ public class RenewalRecordsHelper {
 	}
 
 	public void streamCryptoRemoval(
-			final MerkleEntityId id,
+			final EntityNum id,
 			final List<EntityId> tokens,
 			final List<CurrencyAdjustments> tokenAdjustments
 	) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toAccountId();
-		final var memo = "Entity " + id.toAbbrevString() + " was automatically deleted.";
+		final var grpcId = id.toGrpcAccountId();
+		final var memo = "Entity " + id.toIdString() + " was automatically deleted.";
 		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
@@ -95,13 +95,13 @@ public class RenewalRecordsHelper {
 		log.debug("Streamed crypto removal record {}", expirableTxnRecord);
 	}
 
-	public void streamCryptoRenewal(final MerkleEntityId id, final long fee, final long newExpiry) {
+	public void streamCryptoRenewal(final EntityNum id, final long fee, final long newExpiry) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toAccountId();
+		final var grpcId = id.toGrpcAccountId();
 		final var memo = "Entity " +
-				id.toAbbrevString() +
+				id.toIdString() +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";

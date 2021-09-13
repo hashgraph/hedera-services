@@ -1,15 +1,27 @@
 package com.hedera.services.fees.calculation.utils;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.EnumSet;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-
-import java.util.EnumSet;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /*-
  * ‌
@@ -31,22 +43,10 @@ import javax.inject.Singleton;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.ConsensusOpsUsage;
-import com.hedera.services.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.usage.file.FileOpsUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-
 @Singleton
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(FileAppend, CryptoTransfer,
-			ConsensusSubmitMessage, TokenFeeScheduleUpdate, TokenCreate);
+			CryptoCreate, ConsensusSubmitMessage, TokenFeeScheduleUpdate, TokenCreate);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -87,6 +87,8 @@ public class AccessorBasedUsages {
 			estimateFileAppend(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenCreate) {
 			estimateTokenCreate(sigUsage, accessor, baseMeta, into);
+		} else if (function == CryptoCreate) {
+			estimateCryptoCreate(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -115,11 +117,18 @@ public class AccessorBasedUsages {
 		cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
 	}
 
+	private void estimateCryptoCreate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var cryptoCreateMeta = accessor.getSpanMapAccessor().getCryptoCreateMeta(accessor);
+		cryptoOpsUsage.cryptoCreateUsage(sigUsage, baseMeta, cryptoCreateMeta, into);
+	}
+
 	private void estimateSubmitMessage(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
 			UsageAccumulator into) {
 		final var submitMeta = accessor.availSubmitUsageMeta();
 		consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
 	}
+
 	private void estimateTokenCreate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
 			UsageAccumulator into) {
 		final var tokenCreateMeta = accessor.getSpanMapAccessor().getTokenCreateMeta(accessor);
