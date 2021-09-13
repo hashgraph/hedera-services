@@ -33,7 +33,7 @@ public final class ContextPlatformStatus implements CurrentPlatformStatus {
 
 	@Inject
 	public ContextPlatformStatus() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	@Override

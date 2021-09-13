@@ -41,7 +41,7 @@ import java.util.List;
 public final class CryptoFeeBuilder extends FeeBuilder {
 	@Inject
 	public CryptoFeeBuilder() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	/**

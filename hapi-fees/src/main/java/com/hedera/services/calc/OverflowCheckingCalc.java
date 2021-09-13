@@ -47,7 +47,7 @@ public final class OverflowCheckingCalc {
 
 	@Inject
 	public OverflowCheckingCalc() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	/**

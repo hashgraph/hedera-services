@@ -38,7 +38,7 @@ public final class SemanticVersions {
 
 	@Inject
 	public SemanticVersions() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	/* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */

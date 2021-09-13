@@ -106,7 +106,7 @@ public final class ScreenedSysFileProps implements PropertySource {
 
 	@Inject
 	public ScreenedSysFileProps() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	void screenNew(final ServicesConfigurationList rawProps) {

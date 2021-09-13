@@ -51,7 +51,7 @@ public final class TokenOpsUsage {
 
 	@Inject
 	public TokenOpsUsage() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	public void feeScheduleUpdateUsage(

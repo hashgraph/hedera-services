@@ -47,7 +47,7 @@ import java.util.List;
 public final class SmartContractFeeBuilder extends FeeBuilder {
 	@Inject
 	public SmartContractFeeBuilder() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	/**

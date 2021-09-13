@@ -37,7 +37,7 @@ import javax.inject.Singleton;
 public final class FileFeeBuilder extends FeeBuilder {
   @Inject
   public FileFeeBuilder() {
-    // Nothing to initialize
+    /* No-op */
   }
 
   /**

@@ -38,7 +38,7 @@ public final class ConsensusOpsUsage {
 
 	@Inject
 	public ConsensusOpsUsage() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	public void submitMessageUsage(

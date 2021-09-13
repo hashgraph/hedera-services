@@ -64,7 +64,7 @@ public final class BootstrapProperties implements PropertySource {
 
 	@Inject
 	public BootstrapProperties() {
-		// Nothing to initialize
+		/* No-op */
 	}
 
 	String bootstrapPropsResource = "bootstrap.properties";
