@@ -224,8 +224,7 @@ public class BesuAdapter {
                             .apparentValue(transaction.getValue())
                             .blockHeader(blockHeader)
                             .depth(0)
-                            .completer(__ -> {
-                            })
+                            .completer(__ -> {})
                             .miningBeneficiary(miningBeneficiary)
                             .blockHashLookup(h -> null)
                             .accessListWarmAddresses(gasAndAccessedState.getAccessListAddressSet())

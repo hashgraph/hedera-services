@@ -35,9 +35,12 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -253,9 +256,7 @@ public class HederaWorldUpdater implements WorldUpdater {
       if (updatedCode != null) {
         return updatedCode;
       }
-//todo use storagePersistanceImpl
-//      return Bytes.wrap(contractBytecode.get(address));
-      return null;
+      return Bytes.wrap(repositoryRoot.getCode(address.toArray()));
     }
 
     @Override
@@ -270,8 +271,10 @@ public class HederaWorldUpdater implements WorldUpdater {
 
     @Override
     public UInt256 getStorageValue(final UInt256 key) {
-      return null;// todo
-//      return storageTrie().get(key).orElse(UInt256.ZERO);
+      // todo
+//      repositoryRoot.getStorageValue()
+      //      return storageTrie().get(key).orElse(UInt256.ZERO);
+      return null;
     }
 
     @Override
@@ -330,6 +333,27 @@ public class HederaWorldUpdater implements WorldUpdater {
       getUpdatedAccounts().clear();
     }
 
+    // we need to override this or MessageCallProcessor.transferValue fails
+    @Override
+    public EvmAccount getAccount(final Address address) {
+      // We may have updated it already, so check that first.
+      final MutableAccount existing = updatedAccounts.get(address);
+      if (existing != null) {
+        return new WrappedEvmAccount(existing);
+      }
+      if (deletedAccounts.contains(address)) {
+        return null;
+      }
+
+      // Otherwise, get it from our wrapped view and create a new update tracker.
+      final Account origin = getForMutation(address);
+      if (origin == null) {
+        return null;
+      } else {
+        return new WrappedEvmAccount(track(new HederaUpdateTrackingAccount(origin)));
+      }
+    }
+
     @Override
     public void commit() {
 
@@ -363,7 +387,7 @@ public class HederaWorldUpdater implements WorldUpdater {
 //
 //          for (final Map.Entry<UInt256, UInt256> entry : entries) {
 //            final UInt256 value = entry.getValue();
-//        todo    if (value.isZero()) {
+//            if (value.isZero()) {
 //              storageTrie.remove(entry.getKey());
 //            } else {
 //              storageTrie.put(entry.getKey(), value);

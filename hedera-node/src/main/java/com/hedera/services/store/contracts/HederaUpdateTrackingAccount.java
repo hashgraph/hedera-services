@@ -4,7 +4,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 
-public class HederaUpdateTrackingAccount extends UpdateTrackingAccount<Account> {
+public class HederaUpdateTrackingAccount extends UpdateTrackingAccount {
 
     public HederaUpdateTrackingAccount(Account account) {
         super(account);
@@ -15,6 +15,7 @@ public class HederaUpdateTrackingAccount extends UpdateTrackingAccount<Account> 
         super.setBalance(value);
     }
 
+    //todo also implement incrementBalance and maybe write to state?git
     @Override
     public Wei decrementBalance(Wei value) {
         final Wei current = getBalance();
