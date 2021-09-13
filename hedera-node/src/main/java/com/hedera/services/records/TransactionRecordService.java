@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -149,5 +150,9 @@ public class TransactionRecordService {
 					.build());
 		}
 		txnCtx.setTokenTransferLists(transferLists);
+	}
+	
+	public void includeNewTopic(TopicID id) {
+		txnCtx.setCreated(id);
 	}
 }

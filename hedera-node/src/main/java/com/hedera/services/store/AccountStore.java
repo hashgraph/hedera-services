@@ -31,9 +31,9 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -106,7 +106,7 @@ public class AccountStore {
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
-
+		account.setSmartContract(merkleAccount.isSmartContract());
 		return account;
 	}
 

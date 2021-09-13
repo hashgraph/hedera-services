@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.Comparator;
 
@@ -65,6 +66,14 @@ public class Id {
 				.setTokenNum(num)
 				.build();
 	}
+	
+	public TopicID asGrpcTopic() {
+		return TopicID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTopicNum(num)
+				.build();
+	}
 
 	public static Id fromGrpcAccount(final AccountID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
@@ -72,6 +81,10 @@ public class Id {
 
 	public static Id fromGrpcToken(final TokenID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	}
+	
+	public static Id fromGrpcTopic(final TopicID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 	}
 
 	public long getShard() {
