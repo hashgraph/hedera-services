@@ -23,8 +23,8 @@ package com.hedera.services.queries.contract;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,14 +62,14 @@ class GetContractRecordsAnswerTest {
 	String target = payer;
 	StateView view;
 	Transaction paymentTxn;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	OptionValidator optionValidator;
 	GetContractRecordsAnswer subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		final StateChildren children = new StateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(

@@ -670,7 +670,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -693,7 +693,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -717,7 +717,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -741,7 +741,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -765,7 +765,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -818,7 +818,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -870,7 +870,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -893,7 +893,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -917,7 +917,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -941,7 +941,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -964,7 +964,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -987,7 +987,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1010,7 +1010,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1033,7 +1033,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1056,7 +1056,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1080,7 +1080,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1103,7 +1103,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1126,7 +1126,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1149,7 +1149,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02070-M-Adopt018xSDK
     jobs:
       - build-platform-and-services
       - jrs-regression:

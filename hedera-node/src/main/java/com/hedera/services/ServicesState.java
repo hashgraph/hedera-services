@@ -37,11 +37,12 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
@@ -53,21 +54,28 @@ import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.FCMapMigration;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
+import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -82,6 +90,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private int deserializedVersion = StateVersions.CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
+
+	/* Only needed for 0.18.0 to support migration from a 0.17.x state */
+	private Platform platformForDeferredInit;
+	private AddressBook addressBookForDeferredInit;
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -100,6 +112,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Copy the non-Merkle state from the source */
 		this.deserializedVersion = that.deserializedVersion;
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
+
+		this.platformForDeferredInit = that.platformForDeferredInit;
+		this.addressBookForDeferredInit = that.addressBookForDeferredInit;
 	}
 
 	/* --- MerkleInternal --- */
@@ -117,7 +132,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public int getMinimumChildCount(int version) {
 		if (version < StateVersions.RELEASE_0160_VERSION) {
 			return StateChildIndices.NUM_PRE_0160_CHILDREN;
-		} else if (version <= StateVersions.RELEASE_0170_VERSION) {
+		} else if (version <= StateVersions.RELEASE_0180_VERSION) {
 			return StateChildIndices.NUM_POST_0160_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
@@ -133,7 +148,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void initialize() {
 		if (deserializedVersion < StateVersions.RELEASE_0170_VERSION) {
 			if (deserializedVersion < StateVersions.RELEASE_0160_VERSION) {
-				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new FCMap<>());
+				setChild(LegacyStateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 			}
 			moveLargeFcmsToBinaryRoutePositions(this, deserializedVersion);
 		}
@@ -145,9 +160,87 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		deserializedVersion = version;
 	}
 
+	@Override
+	public void migrate() {
+		if (getDeserializedVersion() < StateVersions.RELEASE_0180_VERSION) {
+			log.info("Beginning FCMap -> MerkleMap migrations");
+			CompletableFuture.allOf(
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.UNIQUE_TOKENS,
+								(MerkleUniqueTokenId uniqueTokenId) -> new EntityNumPair(uniqueTokenId.identityCode()),
+								(MerkleUniqueToken v) -> v);
+						log.info("  ↪ Migrated {} NFTs", uniqueTokens().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.TOKEN_ASSOCIATIONS,
+								(MerkleEntityAssociation tokenRel) -> fromLongs(tokenRel.getFromNum(),
+										tokenRel.getToNum()),
+								(MerkleTokenRelStatus v) -> v);
+						log.info("  ↪ Migrated {} token associations", tokenAssociations().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.TOPICS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleTopic v) -> v);
+						log.info("  ↪ Migrated {} topics", topics().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.STORAGE,
+								MerkleBlobMeta::getPath,
+								(MerkleOptionalBlob v) -> v);
+						log.info("  ↪ Migrated {} blobs", storage().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.ACCOUNTS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleAccount v) -> v);
+						log.info("  ↪ Migrated {} accounts", accounts().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.TOKENS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleToken v) -> v);
+						log.info("  ↪ Migrated {} tokens", tokens().size());
+					}),
+					runAsync(() -> {
+						fcmMigrator.toMerkleMap(
+								this,
+								StateChildIndices.SCHEDULE_TXS,
+								(MerkleEntityId id) -> EntityNum.fromLong(id.getNum()),
+								(MerkleSchedule v) -> v);
+						log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
+					})
+			).join();
+			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
+
+			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
+		}
+	}
+
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
+		if (deserializedVersion < StateVersions.RELEASE_0180_VERSION && platform != platformForDeferredInit) {
+			/* Due to design issues with the BinaryObjectStore, which will not be finished
+			initializing here, we need to defer initialization until post-FCM migration. */
+			platformForDeferredInit = platform;
+			addressBookForDeferredInit = addressBook;
+			log.info("Deferring init for 0.17.x -> 0.18.x upgrade on Services node {}", platform.getSelfId());
+			return;
+		}
+
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
@@ -224,7 +317,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void archive() {
 		/* NOTE: in the near future, likely SDK 0.19.0, it will be necessary
-		* to also propagate this .archive() call to the FCMs as well. */
+		 * to also propagate this .archive() call to the MerkleMaps as well. */
 		if (metadata != null) {
 			metadata.archive();
 		}
@@ -252,27 +345,27 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		log.info(networkCtx());
 	}
 
-	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public MerkleMap<EntityNum, MerkleAccount> accounts() {
 		return getChild(StateChildIndices.ACCOUNTS);
 	}
 
-	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
+	public MerkleMap<String, MerkleOptionalBlob> storage() {
 		return getChild(StateChildIndices.STORAGE);
 	}
 
-	public FCMap<MerkleEntityId, MerkleTopic> topics() {
+	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		return getChild(StateChildIndices.TOPICS);
 	}
 
-	public FCMap<MerkleEntityId, MerkleToken> tokens() {
+	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return getChild(StateChildIndices.TOKENS);
 	}
 
-	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
 		return getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
-	public FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs() {
+	public MerkleMap<EntityNum, MerkleSchedule> scheduleTxs() {
 		return getChild(StateChildIndices.SCHEDULE_TXS);
 	}
 
@@ -292,19 +385,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
 		return metadata.getUniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
 		return metadata.getUniqueOwnershipAssociations();
 	}
 
-	public FCOneToManyRelation<PermHashInteger, Long> uniqueTreasuryOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations() {
 		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 
@@ -318,7 +411,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (APPS.includes(selfId)) {
 			app = APPS.get(selfId);
 		} else {
-			app = APP_BUILDER.get()
+			app = appBuilder.get()
 					.bootstrapProps(bootstrapProps)
 					.initialState(this)
 					.platform(platform)
@@ -334,16 +427,28 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		log.info("  --> Context initialized accordingly on Services node {}", selfId);
 	}
 
+	int getDeserializedVersion() {
+		return deserializedVersion;
+	}
+
+	Platform getPlatformForDeferredInit() {
+		return platformForDeferredInit;
+	}
+
+	AddressBook getAddressBookForDeferredInit() {
+		return addressBookForDeferredInit;
+	}
+
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
-		setChild(StateChildIndices.UNIQUE_TOKENS, new FCMap<>());
-		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-		setChild(StateChildIndices.TOPICS, new FCMap<>());
-		setChild(StateChildIndices.STORAGE, new FCMap<>());
-		setChild(StateChildIndices.ACCOUNTS, new FCMap<>());
-		setChild(StateChildIndices.TOKENS, new FCMap<>());
+		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
+		setChild(StateChildIndices.TOPICS, new MerkleMap<>());
+		setChild(StateChildIndices.STORAGE, new MerkleMap<>());
+		setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
+		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
 		setChild(StateChildIndices.DISK_FS, new MerkleDiskFs());
-		setChild(StateChildIndices.SCHEDULE_TXS, new FCMap<>());
+		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 	}
@@ -362,7 +467,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
-	private static Supplier<ServicesApp.Builder> APP_BUILDER = DaggerServicesApp::builder;
+	@FunctionalInterface
+	interface FcmMigrator {
+		<K1 extends MerkleNode, V1 extends MerkleNode, K2, V2 extends MerkleNode & Keyed<K2>> void toMerkleMap(
+				MerkleInternal parent,
+				int mapIndex,
+				Function<K1, K2> keyConverter,
+				Function<V1, V2> valueConverter);
+	}
+
+	private static FcmMigrator fcmMigrator = FCMapMigration::FCMapToMerkleMap;
+	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
 	StateMetadata getMetadata() {
@@ -377,11 +492,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.deserializedVersion = deserializedVersion;
 	}
 
-	int getDeserializedVersion() {
-		return deserializedVersion;
+	static void setAppBuilder(Supplier<ServicesApp.Builder> appBuilder) {
+		ServicesState.appBuilder = appBuilder;
 	}
 
-	static void setAppBuilder(Supplier<ServicesApp.Builder> appBuilder) {
-		ServicesState.APP_BUILDER = appBuilder;
+	static void setFcmMigrator(FcmMigrator fcmMigrator) {
+		ServicesState.fcmMigrator = fcmMigrator;
 	}
 }
