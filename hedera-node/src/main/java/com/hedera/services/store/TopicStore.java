@@ -1,3 +1,5 @@
+package com.hedera.services.store;
+
 /*
  * -
  * ‌
@@ -13,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.services.store;
 
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleEntityId;
