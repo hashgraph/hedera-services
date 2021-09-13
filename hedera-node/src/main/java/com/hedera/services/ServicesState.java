@@ -164,6 +164,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void migrate() {
 		if (getDeserializedVersion() < StateVersions.RELEASE_0180_VERSION) {
 			log.info("Beginning FCMap -> MerkleMap migrations");
+			MerkleOptionalBlob.setInMigration(true);
 			CompletableFuture.allOf(
 					runAsync(() -> {
 						fcmMigrator.toMerkleMap(
@@ -223,6 +224,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
 					})
 			).join();
+			MerkleOptionalBlob.setInMigration(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());

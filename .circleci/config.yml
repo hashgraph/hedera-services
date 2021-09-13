@@ -814,11 +814,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 5 * * *"
+          cron: "*/30 * * * *"
           filters:
             branches:
               only:
-                - 02070-M-Adopt018xSDK
+                - try-disabling-copy-during-migration
     jobs:
       - build-platform-and-services
       - jrs-regression:
