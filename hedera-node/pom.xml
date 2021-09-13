@@ -306,13 +306,6 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>sdk-staging</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1142</url>
-    </repository>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
       <id>central</id>
       <name>Central Repository</name>
       <url>https://repo.maven.apache.org/maven2</url>
