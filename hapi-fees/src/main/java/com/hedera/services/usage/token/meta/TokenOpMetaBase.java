@@ -8,7 +8,7 @@ public abstract class TokenOpMetaBase {
 	private final SubType subType;
 	private final long transferRecordRb;
 
-	public TokenOpMetaBase(final int bpt,
+	protected TokenOpMetaBase(final int bpt,
 			final SubType subType,
 			final long transferRecordRb) {
 		this.bpt = bpt;
