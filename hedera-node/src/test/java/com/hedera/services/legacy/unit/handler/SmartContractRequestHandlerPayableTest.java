@@ -29,7 +29,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.legacy.TestHelper;
@@ -139,7 +138,6 @@ class SmartContractRequestHandlerPayableTest {
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
-            mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),

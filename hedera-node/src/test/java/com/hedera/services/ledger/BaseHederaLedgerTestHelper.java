@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,6 +87,7 @@ public class BaseHederaLedgerTestHelper {
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
+	protected AccountID misc2 = AccountID.newBuilder().setAccountNum(5_678).build();
 	protected long MISC_BALANCE = 1_234L;
 	protected long RAND_BALANCE = 2_345L;
 	protected long miscFrozenTokenBalance = 500L;
@@ -125,7 +126,9 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public ScheduleID newScheduleId(AccountID sponsor) { return ScheduleID.newBuilder().setScheduleNum(nextId++).build(); }
+			public ScheduleID newScheduleId(AccountID sponsor) {
+				return ScheduleID.newBuilder().setScheduleNum(nextId++).build();
+			}
 
 			@Override
 			public void reclaimLastId() {
@@ -133,10 +136,12 @@ public class BaseHederaLedgerTestHelper {
 			}
 
 			@Override
-			public void reclaimProvisionalIds() { }
+			public void reclaimProvisionalIds() {
+			}
 
 			@Override
-			public void resetProvisionalIds() { }
+			public void resetProvisionalIds() {
+			}
 		};
 	}
 
@@ -203,6 +208,9 @@ public class BaseHederaLedgerTestHelper {
 		addToLedger(deletable, MISC_BALANCE, Map.of(
 				frozenId,
 				new TokenInfo(0, frozenToken)));
+		addToLedger(misc2, MISC_BALANCE, Map.of(
+				frozenId,
+				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addToLedger(detached, 0L, new HederaAccountCustomizer().expiry(1_234_567L));
@@ -221,7 +229,7 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, creator, validator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 	}
@@ -245,5 +253,11 @@ public class BaseHederaLedgerTestHelper {
 			this.balance = balance;
 			this.token = token;
 		}
+	}
+	
+	protected void mockAccountOK(AccountID id) {
+		given(accountsLedger.get(id, AccountProperty.IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(id, AccountProperty.IS_SMART_CONTRACT)).willReturn(false);
+		given(accountsLedger.get(id, AccountProperty.BALANCE)).willReturn(100_000L);
 	}
 }

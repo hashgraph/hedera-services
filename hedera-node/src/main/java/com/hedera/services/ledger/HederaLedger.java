@@ -28,7 +28,6 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -121,7 +120,6 @@ public class HederaLedger {
 			.thenComparingLong(FileID::getRealmNum);
 
 	private final TokenStore tokenStore;
-	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
@@ -145,14 +143,12 @@ public class HederaLedger {
 
 	public HederaLedger(
 			TokenStore tokenStore,
-			EntityIdSource ids,
 			EntityCreator creator,
 			OptionValidator validator,
 			AccountRecordsHistorian historian,
 			GlobalDynamicProperties dynamicProperties,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
-		this.ids = ids;
 		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
@@ -445,18 +441,6 @@ public class HederaLedger {
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
-	public AccountID create(AccountID sponsor, long balance, HederaAccountCustomizer customizer) {
-		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
-		setBalance(sponsor, newSponsorBalance);
-
-		var id = ids.newAccountId(sponsor);
-		spawn(id, balance, customizer);
-
-		GrpcTransfersBuilder.includeTransfer(sponsor, -1 * balance, netTransfers);
-
-		return id;
-	}
-	
 	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
 		accountsLedger.create(id);
 		setBalance(id, balance);
@@ -544,10 +528,6 @@ public class HederaLedger {
 				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
 				&& (long) accountsLedger.get(id, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
-	}
-
-	public boolean isPendingCreation(AccountID id) {
-		return accountsLedger.existsPending(id);
 	}
 
 	public MerkleAccount get(AccountID id) {

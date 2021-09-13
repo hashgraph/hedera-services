@@ -26,7 +26,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -73,7 +72,6 @@ class RepoNewCacheTest {
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
 				mock(TokenStore.class),
-				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
@@ -170,7 +168,6 @@ class RepoNewCacheTest {
 		backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
 		HederaLedger ledger = new HederaLedger(
 				mock(TokenStore.class),
-				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),

@@ -67,7 +67,6 @@ public abstract class LedgerModule {
 						new ChangeSummaryManager<>());
 		final var ledger = new HederaLedger(
 				tokenStore,
-				ids,
 				creator,
 				validator,
 				recordsHistorian,

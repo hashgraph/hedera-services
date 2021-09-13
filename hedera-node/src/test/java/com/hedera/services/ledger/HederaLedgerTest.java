@@ -26,7 +26,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -151,7 +150,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, creator, validator, historian, dynamicProps, accountsLedger);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -162,7 +161,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, creator, validator, historian, dynamicProps, accountsLedger);
 
 		assertFalse(subject.isDetached(genesis));
 	}
@@ -172,7 +171,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, creator, validator, historian, dynamicProps, accountsLedger);
 		dynamicProps.disableAutoRenew();
 
 		assertFalse(subject.isDetached(genesis));
@@ -215,26 +214,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
 		subject.setAlreadyUsedAutomaticAssociations(genesis, 7);
 		verify(accountsLedger).set(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 7);
-	}
-
-	@Test
-	void throwsOnUnderfundedCreate() {
-		assertThrows(InsufficientFundsException.class, () ->
-				subject.create(rand, RAND_BALANCE + 1, noopCustomizer));
-	}
-
-	@Test
-	void performsFundedCreate() {
-		final var customizer = mock(HederaAccountCustomizer.class);
-		given(accountsLedger.existsPending(IdUtils.asAccount(String.format("0.0.%d", NEXT_ID)))).willReturn(true);
-
-		final var created = subject.create(rand, 1_000L, customizer);
-
-		assertEquals(NEXT_ID, created.getAccountNum());
-		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 1_000L);
-		verify(accountsLedger).create(created);
-		verify(accountsLedger).set(created, BALANCE, 1_000L);
-		verify(customizer).customize(created, accountsLedger);
 	}
 
 	@Test

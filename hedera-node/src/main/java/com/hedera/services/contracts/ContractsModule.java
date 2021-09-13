@@ -57,7 +57,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
@@ -118,7 +117,6 @@ public abstract class ContractsModule {
 				new ChangeSummaryManager<>());
 		final var pureLedger = new HederaLedger(
 				NOOP_TOKEN_STORE,
-				NOOP_ID_SOURCE,
 				NOOP_EXPIRING_CREATIONS,
 				validator,
 				NOOP_RECORDS_HISTORIAN,

@@ -93,7 +93,7 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
 		when(accountsLedger.get(detached, BALANCE)).thenReturn(0L);
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, creator, mockValidator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		final var e = assertThrows(DetachedAccountException.class,
@@ -112,7 +112,7 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, creator, mockValidator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		assertDoesNotThrow(() -> subject.doTransfers(accountAmounts));
