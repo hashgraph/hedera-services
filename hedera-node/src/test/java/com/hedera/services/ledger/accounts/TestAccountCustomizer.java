@@ -54,7 +54,7 @@ public class TestAccountCustomizer extends
 			ALREADY_USED_AUTOMATIC_ASSOCIATIONS, LONG
 	);
 
-	public TestAccountCustomizer(ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {
+	public TestAccountCustomizer(final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {
 		super(TestAccountProperty.class, OPTION_PROPERTIES, changeManager);
 	}
 

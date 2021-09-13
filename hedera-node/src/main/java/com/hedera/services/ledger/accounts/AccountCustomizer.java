@@ -75,16 +75,16 @@ public abstract class AccountCustomizer<
 	protected abstract T self();
 
 	protected AccountCustomizer(
-			Class<P> propertyType,
-			Map<Option, P> optionProperties,
-			ChangeSummaryManager<A, P> changeManager
+			final Class<P> propertyType,
+			final Map<Option, P> optionProperties,
+			final ChangeSummaryManager<A, P> changeManager
 	) {
 		this.changeManager = changeManager;
 		this.optionProperties = optionProperties;
 		this.changes = new EnumMap<>(propertyType);
 	}
 
-	public EnumMap<P, Object> getChanges() {
+	public Map<P, Object> getChanges() {
 		return changes;
 	}
 
@@ -92,61 +92,61 @@ public abstract class AccountCustomizer<
 		return unmodifiableMap(optionProperties);
 	}
 
-	public A customizing(A account) {
+	public A customizing(final A account) {
 		changeManager.persist(changes, account);
 		return account;
 	}
 
-	public void customize(K id, TransactionalLedger<K, P, A> ledger) {
+	public void customize(final K id, final TransactionalLedger<K, P, A> ledger) {
 		changes.entrySet().forEach(change -> ledger.set(id, change.getKey(), change.getValue()));
 	}
 
-	public T key(JKey option) {
+	public T key(final JKey option) {
 		changeManager.update(changes, optionProperties.get(KEY), option);
 		return self();
 	}
 
-	public T memo(String option) {
+	public T memo(final String option) {
 		changeManager.update(changes, optionProperties.get(MEMO), option);
 		return self();
 	}
 
-	public T proxy(EntityId option) {
+	public T proxy(final EntityId option) {
 		changeManager.update(changes, optionProperties.get(PROXY), option);
 		return self();
 	}
 
-	public T expiry(long option) {
+	public T expiry(final long option) {
 		changeManager.update(changes, optionProperties.get(EXPIRY), option);
 		return self();
 	}
 
-	public T isDeleted(boolean option) {
+	public T isDeleted(final boolean option) {
 		changeManager.update(changes, optionProperties.get(IS_DELETED), option);
 		return self();
 	}
 
-	public T autoRenewPeriod(long option) {
+	public T autoRenewPeriod(final long option) {
 		changeManager.update(changes, optionProperties.get(AUTO_RENEW_PERIOD), option);
 		return self();
 	}
 
-	public T isSmartContract(boolean option) {
+	public T isSmartContract(final boolean option) {
 		changeManager.update(changes, optionProperties.get(IS_SMART_CONTRACT), option);
 		return self();
 	}
 
-	public T isReceiverSigRequired(boolean option) {
+	public T isReceiverSigRequired(final boolean option) {
 		changeManager.update(changes, optionProperties.get(IS_RECEIVER_SIG_REQUIRED), option);
 		return self();
 	}
 
-	public T maxAutomaticAssociations(int option) {
+	public T maxAutomaticAssociations(final int option) {
 		changeManager.update(changes, optionProperties.get(MAX_AUTOMATIC_ASSOCIATIONS), option);
 		return self();
 	}
 
-	public T alreadyUsedAutomaticAssociations(int option) {
+	public T alreadyUsedAutomaticAssociations(final int option) {
 		changeManager.update(changes, optionProperties.get(ALREADY_USED_AUTOMATIC_ASSOCIATIONS), option);
 		return self();
 	}
