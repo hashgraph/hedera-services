@@ -21,6 +21,7 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,5 +75,23 @@ class ExpandHandleSpanMapAccessorTest {
 		subject.setCryptoCreate(accessor, opMeta);
 
 		assertEquals(1_234, subject.getCryptoCreateMeta(accessor).getBaseSize());
+	}
+
+	@Test
+	void testsForCryptoUpdateMetaAsExpected() {
+		final var opMeta = new CryptoUpdateMeta.Builder()
+				.keyBytesUsed(123)
+				.msgBytesUsed(1_234)
+				.memoSize(100)
+				.effectiveNow(1_234_000L)
+				.expiry(1_234_567L)
+				.hasProxy(false)
+				.maxAutomaticAssociations(3)
+				.hasMaxAutomaticAssociations(true)
+				.build();
+
+		subject.setCryptoUpdate(accessor, opMeta);
+
+		assertEquals(3, subject.getCryptoCreateMeta(accessor).getMaxAutomaticAssociations());
 	}
 }

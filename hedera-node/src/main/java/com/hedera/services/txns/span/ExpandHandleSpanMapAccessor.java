@@ -22,6 +22,7 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenCreateMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -38,6 +39,7 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
 	private static final String TOKEN_CREATE_META_KEY = "tokenCreateMeta";
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
+	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -74,4 +76,14 @@ public class ExpandHandleSpanMapAccessor {
 	public CryptoCreateMeta getCryptoCreateMeta(TxnAccessor accessor) {
 		return (CryptoCreateMeta) accessor.getSpanMap().get(CRYPTO_CREATE_META_KEY);
 	}
+
+	public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {
+		accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
+	}
+
+	public CryptoUpdateMeta getCryptoUpdateMeta(TxnAccessor accessor) {
+		return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
+	}
+
+
 }

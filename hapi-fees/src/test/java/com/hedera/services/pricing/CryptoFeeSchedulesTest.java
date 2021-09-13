@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -45,5 +46,10 @@ class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForCryptoCreate() throws IOException {
 		testExpectedPriceFor(CryptoCreate, DEFAULT);
+	}
+
+	@Test
+	void computesExpectedPriceForCryptoUpdate() throws IOException {
+		testExpectedPriceFor(CryptoUpdate, DEFAULT);
 	}
 }

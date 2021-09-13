@@ -29,7 +29,6 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -111,58 +110,46 @@ public class CryptoOpsUsage {
 				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 	}
 
-	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
-		var op = cryptoUpdate.getCryptoUpdateAccount();
+	public void cryptoUpdateUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoUpdateMeta cryptoUpdateMeta,
+			final ExtantCryptoContext ctx,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
-		long msgBytesUsed = BASIC_ENTITY_ID_SIZE
-				+ op.getMemo().getValueBytes().size()
-				+ keyBytesUsed
-				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
-				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
-				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0)
-				+ (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0);
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
-		estimate.addBpt(msgBytesUsed);
+		accumulator.addBpt(cryptoUpdateMeta.getMsgBytesUsed());
 
 		long newVariableBytes = 0;
-		newVariableBytes += !op.hasMemo()
-				? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
-				: op.getMemo().getValueBytes().size();
-		newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
-		newVariableBytes += (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
+		var newMemoSize = cryptoUpdateMeta.getMemoSize();
+		newVariableBytes += newMemoSize != 0 ? newMemoSize : ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
+		var newKeyBytes = cryptoUpdateMeta.getKeyBytesUsed();
+		newVariableBytes += newKeyBytes == 0 ? getAccountKeyStorageSize(ctx.currentKey()) : newKeyBytes;
+		newVariableBytes += (cryptoUpdateMeta.hasProxy() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
 
 		long tokenRelBytes = ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoUpdateMeta.getEffectiveNow(), cryptoUpdateMeta.getExpiry());
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoUpdateMeta.getEffectiveNow(), ctx.currentExpiry());
 		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				cryptoAutoRenewRb(ctx),
 				oldLifetime,
 				sharedFixedBytes + newVariableBytes,
 				newLifetime);
 		if (rbsDelta > 0) {
-			estimate.addRbs(rbsDelta);
+			accumulator.addRbs(rbsDelta);
 		}
 
-		long maxAutoAssociationsDelta = op.hasMaxAutomaticTokenAssociations() ?
-				((op.getMaxAutomaticTokenAssociations().getValue() * newLifetime)
+		long maxAutoAssociationsDelta = cryptoUpdateMeta.hasMaxAutomaticAssociations() ?
+				((cryptoUpdateMeta.getMaxAutomaticAssociations() * newLifetime)
 						- (ctx.currentMaxAutomaticAssociations() * oldLifetime)) : 0L;
 
 		if (maxAutoAssociationsDelta > 0) {
 			/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
 			one additional association in a tokenAssociate call */
-			estimate.addRbs(maxAutoAssociationsDelta * INT_SIZE * 27);
+			accumulator.addRbs(maxAutoAssociationsDelta * INT_SIZE * 27);
 		}
-
-		return estimate.get();
-	}
-
-	public void cryptoUpdateUsage(final SigUsage sigUsage,
-			final BaseTransactionMeta baseMeta,
-			final CryptoUpdateMeta cryptoUpdateMeta,
-			final UsageAccumulator accumulator) {
-		// TODO : will be implemented in a separate PR
 	}
 
 	public void cryptoCreateUsage(final SigUsage sigUsage,

@@ -25,9 +25,11 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
@@ -37,6 +39,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 
@@ -77,6 +80,33 @@ public class OpUsageCtxHelper {
 			return MISSING_FEE_SCHEDULE_UPDATE_CTX;
 		}
 		return new ExtantFeeScheduleContext(token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
+	}
+
+	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
+		final var op = txn.getCryptoUpdateAccount();
+		ExtantCryptoContext cryptoContext;
+		var info = workingView.infoForAccount(op.getAccountIDToUpdate());
+		if (info.isPresent()) {
+			var details = info.get();
+			cryptoContext = ExtantCryptoContext.newBuilder()
+					.setCurrentKey(details.getKey())
+					.setCurrentMemo(details.getMemo())
+					.setCurrentExpiry(details.getExpirationTime().getSeconds())
+					.setCurrentlyHasProxy(details.hasProxyAccountID())
+					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
+					.build();
+		} else {
+			cryptoContext = ExtantCryptoContext.newBuilder()
+					.setCurrentExpiry(txn.getTransactionID().getTransactionValidStart().getSeconds())
+					.setCurrentMemo(DEFAULT_MEMO)
+					.setCurrentKey(Key.getDefaultInstance())
+					.setCurrentlyHasProxy(false)
+					.setCurrentNumTokenRels(0)
+					.setCurrentMaxAutomaticAssociations(0)
+					.build();
+		}
+		return cryptoContext;
 	}
 
 	private int curFeeScheduleReprSize(List<FcCustomFee> feeSchedule) {

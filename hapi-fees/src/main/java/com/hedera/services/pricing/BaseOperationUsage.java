@@ -31,6 +31,7 @@ import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -51,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -59,6 +61,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -218,15 +221,25 @@ class BaseOperationUsage {
 	}
 
 	UsageAccumulator cryptoUpdate() {
-		// TODO : will be implemented in a separate PR
+		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
 						.setMemo(StringValue.of(BLANK_MEMO))
-				)
+						.setExpirationTime(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS))
+						.setAccountIDToUpdate(AN_ACCOUNT)
+				).build();
+		final var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(now)
+				.setCurrentMemo(BLANK_MEMO)
+				.setCurrentKey(A_KEY)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
 				.build();
-		final var cryptoUpdateMeta = new CryptoUpdateMeta();
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn);
 		final var into = new UsageAccumulator();
-		CRYPTO_OPS_USAGE.cryptoUpdateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, into);
+		CRYPTO_OPS_USAGE.cryptoUpdateUsage(
+				SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into);
 		return into;
 	}
 

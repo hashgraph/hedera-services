@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
@@ -46,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeSch
 @Singleton
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(FileAppend, CryptoTransfer,
-			CryptoCreate, ConsensusSubmitMessage, TokenFeeScheduleUpdate, TokenCreate);
+			CryptoCreate, CryptoUpdate, ConsensusSubmitMessage, TokenFeeScheduleUpdate, TokenCreate);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -89,6 +90,8 @@ public class AccessorBasedUsages {
 			estimateTokenCreate(sigUsage, accessor, baseMeta, into);
 		} else if (function == CryptoCreate) {
 			estimateCryptoCreate(sigUsage, accessor, baseMeta, into);
+		} else if (function == CryptoUpdate) {
+			estimateCryptoUpdate(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -121,6 +124,13 @@ public class AccessorBasedUsages {
 			UsageAccumulator into) {
 		final var cryptoCreateMeta = accessor.getSpanMapAccessor().getCryptoCreateMeta(accessor);
 		cryptoOpsUsage.cryptoCreateUsage(sigUsage, baseMeta, cryptoCreateMeta, into);
+	}
+
+	private void estimateCryptoUpdate(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var cryptoUpdateMeta = accessor.getSpanMapAccessor().getCryptoUpdateMeta(accessor);
+		final var cryptoContext = opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn());
+		cryptoOpsUsage.cryptoUpdateUsage(sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into);
 	}
 
 	private void estimateSubmitMessage(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,

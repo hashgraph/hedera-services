@@ -29,6 +29,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,6 +56,7 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
@@ -301,6 +303,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenCreateUsageMeta();
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
+		} else if (function == CryptoUpdate) {
+			setCryptoUpdateUsageMeta();
 		}
 	}
 
@@ -338,5 +342,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void setCryptoCreateUsageMeta() {
 		final var cryptoCreateMeta = new CryptoCreateMeta(txn);
 		SPAN_MAP_ACCESSOR.setCryptoCreate(this, cryptoCreateMeta);
+	}
+
+	private void setCryptoUpdateUsageMeta() {
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn);
+		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
 	}
 }

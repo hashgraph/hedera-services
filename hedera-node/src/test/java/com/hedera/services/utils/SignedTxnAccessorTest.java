@@ -21,7 +21,9 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -32,6 +34,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -342,8 +345,29 @@ class SignedTxnAccessorTest {
 		assertEquals(10, expandedMeta.getMaxAutomaticAssociations());
 	}
 
+	@Test
+	void setCryptoUpdateUsageMetaWorks() {
+		final var txn = signedCryptoUpdateTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getCryptoUpdateMeta(accessor);
+
+		assertEquals(100, expandedMeta.getKeyBytesUsed());
+		assertEquals(197, expandedMeta.getMsgBytesUsed());
+		assertEquals(now, expandedMeta.getEffectiveNow());
+		assertEquals(now + autoRenewPeriod, expandedMeta.getExpiry());
+		assertEquals(memo.getBytes().length, expandedMeta.getMemoSize());
+		assertEquals(25, expandedMeta.getMaxAutomaticAssociations());
+		assertTrue(expandedMeta.hasProxy());
+	}
+
 	private Transaction signedCryptoCreateTxn() {
 		return buildTransactionFrom(cryptoCreateOp());
+	}
+
+	private Transaction signedCryptoUpdateTxn() {
+		return buildTransactionFrom(cryptoUpdateOp());
 	}
 
 	private TransactionBody cryptoCreateOp() {
@@ -357,6 +381,21 @@ class SignedTxnAccessorTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoCreateAccount(op)
+				.build();
+	}
+
+	private TransactionBody cryptoUpdateOp() {
+		final var op = CryptoUpdateTransactionBody.newBuilder()
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(now + autoRenewPeriod))
+				.setProxyAccountID(autoRenewAccount)
+				.setMemo(StringValue.newBuilder().setValue(memo))
+				.setMaxAutomaticTokenAssociations(Int32Value.of(25))
+				.setKey(adminKey);
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoUpdateAccount(op)
 				.build();
 	}
 

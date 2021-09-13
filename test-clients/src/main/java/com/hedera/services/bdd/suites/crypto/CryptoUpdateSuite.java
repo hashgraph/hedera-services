@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -52,6 +53,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -109,9 +112,42 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
-						updateFailsWithInvalidMaxAutoAssociations()
+						updateFailsWithInvalidMaxAutoAssociations(),
+						usdFeeAsExpected()
 				}
 		);
+	}
+
+	private HapiApiSpec usdFeeAsExpected() {
+		double fee = 0.00022;
+		AtomicLong expiration = new AtomicLong();
+		return defaultHapiSpec("UsdFeeAsExpectedCryptoUpdate")
+				.given(
+						newKeyNamed("key").shape(SIMPLE),
+						cryptoCreate("payer")
+								.key("key")
+								.balance(1_000 * ONE_HBAR),
+						cryptoCreate("canonicalAccount")
+								.key("key")
+								.balance(100 * ONE_HBAR)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.blankMemo()
+								.payingWith("payer"),
+						getAccountInfo("canonicalAccount")
+								.exposingExpiry(expiration::set)
+				)
+				.when(
+						sourcing( () ->
+							cryptoUpdate("canonicalAccount")
+									.payingWith("canonicalAccount")
+									.blankMemo()
+									.expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
+									.via("canonicalCryptoUpdate")
+						)
+				)
+				.then(
+						validateChargedUsd("canonicalCryptoUpdate", fee)
+				);
 	}
 
 	private HapiApiSpec updateFailsWithInvalidMaxAutoAssociations() {
