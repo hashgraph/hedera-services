@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -135,7 +134,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 				op.getAmount(),
 				dynamicProperties.areNftsEnabled(),
 				INVALID_TOKEN_MINT_AMOUNT,
-				new ArrayList<>(op.getMetadataList()),
+				op.getMetadataList(),
 				validator::maxBatchSizeMintCheck,
 				validator::nftMetadataCheck
 		);

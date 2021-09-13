@@ -24,7 +24,6 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,14 +47,8 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class TokenOpsValidatorTest {
-
 	@Mock
 	private OptionValidator validator;
-
-	@BeforeEach
-	private void setup() {
-
-	}
 
 	@Test
 	void validateNftTokenMintHappyPath() {
