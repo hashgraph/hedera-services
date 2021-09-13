@@ -159,9 +159,6 @@ public class TypedTokenStore {
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
 		final var tokenId = token.getId();
 		final var accountId = account.getId();
-//		final var key = new MerkleEntityAssociation(
-//				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-//				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
 		final var key = EntityNumPair.fromLongs(accountId.getNum(), tokenId.getNum());
 		final var merkleTokenRel = tokenRels.get().get(key);
 
