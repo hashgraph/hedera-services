@@ -22,11 +22,9 @@ package com.hedera.services.txns.contract.helpers;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.BesuStateAdapter;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -84,25 +82,21 @@ public class BesuAdapter {
     private final UsagePricesProvider usagePrices;
     private final HbarCentExchange exchange;
     private final TransactionContext txnCtx;
-    private final AccountStore accountStore;
-    private final BlobStorageSource blobStorageSource;
     private final TransactionGasCalculator transactionGasCalculator;
+    private final HederaWorldUpdater besuStateAdapter;
 
     @Inject
     public BesuAdapter(
             final UsagePricesProvider usagePrices,
             final HbarCentExchange exchange,
             final TransactionContext txnCtx,
-            final AccountStore accountStore,
-            final BlobStorageSource blobStorageSource
+            final HederaWorldUpdater besuStateAdapter
     ) {
         this.usagePrices = usagePrices;
         this.exchange = exchange;
         this.txnCtx = txnCtx;
-        this.accountStore = accountStore;
-        this.blobStorageSource = blobStorageSource;
+        this.besuStateAdapter = besuStateAdapter;
         this.transactionGasCalculator = new BerlinTransactionGasCalculator();
-
     }
 
     public void executeTX(
@@ -114,8 +108,6 @@ public class BesuAdapter {
             long value,
             Instant consensusTime,
             final AccountID contractId) {
-
-        WorldUpdater worldUpdater = new BesuStateAdapter(accountStore, blobStorageSource);
 
         Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
         long callGasPrice;
@@ -155,7 +147,7 @@ public class BesuAdapter {
         /* --- Execute the TX and persist the updated models --- */
         var result = processTX(
                 isContractCreation,
-                worldUpdater,
+                besuStateAdapter,
                 Address.fromHexString(asSolidityAddressHex(txnCtx.submittingNodeAccount())),
                 txnCtx.consensusTime().getEpochSecond(),
                 transaction,

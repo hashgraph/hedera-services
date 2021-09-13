@@ -27,13 +27,13 @@ import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -73,7 +73,7 @@ public class Account {
 	private long ownedNfts;
 	private long autoRenewSecs;
 	private JKey key;
-	private String memo;
+	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
 	private boolean isNew;
@@ -83,7 +83,7 @@ public class Account {
 	}
 
 	/**
-	 * Create new {@link Account} instance
+	 * Creates a new {@link Account} instance from the given gRPC.
 	 *
 	 * @param accountId
 	 * 		specifies the id of the newly created account
@@ -121,7 +121,7 @@ public class Account {
 	 * 		the {@link Account} that will get the transferred Hbars
 	 * @param amount
 	 * 		amount to transfer
-	 * @return The externalizable list of balance changes
+	 * @return The list of balance changes to be externalized
 	 */
 	public List<BalanceChange> transferHbar(final Account recipient, long amount) {
 		validateTrue(getBalance() > amount, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -241,9 +241,23 @@ public class Account {
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
+
 	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
+	public boolean equals(final Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		final Account account = (Account) o;
+		return expiry == account.expiry
+				&& balance == account.balance
+				&& deleted == account.deleted 
+				&& isSmartContract == account.isSmartContract 
+				&& isReceiverSigRequired == account.isReceiverSigRequired 
+				&& ownedNfts == account.ownedNfts
+				&& autoRenewSecs == account.autoRenewSecs
+				&& isNew == account.isNew
+				&& Objects.equals(id, account.id)
+				&& Objects.equals(key, account.key)
+				&& Objects.equals(memo, account.memo);
 	}
 
 	@Override
@@ -307,7 +321,7 @@ public class Account {
 	public void setBalance(long balance) {
 		this.balance = balance;
 	}
-	
+
 	public long getOwnedNfts() {
 		return ownedNfts;
 	}

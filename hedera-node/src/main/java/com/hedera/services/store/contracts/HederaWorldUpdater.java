@@ -20,52 +20,77 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.ethereum.db.ServicesRepositoryRoot;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
-import java.util.TreeSet;
 
-public class BesuStateAdapter implements WorldUpdater {
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
-//  private final Map<Address, AccountStorageMap> updatedStorageTries = new HashMap<>();
-  private final Map<Address, Bytes> updatedAccountCode = new HashMap<>();
+public class HederaWorldUpdater implements WorldUpdater {
 
   private final AccountStore accountStore;
-  private final BlobStorageSource blobStorageSource;
-//  private final VirtualMap<ContractKey, ContractValue> virtualMap;
+  private final ServicesRepositoryRoot repositoryRoot;
+
+  private final Map<Address, Bytes> updatedAccountCode = new HashMap<>();
+  private final Map<Address, Bytes> updatedStorageTries = new HashMap<>();
+
   private final Map<Address, Bytes> provisionalCodeUpdates = new HashMap<>();
   private final Map<Address, EvmAccountImpl> provisionalAccountUpdates = new HashMap<>();
   private final Map<Id, Map.Entry<Id, HederaAccountCustomizer>> provisionalAccountCreations = new HashMap<>();
 
-  public BesuStateAdapter(
+  @Inject
+  public HederaWorldUpdater(
           final AccountStore accountStore,
-          final BlobStorageSource blobStorageSource
-  ) {
+          final ServicesRepositoryRoot repositoryRoot
+          ) {
     this.accountStore = accountStore;
-    this.blobStorageSource = blobStorageSource;
+    this.repositoryRoot = repositoryRoot;
+  }
+
+  public void put(Address address, Wei balance) {
+    provisionalAccountUpdates.put(address, new EvmAccountImpl(address, balance));
+  }
+
+  public void putCode(Address address, Bytes code) {
+    provisionalCodeUpdates.put(address, code);
+  }
+
+  public Bytes getCode(Address address) {
+    if (provisionalCodeUpdates.containsKey(address)) {
+      return provisionalCodeUpdates.get(address);
+    } else {
+      var codeBytes = repositoryRoot.getCode(address.toArray());
+      return codeBytes == null ? Bytes.EMPTY : Bytes.of(codeBytes);
+    }
+  }
+
+  private void clearStorage(Address address) {
+    //todo
   }
 
   @Override
@@ -74,8 +99,7 @@ public class BesuStateAdapter implements WorldUpdater {
   }
 
   @Override
-  public HederaUpdateTrackingAccount get(final Address address) {
-
+  public Account get(Address address) {
     Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
 
     if (provisionalAccountCreations.containsKey(id)) {
@@ -88,7 +112,7 @@ public class BesuStateAdapter implements WorldUpdater {
       var balance = hederaAccount.getBalance();
       if (hederaAccount.isSmartContract()) {
         var code = provisionalCodeUpdates.containsKey(address) ?
-                provisionalCodeUpdates.get(address) : Bytes.of(blobStorageSource.get(address.toArray()));
+                provisionalCodeUpdates.get(address) : Bytes.of(repositoryRoot.getCode(address.toArray()));
         return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, Wei.of(balance), code));
       }
       // TODO we must address nonces and mitigate all EVM related operations since Hedera does not have the concept of nonces
@@ -100,36 +124,12 @@ public class BesuStateAdapter implements WorldUpdater {
   }
 
   @Override
-  public EvmAccount getOrCreateSenderAccount(Address address) {
-    return getOrCreate(address);
-  }
-
-  @Override
-  public EvmAccount getOrCreate(Address address) {
-    return getAccount(address); //todo or create?
-  }
-
-  public void put(Address address, long nonce, Wei balance) {
-    provisionalAccountUpdates.put(address, new EvmAccountImpl(address, balance));
-  }
-
-  public void putCode(Address address, Bytes code) {
-    provisionalCodeUpdates.put(address, code);
-  }
-
-  public Bytes getCode(Address address) {
-    if (provisionalCodeUpdates.containsKey(address)) {
-      return provisionalCodeUpdates.get(address);
-    } else {
-      var codeBytes = blobStorageSource.get(address.toArray());
-      return codeBytes == null ? Bytes.EMPTY : Bytes.of(codeBytes);
-    }
-  }
-
-  @Override
-  public EvmAccount createAccount(final Address address, final long nonce, final Wei balance) {
-    //todo
-    return null;
+  public EvmAccount createAccount(Address address, long nonce, Wei balance) {
+    Id id = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
+    com.hedera.services.store.models.Account account = new com.hedera.services.store.models.Account(id);
+    account.setBalance(balance.toLong());
+    accountStore.persistNew(account);
+    return new HederaUpdateTrackingAccount(new EvmAccountImpl(address, balance));
   }
 
   @Override
@@ -138,56 +138,51 @@ public class BesuStateAdapter implements WorldUpdater {
   }
 
   @Override
-  public void deleteAccount(final Address address) {
-    // TODO: set somewhere provisionally
-  }
-
-  public void clearStorage(Address address) {
-    // TODO: set somewhere provisionally
+  public void deleteAccount(Address address) {
+    //todo
   }
 
   @Override
   public Collection<? extends Account> getTouchedAccounts() {
-    //todo
-    return null;
+    return provisionalAccountUpdates.values();
   }
 
   @Override
   public Collection<Address> getDeletedAccountAddresses() {
-    //todo
     return null;
   }
 
   @Override
   public void revert() {
     //todo
-//    accounts = new HashMap<>();
   }
 
   @Override
   public void commit() {
-    //todo can we spawn account without using hederaledger?
-//    provisionalAccountCreations.forEach((accountId, entry) -> {
-//      validateTrue(!accountStore.exists(accountId), FAIL_INVALID);
-//      var pair = entry;
-//      if (pair != null) {
-//        validateTrue((Boolean) pair.getValue().getChanges().get(AccountProperty.IS_SMART_CONTRACT), INVALID_SOLIDITY_ADDRESS);
-//        com.hedera.services.store.models.Account account = new com.hedera.services.store.models.Account(accountId);
-//        account.initBalance(0L);
-//        accountStore.persistAccount(pair.getKey(), accountId, 0L, pair.getValue());
-//      }
-//    });
-//
-//    provisionalAccountUpdates.forEach((address, evmAccount) -> {
-//      final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(address.toArray());
-//      validateTrue(ledger.exists(accountId), FAIL_INVALID);
-//      final var account = ledger.get(accountId);
-//      ledger.adjustBalance(accountId, evmAccount.getBalance().toLong() - account.getBalance());
-//    });
+    //todo sponsor, customizer? we ignore them with the accountstore
+    provisionalAccountCreations.forEach((accountId, entry) -> {
+      validateTrue(!accountStore.exists(accountId), FAIL_INVALID);
+      var pair = entry;
+      if (pair != null) {
+        validateTrue((Boolean) pair.getValue().getChanges().get(AccountProperty.IS_SMART_CONTRACT), INVALID_SOLIDITY_ADDRESS);
+        com.hedera.services.store.models.Account account = new com.hedera.services.store.models.Account(accountId);
+        account.setBalance(0L);
+        accountStore.persistNew(account);
+      }
+    });
+
+    provisionalAccountUpdates.forEach((address, evmAccount) -> {
+      final var accountId = EntityIdUtils.idParsedFromEvmAddress(address.toArray());
+      validateTrue(accountStore.exists(accountId), FAIL_INVALID);
+      final var account = accountStore.loadAccount(accountId);
+      //todo is this enough to update the account balance?
+      account.setBalance(evmAccount.getBalance().toLong() - account.getBalance());
+      accountStore.persistAccount(account);
+    });
 
     /* Commit code updates for each updated address */
     provisionalCodeUpdates.forEach((address, code) -> {
-      blobStorageSource.put(address.toArray(), code.toArray());
+      repositoryRoot.saveCode(address.toArray(), code.toArray());
     });
 
     /* Clear any provisional changes */
@@ -209,8 +204,7 @@ public class BesuStateAdapter implements WorldUpdater {
     private final long nonce;
     private final Wei balance;
 
-    //todo Lazily initialized since we don't always access storage.
-//    private volatile AccountStorageMap storageTrie;
+    private volatile Bytes storageTrie;
 
     public WorldStateAccount(final Address address, final long nonce, final Wei balance) {
       this.address = address;
@@ -218,16 +212,16 @@ public class BesuStateAdapter implements WorldUpdater {
       this.balance = balance;
     }
 //todo
-//    private AccountStorageMap storageTrie() {
-//      final AccountStorageMap updatedTrie = updatedStorageTries.get(address);
-//      if (updatedTrie != null) {
-//        storageTrie = updatedTrie;
-//      }
-//      if (storageTrie == null) {
+    private Bytes storageTrie() {
+      final Bytes updatedTrie = updatedStorageTries.get(address);
+      if (updatedTrie != null) {
+        storageTrie = updatedTrie;
+      }
+      if (storageTrie == null) {
 //        storageTrie = newAccountStorageMap(address);
-//      }
-//      return storageTrie;
-//    }
+      }
+      return storageTrie;
+    }
 
     @Override
     public Address getAddress() {
@@ -259,8 +253,8 @@ public class BesuStateAdapter implements WorldUpdater {
       if (updatedCode != null) {
         return updatedCode;
       }
-
-//      return accountStateStore.getCode(address); todo
+//todo use storagePersistanceImpl
+//      return Bytes.wrap(contractBytecode.get(address));
       return null;
     }
 
@@ -305,30 +299,19 @@ public class BesuStateAdapter implements WorldUpdater {
   }
 
   protected static class Updater
-          extends AbstractWorldUpdater<BesuStateAdapter, WorldStateAccount> {
+          extends AbstractWorldUpdater<HederaWorldUpdater, WorldStateAccount> {
 
-    protected Updater(final BesuStateAdapter world) {
+    protected Updater(final HederaWorldUpdater world) {
       super(world);
     }
 
     @Override
     protected WorldStateAccount getForMutation(final Address address) {
-      final BesuStateAdapter wrapped = wrappedWorldView();
+      final HederaWorldUpdater wrapped = wrappedWorldView();
       Account acc = wrapped.get(address);
       return acc == null
               ? null
               : wrapped.new WorldStateAccount(acc.getAddress(), acc.getNonce(), acc.getBalance());
-    }
-
-    @Override
-    public Account get(Address address) {
-      //todo is this okay?
-      return parentUpdater().get().get(address);
-    }
-
-    @Override
-    public EvmAccount getAccount(Address address) {
-      return new HederaUpdateTrackingAccount(get(address));
     }
 
     @Override
@@ -349,7 +332,8 @@ public class BesuStateAdapter implements WorldUpdater {
 
     @Override
     public void commit() {
-      final BesuStateAdapter wrapped = wrappedWorldView();
+
+      final HederaWorldUpdater wrapped = wrappedWorldView();
 
       for (final Address address : getDeletedAccounts()) {
         wrapped.deleteAccount(address);
@@ -373,12 +357,12 @@ public class BesuStateAdapter implements WorldUpdater {
           // Apply any storage updates todo
 //          final AccountStorageMap storageTrie =
 //                  freshState ? wrapped.newAccountStorageMap(origin.getAddress()) : origin.storageTrie();
-          final TreeSet<Map.Entry<UInt256, UInt256>> entries =
-                  new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
-          entries.addAll(updatedStorage.entrySet());
-
-          for (final Map.Entry<UInt256, UInt256> entry : entries) {
-            final UInt256 value = entry.getValue();
+//          final TreeSet<Map.Entry<UInt256, UInt256>> entries =
+//                  new TreeSet<>(Comparator.comparing(Map.Entry::getKey));
+//          entries.addAll(updatedStorage.entrySet());
+//
+//          for (final Map.Entry<UInt256, UInt256> entry : entries) {
+//            final UInt256 value = entry.getValue();
 //        todo    if (value.isZero()) {
 //              storageTrie.remove(entry.getKey());
 //            } else {
@@ -390,15 +374,15 @@ public class BesuStateAdapter implements WorldUpdater {
         // Lastly, save the new account.
         // TODO we must not allow for arbitrary contract creation. If we do `get` for account and it
         // returns `null` we must halt the execution and revert
-        wrapped.put(
-                updated.getAddress(), updated.getNonce(), updated.getBalance());
+//        wrapped.put(
+//                updated.getAddress(), updated.getBalance());
       }
 
       // Commit account state changes
-      wrapped.commit();
+//      wrapped.commit();
 
       // Clear structures
 //      wrapped.updatedStorageTries.clear();
     }
   }
-}
+
