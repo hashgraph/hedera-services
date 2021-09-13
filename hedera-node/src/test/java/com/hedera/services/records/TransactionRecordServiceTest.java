@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -183,5 +184,11 @@ class TransactionRecordServiceTest {
 		subject.includeChangesToToken(token);
 		verify(txnCtx).setCreated(Id.DEFAULT.asGrpcToken());
 	}
-
+	
+	@Test
+	void updatesReceiptForNewTopic() {
+		final var topic = TopicID.getDefaultInstance();
+		subject.includeNewTopic(topic);
+		verify(txnCtx).setCreated(topic);
+	}
 }
