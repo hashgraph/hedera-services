@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;

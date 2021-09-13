@@ -21,23 +21,23 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.models.NftId;
-import com.swirlds.fcmap.FCMap;
+import com.hedera.services.utils.EntityNumPair;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftId;
+import static com.hedera.services.utils.EntityNumPair.fromNftId;
 
 @Singleton
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate;
+	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate;
 
 	@Inject
-	public BackingNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate) {
+	public BackingNfts(Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate) {
 		this.delegate = delegate;
 	}
 

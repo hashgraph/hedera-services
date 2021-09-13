@@ -22,8 +22,8 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,9 +48,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -69,7 +69,7 @@ class ContractCallTransitionLogicTest {
 	private TransactionBody contractCallTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractCallTransitionLogic subject;
 
 	@BeforeEach

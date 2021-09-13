@@ -28,14 +28,19 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf {
-	static final int MERKLE_VERSION = BinaryObject.ClassVersion.ORIGINAL;
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf, Keyed<String> {
+	static final int PRE_RELEASE_0180_VERSION = 1;
+	static final int RELEASE_0180_VERSION = 2;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
+
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
 			(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03,
 			(byte) 0x04, (byte) 0x05, (byte) 0x06, (byte) 0x07,
@@ -56,6 +61,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	static Supplier<BinaryObject> blobSupplier = BinaryObject::new;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
+	private String path;
 	private BinaryObject delegate;
 
 	public MerkleOptionalBlob() {
@@ -68,6 +74,16 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	public MerkleOptionalBlob(final BinaryObject delegate) {
 		this.delegate = delegate;
+	}
+
+	@Override
+	public String getKey() {
+		return path;
+	}
+
+	@Override
+	public void setKey(String path) {
+		this.path = path;
 	}
 
 	public void modify(final byte[] newContents) {
@@ -87,7 +103,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -107,7 +123,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	 */
 	@Override
 	public void invalidateHash() {
-		// Do nothing because this is no-op intentionally.
+		/* No-op */
 	}
 
 	@Override
@@ -118,6 +134,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 			out.writeBoolean(true);
 			delegate.serialize(out);
 		}
+		out.writeNormalisedString(path);
 	}
 
 	@Override
@@ -125,12 +142,16 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 		final var hasData = in.readBoolean();
 		if (hasData) {
 			delegate = blobSupplier.get();
-			delegate.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
+			delegate.deserialize(in, BinaryObject.ClassVersion.ORIGINAL);
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			path = in.readNormalisedString(Integer.MAX_VALUE);
 		}
 	}
 
 	@Override
-	public void serializeAbbreviated(final SerializableDataOutputStream out) {
+	public void serializeAbbreviated(final SerializableDataOutputStream out) throws IOException {
+		out.writeNormalisedString(path);
 		/* Nothing to do here, since Platform automatically serializes the
 		 * hash of an MerkleExternalLeaf and passes it as an argument to
 		 * deserializeAbbreviated as below. (Our BinaryObject delegate
@@ -142,12 +163,15 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 			final SerializableDataInputStream in,
 			final Hash hash,
 			final int version
-	) {
+	) throws IOException {
 		if (!MISSING_DELEGATE_HASH.equals(hash)) {
 			delegate = blobSupplier.get();
-			delegate.deserializeAbbreviated(in, hash, version);
+			delegate.deserializeAbbreviated(in, hash, BinaryObject.ClassVersion.ORIGINAL);
 		} else {
 			delegate = MISSING_DELEGATE;
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			path = in.readNormalisedString(Integer.MAX_VALUE);
 		}
 	}
 
@@ -155,7 +179,9 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	@Override
 	public MerkleOptionalBlob copy() {
 		setImmutable(true);
-		return new MerkleOptionalBlob(delegate.copy());
+		final var fc = new MerkleOptionalBlob(delegate.copy());
+		fc.setKey(path);
+		return fc;
 	}
 
 	@Override
@@ -169,12 +195,12 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 
 		final var that = (MerkleOptionalBlob) o;
 
-		return Objects.equals(this.delegate, that.delegate);
+		return Objects.equals(this.delegate, that.delegate) && Objects.equals(this.path, that.path);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Objects.hashCode(delegate));
+		return Objects.hash(Objects.hashCode(delegate), path);
 	}
 
 	/* --- Bean --- */
@@ -189,6 +215,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
+				.add("path", path)
 				.add("delegate", delegate)
 				.toString();
 	}

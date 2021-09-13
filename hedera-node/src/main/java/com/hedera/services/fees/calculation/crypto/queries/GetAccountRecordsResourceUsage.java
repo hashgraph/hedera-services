@@ -31,7 +31,7 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 @Singleton
 public class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {

@@ -20,7 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
@@ -43,16 +42,6 @@ class MerkleEntityIdTest {
 	private static final long num = 7;
 
 	private static final MerkleEntityId subject = new MerkleEntityId(shard, realm, num);
-
-	@Test
-	void toAbbrevStringWorks() {
-		assertEquals("13.25.7", subject.toAbbrevString());
-	}
-
-	@Test
-	void toAccountIdWorks() {
-		assertEquals(IdUtils.asAccount("13.25.7"), subject.toAccountId());
-	}
 
 	@Test
 	void objectContractMet() {

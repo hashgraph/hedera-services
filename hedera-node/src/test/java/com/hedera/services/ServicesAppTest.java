@@ -103,6 +103,7 @@ class ServicesAppTest {
 
 	@BeforeEach
 	void setUp() {
+		// setup:
 		final var bootstrapProps = new BootstrapProperties();
 		final var props = new ChainedSources(overridingProps, bootstrapProps);
 		final var logDirKey = "hedera.recordStream.logDir";
@@ -144,7 +145,6 @@ class ServicesAppTest {
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
 		assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-
 		assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
 		assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
 		assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
@@ -162,7 +162,6 @@ class ServicesAppTest {
 		assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
 		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
 		assertThat(subject.updateHelper(), instanceOf(UpdateHelper.class));
-
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

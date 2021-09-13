@@ -24,20 +24,20 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.utils.EntityNum.fromContractId;
 
-public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+public class DefaultContractLookup implements ContractSigMetaLookup {
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-	public DefaultFCMapContractLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public DefaultContractLookup(Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -48,7 +48,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 			return SafeLookupResult.failure(INVALID_CONTRACT);
 		} else {
 			JKey key;
-			if ((key = contract.getKey()) == null || key instanceof JContractIDKey) {
+			if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
 				return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
 			} else {
 				return new SafeLookupResult<>(new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
