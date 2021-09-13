@@ -32,15 +32,23 @@ import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.KeyStoreException;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class NewSpecKey extends UtilOp {
 	static final Logger log = LogManager.getLogger(NewSpecKey.class);
 
+	private boolean yahcliLogger = false;
 	private boolean verboseLoggingOn = false;
 	private final String name;
+	private Optional<String> immediateExportLoc = Optional.empty();
+	private Optional<String> immediateExportPass = Optional.empty();
 	private Optional<KeyType> type = Optional.empty();
 	private Optional<SigControl> shape = Optional.empty();
 	private Optional<KeyLabel> labels = Optional.empty();
@@ -50,8 +58,20 @@ public class NewSpecKey extends UtilOp {
 		this.name = name;
 	}
 
+	public NewSpecKey exportingTo(String loc, String pass) {
+		immediateExportLoc = Optional.of(loc);
+		immediateExportPass = Optional.of(pass);
+		return this;
+	}
+
 	public NewSpecKey logged() {
 		verboseLoggingOn = true;
+		return this;
+	}
+
+	public NewSpecKey yahcliLogged() {
+		verboseLoggingOn = true;
+		yahcliLogger = true;
 		return this;
 	}
 
@@ -89,7 +109,15 @@ public class NewSpecKey extends UtilOp {
 			key = spec.keys().generate(type.orElse(KeyType.SIMPLE), keyGen);
 		}
 		spec.registry().saveKey(name, key);
-		if (verboseLoggingOn) {
+		if (immediateExportLoc.isPresent() && immediateExportPass.isPresent()) {
+			final var exportLoc = immediateExportLoc.get();
+			final var exportPass = immediateExportPass.get();
+			exportWithPass(spec, name, exportLoc, exportPass);
+			if (verboseLoggingOn && yahcliLogger) {
+				COMMON_MESSAGES.info("Exported a newly generated key in PEM format to " + exportLoc);
+			}
+		}
+		if (verboseLoggingOn && !yahcliLogger) {
 			if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
 				log.info("Created simple '{}' w/ Ed25519 public key {}",
 						name,
@@ -101,6 +129,16 @@ public class NewSpecKey extends UtilOp {
 		return false;
 	}
 
+	static void exportWithPass(
+			HapiApiSpec spec,
+			String name,
+			String exportLoc,
+			String exportPass
+	) throws KeyStoreException, IOException {
+		spec.keys().exportSimpleKey(exportLoc, name, exportPass);
+		final var passLoc = exportLoc.replace(".pem", ".pass");
+		Files.writeString(Paths.get(passLoc), exportPass);
+	}
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {

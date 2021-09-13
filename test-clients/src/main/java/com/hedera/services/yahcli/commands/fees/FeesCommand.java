@@ -31,7 +31,7 @@ import java.util.concurrent.Callable;
 				picocli.CommandLine.HelpCommand.class,
 				FeeBasePriceCommand.class
 		},
-		description = "Perform system fee operations")
+		description = "Reports network fees")
 public class FeesCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	Yahcli yahcli;

@@ -36,7 +36,7 @@ import java.util.concurrent.Callable;
 				SysFileDownloadCommand.class,
 				SysFileUploadCommand.class
 		},
-		description = "Perform system file operations")
+		description = "Uploads/downloads system files")
 public class SysFilesCommand implements Callable<Integer> {
 	@ParentCommand
 	Yahcli yahcli;
