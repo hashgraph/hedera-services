@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -55,10 +56,11 @@ class MerkleAccountTest {
 	private static final boolean smartContract = true;
 	private static final boolean receiverSigRequired = true;
 	private static final EntityId proxy = new EntityId(1L, 2L, 3L);
-	private int maxAutoAssociaitons = 1234;
-	private int alreadyUsedAutoAssociations = 123;
-	private int autoAssociationMetadata =
-			buildAutomaticAssociationMetaData(maxAutoAssociaitons, alreadyUsedAutoAssociations);
+	private final int number = 123;
+	private final int maxAutoAssociations = 1234;
+	private final int alreadyUsedAutoAssociations = 123;
+	private final int autoAssociationMetadata =
+			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -96,7 +98,9 @@ class MerkleAccountTest {
 				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy, autoAssociationMetadata);
+				proxy,
+				number, 
+                                autoAssociationMetadata);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
@@ -144,6 +148,8 @@ class MerkleAccountTest {
 
 	@Test
 	void gettersDelegate() {
+		// expect:
+		assertEquals(new EntityNum(number), subject.getKey());
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
@@ -152,7 +158,7 @@ class MerkleAccountTest {
 		assertEquals(state.isReceiverSigRequired(), subject.isReceiverSigRequired());
 		assertEquals(state.memo(), subject.getMemo());
 		assertEquals(state.proxy(), subject.getProxy());
-		assertTrue(equalUpToDecodability(state.key(), subject.getKey()));
+		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
@@ -171,7 +177,7 @@ class MerkleAccountTest {
 	@Test
 	void settersDelegate() throws NegativeAccountBalanceException {
 		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
-		given(delegate.getMaxAutomaticAssociations()).willReturn(maxAutoAssociaitons);
+		given(delegate.getMaxAutomaticAssociations()).willReturn(maxAutoAssociations);
 
 		subject.setExpiry(otherExpiry);
 		subject.setBalance(otherBalance);
@@ -181,8 +187,9 @@ class MerkleAccountTest {
 		subject.setReceiverSigRequired(otherReceiverSigRequired);
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
-		subject.setKey(otherKey);
-		subject.setMaxAutomaticAssociations(maxAutoAssociaitons);
+		subject.setAccountKey(otherKey);
+		subject.setKey(new EntityNum(number));
+		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 
 		verify(delegate).setExpiry(otherExpiry);
@@ -192,9 +199,10 @@ class MerkleAccountTest {
 		verify(delegate).setReceiverSigRequired(otherReceiverSigRequired);
 		verify(delegate).setMemo(otherMemo);
 		verify(delegate).setProxy(otherProxy);
-		verify(delegate).setKey(otherKey);
+		verify(delegate).setAccountKey(otherKey);
 		verify(delegate).setHbarBalance(otherBalance);
-		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociaitons);
+		verify(delegate).setNumber(number);
+		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociations);
 		verify(delegate).setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 	}
 
@@ -233,7 +241,8 @@ class MerkleAccountTest {
 	@Test
 	void throwsOnInvalidAlreadyUsedAtoAssociations() {
 		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(-1));
-		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociaitons+1));
+		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(
+				maxAutoAssociations +1));
 	}
 
 	@Test

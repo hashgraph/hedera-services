@@ -40,12 +40,11 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkletree.MerklePair;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
-import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -92,6 +91,7 @@ import static com.hedera.services.grpc.controllers.FileController.GET_FILE_CONTE
 import static com.hedera.services.grpc.controllers.FileController.GET_FILE_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.UPDATE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FreezeController.FREEZE_METRIC;
+import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTION_TIME_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
@@ -131,6 +131,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -170,6 +171,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETCONTENTS
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYKEY;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYSOLIDITYID;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETEXECUTIONTIME;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSIONINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.SCHEDULEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETACCOUNTNFTINFOS;
@@ -208,7 +210,8 @@ public final class MiscUtils {
 			ScheduleGetInfo,
 			TokenGetNftInfo,
 			TokenGetNftInfos,
-			TokenGetAccountNftInfos
+			TokenGetAccountNftInfos,
+			NetworkGetExecutionTime
 	);
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
@@ -259,6 +262,7 @@ public final class MiscUtils {
 		queryFunctions.put(TOKENGETNFTINFOS, TokenGetNftInfos);
 		queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
+		queryFunctions.put(NETWORKGETEXECUTIONTIME, NetworkGetExecutionTime);
 	}
 
 	private static final Map<HederaFunctionality, String> BASE_STAT_NAMES = new EnumMap<>(HederaFunctionality.class);
@@ -324,6 +328,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
 		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
+		BASE_STAT_NAMES.put(NetworkGetExecutionTime, GET_EXECUTION_TIME_METRIC);
 	}
 
 	public static String baseStatNameOf(final HederaFunctionality function) {
@@ -381,8 +386,8 @@ public final class MiscUtils {
 		try {
 			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (IllegalArgumentException e) {
-			final var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!",
-					storeLoc, kpId);
+			final var msg = String.format(
+					"Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
 			throw new IllegalArgumentException(msg, e);
 		}
 	}
@@ -480,6 +485,8 @@ public final class MiscUtils {
 				return Optional.of(query.getTransactionGetFastRecord().getHeader());
 			case NETWORKGETVERSIONINFO:
 				return Optional.of(query.getNetworkGetVersionInfo().getHeader());
+			case NETWORKGETEXECUTIONTIME:
+				return Optional.of(query.getNetworkGetExecutionTime().getHeader());
 			default:
 				return Optional.empty();
 		}
@@ -730,14 +737,14 @@ public final class MiscUtils {
 		return x;
 	}
 
-	public static <K extends MerkleNode, V extends MerkleNode> void forEach(
-			final FCMap<K, V> map,
+	public static <K, V extends MerkleNode & Keyed<K>> void forEach(
+			final MerkleMap<K, V> map,
 			final BiConsumer<? super K, ? super V> action
 	) {
-		map.forEachNode((@Nonnull final MerkleNode node) -> {
-			if (node.getClassId() == MerklePair.CLASS_ID) {
-				final MerklePair<K, V> pair = node.cast();
-				action.accept(pair.getKey(), pair.getValue());
+		map.forEachNode((final MerkleNode node) -> {
+			if (node instanceof Keyed) {
+				final V leaf = node.cast();
+				action.accept(leaf.getKey(), leaf);
 			}
 		});
 	}

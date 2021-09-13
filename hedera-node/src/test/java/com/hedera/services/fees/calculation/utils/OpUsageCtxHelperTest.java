@@ -25,11 +25,11 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +66,7 @@ class OpUsageCtxHelperTest {
 	private final JKeyList wacl = new JKeyList(List.of(
 			new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(StandardCharsets.UTF_8))));
 	private final MerkleToken extant = new MerkleToken(now, 1, 2,
-			"Three", "FOUR", false, true,
+			"shLong.asPhlThree", "FOUR", false, true,
 			EntityId.MISSING_ENTITY_ID);
 	private final TokenID target = IdUtils.asToken("1.2.3");
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
@@ -82,9 +82,9 @@ class OpUsageCtxHelperTest {
 			.build();
 
 	@Mock
-	private StateView workingView;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private StateView workingView;
 
 	private OpUsageCtxHelper subject;
 
@@ -134,7 +134,7 @@ class OpUsageCtxHelperTest {
 		extant.setFeeSchedule(fcFees());
 		final var expBytes = tokenOpsUsage.bytesNeededToRepr(1, 2, 3, 1, 1, 1);
 
-		given(tokens.get(MerkleEntityId.fromTokenId(target))).willReturn(extant);
+		given(tokens.get(EntityNum.fromTokenId(target))).willReturn(extant);
 
 		// when:
 		final var ctx = subject.ctxForFeeScheduleUpdate(op());

@@ -73,9 +73,12 @@ public class HapiOpPermissions {
 
 	public ResponseCodeEnum permissibilityOf(HederaFunctionality function, AccountID givenPayer) {
 		var num = givenPayer.getAccountNum();
+		if (accountNums.isSuperuser(num)) {
+			return OK;
+		}
+
 		PermissionedAccountsRange range;
-		return (range = permissions.get(function)) != null && (accountNums.isSuperuser(num) || range.contains(num))
-				? OK : NOT_SUPPORTED;
+		return (range = permissions.get(function)) != null && range.contains(num) ? OK : NOT_SUPPORTED;
 	}
 
 	EnumMap<HederaFunctionality, PermissionedAccountsRange> getPermissions() {

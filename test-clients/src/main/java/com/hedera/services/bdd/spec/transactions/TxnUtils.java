@@ -377,6 +377,16 @@ public class TxnUtils {
 	private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 	private static final char[] ALNUM = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
+	public static String readableTxnId(TransactionID txnId) {
+		final var validStart = txnId.getTransactionValidStart();
+		final var startInstant = Instant.ofEpochSecond(validStart.getSeconds(), validStart.getNanos());
+		return new StringBuilder()
+				.append(HapiPropertySource.asAccountString(txnId.getAccountID()))
+				.append("@")
+				.append(startInstant)
+				.toString();
+	}
+
 	public static String readableTokenTransfers(List<TokenTransferList> tokenTransfers) {
 		return tokenTransfers.stream()
 				.map(scopedXfers -> String.format("%s(%s)(%s)",

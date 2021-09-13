@@ -29,12 +29,12 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,7 +72,7 @@ public class SolvencyPrecheck {
 	private final PrecheckVerifier precheckVerifier;
 	private final Supplier<StateView> stateView;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public SolvencyPrecheck(
@@ -82,7 +82,7 @@ public class SolvencyPrecheck {
 			PrecheckVerifier precheckVerifier,
 			Supplier<StateView> stateView,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
@@ -120,12 +120,12 @@ public class SolvencyPrecheck {
 	}
 
 	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerId = MerkleEntityId.fromAccountId(accessor.getPayer());
+		final var payerId = EntityNum.fromAccountId(accessor.getPayer());
 		final var payerAccount = accounts.get().get(payerId);
 
 		try {
 			final var now = accessor.getTxnId().getTransactionValidStart();
-			final var payerKey = payerAccount.getKey();
+			final var payerKey = payerAccount.getAccountKey();
 			final var estimatedFees = feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
 			final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
 
