@@ -92,6 +92,6 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setCryptoUpdate(accessor, opMeta);
 
-		assertEquals(3, subject.getCryptoCreateMeta(accessor).getMaxAutomaticAssociations());
+		assertEquals(3, subject.getCryptoUpdateMeta(accessor).getMaxAutomaticAssociations());
 	}
 }
