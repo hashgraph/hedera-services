@@ -60,7 +60,7 @@ class ScreenedTransitionTest {
 
 	@Test
 	void finishesTransitionWithAuthFailure() {
-		given(opPolicies.check(accessor)).willReturn(IMPERMISSIBLE);
+		given(opPolicies.checkAccessor(accessor)).willReturn(IMPERMISSIBLE);
 
 		// when:
 		subject.finishFor(accessor);
@@ -73,7 +73,7 @@ class ScreenedTransitionTest {
 	@Test
 	void incorporatesAfterFinishingWithSuccess() {
 		given(accessor.getFunction()).willReturn(HederaFunctionality.CryptoTransfer);
-		given(opPolicies.check(accessor)).willReturn(UNNECESSARY);
+		given(opPolicies.checkAccessor(accessor)).willReturn(UNNECESSARY);
 		given(transitionRunner.tryTransition(accessor)).willReturn(true);
 
 		// when:
@@ -86,7 +86,7 @@ class ScreenedTransitionTest {
 
 	@Test
 	void doesntIncorporateAfterFailedTransition() {
-		given(opPolicies.check(accessor)).willReturn(UNNECESSARY);
+		given(opPolicies.checkAccessor(accessor)).willReturn(UNNECESSARY);
 
 		// when:
 		subject.finishFor(accessor);

@@ -26,6 +26,7 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.file.FileAppendMeta;
@@ -38,6 +39,7 @@ import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -57,9 +59,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -109,6 +111,7 @@ class BaseOperationUsage {
 
 	private static final String A_TOKEN_NAME = "012345678912";
 	private static final String A_TOKEN_SYMBOL = "ABCD";
+	private static final String BLANK_MEMO = "";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
@@ -146,6 +149,11 @@ class BaseOperationUsage {
 						return nftCryptoTransferWithCustomFee();
 					default:
 						break;
+				}
+				break;
+			case CryptoCreate:
+				if (type == DEFAULT) {
+					return cryptoCreate();
 				}
 				break;
 			case TokenCreate:
@@ -186,6 +194,19 @@ class BaseOperationUsage {
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
+	}
+
+	UsageAccumulator cryptoCreate() {
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+						.setMemo(BLANK_MEMO)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+						.setKey(A_KEY))
+				.build();
+		final var cryptoCreateMeta = new CryptoCreateMeta(canonicalTxn);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoCreateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoCreateMeta, into);
+		return into;
 	}
 
 	UsageAccumulator fileAppend() {

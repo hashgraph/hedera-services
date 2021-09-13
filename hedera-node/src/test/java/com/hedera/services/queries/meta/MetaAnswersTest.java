@@ -22,10 +22,11 @@ package com.hedera.services.queries.meta;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.mock;
 
 class MetaAnswersTest {
+	GetExecTimeAnswer execTime;
 	GetTxnRecordAnswer txnRecord;
 	GetTxnReceiptAnswer txnReceipt;
 	GetVersionInfoAnswer versionInfo;
@@ -35,18 +36,20 @@ class MetaAnswersTest {
 	@Test
 	void hasExpectedAnswers() {
 		// setup:
+		execTime = mock(GetExecTimeAnswer.class);
 		txnRecord = mock(GetTxnRecordAnswer.class);
 		txnReceipt = mock(GetTxnReceiptAnswer.class);
 		versionInfo = mock(GetVersionInfoAnswer.class);
 		fastTxnRecord = mock(GetFastTxnRecordAnswer.class);
 
 		// given:
-		subject = new MetaAnswers(txnRecord, txnReceipt, versionInfo, fastTxnRecord);
+		subject = new MetaAnswers(execTime, txnRecord, txnReceipt, versionInfo, fastTxnRecord);
 
 		// then:
-		assertEquals(txnRecord, subject.getTxnRecord());
-		assertEquals(txnReceipt, subject.getTxnReceipt());
-		assertEquals(versionInfo, subject.getVersionInfo());
-		assertEquals(fastTxnRecord, subject.getFastTxnRecord());
+		assertSame(txnRecord, subject.getTxnRecord());
+		assertSame(txnReceipt, subject.getTxnReceipt());
+		assertSame(versionInfo, subject.getVersionInfo());
+		assertSame(fastTxnRecord, subject.getFastTxnRecord());
+		assertSame(execTime, subject.getExecTime());
 	}
 }

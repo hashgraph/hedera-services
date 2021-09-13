@@ -34,10 +34,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.IdentityCodeUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
@@ -47,8 +48,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	static final int RELEASE_090_VERSION = 4;
 	static final int RELEASE_0160_VERSION = 5;
-	static final int RELEASE_0180_VERSION = 6;
-	private static final int MERKLE_VERSION = RELEASE_0180_VERSION;
+	static final int RELEASE_0180_PRE_SDK_VERSION = 6;
+	static final int RELEASE_0180_VERSION = 7;
+	private static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -65,9 +67,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private boolean receiverSigRequired;
 	private EntityId proxy;
 	private long nftsOwned;
+	private int number;
 	private int autoAssociationMetadata;
 
 	public MerkleAccountState() {
+		/* RuntimeConstructable */
 	}
 
 	public MerkleAccountState(
@@ -80,6 +84,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			boolean smartContract,
 			boolean receiverSigRequired,
 			EntityId proxy,
+			int number,
 			int autoAssociationMetadata
 	) {
 		this.key = key;
@@ -91,6 +96,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
+		this.number = number;
 		this.autoAssociationMetadata = autoAssociationMetadata;
 	}
 
@@ -102,7 +108,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -120,8 +126,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
 			nftsOwned = in.readLong();
 		}
-		if (version >= RELEASE_0180_VERSION) {
+		if (version >= RELEASE_0180_PRE_SDK_VERSION) {
 			autoAssociationMetadata = in.readInt();
+		}
+		if (version >= RELEASE_0180_VERSION) {
+			number = in.readInt();
 		}
 	}
 
@@ -138,6 +147,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		serdes.writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
 		out.writeInt(autoAssociationMetadata);
+		out.writeInt(number);
 	}
 
 	/* --- Copyable --- */
@@ -153,6 +163,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				smartContract,
 				receiverSigRequired,
 				proxy,
+				number,
 				autoAssociationMetadata);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
@@ -169,7 +180,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 		var that = (MerkleAccountState) o;
 
-		return this.expiry == that.expiry &&
+		return this.number == that.number &&
+				this.expiry == that.expiry &&
 				this.hbarBalance == that.hbarBalance &&
 				this.autoRenewSecs == that.autoRenewSecs &&
 				Objects.equals(this.memo, that.memo) &&
@@ -195,6 +207,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				receiverSigRequired,
 				proxy,
 				nftsOwned,
+				number,
 				autoAssociationMetadata);
 	}
 
@@ -202,6 +215,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
+				.add("number", number + " <-> " + asIdLiteral(number))
 				.add("key", describe(key))
 				.add("expiry", expiry)
 				.add("balance", hbarBalance)
@@ -215,6 +229,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.toString();
+	}
+
+	public int number() {
+		return number;
+	}
+
+	public void setNumber(int number) {
+		this.number = number;
 	}
 
 	public JKey key() {
@@ -257,7 +279,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return nftsOwned;
 	}
 
-	public void setKey(JKey key) {
+	public void setAccountKey(JKey key) {
 		assertMutable("key");
 		this.key = key;
 	}

@@ -20,6 +20,8 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
@@ -77,6 +79,7 @@ class StakedAnswerFlowTest {
 	private final Timestamp now = MiscUtils.asTimestamp(Instant.ofEpochSecond(1_234_567L));
 	private final AccountID node = IdUtils.asAccount("0.0.3");
 	private final AccountID payer = IdUtils.asAccount("0.0.1234");
+	private final AccountID superuser = IdUtils.asAccount("0.0.50");
 	private final Query query = Query.getDefaultInstance();
 	private final Response response = Response.getDefaultInstance();
 	private final SignedTxnAccessor paymentAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
@@ -87,6 +90,15 @@ class StakedAnswerFlowTest {
 							.setAccountID(payer))
 					.build().toByteString())
 			.build());
+	private final SignedTxnAccessor superuserPaymentAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
+					.setNodeAccountID(node)
+					.setTransactionID(TransactionID.newBuilder()
+							.setTransactionValidStart(now)
+							.setAccountID(superuser))
+					.build().toByteString())
+			.build());
+	private final AccountNumbers accountNumbers = new MockAccountNumbers();
 
 	@Mock
 	private FeeData usagePrices;
@@ -117,6 +129,7 @@ class StakedAnswerFlowTest {
 	void setUp() {
 		subject = new StakedAnswerFlow(
 				fees,
+				accountNumbers,
 				() -> stateView,
 				resourceCosts,
 				throttles,
@@ -169,6 +182,31 @@ class StakedAnswerFlowTest {
 
 		// then:
 		assertEquals(response, actual);
+	}
+
+	@Test
+	void doesntChargeSuperusers() {
+		setupCostAwareSuccessServiceResponse();
+
+		givenValidHeader();
+		givenExtractableSuperuserPayment();
+		givenValidSuperuserExtraction();
+		givenPaymentIsRequired();
+		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), Optional.of(superuserPaymentAccessor)));
+		givenAvailFunction();
+		givenSuperuserPermission();
+		givenHappyService();
+		givenAvailableResourcePrices();
+		givenComputableCost();
+
+		// when:
+		Response actual = subject.satisfyUsing(service, query);
+
+		// then:
+		assertEquals(response, actual);
+		// and:
+		verify(submissionManager, never()).trySubmission(superuserPaymentAccessor);
 	}
 
 	@Test
@@ -391,6 +429,10 @@ class StakedAnswerFlowTest {
 		given(hapiOpPermissions.permissibilityOf(ConsensusGetTopicInfo, payer)).willReturn(OK);
 	}
 
+	private void givenSuperuserPermission() {
+		given(hapiOpPermissions.permissibilityOf(ConsensusGetTopicInfo, superuser)).willReturn(OK);
+	}
+
 	private void givenCostEstimateIsRequired() {
 		given(service.needsAnswerOnlyCost(query)).willReturn(true);
 	}
@@ -408,8 +450,17 @@ class StakedAnswerFlowTest {
 				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), Optional.of(paymentAccessor)));
 	}
 
+	private void givenValidSuperuserExtraction() {
+		given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
+				.willReturn(Pair.of(new TxnValidityAndFeeReq(OK), Optional.of(superuserPaymentAccessor)));
+	}
+
 	private void givenExtractablePayment() {
 		given(service.extractPaymentFrom(query)).willReturn(Optional.of(paymentAccessor));
+	}
+
+	private void givenExtractableSuperuserPayment() {
+		given(service.extractPaymentFrom(query)).willReturn(Optional.of(superuserPaymentAccessor));
 	}
 
 	private void givenNoExtractablePayment() {

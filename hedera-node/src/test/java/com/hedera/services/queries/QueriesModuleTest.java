@@ -34,6 +34,7 @@ class QueriesModuleTest {
 		assertThat(QueriesModule.provideAnswerFlow(
 			null,
 			null,
+			null,
 			ServicesNodeType.ZERO_STAKE_NODE,
 			null,
 			null,

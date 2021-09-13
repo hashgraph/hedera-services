@@ -60,6 +60,7 @@ public class NodeLocalProperties {
 	private long nettyStartRetryIntervalMs;
 	private boolean dumpFcmsOnIss;
 	private boolean createStateFile;
+	private int numExecutionTimesToTrack;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -100,6 +101,7 @@ public class NodeLocalProperties {
 		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 		dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
 		createStateFile = properties.getBooleanProperty("create.state.file");
+		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
 	}
 
 	public int port() {
@@ -223,4 +225,7 @@ public class NodeLocalProperties {
 	}
 
 	public boolean isCreateStateFile() { return createStateFile; }
+	public int numExecutionTimesToTrack() {
+		return numExecutionTimesToTrack;
+	}
 }

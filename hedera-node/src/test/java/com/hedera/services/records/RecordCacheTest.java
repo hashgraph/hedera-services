@@ -256,8 +256,14 @@ class RecordCacheTest {
 		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
 		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expirableTxnRecord);
 
-		subject.setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
+		// when:
+		subject.setFailInvalid(
+				effectivePayer,
+				accessor,
+				consensusTime,
+				submittingMember);
 
+		// then:
 		verify(recentHistory).observe(expirableTxnRecord, FAIL_INVALID);
 	}
 
@@ -305,7 +311,7 @@ class RecordCacheTest {
 			.setExchangeRates(
 					ExchangeRates.fromGrpc(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate).build()))
 			.build();
-	private static final ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
+	private final ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
 			.setMemo("Something")
 			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
 			.setReceipt(knownReceipt)

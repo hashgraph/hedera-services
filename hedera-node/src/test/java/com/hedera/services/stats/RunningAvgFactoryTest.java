@@ -62,6 +62,6 @@ class RunningAvgFactoryTest {
 		assertSame(runningAvg, resetRunningAvg);
 		verify(runningAvg, times(2)).reset(halfLife);
 		// and:
-		assertEquals(something, entry.supplier.get());
+		assertEquals(something, entry.statsStringSupplier.get());
 	}
 }

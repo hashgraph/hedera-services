@@ -22,8 +22,8 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -176,7 +176,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 							newExpiry.ifPresent(l ->
 								builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 							newMaxAutomaticAssociations.ifPresent(p ->
-									builder.setMaxAutomaticTokenAssociations(UInt32Value.of(p)));
+									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 						}
 				);
 		return builder -> builder.setCryptoUpdateAccount(opBody);

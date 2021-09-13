@@ -20,13 +20,12 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -79,7 +78,7 @@ class RenewalProcessTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, recordsHelper);
+		subject = new RenewalProcess(fees, helper, recordsHelper);
 	}
 
 	@Test
@@ -185,7 +184,7 @@ class RenewalProcessTest {
 		assertTrue(wasTouched);
 		verify(helper).removeLastClassifiedAccount();
 		verify(recordsHelper).streamCryptoRemoval(
-				new MerkleEntityId(0, 0, brokeExpiredAccountNum),
+				EntityNum.fromLong(brokeExpiredAccountNum),
 				Collections.emptyList(),
 				Collections.emptyList());
 	}
@@ -193,7 +192,7 @@ class RenewalProcessTest {
 	@Test
 	void renewsAtExpectedFee() {
 		// setup:
-		var key = new MerkleEntityId(0, 0, fundedExpiredAccountNum);
+		var key = EntityNum.fromLong(fundedExpiredAccountNum);
 
 		given(helper.classify(fundedExpiredAccountNum, now)).willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
 		given(helper.getLastClassifiedAccount()).willReturn(expiredAccountNonZeroBalance);

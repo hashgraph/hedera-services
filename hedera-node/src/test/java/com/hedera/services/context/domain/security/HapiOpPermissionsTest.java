@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
@@ -76,6 +77,8 @@ class HapiOpPermissionsTest {
 		subject.reloadFrom(config);
 
 		// then:
+		Assertions.assertEquals(OK, subject.permissibilityOf(FileUpdate, treasury));
+		Assertions.assertEquals(OK, subject.permissibilityOf(FileUpdate, sysadmin));
 		Assertions.assertEquals(OK, subject.permissibilityOf(UncheckedSubmit, treasury));
 		Assertions.assertEquals(OK, subject.permissibilityOf(UncheckedSubmit, sysadmin));
 		Assertions.assertEquals(OK, subject.permissibilityOf(CryptoTransfer, treasury));
