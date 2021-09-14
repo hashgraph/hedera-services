@@ -42,7 +42,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 @Singleton
-public class TokenOpsUsage {
+public final class TokenOpsUsage {
 	/* Sizes of various fee types, _not_ including the collector entity id */
 	private static final int FIXED_HBAR_REPR_SIZE = LONG_SIZE;
 	private static final int FIXED_HTS_REPR_SIZE = LONG_SIZE + BASIC_ENTITY_ID_SIZE;
@@ -54,6 +54,7 @@ public class TokenOpsUsage {
 
 	@Inject
 	public TokenOpsUsage() {
+		/* No-op */
 	}
 
 	public void feeScheduleUpdateUsage(
@@ -75,7 +76,7 @@ public class TokenOpsUsage {
 		accumulator.addRbs(rbsDelta);
 	}
 
-	public int bytesNeededToRepr(List<CustomFee> feeSchedule) {
+	public int bytesNeededToRepr(final List<CustomFee> feeSchedule) {
 		int numFixedHbarFees = 0;
 		int numFixedHtsFees = 0;
 		int numFractionalFees = 0;

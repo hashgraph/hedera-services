@@ -20,42 +20,28 @@ package com.hedera.services.usage.consensus;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.test.AdapterUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.SigValueObj;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class ConsensusOpsUsageTest {
-	private final int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	private final long now = 1_234_567L;
-	private final String aMemo = "The commonness of thoughts and images";
-	private final String aMessage = "That have the frenzy of our Western seas";
-	private final TopicID target = TopicID.newBuilder().setTopicNum(2345).build();
-	private final SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	private final SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigSize);
-	private final AccountID payer = AccountID.newBuilder().setAccountNum(1234).build();
+	private static final int numSigs = 3;
+	private static final int sigSize = 100;
+	private static final int numPayerKeys = 1;
+	private static final String memo = "The commonness of thoughts and images";
+	private static final String message = "That have the frenzy of our Western seas";
+	private static final SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 
-	private TransactionBody txn;
-
-	private ConsensusOpsUsage subject = new ConsensusOpsUsage();
+	private static final ConsensusOpsUsage subject = new ConsensusOpsUsage();
 
 	@Test
 	void matchesLegacyEstimate() {
-		setupChunkSubmit(1, 2, txnId(payer, now - 123));
-		// and:
 		final var expected = FeeData.newBuilder()
 				.setNetworkdata(FeeComponents.newBuilder()
 						.setConstant(1)
@@ -71,51 +57,13 @@ class ConsensusOpsUsageTest {
 						.setConstant(1)
 						.setRbh(8))
 				.build();
-
-		// given:
 		final var accum = new UsageAccumulator();
-		// and:
-		final var baseMeta = new BaseTransactionMeta(aMemo.length(), 0);
-		final var submitMeta = new SubmitMessageMeta(aMessage.length());
+		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
+		final var submitMeta = new SubmitMessageMeta(message.length());
 
-		// when:
 		subject.submitMessageUsage(sigUsage, submitMeta, baseMeta, accum);
-		// and:
 		final var actualLegacyRepr = AdapterUtils.feeDataFrom(accum);
 
-		// then:
-		Assertions.assertEquals(expected, actualLegacyRepr);
-	}
-
-	private void setupChunkSubmit(int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
-		ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
-				.newBuilder()
-				.setInitialTransactionID(initialTransactionID)
-				.setTotal(totalChunks)
-				.setNumber(chunkNumber)
-				.build();
-		givenTransaction(getBasicValidTransactionBodyBuilder().setChunkInfo(chunkInfo));
-	}
-
-	private void givenTransaction(ConsensusSubmitMessageTransactionBody.Builder body) {
-		txn = TransactionBody.newBuilder()
-				.setMemo(aMemo)
-				.setTransactionID(txnId(payer, now))
-				.setConsensusSubmitMessage(body.build())
-				.build();
-	}
-
-	private ConsensusSubmitMessageTransactionBody.Builder getBasicValidTransactionBodyBuilder() {
-		return ConsensusSubmitMessageTransactionBody.newBuilder()
-				.setTopicID(target)
-				.setMessage(ByteString.copyFromUtf8(aMessage));
-	}
-
-	private TransactionID txnId(AccountID payer, long at) {
-		return TransactionID.newBuilder()
-				.setAccountID(payer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(at))
-				.build();
+		assertEquals(expected, actualLegacyRepr);
 	}
 }
