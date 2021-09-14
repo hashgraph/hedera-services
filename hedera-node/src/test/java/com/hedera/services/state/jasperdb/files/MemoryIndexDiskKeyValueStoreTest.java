@@ -1,5 +1,6 @@
-package com.hedera.services.state.jasperdb.collections;
+package com.hedera.services.state.jasperdb.files;
 
+import com.hedera.services.state.jasperdb.files.MemoryIndexDiskKeyValueStore;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

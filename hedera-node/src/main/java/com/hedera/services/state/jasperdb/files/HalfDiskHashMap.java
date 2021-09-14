@@ -1,5 +1,7 @@
-package com.hedera.services.state.jasperdb.collections;
+package com.hedera.services.state.jasperdb.files;
 
+import com.hedera.services.state.jasperdb.collections.LongList;
+import com.hedera.services.state.jasperdb.collections.LongListHeap;
 import com.hedera.services.state.jasperdb.files.DataFileCollection;
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
 import com.hedera.services.state.jasperdb.files.DataFileReader;

@@ -1,6 +1,7 @@
-package com.hedera.services.state.jasperdb.collections;
+package com.hedera.services.state.jasperdb.files;
 
 import com.hedera.services.state.jasperdb.files.DataFileCommon;
+import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

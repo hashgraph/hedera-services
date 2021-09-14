@@ -3,6 +3,8 @@ package com.hedera.services.state.jasperdb;
 import com.hedera.services.state.jasperdb.collections.*;
 import com.hedera.services.state.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.hedera.services.state.jasperdb.files.DataFileReader;
+import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.MemoryIndexDiskKeyValueStore;
 import com.hedera.services.state.jasperdb.utilities.HashTools;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataOutputStream;

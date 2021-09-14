@@ -1,6 +1,6 @@
 package com.hedera.services.state.jasperdb.utilities;
 
-import com.hedera.services.state.jasperdb.collections.HalfDiskHashMap;
+import com.hedera.services.state.jasperdb.files.HalfDiskHashMap;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 

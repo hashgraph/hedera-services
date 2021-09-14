@@ -5,16 +5,23 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LongListHeapTest {
-    public static final LongList longList = new LongListHeap();
+    public static LongList longList;
+
+    protected LongList createLongList() {
+        return new LongListHeap();
+    }
 
     @Test
     @Order(1)
     public void createData() throws Exception {
+        longList = createLongList();
         // create 10 million sample data
         for (int i = 0; i < 10_000_000; i++) {
             longList.put(i, i);
@@ -64,5 +71,17 @@ public class LongListHeapTest {
                 assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
             }
         }
+        // check with stream as well
+        AtomicInteger atomicI = new AtomicInteger(start);
+        longList.stream().forEach(readValue -> {
+            final int i = atomicI.getAndIncrement();
+            if (checkZero) {
+                assertEquals(0, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be ZERO");
+            } else {
+                assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
+            }
+        });
+        // check with parallel stream
+        assertEquals(endExclusive-start,longList.stream().parallel().summaryStatistics().getCount());
     }
 }
