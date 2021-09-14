@@ -169,11 +169,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 			final var op = getTxn().getTokenMint();
 			return op.getMetadataCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
 		} else if (function == TokenBurn) {
-			final var op = getTxn().getTokenBurn();
-			return op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+			return SPAN_MAP_ACCESSOR.getTokenBurnMeta(this).getSubType();
 		} else if (function == TokenAccountWipe) {
-			final var op = getTxn().getTokenWipe();
-			return op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+			return SPAN_MAP_ACCESSOR.getTokenWipeMeta(this).getSubType();
 		}
 		return SubType.DEFAULT;
 	}
@@ -314,6 +312,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setFeeScheduleUpdateMeta();
 		} else if (function == TokenCreate) {
 			setTokenCreateUsageMeta();
+		} else if (function == TokenBurn) {
+			setTokenBurnUsageMeta();
+		} else if (function == TokenAccountWipe) {
+			setTokenWipeUsageMeta();
 		} else if (function == CryptoCreate) {
 			setCryptoCreateUsageMeta();
 		}
@@ -348,6 +350,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void setTokenCreateUsageMeta() {
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 		SPAN_MAP_ACCESSOR.setTokenCreateMeta(this, tokenCreateMeta);
+	}
+
+	private void setTokenBurnUsageMeta() {
+		final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenBurnMeta(this, tokenBurnMeta);
+	}
+
+	private void setTokenWipeUsageMeta() {
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
+		SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
 	}
 
 	private void setCryptoCreateUsageMeta() {

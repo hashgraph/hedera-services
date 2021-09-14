@@ -136,7 +136,7 @@ class TokenOpsUsageUtilsTest {
 	void tokenWipeFungibleCommonWorks() {
 		final var txn = givenTokenWipeWith(FUNGIBLE_COMMON);
 
-		TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn, TOKEN_FUNGIBLE_COMMON);
+		TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
 
 		assertEquals(0, tokenWipeMeta.getSerialNumsCount());
 		assertEquals(56, tokenWipeMeta.getTransferRecordDb());
@@ -146,7 +146,7 @@ class TokenOpsUsageUtilsTest {
 	void tokenWipeNonFungibleUniqueWorks() {
 		final var txn = givenTokenWipeWith(NON_FUNGIBLE_UNIQUE);
 
-		TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
 
 		assertEquals(1, tokenWipeMeta.getSerialNumsCount());
 		assertEquals(80, tokenWipeMeta.getTransferRecordDb());
@@ -156,7 +156,7 @@ class TokenOpsUsageUtilsTest {
 	void tokenBurnFungibleCommonWorks() {
 		final var txn = givenTokenBurnWith(FUNGIBLE_COMMON);
 
-		TokenBurnMeta tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn, TOKEN_FUNGIBLE_COMMON);
+		TokenBurnMeta tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
 
 		assertEquals(0, tokenBurnMeta.getSerialNumsCount());
 		assertEquals(56, tokenBurnMeta.getTransferRecordDb());
@@ -166,7 +166,7 @@ class TokenOpsUsageUtilsTest {
 	void tokenBurnNonFungibleUniqueWorks() {
 		final var txn = givenTokenBurnWith(NON_FUNGIBLE_UNIQUE);
 
-		TokenBurnMeta tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		TokenBurnMeta tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
 
 		assertEquals(1, tokenBurnMeta.getSerialNumsCount());
 		assertEquals(80, tokenBurnMeta.getTransferRecordDb());
