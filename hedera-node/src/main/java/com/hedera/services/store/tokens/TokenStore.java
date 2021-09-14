@@ -56,8 +56,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
-	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
-
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);

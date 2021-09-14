@@ -80,7 +80,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -401,15 +400,6 @@ class HederaTokenStoreTest {
 		subject.pendingId = pending;
 
 		assertTrue(subject.exists(pending));
-	}
-
-	@Test
-	void freezingRejectsMissingAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(false);
-
-		final var status = subject.freeze(sponsor, misc);
-
-		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -926,45 +916,12 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void freezingRejectsUnfreezableToken() {
-		given(token.freezeKey()).willReturn(Optional.empty());
-
-		final var status = subject.freeze(treasury, misc);
-
-		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, status);
-	}
-
-	@Test
 	void grantingRejectsUnknowableToken() {
 		given(token.kycKey()).willReturn(Optional.empty());
 
 		final var status = subject.grantKyc(treasury, misc);
 
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY, status);
-	}
-
-	@Test
-	void freezingRejectsDeletedToken() {
-		givenTokenWithFreezeKey(true);
-		given(token.isDeleted()).willReturn(true);
-
-		final var status = subject.freeze(treasury, misc);
-
-		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
-	}
-
-	@Test
-	void performsValidFreeze() {
-		givenTokenWithFreezeKey(false);
-
-		subject.freeze(treasury, misc);
-
-		verify(tokenRelsLedger).set(treasuryMisc, TokenRelProperty.IS_FROZEN, true);
-	}
-
-	private void givenTokenWithFreezeKey(boolean freezeDefault) {
-		given(token.freezeKey()).willReturn(Optional.of(TOKEN_TREASURY_KT.asJKeyUnchecked()));
-		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
 	}
 
 	@Test

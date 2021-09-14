@@ -264,11 +264,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return setHasKyc(aId, tId, false);
 	}
 
-	@Override
-	public ResponseCodeEnum freeze(final AccountID aId, final TokenID tId) {
-		return setIsFrozen(aId, tId, true);
-	}
-
 	private ResponseCodeEnum setHasKyc(final AccountID aId, final TokenID tId, final boolean value) {
 		return manageFlag(
 				aId,
