@@ -146,10 +146,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
 						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS),
 						cryptoCreate("ok")
+								.key("civilian")
 								.balance(0L)
 								.via("txn")
-								.memo("")
-								.entityMemo("")
+								.blankMemo()
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.signedBy("civilian")
 								.payingWith("civilian")

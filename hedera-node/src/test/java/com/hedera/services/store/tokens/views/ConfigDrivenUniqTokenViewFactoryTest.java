@@ -20,14 +20,13 @@ package com.hedera.services.store.tokens.views;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,15 +40,15 @@ class ConfigDrivenUniqTokenViewFactoryTest {
 	@Mock
 	private TokenStore tokenStore;
 	@Mock
-	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
+	private Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts;
 	@Mock
-	private Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	@Mock
-	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByType;
+	private Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByType;
 	@Mock
-	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> nftsByOwner;
+	private Supplier<FCOneToManyRelation<EntityNum, Long>> nftsByOwner;
 	@Mock
-	private Supplier<FCOneToManyRelation<PermHashInteger, Long>> treasuryNftsByType;
+	private Supplier<FCOneToManyRelation<EntityNum, Long>> treasuryNftsByType;
 
 	@Test
 	void constructsExplicitIfNotUsingWildcards() {

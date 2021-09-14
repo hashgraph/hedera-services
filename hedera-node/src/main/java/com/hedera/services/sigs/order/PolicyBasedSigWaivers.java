@@ -62,31 +62,31 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
 	@Override
 	public boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn) {
 		assertTypeExpectation(fileAppendTxn.hasFileAppend());
-		return opPolicies.check(fileAppendTxn, FileAppend) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileAppendTxn, FileAppend) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn) {
 		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
-		return opPolicies.check(fileUpdateTxn, FileUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn) {
 		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
-		return opPolicies.check(fileUpdateTxn, FileUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
 		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-		return opPolicies.check(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		return opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
 	}
 
 	@Override
 	public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn) {
 		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-		final var isAuthorized = opPolicies.check(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		final var isAuthorized = opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
 		if (!isAuthorized) {
 			return false;
 		} else {

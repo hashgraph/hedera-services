@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,21 +28,25 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -56,13 +60,14 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.merkletree.MerkleBinaryTree;
-import com.swirlds.merkletree.MerklePair;
-import com.swirlds.merkletree.MerkleTreeInternalNode;
+import com.swirlds.merkle.map.FCMapMigration;
+import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -80,8 +85,8 @@ import java.util.List;
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.swirlds.common.constructable.ConstructableRegistry.registerConstructable;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,7 +97,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -142,6 +150,8 @@ class ServicesStateTest {
 	private ServicesInitFlow initFlow;
 	@Mock
 	private ServicesApp.Builder appBuilder;
+	@Mock
+	private ServicesState.FcmMigrator fcmMigrator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -261,7 +271,8 @@ class ServicesStateTest {
 		// then:
 		assertThat(
 				logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));;
+				contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+		;
 	}
 
 	@Test
@@ -343,10 +354,13 @@ class ServicesStateTest {
 				StateChildIndices.NUM_POST_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION));
 		assertEquals(
+				StateChildIndices.NUM_POST_0160_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
+		assertEquals(
 				StateChildIndices.NUM_PRE_0160_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0120_VERSION));
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.RELEASE_0170_VERSION + 1));
+				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
 
 	@Test
@@ -357,12 +371,76 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateFromRelease0170() {
+	void doesntMigrateWhenInitializingFromRelease0170() {
 		// given:
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::initialize);
+	}
+
+	@Test
+	void defersInitWhenInitializingFromRelease0170() {
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
+
+		subject.init(platform, addressBook);
+
+		assertSame(platform, subject.getPlatformForDeferredInit());
+		assertSame(addressBook, subject.getAddressBookForDeferredInit());
+	}
+
+	@Test
+	void doesntMigrateWhenInitializingFromRelease0180() {
+		// given:
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0180_VERSION);
+
+		// expect:
+		assertDoesNotThrow(subject::migrate);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0180() {
+		ServicesState.setFcmMigrator(fcmMigrator);
+		final MerkleMap<?, ?> pretend = new MerkleMap<>();
+
+		subject = mock(ServicesState.class);
+		given(subject.uniqueTokens()).willReturn((MerkleMap<EntityNumPair, MerkleUniqueToken>) pretend);
+		given(subject.tokenAssociations()).willReturn((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) pretend);
+		given(subject.topics()).willReturn((MerkleMap<EntityNum, MerkleTopic>) pretend);
+		given(subject.storage()).willReturn((MerkleMap<String, MerkleOptionalBlob>) pretend);
+		given(subject.accounts()).willReturn((MerkleMap<EntityNum, MerkleAccount>) pretend);
+		given(subject.tokens()).willReturn((MerkleMap<EntityNum, MerkleToken>) pretend);
+		given(subject.scheduleTxs()).willReturn((MerkleMap<EntityNum, MerkleSchedule>) pretend);
+
+		willCallRealMethod().given(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0170_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+
+		subject.migrate();
+
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.UNIQUE_TOKENS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKEN_ASSOCIATIONS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOPICS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.STORAGE), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.ACCOUNTS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.TOKENS), any(), any());
+		verify(fcmMigrator).toMerkleMap(eq(subject), eq(StateChildIndices.SCHEDULE_TXS), any(), any());
+		verify(subject).init(platform, addressBook);
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(
+						equalTo("Beginning FCMap -> MerkleMap migrations"),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						Matchers.startsWith("↪ Migrated 0 "),
+						equalTo("Finished with FCMap -> MerkleMap migrations, completing the deferred init")));
+
+		ServicesState.setFcmMigrator(FCMapMigration::FCMapToMerkleMap);
 	}
 
 	@Test
@@ -438,21 +516,23 @@ class ServicesStateTest {
 	@Test
 	void migratesFromRelease0160AsExpected() throws ConstructableRegistryException {
 		// setup:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
 		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
-		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
-		final var nftKey = new MerkleUniqueTokenId(MISSING_ENTITY_ID, 1L);
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var nftKey = EntityNumPair.fromLongs(MISSING_ENTITY_ID.num(), 1L);
 		final var nftVal = new MerkleUniqueToken(MISSING_ENTITY_ID, "TBD".getBytes(), MISSING_INSTANT);
-		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
-		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, false);
+		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
+		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		nfts.put(nftKey, nftVal);
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -474,12 +554,12 @@ class ServicesStateTest {
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				nftVal,
-				((FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
+				((MerkleMap<EntityNumPair, MerkleUniqueToken>) subject.getChild(StateChildIndices.UNIQUE_TOKENS))
 						.get(nftKey));
 		assertEquals(nftVal, subject.uniqueTokens().get(nftKey));
 		assertEquals(
 				tokenRelsVal,
-				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
@@ -487,19 +567,14 @@ class ServicesStateTest {
 
 	@Test
 	void migratesFromPreRelease0160AsExpected() throws ConstructableRegistryException {
-		// setup:
-		registerConstructable(new ClassConstructorPair(FCMap.class, FCMap::new));
-		registerConstructable(new ClassConstructorPair(MerklePair.class, MerklePair::new));
-		registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-		registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
 		// and:
 		final var addressBook = new AddressBook();
 		final var networkContext = new MerkleNetworkContext();
 		networkContext.setSeqNo(new SequenceNumber(1234L));
 		networkContext.setMidnightRates(new ExchangeRates(1, 2, 3, 4, 5, 6));
-		final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts = new FCMap<>();
-		final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
-		final var tokenRelsKey = new MerkleEntityAssociation(0, 0, 2, 0, 0, 3);
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+		final var tokenRelsKey = EntityNumPair.fromLongs(2, 3);
 		final var tokenRelsVal = new MerkleTokenRelStatus(1_234L, true, false, true);
 		// and:
 		tokenRels.put(tokenRelsKey, tokenRelsVal);
@@ -521,7 +596,7 @@ class ServicesStateTest {
 		assertEquals(networkContext.midnightRates(), subject.networkCtx().midnightRates());
 		assertEquals(
 				tokenRelsVal,
-				((FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>) subject.getChild(
+				((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) subject.getChild(
 						StateChildIndices.TOKEN_ASSOCIATIONS))
 						.get(tokenRelsKey));
 		assertEquals(tokenRelsVal, subject.tokenAssociations().get(tokenRelsKey));
@@ -530,9 +605,9 @@ class ServicesStateTest {
 	@Test
 	void forwardsFcomtrAsExpected() {
 		// setup:
-		final FCOneToManyRelation<PermHashInteger, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<PermHashInteger, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<PermHashInteger, Long> c = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> a = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> b = new FCOneToManyRelation<>();
+		final FCOneToManyRelation<EntityNum, Long> c = new FCOneToManyRelation<>();
 		// and:
 		subject.setMetadata(metadata);
 
@@ -604,8 +679,8 @@ class ServicesStateTest {
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
-			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts,
-			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels,
+			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
+			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			boolean withNfts
 	) {
 		final List<MerkleNode> legacyChildren = new ArrayList<>();

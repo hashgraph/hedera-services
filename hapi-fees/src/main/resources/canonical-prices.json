@@ -1,5 +1,5 @@
 {
-  "CryptoCreate": { "DEFAULT": 0.01 },
+  "CryptoCreate": { "DEFAULT": 0.05 },
   "CryptoAccountAutoRenew": { "DEFAULT": 0.00022 },
   "CryptoUpdate": { "DEFAULT": 0.00022 },
   "CryptoTransfer": {"DEFAULT": 0.0001, "TOKEN_FUNGIBLE_COMMON": 0.001, "TOKEN_NON_FUNGIBLE_UNIQUE": 0.001,

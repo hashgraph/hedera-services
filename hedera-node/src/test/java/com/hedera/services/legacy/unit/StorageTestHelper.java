@@ -22,20 +22,19 @@ package com.hedera.services.legacy.unit;
 
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.ArrayUtils;
 
-public class FCStorageWrapper {
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+public class StorageTestHelper {
+	private MerkleMap<String, MerkleOptionalBlob> storageMap;
 
-	public FCStorageWrapper(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
+	public StorageTestHelper(final MerkleMap<String, MerkleOptionalBlob> storageMap) {
 		this.storageMap = storageMap;
 	}
 
 	public void fileCreate(final String path, final byte[] content) {
-		final var sKey = new MerkleBlobMeta(path);
 		final var sVal = new MerkleOptionalBlob(content);
-		storageMap.put(sKey, sVal);
+		storageMap.put(path, sVal);
 	}
 
 	public byte[] fileRead(final String path) {
@@ -45,14 +44,14 @@ public class FCStorageWrapper {
 		} catch (StorageKeyNotFoundException e) {
 			return new byte[0];
 		}
-		return storageMap.get(sKey).getData();
+		return storageMap.get(sKey.getPath()).getData();
 	}
 
 	public boolean fileExists(final String path) {
 		MerkleBlobMeta sKey;
 		try {
 			sKey = validateStorageKey(path);
-			return storageMap.containsKey(sKey);
+			return storageMap.containsKey(sKey.getPath());
 		} catch (StorageKeyNotFoundException ignore) {
 		}
 		return false;
@@ -60,8 +59,8 @@ public class FCStorageWrapper {
 
 	public long getSize(final String path) {
 		MerkleBlobMeta sKey = new MerkleBlobMeta(path);
-		if (storageMap.containsKey(sKey)) {
-			return storageMap.get(sKey).getData().length;
+		if (storageMap.containsKey(sKey.getPath())) {
+			return storageMap.get(sKey.getPath()).getData().length;
 		} else {
 			return 0l;
 		}
@@ -75,7 +74,7 @@ public class FCStorageWrapper {
 
 	private MerkleBlobMeta validateStorageKey(final String path) throws StorageKeyNotFoundException {
 		MerkleBlobMeta sKey = new MerkleBlobMeta(path);
-		if (!storageMap.containsKey(sKey)) {
+		if (!storageMap.containsKey(sKey.getPath())) {
 			throw new StorageKeyNotFoundException("Destination file does not exist: '" + path + "'");
 		}
 		return sKey;
@@ -83,6 +82,6 @@ public class FCStorageWrapper {
 
 	public void delete(final String path) throws StorageKeyNotFoundException {
 		final var sKey = validateStorageKey(path);
-		storageMap.remove(sKey);
+		storageMap.remove(sKey.getPath());
 	}
 }

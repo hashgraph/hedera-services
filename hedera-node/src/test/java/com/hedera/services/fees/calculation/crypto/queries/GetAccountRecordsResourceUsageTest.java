@@ -25,8 +25,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,12 +56,11 @@ import static org.mockito.BDDMockito.mock;
 class GetAccountRecordsResourceUsageTest {
 	private StateView view;
 	private CryptoFeeBuilder usageEstimator;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private GetAccountRecordsResourceUsage subject;
-	private static final String a = "0.0.1234";
+	private String a = "0.0.1234";
 	private MerkleAccount aValue;
-	private static final List<TransactionRecord> someRecords =
-			ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
+	private List<TransactionRecord> someRecords = ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
 	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
@@ -70,7 +69,7 @@ class GetAccountRecordsResourceUsageTest {
 		aValue.records().offer(recordOne());
 		aValue.records().offer(recordTwo());
 		usageEstimator = mock(CryptoFeeBuilder.class);
-		accounts = mock(FCMap.class);
+		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
 		final StateChildren children = new StateChildren();
 		children.setAccounts(accounts);
@@ -93,9 +92,12 @@ class GetAccountRecordsResourceUsageTest {
 
 	@Test
 	void invokesEstimatorAsExpectedForType() {
+		// setup:
 		final var costAnswerUsage = mock(FeeData.class);
 		final var answerOnlyUsage = mock(FeeData.class);
-		final var key = MerkleEntityId.fromAccountId(asAccount(a));
+		final var key = EntityNum.fromAccountId(asAccount(a));
+
+		// given:
 		final var answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
 		final var costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
 		given(accounts.get(key)).willReturn(aValue);
