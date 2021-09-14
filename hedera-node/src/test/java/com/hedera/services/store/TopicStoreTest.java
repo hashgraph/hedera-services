@@ -57,7 +57,6 @@ class TopicStoreTest {
 		subject.persistNew(topic);
 		
 		verify(topics).put(any(), any());
-		verify(topic).getAdminKey();
 		verify(mockAutoRenewId).asEntityId();
 	}
 

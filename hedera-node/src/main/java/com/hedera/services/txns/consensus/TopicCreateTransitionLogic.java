@@ -30,8 +30,6 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -53,22 +51,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public class TopicCreateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TopicCreateTransitionLogic.class);
-
 	private final AccountStore accountStore;
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
-	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK =
-			this::validatePreSignatureValidation;
+	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK = this::validate;
 	private final TransactionContext transactionContext;
 
 	@Inject
 	public TopicCreateTransitionLogic(
-			TopicStore topicStore,
-			EntityIdSource entityIdSource,
-			OptionValidator validator,
-			TransactionContext transactionContext,
+			final TopicStore topicStore,
+			final EntityIdSource entityIdSource,
+			final OptionValidator validator,
+			final TransactionContext transactionContext,
 			final AccountStore accountStore) {
 		this.accountStore = accountStore;
 		this.topicStore = topicStore;
@@ -82,15 +77,15 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 		/* --- pre-validation --- */
 		validatePreStateTransition();
 		/* --- extract gRPC --- */
-		var transactionBody = transactionContext.accessor().getTxn();
-		var payerAccountId = transactionBody.getTransactionID().getAccountID();
-		var op = transactionBody.getConsensusCreateTopic();
+		final var transactionBody = transactionContext.accessor().getTxn();
+		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
+		final var op = transactionBody.getConsensusCreateTopic();
 		// expirationTime (currently un-enforced) is consensus timestamp of create plus the specified required
 		// autoRenewPeriod->seconds.
-		var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
+		final var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
 		/* --- Do business logic --- */
-		var topicId = entityIdSource.newAccountId(payerAccountId);
-		var topic = Topic.fromGrpcTopicCreate(op, Id.fromGrpcAccount(topicId), expirationTime);
+		final var topicId = entityIdSource.newAccountId(payerAccountId);
+		final var topic = Topic.fromGrpcTopicCreate(op, Id.fromGrpcAccount(topicId), expirationTime);
 		/* --- persist the topic --- */
 		topicStore.persistNew(topic);
 	}
@@ -110,11 +105,12 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	 * adminKey; this check occurs before signature validation which occurs before doStateTransition.
 	 *
 	 * @param transactionBody
+	 * 		- the gRPC body
 	 * @return the validity
 	 */
-	private ResponseCodeEnum validatePreSignatureValidation(TransactionBody transactionBody) {
+	private ResponseCodeEnum validate(TransactionBody transactionBody) {
 		var op = transactionBody.getConsensusCreateTopic();
-
+		
 		if (op.hasAdminKey() && !validator.hasGoodEncoding(op.getAdminKey())) {
 			return BAD_ENCODING;
 		}
@@ -124,8 +120,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	/**
 	 * Validation of the post-consensus transaction just prior to state transition.
-	 *
-	 * @return the validity
+	 * Throws {@link com.hedera.services.exceptions.InvalidTransactionException} on failed validation.
 	 */
 	private void validatePreStateTransition() {
 		final var op = transactionContext.accessor().getTxn().getConsensusCreateTopic();
@@ -140,5 +135,5 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
 		}
 	}
-	
+
 }

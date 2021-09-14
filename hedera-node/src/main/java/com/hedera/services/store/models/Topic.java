@@ -23,6 +23,8 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 
@@ -32,18 +34,21 @@ import java.time.Instant;
  * @author Yoan Sredkov
  */
 public class Topic {
-
+	private final static Logger log = LogManager.getLogger(Topic.class);
+	
 	private final Id id;
 	private String memo;
 	private JKey adminKey;
 	private JKey submitKey;
 	private Id autoRenewAccountId;
 	private long autoRenewDurationSeconds;
-	private RichInstant expirationTimestamp;
 	private boolean deleted;
+	private RichInstant expirationTimestamp;
+	
 	private long sequenceNumber;
-
-	public Topic(final Id id) {
+	private byte[] runningHash;
+	
+ 	public Topic(final Id id) {
 		this.id = id;
 	}
 
@@ -75,7 +80,7 @@ public class Topic {
 		try {
 			return JKey.mapKey(k);
 		} catch (DecoderException e) {
-			// TODO: log it 
+			log.error("DecoderException should have been hit in TopicCreateTransitionLogic.validatePreStateTransition().", e);
 			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
 		}
 	}
