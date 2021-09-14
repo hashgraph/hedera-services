@@ -65,13 +65,6 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void getsTokenBalance() {
-		final var balance = subject.getTokenBalance(misc, frozenId);
-
-		assertEquals(miscFrozenTokenBalance, balance);
-	}
-
-	@Test
 	void recognizesAccountWithNonZeroTokenBalances() {
 		assertFalse(subject.allTokenBalancesVanish(misc));
 	}
