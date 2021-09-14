@@ -29,6 +29,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.Topic;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -36,7 +37,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -187,8 +187,9 @@ class TransactionRecordServiceTest {
 	
 	@Test
 	void updatesReceiptForNewTopic() {
-		final var topic = TopicID.getDefaultInstance();
-		subject.includeNewTopic(topic);
-		verify(txnCtx).setCreated(topic);
+		final var topic = new Topic(Id.DEFAULT);
+		topic.setNew(true);
+		subject.includeChangesToTopic(topic);
+		verify(txnCtx).setCreated(Id.DEFAULT.asGrpcTopic());
 	}
 }

@@ -25,12 +25,12 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.Topic;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TopicID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -151,8 +151,17 @@ public class TransactionRecordService {
 		}
 		txnCtx.setTokenTransferLists(transferLists);
 	}
-	
-	public void includeNewTopic(TopicID id) {
-		txnCtx.setCreated(id);
+
+	/**
+	 * Updates the record of the current transaction with the changes in the given {@link Topic}.
+	 * Currently, the only operation refactored is the TopicCreate.
+	 * This function should be updated correspondingly while refactoring the other Topic operations.
+	 * 
+	 * @param topic - the Topic, whose changes have to be included in the receipt
+	 */
+	public void includeChangesToTopic(Topic topic) {
+		if (topic.isNew()) {
+			txnCtx.setCreated(topic.getId().asGrpcTopic());
+		}
 	}
 }

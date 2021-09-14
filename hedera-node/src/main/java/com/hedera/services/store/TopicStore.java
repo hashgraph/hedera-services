@@ -26,6 +26,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+/**
+ * A store which interacts with the state topics, represented in a {@link FCMap}.
+ * 
+ * @author Yoan Sredkov
+ */
 @Singleton
 public class TopicStore {
 
@@ -39,10 +44,10 @@ public class TopicStore {
 	}
 
 	/**
-	 * Persists a new {@link Topic} into the state.
+	 * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction receipt.
 	 *
 	 * @param model
-	 * 		- the model to be mapped onto a **new** {@link MerkleTopic} and persisted.
+	 * 		- the model to be mapped onto a new {@link MerkleTopic} and persisted.
 	 */
 	public void persistNew(Topic model) {
 		final var id = model.getId().asMerkle();
@@ -51,10 +56,16 @@ public class TopicStore {
 		mapModelToMerkle(model, merkleTopic);
 		merkleTopic.setSequenceNumber(0);
 		currentTopics.put(id, merkleTopic);
-		transactionRecordService.includeNewTopic(model.getId().asGrpcTopic());
+		transactionRecordService.includeChangesToTopic(model);
 	}
 
-	public void mapModelToMerkle(Topic model, MerkleTopic merkle) {
+	/**
+	 * Maps properties between a model {@link Topic} and a {@link MerkleTopic}
+	 * 
+	 * @param model - the Topic model which will be used to map into a MerkleTopic
+	 * @param merkle - the merkle topic
+	 */
+	private void mapModelToMerkle(Topic model, MerkleTopic merkle) {
 		merkle.setAdminKey(model.getAdminKey());
 		merkle.setSubmitKey(model.getSubmitKey());
 		merkle.setMemo(model.getMemo());

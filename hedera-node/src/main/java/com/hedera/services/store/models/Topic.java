@@ -43,6 +43,7 @@ public class Topic {
 	private Id autoRenewAccountId;
 	private long autoRenewDurationSeconds;
 	private boolean deleted;
+	private boolean isNew;
 	private RichInstant expirationTimestamp;
 	
 	private long sequenceNumber;
@@ -55,6 +56,7 @@ public class Topic {
 	/**
 	 * Creates a new {@link Topic} from the given body.
 	 * Note: The created model is not added to state, and must be explicitly persisted via {@link com.hedera.services.store.TopicStore#persistNew(Topic)}
+	 * 
 	 * @param body - the gRPC transaction body
 	 * @param id - the id generated in the transition logic
 	 * @param expirationTime - expiration time of the topic,
@@ -73,6 +75,7 @@ public class Topic {
 		topic.setSubmitKey(submitKey);
 		topic.setAdminKey(adminKey);
 		topic.setExpirationTimestamp(RichInstant.fromJava(expirationTime));
+		topic.setNew(true);
 		return topic;
 	}
 
@@ -151,5 +154,13 @@ public class Topic {
 
 	public void setSequenceNumber(final long sequenceNumber) {
 		this.sequenceNumber = sequenceNumber;
+	}
+
+	public boolean isNew() {
+		return isNew;
+	}
+
+	public void setNew(final boolean aNew) {
+		isNew = aNew;
 	}
 }
