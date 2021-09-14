@@ -814,7 +814,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "50 * * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
