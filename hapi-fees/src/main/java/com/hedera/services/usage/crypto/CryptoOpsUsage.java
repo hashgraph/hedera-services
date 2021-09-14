@@ -50,6 +50,9 @@ public class CryptoOpsUsage {
 	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 	private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
 
+	static final long CREATE_SLOT_MULTIPLIER = 1228;
+	static final long UPDATE_SLOT_MULTIPLIER = 24000;
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
@@ -141,14 +144,13 @@ public class CryptoOpsUsage {
 			accumulator.addRbs(rbsDelta);
 		}
 
-		long maxAutoAssociationsDelta = cryptoUpdateMeta.hasMaxAutomaticAssociations() ?
-				((cryptoUpdateMeta.getMaxAutomaticAssociations() * newLifetime)
-						- (ctx.currentMaxAutomaticAssociations() * oldLifetime)) : 0L;
-
-		if (maxAutoAssociationsDelta > 0) {
-			/* 	A multiplier '27' is used here to match the cost of each auto-association slot with cost for
-			one additional association in a tokenAssociate call */
-			accumulator.addRbs(maxAutoAssociationsDelta * INT_SIZE * 27);
+		final var oldSlotsUsage = ctx.currentMaxAutomaticAssociations() * UPDATE_SLOT_MULTIPLIER;
+		final var newSlotsUsage = cryptoUpdateMeta.hasMaxAutomaticAssociations()
+				? cryptoUpdateMeta.getMaxAutomaticAssociations() * UPDATE_SLOT_MULTIPLIER
+				: oldSlotsUsage;
+		long slotRbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldSlotsUsage, oldLifetime, newSlotsUsage, newLifetime);
+		if (slotRbsDelta > 0) {
+			accumulator.addRbs(slotRbsDelta);
 		}
 	}
 
@@ -172,9 +174,7 @@ public class CryptoOpsUsage {
 			plus a boolean for receiver sig required. */
 		accumulator.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
 		accumulator.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime);
-		/* A multiplier '27' is used here to match the cost of each auto-association slot with cost for
-			one additional association in a tokenAssociate call */
-		accumulator.addRbs(maxAutomaticTokenAssociations * INT_SIZE * lifeTime * 27);
+		accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
 		accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 }

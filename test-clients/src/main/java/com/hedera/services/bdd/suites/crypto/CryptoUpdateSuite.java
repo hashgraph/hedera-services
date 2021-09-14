@@ -119,7 +119,15 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {
-		double fee = 0.00022;
+		double autoAssocSlotPrice = 0.0018;
+		double baseFee = 0.00022;
+		double plusOneSlotFee = baseFee + autoAssocSlotPrice;
+		double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
+
+		final var baseTxn = "baseTxn";
+		final var plusOneTxn = "plusOneTxn";
+		final var plusTenTxn = "plusTenTxn";
+
 		AtomicLong expiration = new AtomicLong();
 		return defaultHapiSpec("UsdFeeAsExpectedCryptoUpdate")
 				.given(
@@ -133,20 +141,38 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.blankMemo()
 								.payingWith("payer"),
+						cryptoCreate("autoAssocTarget")
+								.key("key")
+								.balance(100 * ONE_HBAR)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.blankMemo()
+								.payingWith("payer"),
 						getAccountInfo("canonicalAccount")
 								.exposingExpiry(expiration::set)
 				)
 				.when(
-						sourcing( () ->
-							cryptoUpdate("canonicalAccount")
-									.payingWith("canonicalAccount")
-									.blankMemo()
-									.expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
-									.via("canonicalCryptoUpdate")
-						)
+						sourcing(() ->
+								cryptoUpdate("canonicalAccount")
+										.payingWith("canonicalAccount")
+										.expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
+										.blankMemo()
+										.via(baseTxn)
+						),
+						cryptoUpdate("autoAssocTarget")
+								.payingWith("autoAssocTarget")
+								.blankMemo()
+								.maxAutomaticAssociations(1)
+								.via(plusOneTxn),
+						cryptoUpdate("autoAssocTarget")
+								.payingWith("autoAssocTarget")
+								.blankMemo()
+								.maxAutomaticAssociations(11)
+								.via(plusTenTxn)
 				)
 				.then(
-						validateChargedUsd("canonicalCryptoUpdate", fee)
+						validateChargedUsd(baseTxn, baseFee),
+						validateChargedUsd(plusOneTxn, plusOneSlotFee),
+						validateChargedUsd(plusTenTxn, plusTenSlotsFee)
 				);
 	}
 
@@ -169,7 +195,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
+								.overridingProps(
+										Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(firstUser)
@@ -210,11 +237,12 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(newGoodMax),
 						cryptoUpdate(firstUser)
-								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork+1)
+								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
+								.overridingProps(
+										Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
 				);
 	}
 

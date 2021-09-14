@@ -170,7 +170,7 @@ class CryptoOpsUsageTest {
 		expected.resetForTransaction(baseMeta, singleSigUsage);
 		expected.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
 		expected.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * secs);
-		expected.addRbs(maxAutoAssociations * INT_SIZE * secs * 27);
+		expected.addRbs(maxAutoAssociations * secs * CryptoOpsUsage.CREATE_SLOT_MULTIPLIER);
 		expected.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		subject.cryptoCreateUsage(singleSigUsage, baseMeta, opMeta, actual);
@@ -272,11 +272,12 @@ class CryptoOpsUsageTest {
 			expected.addRbs(rbsDelta);
 		}
 
-		long maxAutoAssociationsDelta =
-				(maxAutoAssociations * newLifetime)
-						- (oldMaxAutoAssociations * oldLifetime);
-
-		expected.addRbs(maxAutoAssociationsDelta * INT_SIZE * 27);
+		final var slotDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				oldMaxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				oldLifetime,
+				maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				newLifetime);
+		expected.addRbs(slotDelta);
 
 		var actual = new UsageAccumulator();
 
@@ -329,6 +330,12 @@ class CryptoOpsUsageTest {
 		if (rbsDelta > 0) {
 			expected.addRbs(rbsDelta);
 		}
+		final var slotDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				oldLifetime,
+				maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+				newLifetime);
+		expected.addRbs(slotDelta);
 
 		var actual = new UsageAccumulator();
 

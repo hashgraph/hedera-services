@@ -207,6 +207,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 						.setCurrentMemo(info.getMemo())
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
+						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoUpdateMeta(_txn.getCryptoUpdateAccount(),

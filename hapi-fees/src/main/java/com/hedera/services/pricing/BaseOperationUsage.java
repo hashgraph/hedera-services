@@ -21,6 +21,7 @@ package com.hedera.services.pricing;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
@@ -159,12 +160,12 @@ class BaseOperationUsage {
 				break;
 			case CryptoCreate:
 				if (type == DEFAULT) {
-					return cryptoCreate();
+					return cryptoCreate(0);
 				}
 				break;
 			case CryptoUpdate:
 				if (type == DEFAULT) {
-					return cryptoUpdate();
+					return cryptoUpdate(0);
 				}
 				break;
 			case TokenCreate:
@@ -207,9 +208,10 @@ class BaseOperationUsage {
 		throw new IllegalArgumentException("Canonical usage unknown");
 	}
 
-	UsageAccumulator cryptoCreate() {
+	UsageAccumulator cryptoCreate(int autoAssocSlots) {
 		final var cryptoCreateTxnBody = CryptoCreateTransactionBody.newBuilder()
 						.setMemo(BLANK_MEMO)
+						.setMaxAutomaticTokenAssociations(autoAssocSlots)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.setKey(A_KEY).build();
 		final var cryptoCreateMeta = new CryptoCreateMeta(cryptoCreateTxnBody);
@@ -218,12 +220,13 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	UsageAccumulator cryptoUpdate() {
+	UsageAccumulator cryptoUpdate(int newAutoAssocSlots) {
 		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
 						.setMemo(StringValue.of(BLANK_MEMO))
 						.setExpirationTime(Timestamp.newBuilder().setSeconds(now + THREE_MONTHS_IN_SECONDS))
+						.setMaxAutomaticTokenAssociations(Int32Value.newBuilder().setValue(newAutoAssocSlots))
 						.setAccountIDToUpdate(AN_ACCOUNT)
 				).build();
 		final var ctx = ExtantCryptoContext.newBuilder()
@@ -234,8 +237,7 @@ class BaseOperationUsage {
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
 				.build();
-		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(),
-				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoUpdateUsage(
 				SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into);

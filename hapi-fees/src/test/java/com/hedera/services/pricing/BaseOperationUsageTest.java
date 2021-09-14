@@ -93,10 +93,10 @@ class BaseOperationUsageTest {
 		verify(mock).uniqueTokenCreateWithCustomFees();
 
 		mock.baseUsageFor(CryptoCreate, DEFAULT);
-		verify(mock).cryptoCreate();
+		verify(mock).cryptoCreate(0);
 
 		mock.baseUsageFor(CryptoUpdate, DEFAULT);
-		verify(mock).cryptoUpdate();
+		verify(mock).cryptoUpdate(0);
 
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));
