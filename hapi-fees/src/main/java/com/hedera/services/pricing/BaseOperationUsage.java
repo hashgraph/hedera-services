@@ -208,13 +208,11 @@ class BaseOperationUsage {
 	}
 
 	UsageAccumulator cryptoCreate() {
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+		final var cryptoCreateTxnBody = CryptoCreateTransactionBody.newBuilder()
 						.setMemo(BLANK_MEMO)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-						.setKey(A_KEY))
-				.build();
-		final var cryptoCreateMeta = new CryptoCreateMeta(canonicalTxn);
+						.setKey(A_KEY).build();
+		final var cryptoCreateMeta = new CryptoCreateMeta(cryptoCreateTxnBody);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoCreateUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoCreateMeta, into);
 		return into;
@@ -236,7 +234,8 @@ class BaseOperationUsage {
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
 				.build();
-		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn);
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(),
+				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoUpdateUsage(
 				SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into);

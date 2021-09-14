@@ -22,7 +22,6 @@ package com.hedera.services.usage.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -53,17 +52,15 @@ public class CryptoUpdateMeta {
 		hasMaxAutomaticAssociations = builder.hasMaxAutomaticAssociations;
 	}
 
-	public CryptoUpdateMeta(TransactionBody cryptoUpdateTxn) {
-		var op = cryptoUpdateTxn.getCryptoUpdateAccount();
-
-		keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
-		msgBytesUsed = bytesUsedInTxn(op) + keyBytesUsed;
-		memoSize = op.hasMemo() ? op.getMemo().getValueBytes().size() : 0;
-		effectiveNow = cryptoUpdateTxn.getTransactionID().getTransactionValidStart().getSeconds();
-		expiry = op.getExpirationTime().getSeconds();
-		hasProxy = op.hasProxyAccountID();
-		hasMaxAutomaticAssociations = op.hasMaxAutomaticTokenAssociations();
-		maxAutomaticAssociations = op.getMaxAutomaticTokenAssociations().getValue();
+	public CryptoUpdateMeta(CryptoUpdateTransactionBody cryptoUpdateTxnBody, long transactionValidStartSecs) {
+		keyBytesUsed = cryptoUpdateTxnBody.hasKey() ? getAccountKeyStorageSize(cryptoUpdateTxnBody.getKey()) : 0;
+		msgBytesUsed = bytesUsedInTxn(cryptoUpdateTxnBody) + keyBytesUsed;
+		memoSize = cryptoUpdateTxnBody.hasMemo() ? cryptoUpdateTxnBody.getMemo().getValueBytes().size() : 0;
+		effectiveNow = transactionValidStartSecs;
+		expiry = cryptoUpdateTxnBody.getExpirationTime().getSeconds();
+		hasProxy = cryptoUpdateTxnBody.hasProxyAccountID();
+		hasMaxAutomaticAssociations = cryptoUpdateTxnBody.hasMaxAutomaticTokenAssociations();
+		maxAutomaticAssociations = cryptoUpdateTxnBody.getMaxAutomaticTokenAssociations().getValue();
 	}
 
 	public long getMsgBytesUsed() {

@@ -99,7 +99,8 @@ class CryptoUpdateMetaTest {
 		final var expectedMsgBytes = BASIC_ENTITY_ID_SIZE + memo.length() + LONG_SIZE
 				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE;
 
-		final var subject = new CryptoUpdateMeta(canonicalTxn);
+		final var subject = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(),
+				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
 		assertEquals(0, subject.getKeyBytesUsed());
 		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());

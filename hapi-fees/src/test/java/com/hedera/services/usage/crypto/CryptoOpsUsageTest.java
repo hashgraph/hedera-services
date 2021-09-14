@@ -160,7 +160,7 @@ class CryptoOpsUsageTest {
 				.build();
 		final SigUsage singleSigUsage = new SigUsage(
 				1, onePairSigMap.getSerializedSize(), 1);
-		final var opMeta = new CryptoCreateMeta(txn);
+		final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
 		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 
 		var actual = new UsageAccumulator();
@@ -190,7 +190,7 @@ class CryptoOpsUsageTest {
 				.build();
 		final SigUsage singleSigUsage = new SigUsage(
 				1, onePairSigMap.getSerializedSize(), 1);
-		final var opMeta = new CryptoCreateMeta(txn);
+		final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
 		final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
 
 		var actual = new UsageAccumulator();
@@ -231,7 +231,8 @@ class CryptoOpsUsageTest {
 		givenUpdateOpWithMaxAutoAssociations();
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(memo.length(), 0);
-		var opMeta = new CryptoUpdateMeta(txn);
+		var opMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
 
 		expected.resetForTransaction(baseMeta, sigUsage);
 
@@ -289,7 +290,8 @@ class CryptoOpsUsageTest {
 		givenUpdateOpWithOutMaxAutoAssociations();
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(memo.length(), 0);
-		var opMeta = new CryptoUpdateMeta(txn);
+		var opMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
 
 		expected.resetForTransaction(baseMeta, sigUsage);
 

@@ -209,7 +209,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-				var opMeta = new CryptoUpdateMeta(_txn);
+				var opMeta = new CryptoUpdateMeta(_txn.getCryptoUpdateAccount(),
+						_txn.getTransactionID().getTransactionValidStart().getSeconds());
 				var accumulator = new UsageAccumulator();
 				cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
 				return AdapterUtils.feeDataFrom(accumulator);

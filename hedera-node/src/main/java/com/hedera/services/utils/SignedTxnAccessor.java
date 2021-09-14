@@ -340,12 +340,13 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	private void setCryptoCreateUsageMeta() {
-		final var cryptoCreateMeta = new CryptoCreateMeta(txn);
+		final var cryptoCreateMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
 		SPAN_MAP_ACCESSOR.setCryptoCreate(this, cryptoCreateMeta);
 	}
 
 	private void setCryptoUpdateUsageMeta() {
-		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn);
+		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
 	}
 }
