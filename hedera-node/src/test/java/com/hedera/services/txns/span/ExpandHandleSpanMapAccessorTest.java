@@ -53,14 +53,22 @@ class ExpandHandleSpanMapAccessorTest {
 
 	@Test
 	void testsForImpliedXfersAsExpected() {
-		// expect:
 		Assertions.assertDoesNotThrow(() -> subject.getImpliedTransfers(accessor));
 	}
 
 	@Test
 	void testsForTokenCreateMetaAsExpected() {
-		// expect:
 		Assertions.assertDoesNotThrow(() -> subject.getTokenCreateMeta(accessor));
+	}
+
+	@Test
+	void testsForTokenBurnMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getTokenBurnMeta(accessor));
+	}
+
+	@Test
+	void testsForTokenWipeMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
 	}
 
 	@Test
