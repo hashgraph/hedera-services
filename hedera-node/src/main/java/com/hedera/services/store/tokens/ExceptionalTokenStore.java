@@ -37,11 +37,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_STORE;
 
 	@Override
-	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		throw new UnsupportedOperationException();
 	}

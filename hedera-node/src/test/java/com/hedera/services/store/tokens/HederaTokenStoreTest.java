@@ -509,15 +509,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void revokingKycRejectsMissingAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(false);
-
-		final var status = subject.revokeKyc(sponsor, misc);
-
-		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
 	void adjustingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
