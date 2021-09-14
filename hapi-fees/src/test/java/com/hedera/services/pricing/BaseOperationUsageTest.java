@@ -44,7 +44,15 @@ import static org.mockito.Mockito.verify;
 
 class BaseOperationUsageTest {
 	@Test
-	void picksAppropriateOperation() {
+	void picksAppropriateFileOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
+
+		mock.baseUsageFor(FileAppend, DEFAULT);
+		verify(mock).fileAppend();
+	}
+
+	@Test
+	void picksAppropriateCryptoOp() {
 		final var mock = Mockito.spy(new BaseOperationUsage());
 
 		mock.baseUsageFor(CryptoTransfer, DEFAULT);
@@ -61,6 +69,14 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		verify(mock).nftCryptoTransferWithCustomFee();
+
+		mock.baseUsageFor(CryptoCreate, DEFAULT);
+		verify(mock).cryptoCreate();
+	}
+
+	@Test
+	void picksAppropriateTokenOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
 
 		mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON);
 		verify(mock).fungibleCommonTokenWipe();
@@ -86,9 +102,6 @@ class BaseOperationUsageTest {
 		mock.baseUsageFor(TokenFeeScheduleUpdate, DEFAULT);
 		verify(mock).feeScheduleUpdate();
 
-		mock.baseUsageFor(FileAppend, DEFAULT);
-		verify(mock).fileAppend();
-
 		mock.baseUsageFor(TokenCreate, TOKEN_FUNGIBLE_COMMON);
 		verify(mock).fungibleTokenCreate();
 
@@ -100,29 +113,41 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		verify(mock).uniqueTokenCreateWithCustomFees();
+	}
 
-		mock.baseUsageFor(CryptoCreate, DEFAULT);
-		verify(mock).cryptoCreate();
-
-		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
-
-		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));
+	@Test
+	void failsOnUnrecognizedTokenTypes() {
+		final var subject = new BaseOperationUsage();
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(FileAppend, UNRECOGNIZED));
+				() -> subject.baseUsageFor(TokenCreate, UNRECOGNIZED));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+				() -> subject.baseUsageFor(TokenMint, UNRECOGNIZED));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenMint, UNRECOGNIZED));
+				() -> subject.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+				() -> subject.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+	}
+
+	@Test
+	void failsOnUnrecognizedCryptoTypes() {
+		final var subject = new BaseOperationUsage();
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+				() -> subject.baseUsageFor(CryptoUpdate, DEFAULT));
+
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+	}
+
+	@Test
+	void failsOnUnrecognizedFileTypes() {
+		final var subject = new BaseOperationUsage();
+
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.baseUsageFor(FileAppend, UNRECOGNIZED));
 	}
 }
