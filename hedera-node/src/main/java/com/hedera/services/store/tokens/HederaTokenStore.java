@@ -40,7 +40,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -85,8 +84,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static java.util.stream.Collectors.toList;
@@ -255,31 +252,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum revokeKyc(final AccountID aId, final TokenID tId) {
-		return setHasKyc(aId, tId, false);
-	}
-
-	private ResponseCodeEnum setHasKyc(final AccountID aId, final TokenID tId, final boolean value) {
-		return manageFlag(
-				aId,
-				tId,
-				value,
-				TOKEN_HAS_NO_KYC_KEY,
-				TokenRelProperty.IS_KYC_GRANTED,
-				MerkleToken::kycKey);
-	}
-
-	private ResponseCodeEnum setIsFrozen(final AccountID aId, final TokenID tId, final boolean value) {
-		return manageFlag(
-				aId,
-				tId,
-				value,
-				TOKEN_HAS_NO_FREEZE_KEY,
-				TokenRelProperty.IS_FROZEN,
-				MerkleToken::freezeKey);
-	}
-
-	@Override
 	public ResponseCodeEnum adjustBalance(final AccountID aId, final TokenID tId, final long adjustment) {
 		return sanityCheckedFungibleCommon(aId, tId, token -> tryAdjustment(aId, tId, adjustment));
 	}
@@ -404,10 +376,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 		}
 		return OK;
-	}
-
-	private boolean isValidAutoRenewPeriod(final long secs) {
-		return validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 	}
 
 	@Override
