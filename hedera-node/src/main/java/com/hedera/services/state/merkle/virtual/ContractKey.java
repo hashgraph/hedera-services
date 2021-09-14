@@ -100,16 +100,9 @@ public final class ContractKey implements VirtualKey {
      */
     @Override
     public int hashCode() {
-        long x = perm64(31 * contractId);
-        x ^= perm64(uint256Key[7]);
-        x ^= perm64(uint256Key[6]);
-        x ^= perm64(uint256Key[5]);
-        x ^= perm64(uint256Key[4]);
-        x ^= perm64(uint256Key[3]);
-        x ^= perm64(uint256Key[2]);
-        x ^= perm64(uint256Key[1]);
-        x ^= perm64(uint256Key[0]);
-        return (int) x;
+        return (int) perm64(perm64(perm64(perm64(perm64(perm64( perm64( perm64( perm64(
+                contractId) ^ uint256Key[7]) ^ uint256Key[6]) ^ uint256Key[5]) ^ uint256Key[4]) ^
+                uint256Key[3]) ^ uint256Key[2]) ^ uint256Key[1]) ^ uint256Key[0]);
     }
 
     @Override
