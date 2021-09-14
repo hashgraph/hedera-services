@@ -26,8 +26,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -38,9 +36,7 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
@@ -53,12 +49,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -93,11 +87,8 @@ import static java.util.stream.Collectors.toList;
  */
 @Singleton
 public class HederaTokenStore extends HederaStore implements TokenStore {
+
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
-
-	private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
-
-	private final OptionValidator validator;
 	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
@@ -114,7 +105,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Inject
 	public HederaTokenStore(
 			final EntityIdSource ids,
-			final OptionValidator validator,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final GlobalDynamicProperties properties,
 			final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
@@ -123,7 +113,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	) {
 		super(ids);
 		this.tokens = tokens;
-		this.validator = validator;
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
@@ -446,24 +435,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return false;
 		}
 		return knownTreasuries.get(aId).contains(tId);
-	}
-
-	private ResponseCodeEnum manageFlag(
-			final AccountID aId,
-			final TokenID tId,
-			final boolean value,
-			final ResponseCodeEnum keyFailure,
-			final TokenRelProperty flagProperty,
-			final Function<MerkleToken, Optional<JKey>> controlKeyFn
-	) {
-		return sanityChecked(false, aId, null, tId, token -> {
-			if (controlKeyFn.apply(token).isEmpty()) {
-				return keyFailure;
-			}
-			final var relationship = asTokenRel(aId, tId);
-			tokenRelsLedger.set(relationship, flagProperty, value);
-			return OK;
-		});
 	}
 
 	private ResponseCodeEnum sanityCheckedFungibleCommon(

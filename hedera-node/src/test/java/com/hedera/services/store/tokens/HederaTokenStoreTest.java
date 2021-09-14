@@ -81,7 +81,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
-import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -265,7 +264,7 @@ class HederaTokenStoreTest {
 		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, uniqTokenViewsManager, properties, () -> tokens, tokenRelsLedger, nftsLedger);
+				ids, uniqTokenViewsManager, properties, () -> tokens, tokenRelsLedger, nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{
