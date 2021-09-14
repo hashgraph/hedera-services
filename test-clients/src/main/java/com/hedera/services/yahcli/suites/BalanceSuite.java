@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class BalanceSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(BalanceSuite.class);
@@ -47,21 +46,8 @@ public class BalanceSuite extends HapiApiSuite {
 
 	private List<String> rationalized(final String[] accounts) {
 		return Arrays.stream(accounts)
-				.map(a -> getAccount(a))
+				.map(Utils::extractAccount)
 				.collect(Collectors.toList());
-	}
-
-	private String getAccount(final String account) {
-		if(isIdLiteral(account)) {
-			return account;
-		} else {
-			try {
-				long number = Long.parseLong(account);
-				return "0.0." + number;
-			} catch (NumberFormatException ignore) {
-				throw  new IllegalArgumentException("Named accounts not yet supported!");
-			}
-		}
 	}
 
 	@Override

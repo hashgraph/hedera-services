@@ -41,6 +41,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
+import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
@@ -173,6 +174,10 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation expectedEntitiesExist() {
 		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
+	}
+
+	public static SpecKeyFromFile keyFromFile(String name, String flexLoc) {
+		return new SpecKeyFromFile(name, flexLoc);
 	}
 
 	public static SpecKeyFromPem keyFromPem(String pemLoc) {
