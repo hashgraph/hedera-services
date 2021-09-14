@@ -27,18 +27,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static com.hedera.test.utils.IdUtils.tokenWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.times;
-import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
 class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
@@ -47,73 +37,6 @@ class HederLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 		commonSetup();
 		setupWithMockLedger();
 		subject.setTokenViewsManager(mock(UniqTokenViewsManager.class));
-	}
-
-	@Test
-	void tokenTransferHappyPathWOrks() {
-		// setup
-		given(subject.adjustTokenBalance(misc, tokenId, -1_000)).willReturn(OK);
-		given(subject.adjustTokenBalance(rand, tokenId, 1_000)).willReturn(OK);
-
-		// when:
-		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 1_000);
-
-		// then:
-		assertEquals(OK, outcome);
-		verify(tokenStore, never()).exists(tokenId);
-	}
-
-	@Test
-	void tokenTransferRevertsChangesOnFirstAdjust() {
-		// setup
-		given(tokenStore.adjustBalance(misc, tokenId, -555))
-				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
-		// given:
-		var status = subject.doTokenTransfer(tokenId, misc, rand, 555);
-
-		// expect:
-		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		// and:
-		assertEquals(0, subject.numTouches);
-		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
-		verify(tokenRelsLedger).rollback();
-	}
-
-	@Test
-	void tokenTransferRevertsChangesOnSecondAdjust() {
-		// setup
-		given(tokenStore.adjustBalance(misc, tokenId, -555))
-				.willReturn(OK);
-		given(tokenStore.adjustBalance(rand, tokenId, 555))
-				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
-		// given:
-		var status = subject.doTokenTransfer(tokenId, misc, rand, 555);
-
-		// expect:
-		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		// and:
-		assertEquals(0, subject.numTouches);
-		verify(tokenStore).adjustBalance(misc, tokenId, -555);
-		verify(tokenStore).adjustBalance(rand, tokenId, 555);
-		verify(tokenRelsLedger).rollback();
-	}
-
-	@Test
-	void tokenTransferHappyPath() {
-		// setup
-		givenAdjustBalanceUpdatingTokenXfers(misc, tokenId, -555);
-		givenAdjustBalanceUpdatingTokenXfers(rand, tokenId, 555);
-
-		// given
-		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 555);
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		assertEquals(OK, outcome);
-		assertEquals(tokenId, netXfers.get(0).getToken());
-		assertEquals(List.of(aa(misc, -555), aa(rand, 555)),
-				netXfers.get(0).getTransfersList());
 	}
 
 	@Test

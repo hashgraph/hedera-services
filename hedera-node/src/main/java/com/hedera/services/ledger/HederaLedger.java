@@ -378,24 +378,6 @@ public class HederaLedger {
 		clearNetTokenTransfers();
 	}
 
-	public ResponseCodeEnum doTokenTransfer(
-			TokenID tId,
-			AccountID from,
-			AccountID to,
-			long adjustment
-	) {
-	var validity = OK;
-		validity = adjustTokenBalance(from, tId, -adjustment);
-		if (validity == OK) {
-			validity = adjustTokenBalance(to, tId, adjustment);
-		}
-
-		if (validity != OK) {
-			dropPendingTokenChanges();
-		}
-		return validity;
-	}
-
 	public void doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
