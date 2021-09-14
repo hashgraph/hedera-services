@@ -60,9 +60,10 @@ import java.util.Optional;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-
 
 @ExtendWith(MockitoExtension.class)
 class OpUsageCtxHelperTest {
@@ -160,15 +161,15 @@ class OpUsageCtxHelperTest {
 		TransactionBody txn = getTxnBody(mintTxnBody);
 
 		given(accessor.getTxn()).willReturn(txn);
+		given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);
 		Optional<TokenType> tokenType = Optional.of(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(workingView.tokenType(target)).willReturn(tokenType);
 		given(workingView.tokenWith(target)).willReturn(Optional.of(extant));
 
 		final var tokenMintMeta = subject.metaForTokenMint(accessor);
 
 		// then:
 		assertEquals(34, tokenMintMeta.getBpt());
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, tokenMintMeta.getSubType());
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, tokenMintMeta.getSubType());
 		assertEquals(12345670, tokenMintMeta.getRbs());
 		assertEquals(80, tokenMintMeta.getTransferRecordDb());
 	}
@@ -179,8 +180,7 @@ class OpUsageCtxHelperTest {
 		TransactionBody txn = getTxnBody(burnTxnBody);
 
 		given(accessor.getTxn()).willReturn(txn);
-		Optional<TokenType> tokenType = Optional.of(TokenType.FUNGIBLE_COMMON);
-		given(workingView.tokenType(target)).willReturn(tokenType);
+		given(accessor.getSubType()).willReturn(TOKEN_FUNGIBLE_COMMON);
 
 		final var tokenBurnMeta = subject.metaForTokenBurn(accessor);
 
@@ -197,15 +197,13 @@ class OpUsageCtxHelperTest {
 		TransactionBody txn = getTxnBody(wipeTxnBody);
 
 		given(accessor.getTxn()).willReturn(txn);
-		Optional<TokenType> tokenType = Optional.of(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(workingView.tokenType(target)).willReturn(tokenType);
-		//given(workingView.tokenWith(target)).willReturn(Optional.of(extant));
+		given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);
 
 		final var tokenWipeMeta = subject.metaForTokenWipe(accessor);
 
 		// then:
 		assertEquals(32, tokenWipeMeta.getBpt());
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, tokenWipeMeta.getSubType());
+		assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, tokenWipeMeta.getSubType());
 		assertEquals(1, tokenWipeMeta.getSerialNumsCount());
 		assertEquals(80, tokenWipeMeta.getTransferRecordDb());
 	}
