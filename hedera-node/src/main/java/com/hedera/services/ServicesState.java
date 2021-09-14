@@ -41,9 +41,9 @@ import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -67,14 +67,15 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.Release0170Migration.moveLargeFcmsToBinaryRoutePositions;
-import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityNumPair.fromLongs;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
@@ -164,7 +165,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void migrate() {
 		if (getDeserializedVersion() < StateVersions.RELEASE_0180_VERSION) {
 			log.info("Beginning FCMap -> MerkleMap migrations");
-			MerkleOptionalBlob.setInMigration(true);
+			blobMigrationFlag.accept(true);
 			CompletableFuture.allOf(
 					runAsync(() -> {
 						fcmMigrator.toMerkleMap(
@@ -224,7 +225,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						log.info("  ↪ Migrated {} scheduled txns", scheduleTxs().size());
 					})
 			).join();
-			MerkleOptionalBlob.setInMigration(false);
+			blobMigrationFlag.accept(false);
 			log.info("Finished with FCMap -> MerkleMap migrations, completing the deferred init");
 
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit());
@@ -479,6 +480,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private static FcmMigrator fcmMigrator = FCMapMigration::FCMapToMerkleMap;
+	private static Consumer<Boolean> blobMigrationFlag = MerkleOptionalBlob::setInMigration;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -500,5 +502,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static void setFcmMigrator(FcmMigrator fcmMigrator) {
 		ServicesState.fcmMigrator = fcmMigrator;
+	}
+
+	static void setBlobMigrationFlag(Consumer<Boolean> blobMigrationFlag) {
+		ServicesState.blobMigrationFlag = blobMigrationFlag;
 	}
 }
