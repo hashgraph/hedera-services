@@ -77,11 +77,11 @@ public class SystemOpPolicies {
 		functionPolicies.put(UncheckedSubmit, this::checkUncheckedSubmit);
 	}
 
-	public SystemOpAuthorization check(TxnAccessor accessor) {
-		return check(accessor.getTxn(), accessor.getFunction());
+	public SystemOpAuthorization checkAccessor(TxnAccessor accessor) {
+		return checkKnownTxn(accessor.getTxn(), accessor.getFunction());
 	}
 
-	public SystemOpAuthorization check(TransactionBody txn, HederaFunctionality function) {
+	public SystemOpAuthorization checkKnownTxn(TransactionBody txn, HederaFunctionality function) {
 		return Optional.ofNullable(functionPolicies.get(function))
 				.map(opCheck -> opCheck.apply(txn))
 				.orElse(UNNECESSARY);

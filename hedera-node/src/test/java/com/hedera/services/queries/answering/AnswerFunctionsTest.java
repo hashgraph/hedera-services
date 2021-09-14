@@ -25,14 +25,14 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -79,7 +79,7 @@ class AnswerFunctionsTest {
 	private MerkleAccount payerAccount;
 	private StateView view;
 	private RecordCache recordCache;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private NodeLocalProperties nodeProps;
 
@@ -91,8 +91,8 @@ class AnswerFunctionsTest {
 		payerAccount.records().offer(recordOne());
 		payerAccount.records().offer(targetRecord);
 
-		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
+		accounts = mock(MerkleMap.class);
+		given(accounts.get(EntityNum.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new StateChildren();
 		children.setAccounts(accounts);

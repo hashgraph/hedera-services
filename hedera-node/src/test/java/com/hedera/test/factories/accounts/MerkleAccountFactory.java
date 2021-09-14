@@ -62,7 +62,7 @@ public class MerkleAccountFactory {
 		proxy.ifPresent(p -> value.setProxy(EntityId.fromGrpcAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
 		deleted.ifPresent(value::setDeleted);
-		accountKeys.ifPresent(value::setKey);
+		accountKeys.ifPresent(value::setAccountKey);
 		expirationTime.ifPresent(value::setExpiry);
 		autoRenewPeriod.ifPresent(value::setAutoRenewSecs);
 		isSmartContract.ifPresent(value::setSmartContract);

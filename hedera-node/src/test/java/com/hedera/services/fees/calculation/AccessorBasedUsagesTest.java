@@ -30,6 +30,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.file.FileAppendMeta;
@@ -65,8 +66,10 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -117,18 +120,15 @@ class AccessorBasedUsagesTest {
 
 	@Test
 	void throwsIfNotSupported() {
-		// setup:
 		final var accumulator = new UsageAccumulator();
 
-		given(txnAccessor.getFunction()).willReturn(CryptoCreate);
+		given(txnAccessor.getFunction()).willReturn(ContractCreate);
 
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.assess(sigUsage, txnAccessor, accumulator));
 	}
 
 	@Test
 	void worksAsExpectedForFileAppend() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var opMeta = new FileAppendMeta(1_234, 1_234_567L);
 		final var accumulator = new UsageAccumulator();
@@ -138,16 +138,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
 		given(opUsageCtxHelper.metaForFileAppend(TransactionBody.getDefaultInstance())).willReturn(opMeta);
 
-		// expect:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(fileOpsUsage).fileAppendUsage(sigUsage, opMeta, baseMeta, accumulator);
 	}
 
 	@Test
 	void worksAsExpectedForCryptoTransfer() {
-		// setup:
 		int multiplier = 30;
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var xferMeta = new CryptoTransferMeta(1, 3, 7, 4);
@@ -158,18 +155,14 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.availXferUsageMeta()).willReturn(xferMeta);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, usageAccumulator);
 
-		// then:
 		verify(cryptoOpsUsage).cryptoTransferUsage(sigUsage, xferMeta, baseMeta, usageAccumulator);
-		// and:
 		assertEquals(multiplier, xferMeta.getTokenMultiplier());
 	}
 
 	@Test
 	void worksAsExpectedForSubmitMessage() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 0);
 		final var submitMeta = new SubmitMessageMeta(1_234);
 		final var usageAccumulator = new UsageAccumulator();
@@ -178,16 +171,13 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.availSubmitUsageMeta()).willReturn(submitMeta);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, usageAccumulator);
 
-		// then:
 		verify(consensusOpsUsage).submitMessageUsage(sigUsage, submitMeta, baseMeta, usageAccumulator);
 	}
 
 	@Test
 	void worksAsExpectedForFeeScheduleUpdate() {
-		// setup:
 		final var realAccessor = uncheckedFrom(signedFeeScheduleUpdateTxn());
 
 		final var op = feeScheduleUpdateTxn().getTokenFeeScheduleUpdate();
@@ -196,22 +186,17 @@ class AccessorBasedUsagesTest {
 		final var feeScheduleCtx = new ExtantFeeScheduleContext(now, 123);
 
 		given(opUsageCtxHelper.ctxForFeeScheduleUpdate(op)).willReturn(feeScheduleCtx);
-		// and:
 		spanMapAccessor.setFeeScheduleUpdateMeta(realAccessor, opMeta);
 
-		// when:
 		final var accum = new UsageAccumulator();
-		// and:
 		subject.assess(sigUsage, realAccessor, accum);
 
-		// then:
 		verify(tokenOpsUsage).feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, feeScheduleCtx, accum);
 	}
 
 
 	@Test
 	void worksAsExpectedForTokenCreate() {
-		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
 		final var opMeta = new TokenCreateMeta.Builder()
 				.baseSize(1_234)
@@ -230,10 +215,8 @@ class AccessorBasedUsagesTest {
 		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
 		given(txnAccessor.getSpanMapAccessor().getTokenCreateMeta(any())).willReturn(opMeta);
 
-		// when:
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
-		// then:
 		verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta,  accumulator);
 	}
 
@@ -286,15 +269,34 @@ class AccessorBasedUsagesTest {
 
 		// then:
 		verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta,  accumulator);
+  }
+  
+	void worksAsExpectedForCryptoCreate() {
+		final var baseMeta = new BaseTransactionMeta(100, 0);
+		final var opMeta = new CryptoCreateMeta.Builder()
+				.baseSize(1_234)
+				.lifeTime(1_234_567L)
+				.maxAutomaticAssociations(3)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(CryptoCreate);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getCryptoCreateMeta(any())).willReturn(opMeta);
+
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		verify(cryptoOpsUsage).cryptoCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
 	}
 
 
 	@Test
 	void supportsIfInSet() {
-		// expect:
 		assertTrue(subject.supports(CryptoTransfer));
 		assertTrue(subject.supports(ConsensusSubmitMessage));
-		assertFalse(subject.supports(CryptoCreate));
+		assertTrue(subject.supports(CryptoCreate));
+		assertFalse(subject.supports(CryptoUpdate));
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {

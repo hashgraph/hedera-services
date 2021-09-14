@@ -24,7 +24,7 @@ import com.google.protobuf.TextFormat;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.unit.FCStorageWrapper;
+import com.hedera.services.legacy.unit.StorageTestHelper;
 import com.hedera.services.legacy.unit.InvalidFileWACLException;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
@@ -46,9 +46,9 @@ import java.time.Instant;
 
 public class FileServiceHandler {
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
-  private FCStorageWrapper storageWrapper;
+  private StorageTestHelper storageWrapper;
 
-  FileServiceHandler(final FCStorageWrapper storageWrapper) {
+  FileServiceHandler(final StorageTestHelper storageWrapper) {
     this.storageWrapper = storageWrapper;
   }
 

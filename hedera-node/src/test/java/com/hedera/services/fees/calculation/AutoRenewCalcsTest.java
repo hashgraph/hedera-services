@@ -175,7 +175,7 @@ class AutoRenewCalcsTest {
 		// given:
 		var expectedCtx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(0L)
-				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getKey()))
+				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getAccountKey()))
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
 				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())

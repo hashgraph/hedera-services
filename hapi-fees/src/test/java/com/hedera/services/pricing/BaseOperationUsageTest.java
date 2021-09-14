@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -100,6 +101,12 @@ class BaseOperationUsageTest {
 		mock.baseUsageFor(TokenCreate, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
 		verify(mock).uniqueTokenCreateWithCustomFees();
 
+		mock.baseUsageFor(CryptoCreate, DEFAULT);
+		verify(mock).cryptoCreate();
+
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
+
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenCreate, UNRECOGNIZED));
 
@@ -107,13 +114,13 @@ class BaseOperationUsageTest {
 				() -> mock.baseUsageFor(FileAppend, UNRECOGNIZED));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
-		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenMint, UNRECOGNIZED));
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
 	}

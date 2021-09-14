@@ -21,24 +21,23 @@ package com.hedera.services.legacy.unit.handler;
  */
 
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
-import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.legacy.unit.StorageTestHelper;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.utils.EntityIdUtils;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 import org.ethereum.datasource.StoragePersistence;
 
 public class StoragePersistenceImpl implements StoragePersistence {
 	private static String ADDRESS_APENDED_PATH = "/{0}/d{1}";
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+	private MerkleMap<String, MerkleOptionalBlob> storageMap;
 
-	public StoragePersistenceImpl(final FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
+	public StoragePersistenceImpl(final MerkleMap<String, MerkleOptionalBlob> storageMap) {
 		this.storageMap = storageMap;
 	}
 
 	@Override
 	public boolean storageExist(final byte[] key) {
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 		final var filePath = getAddressAppendedPath(key);
 		return storageWrapper.fileExists(filePath);
 
@@ -47,14 +46,14 @@ public class StoragePersistenceImpl implements StoragePersistence {
 	@Override
 	public void persist(final byte[] key, final byte[] storageCache, final long expirationTime, final long currentTime) {
 		final var filePath = getAddressAppendedPath(key);
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 		storageWrapper.fileCreate(filePath, storageCache);
 	}
 
 	@Override
 	public byte[] get(final byte[] key) {
 		byte[] serializedCache = null;
-		final var storageWrapper = new FCStorageWrapper(storageMap);
+		final var storageWrapper = new StorageTestHelper(storageMap);
 		if (storageExist(key)) {
 			final var filePath = getAddressAppendedPath(key);
 			serializedCache = storageWrapper.fileRead(filePath);

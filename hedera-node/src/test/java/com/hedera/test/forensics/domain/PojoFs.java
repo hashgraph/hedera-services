@@ -21,10 +21,9 @@ package com.hedera.test.forensics.domain;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.common.merkle.io.MerkleDataInputStream;
-import com.swirlds.fcmap.FCMap;
+import com.swirlds.merkle.map.MerkleMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,13 +39,13 @@ public class PojoFs {
 
 	public static PojoFs fromDisk(String dumpLoc) throws Exception {
 		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(dumpLoc)), false)) {
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+			MerkleMap<String, MerkleOptionalBlob> fcm = in.readMerkleTree(Integer.MAX_VALUE);
 			var pojo = from(fcm);
 			return pojo;
 		}
 	}
 
-	public static PojoFs from(FCMap<MerkleBlobMeta, MerkleOptionalBlob> fs) {
+	public static PojoFs from(MerkleMap<String, MerkleOptionalBlob> fs) {
 		var pojo = new PojoFs();
 		var readable = fs.entrySet()
 				.stream()
