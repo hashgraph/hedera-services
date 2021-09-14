@@ -265,11 +265,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum unfreeze(final AccountID aId, final TokenID tId) {
-		return setIsFrozen(aId, tId, false);
-	}
-
-	@Override
 	public ResponseCodeEnum freeze(final AccountID aId, final TokenID tId) {
 		return setIsFrozen(aId, tId, true);
 	}
