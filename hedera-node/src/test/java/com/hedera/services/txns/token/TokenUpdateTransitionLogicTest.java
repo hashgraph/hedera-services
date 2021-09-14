@@ -23,9 +23,6 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
@@ -33,7 +30,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -86,29 +82,25 @@ import static org.mockito.Mockito.doThrow;
 
 class TokenUpdateTransitionLogicTest {
 	private final TokenID target = IdUtils.asToken("1.2.666");
-	private final NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
 	private final AccountID oldTreasuryId = IdUtils.asAccount("1.2.4");
 	private final AccountID newTreasuryId = IdUtils.asAccount("1.2.5");
 	private final AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
-	private final AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
 	private final String symbol = "SYMBOL";
 	private final String name = "Name";
-	private final JKey adminKey = new JEd25519Key("w/e".getBytes());
 	long thisSecond = 1_234_567L;
 	private final Instant now = Instant.ofEpochSecond(thisSecond);
 	private TransactionBody tokenUpdateTxn;
 	private MerkleToken merkleToken;
 	private Token token;
-	private Account oldTreasury = mock(Account.class);
-	private Account newTreasury = mock(Account.class);
-	private CopyOnWriteIds treasuryAssociatedTokens = mock(CopyOnWriteIds.class);
-	private CopyOnWriteIds newTreasuryAssociatedTokens = mock(CopyOnWriteIds.class);
+	private final Account oldTreasury = mock(Account.class);
+	private final Account newTreasury = mock(Account.class);
+	private final CopyOnWriteIds treasuryAssociatedTokens = mock(CopyOnWriteIds.class);
+	private final CopyOnWriteIds newTreasuryAssociatedTokens = mock(CopyOnWriteIds.class);
 
 	private TokenRelationship currentTreasuryRel;
 
 
 	private OptionValidator validator;
-	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private TypedTokenStore tokenStore;
@@ -121,7 +113,6 @@ class TokenUpdateTransitionLogicTest {
 		tokenStore = mock(TypedTokenStore.class);
 		accountStore = mock(AccountStore.class);
 		validator = mock(OptionValidator.class);
-		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		merkleToken = mock(MerkleToken.class);
 		token = mock(Token.class);
@@ -192,7 +183,8 @@ class TokenUpdateTransitionLogicTest {
 		// when:
 		assertFailsWith(() -> subject.doStateTransition(), FAIL_INVALID);
 		// then:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+
+		verifyBalanceDoesNotChange();
 	}
 
 	@Test
@@ -221,7 +213,7 @@ class TokenUpdateTransitionLogicTest {
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+		verifyBalanceDoesNotChange();
 	}
 
 	@Test
@@ -245,7 +237,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx(true);
 		given(tokenStore.loadToken(any())).willThrow(new InvalidTransactionException(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 		assertFailsWith(() -> subject.doStateTransition(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+		verifyBalanceDoesNotChange();
 	}
 
 	@Test
@@ -688,12 +680,6 @@ class TokenUpdateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(ledger.exists(newTreasuryId)).willReturn(true);
-		given(ledger.exists(newAutoRenew)).willReturn(true);
-		given(ledger.isDeleted(newTreasuryId)).willReturn(false);
-		given(ledger.exists(oldTreasuryId)).willReturn(true);
-		given(ledger.isDeleted(oldTreasuryId)).willReturn(false);
-		given(ledger.isDetached(newTreasuryId)).willReturn(false);
 	}
 
 	private void givenMissingToken() {
@@ -746,5 +732,12 @@ class TokenUpdateTransitionLogicTest {
 		given(validator.tokenNameCheck(any())).willReturn(OK);
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
 		given(validator.memoCheck(any())).willReturn(OK);
+	}
+
+	private void verifyBalanceDoesNotChange() {
+		verify(currentTreasuryRel, never()).setBalance(anyLong());
+		verify(accountStore, never()).persistAccount(any());
+		verify(tokenStore, never()).persistTokenRelationships(any());
+		verify(tokenStore, never()).persistTrackers(any());
 	}
 }
