@@ -44,7 +44,6 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.store.tokens.views.internals.PermHashInteger;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -101,7 +100,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
-				TestContextValidator.TEST_VALIDATOR,
 				viewManager,
 				new MockGlobalDynamicProps(),
 				() -> tokens,
